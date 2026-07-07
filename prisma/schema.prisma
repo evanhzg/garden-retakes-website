@@ -1,0 +1,131 @@
+// Maps directly onto the tables created by GardenRankings (EF Core).
+// Point DATABASE_URL at the same MySQL the plugin uses
+// (DatabaseProvider = MySql in the plugin config).
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "mysql"
+  url      = env("DATABASE_URL")
+}
+
+model Season {
+  Id           Int       @id @default(autoincrement())
+  Name         String
+  StartedAtUtc DateTime
+  EndedAtUtc   DateTime?
+  IsActive     Boolean
+
+  @@map("Seasons")
+}
+
+model PlayerProfile {
+  SteamId        BigInt   @id
+  LastKnownName  String
+  FirstSeenAtUtc DateTime
+  LastSeenAtUtc  DateTime
+
+  @@map("PlayerProfiles")
+}
+
+model PlayerSeasonStats {
+  Id                   Int       @id @default(autoincrement())
+  SeasonId             Int
+  SteamId              BigInt
+  Elo                  Int
+  PeakElo              Int
+  RankedRoundsPlayed   Int
+  RankedRoundsWon      Int
+  UnrankedRoundsPlayed Int
+  LastRankedRoundAtUtc DateTime?
+  UpdatedAtUtc         DateTime
+
+  @@unique([SeasonId, SteamId])
+  @@map("PlayerSeasonStats")
+}
+
+model PlayerRoundRecord {
+  Id                 BigInt   @id @default(autoincrement())
+  RoundRecordId      BigInt
+  SeasonId           Int
+  Map                String
+  PlayedAtUtc        DateTime
+  IsRanked           Boolean
+  SteamId            BigInt
+  PlayerName         String
+  TeamNum            Int
+  WonRound           Boolean
+  Kills              Int
+  Headshots          Int
+  Assists            Int
+  FlashAssists       Int
+  Damage             Int
+  UtilityDamage      Int
+  EnemiesFlashed     Int
+  EnemyBlindDuration Float
+  Died               Boolean
+  DiedAtSeconds      Float?
+  WasTeamKilled      Boolean
+  KilledTeammate     Boolean
+  DiedEarly          Boolean
+  OpeningKill        Boolean
+  OpeningDeath       Boolean
+  TradeKills         Int
+  TradedDeath        Boolean
+  Kast               Boolean
+  MultiKillCount     Int
+  ClutchVersus       Int
+  ClutchWon          Boolean
+  BombPlanted        Boolean
+  BombDefused        Boolean
+  WasAfk             Boolean
+  Rating             Float
+  EloDelta           Int
+  EloAfter           Int
+
+  @@index([SteamId, PlayedAtUtc])
+  @@index([SeasonId, SteamId])
+  @@map("PlayerRoundRecords")
+}
+
+model CrTeamStats {
+  Id            Int      @id @default(autoincrement())
+  SeasonId      Int
+  TeamKey       String
+  PlayerNames   String
+  TeamSize      Int
+  Elo           Int
+  PeakElo       Int
+  MatchesPlayed Int
+  MatchesWon    Int
+  MatchesDrawn  Int
+  RoundsWon     Int
+  RoundsLost    Int
+  UpdatedAtUtc  DateTime
+
+  @@unique([SeasonId, TeamKey])
+  @@map("CrTeamStats")
+}
+
+model CrMatch {
+  Id           BigInt    @id @default(autoincrement())
+  SeasonId     Int
+  Map          String
+  StartedAtUtc DateTime
+  EndedAtUtc   DateTime?
+  TeamAKey     String
+  TeamBKey     String
+  TeamAName    String
+  TeamBName    String
+  TeamSize     Int
+  ScoreA       Int
+  ScoreB       Int
+  Result       String
+  EloDeltaA    Int
+  EloDeltaB    Int
+
+  @@index([SeasonId])
+  @@map("CrMatches")
+}
