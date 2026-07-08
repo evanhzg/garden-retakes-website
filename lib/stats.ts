@@ -141,7 +141,7 @@ export function groupBy(rows: RoundRow[], key: (row: RoundRow) => string): [stri
       map.set(k, [row]);
     }
   }
-  return [...map.entries()];
+  return Array.from(map.entries());
 }
 
 export const sideName = (teamNum: number) => (teamNum === 2 ? "T" : "CT");
