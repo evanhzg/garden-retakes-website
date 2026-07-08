@@ -16,7 +16,9 @@ export type WeaponCategory =
   | "SMGs"
   | "Rifles"
   | "Snipers"
-  | "Heavy";
+  | "Heavy"
+  | "Knives"
+  | "Gloves";
 
 export const WEAPON_CATEGORY_ORDER: WeaponCategory[] = [
   "Rifles",
@@ -24,6 +26,8 @@ export const WEAPON_CATEGORY_ORDER: WeaponCategory[] = [
   "SMGs",
   "Pistols",
   "Heavy",
+  "Knives",
+  "Gloves",
 ];
 
 export type Team = "ct" | "t" | "both";
@@ -100,11 +104,35 @@ function ensureLoaded() {
     Rifles: [],
     Snipers: [],
     Heavy: [],
+    Knives: [],
+    Gloves: [],
   };
   weaponByDef = new Map();
 
   for (const item of CS2Economy.itemsAsArray) {
-    if (!item.isWeapon() || !item.base || item.def === undefined) continue;
+    if (!item.base || item.def === undefined) continue;
+
+    // Knives & gloves live outside isWeapon(); the stock knives/gloves have
+    // no paints, so skip them (nothing to equip).
+    if (item.isMelee() || item.isGloves()) {
+      const isStock =
+        item.def === 42 || item.def === 59 || item.def === 5028 || item.free === true;
+      if (isStock) continue;
+      const entry: WeaponEntry = {
+        id: item.id,
+        def: item.def,
+        name: item.name,
+        model: item.model ?? "",
+        image: item.getImage(),
+        category: item.isMelee() ? "Knives" : "Gloves",
+        team: teamOf(item),
+      };
+      weaponsByCategory[entry.category].push(entry);
+      weaponByDef.set(item.def, entry);
+      continue;
+    }
+
+    if (!item.isWeapon()) continue;
     const category = categoryOf(item);
     if (!category) continue;
     const entry: WeaponEntry = {
@@ -142,7 +170,7 @@ export function getSkinsForWeapon(def: number): SkinEntry[] {
   const skins: SkinEntry[] = [];
   for (const item of CS2Economy.itemsAsArray) {
     if (
-      !item.isWeapon() ||
+      (!item.isWeapon() && !item.isMelee() && !item.isGloves()) ||
       item.base ||
       item.def !== def ||
       item.index === undefined
