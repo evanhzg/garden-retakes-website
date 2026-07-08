@@ -1,4 +1,6 @@
+import Link from "next/link";
 import { getActiveSeason, prisma } from "@/lib/db";
+import { dayKey, fetchRows, groupBy, ratingClass, sideName, summarize } from "@/lib/stats";
 
 export const revalidate = 30;
 
@@ -13,111 +15,299 @@ export default async function PlayerPage({
   const activeSeason = await getActiveSeason();
   const seasonId = searchParams.season ? Number(searchParams.season) : activeSeason?.Id ?? 0;
   const rankedOnly = searchParams.ranked === "1";
+  const query = (extra: string) =>
+    `?season=${seasonId}${rankedOnly ? "&ranked=1" : ""}${extra}`;
 
-  const profile = await prisma.playerProfile.findUnique({ where: { SteamId: steamId } });
-  const seasonStats = await prisma.playerSeasonStats.findFirst({
-    where: { SeasonId: seasonId, SteamId: steamId },
-  });
-  const seasons = await prisma.season.findMany({ orderBy: { Id: "asc" } });
+  const [profile, seasonStats, seasons, rows] = await Promise.all([
+    prisma.playerProfile.findUnique({ where: { SteamId: steamId } }),
+    prisma.playerSeasonStats.findFirst({ where: { SeasonId: seasonId, SteamId: steamId } }),
+    prisma.season.findMany({ orderBy: { Id: "asc" } }),
+    fetchRows(seasonId, steamId, rankedOnly),
+  ]);
 
-  const where = {
-    SteamId: steamId,
-    SeasonId: seasonId,
-    ...(rankedOnly ? { IsRanked: true } : {}),
-  };
+  const name = profile?.LastKnownName ?? params.steamId;
+  const total = summarize(rows);
 
-  const [totals, roundCount, wonCount, kastCount, deathCount, clutchWins, entryKills, plants, defuses, avgRating] =
-    await Promise.all([
-      prisma.playerRoundRecord.aggregate({
-        where,
-        _sum: { Kills: true, Assists: true, Headshots: true, Damage: true, UtilityDamage: true },
-      }),
-      prisma.playerRoundRecord.count({ where }),
-      prisma.playerRoundRecord.count({ where: { ...where, WonRound: true } }),
-      prisma.playerRoundRecord.count({ where: { ...where, Kast: true } }),
-      prisma.playerRoundRecord.count({ where: { ...where, Died: true } }),
-      prisma.playerRoundRecord.count({ where: { ...where, ClutchWon: true } }),
-      prisma.playerRoundRecord.count({ where: { ...where, OpeningKill: true } }),
-      prisma.playerRoundRecord.count({ where: { ...where, BombPlanted: true } }),
-      prisma.playerRoundRecord.count({ where: { ...where, BombDefused: true } }),
-      prisma.playerRoundRecord.aggregate({ where: { ...where, WasAfk: false }, _avg: { Rating: true } }),
-    ]);
+  const bySide = groupBy(rows, (r) => sideName(r.TeamNum)).map(
+    ([side, sideRows]) => [side, summarize(sideRows)] as const
+  );
+  const byMap = groupBy(rows, (r) => r.Map)
+    .map(([map, mapRows]) => [map, summarize(mapRows)] as const)
+    .sort((a, b) => b[1].rounds - a[1].rounds);
+  const byDay = groupBy(rows, (r) => dayKey(r.PlayedAtUtc))
+    .map(([day, dayRows]) => [day, summarize(dayRows)] as const)
+    .sort((a, b) => (a[0] < b[0] ? 1 : -1))
+    .slice(0, 14);
 
-  const kills = totals._sum.Kills ?? 0;
-  const deaths = deathCount;
-  const kd = deaths > 0 ? (kills / deaths).toFixed(2) : kills.toFixed(2);
-  const adr = roundCount > 0 ? Math.round((totals._sum.Damage ?? 0) / roundCount) : 0;
-  const kast = roundCount > 0 ? Math.round((100 * kastCount) / roundCount) : 0;
-  const hs = kills > 0 ? Math.round((100 * (totals._sum.Headshots ?? 0)) / kills) : 0;
+  const recentRatings = rows
+    .filter((r) => !r.WasAfk)
+    .slice(-30)
+    .map((r) => r.Rating);
+  const maxRecent = Math.max(1.5, ...recentRatings);
 
   return (
     <>
+      {/* ---------- Hero ---------- */}
       <section className="panel">
-        <h2>{profile?.LastKnownName ?? params.steamId}</h2>
-        <p className="muted">
-          SteamID64: {params.steamId} · Season:{" "}
-          {seasons.find((s) => s.Id === seasonId)?.Name ?? seasonId}
-          {rankedOnly ? " · ranked only" : ""}
-        </p>
-        <p>
+        <div className="player-hero">
+          <div className="player-avatar">{name.slice(0, 1).toUpperCase()}</div>
+          <div style={{ flex: 1, minWidth: 220 }}>
+            <h1 className="hero-name">{name}</h1>
+            <div className="hero-sub">
+              SteamID64 {params.steamId}
+              {rankedOnly ? " · ranked rounds only" : " · all rounds"}
+            </div>
+          </div>
+          <Link className="btn secondary" href={`/compare?a=${params.steamId}`}>
+            ⚔ Compare
+          </Link>
+        </div>
+
+        <div className="chip-row" style={{ marginTop: 16, marginBottom: 0 }}>
           {seasons.map((s) => (
-            <a key={s.Id} href={`?season=${s.Id}${rankedOnly ? "&ranked=1" : ""}`} style={{ marginRight: 12 }}>
-              {s.IsActive ? `▸ ${s.Name}` : s.Name}
+            <a
+              key={s.Id}
+              className={`chip ${s.Id === seasonId ? "active" : ""}`}
+              href={`?season=${s.Id}${rankedOnly ? "&ranked=1" : ""}`}
+            >
+              {s.Name}
             </a>
           ))}
-          · <a href={`?season=${seasonId}${rankedOnly ? "" : "&ranked=1"}`}>{rankedOnly ? "show all" : "ranked only"}</a>
-        </p>
+          <a
+            className={`chip ${rankedOnly ? "active" : ""}`}
+            href={`?season=${seasonId}${rankedOnly ? "" : "&ranked=1"}`}
+          >
+            Ranked only
+          </a>
+        </div>
       </section>
 
+      {/* ---------- Headline numbers ---------- */}
       <section className="panel">
+        <div className="bigstat-row">
+          <div className="bigstat">
+            <div className={`num ${ratingClass(total.rating)}`}>{total.rating.toFixed(2)}</div>
+            <div className="cap">Rating</div>
+          </div>
+          <div className="bigstat">
+            <div className="num rating-neutral">{seasonStats?.Elo ?? "—"}</div>
+            <div className="cap">CS Rating (peak {seasonStats?.PeakElo ?? "—"})</div>
+          </div>
+          <div className="bigstat">
+            <div className="num rating-neutral">{total.kd.toFixed(2)}</div>
+            <div className="cap">
+              K/D ({total.kills}/{total.deaths})
+            </div>
+          </div>
+          <div className="bigstat">
+            <div className="num rating-neutral">{total.rounds}</div>
+            <div className="cap">Rounds · {byMap.length} maps</div>
+          </div>
+        </div>
+
+        <div style={{ marginTop: 18 }}>
+          <div className="meter">
+            <span className="cap">Round win %</span>
+            <div className="track">
+              <div className="fill" style={{ width: `${Math.min(100, total.winPct)}%` }} />
+            </div>
+            <span className="val">{total.winPct.toFixed(0)}%</span>
+          </div>
+          <div className="meter">
+            <span className="cap">KAST</span>
+            <div className="track">
+              <div className="fill" style={{ width: `${Math.min(100, total.kast)}%` }} />
+            </div>
+            <span className="val">{total.kast.toFixed(0)}%</span>
+          </div>
+          <div className="meter">
+            <span className="cap">Headshots</span>
+            <div className="track">
+              <div className="fill" style={{ width: `${Math.min(100, total.hs)}%` }} />
+            </div>
+            <span className="val">{total.hs.toFixed(0)}%</span>
+          </div>
+          <div className="meter">
+            <span className="cap">ADR</span>
+            <div className="track">
+              <div className="fill" style={{ width: `${Math.min(100, (total.adr / 150) * 100)}%` }} />
+            </div>
+            <span className="val">{total.adr.toFixed(0)}</span>
+          </div>
+        </div>
+
+        {recentRatings.length > 1 && (
+          <div style={{ marginTop: 16 }}>
+            <div className="cap muted" style={{ fontSize: "0.78rem", fontWeight: 700, marginBottom: 6 }}>
+              LAST {recentRatings.length} ROUNDS — RATING
+            </div>
+            <div className="sparkline">
+              {recentRatings.map((r, i) => (
+                <span
+                  key={i}
+                  title={r.toFixed(2)}
+                  style={{
+                    height: `${Math.max(6, (r / maxRecent) * 100)}%`,
+                    animationDelay: `${i * 0.015}s`,
+                    opacity: r >= 1 ? 1 : 0.45,
+                  }}
+                />
+              ))}
+            </div>
+          </div>
+        )}
+      </section>
+
+      {/* ---------- Per side ---------- */}
+      <section className="panel">
+        <h2>Per side</h2>
+        {bySide.length === 0 ? (
+          <p className="empty-hint">No rounds recorded with these filters yet.</p>
+        ) : (
+          <div className="split-cards">
+            {bySide.map(([side, s]) => (
+              <div key={side} className="side-card">
+                <h3>
+                  <span>{side === "T" ? "Terrorist (defense)" : "Counter-Terrorist (retake)"}</span>
+                  <span className={`side-tag ${side === "T" ? "side-t" : "side-ct"}`}>{side}</span>
+                </h3>
+                <div className="stat-grid">
+                  <div className="stat-card">
+                    <div className={`value ${ratingClass(s.rating)}`}>{s.rating.toFixed(2)}</div>
+                    <div className="label">Rating</div>
+                  </div>
+                  <div className="stat-card">
+                    <div className="value">{s.kd.toFixed(2)}</div>
+                    <div className="label">K/D</div>
+                  </div>
+                  <div className="stat-card">
+                    <div className="value">{s.adr.toFixed(0)}</div>
+                    <div className="label">ADR</div>
+                  </div>
+                  <div className="stat-card">
+                    <div className="value">{s.winPct.toFixed(0)}%</div>
+                    <div className="label">Win % · {s.rounds} rounds</div>
+                  </div>
+                </div>
+              </div>
+            ))}
+          </div>
+        )}
+      </section>
+
+      {/* ---------- Per map ---------- */}
+      <section className="panel">
+        <h2>Per map</h2>
+        {byMap.length === 0 ? (
+          <p className="empty-hint">Nothing yet.</p>
+        ) : (
+          <table>
+            <thead>
+              <tr>
+                <th>Map</th>
+                <th>Rounds</th>
+                <th>Win %</th>
+                <th>K — D</th>
+                <th>ADR</th>
+                <th>KAST</th>
+                <th>Rating</th>
+              </tr>
+            </thead>
+            <tbody>
+              {byMap.map(([map, s]) => (
+                <tr key={map}>
+                  <td style={{ fontWeight: 700 }}>{map}</td>
+                  <td>{s.rounds}</td>
+                  <td>{s.winPct.toFixed(0)}%</td>
+                  <td>
+                    {s.kills} — {s.deaths}
+                  </td>
+                  <td>{s.adr.toFixed(0)}</td>
+                  <td>{s.kast.toFixed(0)}%</td>
+                  <td className={ratingClass(s.rating)} style={{ fontWeight: 800 }}>
+                    {s.rating.toFixed(2)}
+                  </td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        )}
+      </section>
+
+      {/* ---------- Per day ---------- */}
+      <section className="panel">
+        <h2>Per day (last {byDay.length})</h2>
+        {byDay.length === 0 ? (
+          <p className="empty-hint">Nothing yet.</p>
+        ) : (
+          <table>
+            <thead>
+              <tr>
+                <th>Day</th>
+                <th>Rounds</th>
+                <th>Win %</th>
+                <th>K — D</th>
+                <th>ADR</th>
+                <th>Clutches</th>
+                <th>Rating</th>
+              </tr>
+            </thead>
+            <tbody>
+              {byDay.map(([day, s]) => (
+                <tr key={day}>
+                  <td style={{ fontWeight: 700 }}>{day}</td>
+                  <td>{s.rounds}</td>
+                  <td>{s.winPct.toFixed(0)}%</td>
+                  <td>
+                    {s.kills} — {s.deaths}
+                  </td>
+                  <td>{s.adr.toFixed(0)}</td>
+                  <td>{s.clutches}</td>
+                  <td className={ratingClass(s.rating)} style={{ fontWeight: 800 }}>
+                    {s.rating.toFixed(2)}
+                  </td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        )}
+      </section>
+
+      {/* ---------- Extras ---------- */}
+      <section className="panel">
+        <h2>Details</h2>
         <div className="stat-grid">
           <div className="stat-card">
-            <div className="value">{seasonStats?.Elo ?? "—"}</div>
-            <div className="label">CS Rating</div>
+            <div className="value">{total.openingKills}</div>
+            <div className="label">Opening kills ({total.openingDeaths} deaths)</div>
           </div>
           <div className="stat-card">
-            <div className="value">{seasonStats?.PeakElo ?? "—"}</div>
-            <div className="label">Peak</div>
-          </div>
-          <div className="stat-card">
-            <div className="value">{(avgRating._avg.Rating ?? 0).toFixed(2)}</div>
-            <div className="label">Rating</div>
-          </div>
-          <div className="stat-card">
-            <div className="value">{roundCount}</div>
-            <div className="label">Rounds</div>
-          </div>
-          <div className="stat-card">
-            <div className="value">{roundCount > 0 ? Math.round((100 * wonCount) / roundCount) : 0}%</div>
-            <div className="label">Round win %</div>
-          </div>
-          <div className="stat-card">
-            <div className="value">{kd}</div>
-            <div className="label">K/D ({kills}/{deaths})</div>
-          </div>
-          <div className="stat-card">
-            <div className="value">{adr}</div>
-            <div className="label">ADR</div>
-          </div>
-          <div className="stat-card">
-            <div className="value">{kast}%</div>
-            <div className="label">KAST</div>
-          </div>
-          <div className="stat-card">
-            <div className="value">{hs}%</div>
-            <div className="label">Headshots</div>
-          </div>
-          <div className="stat-card">
-            <div className="value">{clutchWins}</div>
+            <div className="value">{total.clutches}</div>
             <div className="label">Clutches won</div>
           </div>
           <div className="stat-card">
-            <div className="value">{entryKills}</div>
-            <div className="label">Opening kills</div>
+            <div className="value">{total.multiKills}</div>
+            <div className="label">Multi-kill rounds</div>
           </div>
           <div className="stat-card">
-            <div className="value">{defuses}</div>
-            <div className="label">Defuses ({plants} plants)</div>
+            <div className="value">{total.tradeKills}</div>
+            <div className="label">Trade kills</div>
+          </div>
+          <div className="stat-card">
+            <div className="value">{total.utilPerRound.toFixed(1)}</div>
+            <div className="label">Util dmg / round</div>
+          </div>
+          <div className="stat-card">
+            <div className="value">{total.enemiesFlashed}</div>
+            <div className="label">Enemies flashed</div>
+          </div>
+          <div className="stat-card">
+            <div className="value">{total.defuses}</div>
+            <div className="label">Defuses ({total.plants} plants)</div>
+          </div>
+          <div className="stat-card">
+            <div className="value">{total.kpr.toFixed(2)}</div>
+            <div className="label">Kills / round</div>
           </div>
         </div>
       </section>

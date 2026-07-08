@@ -1049,3 +1049,258 @@ tbody tr:hover {
     gap: 10px;
   }
 }
+
+
+/* ---------- HLTV-style player stats & compare (Garden additions) ---------- */
+
+.player-hero {
+  display: flex;
+  gap: 18px;
+  align-items: center;
+  flex-wrap: wrap;
+}
+
+.player-avatar {
+  width: 64px;
+  height: 64px;
+  border-radius: 18px;
+  background: var(--gradient);
+  color: #fff;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 1.6rem;
+  font-weight: 800;
+  box-shadow: var(--shadow);
+  animation: floaty 5s ease-in-out infinite;
+}
+
+.hero-name {
+  font-size: 1.5rem;
+  font-weight: 800;
+  margin: 0;
+}
+
+.hero-sub {
+  color: var(--muted);
+  font-size: 0.85rem;
+}
+
+.bigstat-row {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+  gap: 14px;
+}
+
+.bigstat {
+  background: linear-gradient(180deg, #fff, var(--bg-soft));
+  border: 1px solid var(--border);
+  border-radius: 12px;
+  padding: 18px;
+  text-align: center;
+  transition: transform 0.2s ease, box-shadow 0.2s ease;
+  animation: popIn 0.4s ease both;
+}
+
+.bigstat:hover {
+  transform: translateY(-3px);
+  box-shadow: var(--shadow);
+}
+
+.bigstat .num {
+  font-size: 2.2rem;
+  font-weight: 800;
+  line-height: 1.1;
+}
+
+.bigstat .cap {
+  color: var(--muted);
+  font-size: 0.78rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+}
+
+.rating-good {
+  color: #16a34a;
+}
+
+.rating-bad {
+  color: #e11d48;
+}
+
+.rating-neutral {
+  background: var(--gradient);
+  -webkit-background-clip: text;
+  background-clip: text;
+  color: transparent;
+}
+
+.meter {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  margin: 8px 0;
+}
+
+.meter .cap {
+  width: 130px;
+  color: var(--muted);
+  font-size: 0.8rem;
+  font-weight: 700;
+}
+
+.meter .track {
+  flex: 1;
+  height: 10px;
+  border-radius: 999px;
+  background: var(--bg-soft);
+  overflow: hidden;
+}
+
+.meter .fill {
+  height: 100%;
+  border-radius: 999px;
+  background: var(--gradient);
+  animation: meterGrow 0.8s cubic-bezier(0.22, 1, 0.36, 1) both;
+}
+
+@keyframes meterGrow {
+  from {
+    width: 0;
+  }
+}
+
+.meter .val {
+  width: 52px;
+  text-align: right;
+  font-weight: 800;
+  font-size: 0.85rem;
+}
+
+.split-cards {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 14px;
+}
+
+@media (max-width: 700px) {
+  .split-cards {
+    grid-template-columns: 1fr;
+  }
+}
+
+.side-card {
+  border: 1px solid var(--border);
+  border-radius: 12px;
+  padding: 16px;
+  background: linear-gradient(180deg, #fff, var(--bg-soft));
+}
+
+.side-card h3 {
+  margin: 0 0 12px;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  font-size: 0.98rem;
+}
+
+.side-tag {
+  font-size: 0.72rem;
+  font-weight: 800;
+  padding: 3px 10px;
+  border-radius: 999px;
+}
+
+.side-t {
+  background: #fff3e6;
+  color: #c2570a;
+}
+
+.side-ct {
+  background: #e8f0ff;
+  color: #2456c4;
+}
+
+.sparkline {
+  display: flex;
+  align-items: flex-end;
+  gap: 3px;
+  height: 46px;
+}
+
+.sparkline span {
+  flex: 1;
+  border-radius: 3px 3px 0 0;
+  background: var(--gradient);
+  min-height: 3px;
+  animation: popIn 0.4s ease both;
+}
+
+.cmp-grid {
+  display: grid;
+  grid-template-columns: 1fr 150px 1fr;
+  gap: 8px 14px;
+  align-items: center;
+}
+
+@media (max-width: 640px) {
+  .cmp-grid {
+    grid-template-columns: 1fr 90px 1fr;
+  }
+}
+
+.cmp-name {
+  font-weight: 800;
+  font-size: 1.05rem;
+}
+
+.cmp-name a:hover {
+  color: var(--accent);
+}
+
+.cmp-val {
+  font-weight: 800;
+}
+
+.cmp-metric {
+  color: var(--muted);
+  font-size: 0.75rem;
+  font-weight: 800;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  text-align: center;
+}
+
+.cmp-bar {
+  height: 8px;
+  border-radius: 999px;
+  background: var(--bg-soft);
+  position: relative;
+  overflow: hidden;
+  margin-top: 4px;
+}
+
+.cmp-bar .fill {
+  position: absolute;
+  top: 0;
+  bottom: 0;
+  border-radius: 999px;
+  background: var(--gradient);
+  animation: meterGrow 0.7s cubic-bezier(0.22, 1, 0.36, 1) both;
+}
+
+.cmp-bar.left .fill {
+  right: 0;
+}
+
+.cmp-bar.right .fill {
+  left: 0;
+}
+
+.form-row {
+  display: flex;
+  gap: 10px;
+  flex-wrap: wrap;
+  align-items: center;
+}
