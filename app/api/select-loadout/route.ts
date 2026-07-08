@@ -8,7 +8,8 @@ export const dynamic = "force-dynamic";
 // Guarded by the shared key (INVSIM_API_KEY here, invsim_apikey on the server).
 // Sets the player's active loadout so the next inventory fetch serves it.
 export async function POST(request: Request) {
-  const secret = process.env.INVSIM_API_KEY ?? "";
+  // Trim to guard against accidental whitespace from copy-pasting in the Vercel dashboard.
+  const secret = (process.env.INVSIM_API_KEY ?? "").trim();
   if (!secret) {
     return NextResponse.json({ error: "INVSIM_API_KEY not configured" }, { status: 500 });
   }
@@ -20,7 +21,13 @@ export async function POST(request: Request) {
     return NextResponse.json({ error: "invalid body" }, { status: 400 });
   }
 
-  if (body.apiKey !== secret) {
+  const sentKey = (body.apiKey ?? "").trim();
+  if (sentKey !== secret) {
+    // Log first-4-chars + length of both sides so mismatches are diagnosable in Vercel logs.
+    console.error(
+      `select-loadout 401: sent="${sentKey.slice(0, 4)}..." len=${sentKey.length} ` +
+        `| expected="${secret.slice(0, 4)}..." len=${secret.length}`
+    );
     return NextResponse.json({ error: "unauthorized" }, { status: 401 });
   }
 
