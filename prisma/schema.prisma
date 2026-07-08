@@ -109,6 +109,16 @@ model CrTeamStats {
   @@map("CrTeamStats")
 }
 
+// Website-owned: a player's saved inventory simulator loadouts (JSON blob),
+// keyed by SteamID64. Served to the CS2 inventory-simulator plugin.
+model WebInventory {
+  SteamId   BigInt   @id
+  Data      String   @db.LongText
+  UpdatedAt DateTime @updatedAt
+
+  @@map("WebInventories")
+}
+
 model CrMatch {
   Id           BigInt    @id @default(autoincrement())
   SeasonId     Int

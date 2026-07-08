@@ -23,8 +23,18 @@ export default async function TeamsPage() {
 
   return (
     <>
+      <section className="hero hero-compact">
+        <div className="hero-inner">
+          <span className="eyebrow">Competitive Retakes</span>
+          <h1>
+            The <span className="grad">2v2 / 3v3</span> ladder.
+          </h1>
+          <p className="muted">Team ELO, records and recent matches for {season?.Name ?? "the current season"}.</p>
+        </div>
+      </section>
+
       <section className="panel">
-        <h2>Competitive Retakes teams — {season?.Name ?? "no season"}</h2>
+        <h2>Teams — {season?.Name ?? "no season"}</h2>
         {teams.length === 0 ? (
           <p className="muted">No CR matches yet. Get a 2v2 or 3v3 going and type /cr!</p>
         ) : (

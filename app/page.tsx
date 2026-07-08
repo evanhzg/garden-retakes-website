@@ -24,12 +24,19 @@ export default async function HomePage() {
 
   return (
     <>
-      <section className="panel">
-        <h2>Play Garden Retakes</h2>
-        <p className="muted">
-          Retakes with a real economy, Ranked sessions, Competitive 2v2/3v3 and clutch rounds.
-        </p>
-        <ConnectButton serverAddress={serverAddress} />
+      <section className="hero">
+        <div className="hero-inner">
+          <span className="eyebrow">Garden Retakes · CS2</span>
+          <h1>
+            Retakes with a <span className="grad">real economy</span>.
+          </h1>
+          <p className="muted">
+            Ranked sessions, Competitive 2v2/3v3, clutch rounds — and a skin loadout that follows
+            you in-game. Jump on the server and climb the ladder.
+          </p>
+          <ConnectButton serverAddress={serverAddress} />
+        </div>
+        <div className="hero-glow" aria-hidden="true" />
       </section>
 
       <section className="panel">

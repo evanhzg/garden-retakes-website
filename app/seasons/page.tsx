@@ -22,9 +22,20 @@ export default async function SeasonsPage() {
   );
 
   return (
-    <section className="panel">
-      <h2>Seasons</h2>
-      <table>
+    <>
+      <section className="hero hero-compact">
+        <div className="hero-inner">
+          <span className="eyebrow">History</span>
+          <h1>
+            Every <span className="grad">season</span>.
+          </h1>
+          <p className="muted">Champions and record ratings across the lifetime of the server.</p>
+        </div>
+      </section>
+
+      <section className="panel">
+        <h2>Seasons</h2>
+        <table>
         <thead>
           <tr>
             <th>Season</th>
@@ -55,7 +66,8 @@ export default async function SeasonsPage() {
             </tr>
           ))}
         </tbody>
-      </table>
-    </section>
+        </table>
+      </section>
+    </>
   );
 }

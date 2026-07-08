@@ -10,7 +10,8 @@
     "prisma:generate": "prisma generate"
   },
   "dependencies": {
-    "@prisma/client": "^5.17.0",
+    "@ianlucas/cs2-lib": "^8.0.2",
+    "@prisma/client": "^6.19.3",
     "next": "^14.2.5",
     "react": "^18.3.1",
     "react-dom": "^18.3.1"
@@ -18,7 +19,7 @@
   "devDependencies": {
     "@types/node": "^20.14.0",
     "@types/react": "^18.3.3",
-    "prisma": "^5.17.0",
+    "prisma": "^6.19.3",
     "typescript": "^5.5.3"
   }
 }

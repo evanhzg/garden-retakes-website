@@ -23,6 +23,19 @@ Railway...). On first start the plugin creates all tables.
 > Existing SQLite data does not migrate automatically. If you care about the current
 > season, either keep SQLite until a season rollover, or copy the rows over manually.
 
+### Creating the schema up front (needed before the first deploy)
+
+Vercel pre-renders the pages at build time, so the database must exist **with tables**
+before the first deploy. Either start the plugin once against MySQL (it creates
+everything), or create a blank schema directly:
+
+```bash
+mysql -h <host> -P <port> -u <user> -p <database> < sql/blank-schema.sql
+```
+
+The script is idempotent, matches the plugin's schema exactly, and seeds an initial
+active "Season 1" so every page renders.
+
 ## 2. Run locally
 
 ```bash
@@ -45,13 +58,34 @@ npm run dev
 Make sure the MySQL server allows connections from Vercel (public host with SSL,
 or an allowlist that includes Vercel's egress IPs if your provider supports it).
 
-## InventorySimulator (planned)
+## Inventory Simulator (in-game skins)
 
-The `/inventory` page is a placeholder for
-[cs2-inventory-simulator](https://github.com/ianlucas/cs2-inventory-simulator).
-The plan: run its companion CounterStrikeSharp plugin on the server and link to a
-self-hosted simulator instance from that page, so players equip skins on the web
-and see them in-game.
+The `/inventory` page is a self-contained skin/sticker loadout builder that talks
+directly to ianlucas's
+[cs2-inventory-simulator-plugin](https://github.com/ianlucas/cs2-inventory-simulator-plugin).
+Item ids come from [`@ianlucas/cs2-lib`](https://github.com/ianlucas/cs2-lib), the
+same catalog the plugin uses, so the numeric weapon `def` / paint / sticker ids we
+serve match what the game expects.
+
+Flow: players sign in with Steam, pick a weapon by type, choose a skin, place
+stickers on a 2D render, tweak wear / seed / StatTrak / name tag, and save it to
+their inventory. Loadouts are stored in the `WebInventories` table (keyed by
+SteamID64) and switched with one click.
+
+The plugin polls the active loadout from:
+
+```
+GET {SITE_URL}/api/equipped/v4/{steamID64}.json
+```
+
+which returns the plugin's exact `ctWeapons` / `tWeapons` econ-item shape. Point
+the plugin's `invsim_url` convar at this site; players run `css_ws` in-game to
+refresh. Guests (not signed in) can still build loadouts — they're saved to the
+browser's localStorage only and are not served in-game.
+
+Extra environment variables (see `.env.example`): `AUTH_SECRET` (required — signs
+the login cookie), `SITE_URL`, and optional `STEAM_API_KEY` (Steam name/avatar)
+and `NEXT_PUBLIC_ASSETS_BASE_URL` (skin image host).
 
 ## Pages
 
@@ -59,5 +93,5 @@ and see them in-game.
 - `/players/[steamId]` — full player stats with season selector and ranked-only filter
 - `/teams` — Competitive Retakes duo/trio ELO ladder + recent matches
 - `/seasons` — all seasons with champions and record ELOs
-- `/inventory` — InventorySimulator placeholder
+- `/inventory` — skin/sticker loadout builder that syncs in-game via the plugin
 "# garden-retakes-website" 
