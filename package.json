@@ -10,7 +10,7 @@
     "prisma:generate": "prisma generate"
   },
   "dependencies": {
-    "@ianlucas/cs2-lib": "^8.0.2",
+    "@ianlucas/cs2-lib": "^8.0.3",
     "@prisma/client": "^6.19.3",
     "next": "^14.2.5",
     "react": "^18.3.1",

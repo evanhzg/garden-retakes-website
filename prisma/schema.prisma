@@ -119,6 +119,24 @@ model WebInventory {
   @@map("WebInventories")
 }
 
+// Garden-retakes merged plugin (Duels mode): one row per completed 1v1.
+model DuelRecord {
+  Id             BigInt   @id @default(autoincrement())
+  SeasonId       Int
+  Map            String
+  PlayedAtUtc    DateTime
+  ArenaName      String
+  WinnerSteamId  BigInt
+  WinnerName     String
+  LoserSteamId   BigInt
+  LoserName      String
+  IsChallenge    Boolean
+  ChallengeScore String
+
+  @@index([SeasonId])
+  @@map("DuelRecords")
+}
+
 // Garden-retakes merged plugin (R3): admin storage + audit log.
 model GardenAdmin {
   SteamId    BigInt   @id

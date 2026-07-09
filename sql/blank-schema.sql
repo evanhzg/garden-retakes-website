@@ -138,6 +138,22 @@ CREATE TABLE IF NOT EXISTS CrMatches (
     KEY IX_CrMatches_SeasonId (SeasonId)
 ) CHARACTER SET utf8mb4;
 
+-- Garden-retakes merged plugin (Duels mode): one row per completed 1v1.
+CREATE TABLE IF NOT EXISTS DuelRecords (
+    Id BIGINT NOT NULL AUTO_INCREMENT PRIMARY KEY,
+    SeasonId INT NOT NULL,
+    Map VARCHAR(128) NOT NULL,
+    PlayedAtUtc DATETIME(6) NOT NULL,
+    ArenaName VARCHAR(64) NOT NULL,
+    WinnerSteamId BIGINT UNSIGNED NOT NULL,
+    WinnerName VARCHAR(128) NOT NULL,
+    LoserSteamId BIGINT UNSIGNED NOT NULL,
+    LoserName VARCHAR(128) NOT NULL,
+    IsChallenge TINYINT(1) NOT NULL,
+    ChallengeScore VARCHAR(16) NOT NULL,
+    KEY IX_DuelRecords_SeasonId (SeasonId)
+) CHARACTER SET utf8mb4;
+
 -- Garden-retakes merged plugin (ROADMAP R3): admin storage + audit log.
 CREATE TABLE IF NOT EXISTS GardenAdmins (
     SteamId BIGINT UNSIGNED NOT NULL PRIMARY KEY,

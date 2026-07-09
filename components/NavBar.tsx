@@ -8,6 +8,7 @@ const LINKS = [
   { href: "/", label: "Ladder" },
   { href: "/compare", label: "Compare" },
   { href: "/teams", label: "CR Teams" },
+  { href: "/duels", label: "Duels" },
   { href: "/seasons", label: "Seasons" },
   { href: "/inventory", label: "Inventory" },
   { href: "/commands", label: "Commands" },

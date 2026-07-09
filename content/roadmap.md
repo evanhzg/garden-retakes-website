@@ -81,8 +81,10 @@ True per-user Discord Rich Presence is client-side only; chosen design: **bot pr
 - [x] D1. Bot skeleton: discord.js v14, `.env` config, graceful shutdown.
 - [x] D2. Live presence: A2S query (gamedig) of the game server → "Watching 7/10 · de_mirage", refresh ~60s.
 - [x] D3. Status embed: one auto-edited message in a configured channel (map, players+names, connect link, top-5 ladder from MySQL).
-- [ ] D4. (Later) Stats commands: `/stats`, `/ladder`, `/compare`, `/seasons` reading the shared MySQL
-      (query recipes in `Garden-rankings/Docs/RATING.md`).
+- [x] D4. Stats commands — DONE 2026-07-09: `/ladder [count]`, `/stats <player> [ranked]`
+      (name or SteamID64, partial names resolve to most recently seen), `/compare <p1> <p2>`,
+      `/seasons` — purple embeds linking to the website, shared MySQL via a pooled db helper.
+      Optional `GUILD_ID` env for instant slash-command registration.
 - [ ] D5. (Later) Round/match event posts (CR results, records broken) — either poll DB or a tiny
       webhook sender in the plugin.
 
@@ -292,7 +294,10 @@ collected 2026-07-09 so nothing gets lost:
 - [x] Admin log page — DONE 2026-07-09: hidden key-protected URL
       `/admin-log?key=<INVSIM_API_KEY>` (not in the nav), last 200 `GardenAdminLog` entries;
       Prisma models `GardenAdmin`/`GardenAdminLogEntry` added (run `npx prisma generate`).
-- [ ] Duels ladder + mode pages once Garden-retakes emits their stats.
+- [x] Duels ladder — DONE 2026-07-09: plugin persists every completed 1v1 to `DuelRecords`
+      (season, map, arena, winner/loser, challenge flag + final score; best-effort like the admin
+      log; schema in SchemaUpgrades + blank-schema.sql + Prisma). Website `/duels` page: season
+      ladder (wins/losses/winrate/challenges won) + last 20 duels; NavBar link.
 - [ ] Discord D4/D5.
 
 ---
@@ -363,3 +368,12 @@ collected 2026-07-09 so nothing gets lost:
 - 2026-07-09 (17): R10 finale — duels polish (spectator auto-follow, !duelscore arenas) +
   executes polish (strategy weights, per-side utility capture/replay). **R10 done except the
   deploy half of the cutover.** Remaining: cutover deploy, W duels ladder, Discord D4/D5.
+- 2026-07-09 (18): Discord D4 shipped — /ladder /stats /compare /seasons slash commands
+  (db.js pooled helper, stats.js aggregates matching the website's summaries). Remaining:
+  cutover deploy (Evan), W duels ladder (needs duel-stat persistence), Discord D5.
+- 2026-07-09 (19): Duel persistence + /duels ladder shipped (DuelRecords table end to end:
+  plugin → DB → website page). Remaining: cutover deploy (Evan), Discord D5.
+- 2026-07-09 (20): New skin collections (today's CS2 update): @ianlucas/cs2-lib bumped to 8.0.3
+  (published today with the regenerated item catalog) — run `npm update @ianlucas/cs2-lib` to
+  refresh the lockfile before redeploying. The inventory simulator picks the new collections up
+  automatically (runtime catalog + cdn.cstrike.app images). Same recipe for future drops.
