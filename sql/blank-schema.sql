@@ -138,6 +138,26 @@ CREATE TABLE IF NOT EXISTS CrMatches (
     KEY IX_CrMatches_SeasonId (SeasonId)
 ) CHARACTER SET utf8mb4;
 
+-- Garden-retakes merged plugin (ROADMAP R3): admin storage + audit log.
+CREATE TABLE IF NOT EXISTS GardenAdmins (
+    SteamId BIGINT UNSIGNED NOT NULL PRIMARY KEY,
+    Name VARCHAR(128) NOT NULL,
+    Level INT NOT NULL,
+    AddedBy BIGINT UNSIGNED NOT NULL,
+    AddedAtUtc DATETIME(6) NOT NULL
+) CHARACTER SET utf8mb4;
+
+CREATE TABLE IF NOT EXISTS GardenAdminLog (
+    Id BIGINT NOT NULL AUTO_INCREMENT PRIMARY KEY,
+    AtUtc DATETIME(6) NOT NULL,
+    ActorSteamId BIGINT UNSIGNED NOT NULL,
+    ActorName VARCHAR(128) NOT NULL,
+    Action VARCHAR(32) NOT NULL,
+    TargetSteamId BIGINT UNSIGNED NOT NULL,
+    TargetName VARCHAR(128) NOT NULL,
+    Detail VARCHAR(256) NOT NULL
+) CHARACTER SET utf8mb4;
+
 -- Website-owned: saved inventory simulator loadouts (JSON), keyed by SteamID64.
 -- Served to the CS2 inventory-simulator plugin via /api/equipped/v4/{steamid}.json.
 CREATE TABLE IF NOT EXISTS WebInventories (

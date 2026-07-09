@@ -10,6 +10,7 @@ const LINKS = [
   { href: "/teams", label: "CR Teams" },
   { href: "/seasons", label: "Seasons" },
   { href: "/inventory", label: "Inventory" },
+  { href: "/roadmap", label: "Roadmap" },
 ];
 
 type Session = { authenticated: boolean; name?: string | null; avatar?: string | null };
