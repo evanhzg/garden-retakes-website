@@ -119,6 +119,30 @@ model WebInventory {
   @@map("WebInventories")
 }
 
+// Garden-retakes merged plugin (R3): admin storage + audit log.
+model GardenAdmin {
+  SteamId    BigInt   @id
+  Name       String
+  Level      Int
+  AddedBy    BigInt
+  AddedAtUtc DateTime
+
+  @@map("GardenAdmins")
+}
+
+model GardenAdminLogEntry {
+  Id            BigInt   @id @default(autoincrement())
+  AtUtc         DateTime
+  ActorSteamId  BigInt
+  ActorName     String
+  Action        String
+  TargetSteamId BigInt
+  TargetName    String
+  Detail        String
+
+  @@map("GardenAdminLog")
+}
+
 model CrMatch {
   Id           BigInt    @id @default(autoincrement())
   SeasonId     Int

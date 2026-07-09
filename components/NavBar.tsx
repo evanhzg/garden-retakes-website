@@ -10,6 +10,7 @@ const LINKS = [
   { href: "/teams", label: "CR Teams" },
   { href: "/seasons", label: "Seasons" },
   { href: "/inventory", label: "Inventory" },
+  { href: "/commands", label: "Commands" },
   { href: "/roadmap", label: "Roadmap" },
 ];
 

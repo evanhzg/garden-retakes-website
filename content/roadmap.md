@@ -227,34 +227,60 @@ instant defuse + game-mode/small-server scaffolding. Next: R1 spawn editor.
 (spawn editor early because Duels/SmallServer/Executes/FastStrat all consume its data;
 Executes/FastStrat last — utility replay is the hardest single piece).
 
-**R8. Duels v2 (after R7 — requested 2026-07-09)**
-- [ ] Named arena pairs: create duel spawns as explicit PAIRS with a name ("Mid duel",
-      "Palace duel", ...) instead of proximity auto-pairing; editor commands + shown in the
-      versus announce. (Data: arenas list in the map JSON alongside spawns, or a duels/<map>.json.)
-- [ ] Parallel duels: run several arenas at once when 4+ players are in — one DuelSession per
-      arena, players spread across them, merged scoreboard.
-- [ ] Challenges: `!duel <player>` invites someone to a private duel — both stay paired without
-      queue rotation, with predefined rules (first to X kills, or infinite until cancelled);
-      other players keep rotating on the remaining arenas.
+**R8. Duels v2 (requested 2026-07-09)** — *completed 2026-07-09*
+- [x] Named arena pairs: `!garena new <name>` (end A = where you stand) + `!garena setb <name>`,
+      `seta`/`del`/`list`; stored per map in `duels/<map>.json` (Core `DuelArenaStore`, tested);
+      the versus announce shows the arena name. Fallback: when a map has no named arenas, the R4
+      proximity auto-pairing of `duel`-flagged spawns still applies ("Arena N").
+- [x] Parallel duels: Core `DuelManager` runs up to min(arenas, `Duels.MaxParallelDuels`=3) lanes
+      at once with one shared FIFO queue and a merged win scoreboard; lanes get non-colliding
+      arenas and rotate arenas between duels; disconnects re-slot the abandoned partner.
+- [x] Challenges: `!duel <player> [firstTo]` invites (30s); `!duel accept/decline`. A challenge
+      reserves a private lane — no queue rotation, fixed arena, own score line — ends at
+      first-to-X with a winner announce, or runs infinite until `!duel stop`. Other players keep
+      rotating on the remaining lanes; abandoned partners are re-paired automatically.
 
-**R9. Inventory loadout UX (after the current roadmap's final tasks — requested 2026-07-09)**
-- [ ] `!loadouts` in Garden-inventory: list all the player's website loadouts (needs a small
-      list endpoint on Garden-website, or reuse select-loadout's `available` array via a
-      deliberate miss — better: add GET /api/loadouts/{steamid}).
-- [ ] `!loadout <name>` case-insensitivity: the website's findLoadout already matches names
-      case-insensitively — VERIFY in game and fix on whichever side misbehaves.
-- [ ] Center menu (W/S navigate, D select — same UX as the gun menu) to pick a loadout.
-- [ ] Random loadout: `!loadout random` + a menu entry; optionally auto-random each map.
+**R9. Inventory loadout UX (requested 2026-07-09)** — *completed 2026-07-09*
+- [x] `GET /api/loadouts/{steamid}.json` on Garden-website (names + active flag) and
+      `Api.FetchLoadoutsAsync` in Garden-inventory; `!loadouts` lists them with the active one
+      marked green.
+- [x] Case-insensitivity: verified — the website's `findLoadout` lower-cases names, so
+      `!loadout GREEN` already works; no fix needed.
+- [x] Center menu: `!loadout` with no args opens it — W/S navigate, D select, A/TAB exit,
+      player frozen while open (same UX as the gun menu), active loadout pre-highlighted,
+      "🎲 Random" entry at the bottom. Uses the fork's pinned CSS.NextFrame wrapper.
+- [x] `!loadout random` (and the menu entry): picks any loadout except the active one.
+      (Auto-random each map = possible later toggle.)
+
+**R10. Consolidated backlog** — every "(for later)" suggestion scattered across this file,
+collected 2026-07-09 so nothing gets lost:
+- [ ] **Production cutover** (do this FIRST): `dotnet build GardenRetakes.sln` + `dotnet test`
+      fix pass (nothing has been compiled yet!), rebuild Garden-inventory, deploy the merged
+      plugin, retire standalone Garden-allocator/Garden-rankings, migrate configs
+      (allocator `config.json` + `data.db` + `gamedata/` as-is; rankings config →
+      `config/rankings.json`), set `EnableFallbackAllocation=false`, redeploy website
+      (react-markdown deps + new endpoints/pages), `npx prisma generate`.
+- [ ] Absorb rankings' ModeCvars profiles into `GameModeManager` mode switches (R0 leftover —
+      today Duels/Executes use their own Start/StopCommands lists, rankings still applies
+      Classic/Ranked/Competitive cvars itself; unify into per-mode cvar profiles in one place).
+- [ ] Short command names: once the legacy plugins are retired, add non-prefixed aliases for the
+      g-commands (`!admin`, `!kick`, `!map`, `!spawns`, ...) behind a config toggle (the g-
+      prefixes were only there to avoid collisions during the transition).
+- [ ] Auto-random loadout each map: optional Garden-inventory toggle that runs
+      `!loadout random` for opted-in players on map start.
+- [ ] Parallel-duels polish: spectator auto-follow of the closest lane; per-arena win stats.
+- [ ] Executes polish: per-strategy weights for random selection; CT utility auto-throw
+      (currently only the T strat's utility is replayed in Fast-strat/Executes).
 
 ### Phase W — website/bot follow-ups (opportunistic)
-- [ ] **Commands reference page** (`/commands` on Garden-website): render the complete
-      chat/console command list. Source of truth: `Garden-retakes/COMMANDS.md` (created 2026-07-09,
-      linked from the README — keep it updated whenever commands change; the page can be generated
-      from it or hand-mirrored). Do this on the next website touch, after the mode commands
-      (Duels/Executes/FastStrat) stabilize so the list doesn't churn.
+- [x] **Commands reference page** (`/commands`) — DONE 2026-07-09: renders
+      `content/commands.md` (mirror of `Garden-retakes/COMMANDS.md` — keep BOTH in sync whenever
+      commands change), same markdown pipeline/styles as /roadmap, NavBar link.
 - [ ] **Roadmap page** (`/roadmap`) — DONE 2026-07-09: renders this file (mirrored to
       `Garden-website/content/roadmap.md` — keep the mirror in sync on every roadmap change).
-- [ ] Admin log page (reads `GardenAdminLog`; owner-only or hidden URL).
+- [x] Admin log page — DONE 2026-07-09: hidden key-protected URL
+      `/admin-log?key=<INVSIM_API_KEY>` (not in the nav), last 200 `GardenAdminLog` entries;
+      Prisma models `GardenAdmin`/`GardenAdminLogEntry` added (run `npx prisma generate`).
 - [ ] Duels ladder + mode pages once Garden-retakes emits their stats.
 - [ ] Discord D4/D5.
 
@@ -306,3 +332,15 @@ Executes/FastStrat last — utility replay is the hardest single piece).
 - 2026-07-09 (12): R7 Fast-strat completed (per-side !strat/!setup votes, shared executes data,
   face-off spawning + utility replay). All four game modes now switchable via !gamemode.
   **Original Phase R roadmap complete.**
+- 2026-07-09 (13): R8 Duels v2 completed — DuelArenaStore (named pairs, duels/<map>.json) +
+  DuelManager (parallel lanes, shared queue, challenge lanes) in Core with tests; DuelsModule v2
+  (!garena editor, per-lane arena assignment, !duel challenges first-to-X/infinite).
+  Next (on "Continue"): R9 inventory loadout UX (!loadouts, center menu, random — touches
+  Garden-inventory + Garden-website).
+- 2026-07-09 (14): R9 completed — /api/loadouts endpoint, !loadouts, !loadout center menu +
+  random in Garden-inventory (case-insensitivity confirmed already working). Remaining backlog:
+  Phase W (/commands page, admin log page, duels ladder), Discord D4/D5.
+- 2026-07-09 (15): Phase W /commands page + hidden /admin-log page shipped (Prisma admin models,
+  content/commands.md mirror). New R10 section consolidates every inline "(for later)"
+  suggestion — production cutover first, then ModeCvars unification, short command aliases,
+  auto-random loadout, duels/executes polish. Remaining: R10, W duels ladder, Discord D4/D5.
