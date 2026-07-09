@@ -57,6 +57,10 @@ Shared infra:
 10. **Workshop/community skins are impossible** (client-side assets). Official catalog only.
 11. Server cfg for plugin convars: `game/csgo/cfg/garden-inventory.cfg` + `exec` from `server.cfg`
     (executes after plugin load). Secrets never in git.
+12. **CSS API changes between 1.0.329 → 1.0.367** (hit while porting the donors):
+    `EventPlayerChat` removed — hook chat with `AddCommandListener("say"/"say_team", handler,
+    HookMode.Post)` and read the message from `commandInfo.GetArg(1)`;
+    `PlayerConnectedState.PlayerConnected` renamed to `PlayerConnectedState.Connected`.
 
 ## 3. Conventions
 
@@ -254,23 +258,30 @@ Executes/FastStrat last — utility replay is the hardest single piece).
 
 **R10. Consolidated backlog** — every "(for later)" suggestion scattered across this file,
 collected 2026-07-09 so nothing gets lost:
-- [ ] **Production cutover** (do this FIRST): `dotnet build GardenRetakes.sln` + `dotnet test`
-      fix pass (nothing has been compiled yet!), rebuild Garden-inventory, deploy the merged
+- [ ] **Production cutover** — build/test DONE 2026-07-09 (`dotnet build` clean,
+      **all 142 tests green** across the three suites after two fixes: CSS 1.0.367 API renames
+      + test localizer replacement). REMAINING: rebuild Garden-inventory, deploy the merged
       plugin, retire standalone Garden-allocator/Garden-rankings, migrate configs
       (allocator `config.json` + `data.db` + `gamedata/` as-is; rankings config →
       `config/rankings.json`), set `EnableFallbackAllocation=false`, redeploy website
       (react-markdown deps + new endpoints/pages), `npx prisma generate`.
-- [ ] Absorb rankings' ModeCvars profiles into `GameModeManager` mode switches (R0 leftover —
-      today Duels/Executes use their own Start/StopCommands lists, rankings still applies
-      Classic/Ranked/Competitive cvars itself; unify into per-mode cvar profiles in one place).
-- [ ] Short command names: once the legacy plugins are retired, add non-prefixed aliases for the
-      g-commands (`!admin`, `!kick`, `!map`, `!spawns`, ...) behind a config toggle (the g-
-      prefixes were only there to avoid collisions during the transition).
-- [ ] Auto-random loadout each map: optional Garden-inventory toggle that runs
-      `!loadout random` for opted-in players on map start.
-- [ ] Parallel-duels polish: spectator auto-follow of the closest lane; per-arena win stats.
-- [ ] Executes polish: per-strategy weights for random selection; CT utility auto-throw
-      (currently only the T strat's utility is replayed in Fast-strat/Executes).
+- [x] ModeCvars unification — DONE 2026-07-09 (pragmatic form): every mode transition now applies
+      the right profile — RankingsModule re-applies its Classic/Ranked/Competitive cvars whenever
+      the server returns to Retakes mode (0.5s after ModeChanged), Duels/Executes/FastStrat apply
+      their own Start/StopCommands on their transitions. Config locations intentionally unchanged.
+- [x] Short command names — DONE 2026-07-09: `GardenSettings.Admin.EnableShortAliases` (default
+      false) additionally registers `!admin`, `!kick`, `!slay`, `!map`, `!rcon`. Turn on after the
+      legacy plugins are retired.
+- [x] Auto-random loadout each map — DONE 2026-07-09: `invsim_random_loadout_each_map` convar
+      (default off) in Garden-inventory equips a random loadout for every player on each
+      connect/map change (3s after connect so the initial inventory fetch settles).
+- [x] Parallel-duels polish — DONE 2026-07-09: dead/queued players auto-spectate the duel that
+      just started (in-eye; guarded observer-handle writes, disable via `Duels.SpectatorAutoFollow`
+      if a CS2 update misbehaves); `!duelscore arenas` shows per-arena duels played + best fighter.
+- [x] Executes polish — DONE 2026-07-09: `ExecuteStrategy.Weight` (0–100, weighted random pick,
+      0 = manual-only, `!gexec weight <n>`, tested); `UtilityThrow.Team` records the thrower's
+      side (old JSONs default to T) — projectiles spawn with the right TeamNum, Executes replays
+      both sides' lineups, Fast-strat replays the T strat's T utility + the CT setup's CT utility.
 
 ### Phase W — website/bot follow-ups (opportunistic)
 - [x] **Commands reference page** (`/commands`) — DONE 2026-07-09: renders
@@ -344,3 +355,11 @@ collected 2026-07-09 so nothing gets lost:
   content/commands.md mirror). New R10 section consolidates every inline "(for later)"
   suggestion — production cutover first, then ModeCvars unification, short command aliases,
   auto-random loadout, duels/executes polish. Remaining: R10, W duels ladder, Discord D4/D5.
+- 2026-07-09 (16): **First full build + test pass GREEN** (47+56+39 tests) after fixing CSS
+  1.0.367 renames (gotcha #12) and swapping the allocator tests' JsonStringLocalizer for a
+  self-contained TestJsonLocalizer. R10 sweep landed: mode-cvar reapply on return to Retakes,
+  Admin.EnableShortAliases, invsim_random_loadout_each_map. Remaining backlog: cutover deploy
+  steps, duels/executes polish, W duels ladder, Discord D4/D5.
+- 2026-07-09 (17): R10 finale — duels polish (spectator auto-follow, !duelscore arenas) +
+  executes polish (strategy weights, per-side utility capture/replay). **R10 done except the
+  deploy half of the cutover.** Remaining: cutover deploy, W duels ladder, Discord D4/D5.
