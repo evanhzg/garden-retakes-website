@@ -213,9 +213,15 @@ instant defuse + game-mode/small-server scaffolding. Next: R1 spawn editor.
       re-check ThrowUtility first if a CS2 update breaks a type). Normal win conditions
       (plant/defuse/elimination), rounds cycle naturally.
 
-**R7. Fast-strat mode**
-- [ ] CT vote a defined setup, T vote a defined strategy → both teams spawn in the chosen situation facing off.
-- [ ] Definitions shared with Executes (same data format: named setups/strats per map/site).
+**R7. Fast-strat mode** — *completed 2026-07-09*
+- [x] `!gamemode faststrat`: every round CTs vote a SETUP (`!setup <name|list>`) and Ts vote a
+      STRATEGY (`!strat <name|list>`) — majority per side, ties/no-votes random; both teams spawn
+      in the chosen situation facing off (T strat's TStarts + auto-thrown utility vs CT setup's
+      CtSetups), C4 to a T, normal win conditions, votes reset each round.
+- [x] Definitions fully shared with Executes: same `executes/<map>.json` via the ExecutesModule
+      store; `PlaceGroup`/`ThrowUtility` reused (ThrowUtility now allows both modes).
+      **The original Phase R roadmap is COMPLETE** — next up: R8 Duels v2, R9 inventory loadout
+      UX, Phase W website pages, Discord D4/D5.
 
 **Suggested order**: R0 → R1 → R3 → R2 → R5 → R4 → R6 → R7
 (spawn editor early because Duels/SmallServer/Executes/FastStrat all consume its data;
@@ -297,3 +303,6 @@ Executes/FastStrat last — utility replay is the hardest single piece).
   off — reuses the executes data format), which finishes the original roadmap.
 - 2026-07-09 (11): Website /roadmap page added (renders this mirrored file, react-markdown +
   remark-gfm, NavBar link).
+- 2026-07-09 (12): R7 Fast-strat completed (per-side !strat/!setup votes, shared executes data,
+  face-off spawning + utility replay). All four game modes now switchable via !gamemode.
+  **Original Phase R roadmap complete.**
