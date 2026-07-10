@@ -276,8 +276,9 @@ collected 2026-07-09 so nothing gets lost:
       live). REMAINING (game server): rebuild Garden-inventory, deploy the merged plugin, retire
       standalone Garden-allocator/Garden-rankings, migrate configs (allocator `config.json` +
       `data.db` + `gamedata/` as-is; rankings config → `config/rankings.json`), set
-      `EnableFallbackAllocation=false`, set allocator `DatabaseProvider=MySql` (R12), run
-      `sql/blank-schema.sql` once to create the W2 tables.
+      `EnableFallbackAllocation=false`, set allocator `DatabaseProvider=MySql` (R12). No manual DB
+      step: the plugin's `SchemaUpgrades` now self-creates ALL W2 tables on load (GardenBans /
+      GardenNameOverrides / GardenWebProfiles / GardenAdmins / GardenAdminLog / DuelRecords).
 - [x] ModeCvars unification — DONE 2026-07-09 (pragmatic form): every mode transition now applies
       the right profile — RankingsModule re-applies its Classic/Ranked/Competitive cvars whenever
       the server returns to Retakes mode (0.5s after ModeChanged), Duels/Executes/FastStrat apply
@@ -313,7 +314,7 @@ collected 2026-07-09 so nothing gets lost:
       (strategies), and !garena/!gexec commands join multi-word args
       (**!gexec new signature changed to `new <a|b> <name...>`**).
 
-**R12. Gameplay fixes batch (reported 2026-07-10)** — *plugin fixes landed 2026-07-11 (pending Evan's build/deploy)*
+**R12. Gameplay fixes batch (reported 2026-07-10)** — *DONE 2026-07-11 — build GREEN on .NET 10 SDK, all 146 tests pass (51+56+39); pending Evan's server deploy*
 - [x] CR: warmup hold on ranked (`_warmupHoldActive`, `RankedWarmupMaxSeconds`), match start
       suspends Ranked Retakes, `/ry` unanimity dropped, inverted-sides fixed (retakes core's
       win-based team rotation gated during CR). See `RankingsModule.cs` / `RankingsModule.Modes.cs`.
@@ -457,6 +458,12 @@ collected 2026-07-09 so nothing gets lost:
   placement, last-session standout hero (`lib/hero.ts`); NavBar Admin/Profile links; cursor +
   animation polish. Typecheck clean; client pages verified in the dev server (DB-backed pages need
   Evan's live MySQL). Remaining: Evan's production cutover + R12 build/deploy; `npx prisma generate`.
+- 2026-07-11 (27): **Garden-retakes builds GREEN on the .NET 10 SDK** (0 errors; official CSS
+  1.0.371 resolved from nuget.org — local feed no longer needed) and **all 146 tests pass**
+  (GardenRetakes 51 + RetakesAllocator 56 + GardenRankings 39). Added `GardenWebProfiles` to the
+  plugin's `SchemaUpgrades` so the entire W2 schema self-creates on plugin load — the cutover no
+  longer needs a manual `sql/blank-schema.sql` run. (Plugin repo isn't under git here, so this
+  edit lives in Evan's working tree; the website schema mirror is already on GitHub.)
 - 2026-07-11 (26): Roadmap swept for open items — **everything implementable is done**. Ticked the
   stale "Discord D4/D5" line (both shipped, see Phase D). The one remaining checkbox is the
   **production cutover**, which is Evan-only: it needs the .NET 10 SDK (sandbox has none) and the
