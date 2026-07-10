@@ -15,7 +15,13 @@ const LINKS = [
   { href: "/roadmap", label: "Roadmap" },
 ];
 
-type Session = { authenticated: boolean; name?: string | null; avatar?: string | null };
+type Session = {
+  authenticated: boolean;
+  name?: string | null;
+  avatar?: string | null;
+  steamId?: string | null;
+  adminLevel?: number;
+};
 
 export default function NavBar() {
   const pathname = usePathname();
@@ -41,16 +47,21 @@ export default function NavBar() {
             {l.label}
           </Link>
         ))}
+        {(session.adminLevel ?? 0) > 0 && (
+          <Link href="/admin" className={isActive("/admin") ? "active" : ""}>
+            Admin
+          </Link>
+        )}
       </nav>
       <div className="nav-account">
         {session.authenticated ? (
-          <span className="account-chip">
+          <Link className="account-chip" href="/profile" title="Edit your profile">
             {session.avatar && (
               // eslint-disable-next-line @next/next/no-img-element
               <img src={session.avatar} alt="" />
             )}
             <span>{session.name ?? "Signed in"}</span>
-          </span>
+          </Link>
         ) : (
           <a className="account-signin" href="/api/auth/steam/login">
             Sign in

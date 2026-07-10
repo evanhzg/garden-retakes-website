@@ -138,6 +138,30 @@ CREATE TABLE IF NOT EXISTS CrMatches (
     KEY IX_CrMatches_SeasonId (SeasonId)
 ) CHARACTER SET utf8mb4;
 
+-- Garden (W2): bans, display-name overrides, web profiles.
+CREATE TABLE IF NOT EXISTS GardenBans (
+    SteamId BIGINT UNSIGNED NOT NULL PRIMARY KEY,
+    Name VARCHAR(128) NOT NULL,
+    Reason VARCHAR(256) NOT NULL,
+    BannedBy BIGINT UNSIGNED NOT NULL,
+    BannedAtUtc DATETIME(6) NOT NULL,
+    ExpiresAtUtc DATETIME(6) NULL
+) CHARACTER SET utf8mb4;
+
+CREATE TABLE IF NOT EXISTS GardenNameOverrides (
+    SteamId BIGINT UNSIGNED NOT NULL PRIMARY KEY,
+    Name VARCHAR(64) NOT NULL
+) CHARACTER SET utf8mb4;
+
+-- Website-owned: custom avatar/bio shown on player pages, ladder and hero.
+CREATE TABLE IF NOT EXISTS GardenWebProfiles (
+    SteamId BIGINT UNSIGNED NOT NULL PRIMARY KEY,
+    AvatarUrl VARCHAR(512) NULL,
+    Bio VARCHAR(280) NULL,
+    Country VARCHAR(2) NULL,
+    UpdatedAt DATETIME(6) NOT NULL
+) CHARACTER SET utf8mb4;
+
 -- Garden-retakes merged plugin (Duels mode): one row per completed 1v1.
 CREATE TABLE IF NOT EXISTS DuelRecords (
     Id BIGINT NOT NULL AUTO_INCREMENT PRIMARY KEY,

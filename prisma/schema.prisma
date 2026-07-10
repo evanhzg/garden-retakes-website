@@ -119,6 +119,35 @@ model WebInventory {
   @@map("WebInventories")
 }
 
+// Garden (W2): bans, display-name overrides, web profiles.
+model GardenBan {
+  SteamId     BigInt    @id
+  Name        String
+  Reason      String
+  BannedBy    BigInt
+  BannedAtUtc DateTime
+  ExpiresAtUtc DateTime?
+
+  @@map("GardenBans")
+}
+
+model GardenNameOverride {
+  SteamId BigInt @id
+  Name    String
+
+  @@map("GardenNameOverrides")
+}
+
+model GardenWebProfile {
+  SteamId   BigInt   @id
+  AvatarUrl String?
+  Bio       String?
+  Country   String?
+  UpdatedAt DateTime @updatedAt
+
+  @@map("GardenWebProfiles")
+}
+
 // Garden-retakes merged plugin (Duels mode): one row per completed 1v1.
 model DuelRecord {
   Id             BigInt   @id @default(autoincrement())

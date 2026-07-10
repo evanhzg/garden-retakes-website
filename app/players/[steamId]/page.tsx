@@ -1,7 +1,9 @@
 import Link from "next/link";
 import { getActiveSeason, prisma } from "@/lib/db";
+import { getSession } from "@/lib/auth";
 import { dayKey, fetchRows, groupBy, ratingClass, sideName, summarize } from "@/lib/stats";
 
+export const dynamic = "force-dynamic";
 export const revalidate = 30;
 
 export default async function PlayerPage({
@@ -18,14 +20,17 @@ export default async function PlayerPage({
   const query = (extra: string) =>
     `?season=${seasonId}${rankedOnly ? "&ranked=1" : ""}${extra}`;
 
-  const [profile, seasonStats, seasons, rows] = await Promise.all([
+  const [profile, override, webProfile, seasonStats, seasons, rows] = await Promise.all([
     prisma.playerProfile.findUnique({ where: { SteamId: steamId } }),
+    prisma.gardenNameOverride.findUnique({ where: { SteamId: steamId } }),
+    prisma.gardenWebProfile.findUnique({ where: { SteamId: steamId } }),
     prisma.playerSeasonStats.findFirst({ where: { SeasonId: seasonId, SteamId: steamId } }),
     prisma.season.findMany({ orderBy: { Id: "asc" } }),
     fetchRows(seasonId, steamId, rankedOnly),
   ]);
 
-  const name = profile?.LastKnownName ?? params.steamId;
+  const name = override?.Name ?? profile?.LastKnownName ?? params.steamId;
+  const isOwnPage = getSession()?.steamId === params.steamId;
   const total = summarize(rows);
 
   const bySide = groupBy(rows, (r) => sideName(r.TeamNum)).map(
@@ -50,17 +55,36 @@ export default async function PlayerPage({
       {/* ---------- Hero ---------- */}
       <section className="panel">
         <div className="player-hero">
-          <div className="player-avatar">{name.slice(0, 1).toUpperCase()}</div>
+          <div className="player-avatar">
+            {webProfile?.AvatarUrl ? (
+              // eslint-disable-next-line @next/next/no-img-element
+              <img src={webProfile.AvatarUrl} alt="" />
+            ) : (
+              name.slice(0, 1).toUpperCase()
+            )}
+          </div>
           <div style={{ flex: 1, minWidth: 220 }}>
-            <h1 className="hero-name">{name}</h1>
+            <h1 className="hero-name">
+              {name}
+              {override && <span className="mini-badge">custom name</span>}
+            </h1>
             <div className="hero-sub">
               SteamID64 {params.steamId}
+              {webProfile?.Country ? ` · ${webProfile.Country}` : ""}
               {rankedOnly ? " · ranked rounds only" : " · all rounds"}
             </div>
+            {webProfile?.Bio && <p className="player-bio">{webProfile.Bio}</p>}
           </div>
-          <Link className="btn secondary" href={`/compare?a=${params.steamId}`}>
-            ⚔ Compare
-          </Link>
+          <div className="player-hero-actions">
+            {isOwnPage && (
+              <Link className="btn small secondary" href="/profile">
+                ✎ Edit profile
+              </Link>
+            )}
+            <Link className="btn secondary" href={`/compare?a=${params.steamId}`}>
+              ⚔ Compare
+            </Link>
+          </div>
         </div>
 
         <div className="chip-row" style={{ marginTop: 16, marginBottom: 0 }}>

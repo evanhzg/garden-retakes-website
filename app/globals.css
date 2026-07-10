@@ -1559,3 +1559,428 @@ tbody tr:hover {
     overflow-x: auto;
   }
 }
+
+/* ============================================================
+   W2 — profiles, RCON, admin panel, ladder redesign, hero
+   ============================================================ */
+
+/* ---- shared badges / heads ---- */
+.mini-badge {
+  display: inline-block;
+  margin-left: 8px;
+  padding: 1px 8px;
+  border-radius: 999px;
+  background: var(--accent-soft);
+  color: var(--accent);
+  font-size: 0.68rem;
+  font-weight: 800;
+  letter-spacing: 0.03em;
+  text-transform: uppercase;
+  vertical-align: middle;
+}
+.mini-badge.danger {
+  background: #fde8ef;
+  color: #d6336c;
+}
+
+.role-badge {
+  display: inline-flex;
+  align-items: center;
+  padding: 3px 12px;
+  border-radius: 999px;
+  background: var(--gradient);
+  color: #fff;
+  font-size: 0.75rem;
+  font-weight: 800;
+  letter-spacing: 0.02em;
+  box-shadow: var(--shadow);
+}
+.role-badge.sm {
+  padding: 1px 9px;
+  font-size: 0.68rem;
+  box-shadow: none;
+}
+
+.admin-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  flex-wrap: wrap;
+}
+
+/* ---- player page extras ---- */
+.player-avatar img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  border-radius: inherit;
+}
+.hero-name {
+  display: inline-flex;
+  align-items: center;
+  flex-wrap: wrap;
+}
+.player-bio {
+  margin: 8px 0 0;
+  color: var(--muted);
+  max-width: 60ch;
+}
+.player-hero-actions {
+  display: flex;
+  gap: 8px;
+  flex-wrap: wrap;
+  align-items: center;
+}
+
+/* ---- profile editor ---- */
+.profile-editor {
+  display: grid;
+  gap: 18px;
+  max-width: 560px;
+  margin-top: 12px;
+  animation: fadeInUp 0.4s ease;
+}
+.profile-preview {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  padding: 14px;
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  background: var(--bg-soft);
+}
+.profile-preview-avatar {
+  width: 56px;
+  height: 56px;
+  border-radius: 16px;
+  background: var(--gradient);
+  color: #fff;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 1.4rem;
+  font-weight: 800;
+  overflow: hidden;
+  flex-shrink: 0;
+}
+.profile-preview-avatar img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+.profile-preview-name {
+  font-size: 1.15rem;
+  font-weight: 800;
+}
+.field {
+  display: grid;
+  gap: 6px;
+}
+.field-label {
+  font-weight: 700;
+  font-size: 0.9rem;
+}
+.field-hint {
+  font-size: 0.8rem;
+  color: var(--muted);
+}
+textarea.input {
+  resize: vertical;
+  font-family: inherit;
+}
+.linklike {
+  background: none;
+  border: none;
+  padding: 0;
+  color: var(--accent);
+  font: inherit;
+  font-weight: 700;
+  cursor: pointer;
+  text-decoration: underline;
+}
+.form-actions {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+}
+.form-msg {
+  font-weight: 700;
+  font-size: 0.9rem;
+}
+.form-msg.ok {
+  color: #2f9e44;
+}
+.form-msg.error {
+  color: #d6336c;
+}
+
+/* ---- RCON console ---- */
+.rcon {
+  display: grid;
+  gap: 12px;
+  margin-top: 10px;
+}
+.rcon-quick {
+  display: flex;
+  gap: 8px;
+  flex-wrap: wrap;
+}
+.rcon-log {
+  height: 320px;
+  overflow-y: auto;
+  padding: 14px;
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  background: #1c1424;
+  color: #e9ddf5;
+  font-family: ui-monospace, "Cascadia Code", "Consolas", monospace;
+  font-size: 0.82rem;
+}
+.rcon-empty {
+  color: #8a7a96;
+}
+.rcon-entry {
+  margin-bottom: 12px;
+}
+.rcon-cmd {
+  color: #d8b4fe;
+  font-weight: 700;
+}
+.rcon-out {
+  margin: 4px 0 0;
+  white-space: pre-wrap;
+  word-break: break-word;
+  color: #cbb9da;
+}
+.rcon-out.error {
+  color: #ff8fab;
+}
+.rcon-input-row {
+  display: flex;
+  gap: 10px;
+}
+.rcon-input {
+  flex: 1;
+  font-family: ui-monospace, "Cascadia Code", "Consolas", monospace;
+}
+
+/* ---- admin panel ---- */
+.admin-inline-form {
+  display: flex;
+  gap: 10px;
+  align-items: center;
+  flex-wrap: wrap;
+  margin-bottom: 14px;
+}
+.admin-toast {
+  position: fixed;
+  right: 20px;
+  bottom: 20px;
+  z-index: 50;
+  padding: 12px 18px;
+  border-radius: 12px;
+  color: #fff;
+  font-weight: 700;
+  box-shadow: var(--shadow-hover);
+  animation: toastIn 0.25s ease;
+  max-width: 380px;
+}
+.admin-toast.ok {
+  background: linear-gradient(120deg, #2f9e44, #37b24d);
+}
+.admin-toast.error {
+  background: linear-gradient(120deg, #d6336c, #f03e3e);
+}
+@keyframes toastIn {
+  from {
+    opacity: 0;
+    transform: translateY(12px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+.admin-table-wrap {
+  overflow-x: auto;
+}
+.admin-table {
+  width: 100%;
+}
+.admin-pname {
+  font-weight: 700;
+}
+.admin-steamid {
+  font-size: 0.75rem;
+  color: var(--muted);
+  font-family: ui-monospace, monospace;
+}
+.admin-actions {
+  display: flex;
+  gap: 6px;
+  flex-wrap: wrap;
+  align-items: center;
+}
+.actions-col {
+  min-width: 240px;
+}
+.row-banned {
+  background: #fdecf2;
+}
+.role-select {
+  padding: 4px 8px;
+  font-size: 0.8rem;
+  cursor: pointer;
+}
+
+/* ---- home: standout card ---- */
+.standout-card {
+  position: relative;
+  z-index: 1;
+  display: block;
+  align-self: center;
+  min-width: 280px;
+  max-width: 340px;
+  padding: 18px;
+  border-radius: var(--radius);
+  background: var(--panel);
+  border: 1px solid var(--border);
+  box-shadow: var(--shadow);
+  transition: transform 0.2s ease, box-shadow 0.2s ease;
+  animation: popIn 0.5s ease;
+}
+.standout-card:hover {
+  transform: translateY(-4px);
+  box-shadow: var(--shadow-hover);
+}
+.standout-eyebrow {
+  font-size: 0.72rem;
+  font-weight: 800;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  color: var(--accent);
+}
+.standout-top {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  margin: 10px 0 14px;
+}
+.standout-avatar {
+  width: 48px;
+  height: 48px;
+  border-radius: 14px;
+  background: var(--gradient);
+  color: #fff;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 1.2rem;
+  font-weight: 800;
+  overflow: hidden;
+  flex-shrink: 0;
+}
+.standout-avatar img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+.standout-name {
+  font-weight: 800;
+  font-size: 1.05rem;
+}
+.standout-elo {
+  font-size: 0.8rem;
+  color: var(--muted);
+}
+.standout-rating {
+  margin-left: auto;
+  font-size: 1.6rem;
+  font-weight: 900;
+  background: var(--gradient);
+  -webkit-background-clip: text;
+  background-clip: text;
+  color: transparent;
+}
+.standout-stats {
+  display: flex;
+  gap: 14px;
+  flex-wrap: wrap;
+  font-size: 0.82rem;
+  color: var(--muted);
+}
+.standout-stats strong {
+  color: var(--text);
+}
+
+/* ---- home: ladder redesign + session link ---- */
+.ladder-table td {
+  vertical-align: middle;
+}
+.rank-cell {
+  font-size: 1.05rem;
+  font-weight: 800;
+  width: 44px;
+}
+.ladder-player {
+  display: inline-flex;
+  align-items: center;
+  gap: 10px;
+  font-weight: 700;
+}
+.ladder-avatar {
+  width: 30px;
+  height: 30px;
+  border-radius: 9px;
+  background: var(--gradient);
+  color: #fff;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 0.85rem;
+  font-weight: 800;
+  overflow: hidden;
+  flex-shrink: 0;
+}
+.ladder-avatar img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+tr.you {
+  background: linear-gradient(90deg, var(--accent-soft), transparent);
+}
+tr.you td {
+  font-weight: 700;
+}
+.your-placement {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  flex-wrap: wrap;
+  margin-top: 16px;
+  padding: 14px 16px;
+  border: 1px dashed var(--border);
+  border-radius: var(--radius);
+  background: var(--bg-soft);
+  animation: fadeInUp 0.4s ease;
+}
+
+/* ---- cursor polish (W2) ---- */
+button,
+select,
+[role="button"],
+summary,
+a {
+  cursor: pointer;
+}
+button:disabled,
+.btn:disabled {
+  cursor: not-allowed;
+  opacity: 0.55;
+}
+input,
+textarea {
+  cursor: text;
+}

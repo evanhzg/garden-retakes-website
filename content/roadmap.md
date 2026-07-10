@@ -61,6 +61,14 @@ Shared infra:
     `EventPlayerChat` removed — hook chat with `AddCommandListener("say"/"say_team", handler,
     HookMode.Post)` and read the message from `commandInfo.GetArg(1)`;
     `PlayerConnectedState.PlayerConnected` renamed to `PlayerConnectedState.Connected`.
+13. **CSS 1.0.371 / .NET 10 (2026-07-10)** — the CS2 update [1.41.6.9] broke CSS; official
+    v1.0.371 (= PR #1348 merged) fixes it and stays on **net10.0** (building needs the .NET 10
+    SDK). Both repos pin `CounterStrikeSharp.API 1.0.371`; server runs
+    `counterstrikesharp-linux-1.0.371`. Until nuget.org publishes 1.0.371, the package must come
+    from the local feed: download `counterstrikesharp-api-v1.0.371.zip` from the GitHub release
+    and put the `.nupkg` in `C:\local-nuget` (NuGet.config in each repo points there; nuget.org
+    stays enabled so the pin resolves automatically once published — then the local feed +
+    NuGet.config files can be deleted).
 
 ## 3. Conventions
 
@@ -85,8 +93,10 @@ True per-user Discord Rich Presence is client-side only; chosen design: **bot pr
       (name or SteamID64, partial names resolve to most recently seen), `/compare <p1> <p2>`,
       `/seasons` — purple embeds linking to the website, shared MySQL via a pooled db helper.
       Optional `GUILD_ID` env for instant slash-command registration.
-- [ ] D5. (Later) Round/match event posts (CR results, records broken) — either poll DB or a tiny
-      webhook sender in the plugin.
+- [x] D5. Event posts — DONE 2026-07-10: the bot polls the shared DB (30s default) and posts
+      CR match results, finished duel challenges and new seasons to `EVENTS_CHANNEL_ID`
+      (fallback: status channel). Id cursors persist in data/state.json — first run initializes
+      silently, restarts never flood. (Record-broken announces stay in-game chat only.)
 
 ### Phase R — Garden-retakes: THE merged signature plugin
 Base: **fork of B3none/cs2-retakes** added by Evan as `Garden-retakes/` (not yet present).
@@ -285,12 +295,60 @@ collected 2026-07-09 so nothing gets lost:
       side (old JSONs default to T) — projectiles spawn with the right TeamNum, Executes replays
       both sides' lineups, Fast-strat replays the T strat's T utility + the CT setup's CT utility.
 
+**R11. Edit mode rework (requested 2026-07-10)** — *completed 2026-07-10*
+- [x] `!gamemode edit` (GameModeKind.Edit): paused endless warmup (no timer), mp_death_drop_c4 0
+      + a 3s C4 sweep (no bomb), retakes machinery gated; noclip toggle in the editor menu.
+      Leaving restores cvars + mp_restartgame.
+- [x] Visual differentiation per category (`EditModeModule` markers, rendered for the active
+      category): retakes spawns via the existing SpawnService models/labels; duel arenas as
+      purple/magenta markers labeled "arena — End A/B"; execute positions as orange (T start) /
+      blue (CT setup) markers + green nade labels ("T Smoke +0.5s").
+- [x] `!gedit` center menu usable WHILE MOVING — nobody is frozen: **R cycles, E activates,
+      TAB closes** (rising-edge bitwise input, so WASD stays free — works in noclip). Flat
+      action list per category: add spawn/end/position where you stand, cycle team/site/
+      arena/strategy, toggle planter, delete nearest/selected, save last thrown nade.
+- [x] Multi-word names ("A Site VS Long"): store validation relaxed (≤48 chars, spaces OK,
+      tested), menu "new" actions prompt `!name <name>` (arenas) / `!name <a|b> <name>`
+      (strategies), and !garena/!gexec commands join multi-word args
+      (**!gexec new signature changed to `new <a|b> <name...>`**).
+
+**R12. Gameplay fixes batch (reported 2026-07-10)** — *plugin fixes landed 2026-07-11 (pending Evan's build/deploy)*
+- [x] CR: warmup hold on ranked (`_warmupHoldActive`, `RankedWarmupMaxSeconds`), match start
+      suspends Ranked Retakes, `/ry` unanimity dropped, inverted-sides fixed (retakes core's
+      win-based team rotation gated during CR). See `RankingsModule.cs` / `RankingsModule.Modes.cs`.
+- [x] Executes: detonation fixed — `ExecutesModule.PickThrowerPawn` sets projectile
+      `Thrower`/`OwnerEntity` to a live pawn + `InitializeSpawnFromWorld` on all types.
+- [x] Allocator: weapon prefs persist via `DatabaseProvider.MySql` (shared DB) — see
+      `RetakesAllocatorCore/Db/Db.cs`; set `DatabaseProvider=MySql` in the allocator config.
+- [x] Small Server: overlay state computed LIVE (not the prestart snapshot), bots excluded,
+      last-CT-death switch re-evaluated in the death handler. See `SmallServerModule.cs`.
+
+**W2. Website overhaul batch (requested 2026-07-10)** — *COMPLETE (website) 2026-07-11*
+- [x] RCON page: `/admin/rcon` console (`components/RconConsole` → `POST /api/admin/rcon` →
+      `lib/rcon.ts` Source RCON client). Admin+/web-key gated, every command audit-logged.
+- [x] Stats + compare pages: entrance animations + correct cursors on every interactive element
+      (global cursor rules + `:disabled` states in `globals.css`).
+- [x] Profile editor: `/profile` (Steam session) — display-name override, avatar URL, bio,
+      country; `POST /api/profile` writes GardenNameOverrides + GardenWebProfiles; revert-to-Steam.
+- [x] Ladder redesign: rank medals, avatars, override-aware names (`lib/names.ts`), cleaner table.
+- [x] Session link: logged-in user's ladder row highlighted; own placement strip when outside the
+      top 20; "your profile" links; own player page shows an Edit-profile button.
+- [x] Username override: `GardenNameOverrides` written from /profile and the admin panel; the
+      plugin already reads it (`Queries.GetNameOverride`) and stops overwriting LastKnownName;
+      revert deletes the row. Name resolution is centralized in `lib/names.ts`.
+- [x] Admin tab: `/admin` full panel — searchable player list (everyone in PlayerProfiles + SteamID),
+      role management (Owner), rename/kick/slay/ban/unban, map change, embedded RCON. Persistence via
+      Prisma (bans/roles/overrides), live effects via the plugin's `css_g*` over RCON. NavBar shows
+      "Admin" only to admins. (Plugin ban support — GardenBans + connect kick — already shipped.)
+- [x] Hero section: `lib/hero.ts` computes the last session's standout (highest rating that UTC
+      day, min 8 rounds); home renders a clickable card with avatar, ELO and key stats.
+
 ### Phase W — website/bot follow-ups (opportunistic)
+- [x] **Roadmap page** (`/roadmap`) — DONE 2026-07-09: renders this file (mirrored to
+      `Garden-website/content/roadmap.md` — keep the mirror in sync on every roadmap change).
 - [x] **Commands reference page** (`/commands`) — DONE 2026-07-09: renders
       `content/commands.md` (mirror of `Garden-retakes/COMMANDS.md` — keep BOTH in sync whenever
       commands change), same markdown pipeline/styles as /roadmap, NavBar link.
-- [ ] **Roadmap page** (`/roadmap`) — DONE 2026-07-09: renders this file (mirrored to
-      `Garden-website/content/roadmap.md` — keep the mirror in sync on every roadmap change).
 - [x] Admin log page — DONE 2026-07-09: hidden key-protected URL
       `/admin-log?key=<INVSIM_API_KEY>` (not in the nav), last 200 `GardenAdminLog` entries;
       Prisma models `GardenAdmin`/`GardenAdminLogEntry` added (run `npx prisma generate`).
@@ -373,6 +431,30 @@ collected 2026-07-09 so nothing gets lost:
   cutover deploy (Evan), W duels ladder (needs duel-stat persistence), Discord D5.
 - 2026-07-09 (19): Duel persistence + /duels ladder shipped (DuelRecords table end to end:
   plugin → DB → website page). Remaining: cutover deploy (Evan), Discord D5.
+- 2026-07-10 (21): TEMP CSS fork switch (gotcha #13): Garden-retakes (all 9 projects) +
+  Garden-inventory on CounterStrikeSharp.API 1.0.371-PullRequest1348.5 / net10.0, local NuGet
+  feed at C:\local-nuget. Requires the .NET 10 SDK to build.
+- 2026-07-10 (22): Discord D5 shipped (DB-polling event posts with persistent cursors).
+  **Every planned item is now done** — remaining: Evan's production cutover.
+- 2026-07-10 (23): Switched to OFFICIAL CSS v1.0.371 (gotcha #13 updated): all pins now
+  `1.0.371`, net10.0 stays. One manual step until nuget.org publishes: drop the official
+  api nupkg into C:\local-nuget. (Repacked PR nupkg placed there as a bridge — same merged code.)
+- 2026-07-10 (24): Big new batch added to the roadmap (R11 edit mode, R12 gameplay fixes,
+  W2 website overhaul). **R11 completed**: EditModeModule (no bomb/timer, noclip, per-category
+  markers, moving-friendly R/E/TAB menu, !name prompts), multi-word names everywhere.
+  Next (on "Continue"): R12 fixes (CR warmup/auto-ranked/side-inversion, executes nade
+  detonation, allocator MySQL persistence, small-server reliability).
+- 2026-07-11 (25): **R12 plugin fixes landed** (CR warmup hold + ranked suspend + side-inversion
+  gate, executes detonation via live Thrower/OwnerEntity, allocator MySQL persistence, small-server
+  live evaluation) — pending Evan's `dotnet build`/deploy. **W2 website batch COMPLETE**: new tables
+  GardenBans / GardenNameOverrides / GardenWebProfiles (schema + Prisma + blank-schema.sql); Source
+  RCON client (`lib/rcon.ts`) + role/key auth (`lib/adminAuth.ts` with GardenAdmins levels) +
+  admin-action layer (`lib/adminActions.ts`, DB-authoritative + `css_g*` over RCON); pages
+  `/profile` (self edit + name override), `/admin/rcon`, `/admin` (players/roles/ban/kick/slay/map +
+  console); ladder redesign with override-aware names (`lib/names.ts`), session highlight + own
+  placement, last-session standout hero (`lib/hero.ts`); NavBar Admin/Profile links; cursor +
+  animation polish. Typecheck clean; client pages verified in the dev server (DB-backed pages need
+  Evan's live MySQL). Remaining: Evan's production cutover + R12 build/deploy; `npx prisma generate`.
 - 2026-07-09 (20): New skin collections (today's CS2 update): @ianlucas/cs2-lib bumped to 8.0.3
   (published today with the regenerated item catalog) — run `npm update @ianlucas/cs2-lib` to
   refresh the lockfile before redeploying. The inventory simulator picks the new collections up
