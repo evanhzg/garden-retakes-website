@@ -270,13 +270,14 @@ Executes/FastStrat last — utility replay is the hardest single piece).
 
 **R10. Consolidated backlog** — every "(for later)" suggestion scattered across this file,
 collected 2026-07-09 so nothing gets lost:
-- [ ] **Production cutover** — build/test DONE 2026-07-09 (`dotnet build` clean,
-      **all 142 tests green** across the three suites after two fixes: CSS 1.0.367 API renames
-      + test localizer replacement). REMAINING: rebuild Garden-inventory, deploy the merged
-      plugin, retire standalone Garden-allocator/Garden-rankings, migrate configs
-      (allocator `config.json` + `data.db` + `gamedata/` as-is; rankings config →
-      `config/rankings.json`), set `EnableFallbackAllocation=false`, redeploy website
-      (react-markdown deps + new endpoints/pages), `npx prisma generate`.
+- [ ] **Production cutover** (Evan-only — needs the .NET 10 SDK + live server) — build/test DONE
+      2026-07-09 (`dotnet build` clean, **all 142 tests green**). Website half DONE 2026-07-11
+      (pushed → Vercel auto-deploy; `prisma generate` runs in the build script; W2 endpoints/pages
+      live). REMAINING (game server): rebuild Garden-inventory, deploy the merged plugin, retire
+      standalone Garden-allocator/Garden-rankings, migrate configs (allocator `config.json` +
+      `data.db` + `gamedata/` as-is; rankings config → `config/rankings.json`), set
+      `EnableFallbackAllocation=false`, set allocator `DatabaseProvider=MySql` (R12), run
+      `sql/blank-schema.sql` once to create the W2 tables.
 - [x] ModeCvars unification — DONE 2026-07-09 (pragmatic form): every mode transition now applies
       the right profile — RankingsModule re-applies its Classic/Ranked/Competitive cvars whenever
       the server returns to Retakes mode (0.5s after ModeChanged), Duels/Executes/FastStrat apply
@@ -356,7 +357,8 @@ collected 2026-07-09 so nothing gets lost:
       (season, map, arena, winner/loser, challenge flag + final score; best-effort like the admin
       log; schema in SchemaUpgrades + blank-schema.sql + Prisma). Website `/duels` page: season
       ladder (wins/losses/winrate/challenges won) + last 20 duels; NavBar link.
-- [ ] Discord D4/D5.
+- [x] Discord D4/D5 — DONE (see Phase D): D4 stats slash-commands (2026-07-09),
+      D5 DB-polling event posts (2026-07-10). Both shipped.
 
 ---
 
@@ -455,6 +457,12 @@ collected 2026-07-09 so nothing gets lost:
   placement, last-session standout hero (`lib/hero.ts`); NavBar Admin/Profile links; cursor +
   animation polish. Typecheck clean; client pages verified in the dev server (DB-backed pages need
   Evan's live MySQL). Remaining: Evan's production cutover + R12 build/deploy; `npx prisma generate`.
+- 2026-07-11 (26): Roadmap swept for open items — **everything implementable is done**. Ticked the
+  stale "Discord D4/D5" line (both shipped, see Phase D). The one remaining checkbox is the
+  **production cutover**, which is Evan-only: it needs the .NET 10 SDK (sandbox has none) and the
+  live game server. Its website half is already deployed (2026-07-11 push → Vercel); only the
+  game-server steps (plugin rebuild/deploy, legacy-plugin retirement, config migration, one-time
+  `sql/blank-schema.sql` run) remain.
 - 2026-07-09 (20): New skin collections (today's CS2 update): @ianlucas/cs2-lib bumped to 8.0.3
   (published today with the regenerated item catalog) — run `npm update @ianlucas/cs2-lib` to
   refresh the lockfile before redeploying. The inventory simulator picks the new collections up
