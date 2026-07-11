@@ -5,6 +5,7 @@ import { dayKey, fetchRows, groupBy, ratingClass, sideName, summarize } from "@/
 import { resolveName } from "@/lib/names";
 import ProfileShowcase from "@/components/ProfileShowcase";
 import ProfileEditor from "@/components/ProfileEditor";
+import AvatarImage from "@/components/AvatarImage";
 
 export const dynamic = "force-dynamic";
 
@@ -107,12 +108,7 @@ export default async function ProfilePage({
       <section className="panel">
         <div className="player-hero">
           <div className="player-avatar">
-            {webProfile?.AvatarUrl ? (
-              // eslint-disable-next-line @next/next/no-img-element
-              <img src={`/${steamId}pp.png`} alt="" />
-            ) : (
-              <img src={`default_pp.png`} alt="" />
-            )}
+            <AvatarImage steamId={session.steamId} />
           </div>
           <div style={{ flex: 1, minWidth: 220 }}>
             <h1 className="hero-name">

@@ -2,6 +2,7 @@ import Link from "next/link";
 import ConnectButton from "@/components/ConnectButton";
 import { getActiveSeason, prisma } from "@/lib/db";
 import { getSession } from "@/lib/auth";
+import AvatarImage from "@/components/AvatarImage";
 import { resolveNames, nameFrom } from "@/lib/names";
 import { getLastSessionStandout } from "@/lib/hero";
 
@@ -102,11 +103,7 @@ export default async function HomePage() {
                     <td>
                       <Link href={`/players/${key}`} className="ladder-player">
                         <span className="ladder-avatar">
-                          <img
-                            src={`/${key}_pp.png`}
-                            alt="Avatar"
-                            onError={(e) => { (e.currentTarget as HTMLImageElement).src = "/default_pp.png"; }}
-                          />
+                          <AvatarImage steamId={key} />
                         </span>
                         <span>{nameFrom(names, key)}</span>
                         {isYou && <span className="mini-badge">you</span>}
@@ -172,11 +169,7 @@ function Hero({
           <div className="standout-eyebrow">★ Standout — {standout.day}</div>
           <div className="standout-top">
             <span className="standout-avatar">
-              <img
-                src={`/${standout.steamId}_pp.png`}
-                alt="Avatar"
-                onError={(e) => { (e.currentTarget as HTMLImageElement).src = "/default_pp.png"; }}
-              />
+              <AvatarImage steamId={standout.steamId} />
             </span>
             <div>
               <div className="standout-name">{standoutName || standout.name}</div>

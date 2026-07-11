@@ -3,6 +3,7 @@ import { getActiveSeason, prisma } from "@/lib/db";
 import { getSession } from "@/lib/auth";
 import { dayKey, fetchRows, groupBy, ratingClass, sideName, summarize } from "@/lib/stats";
 import CharacterHero from "@/components/CharacterHero";
+import AvatarImage from "@/components/AvatarImage";
 
 export const dynamic = "force-dynamic";
 export const revalidate = 30;
@@ -71,12 +72,7 @@ export default async function PlayerPage({
       <section className="panel">
         <div className="player-hero">
           <div className="player-avatar">
-            {webProfile?.AvatarUrl ? (
-              // eslint-disable-next-line @next/next/no-img-element
-              <img src={`/${steamId}pp.png`} alt="" />
-            ) : (
-              <img src={`default_pp.png`} alt="" />
-            )}
+            <AvatarImage steamId={params.steamId} />
           </div>
           <div style={{ flex: 1, minWidth: 220 }}>
             <h1 className="hero-name">
