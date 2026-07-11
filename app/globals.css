@@ -1903,11 +1903,13 @@ textarea.input {
   z-index: 1;
   display: block;
   width: 100%;
-  margin: 36px 0 0 0; /* more aligned and not touching other elements */
+  margin: 36px 0 0 0;
+  /* more aligned and not touching other elements */
   padding: 24px 32px;
   border-radius: 20px;
   background: linear-gradient(to bottom right, var(--panel), var(--bg));
-  border: 1.5px solid var(--accent); /* make it standout */
+  border: 1.5px solid var(--accent);
+  /* make it standout */
   box-shadow: 0 12px 36px rgba(0, 0, 0, 0.15), 0 0 0 1px var(--accent-soft);
   transition: transform 0.2s ease, box-shadow 0.2s ease;
   animation: popIn 0.5s ease;
@@ -1952,8 +1954,8 @@ textarea.input {
   height: 100%;
   object-fit: contain;
   position: absolute;
-  transform: scale(1.6); /* Break out of the box */
-  filter: drop-shadow(0 4px 12px rgba(0, 0, 0, 0.4));
+  transform: scale(3);
+  filter: drop-shadow(0 4px 30px rgb(236, 72, 153, 1));
 }
 
 .standout-name {
@@ -2038,8 +2040,8 @@ textarea.input {
   height: 100%;
   object-fit: contain;
   position: absolute;
-  transform: scale(1.5); /* Break out of the row slightly */
-  filter: drop-shadow(0 2px 4px rgba(0, 0, 0, 0.3));
+  transform: scale(2.5);
+  filter: drop-shadow(0 2px 4px rgba(236, 72, 153, .1));
 }
 
 tr.you {
@@ -2078,6 +2080,233 @@ button:disabled,
   opacity: 0.55;
 }
 
+/* Compare page interactive redesign */
+.cmp-roster {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
+  gap: 16px;
+  margin-top: 24px;
+}
+
+.cmp-roster-card {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 12px;
+  background: var(--bg);
+  border: 1px solid var(--border);
+  border-radius: 12px;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  text-align: left;
+  position: relative;
+  overflow: hidden;
+}
+
+.cmp-roster-card:hover:not(:disabled) {
+  background: var(--panel);
+  border-color: var(--accent-soft);
+  transform: translateY(-2px);
+}
+
+.cmp-roster-card:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+.cmp-roster-card.picked {
+  opacity: 1;
+  background: var(--panel);
+}
+
+.cmp-roster-card.picked-a {
+  border-color: #3b82f6;
+  box-shadow: 0 0 0 1px #3b82f6;
+}
+
+.cmp-roster-card.picked-b {
+  border-color: #ef4444;
+  box-shadow: 0 0 0 1px #ef4444;
+}
+
+.crc-avatar {
+  width: 48px;
+  height: 48px;
+  flex-shrink: 0;
+  position: relative;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.crc-avatar img {
+  width: 100%;
+  height: 100%;
+  object-fit: contain;
+  position: absolute;
+  transform: scale(1.6);
+  filter: drop-shadow(0 2px 4px rgba(0,0,0,0.3));
+}
+
+.crc-name {
+  font-weight: 800;
+  font-size: 1rem;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  max-width: 110px;
+}
+
+.crc-elo {
+  font-size: 0.8rem;
+  color: var(--muted);
+}
+
+.crc-badge {
+  position: absolute;
+  top: -8px;
+  right: -8px;
+  width: 32px;
+  height: 32px;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-weight: 900;
+  color: white;
+  font-size: 0.85rem;
+}
+
+.crc-badge.badge-a { background: #3b82f6; }
+.crc-badge.badge-b { background: #ef4444; }
+
+.cmp-header {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 32px;
+  margin-top: 24px;
+  animation: popIn 0.5s cubic-bezier(0.2, 0.8, 0.2, 1);
+}
+
+.cmp-hero-player {
+  display: flex;
+  align-items: center;
+  gap: 24px;
+  flex: 1;
+}
+
+.cmp-hero-player.left {
+  justify-content: flex-end;
+  text-align: right;
+}
+
+.cmp-hero-player.right {
+  justify-content: flex-start;
+  text-align: left;
+}
+
+.chp-avatar {
+  width: 72px;
+  height: 72px;
+  position: relative;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+}
+
+.chp-avatar img {
+  width: 100%;
+  height: 100%;
+  object-fit: contain;
+  position: absolute;
+  transform: scale(2);
+  filter: drop-shadow(0 4px 12px rgba(0,0,0,0.4));
+}
+
+.chp-name {
+  font-size: 1.6rem;
+  font-weight: 900;
+  margin-bottom: 6px;
+}
+
+.chp-badges {
+  display: flex;
+  gap: 8px;
+}
+
+.cmp-hero-player.left .chp-badges { justify-content: flex-end; }
+
+.chp-rating {
+  font-size: 2.8rem;
+  font-weight: 900;
+}
+
+.cmp-vs {
+  font-size: 1.2rem;
+  font-weight: 900;
+  color: var(--muted);
+  font-style: italic;
+  background: var(--bg);
+  padding: 8px 16px;
+  border-radius: 12px;
+  border: 1px solid var(--border);
+}
+
+@keyframes growWidth {
+  from { width: 0%; }
+}
+
+.anim-fill {
+  animation: growWidth 1s cubic-bezier(0.1, 1, 0.2, 1) forwards;
+}
+
+.map-breakdown-list {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+  gap: 16px;
+}
+
+.map-cmp-card {
+  background: var(--bg);
+  border: 1px solid var(--border);
+  border-radius: 12px;
+  padding: 16px;
+  transition: transform 0.2s ease;
+}
+
+.map-cmp-card:hover {
+  transform: translateY(-2px);
+  border-color: var(--accent-soft);
+}
+
+.mcc-title {
+  font-size: 1.1rem;
+  font-weight: 900;
+  text-align: center;
+  margin-bottom: 16px;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  color: var(--accent);
+}
+
+.mcc-body {
+  display: flex;
+  justify-content: space-between;
+}
+
+.mcc-col {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  font-size: 0.9rem;
+}
+
+.mcc-col.left { text-align: left; }
+.mcc-col.right { text-align: right; }
+.mcc-col strong { font-size: 1.2rem; }
+
 input,
 textarea {
   cursor: text;
@@ -2115,8 +2344,73 @@ body {
     padding: 9px 12px;
   }
 
+  /* Standout Card Fixes for Mobile */
+  .standout-card {
+    padding: 16px 20px;
+  }
+
+  .standout-top {
+    gap: 12px;
+  }
+
+  .standout-rating {
+    font-size: 2.2rem;
+  }
+
+  .standout-avatar {
+    width: 64px;
+    height: 64px;
+  }
+
+  .standout-stats {
+    gap: 16px;
+    font-size: 0.85rem;
+  }
+
+  .standout-stats strong {
+    font-size: 1.05rem;
+  }
+
+  /* Profile Showcase Mobile Fixes */
+  .ps-overlays {
+    position: static;
+  }
+
+  .ps-stats {
+    display: none;
+  }
+
+  .ps-loadout {
+    position: static;
+    transform: none;
+    width: 100%;
+    margin-top: 16px;
+    animation: none;
+  }
+
+  .ps-stage {
+    padding-bottom: 16px;
+  }
+
+  .cmp-header {
+    flex-direction: column;
+    gap: 16px;
+  }
+  
+  .cmp-hero-player {
+    width: 100%;
+    justify-content: center !important;
+    text-align: center !important;
+    flex-direction: column;
+  }
+  
+  .cmp-hero-player.left .chp-badges {
+    justify-content: center;
+  }
+
+
+
   /* Hero + standout card stack full-width */
-  .hero {
     padding: 26px 2px 18px;
   }
 
