@@ -2,7 +2,6 @@
 
 import { useState } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
-import AvatarImage from "@/components/AvatarImage";
 import { ratingClass } from "@/lib/stats";
 
 type PlayerSummary = {
@@ -11,6 +10,7 @@ type PlayerSummary = {
   elo: number;
   peakElo: number;
   rank: number;
+  avatarSrc: string;
 };
 
 // ... type definitions for metrics and stats
@@ -106,7 +106,7 @@ export default function CompareInteractive({
                 disabled={isPicked}
               >
                 <div className="crc-avatar">
-                  <AvatarImage steamId={p.steamId} />
+                  <img src={p.avatarSrc} alt={p.name} />
                 </div>
                 <div className="crc-info">
                   <div className="crc-name">{p.name}</div>
@@ -146,7 +146,7 @@ export default function CompareInteractive({
           {/* Player A Header */}
           <div className="cmp-hero-player left">
             <div className="chp-avatar">
-              <AvatarImage steamId={statsA.steamId || currentA!} />
+              <img src={playerAInfo?.avatarSrc || "/default_pp.png"} alt={nameA || "Player A"} />
             </div>
             <div className="chp-details">
               <div className="chp-name">{nameA}</div>
@@ -175,7 +175,7 @@ export default function CompareInteractive({
               </div>
             </div>
             <div className="chp-avatar">
-              <AvatarImage steamId={statsB.steamId || currentB!} />
+              <img src={playerBInfo?.avatarSrc || "/default_pp.png"} alt={nameB || "Player B"} />
             </div>
           </div>
         </div>

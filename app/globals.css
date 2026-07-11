@@ -2411,6 +2411,7 @@ body {
 
 
   /* Hero + standout card stack full-width */
+  .hero {
     padding: 26px 2px 18px;
   }
 

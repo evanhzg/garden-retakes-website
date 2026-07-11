@@ -1,3 +1,5 @@
+import fs from "fs";
+import path from "path";
 import { getActiveSeason, prisma } from "@/lib/db";
 import { fetchRows, ratingClass, summarize, StatSummary } from "@/lib/stats";
 
@@ -47,13 +49,20 @@ export default async function ComparePage({
   });
   const nameOf = new Map(profiles.map((p) => [p.SteamId.toString(), p.LastKnownName]));
 
-  const ladder = ladderRaw.map((entry, idx) => ({
-    steamId: entry.SteamId.toString(),
-    name: nameOf.get(entry.SteamId.toString()) ?? entry.SteamId.toString(),
-    elo: entry.Elo,
-    peakElo: entry.PeakElo,
-    rank: idx + 1,
-  }));
+  const ladder = ladderRaw.map((entry, idx) => {
+    const idStr = entry.SteamId.toString();
+    const filePath = path.join(process.cwd(), "public", `${idStr}_pp.png`);
+    const exists = fs.existsSync(filePath);
+    
+    return {
+      steamId: idStr,
+      name: nameOf.get(idStr) ?? idStr,
+      elo: entry.Elo,
+      peakElo: entry.PeakElo,
+      rank: idx + 1,
+      avatarSrc: exists ? `/${idStr}_pp.png` : "/default_pp.png",
+    };
+  });
 
   const parseId = (value?: string) => {
     try {
