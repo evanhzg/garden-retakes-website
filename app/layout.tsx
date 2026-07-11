@@ -3,7 +3,7 @@ import fs from "fs";
 import path from "path";
 import { prisma } from "@/lib/db";
 import NavBar from "@/components/NavBar";
-import RightSidebar from "@/components/RightSidebar";
+import LeftSidebar from "@/components/LeftSidebar";
 import "./globals.css";
 
 export const metadata: Metadata = {
@@ -51,6 +51,7 @@ export default async function RootLayout({ children }: { children: React.ReactNo
         </div>
         
         <div className="layout-wrapper">
+          <LeftSidebar players={avatarPlayers} />
           <div className="main-content">
             <NavBar avatarPlayers={avatarPlayers} />
             <main className="container">{children}</main>
@@ -58,7 +59,6 @@ export default async function RootLayout({ children }: { children: React.ReactNo
               Powered by GardenRankings · stats update live from the game server
             </footer>
           </div>
-          <RightSidebar players={avatarPlayers} />
         </div>
       </body>
     </html>

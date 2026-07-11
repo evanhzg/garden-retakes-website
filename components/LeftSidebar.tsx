@@ -6,13 +6,13 @@ type AvatarPlayer = {
   avatarSrc: string;
 };
 
-export default function RightSidebar({ players }: { players: AvatarPlayer[] }) {
+export default function LeftSidebar({ players }: { players: AvatarPlayer[] }) {
   if (players.length === 0) return null;
 
   return (
-    <aside className="right-sidebar">
+    <aside className="left-sidebar">
       {players.map((p) => (
-        <Link key={p.steamId} href={`/players/${p.steamId}`} title={p.name} className="rs-avatar-link">
+        <Link key={p.steamId} href={`/players/${p.steamId}`} title={p.name} className="ls-avatar-link">
           <img src={p.avatarSrc} alt={p.name} />
         </Link>
       ))}
