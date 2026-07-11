@@ -2,6 +2,7 @@ import Link from "next/link";
 import { getActiveSeason, prisma } from "@/lib/db";
 import { getSession } from "@/lib/auth";
 import { dayKey, fetchRows, groupBy, ratingClass, sideName, summarize } from "@/lib/stats";
+import CharacterHero from "@/components/CharacterHero";
 
 export const dynamic = "force-dynamic";
 export const revalidate = 30;
@@ -52,6 +53,9 @@ export default async function PlayerPage({
 
   return (
     <>
+      {/* ---------- Character image hero ---------- */}
+      <CharacterHero steamId={params.steamId} />
+
       {/* ---------- Hero ---------- */}
       <section className="panel">
         <div className="player-hero">
