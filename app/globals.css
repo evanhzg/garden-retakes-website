@@ -1641,6 +1641,7 @@ tbody tr:hover {
   height: 100%;
   object-fit: cover;
   border-radius: inherit;
+  transform: scale(1.5);
 }
 
 .hero-name {
@@ -2145,7 +2146,7 @@ button:disabled,
   object-fit: contain;
   position: absolute;
   transform: scale(1.6);
-  filter: drop-shadow(0 2px 4px rgba(0,0,0,0.3));
+  filter: drop-shadow(0 2px 4px rgba(0, 0, 0, 0.3));
 }
 
 .crc-name {
@@ -2177,8 +2178,13 @@ button:disabled,
   font-size: 0.85rem;
 }
 
-.crc-badge.badge-a { background: #3b82f6; }
-.crc-badge.badge-b { background: #ef4444; }
+.crc-badge.badge-a {
+  background: #3b82f6;
+}
+
+.crc-badge.badge-b {
+  background: #ef4444;
+}
 
 .cmp-header {
   display: flex;
@@ -2222,7 +2228,7 @@ button:disabled,
   object-fit: contain;
   position: absolute;
   transform: scale(2);
-  filter: drop-shadow(0 4px 12px rgba(0,0,0,0.4));
+  filter: drop-shadow(0 4px 12px rgba(0, 0, 0, 0.4));
 }
 
 .chp-name {
@@ -2236,7 +2242,9 @@ button:disabled,
   gap: 8px;
 }
 
-.cmp-hero-player.left .chp-badges { justify-content: flex-end; }
+.cmp-hero-player.left .chp-badges {
+  justify-content: flex-end;
+}
 
 .chp-rating {
   font-size: 2.8rem;
@@ -2255,7 +2263,9 @@ button:disabled,
 }
 
 @keyframes growWidth {
-  from { width: 0%; }
+  from {
+    width: 0%;
+  }
 }
 
 .anim-fill {
@@ -2303,9 +2313,17 @@ button:disabled,
   font-size: 0.9rem;
 }
 
-.mcc-col.left { text-align: left; }
-.mcc-col.right { text-align: right; }
-.mcc-col strong { font-size: 1.2rem; }
+.mcc-col.left {
+  text-align: left;
+}
+
+.mcc-col.right {
+  text-align: right;
+}
+
+.mcc-col strong {
+  font-size: 1.2rem;
+}
 
 input,
 textarea {
@@ -2396,14 +2414,14 @@ body {
     flex-direction: column;
     gap: 16px;
   }
-  
+
   .cmp-hero-player {
     width: 100%;
     justify-content: center !important;
     text-align: center !important;
     flex-direction: column;
   }
-  
+
   .cmp-hero-player.left .chp-badges {
     justify-content: center;
   }
