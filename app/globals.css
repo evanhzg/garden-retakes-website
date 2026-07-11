@@ -1049,9 +1049,11 @@ tbody tr:hover {
     gap: 20px;
     flex-wrap: nowrap;
     overflow-x: auto;
+    overflow-y: hidden; /* overflow-x:auto implies overflow-y:auto — pin it */
     justify-content: flex-start;
     scrollbar-width: none;
     -webkit-overflow-scrolling: touch;
+    padding-bottom: 4px; /* room for the active-link underline (bottom:-2px) */
   }
   .site-header nav::-webkit-scrollbar {
     display: none;
