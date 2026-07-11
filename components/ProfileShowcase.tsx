@@ -152,7 +152,12 @@ export default function ProfileShowcase({
     <section className="profile-showcase">
       <div className="ps-stage">
         {/* eslint-disable-next-line @next/next/no-img-element */}
-        <img className="ps-bg" src="/profile-character.png" alt="" />
+        <img
+          className="ps-bg"
+          src={`/${steamId}-character.PNG`}
+          alt=""
+          onError={(e) => { (e.currentTarget as HTMLImageElement).src = "/default-character.PNG"; }}
+        />
         <div className="ps-scrim" aria-hidden="true" />
 
         {/* Username — top center */}
