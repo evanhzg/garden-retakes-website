@@ -2835,3 +2835,504 @@ body {
     border-color: var(--border);
   }
 }
+
+/* ============================================================
+   Inventory workspace v3 — non-scrollable loadouts | weapons | preview
+   ============================================================ */
+.inv3 {
+  display: flex;
+  gap: 14px;
+  align-items: stretch;
+  height: calc(100vh - 126px);
+  min-height: 460px;
+  margin-bottom: -46px; /* eat most of the container bottom padding */
+}
+.inv3-side,
+.inv3-main,
+.inv3-preview {
+  background: var(--panel);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  box-shadow: var(--shadow);
+  min-height: 0;
+  display: flex;
+  flex-direction: column;
+}
+.inv3-side {
+  width: 232px;
+  flex-shrink: 0;
+  padding: 12px;
+}
+.inv3-main {
+  flex: 1;
+  min-width: 0;
+  padding: 14px;
+}
+.inv3-preview {
+  width: 250px;
+  flex-shrink: 0;
+  padding: 12px;
+  overflow-y: auto;
+}
+
+/* ---- sidebar ---- */
+.inv3-side-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 8px;
+}
+.inv3-losort {
+  margin-bottom: 8px;
+}
+.inv3-losort .input {
+  padding: 6px 10px;
+  font-size: 0.82rem;
+}
+.inv3-lolist {
+  flex: 1;
+  overflow-y: auto;
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  padding-right: 2px;
+}
+.inv3-lo {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  border: 1px solid var(--border);
+  border-radius: 10px;
+  padding: 4px 8px;
+  transition: border-color 0.15s ease, background 0.15s ease, transform 0.1s ease;
+}
+.inv3-lo.active {
+  border-color: var(--accent);
+  background: var(--accent-soft);
+}
+.inv3-lo.dragover {
+  border-color: var(--accent);
+  transform: translateY(1px);
+}
+.inv3-lo-dot {
+  width: 10px;
+  height: 10px;
+  border-radius: 50%;
+  flex-shrink: 0;
+}
+.inv3-lo-pick {
+  flex: 1;
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  background: none;
+  border: none;
+  cursor: pointer;
+  padding: 5px 0;
+}
+.inv3-lo-name {
+  font-weight: 700;
+  font-size: 0.9rem;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  max-width: 130px;
+}
+.inv3-lo-count {
+  font-size: 0.68rem;
+  color: var(--muted);
+}
+.inv3-lo-grip {
+  cursor: grab;
+  color: var(--muted);
+  font-size: 0.85rem;
+  user-select: none;
+}
+.inv3-lo-actions {
+  border-top: 1px solid var(--border);
+  padding-top: 10px;
+  margin-top: 8px;
+}
+.inv3-colors {
+  display: flex;
+  gap: 5px;
+  flex-wrap: wrap;
+  margin-bottom: 8px;
+}
+.inv3-color {
+  width: 18px;
+  height: 18px;
+  border-radius: 50%;
+  border: 2px solid transparent;
+  cursor: pointer;
+  padding: 0;
+  transition: transform 0.12s ease;
+}
+.inv3-color:hover {
+  transform: scale(1.15);
+}
+.inv3-color.active {
+  border-color: var(--text);
+}
+.inv3-lo-btns {
+  display: flex;
+  gap: 4px;
+  flex-wrap: wrap;
+}
+.inv3-lo-btns .btn.small {
+  padding: 5px 9px;
+}
+.inv3-borrow {
+  border-top: 1px solid var(--border);
+  padding-top: 10px;
+  margin-top: 10px;
+}
+.inv3-borrow .borrow-row .input {
+  font-size: 0.8rem;
+}
+.inv3-featured {
+  margin-top: 8px;
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+.inv3-feat {
+  display: flex;
+  justify-content: space-between;
+  gap: 6px;
+  background: var(--bg-soft);
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  padding: 5px 8px;
+  cursor: pointer;
+  font-size: 0.8rem;
+}
+.inv3-feat:hover {
+  border-color: var(--accent);
+}
+.inv3-feat-name {
+  font-weight: 700;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+/* ---- center ---- */
+.inv3-topbar {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  flex-wrap: wrap;
+  margin-bottom: 12px;
+}
+.inv3-sides {
+  display: flex;
+  gap: 4px;
+  background: var(--bg-soft);
+  border-radius: 10px;
+  padding: 3px;
+}
+.inv3-sidebtn {
+  padding: 6px 16px;
+  border-radius: 8px;
+  border: none;
+  background: transparent;
+  color: var(--muted);
+  font-weight: 800;
+  font-size: 0.82rem;
+  cursor: pointer;
+  transition: all 0.15s ease;
+}
+.inv3-sidebtn.active.side-t {
+  background: linear-gradient(120deg, #f59e0b, #f97316);
+  color: #fff;
+}
+.inv3-sidebtn.active.side-ct {
+  background: linear-gradient(120deg, #3b82f6, #6366f1);
+  color: #fff;
+}
+.inv3-cats {
+  display: flex;
+  gap: 5px;
+  flex-wrap: wrap;
+  flex: 1;
+}
+.inv3-cats .chip {
+  padding: 4px 10px;
+  font-size: 0.78rem;
+}
+.inv3-prevtoggle {
+  flex-shrink: 0;
+}
+
+.inv3-weapons {
+  flex: 1;
+  overflow-y: auto;
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(122px, 1fr));
+  gap: 10px;
+  align-content: start;
+  padding-right: 4px;
+  animation: fadeInUp 0.35s ease;
+}
+.inv3-weapon {
+  background: var(--bg-soft);
+  border: 1.5px solid var(--border);
+  border-radius: 12px;
+  padding: 10px 8px;
+  cursor: pointer;
+  transition: transform 0.15s ease, border-color 0.15s ease, box-shadow 0.15s ease;
+  text-align: center;
+}
+.inv3-weapon:hover {
+  transform: translateY(-3px);
+  border-color: var(--accent);
+  box-shadow: var(--shadow);
+}
+.inv3-weapon.has-skin {
+  border-color: rgba(168, 85, 247, 0.5);
+}
+.inv3-weapon-img {
+  height: 54px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+.inv3-weapon-img img {
+  max-width: 100%;
+  max-height: 54px;
+  object-fit: contain;
+}
+.inv3-weapon-name {
+  font-weight: 700;
+  font-size: 0.8rem;
+  margin-top: 6px;
+}
+.inv3-weapon-skin {
+  font-size: 0.68rem;
+  color: var(--muted);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+/* ---- skin chooser ---- */
+.inv3-chooser {
+  flex: 1;
+  min-height: 0;
+  display: flex;
+  flex-direction: column;
+  animation: fadeInUp 0.3s ease;
+}
+.inv3-chooser-head {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  margin-bottom: 10px;
+  flex-wrap: wrap;
+}
+.inv3-chooser-head strong {
+  font-size: 1.05rem;
+}
+.inv3-chooser-head .btn.danger {
+  margin-left: auto;
+}
+.inv3-filters {
+  display: flex;
+  gap: 8px;
+  flex-wrap: wrap;
+  margin-bottom: 10px;
+}
+.inv3-filters .input {
+  padding: 7px 10px;
+  font-size: 0.82rem;
+  width: auto;
+  flex: 1;
+  min-width: 120px;
+}
+.inv3-filters select.input {
+  flex: 0 0 auto;
+  min-width: 130px;
+}
+.inv3-config {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  flex-wrap: wrap;
+  padding: 10px 12px;
+  background: var(--bg-soft);
+  border-radius: 10px;
+  margin-bottom: 10px;
+  font-size: 0.8rem;
+}
+.inv3-config label {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+.inv3-config input[type="range"] {
+  width: 130px;
+}
+.inv3-config .input {
+  width: 70px;
+  padding: 5px 8px;
+}
+.inv3-cfg-toggle {
+  font-weight: 700;
+}
+.inv3-stickers {
+  display: grid;
+  grid-template-columns: 1fr 220px;
+  gap: 12px;
+  margin-bottom: 12px;
+}
+.inv3-stickers .sticker-stage {
+  height: 180px;
+}
+
+.inv3-skins {
+  flex: 1;
+  overflow-y: auto;
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(124px, 1fr));
+  gap: 10px;
+  align-content: start;
+  padding-right: 4px;
+}
+.inv3-skin {
+  position: relative;
+  border: 1.5px solid var(--border);
+  border-radius: 12px;
+  background: var(--panel);
+  overflow: hidden;
+  border-bottom: 3px solid var(--rarity, var(--border));
+  transition: transform 0.15s ease, box-shadow 0.15s ease;
+}
+.inv3-skin:hover {
+  transform: translateY(-3px);
+  box-shadow: var(--shadow);
+}
+.inv3-skin.current {
+  border-color: var(--accent);
+  box-shadow: 0 0 0 2px var(--accent-soft);
+}
+.inv3-skin-pick {
+  display: block;
+  width: 100%;
+  background: none;
+  border: none;
+  cursor: pointer;
+  padding: 10px 8px 8px;
+}
+.inv3-skin-pick img {
+  width: 100%;
+  height: 48px;
+  object-fit: contain;
+}
+.inv3-skin-name {
+  display: block;
+  font-size: 0.72rem;
+  font-weight: 700;
+  margin-top: 6px;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+.inv3-heart {
+  position: absolute;
+  top: 4px;
+  right: 4px;
+  background: rgba(255, 255, 255, 0.85);
+  border: none;
+  border-radius: 50%;
+  width: 24px;
+  height: 24px;
+  cursor: pointer;
+  font-size: 0.9rem;
+  color: #d6336c;
+  line-height: 1;
+  transition: transform 0.12s ease;
+}
+.inv3-heart:hover {
+  transform: scale(1.2);
+}
+.inv3-heart.on {
+  background: #ffe3ee;
+}
+
+/* ---- right preview ---- */
+.inv3-prev-side {
+  margin-bottom: 12px;
+}
+.inv3-prev-head {
+  margin-bottom: 6px;
+}
+.inv3-prev-guns {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 6px;
+}
+.inv3-prev-gun {
+  background: var(--bg-soft);
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  padding: 6px;
+  height: 46px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+.inv3-prev-gun.has {
+  border-color: rgba(168, 85, 247, 0.5);
+}
+.inv3-prev-gun img {
+  max-width: 100%;
+  max-height: 34px;
+  object-fit: contain;
+}
+.inv3-guest {
+  position: fixed;
+  bottom: 12px;
+  left: 50%;
+  transform: translateX(-50%);
+  background: var(--accent-soft);
+  border: 1px solid var(--border);
+  border-radius: 999px;
+  padding: 6px 16px;
+  font-size: 0.82rem;
+  z-index: 30;
+  box-shadow: var(--shadow);
+}
+.inv3-guest a {
+  color: var(--accent);
+  font-weight: 700;
+}
+
+/* ---- inventory workspace: tablet + phone (scrolls, stacks) ---- */
+@media (max-width: 900px) {
+  .inv3 {
+    flex-direction: column;
+    height: auto;
+    margin-bottom: 0;
+  }
+  .inv3-side,
+  .inv3-preview {
+    width: auto;
+  }
+  .inv3-lolist {
+    max-height: 220px;
+  }
+  .inv3-weapons,
+  .inv3-skins {
+    max-height: none;
+    overflow: visible;
+  }
+  .inv3-stickers {
+    grid-template-columns: 1fr;
+  }
+}
+
+/* Inventory: hide the global footer so the workspace fills the viewport */
+body.inv-fullscreen .site-footer { display: none; }
+@media (max-width: 900px) { body.inv-fullscreen .site-footer { display: block; } }

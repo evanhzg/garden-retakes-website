@@ -6,6 +6,7 @@ import {
   InventoryStore,
   ItemKind,
   Loadout,
+  LOADOUT_COLORS,
   PlacedSticker,
   SLOT_ANCHORS,
   Side,
@@ -18,6 +19,7 @@ import {
   newId,
   normaliseStore,
   saveStore,
+  skinKey,
 } from "@/lib/inventory";
 import { importSnapshot, type LoadoutSnapshot } from "@/lib/share";
 
@@ -30,21 +32,27 @@ type WeaponEntry = {
   category: string;
   team: Team;
 };
-type Skin = { id: number; def: number; paint: number; name: string; image: string; rarity: string };
+type Skin = { id: number; def: number; paint: number; name: string; image: string; rarity: string; collection?: string };
 type StickerOption = { id: number; def: number; name: string; image: string; rarity: string };
 type Catalog = Record<string, WeaponEntry[]>;
-type Session = {
-  authenticated: boolean;
-  steamId?: string;
-  name?: string | null;
-  avatar?: string | null;
-  adminLevel?: number;
-};
+type Session = { authenticated: boolean; steamId?: string; name?: string | null; avatar?: string | null; adminLevel?: number };
 type FeaturedPreset = { key: string; name: string; ownerName: string | null; images: string[]; count: number };
-type RightTab = "loadout" | "items";
-type EquipSide = Side | "both";
+type SkinSort = "name" | "quality" | "newest" | "fav";
+type LoSort = "custom" | "name" | "color";
 
 const CATEGORY_ORDER = ["Rifles", "Snipers", "SMGs", "Pistols", "Heavy", "Knives", "Gloves"];
+
+// Signature guns shown in the T/CT preview.
+const T_SLOTS = [7, 9, 1, 4];
+const CT_SLOTS = [16, 9, 1, 61]; // M4 slot swaps to preferredM4
+const M4A4 = 16;
+const M4A1S = 60;
+
+// Rarity hex → quality tier (higher = rarer) for the "quality" sort.
+const RARITY_TIER: Record<string, number> = {
+  "#b0c3d9": 0, "#5e98d9": 1, "#4b69ff": 2, "#8847ff": 3,
+  "#d32ce6": 4, "#eb4b4b": 5, "#e4ae39": 6, "#ffd700": 6, "#ffae39": 6,
+};
 
 function wearLabel(wear: number): string {
   if (wear < 0.07) return "Factory New";
@@ -53,57 +61,11 @@ function wearLabel(wear: number): string {
   if (wear < 0.45) return "Well-Worn";
   return "Battle-Scarred";
 }
-
-function skinLabel(name: string): string {
-  return name.split(" | ")[1] ?? name;
-}
-
+const skinLabel = (name: string) => name.split(" | ")[1] ?? name;
 function kindOfCategory(category: string): ItemKind {
   if (category === "Knives") return "knife";
   if (category === "Gloves") return "gloves";
   return "weapon";
-}
-
-/** Pure helper: equip an item into a loadout on the given side(s). */
-function equipInto(loadout: Loadout, item: InventoryItem, side: EquipSide): Loadout {
-  const next: Loadout = {
-    ...loadout,
-    equippedCT: { ...loadout.equippedCT },
-    equippedT: { ...loadout.equippedT },
-  };
-  const sides: Side[] = side === "both" ? ["t", "ct"] : [side];
-
-  for (const s of sides) {
-    if (item.kind === "knife") {
-      if (s === "t") next.knifeT = item.id;
-      else next.knifeCT = item.id;
-    } else if (item.kind === "gloves") {
-      if (s === "t") next.glovesT = item.id;
-      else next.glovesCT = item.id;
-    } else if (s === "t") {
-      next.equippedT[item.weaponDef] = item.id;
-    } else {
-      next.equippedCT[item.weaponDef] = item.id;
-    }
-  }
-  return next;
-}
-
-/** Which sides of a loadout an item is currently equipped on. */
-function equippedSides(loadout: Loadout | undefined, item: InventoryItem): Side[] {
-  if (!loadout) return [];
-  const sides: Side[] = [];
-  if (item.kind === "knife") {
-    if (loadout.knifeT === item.id) sides.push("t");
-    if (loadout.knifeCT === item.id) sides.push("ct");
-  } else if (item.kind === "gloves") {
-    if (loadout.glovesT === item.id) sides.push("t");
-    if (loadout.glovesCT === item.id) sides.push("ct");
-  } else {
-    if (loadout.equippedT[item.weaponDef] === item.id) sides.push("t");
-    if (loadout.equippedCT[item.weaponDef] === item.id) sides.push("ct");
-  }
-  return sides;
 }
 
 export default function InventorySimulator() {
@@ -111,29 +73,39 @@ export default function InventorySimulator() {
   const [hydrated, setHydrated] = useState(false);
   const [session, setSession] = useState<Session>({ authenticated: false });
   const [origin, setOrigin] = useState("");
-  const [rightTab, setRightTab] = useState<RightTab>("loadout");
   const [toast, setToast] = useState<string | null>(null);
 
   const [catalog, setCatalog] = useState<Catalog | null>(null);
-  const [category, setCategory] = useState<string>("Rifles");
-  const [weapon, setWeapon] = useState<WeaponEntry | null>(null);
+  const [category, setCategory] = useState("Rifles");
+  const [side, setSide] = useState<Side>("t");
+  const [weapon, setWeapon] = useState<WeaponEntry | null>(null); // set = skin chooser open
   const [skins, setSkins] = useState<Skin[]>([]);
   const [skinsLoading, setSkinsLoading] = useState(false);
-  const [skinSearch, setSkinSearch] = useState("");
-  const [selectedSkin, setSelectedSkin] = useState<Skin | null>(null);
 
-  const [stickers, setStickers] = useState<(PlacedSticker | null)[]>(defaultStickerSlots());
-  const [wear, setWear] = useState(0.06);
+  // Skin chooser filters
+  const [skinSearch, setSkinSearch] = useState("");
+  const [skinSort, setSkinSort] = useState<SkinSort>("quality");
+  const [collectionFilter, setCollectionFilter] = useState("");
+  const [favOnly, setFavOnly] = useState(false);
+
+  // Config for the slot being edited
+  const [wear, setWear] = useState(0.02);
   const [seed, setSeed] = useState(1);
   const [statTrak, setStatTrak] = useState(false);
   const [nameTag, setNameTag] = useState("");
-  const [equipSide, setEquipSide] = useState<EquipSide>("both");
-  const [editingItemId, setEditingItemId] = useState<string | null>(null);
-
+  const [stickers, setStickers] = useState<(PlacedSticker | null)[]>(defaultStickerSlots());
+  const [showStickers, setShowStickers] = useState(false);
   const [stickerQuery, setStickerQuery] = useState("Katowice 2014");
   const [stickerResults, setStickerResults] = useState<StickerOption[]>([]);
   const [stickersLoading, setStickersLoading] = useState(false);
 
+  // Loadout sidebar
+  const [loSort, setLoSort] = useState<LoSort>("custom");
+  const dragIndex = useRef<number | null>(null);
+  const [dragOver, setDragOver] = useState<number | null>(null);
+
+  // Preview + share
+  const [showPreview, setShowPreview] = useState(true);
   const [importKey, setImportKey] = useState("");
   const [featured, setFeatured] = useState<FeaturedPreset[]>([]);
   const [shareBusy, setShareBusy] = useState(false);
@@ -142,8 +114,8 @@ export default function InventorySimulator() {
   const dragSlot = useRef<number | null>(null);
   const saveTimer = useRef<number | null>(null);
 
-  const showToast = useCallback((message: string) => {
-    setToast(message);
+  const showToast = useCallback((m: string) => {
+    setToast(m);
     window.setTimeout(() => setToast(null), 2200);
   }, []);
 
@@ -151,16 +123,16 @@ export default function InventorySimulator() {
   const supportsStickers = builderKind === "weapon";
   const supportsStatTrak = builderKind !== "gloves";
 
-  // ---------- Boot: session + catalog + inventory ----------
+  // Full-height page: hide the global footer so the workspace never scrolls.
+  useEffect(() => {
+    document.body.classList.add("inv-fullscreen");
+    return () => document.body.classList.remove("inv-fullscreen");
+  }, []);
 
+  // ---------- Boot ----------
   useEffect(() => {
     setOrigin(window.location.origin);
-
-    fetch("/api/weapons")
-      .then((r) => r.json())
-      .then((data: Catalog) => setCatalog(data))
-      .catch(() => setCatalog(null));
-
+    fetch("/api/weapons").then((r) => r.json()).then(setCatalog).catch(() => setCatalog(null));
     (async () => {
       let sess: Session = { authenticated: false };
       try {
@@ -169,11 +141,9 @@ export default function InventorySimulator() {
         /* ignore */
       }
       setSession(sess);
-
       if (sess.authenticated) {
         try {
-          const remote = await fetch("/api/inventory").then((r) => r.json());
-          setStore(normaliseStore(remote));
+          setStore(normaliseStore(await fetch("/api/inventory").then((r) => r.json())));
         } catch {
           setStore(loadStore());
         }
@@ -182,23 +152,18 @@ export default function InventorySimulator() {
       }
       setHydrated(true);
     })();
+    fetch("/api/loadout/featured").then((r) => r.json()).then((d) => setFeatured(d.presets ?? [])).catch(() => {});
   }, []);
 
-  // ---------- Persistence (debounced) ----------
-
+  // ---------- Persist ----------
   const persist = useCallback((next: InventoryStore, authed: boolean) => {
     saveStore(next);
     if (!authed) return;
     if (saveTimer.current) window.clearTimeout(saveTimer.current);
     saveTimer.current = window.setTimeout(() => {
-      fetch("/api/inventory", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify(next),
-      }).catch(() => {});
+      fetch("/api/inventory", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify(next) }).catch(() => {});
     }, 600);
   }, []);
-
   useEffect(() => {
     if (hydrated) persist(store, session.authenticated);
   }, [store, hydrated, session.authenticated, persist]);
@@ -207,14 +172,10 @@ export default function InventorySimulator() {
     () => store.loadouts.find((l) => l.id === store.activeLoadoutId) ?? store.loadouts[0],
     [store]
   );
+  const itemById = useCallback((id?: string) => (id ? store.items.find((i) => i.id === id) : undefined), [store.items]);
+  const favorites = useMemo(() => new Set(store.favorites ?? []), [store.favorites]);
 
-  const itemById = useCallback(
-    (id: string | undefined) => (id ? store.items.find((i) => i.id === id) : undefined),
-    [store.items]
-  );
-
-  // ---------- Skins ----------
-
+  // ---------- Skins fetch ----------
   useEffect(() => {
     if (!weapon) {
       setSkins([]);
@@ -224,7 +185,7 @@ export default function InventorySimulator() {
     setSkinsLoading(true);
     fetch(`/api/skins?weapon=${weapon.def}`)
       .then((r) => r.json())
-      .then((data: Skin[]) => !cancelled && setSkins(Array.isArray(data) ? data : []))
+      .then((d: Skin[]) => !cancelled && setSkins(Array.isArray(d) ? d : []))
       .catch(() => !cancelled && setSkins([]))
       .finally(() => !cancelled && setSkinsLoading(false));
     return () => {
@@ -232,357 +193,271 @@ export default function InventorySimulator() {
     };
   }, [weapon]);
 
-  // ---------- Sticker search (debounced) ----------
-
+  // ---------- Sticker search ----------
   useEffect(() => {
-    const handle = window.setTimeout(() => {
+    if (!showStickers) return;
+    const h = window.setTimeout(() => {
       setStickersLoading(true);
       fetch(`/api/stickers?q=${encodeURIComponent(stickerQuery)}`)
         .then((r) => r.json())
-        .then((data: StickerOption[]) => setStickerResults(Array.isArray(data) ? data : []))
+        .then((d: StickerOption[]) => setStickerResults(Array.isArray(d) ? d : []))
         .catch(() => setStickerResults([]))
         .finally(() => setStickersLoading(false));
     }, 350);
-    return () => window.clearTimeout(handle);
-  }, [stickerQuery]);
+    return () => window.clearTimeout(h);
+  }, [stickerQuery, showStickers]);
 
-  // ---------- Builder ----------
+  // ---------- Slot helpers ----------
+  const slotItemFor = useCallback(
+    (def: number, kind: ItemKind, s: Side, loadout = activeLoadout): InventoryItem | undefined => {
+      if (!loadout) return undefined;
+      if (kind === "knife") return itemById(s === "t" ? loadout.knifeT : loadout.knifeCT);
+      if (kind === "gloves") return itemById(s === "t" ? loadout.glovesT : loadout.glovesCT);
+      return itemById((s === "t" ? loadout.equippedT : loadout.equippedCT)[def]);
+    },
+    [activeLoadout, itemById]
+  );
 
-  const resetConfig = () => {
-    setStickers(defaultStickerSlots());
-    setWear(0.06);
-    setSeed(1);
-    setStatTrak(false);
-    setNameTag("");
-    setEditingItemId(null);
-  };
-
-  const pickWeapon = (w: WeaponEntry) => {
+  // Open a weapon in the chooser, preloading config from its equipped slot item.
+  const openWeapon = (w: WeaponEntry) => {
     setWeapon(w);
-    setSelectedSkin(null);
     setSkinSearch("");
-    resetConfig();
-    // Preselect the natural side: side-specific weapons default to their side.
-    setEquipSide(w.team === "both" ? "both" : w.team === "t" ? "t" : "ct");
-  };
-
-  const addSticker = (option: StickerOption) => {
-    const slot = stickers.findIndex((s) => s === null);
-    if (slot === -1) {
-      showToast("All sticker slots are full — remove one first");
-      return;
+    setCollectionFilter("");
+    setShowStickers(false);
+    const existing = slotItemFor(w.def, kindOfCategory(w.category), side);
+    if (existing) {
+      setWear(existing.wear);
+      setSeed(existing.seed);
+      setStatTrak(existing.statTrak);
+      setNameTag(existing.nameTag);
+      setStickers(existing.stickers?.length ? [...existing.stickers] : defaultStickerSlots());
+    } else {
+      setWear(0.02);
+      setSeed(1);
+      setStatTrak(false);
+      setNameTag("");
+      setStickers(defaultStickerSlots());
     }
-    const next = [...stickers];
-    next[slot] = {
-      def: option.def,
-      name: option.name,
-      image: option.image,
-      slot,
-      wear: 0,
-      x: SLOT_ANCHORS[slot].x,
-      y: SLOT_ANCHORS[slot].y,
-      rotation: 0,
-    };
-    setStickers(next);
   };
 
-  const removeSticker = (slot: number) => {
-    const next = [...stickers];
-    next[slot] = null;
-    setStickers(next);
-  };
-
-  const onStickerPointerDown = (slot: number) => (event: React.PointerEvent) => {
-    dragSlot.current = slot;
-    (event.target as HTMLElement).setPointerCapture?.(event.pointerId);
-    event.preventDefault();
-  };
-
-  const onStagePointerMove = (event: React.PointerEvent) => {
-    if (dragSlot.current === null || !stageRef.current) return;
-    const rect = stageRef.current.getBoundingClientRect();
-    const x = Math.min(95, Math.max(5, ((event.clientX - rect.left) / rect.width) * 100));
-    const y = Math.min(92, Math.max(8, ((event.clientY - rect.top) / rect.height) * 100));
-    setStickers((current) => {
-      const slot = dragSlot.current;
-      if (slot === null || !current[slot]) return current;
-      const next = [...current];
-      next[slot] = { ...next[slot]!, x, y };
-      return next;
-    });
-  };
-
-  const endDrag = () => {
-    dragSlot.current = null;
-  };
-
-  const saveToInventory = () => {
-    if (!weapon || !selectedSkin) return;
-
-    if (editingItemId) {
-      setStore((current) => ({
-        ...current,
-        items: current.items.map((item) =>
-          item.id === editingItemId
-            ? {
-                ...item,
-                skinId: selectedSkin.id,
-                skinName: selectedSkin.name,
-                paint: selectedSkin.paint,
-                image: selectedSkin.image,
-                stickers: supportsStickers ? stickers : defaultStickerSlots(),
-                wear,
-                seed,
-                statTrak: supportsStatTrak ? statTrak : false,
-                nameTag,
-              }
-            : item
-        ),
-      }));
-      showToast("Item updated");
-      return;
-    }
-
-    setStore((current) => {
-      const item: InventoryItem = {
-        id: newId(),
-        uid: current.nextUid,
-        kind: builderKind,
+  // Create/update the slot's item and equip it into the active loadout.
+  const equipSkin = (skin: Skin) => {
+    if (!weapon) return;
+    const kind = kindOfCategory(weapon.category);
+    setStore((cur) => {
+      const loadout = cur.loadouts.find((l) => l.id === cur.activeLoadoutId);
+      if (!loadout) return cur;
+      const existing = slotItemFor(weapon.def, kind, side, loadout);
+      let items = cur.items;
+      let itemId: string;
+      let nextUid = cur.nextUid;
+      const payload = {
+        kind,
         weaponDef: weapon.def,
         weaponName: weapon.name,
         team: weapon.team,
-        skinId: selectedSkin.id,
-        skinName: selectedSkin.name,
-        paint: selectedSkin.paint,
-        image: selectedSkin.image,
+        skinId: skin.id,
+        skinName: skin.name,
+        paint: skin.paint,
+        image: skin.image,
         wear,
         seed,
         statTrak: supportsStatTrak ? statTrak : false,
         nameTag,
         stickers: supportsStickers ? stickers : defaultStickerSlots(),
-        createdAt: Date.now(),
       };
-      setEditingItemId(item.id);
-      return {
-        ...current,
-        nextUid: current.nextUid + 1,
-        items: [item, ...current.items],
-        loadouts: current.loadouts.map((l) =>
-          l.id === current.activeLoadoutId ? equipInto(l, item, equipSide) : l
-        ),
-      };
+      if (existing) {
+        itemId = existing.id;
+        items = cur.items.map((i) => (i.id === existing.id ? { ...i, ...payload } : i));
+      } else {
+        itemId = newId();
+        items = [{ id: itemId, uid: nextUid, createdAt: Date.now(), ...payload }, ...cur.items];
+        nextUid += 1;
+      }
+      const loadouts = cur.loadouts.map((l) => {
+        if (l.id !== loadout.id) return l;
+        const nl: Loadout = { ...l, equippedCT: { ...l.equippedCT }, equippedT: { ...l.equippedT } };
+        if (kind === "knife") {
+          if (side === "t") nl.knifeT = itemId;
+          else nl.knifeCT = itemId;
+        } else if (kind === "gloves") {
+          if (side === "t") nl.glovesT = itemId;
+          else nl.glovesCT = itemId;
+        } else if (side === "t") nl.equippedT[weapon.def] = itemId;
+        else nl.equippedCT[weapon.def] = itemId;
+        return nl;
+      });
+      return pruneItems({ ...cur, items, loadouts, nextUid });
     });
-    showToast(
-      `Saved & equipped (${equipSide === "both" ? "T + CT" : equipSide.toUpperCase()}) on ${activeLoadout?.name ?? "loadout"}`
-    );
+    showToast(`Equipped ${skinLabel(skin.name)} (${side.toUpperCase()})`);
+    setWeapon(null); // unselect on skin choice
   };
 
-  const editItem = (item: InventoryItem) => {
-    if (!catalog) return;
-    let found: WeaponEntry | undefined;
-    let foundCategory = category;
-    for (const [cat, list] of Object.entries(catalog)) {
-      const hit = list.find((w) => w.def === item.weaponDef);
-      if (hit) {
-        found = hit;
-        foundCategory = cat;
-        break;
-      }
+  const clearSlot = (def: number, kind: ItemKind) => {
+    setStore((cur) => {
+      const loadouts = cur.loadouts.map((l) => {
+        if (l.id !== cur.activeLoadoutId) return l;
+        const nl: Loadout = { ...l, equippedCT: { ...l.equippedCT }, equippedT: { ...l.equippedT } };
+        if (kind === "knife") {
+          if (side === "t") nl.knifeT = undefined;
+          else nl.knifeCT = undefined;
+        } else if (kind === "gloves") {
+          if (side === "t") nl.glovesT = undefined;
+          else nl.glovesCT = undefined;
+        } else if (side === "t") delete nl.equippedT[def];
+        else delete nl.equippedCT[def];
+        return nl;
+      });
+      return pruneItems({ ...cur, loadouts });
+    });
+  };
+
+  // Drop items no loadout references, to avoid orphan bloat.
+  const pruneItems = (s: InventoryStore): InventoryStore => {
+    const used = new Set<string>();
+    for (const l of s.loadouts) {
+      Object.values(l.equippedCT).forEach((id) => used.add(id));
+      Object.values(l.equippedT).forEach((id) => used.add(id));
+      [l.knifeCT, l.knifeT, l.glovesCT, l.glovesT].forEach((id) => id && used.add(id));
     }
-    setCategory(foundCategory);
-    setWeapon(
-      found ?? {
-        id: 0,
-        def: item.weaponDef,
-        name: item.weaponName,
-        model: "",
-        image: item.image,
-        category: foundCategory,
-        team: item.team,
-      }
-    );
-    setSelectedSkin({
-      id: item.skinId,
-      def: item.weaponDef,
-      paint: item.paint,
-      name: item.skinName,
-      image: item.image,
-      rarity: "#a855f7",
+    return { ...s, items: s.items.filter((i) => used.has(i.id)) };
+  };
+
+  const toggleFavorite = (def: number, paint: number) => {
+    const key = skinKey(def, paint);
+    setStore((cur) => {
+      const set = new Set(cur.favorites ?? []);
+      if (set.has(key)) set.delete(key);
+      else set.add(key);
+      return { ...cur, favorites: Array.from(set) };
     });
-    setStickers(item.stickers.length ? [...item.stickers] : defaultStickerSlots());
-    setWear(item.wear);
-    setSeed(item.seed);
-    setStatTrak(item.statTrak);
-    setNameTag(item.nameTag);
-    setEditingItemId(item.id);
-    setRightTab("items");
   };
 
-  // ---------- Inventory ----------
-
-  const equipItem = (item: InventoryItem, side: EquipSide) => {
-    setStore((current) => ({
-      ...current,
-      loadouts: current.loadouts.map((l) =>
-        l.id === current.activeLoadoutId ? equipInto(l, item, side) : l
-      ),
-    }));
-    showToast(
-      `Equipped (${side === "both" ? "T + CT" : side.toUpperCase()}) on ${activeLoadout?.name ?? "loadout"}`
-    );
+  // ---------- Stickers ----------
+  const addSticker = (o: StickerOption) => {
+    const slot = stickers.findIndex((s) => s === null);
+    if (slot === -1) {
+      showToast("All sticker slots full");
+      return;
+    }
+    const next = [...stickers];
+    next[slot] = { def: o.def, name: o.name, image: o.image, slot, wear: 0, x: SLOT_ANCHORS[slot].x, y: SLOT_ANCHORS[slot].y, rotation: 0 };
+    setStickers(next);
   };
-
-  const unequipSlot = (side: Side, item: InventoryItem) => {
-    setStore((current) => ({
-      ...current,
-      loadouts: current.loadouts.map((l) => {
-        if (l.id !== current.activeLoadoutId) return l;
-        const next: Loadout = { ...l, equippedCT: { ...l.equippedCT }, equippedT: { ...l.equippedT } };
-        if (item.kind === "knife") {
-          if (side === "t" && next.knifeT === item.id) next.knifeT = undefined;
-          if (side === "ct" && next.knifeCT === item.id) next.knifeCT = undefined;
-        } else if (item.kind === "gloves") {
-          if (side === "t" && next.glovesT === item.id) next.glovesT = undefined;
-          if (side === "ct" && next.glovesCT === item.id) next.glovesCT = undefined;
-        } else if (side === "t") {
-          if (next.equippedT[item.weaponDef] === item.id) delete next.equippedT[item.weaponDef];
-        } else if (next.equippedCT[item.weaponDef] === item.id) {
-          delete next.equippedCT[item.weaponDef];
-        }
-        return next;
-      }),
-    }));
+  const removeSticker = (slot: number) => {
+    const next = [...stickers];
+    next[slot] = null;
+    setStickers(next);
   };
-
-  const deleteItem = (item: InventoryItem) => {
-    setStore((current) => ({
-      ...current,
-      items: current.items.filter((i) => i.id !== item.id),
-      loadouts: current.loadouts.map((l) => {
-        const next: Loadout = { ...l, equippedCT: { ...l.equippedCT }, equippedT: { ...l.equippedT } };
-        for (const map of [next.equippedCT, next.equippedT]) {
-          for (const [def, itemId] of Object.entries(map)) {
-            if (itemId === item.id) delete map[def];
-          }
-        }
-        if (next.knifeCT === item.id) next.knifeCT = undefined;
-        if (next.knifeT === item.id) next.knifeT = undefined;
-        if (next.glovesCT === item.id) next.glovesCT = undefined;
-        if (next.glovesT === item.id) next.glovesT = undefined;
-        return next;
-      }),
-    }));
-    if (editingItemId === item.id) setEditingItemId(null);
+  const onStickerDown = (slot: number) => (e: React.PointerEvent) => {
+    dragSlot.current = slot;
+    (e.target as HTMLElement).setPointerCapture?.(e.pointerId);
+    e.preventDefault();
+  };
+  const onStageMove = (e: React.PointerEvent) => {
+    if (dragSlot.current === null || !stageRef.current) return;
+    const rect = stageRef.current.getBoundingClientRect();
+    const x = Math.min(95, Math.max(5, ((e.clientX - rect.left) / rect.width) * 100));
+    const y = Math.min(92, Math.max(8, ((e.clientY - rect.top) / rect.height) * 100));
+    setStickers((cur) => {
+      const s = dragSlot.current;
+      if (s === null || !cur[s]) return cur;
+      const n = [...cur];
+      n[s] = { ...n[s]!, x, y };
+      return n;
+    });
+  };
+  const endDrag = () => {
+    dragSlot.current = null;
   };
 
   // ---------- Loadouts ----------
-
   const addLoadout = () => {
-    const loadout = emptyLoadout(`Loadout ${store.loadouts.length + 1}`);
-    setStore((current) => ({
-      ...current,
-      loadouts: [...current.loadouts, loadout],
-      activeLoadoutId: loadout.id,
-    }));
+    const l = emptyLoadout(`Loadout ${store.loadouts.length + 1}`);
+    setStore((c) => ({ ...c, loadouts: [...c.loadouts, l], activeLoadoutId: l.id }));
   };
-
-  const duplicateLoadout = (source: Loadout) => {
-    const copy: Loadout = {
-      ...source,
-      id: newId(),
-      name: `${source.name} copy`,
-      equippedCT: { ...source.equippedCT },
-      equippedT: { ...source.equippedT },
-    };
-    setStore((current) => ({
-      ...current,
-      loadouts: [...current.loadouts, copy],
-      activeLoadoutId: copy.id,
-    }));
-    showToast(`Duplicated as "${copy.name}"`);
+  const duplicateLoadout = (src: Loadout) => {
+    const copy: Loadout = { ...src, id: newId(), name: `${src.name} copy`, equippedCT: { ...src.equippedCT }, equippedT: { ...src.equippedT } };
+    setStore((c) => ({ ...c, loadouts: [...c.loadouts, copy], activeLoadoutId: copy.id }));
+    showToast(`Duplicated "${copy.name}"`);
   };
-
-  const renameLoadout = (loadout: Loadout) => {
-    const name = window.prompt("Loadout name (used in-game: /loadout <name>)", loadout.name)?.trim();
+  const renameLoadout = (l: Loadout) => {
+    const name = window.prompt("Loadout name (in-game: /loadout <name>)", l.name)?.trim();
     if (!name) return;
-    setStore((current) => ({
-      ...current,
-      loadouts: current.loadouts.map((l) => (l.id === loadout.id ? { ...l, name } : l)),
-    }));
+    setStore((c) => ({ ...c, loadouts: c.loadouts.map((x) => (x.id === l.id ? { ...x, name } : x)) }));
   };
-
-  const deleteLoadout = (loadout: Loadout) => {
+  const deleteLoadout = (l: Loadout) => {
     if (store.loadouts.length <= 1) {
-      showToast("You need at least one loadout");
+      showToast("Keep at least one loadout");
       return;
     }
-    setStore((current) => {
-      const loadouts = current.loadouts.filter((l) => l.id !== loadout.id);
-      return {
-        ...current,
-        loadouts,
-        activeLoadoutId:
-          current.activeLoadoutId === loadout.id ? loadouts[0].id : current.activeLoadoutId,
-      };
+    setStore((c) => {
+      const loadouts = c.loadouts.filter((x) => x.id !== l.id);
+      return { ...c, loadouts, activeLoadoutId: c.activeLoadoutId === l.id ? loadouts[0].id : c.activeLoadoutId };
     });
   };
+  const setLoadoutColor = (l: Loadout, color: string) => {
+    setStore((c) => ({ ...c, loadouts: c.loadouts.map((x) => (x.id === l.id ? { ...x, color } : x)) }));
+  };
+  const setActiveLoadout = (id: string) => setStore((c) => ({ ...c, activeLoadoutId: id }));
 
-  const setActiveLoadout = (id: string) => setStore((current) => ({ ...current, activeLoadoutId: id }));
+  // Drag-reorder (custom order only)
+  const onLoDrop = (targetIdx: number) => {
+    const from = dragIndex.current;
+    setDragOver(null);
+    dragIndex.current = null;
+    if (from === null || from === targetIdx) return;
+    setStore((c) => {
+      const arr = [...c.loadouts];
+      const [moved] = arr.splice(from, 1);
+      arr.splice(targetIdx, 0, moved);
+      return { ...c, loadouts: arr };
+    });
+    setLoSort("custom");
+  };
+
+  const sortedLoadouts = useMemo(() => {
+    const arr = [...store.loadouts];
+    if (loSort === "name") arr.sort((a, b) => a.name.localeCompare(b.name));
+    else if (loSort === "color") arr.sort((a, b) => (a.color ?? "~").localeCompare(b.color ?? "~"));
+    return arr; // "custom" = array order
+  }, [store.loadouts, loSort]);
 
   // ---------- Share / borrow ----------
-
-  const loadFeatured = useCallback(() => {
-    fetch("/api/loadout/featured")
-      .then((r) => r.json())
-      .then((d: { presets?: FeaturedPreset[] }) => setFeatured(Array.isArray(d.presets) ? d.presets : []))
-      .catch(() => setFeatured([]));
-  }, []);
-
-  useEffect(() => {
-    loadFeatured();
-  }, [loadFeatured]);
-
-  const shareLoadout = async (loadout: Loadout, asFeatured = false) => {
+  const shareLoadout = async (l: Loadout, asFeatured = false) => {
     setShareBusy(true);
     try {
       const res = await fetch("/api/loadout/share", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ store, loadoutId: loadout.id, featured: asFeatured }),
+        body: JSON.stringify({ store, loadoutId: l.id, featured: asFeatured }),
       });
-      const json = await res.json();
-      if (!res.ok || !json.key) {
-        showToast(json.error ?? "Could not share");
+      const j = await res.json();
+      if (!res.ok || !j.key) {
+        showToast(j.error ?? "Could not share");
         return;
       }
-      await navigator.clipboard?.writeText(json.key).catch(() => {});
-      showToast(
-        asFeatured
-          ? `Featured! Key ${json.key} copied`
-          : `Share key ${json.key} copied — friends run /borrow ${json.key}`
-      );
-      if (asFeatured) loadFeatured();
+      await navigator.clipboard?.writeText(j.key).catch(() => {});
+      showToast(asFeatured ? `Featured! Key ${j.key} copied` : `Key ${j.key} copied · /borrow ${j.key}`);
+      if (asFeatured) fetch("/api/loadout/featured").then((r) => r.json()).then((d) => setFeatured(d.presets ?? []));
     } finally {
       setShareBusy(false);
     }
   };
-
-  const importByKey = async (rawKey: string) => {
-    const key = rawKey.trim().toLowerCase();
+  const importByKey = async (raw: string) => {
+    const key = raw.trim().toLowerCase();
     if (!key) return;
     setShareBusy(true);
     try {
       const res = await fetch(`/api/loadout/borrow/${encodeURIComponent(key)}`);
-      const json = await res.json();
-      if (!res.ok || !json.snapshot) {
-        showToast(json.error === "not found" ? "No loadout for that key" : json.error ?? "Import failed");
+      const j = await res.json();
+      if (!res.ok || !j.snapshot) {
+        showToast(j.error === "not found" ? "No loadout for that key" : j.error ?? "Import failed");
         return;
       }
-      const snapshot = json.snapshot as LoadoutSnapshot;
-      setStore((current) => importSnapshot(current, snapshot));
+      setStore((cur) => importSnapshot(cur, j.snapshot as LoadoutSnapshot));
       setImportKey("");
-      setRightTab("loadout");
-      showToast(`Imported "${json.name}" — now active`);
+      showToast(`Imported "${j.name}"`);
     } finally {
       setShareBusy(false);
     }
@@ -590,495 +465,337 @@ export default function InventorySimulator() {
 
   const isAdmin = (session.adminLevel ?? 0) >= 2;
 
-  const filteredSkins = skins.filter((s) =>
-    skinLabel(s.name).toLowerCase().includes(skinSearch.toLowerCase())
-  );
+  // ---------- Derived: skin chooser list ----------
+  const collections = useMemo(() => {
+    const set = new Set<string>();
+    for (const s of skins) if (s.collection) set.add(s.collection);
+    return Array.from(set).sort();
+  }, [skins]);
 
-  // ---------- Loadout view helpers ----------
+  const currentSkinId = weapon ? slotItemFor(weapon.def, builderKind, side)?.skinId : undefined;
 
-  const sideRows = (side: Side) => {
-    if (!activeLoadout) return [];
-    const rows: { slot: string; item: InventoryItem }[] = [];
-    const knife = itemById(side === "t" ? activeLoadout.knifeT : activeLoadout.knifeCT);
-    if (knife) rows.push({ slot: "Knife", item: knife });
-    const gloves = itemById(side === "t" ? activeLoadout.glovesT : activeLoadout.glovesCT);
-    if (gloves) rows.push({ slot: "Gloves", item: gloves });
-    const map = side === "t" ? activeLoadout.equippedT : activeLoadout.equippedCT;
-    for (const itemId of Object.values(map)) {
-      const item = itemById(itemId);
-      if (item) rows.push({ slot: item.weaponName, item });
+  const shownSkins = useMemo(() => {
+    let list = skins.filter((s) => skinLabel(s.name).toLowerCase().includes(skinSearch.toLowerCase()));
+    if (collectionFilter) list = list.filter((s) => s.collection === collectionFilter);
+    if (favOnly) list = list.filter((s) => favorites.has(skinKey(s.def, s.paint)));
+    const rank = (s: Skin) => RARITY_TIER[s.rarity?.toLowerCase()] ?? -1;
+    if (skinSort === "quality") list.sort((a, b) => rank(b) - rank(a) || skinLabel(a.name).localeCompare(skinLabel(b.name)));
+    else if (skinSort === "newest") list.sort((a, b) => b.paint - a.paint);
+    else if (skinSort === "fav") list.sort((a, b) => Number(favorites.has(skinKey(b.def, b.paint))) - Number(favorites.has(skinKey(a.def, a.paint))));
+    else list.sort((a, b) => skinLabel(a.name).localeCompare(skinLabel(b.name)));
+    // Current skin first
+    if (currentSkinId) {
+      const idx = list.findIndex((s) => s.id === currentSkinId);
+      if (idx > 0) list.unshift(list.splice(idx, 1)[0]);
     }
-    return rows;
+    return list;
+  }, [skins, skinSearch, collectionFilter, favOnly, favorites, skinSort, currentSkinId]);
+
+  const weapons = catalog?.[category] ?? [];
+
+  // ---------- Preview slots ----------
+  const previewSlots = (s: Side) => {
+    const defs = s === "t" ? T_SLOTS : CT_SLOTS.map((d) => (d === M4A4 ? activeLoadout?.preferredM4 ?? M4A4 : d));
+    return defs.map((def) => ({ def, item: slotItemFor(def, "weapon", s) }));
   };
 
   // ---------- Render ----------
-
-  const categories = catalog ? CATEGORY_ORDER.filter((c) => catalog[c]?.length) : CATEGORY_ORDER;
-
   return (
-    <>
-      {/* Auth / sync banner */}
-      <div className={`sync-banner ${session.authenticated ? "on" : ""}`}>
-        {session.authenticated ? (
-          <>
-            {session.avatar && (
-              // eslint-disable-next-line @next/next/no-img-element
-              <img className="sync-avatar" src={session.avatar} alt="" />
-            )}
-            <div className="sync-text">
-              <strong>{session.name ?? "Signed in"}</strong>
-              <span className="muted">
-                Syncs in-game · <code>!ws</code> refreshes · <code>!loadout &lt;name&gt;</code> swaps loadouts
-              </span>
-            </div>
-            {origin && session.steamId && (
-              <button
-                className="btn small secondary"
-                onClick={() => {
-                  navigator.clipboard?.writeText(`${origin}/api/equipped/v4/${session.steamId}.json`);
-                  showToast("Equipped-items URL copied");
+    <div className="inv3">
+      {/* ===== LEFT: loadout sidebar ===== */}
+      <aside className="inv3-side">
+        <div className="inv3-side-head">
+          <span className="loadout-label">Loadouts</span>
+          <button className="btn small" onClick={addLoadout} title="New loadout">
+            +
+          </button>
+        </div>
+        <div className="inv3-losort">
+          <select className="input" value={loSort} onChange={(e) => setLoSort(e.target.value as LoSort)}>
+            <option value="custom">Custom order</option>
+            <option value="name">By name</option>
+            <option value="color">By color</option>
+          </select>
+        </div>
+
+        <div className="inv3-lolist">
+          {sortedLoadouts.map((l, idx) => {
+            const active = l.id === store.activeLoadoutId;
+            const canDrag = loSort === "custom";
+            return (
+              <div
+                key={l.id}
+                className={`inv3-lo ${active ? "active" : ""} ${dragOver === idx ? "dragover" : ""}`}
+                draggable={canDrag}
+                onDragStart={() => (dragIndex.current = idx)}
+                onDragOver={(e) => {
+                  if (canDrag) {
+                    e.preventDefault();
+                    setDragOver(idx);
+                  }
+                }}
+                onDrop={() => onLoDrop(idx)}
+                onDragEnd={() => {
+                  setDragOver(null);
+                  dragIndex.current = null;
                 }}
               >
-                Copy plugin URL
-              </button>
-            )}
-            <a className="btn small danger" href="/api/auth/logout">
-              Sign out
-            </a>
-          </>
-        ) : (
-          <>
-            <div className="sync-text">
-              <strong>Playing as a guest</strong>
-              <span className="muted">Saved on this device only. Sign in to sync skins in-game.</span>
-            </div>
-            <a className="btn small" href="/api/auth/steam/login">
-              Sign in with Steam
-            </a>
-          </>
-        )}
-      </div>
+                <span className="inv3-lo-dot" style={{ background: l.color ?? "var(--muted)" }} />
+                <button className="inv3-lo-pick" onClick={() => setActiveLoadout(l.id)}>
+                  <span className="inv3-lo-name">{l.name}</span>
+                  <span className="inv3-lo-count">{loadoutSize(l)} items</span>
+                </button>
+                {canDrag && <span className="inv3-lo-grip" title="Drag to reorder">⠿</span>}
+              </div>
+            );
+          })}
+        </div>
 
-      <div className="inv-layout">
-        {/* ---------- LEFT: weapons + CENTER: editor ---------- */}
-        <div className="inv-builder">
-          {/* WEAPONS */}
-          <aside className="inv-weapons">
-            <div className="pane-head">Weapons</div>
-            <div className="chip-row inv-cats">
-              {categories.map((c) => (
-                <button key={c} className={`chip ${category === c ? "active" : ""}`} onClick={() => setCategory(c)}>
-                  {c}
+        {activeLoadout && (
+          <div className="inv3-lo-actions">
+            <div className="inv3-colors">
+              {LOADOUT_COLORS.map((c) => (
+                <button
+                  key={c.hex}
+                  className={`inv3-color ${activeLoadout.color === c.hex ? "active" : ""}`}
+                  style={{ background: c.hex }}
+                  title={c.name}
+                  onClick={() => setLoadoutColor(activeLoadout, c.hex)}
+                />
+              ))}
+            </div>
+            <div className="inv3-lo-btns">
+              <button className="btn small secondary" onClick={() => renameLoadout(activeLoadout)}>✎</button>
+              <button className="btn small secondary" onClick={() => duplicateLoadout(activeLoadout)}>⧉</button>
+              <button className="btn small secondary" onClick={() => shareLoadout(activeLoadout)} disabled={shareBusy}>↗</button>
+              {isAdmin && <button className="btn small secondary" title="Feature" onClick={() => shareLoadout(activeLoadout, true)}>★</button>}
+              {store.loadouts.length > 1 && <button className="btn small danger" onClick={() => deleteLoadout(activeLoadout)}>✕</button>}
+            </div>
+          </div>
+        )}
+
+        <div className="inv3-borrow">
+          <form
+            className="borrow-row"
+            onSubmit={(e) => {
+              e.preventDefault();
+              importByKey(importKey);
+            }}
+          >
+            <input className="input" placeholder="borrow key…" value={importKey} maxLength={16} spellCheck={false} onChange={(e) => setImportKey(e.target.value)} />
+            <button className="btn small" type="submit" disabled={shareBusy || !importKey.trim()}>Get</button>
+          </form>
+          {featured.length > 0 && (
+            <div className="inv3-featured">
+              <span className="loadout-label">★ Featured</span>
+              {featured.slice(0, 4).map((f) => (
+                <button key={f.key} className="inv3-feat" onClick={() => importByKey(f.key)} disabled={shareBusy}>
+                  <span className="inv3-feat-name">{f.name}</span>
+                  <span className="muted">{f.count}</span>
                 </button>
               ))}
             </div>
-            {!catalog ? (
-              <p className="empty-hint">Loading…</p>
-            ) : (
-              <div className="weapon-list">
-                {(catalog[category] ?? []).map((w) => (
-                  <button
-                    key={w.def}
-                    className={`weapon-row ${weapon?.def === w.def ? "selected" : ""}`}
-                    onClick={() => pickWeapon(w)}
-                  >
-                    {/* eslint-disable-next-line @next/next/no-img-element */}
-                    <img src={w.image} alt="" loading="lazy" />
-                    <span className="wr-name">{w.name}</span>
-                    <span className={`wr-team team-${w.team}`}>{w.team === "both" ? "T/CT" : w.team.toUpperCase()}</span>
-                  </button>
-                ))}
-              </div>
-            )}
-          </aside>
+          )}
+        </div>
+      </aside>
 
-          {/* EDITOR */}
-          <section className="inv-editor">
-            {!weapon && (
-              <div className="editor-empty">
-                <div className="editor-empty-icon">🎯</div>
-                <p className="muted">Pick a weapon on the left to browse its skins.</p>
-              </div>
-            )}
+      {/* ===== CENTER: weapons grid / skin chooser ===== */}
+      <section className="inv3-main">
+        <div className="inv3-topbar">
+          <div className="inv3-sides">
+            {(["t", "ct"] as Side[]).map((s) => (
+              <button key={s} className={`inv3-sidebtn side-${s} ${side === s ? "active" : ""}`} onClick={() => setSide(s)}>
+                {s.toUpperCase()}
+              </button>
+            ))}
+          </div>
+          <div className="inv3-cats">
+            {(catalog ? CATEGORY_ORDER.filter((c) => catalog[c]?.length) : CATEGORY_ORDER).map((c) => (
+              <button
+                key={c}
+                className={`chip ${category === c ? "active" : ""}`}
+                onClick={() => {
+                  setCategory(c);
+                  setWeapon(null);
+                }}
+              >
+                {c}
+              </button>
+            ))}
+          </div>
+          <button className={`btn small secondary inv3-prevtoggle ${showPreview ? "on" : ""}`} onClick={() => setShowPreview((v) => !v)} title="Toggle T/CT preview">
+            {showPreview ? "Hide preview" : "Show preview"}
+          </button>
+        </div>
 
-            {weapon && !selectedSkin && (
-              <>
-                <div className="editor-head">
-                  <div className="editor-title">
-                    <strong>{weapon.name}</strong> <span className="muted">— choose a skin</span>
-                  </div>
-                  <input
-                    className="input editor-search"
-                    placeholder="Search skins…"
-                    value={skinSearch}
-                    onChange={(e) => setSkinSearch(e.target.value)}
-                  />
-                </div>
-                {skinsLoading ? (
-                  <p className="empty-hint">Loading skins…</p>
-                ) : (
-                  <div className="card-grid skins-grid">
-                    {filteredSkins.map((s) => (
-                      <div
-                        key={s.id}
-                        className="item-card skin-card"
-                        style={{ "--rarity": s.rarity } as React.CSSProperties}
-                        onClick={() => setSelectedSkin(s)}
-                      >
-                        {/* eslint-disable-next-line @next/next/no-img-element */}
-                        <img src={s.image} alt={s.name} loading="lazy" />
-                        <div className="name" style={{ color: s.rarity }}>
-                          {skinLabel(s.name)}
-                        </div>
-                      </div>
-                    ))}
-                  </div>
-                )}
-              </>
-            )}
-
-            {weapon && selectedSkin && (
-              <>
-                <div className="editor-head">
-                  <button className="btn small secondary" onClick={() => setSelectedSkin(null)}>
-                    ← Skins
-                  </button>
-                  <div className="editor-title">
-                    <strong>{weapon.name}</strong> · {skinLabel(selectedSkin.name)}
-                  </div>
-                  {editingItemId && <span className="mini-badge">editing</span>}
-                </div>
-
-                <div className="builder-columns">
-                  <div>
-                    <div
-                      ref={stageRef}
-                      className="sticker-stage"
-                      onPointerMove={onStagePointerMove}
-                      onPointerUp={endDrag}
-                      onPointerLeave={endDrag}
-                    >
+        {!weapon ? (
+          // ---- Weapons grid ----
+          !catalog ? (
+            <p className="empty-hint">Loading…</p>
+          ) : (
+            <div className="inv3-weapons">
+              {weapons.map((w) => {
+                const item = slotItemFor(w.def, kindOfCategory(w.category), side);
+                return (
+                  <button key={w.def} className={`inv3-weapon ${item ? "has-skin" : ""}`} onClick={() => openWeapon(w)}>
+                    <div className="inv3-weapon-img">
                       {/* eslint-disable-next-line @next/next/no-img-element */}
-                      <img className="weapon-img" src={selectedSkin.image} alt={selectedSkin.name} />
-                      {supportsStickers &&
-                        SLOT_ANCHORS.map((anchor, slot) =>
-                          stickers[slot] ? null : (
-                            <div key={slot} className="slot-hint" style={{ left: `${anchor.x}%`, top: `${anchor.y}%` }}>
-                              {slot + 1}
-                            </div>
-                          )
-                        )}
-                      {supportsStickers &&
-                        stickers.map((sticker, slot) =>
-                          sticker ? (
-                            <div
-                              key={slot}
-                              className="placed-sticker"
-                              style={{ left: `${sticker.x}%`, top: `${sticker.y}%` }}
-                              onPointerDown={onStickerPointerDown(slot)}
-                              title={sticker.name}
-                            >
-                              {/* eslint-disable-next-line @next/next/no-img-element */}
-                              <img src={sticker.image} alt={sticker.name} />
-                              <button className="remove" onClick={() => removeSticker(slot)}>
-                                ×
-                              </button>
-                            </div>
-                          ) : null
-                        )}
+                      <img src={item?.image ?? w.image} alt={w.name} loading="lazy" />
                     </div>
+                    <div className="inv3-weapon-name">{w.name}</div>
+                    <div className="inv3-weapon-skin">{item ? skinLabel(item.skinName) : "Default"}</div>
+                  </button>
+                );
+              })}
+            </div>
+          )
+        ) : (
+          // ---- Skin chooser ----
+          <div className="inv3-chooser">
+            <div className="inv3-chooser-head">
+              <button className="btn small secondary" onClick={() => setWeapon(null)}>← Back</button>
+              <strong>{weapon.name}</strong>
+              <span className="muted">— {side.toUpperCase()} skin</span>
+              {slotItemFor(weapon.def, builderKind, side) && (
+                <button className="btn small danger" onClick={() => { clearSlot(weapon.def, builderKind); setWeapon(null); }}>
+                  Remove skin
+                </button>
+              )}
+            </div>
 
-                    {/* Item config */}
-                    <div className="config-grid">
-                      <label className="config-field">
-                        <span>
-                          Wear · <strong>{wear.toFixed(3)}</strong> <em>{wearLabel(wear)}</em>
-                        </span>
-                        <input type="range" min={0} max={1} step={0.001} value={wear} onChange={(e) => setWear(Number(e.target.value))} />
-                      </label>
-                      <label className="config-field">
-                        <span>Pattern seed</span>
-                        <input
-                          className="input"
-                          type="number"
-                          min={0}
-                          max={1000}
-                          value={seed}
-                          onChange={(e) => setSeed(Math.max(0, Math.min(1000, Number(e.target.value) || 0)))}
-                        />
-                      </label>
-                      {builderKind !== "gloves" && (
-                        <label className="config-field">
-                          <span>Name tag</span>
-                          <input className="input" placeholder="(none)" maxLength={20} value={nameTag} onChange={(e) => setNameTag(e.target.value)} />
-                        </label>
-                      )}
-                      {supportsStatTrak && (
-                        <label className="config-field toggle">
-                          <input type="checkbox" checked={statTrak} onChange={(e) => setStatTrak(e.target.checked)} />
-                          <span>StatTrak™</span>
-                        </label>
-                      )}
-                    </div>
+            <div className="inv3-filters">
+              <input className="input" placeholder="Search skins…" value={skinSearch} onChange={(e) => setSkinSearch(e.target.value)} />
+              <select className="input" value={skinSort} onChange={(e) => setSkinSort(e.target.value as SkinSort)}>
+                <option value="quality">Quality</option>
+                <option value="name">Name A–Z</option>
+                <option value="newest">Newest</option>
+                <option value="fav">Favorites first</option>
+              </select>
+              <select className="input" value={collectionFilter} onChange={(e) => setCollectionFilter(e.target.value)}>
+                <option value="">All collections</option>
+                {collections.map((c) => (
+                  <option key={c} value={c}>{c}</option>
+                ))}
+              </select>
+              <button className={`chip ${favOnly ? "active" : ""}`} onClick={() => setFavOnly((v) => !v)}>♥ Favorites</button>
+            </div>
 
-                    {/* Side selection */}
-                    <div className="side-select">
-                      <span className="loadout-label">EQUIP ON</span>
-                      {(["t", "ct", "both"] as EquipSide[]).map((s) => (
-                        <button
-                          key={s}
-                          className={`chip side-chip-${s} ${equipSide === s ? "active" : ""}`}
-                          onClick={() => setEquipSide(s)}
-                        >
-                          {s === "both" ? "Both sides" : s === "t" ? "T side" : "CT side"}
-                        </button>
-                      ))}
-                    </div>
+            {/* config strip */}
+            <div className="inv3-config">
+              <label>
+                Wear <strong>{wear.toFixed(3)}</strong> <em>{wearLabel(wear)}</em>
+                <input type="range" min={0} max={1} step={0.001} value={wear} onChange={(e) => setWear(Number(e.target.value))} />
+              </label>
+              <label>
+                Seed
+                <input className="input" type="number" min={0} max={1000} value={seed} onChange={(e) => setSeed(Math.max(0, Math.min(1000, Number(e.target.value) || 0)))} />
+              </label>
+              {supportsStatTrak && (
+                <label className="inv3-cfg-toggle">
+                  <input type="checkbox" checked={statTrak} onChange={(e) => setStatTrak(e.target.checked)} /> StatTrak™
+                </label>
+              )}
+              {supportsStickers && (
+                <button className="btn small secondary" onClick={() => setShowStickers((v) => !v)}>
+                  {showStickers ? "Hide stickers" : "Stickers"}
+                </button>
+              )}
+            </div>
 
-                    <div className="connect-row" style={{ marginTop: 14 }}>
-                      <button className="btn" onClick={saveToInventory}>
-                        {editingItemId ? "Update item" : "Save & equip"}
-                      </button>
-                      <button className="btn secondary" onClick={() => setSelectedSkin(null)}>
-                        Change skin
-                      </button>
-                      {supportsStickers && (
-                        <span className="muted" style={{ fontSize: "0.85rem" }}>
-                          Drag stickers to preview placement · hover to remove
-                        </span>
-                      )}
-                    </div>
-                  </div>
-
-                  {supportsStickers ? (
-                    <div className="sticker-picker">
-                      <strong>Stickers</strong>
-                      <input className="input" placeholder="Search stickers…" value={stickerQuery} onChange={(e) => setStickerQuery(e.target.value)} />
-                      {stickersLoading ? (
-                        <p className="empty-hint">Searching…</p>
-                      ) : (
-                        <div className="results">
-                          {stickerResults.map((sticker) => (
-                            <div key={sticker.id} className="sticker-cell" title={sticker.name} onClick={() => addSticker(sticker)}>
-                              {/* eslint-disable-next-line @next/next/no-img-element */}
-                              <img src={sticker.image} alt={sticker.name} loading="lazy" />
-                            </div>
-                          ))}
-                        </div>
-                      )}
-                    </div>
+            {showStickers && supportsStickers && (
+              <div className="inv3-stickers">
+                <div ref={stageRef} className="sticker-stage" onPointerMove={onStageMove} onPointerUp={endDrag} onPointerLeave={endDrag}>
+                  {(slotItemFor(weapon.def, builderKind, side)?.image ?? shownSkins[0]?.image) && (
+                    // eslint-disable-next-line @next/next/no-img-element
+                    <img className="weapon-img" src={slotItemFor(weapon.def, builderKind, side)?.image ?? shownSkins[0]?.image} alt="" />
+                  )}
+                  {stickers.map((st, slot) =>
+                    st ? (
+                      <div key={slot} className="placed-sticker" style={{ left: `${st.x}%`, top: `${st.y}%` }} onPointerDown={onStickerDown(slot)} title={st.name}>
+                        {/* eslint-disable-next-line @next/next/no-img-element */}
+                        <img src={st.image} alt="" />
+                        <button className="remove" onClick={() => removeSticker(slot)}>×</button>
+                      </div>
+                    ) : null
+                  )}
+                </div>
+                <div className="sticker-picker">
+                  <input className="input" placeholder="Search stickers…" value={stickerQuery} onChange={(e) => setStickerQuery(e.target.value)} />
+                  {stickersLoading ? (
+                    <p className="empty-hint">Searching…</p>
                   ) : (
-                    <div className="sticker-picker">
-                      <strong>{builderKind === "knife" ? "Knife" : "Gloves"}</strong>
-                      <p className="muted" style={{ fontSize: "0.85rem" }}>
-                        {builderKind === "knife"
-                          ? "Knives don't take stickers. Pick your finish, wear and seed, then choose which side carries it."
-                          : "Gloves have no stickers, StatTrak or name tags — just the finish, wear and seed."}
-                      </p>
+                    <div className="results">
+                      {stickerResults.map((s) => (
+                        <div key={s.id} className="sticker-cell" title={s.name} onClick={() => addSticker(s)}>
+                          {/* eslint-disable-next-line @next/next/no-img-element */}
+                          <img src={s.image} alt="" loading="lazy" />
+                        </div>
+                      ))}
                     </div>
                   )}
                 </div>
-              </>
-            )}
-          </section>
-        </div>
-
-        {/* ---------- RIGHT: loadouts + saved items ---------- */}
-        <aside className="inv-loadouts">
-          <div className="right-subtabs">
-            <button className={rightTab === "loadout" ? "active" : ""} onClick={() => setRightTab("loadout")}>
-              Loadouts
-            </button>
-            <button className={rightTab === "items" ? "active" : ""} onClick={() => setRightTab("items")}>
-              Saved ({store.items.length})
-            </button>
-          </div>
-
-          {rightTab === "loadout" && (
-            <>
-              <div className="lo-head">
-                <span className="loadout-label">YOUR LOADOUTS</span>
-                <button className="btn small" onClick={addLoadout}>
-                  + New
-                </button>
+                <p className="muted" style={{ fontSize: "0.78rem" }}>Stickers apply when you pick a skin below.</p>
               </div>
-              <div className="lo-list">
-                {store.loadouts.map((l) => (
-                  <div key={l.id} className={`lo-row ${l.id === store.activeLoadoutId ? "active" : ""}`}>
-                    <button className="lo-pick" onClick={() => setActiveLoadout(l.id)}>
-                      <span className="lo-name">{l.name}</span>
-                      <span className="lo-size">{loadoutSize(l)} items</span>
-                    </button>
-                    <div className="lo-actions">
-                      <button title="Share (get a /borrow key)" onClick={() => shareLoadout(l)} disabled={shareBusy}>
-                        ↗
+            )}
+
+            {skinsLoading ? (
+              <p className="empty-hint">Loading skins…</p>
+            ) : (
+              <div className="inv3-skins">
+                {shownSkins.map((s) => {
+                  const fav = favorites.has(skinKey(s.def, s.paint));
+                  return (
+                    <div key={s.id} className={`inv3-skin ${s.id === currentSkinId ? "current" : ""}`} style={{ "--rarity": s.rarity } as React.CSSProperties}>
+                      <button className="inv3-skin-pick" onClick={() => equipSkin(s)}>
+                        {/* eslint-disable-next-line @next/next/no-img-element */}
+                        <img src={s.image} alt={s.name} loading="lazy" />
+                        <span className="inv3-skin-name" style={{ color: s.rarity }}>{skinLabel(s.name)}</span>
                       </button>
-                      <button title="Rename" onClick={() => renameLoadout(l)}>
-                        ✎
+                      <button className={`inv3-heart ${fav ? "on" : ""}`} title="Favorite" onClick={() => toggleFavorite(s.def, s.paint)}>
+                        {fav ? "♥" : "♡"}
                       </button>
-                      <button title="Duplicate" onClick={() => duplicateLoadout(l)}>
-                        ⧉
-                      </button>
-                      {isAdmin && (
-                        <button title="Publish as a Featured preset" onClick={() => shareLoadout(l, true)} disabled={shareBusy}>
-                          ★
-                        </button>
-                      )}
-                      {store.loadouts.length > 1 && (
-                        <button title="Delete" onClick={() => deleteLoadout(l)}>
-                          ✕
-                        </button>
-                      )}
                     </div>
+                  );
+                })}
+              </div>
+            )}
+          </div>
+        )}
+      </section>
+
+      {/* ===== RIGHT: T/CT preview (toggleable) ===== */}
+      {showPreview && (
+        <aside className="inv3-preview">
+          <div className="loadout-label" style={{ marginBottom: 8 }}>{activeLoadout?.name ?? "Loadout"}</div>
+          {(["t", "ct"] as Side[]).map((s) => (
+            <div key={s} className="inv3-prev-side">
+              <div className="inv3-prev-head">
+                <span className={`side-tag ${s === "t" ? "side-t" : "side-ct"}`}>{s.toUpperCase()}</span>
+              </div>
+              <div className="inv3-prev-guns">
+                {previewSlots(s).map(({ def, item }) => (
+                  <div key={def} className={`inv3-prev-gun ${item ? "has" : ""}`}>
+                    {/* eslint-disable-next-line @next/next/no-img-element */}
+                    <img src={item?.image ?? catalog && Object.values(catalog).flat().find((w) => w.def === def)?.image ?? ""} alt="" loading="lazy" />
                   </div>
                 ))}
               </div>
-
-              {activeLoadout && (
-                <div className="active-loadout">
-                  <div className="al-head">
-                    <strong>{activeLoadout.name}</strong>
-                    <code>/loadout {activeLoadout.name}</code>
-                  </div>
-                  {(["t", "ct"] as Side[]).map((side) => (
-                    <div key={side} className="al-side">
-                      <div className="al-side-head">
-                        <span className={`side-tag ${side === "t" ? "side-t" : "side-ct"}`}>{side.toUpperCase()}</span>
-                        <span className="muted">{side === "t" ? "Terrorist" : "Counter-Terrorist"}</span>
-                      </div>
-                      {sideRows(side).length === 0 ? (
-                        <p className="empty-hint small">Nothing on this side yet.</p>
-                      ) : (
-                        <div className="loadout-rows">
-                          {sideRows(side).map(({ slot, item }) => (
-                            <div key={`${slot}-${item.id}`} className="loadout-row">
-                              {/* eslint-disable-next-line @next/next/no-img-element */}
-                              <img src={item.image} alt="" />
-                              <div className="loadout-row-text">
-                                <strong>{skinLabel(item.skinName)}</strong>
-                                <span className="muted">{slot}</span>
-                              </div>
-                              <button className="lo-unequip" title="Unequip" onClick={() => unequipSlot(side, item)}>
-                                ✕
-                              </button>
-                            </div>
-                          ))}
-                        </div>
-                      )}
-                    </div>
-                  ))}
-                </div>
-              )}
-              {/* Borrow a loadout by key + Featured presets */}
-              <div className="share-block">
-                <div className="lo-head" style={{ marginTop: 4 }}>
-                  <span className="loadout-label">BORROW A LOADOUT</span>
-                </div>
-                <form
-                  className="borrow-row"
-                  onSubmit={(e) => {
-                    e.preventDefault();
-                    importByKey(importKey);
-                  }}
-                >
-                  <input
-                    className="input"
-                    placeholder="paste a key…"
-                    value={importKey}
-                    maxLength={16}
-                    spellCheck={false}
-                    autoComplete="off"
-                    onChange={(e) => setImportKey(e.target.value)}
-                  />
-                  <button className="btn small" type="submit" disabled={shareBusy || !importKey.trim()}>
-                    Borrow
-                  </button>
-                </form>
-                <p className="field-hint" style={{ marginTop: 6 }}>
-                  Share ↗ any loadout for a short key. In-game: <code>/borrow &lt;key&gt;</code>.
-                </p>
-
-                {featured.length > 0 && (
-                  <>
-                    <div className="lo-head" style={{ marginTop: 16 }}>
-                      <span className="loadout-label">★ FEATURED PRESETS</span>
-                    </div>
-                    <div className="featured-list">
-                      {featured.map((f) => (
-                        <div key={f.key} className="featured-card">
-                          <div className="fc-imgs">
-                            {f.images.slice(0, 4).map((img, i) => (
-                              // eslint-disable-next-line @next/next/no-img-element
-                              <img key={i} src={img} alt="" loading="lazy" />
-                            ))}
-                          </div>
-                          <div className="fc-text">
-                            <strong>{f.name}</strong>
-                            <span className="muted">
-                              {f.ownerName ? `by ${f.ownerName} · ` : ""}
-                              {f.count} items
-                            </span>
-                          </div>
-                          <button className="btn small" onClick={() => importByKey(f.key)} disabled={shareBusy}>
-                            Copy
-                          </button>
-                        </div>
-                      ))}
-                    </div>
-                  </>
-                )}
-              </div>
-            </>
-          )}
-
-          {rightTab === "items" && (
-            <div className="saved-items">
-              {store.items.length === 0 ? (
-                <p className="empty-hint">Nothing saved yet — build a weapon and it lands here.</p>
-              ) : (
-                store.items.map((item) => {
-                  const sides = equippedSides(activeLoadout, item);
-                  return (
-                    <div key={item.id} className={`saved-item ${sides.length ? "equipped" : ""}`}>
-                      {/* eslint-disable-next-line @next/next/no-img-element */}
-                      <img src={item.image} alt="" loading="lazy" />
-                      <div className="si-text">
-                        <strong>
-                          {item.statTrak ? "StatTrak™ " : ""}
-                          {skinLabel(item.skinName)}
-                        </strong>
-                        <span className="muted">
-                          {item.weaponName}
-                          {sides.length ? ` · ${sides.map((s) => s.toUpperCase()).join(" + ")}` : ""}
-                        </span>
-                        <div className="si-actions">
-                          <button className="btn small" onClick={() => equipItem(item, "t")}>
-                            T
-                          </button>
-                          <button className="btn small" onClick={() => equipItem(item, "ct")}>
-                            CT
-                          </button>
-                          <button className="btn small" onClick={() => equipItem(item, "both")}>
-                            Both
-                          </button>
-                          <button className="btn small secondary" onClick={() => editItem(item)}>
-                            Edit
-                          </button>
-                          <button className="btn small danger" onClick={() => deleteItem(item)}>
-                            ✕
-                          </button>
-                        </div>
-                      </div>
-                    </div>
-                  );
-                })
-              )}
             </div>
-          )}
+          ))}
+          <a className="btn small secondary" href={session.authenticated && session.steamId ? "/profile" : "#"} style={{ width: "100%", justifyContent: "center", marginTop: 8 }}>
+            View on profile →
+          </a>
         </aside>
-      </div>
+      )}
+
+      {/* Sign-in hint (slim) */}
+      {hydrated && !session.authenticated && (
+        <div className="inv3-guest">
+          Guest — saved on this device. <a href="/api/auth/steam/login">Sign in</a> to sync in-game.
+        </div>
+      )}
 
       {toast && <div className="toast">{toast}</div>}
-    </>
+    </div>
   );
 }
