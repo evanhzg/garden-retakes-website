@@ -1,3 +1,4 @@
+import Link from "next/link";
 import { getSession } from "@/lib/auth";
 import { getActiveSeason, prisma } from "@/lib/db";
 import { dayKey, fetchRows, groupBy, ratingClass, sideName, summarize } from "@/lib/stats";
@@ -47,16 +48,18 @@ export default async function ProfilePage({
   const seasonId = searchParams.season ? Number(searchParams.season) : activeSeason?.Id ?? 0;
   const rankedOnly = searchParams.ranked === "1";
 
-  const [seasonStats, rows, name, seasons] = await Promise.all([
-    seasonId
-      ? prisma.playerSeasonStats.findFirst({ where: { SeasonId: seasonId, SteamId: steamId } })
-      : Promise.resolve(null),
-    seasonId ? fetchRows(seasonId, steamId, rankedOnly) : Promise.resolve([]),
-    resolveName(steamId),
+  const [profile, override, webProfile, seasonStats, seasons, rows, name] = await Promise.all([
+    prisma.playerProfile.findUnique({ where: { SteamId: steamId } }),
+    prisma.gardenNameOverride.findUnique({ where: { SteamId: steamId } }),
+    prisma.gardenWebProfile.findUnique({ where: { SteamId: steamId } }),
+    prisma.playerSeasonStats.findFirst({ where: { SeasonId: seasonId, SteamId: steamId } }),
     prisma.season.findMany({ orderBy: { Id: "asc" } }),
+    fetchRows(seasonId, steamId, rankedOnly),
+    resolveName(steamId),
   ]);
 
   const total = summarize(rows);
+
   const stats: ProfileStats = {
     elo: seasonStats?.Elo ?? null,
     peakElo: seasonStats?.PeakElo ?? null,
@@ -88,8 +91,11 @@ export default async function ProfilePage({
     .map((r) => r.Rating);
   const maxRecent = Math.max(1.5, ...recentRatings);
 
+  const displayName = override?.Name ?? profile?.LastKnownName ?? session.steamId;
+
   return (
     <>
+      {/* ---------- Hero image with overlays ---------- */}
       <ProfileShowcase
         steamId={session.steamId}
         initialName={name}
@@ -97,9 +103,37 @@ export default async function ProfilePage({
         stats={stats}
       />
 
-      {/* ---------- Season selector ---------- */}
+      {/* ---------- Player info + season selector (from /players/[steamId]) ---------- */}
       <section className="panel">
-        <div className="chip-row" style={{ marginBottom: 0 }}>
+        <div className="player-hero">
+          <div className="player-avatar">
+            {webProfile?.AvatarUrl ? (
+              // eslint-disable-next-line @next/next/no-img-element
+              <img src={webProfile.AvatarUrl} alt="" />
+            ) : (
+              displayName.slice(0, 1).toUpperCase()
+            )}
+          </div>
+          <div style={{ flex: 1, minWidth: 220 }}>
+            <h1 className="hero-name">
+              {displayName}
+              {override && <span className="mini-badge">custom name</span>}
+            </h1>
+            <div className="hero-sub">
+              SteamID64 {session.steamId}
+              {webProfile?.Country ? ` · ${webProfile.Country}` : ""}
+              {rankedOnly ? " · ranked rounds only" : " · all rounds"}
+            </div>
+            {webProfile?.Bio && <p className="player-bio">{webProfile.Bio}</p>}
+          </div>
+          <div className="player-hero-actions">
+            <Link className="btn secondary" href={`/compare?a=${session.steamId}`}>
+              ⚔ Compare
+            </Link>
+          </div>
+        </div>
+
+        <div className="chip-row" style={{ marginTop: 16, marginBottom: 0 }}>
           {seasons.map((s) => (
             <a
               key={s.Id}
