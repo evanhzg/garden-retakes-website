@@ -165,9 +165,9 @@ export default function ProfileShowcase({
         {/* eslint-disable-next-line @next/next/no-img-element */}
         <img
           className="ps-bg"
-          src={`/${steamId}-character.PNG`}
+          src={`/${steamId}_character.PNG`}
           alt=""
-          onError={(e) => { (e.currentTarget as HTMLImageElement).src = "/default-character.PNG"; }}
+          onError={(e) => { (e.currentTarget as HTMLImageElement).src = "/default_character.PNG"; }}
         />
         <div className="ps-scrim" aria-hidden="true" />
 
