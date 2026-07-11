@@ -39,6 +39,18 @@ export default function NavBar({ avatarPlayers = [] }: { avatarPlayers?: AvatarP
     setIsMenuOpen(false);
   }, [pathname]);
 
+  // Lock body scroll when mobile menu is open
+  useEffect(() => {
+    if (isMenuOpen) {
+      document.body.style.overflow = "hidden";
+    } else {
+      document.body.style.overflow = "";
+    }
+    return () => {
+      document.body.style.overflow = "";
+    };
+  }, [isMenuOpen]);
+
   useEffect(() => {
     fetch("/api/auth/session")
       .then((r) => r.json())

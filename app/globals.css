@@ -2972,12 +2972,14 @@ body {
   bottom: 14px;
   right: 14px;
   z-index: 10;
-  opacity: 0.72;
+  opacity: 0;
+  pointer-events: none;
   transition: opacity 0.2s ease;
 }
 
 .ps-stage:hover .ps-overlay-toggle {
   opacity: 1;
+  pointer-events: auto;
 }
 
 /* Overlay group — covers the full stage so children keep absolute positioning */
@@ -3316,6 +3318,19 @@ body {
 
   .ps-scrim {
     display: none;
+  }
+
+  .ps-overlays {
+    position: static !important;
+    opacity: 1 !important;
+    transform: none !important;
+    pointer-events: auto !important;
+    display: flex;
+    flex-direction: column;
+  }
+
+  .ps-overlay-toggle {
+    display: none !important;
   }
 
   .ps-username,
