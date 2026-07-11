@@ -1,5 +1,9 @@
 import type { Metadata, Viewport } from "next";
+import fs from "fs";
+import path from "path";
+import { prisma } from "@/lib/db";
 import NavBar from "@/components/NavBar";
+import RightSidebar from "@/components/RightSidebar";
 import "./globals.css";
 
 export const metadata: Metadata = {
@@ -13,7 +17,30 @@ export const viewport: Viewport = {
   viewportFit: "cover",
 };
 
-export default function RootLayout({ children }: { children: React.ReactNode }) {
+export default async function RootLayout({ children }: { children: React.ReactNode }) {
+  // Find all players with custom avatars
+  const publicDir = path.join(process.cwd(), "public");
+  let customAvatarIds: string[] = [];
+  try {
+    const files = fs.readdirSync(publicDir);
+    customAvatarIds = files
+      .filter((f) => f.endsWith("_pp.png") && f !== "default_pp.png")
+      .map((f) => f.replace("_pp.png", ""));
+  } catch (e) {
+    // ignore
+  }
+
+  const profiles = await prisma.playerProfile.findMany({
+    where: { SteamId: { in: customAvatarIds.map((id) => BigInt(id)) } },
+    select: { SteamId: true, LastKnownName: true },
+  });
+
+  const avatarPlayers = profiles.map((p) => ({
+    steamId: p.SteamId.toString(),
+    name: p.LastKnownName,
+    avatarSrc: `/${p.SteamId.toString()}_pp.png`,
+  }));
+
   return (
     <html lang="en">
       <body>
@@ -22,11 +49,17 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
           <span className="orb orb-2" />
           <span className="orb orb-3" />
         </div>
-        <NavBar />
-        <main className="container">{children}</main>
-        <footer className="site-footer">
-          Powered by GardenRankings · stats update live from the game server
-        </footer>
+        
+        <div className="layout-wrapper">
+          <div className="main-content">
+            <NavBar avatarPlayers={avatarPlayers} />
+            <main className="container">{children}</main>
+            <footer className="site-footer">
+              Powered by GardenRankings · stats update live from the game server
+            </footer>
+          </div>
+          <RightSidebar players={avatarPlayers} />
+        </div>
       </body>
     </html>
   );
