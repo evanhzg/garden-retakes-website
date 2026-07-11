@@ -4003,38 +4003,30 @@ body {
 }
 
 .left-sidebar {
-  width: 80px;
+  width: 100px;
   position: sticky;
   top: 0;
   height: 100vh;
-  overflow-y: auto;
+  /* Removed overflow to prevent clipping the scale(3) avatars */
   padding: 16px 8px;
   display: flex;
   flex-direction: column;
   align-items: center;
   justify-content: center;
   gap: 16px;
-  /* Hide scrollbar */
-  scrollbar-width: none;
-  -ms-overflow-style: none;
-}
-.left-sidebar::-webkit-scrollbar {
-  display: none;
+  z-index: 10;
 }
 
 .ls-avatar-link {
   display: block;
-  width: 60px;
-  height: 60px;
-  transition: transform 0.2s ease, filter 0.2s ease;
-  flex-shrink: 0;
+  width: 80px;
+  height: 80px;
   position: relative;
   z-index: 1;
+  flex-shrink: 0;
 }
 
 .ls-avatar-link:hover {
-  transform: scale(3);
-  filter: drop-shadow(0 4px 30px rgb(236, 72, 153, 1));
   z-index: 20;
 }
 
@@ -4042,6 +4034,13 @@ body {
   width: 100%;
   height: 100%;
   object-fit: contain;
+  transition: transform 0.2s ease, filter 0.2s ease;
+  pointer-events: none;
+}
+
+.ls-avatar-link:hover img {
+  transform: scale(3);
+  filter: drop-shadow(0 4px 30px rgb(236, 72, 153, 1));
 }
 
 /* Mobile Burger Button */
