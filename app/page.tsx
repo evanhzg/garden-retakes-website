@@ -96,19 +96,17 @@ export default async function HomePage() {
                 const key = entry.SteamId.toString();
                 const rank = index + 1;
                 const isYou = key === mySteamId;
-                const avatar = avatarOf.get(key);
                 return (
                   <tr key={entry.Id} className={isYou ? "you" : ""}>
                     <td className="rank-cell">{medal(rank) ?? rank}</td>
                     <td>
                       <Link href={`/players/${key}`} className="ladder-player">
                         <span className="ladder-avatar">
-                          {avatar ? (
-                            // eslint-disable-next-line @next/next/no-img-element
-                            <img src={avatar} alt="" />
-                          ) : (
-                            nameFrom(names, key).slice(0, 1).toUpperCase()
-                          )}
+                          <img
+                            src={`/${key}_pp.png`}
+                            alt="Avatar"
+                            onError={(e) => { (e.currentTarget as HTMLImageElement).src = "/default_pp.png"; }}
+                          />
                         </span>
                         <span>{nameFrom(names, key)}</span>
                         {isYou && <span className="mini-badge">you</span>}
@@ -174,12 +172,11 @@ function Hero({
           <div className="standout-eyebrow">★ Standout — {standout.day}</div>
           <div className="standout-top">
             <span className="standout-avatar">
-              {standout.avatarUrl ? (
-                // eslint-disable-next-line @next/next/no-img-element
-                <img src={standout.avatarUrl} alt="" />
-              ) : (
-                (standoutName || standout.name).slice(0, 1).toUpperCase()
-              )}
+              <img
+                src={`/${standout.steamId}_pp.png`}
+                alt="Avatar"
+                onError={(e) => { (e.currentTarget as HTMLImageElement).src = "/default_pp.png"; }}
+              />
             </span>
             <div>
               <div className="standout-name">{standoutName || standout.name}</div>
