@@ -109,9 +109,9 @@ export default async function ProfilePage({
           <div className="player-avatar">
             {webProfile?.AvatarUrl ? (
               // eslint-disable-next-line @next/next/no-img-element
-              <img src={webProfile.AvatarUrl} alt="" />
+              <img src={`/${steamId}pp.png`} alt="" />
             ) : (
-              displayName.slice(0, 1).toUpperCase()
+              <img src={`default_pp.png`} alt="" />
             )}
           </div>
           <div style={{ flex: 1, minWidth: 220 }}>
