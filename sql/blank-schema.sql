@@ -206,6 +206,18 @@ CREATE TABLE IF NOT EXISTS WebInventories (
     UpdatedAt DATETIME(6) NOT NULL
 ) CHARACTER SET utf8mb4;
 
+-- Website-owned: shareable loadout snapshots (short-key /borrow + Featured presets).
+CREATE TABLE IF NOT EXISTS SharedLoadouts (
+    ShareKey VARCHAR(16) NOT NULL PRIMARY KEY,
+    OwnerSteamId BIGINT UNSIGNED NOT NULL,
+    OwnerName VARCHAR(64) NULL,
+    Name VARCHAR(64) NOT NULL,
+    Data LONGTEXT NOT NULL,
+    Featured TINYINT(1) NOT NULL DEFAULT 0,
+    CreatedAt DATETIME(6) NOT NULL,
+    KEY IX_SharedLoadouts_Featured (Featured)
+) CHARACTER SET utf8mb4;
+
 -- Initial active season (skipped if any season already exists).
 INSERT INTO Seasons (Name, StartedAtUtc, IsActive)
 SELECT 'Season 1', UTC_TIMESTAMP(6), 1

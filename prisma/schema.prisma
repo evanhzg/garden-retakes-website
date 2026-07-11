@@ -210,3 +210,19 @@ model CrMatch {
   @@index([SeasonId])
   @@map("CrMatches")
 }
+
+// Website-owned: a shareable snapshot of one loadout (self-contained: the
+// loadout structure + the items it references). Borrowed via a short lowercase
+// key on the website or in-game with /borrow <key>. Featured = curated presets.
+model SharedLoadout {
+  ShareKey     String   @id @db.VarChar(16)
+  OwnerSteamId BigInt
+  OwnerName    String?
+  Name         String
+  Data         String   @db.LongText
+  Featured     Boolean  @default(false)
+  CreatedAt    DateTime @default(now())
+
+  @@index([Featured])
+  @@map("SharedLoadouts")
+}

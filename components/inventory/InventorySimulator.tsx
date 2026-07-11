@@ -19,6 +19,7 @@ import {
   normaliseStore,
   saveStore,
 } from "@/lib/inventory";
+import { importSnapshot, type LoadoutSnapshot } from "@/lib/share";
 
 type WeaponEntry = {
   id: number;
@@ -32,7 +33,14 @@ type WeaponEntry = {
 type Skin = { id: number; def: number; paint: number; name: string; image: string; rarity: string };
 type StickerOption = { id: number; def: number; name: string; image: string; rarity: string };
 type Catalog = Record<string, WeaponEntry[]>;
-type Session = { authenticated: boolean; steamId?: string; name?: string | null; avatar?: string | null };
+type Session = {
+  authenticated: boolean;
+  steamId?: string;
+  name?: string | null;
+  avatar?: string | null;
+  adminLevel?: number;
+};
+type FeaturedPreset = { key: string; name: string; ownerName: string | null; images: string[]; count: number };
 type RightTab = "loadout" | "items";
 type EquipSide = Side | "both";
 
@@ -125,6 +133,10 @@ export default function InventorySimulator() {
   const [stickerQuery, setStickerQuery] = useState("Katowice 2014");
   const [stickerResults, setStickerResults] = useState<StickerOption[]>([]);
   const [stickersLoading, setStickersLoading] = useState(false);
+
+  const [importKey, setImportKey] = useState("");
+  const [featured, setFeatured] = useState<FeaturedPreset[]>([]);
+  const [shareBusy, setShareBusy] = useState(false);
 
   const stageRef = useRef<HTMLDivElement>(null);
   const dragSlot = useRef<number | null>(null);
@@ -517,6 +529,67 @@ export default function InventorySimulator() {
 
   const setActiveLoadout = (id: string) => setStore((current) => ({ ...current, activeLoadoutId: id }));
 
+  // ---------- Share / borrow ----------
+
+  const loadFeatured = useCallback(() => {
+    fetch("/api/loadout/featured")
+      .then((r) => r.json())
+      .then((d: { presets?: FeaturedPreset[] }) => setFeatured(Array.isArray(d.presets) ? d.presets : []))
+      .catch(() => setFeatured([]));
+  }, []);
+
+  useEffect(() => {
+    loadFeatured();
+  }, [loadFeatured]);
+
+  const shareLoadout = async (loadout: Loadout, asFeatured = false) => {
+    setShareBusy(true);
+    try {
+      const res = await fetch("/api/loadout/share", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ store, loadoutId: loadout.id, featured: asFeatured }),
+      });
+      const json = await res.json();
+      if (!res.ok || !json.key) {
+        showToast(json.error ?? "Could not share");
+        return;
+      }
+      await navigator.clipboard?.writeText(json.key).catch(() => {});
+      showToast(
+        asFeatured
+          ? `Featured! Key ${json.key} copied`
+          : `Share key ${json.key} copied — friends run /borrow ${json.key}`
+      );
+      if (asFeatured) loadFeatured();
+    } finally {
+      setShareBusy(false);
+    }
+  };
+
+  const importByKey = async (rawKey: string) => {
+    const key = rawKey.trim().toLowerCase();
+    if (!key) return;
+    setShareBusy(true);
+    try {
+      const res = await fetch(`/api/loadout/borrow/${encodeURIComponent(key)}`);
+      const json = await res.json();
+      if (!res.ok || !json.snapshot) {
+        showToast(json.error === "not found" ? "No loadout for that key" : json.error ?? "Import failed");
+        return;
+      }
+      const snapshot = json.snapshot as LoadoutSnapshot;
+      setStore((current) => importSnapshot(current, snapshot));
+      setImportKey("");
+      setRightTab("loadout");
+      showToast(`Imported "${json.name}" — now active`);
+    } finally {
+      setShareBusy(false);
+    }
+  };
+
+  const isAdmin = (session.adminLevel ?? 0) >= 2;
+
   const filteredSkins = skins.filter((s) =>
     skinLabel(s.name).toLowerCase().includes(skinSearch.toLowerCase())
   );
@@ -837,12 +910,20 @@ export default function InventorySimulator() {
                       <span className="lo-size">{loadoutSize(l)} items</span>
                     </button>
                     <div className="lo-actions">
+                      <button title="Share (get a /borrow key)" onClick={() => shareLoadout(l)} disabled={shareBusy}>
+                        ↗
+                      </button>
                       <button title="Rename" onClick={() => renameLoadout(l)}>
                         ✎
                       </button>
                       <button title="Duplicate" onClick={() => duplicateLoadout(l)}>
                         ⧉
                       </button>
+                      {isAdmin && (
+                        <button title="Publish as a Featured preset" onClick={() => shareLoadout(l, true)} disabled={shareBusy}>
+                          ★
+                        </button>
+                      )}
                       {store.loadouts.length > 1 && (
                         <button title="Delete" onClick={() => deleteLoadout(l)}>
                           ✕
@@ -888,6 +969,65 @@ export default function InventorySimulator() {
                   ))}
                 </div>
               )}
+              {/* Borrow a loadout by key + Featured presets */}
+              <div className="share-block">
+                <div className="lo-head" style={{ marginTop: 4 }}>
+                  <span className="loadout-label">BORROW A LOADOUT</span>
+                </div>
+                <form
+                  className="borrow-row"
+                  onSubmit={(e) => {
+                    e.preventDefault();
+                    importByKey(importKey);
+                  }}
+                >
+                  <input
+                    className="input"
+                    placeholder="paste a key…"
+                    value={importKey}
+                    maxLength={16}
+                    spellCheck={false}
+                    autoComplete="off"
+                    onChange={(e) => setImportKey(e.target.value)}
+                  />
+                  <button className="btn small" type="submit" disabled={shareBusy || !importKey.trim()}>
+                    Borrow
+                  </button>
+                </form>
+                <p className="field-hint" style={{ marginTop: 6 }}>
+                  Share ↗ any loadout for a short key. In-game: <code>/borrow &lt;key&gt;</code>.
+                </p>
+
+                {featured.length > 0 && (
+                  <>
+                    <div className="lo-head" style={{ marginTop: 16 }}>
+                      <span className="loadout-label">★ FEATURED PRESETS</span>
+                    </div>
+                    <div className="featured-list">
+                      {featured.map((f) => (
+                        <div key={f.key} className="featured-card">
+                          <div className="fc-imgs">
+                            {f.images.slice(0, 4).map((img, i) => (
+                              // eslint-disable-next-line @next/next/no-img-element
+                              <img key={i} src={img} alt="" loading="lazy" />
+                            ))}
+                          </div>
+                          <div className="fc-text">
+                            <strong>{f.name}</strong>
+                            <span className="muted">
+                              {f.ownerName ? `by ${f.ownerName} · ` : ""}
+                              {f.count} items
+                            </span>
+                          </div>
+                          <button className="btn small" onClick={() => importByKey(f.key)} disabled={shareBusy}>
+                            Copy
+                          </button>
+                        </div>
+                      ))}
+                    </div>
+                  </>
+                )}
+              </div>
             </>
           )}
 

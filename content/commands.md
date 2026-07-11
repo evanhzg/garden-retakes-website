@@ -44,6 +44,7 @@ it feeds the website `/commands` page (ROADMAP Phase W).*
 | `!loadout` | Open the center loadout menu (W/S navigate, D select, A/TAB exit) |
 | `!loadout random` | Equip a random loadout (never the current one) |
 | `!loadouts` | List all your loadouts (active one marked) |
+| `!borrow <key>` | Import a shared loadout by its short key (from the website Share button) and equip it |
 | `!spray` | Apply your graffiti |
 
 ## Admins — moderation (Garden admin system)
