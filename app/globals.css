@@ -2089,3 +2089,342 @@ body {
     font-size: 1.05rem;
   }
 }
+
+/* ============================================================
+   Inventory workspace — horizontal weapons │ editor │ loadouts
+   ============================================================ */
+
+.inv-layout {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) 320px;
+  gap: 18px;
+  align-items: start;
+}
+.inv-builder {
+  display: grid;
+  grid-template-columns: 230px minmax(0, 1fr);
+  gap: 16px;
+  min-width: 0;
+}
+
+/* Panes share a card look */
+.inv-weapons,
+.inv-editor,
+.inv-loadouts {
+  background: var(--panel);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  box-shadow: var(--shadow);
+  min-width: 0;
+}
+.inv-weapons {
+  padding: 14px;
+}
+.inv-editor {
+  padding: 18px;
+  min-height: 420px;
+}
+.inv-loadouts {
+  padding: 16px;
+  position: sticky;
+  top: 78px;
+}
+
+.pane-head {
+  font-weight: 800;
+  font-size: 0.9rem;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  color: var(--muted);
+  margin-bottom: 10px;
+}
+
+.inv-cats {
+  margin-bottom: 10px;
+}
+.inv-cats .chip {
+  padding: 4px 10px;
+  font-size: 0.78rem;
+}
+
+/* Weapon list (left) */
+.weapon-list {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  max-height: 560px;
+  overflow-y: auto;
+  padding-right: 4px;
+}
+.weapon-row {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  width: 100%;
+  padding: 6px 8px;
+  border: 1px solid transparent;
+  border-radius: 10px;
+  background: transparent;
+  cursor: pointer;
+  text-align: left;
+  transition: background 0.15s ease, border-color 0.15s ease;
+}
+.weapon-row:hover {
+  background: var(--bg-soft);
+}
+.weapon-row.selected {
+  border-color: var(--accent);
+  background: var(--accent-soft);
+}
+.weapon-row img {
+  width: 54px;
+  height: 30px;
+  object-fit: contain;
+  flex-shrink: 0;
+}
+.wr-name {
+  flex: 1;
+  font-weight: 600;
+  font-size: 0.86rem;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+.wr-team {
+  font-size: 0.62rem;
+  font-weight: 800;
+  color: var(--muted);
+  flex-shrink: 0;
+}
+.wr-team.team-ct {
+  color: #3b82f6;
+}
+.wr-team.team-t {
+  color: #f59e0b;
+}
+
+/* Editor (center) */
+.editor-empty {
+  display: grid;
+  place-items: center;
+  min-height: 380px;
+  text-align: center;
+  gap: 8px;
+}
+.editor-empty-icon {
+  font-size: 3rem;
+  opacity: 0.45;
+}
+.editor-head {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  margin-bottom: 14px;
+  flex-wrap: wrap;
+}
+.editor-title {
+  font-size: 1.05rem;
+}
+.editor-search {
+  max-width: 220px;
+  margin-left: auto;
+}
+/* The editor pane is narrow — stack the stage above the sticker picker. */
+.inv-editor .builder-columns {
+  grid-template-columns: 1fr;
+}
+
+/* Loadouts + saved items (right) */
+.right-subtabs {
+  display: flex;
+  gap: 6px;
+  margin-bottom: 14px;
+}
+.right-subtabs button {
+  flex: 1;
+  padding: 7px 10px;
+  border-radius: 9px;
+  border: 1px solid var(--border);
+  background: var(--bg-soft);
+  color: var(--muted);
+  font-weight: 700;
+  font-size: 0.85rem;
+  cursor: pointer;
+  transition: all 0.15s ease;
+}
+.right-subtabs button.active {
+  background: var(--gradient);
+  color: #fff;
+  border-color: transparent;
+  box-shadow: var(--shadow);
+}
+.lo-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 8px;
+}
+.lo-list {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  margin-bottom: 14px;
+}
+.lo-row {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  border: 1px solid var(--border);
+  border-radius: 10px;
+  padding: 4px 6px;
+  transition: border-color 0.15s ease, background 0.15s ease;
+}
+.lo-row.active {
+  border-color: var(--accent);
+  background: var(--accent-soft);
+}
+.lo-pick {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 1px;
+  background: transparent;
+  border: none;
+  cursor: pointer;
+  padding: 5px 6px;
+  min-width: 0;
+}
+.lo-name {
+  font-weight: 700;
+  font-size: 0.92rem;
+}
+.lo-size {
+  font-size: 0.7rem;
+  color: var(--muted);
+}
+.lo-actions {
+  display: flex;
+  gap: 1px;
+}
+.lo-actions button {
+  background: transparent;
+  border: none;
+  cursor: pointer;
+  padding: 5px 7px;
+  border-radius: 6px;
+  color: var(--muted);
+  font-size: 0.85rem;
+}
+.lo-actions button:hover {
+  background: var(--bg-soft);
+  color: var(--accent);
+}
+
+.active-loadout {
+  border-top: 1px solid var(--border);
+  padding-top: 12px;
+}
+.al-head {
+  display: flex;
+  flex-direction: column;
+  gap: 3px;
+  margin-bottom: 12px;
+}
+.al-head code {
+  font-size: 0.72rem;
+  color: var(--muted);
+}
+.al-side {
+  margin-bottom: 14px;
+}
+.al-side-head {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin-bottom: 6px;
+  font-size: 0.82rem;
+}
+.empty-hint.small {
+  padding: 8px 0;
+  font-size: 0.82rem;
+}
+.lo-unequip {
+  background: transparent;
+  border: none;
+  color: var(--muted);
+  cursor: pointer;
+  font-size: 0.9rem;
+  padding: 4px 8px;
+  border-radius: 6px;
+  flex-shrink: 0;
+}
+.lo-unequip:hover {
+  color: #e11d48;
+  background: #fff0f3;
+}
+
+/* Saved items (right sub-tab) */
+.saved-items {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  max-height: 640px;
+  overflow-y: auto;
+  padding-right: 2px;
+}
+.saved-item {
+  display: flex;
+  gap: 10px;
+  border: 1px solid var(--border);
+  border-radius: 10px;
+  padding: 8px;
+}
+.saved-item.equipped {
+  border-color: var(--accent);
+  background: var(--accent-soft);
+}
+.saved-item img {
+  width: 72px;
+  height: 44px;
+  object-fit: contain;
+  flex-shrink: 0;
+}
+.si-text {
+  flex: 1;
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+.si-text strong {
+  font-size: 0.88rem;
+}
+.si-actions {
+  display: flex;
+  gap: 4px;
+  flex-wrap: wrap;
+  margin-top: 5px;
+}
+
+/* ---- Inventory workspace: tablet + phone ---- */
+@media (max-width: 980px) {
+  .inv-layout {
+    grid-template-columns: 1fr;
+  }
+  .inv-loadouts {
+    position: static;
+  }
+}
+@media (max-width: 680px) {
+  .inv-builder {
+    grid-template-columns: 1fr;
+  }
+  .weapon-list {
+    max-height: 240px;
+  }
+  .editor-search {
+    margin-left: 0;
+    max-width: 100%;
+  }
+}

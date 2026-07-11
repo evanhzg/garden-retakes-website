@@ -33,7 +33,7 @@ type Skin = { id: number; def: number; paint: number; name: string; image: strin
 type StickerOption = { id: number; def: number; name: string; image: string; rarity: string };
 type Catalog = Record<string, WeaponEntry[]>;
 type Session = { authenticated: boolean; steamId?: string; name?: string | null; avatar?: string | null };
-type Tab = "builder" | "inventory" | "loadout";
+type RightTab = "loadout" | "items";
 type EquipSide = Side | "both";
 
 const CATEGORY_ORDER = ["Rifles", "Snipers", "SMGs", "Pistols", "Heavy", "Knives", "Gloves"];
@@ -103,7 +103,7 @@ export default function InventorySimulator() {
   const [hydrated, setHydrated] = useState(false);
   const [session, setSession] = useState<Session>({ authenticated: false });
   const [origin, setOrigin] = useState("");
-  const [tab, setTab] = useState<Tab>("builder");
+  const [rightTab, setRightTab] = useState<RightTab>("loadout");
   const [toast, setToast] = useState<string | null>(null);
 
   const [catalog, setCatalog] = useState<Catalog | null>(null);
@@ -403,7 +403,7 @@ export default function InventorySimulator() {
     setStatTrak(item.statTrak);
     setNameTag(item.nameTag);
     setEditingItemId(item.id);
-    setTab("builder");
+    setRightTab("items");
   };
 
   // ---------- Inventory ----------
@@ -540,6 +540,8 @@ export default function InventorySimulator() {
 
   // ---------- Render ----------
 
+  const categories = catalog ? CATEGORY_ORDER.filter((c) => catalog[c]?.length) : CATEGORY_ORDER;
+
   return (
     <>
       {/* Auth / sync banner */}
@@ -584,355 +586,357 @@ export default function InventorySimulator() {
         )}
       </div>
 
-      {/* Loadout switcher (always visible) */}
-      <div className="loadout-bar">
-        <span className="loadout-label">LOADOUT</span>
-        {store.loadouts.map((l) => (
-          <span key={l.id} className={`loadout-chip ${l.id === store.activeLoadoutId ? "active" : ""}`}>
-            <button className="loadout-chip-main" onClick={() => setActiveLoadout(l.id)}>
-              {l.name} · {loadoutSize(l)}
-            </button>
-            <button className="loadout-chip-edit" title="Rename" onClick={() => renameLoadout(l)}>
-              ✎
-            </button>
-            <button className="loadout-chip-edit" title="Duplicate" onClick={() => duplicateLoadout(l)}>
-              ⧉
-            </button>
-            {store.loadouts.length > 1 && (
-              <button className="loadout-chip-edit" title="Delete" onClick={() => deleteLoadout(l)}>
-                ✕
-              </button>
-            )}
-          </span>
-        ))}
-        <button className="loadout-chip add" onClick={addLoadout}>
-          + New loadout
-        </button>
-      </div>
-
-      <div className="tabs">
-        <button className={tab === "builder" ? "active" : ""} onClick={() => setTab("builder")}>
-          Weapon picker
-        </button>
-        <button className={tab === "inventory" ? "active" : ""} onClick={() => setTab("inventory")}>
-          Inventory ({store.items.length})
-        </button>
-        <button className={tab === "loadout" ? "active" : ""} onClick={() => setTab("loadout")}>
-          {activeLoadout?.name ?? "Loadout"} · T/CT
-        </button>
-      </div>
-
-      {tab === "builder" && (
-        <>
-          <div className="chip-row">
-            {(catalog ? CATEGORY_ORDER.filter((c) => catalog[c]?.length) : CATEGORY_ORDER).map((c) => (
-              <button key={c} className={`chip ${category === c ? "active" : ""}`} onClick={() => setCategory(c)}>
-                {c}
-              </button>
-            ))}
-          </div>
-
-          {!catalog ? (
-            <p className="empty-hint">Loading weapons…</p>
-          ) : (
-            <div className="card-grid" style={{ marginBottom: 20 }}>
-              {(catalog[category] ?? []).map((w) => (
-                <div
-                  key={w.def}
-                  className={`item-card ${weapon?.def === w.def ? "selected" : ""}`}
-                  onClick={() => pickWeapon(w)}
-                >
-                  {/* eslint-disable-next-line @next/next/no-img-element */}
-                  <img src={w.image} alt={w.name} loading="lazy" />
-                  <div className="name">{w.name}</div>
-                  <div className={`sub team-${w.team}`}>{w.team === "both" ? "CT / T" : w.team.toUpperCase()}</div>
-                </div>
+      <div className="inv-layout">
+        {/* ---------- LEFT: weapons + CENTER: editor ---------- */}
+        <div className="inv-builder">
+          {/* WEAPONS */}
+          <aside className="inv-weapons">
+            <div className="pane-head">Weapons</div>
+            <div className="chip-row inv-cats">
+              {categories.map((c) => (
+                <button key={c} className={`chip ${category === c ? "active" : ""}`} onClick={() => setCategory(c)}>
+                  {c}
+                </button>
               ))}
             </div>
-          )}
+            {!catalog ? (
+              <p className="empty-hint">Loading…</p>
+            ) : (
+              <div className="weapon-list">
+                {(catalog[category] ?? []).map((w) => (
+                  <button
+                    key={w.def}
+                    className={`weapon-row ${weapon?.def === w.def ? "selected" : ""}`}
+                    onClick={() => pickWeapon(w)}
+                  >
+                    {/* eslint-disable-next-line @next/next/no-img-element */}
+                    <img src={w.image} alt="" loading="lazy" />
+                    <span className="wr-name">{w.name}</span>
+                    <span className={`wr-team team-${w.team}`}>{w.team === "both" ? "T/CT" : w.team.toUpperCase()}</span>
+                  </button>
+                ))}
+              </div>
+            )}
+          </aside>
 
-          {weapon && !selectedSkin && (
-            <div className="panel">
-              <h2>Pick a skin for the {weapon.name}</h2>
-              <input
-                className="input"
-                placeholder="Search skins…"
-                value={skinSearch}
-                onChange={(e) => setSkinSearch(e.target.value)}
-                style={{ marginBottom: 14 }}
-              />
-              {skinsLoading ? (
-                <p className="empty-hint">Loading skins…</p>
-              ) : (
-                <div className="card-grid">
-                  {filteredSkins.map((s) => (
+          {/* EDITOR */}
+          <section className="inv-editor">
+            {!weapon && (
+              <div className="editor-empty">
+                <div className="editor-empty-icon">🎯</div>
+                <p className="muted">Pick a weapon on the left to browse its skins.</p>
+              </div>
+            )}
+
+            {weapon && !selectedSkin && (
+              <>
+                <div className="editor-head">
+                  <div className="editor-title">
+                    <strong>{weapon.name}</strong> <span className="muted">— choose a skin</span>
+                  </div>
+                  <input
+                    className="input editor-search"
+                    placeholder="Search skins…"
+                    value={skinSearch}
+                    onChange={(e) => setSkinSearch(e.target.value)}
+                  />
+                </div>
+                {skinsLoading ? (
+                  <p className="empty-hint">Loading skins…</p>
+                ) : (
+                  <div className="card-grid skins-grid">
+                    {filteredSkins.map((s) => (
+                      <div
+                        key={s.id}
+                        className="item-card skin-card"
+                        style={{ "--rarity": s.rarity } as React.CSSProperties}
+                        onClick={() => setSelectedSkin(s)}
+                      >
+                        {/* eslint-disable-next-line @next/next/no-img-element */}
+                        <img src={s.image} alt={s.name} loading="lazy" />
+                        <div className="name" style={{ color: s.rarity }}>
+                          {skinLabel(s.name)}
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                )}
+              </>
+            )}
+
+            {weapon && selectedSkin && (
+              <>
+                <div className="editor-head">
+                  <button className="btn small secondary" onClick={() => setSelectedSkin(null)}>
+                    ← Skins
+                  </button>
+                  <div className="editor-title">
+                    <strong>{weapon.name}</strong> · {skinLabel(selectedSkin.name)}
+                  </div>
+                  {editingItemId && <span className="mini-badge">editing</span>}
+                </div>
+
+                <div className="builder-columns">
+                  <div>
                     <div
-                      key={s.id}
-                      className="item-card skin-card"
-                      style={{ "--rarity": s.rarity } as React.CSSProperties}
-                      onClick={() => setSelectedSkin(s)}
+                      ref={stageRef}
+                      className="sticker-stage"
+                      onPointerMove={onStagePointerMove}
+                      onPointerUp={endDrag}
+                      onPointerLeave={endDrag}
                     >
                       {/* eslint-disable-next-line @next/next/no-img-element */}
-                      <img src={s.image} alt={s.name} loading="lazy" />
-                      <div className="name" style={{ color: s.rarity }}>
-                        {skinLabel(s.name)}
-                      </div>
+                      <img className="weapon-img" src={selectedSkin.image} alt={selectedSkin.name} />
+                      {supportsStickers &&
+                        SLOT_ANCHORS.map((anchor, slot) =>
+                          stickers[slot] ? null : (
+                            <div key={slot} className="slot-hint" style={{ left: `${anchor.x}%`, top: `${anchor.y}%` }}>
+                              {slot + 1}
+                            </div>
+                          )
+                        )}
+                      {supportsStickers &&
+                        stickers.map((sticker, slot) =>
+                          sticker ? (
+                            <div
+                              key={slot}
+                              className="placed-sticker"
+                              style={{ left: `${sticker.x}%`, top: `${sticker.y}%` }}
+                              onPointerDown={onStickerPointerDown(slot)}
+                              title={sticker.name}
+                            >
+                              {/* eslint-disable-next-line @next/next/no-img-element */}
+                              <img src={sticker.image} alt={sticker.name} />
+                              <button className="remove" onClick={() => removeSticker(slot)}>
+                                ×
+                              </button>
+                            </div>
+                          ) : null
+                        )}
                     </div>
-                  ))}
-                </div>
-              )}
-            </div>
-          )}
 
-          {weapon && selectedSkin && (
-            <div className="builder-columns">
-              <div>
-                <div
-                  ref={stageRef}
-                  className="sticker-stage"
-                  onPointerMove={onStagePointerMove}
-                  onPointerUp={endDrag}
-                  onPointerLeave={endDrag}
-                >
-                  {/* eslint-disable-next-line @next/next/no-img-element */}
-                  <img className="weapon-img" src={selectedSkin.image} alt={selectedSkin.name} />
-                  {supportsStickers &&
-                    SLOT_ANCHORS.map((anchor, slot) =>
-                      stickers[slot] ? null : (
-                        <div key={slot} className="slot-hint" style={{ left: `${anchor.x}%`, top: `${anchor.y}%` }}>
-                          {slot + 1}
-                        </div>
-                      )
-                    )}
-                  {supportsStickers &&
-                    stickers.map((sticker, slot) =>
-                      sticker ? (
-                        <div
-                          key={slot}
-                          className="placed-sticker"
-                          style={{ left: `${sticker.x}%`, top: `${sticker.y}%` }}
-                          onPointerDown={onStickerPointerDown(slot)}
-                          title={sticker.name}
+                    {/* Item config */}
+                    <div className="config-grid">
+                      <label className="config-field">
+                        <span>
+                          Wear · <strong>{wear.toFixed(3)}</strong> <em>{wearLabel(wear)}</em>
+                        </span>
+                        <input type="range" min={0} max={1} step={0.001} value={wear} onChange={(e) => setWear(Number(e.target.value))} />
+                      </label>
+                      <label className="config-field">
+                        <span>Pattern seed</span>
+                        <input
+                          className="input"
+                          type="number"
+                          min={0}
+                          max={1000}
+                          value={seed}
+                          onChange={(e) => setSeed(Math.max(0, Math.min(1000, Number(e.target.value) || 0)))}
+                        />
+                      </label>
+                      {builderKind !== "gloves" && (
+                        <label className="config-field">
+                          <span>Name tag</span>
+                          <input className="input" placeholder="(none)" maxLength={20} value={nameTag} onChange={(e) => setNameTag(e.target.value)} />
+                        </label>
+                      )}
+                      {supportsStatTrak && (
+                        <label className="config-field toggle">
+                          <input type="checkbox" checked={statTrak} onChange={(e) => setStatTrak(e.target.checked)} />
+                          <span>StatTrak™</span>
+                        </label>
+                      )}
+                    </div>
+
+                    {/* Side selection */}
+                    <div className="side-select">
+                      <span className="loadout-label">EQUIP ON</span>
+                      {(["t", "ct", "both"] as EquipSide[]).map((s) => (
+                        <button
+                          key={s}
+                          className={`chip side-chip-${s} ${equipSide === s ? "active" : ""}`}
+                          onClick={() => setEquipSide(s)}
                         >
-                          {/* eslint-disable-next-line @next/next/no-img-element */}
-                          <img src={sticker.image} alt={sticker.name} />
-                          <button className="remove" onClick={() => removeSticker(slot)}>
-                            ×
-                          </button>
-                        </div>
-                      ) : null
-                    )}
-                </div>
-
-                {/* Item config */}
-                <div className="config-grid">
-                  <label className="config-field">
-                    <span>
-                      Wear · <strong>{wear.toFixed(3)}</strong> <em>{wearLabel(wear)}</em>
-                    </span>
-                    <input type="range" min={0} max={1} step={0.001} value={wear} onChange={(e) => setWear(Number(e.target.value))} />
-                  </label>
-                  <label className="config-field">
-                    <span>Pattern seed</span>
-                    <input
-                      className="input"
-                      type="number"
-                      min={0}
-                      max={1000}
-                      value={seed}
-                      onChange={(e) => setSeed(Math.max(0, Math.min(1000, Number(e.target.value) || 0)))}
-                    />
-                  </label>
-                  {builderKind !== "gloves" && (
-                    <label className="config-field">
-                      <span>Name tag</span>
-                      <input className="input" placeholder="(none)" maxLength={20} value={nameTag} onChange={(e) => setNameTag(e.target.value)} />
-                    </label>
-                  )}
-                  {supportsStatTrak && (
-                    <label className="config-field toggle">
-                      <input type="checkbox" checked={statTrak} onChange={(e) => setStatTrak(e.target.checked)} />
-                      <span>StatTrak™</span>
-                    </label>
-                  )}
-                </div>
-
-                {/* Side selection */}
-                <div className="side-select">
-                  <span className="loadout-label">EQUIP ON</span>
-                  {(["t", "ct", "both"] as EquipSide[]).map((s) => (
-                    <button
-                      key={s}
-                      className={`chip side-chip-${s} ${equipSide === s ? "active" : ""}`}
-                      onClick={() => setEquipSide(s)}
-                    >
-                      {s === "both" ? "Both sides" : s === "t" ? "T side" : "CT side"}
-                    </button>
-                  ))}
-                </div>
-
-                <div className="connect-row" style={{ marginTop: 14 }}>
-                  <button className="btn" onClick={saveToInventory}>
-                    {editingItemId ? "Update item" : "Save & equip"}
-                  </button>
-                  <button className="btn secondary" onClick={() => setSelectedSkin(null)}>
-                    Change skin
-                  </button>
-                  {supportsStickers && (
-                    <span className="muted" style={{ fontSize: "0.85rem" }}>
-                      Drag stickers to preview placement · hover to remove
-                    </span>
-                  )}
-                </div>
-              </div>
-
-              {supportsStickers ? (
-                <div className="sticker-picker">
-                  <strong>Stickers</strong>
-                  <input className="input" placeholder="Search stickers…" value={stickerQuery} onChange={(e) => setStickerQuery(e.target.value)} />
-                  {stickersLoading ? (
-                    <p className="empty-hint">Searching…</p>
-                  ) : (
-                    <div className="results">
-                      {stickerResults.map((sticker) => (
-                        <div key={sticker.id} className="sticker-cell" title={sticker.name} onClick={() => addSticker(sticker)}>
-                          {/* eslint-disable-next-line @next/next/no-img-element */}
-                          <img src={sticker.image} alt={sticker.name} loading="lazy" />
-                        </div>
+                          {s === "both" ? "Both sides" : s === "t" ? "T side" : "CT side"}
+                        </button>
                       ))}
                     </div>
-                  )}
-                </div>
-              ) : (
-                <div className="sticker-picker">
-                  <strong>{builderKind === "knife" ? "Knife" : "Gloves"}</strong>
-                  <p className="muted" style={{ fontSize: "0.85rem" }}>
-                    {builderKind === "knife"
-                      ? "Knives don't take stickers. Pick your finish, wear and seed, then choose which side carries it."
-                      : "Gloves have no stickers, StatTrak or name tags — just the finish, wear and seed."}
-                  </p>
-                </div>
-              )}
-            </div>
-          )}
-        </>
-      )}
 
-      {tab === "inventory" && (
-        <div className="panel">
-          <h2>Your inventory</h2>
-          {store.items.length === 0 ? (
-            <p className="empty-hint">Nothing saved yet — build a weapon in the picker and it lands here.</p>
-          ) : (
-            <div className="card-grid">
-              {store.items.map((item) => {
-                const sides = equippedSides(activeLoadout, item);
-                return (
-                  <div key={item.id} className={`item-card ${sides.length ? "selected" : ""}`}>
-                    <div style={{ position: "relative" }}>
-                      {/* eslint-disable-next-line @next/next/no-img-element */}
-                      <img src={item.image} alt={item.skinName} loading="lazy" />
-                      {item.stickers.map((sticker, slot) =>
-                        sticker ? (
-                          // eslint-disable-next-line @next/next/no-img-element
-                          <img
-                            key={slot}
-                            src={sticker.image}
-                            alt=""
-                            style={{
-                              position: "absolute",
-                              left: `${sticker.x}%`,
-                              top: `${sticker.y}%`,
-                              width: 18,
-                              height: 18,
-                              transform: "translate(-50%, -50%)",
-                            }}
-                          />
-                        ) : null
-                      )}
-                      {sides.length > 0 && (
-                        <span className="equip-badges">
-                          {sides.map((s) => (
-                            <em key={s} className={`equip-badge badge-${s}`}>
-                              {s.toUpperCase()}
-                            </em>
-                          ))}
+                    <div className="connect-row" style={{ marginTop: 14 }}>
+                      <button className="btn" onClick={saveToInventory}>
+                        {editingItemId ? "Update item" : "Save & equip"}
+                      </button>
+                      <button className="btn secondary" onClick={() => setSelectedSkin(null)}>
+                        Change skin
+                      </button>
+                      {supportsStickers && (
+                        <span className="muted" style={{ fontSize: "0.85rem" }}>
+                          Drag stickers to preview placement · hover to remove
                         </span>
                       )}
                     </div>
-                    <div className="name">
-                      {item.statTrak ? "StatTrak™ " : ""}
-                      {skinLabel(item.skinName)}
-                    </div>
-                    <div className="sub">{item.weaponName}</div>
-                    <div className="equip-actions">
-                      <button className="btn small" onClick={() => equipItem(item, "t")} title="Equip on T">
-                        T
-                      </button>
-                      <button className="btn small" onClick={() => equipItem(item, "ct")} title="Equip on CT">
-                        CT
-                      </button>
-                      <button className="btn small" onClick={() => equipItem(item, "both")} title="Equip on both sides">
-                        Both
-                      </button>
-                      <button className="btn small secondary" onClick={() => editItem(item)}>
-                        Edit
-                      </button>
-                      <button className="btn small danger" onClick={() => deleteItem(item)}>
-                        ✕
-                      </button>
-                    </div>
                   </div>
-                );
-              })}
-            </div>
-          )}
-        </div>
-      )}
 
-      {tab === "loadout" && activeLoadout && (
-        <>
-          <div className="panel">
-            <h2>
-              {activeLoadout.name}
-              <span className="muted" style={{ fontWeight: 500, fontSize: "0.85rem", marginLeft: 10 }}>
-                in-game: <code>/loadout {activeLoadout.name}</code>
-              </span>
-            </h2>
-            <div className="split-cards">
-              {(["t", "ct"] as Side[]).map((side) => (
-                <div key={side} className="side-card">
-                  <h3>
-                    <span>{side === "t" ? "Terrorist loadout" : "Counter-Terrorist loadout"}</span>
-                    <span className={`side-tag ${side === "t" ? "side-t" : "side-ct"}`}>{side.toUpperCase()}</span>
-                  </h3>
-                  {sideRows(side).length === 0 ? (
-                    <p className="empty-hint" style={{ padding: "18px 0" }}>
-                      Nothing equipped on this side yet.
-                    </p>
-                  ) : (
-                    <div className="loadout-rows">
-                      {sideRows(side).map(({ slot, item }) => (
-                        <div key={`${slot}-${item.id}`} className="loadout-row">
-                          {/* eslint-disable-next-line @next/next/no-img-element */}
-                          <img src={item.image} alt="" />
-                          <div className="loadout-row-text">
-                            <strong>{skinLabel(item.skinName)}</strong>
-                            <span className="muted">{slot}</span>
-                          </div>
-                          <button className="btn small danger" onClick={() => unequipSlot(side, item)}>
-                            Unequip
-                          </button>
+                  {supportsStickers ? (
+                    <div className="sticker-picker">
+                      <strong>Stickers</strong>
+                      <input className="input" placeholder="Search stickers…" value={stickerQuery} onChange={(e) => setStickerQuery(e.target.value)} />
+                      {stickersLoading ? (
+                        <p className="empty-hint">Searching…</p>
+                      ) : (
+                        <div className="results">
+                          {stickerResults.map((sticker) => (
+                            <div key={sticker.id} className="sticker-cell" title={sticker.name} onClick={() => addSticker(sticker)}>
+                              {/* eslint-disable-next-line @next/next/no-img-element */}
+                              <img src={sticker.image} alt={sticker.name} loading="lazy" />
+                            </div>
+                          ))}
                         </div>
-                      ))}
+                      )}
+                    </div>
+                  ) : (
+                    <div className="sticker-picker">
+                      <strong>{builderKind === "knife" ? "Knife" : "Gloves"}</strong>
+                      <p className="muted" style={{ fontSize: "0.85rem" }}>
+                        {builderKind === "knife"
+                          ? "Knives don't take stickers. Pick your finish, wear and seed, then choose which side carries it."
+                          : "Gloves have no stickers, StatTrak or name tags — just the finish, wear and seed."}
+                      </p>
                     </div>
                   )}
                 </div>
-              ))}
-            </div>
+              </>
+            )}
+          </section>
+        </div>
+
+        {/* ---------- RIGHT: loadouts + saved items ---------- */}
+        <aside className="inv-loadouts">
+          <div className="right-subtabs">
+            <button className={rightTab === "loadout" ? "active" : ""} onClick={() => setRightTab("loadout")}>
+              Loadouts
+            </button>
+            <button className={rightTab === "items" ? "active" : ""} onClick={() => setRightTab("items")}>
+              Saved ({store.items.length})
+            </button>
           </div>
-        </>
-      )}
+
+          {rightTab === "loadout" && (
+            <>
+              <div className="lo-head">
+                <span className="loadout-label">YOUR LOADOUTS</span>
+                <button className="btn small" onClick={addLoadout}>
+                  + New
+                </button>
+              </div>
+              <div className="lo-list">
+                {store.loadouts.map((l) => (
+                  <div key={l.id} className={`lo-row ${l.id === store.activeLoadoutId ? "active" : ""}`}>
+                    <button className="lo-pick" onClick={() => setActiveLoadout(l.id)}>
+                      <span className="lo-name">{l.name}</span>
+                      <span className="lo-size">{loadoutSize(l)} items</span>
+                    </button>
+                    <div className="lo-actions">
+                      <button title="Rename" onClick={() => renameLoadout(l)}>
+                        ✎
+                      </button>
+                      <button title="Duplicate" onClick={() => duplicateLoadout(l)}>
+                        ⧉
+                      </button>
+                      {store.loadouts.length > 1 && (
+                        <button title="Delete" onClick={() => deleteLoadout(l)}>
+                          ✕
+                        </button>
+                      )}
+                    </div>
+                  </div>
+                ))}
+              </div>
+
+              {activeLoadout && (
+                <div className="active-loadout">
+                  <div className="al-head">
+                    <strong>{activeLoadout.name}</strong>
+                    <code>/loadout {activeLoadout.name}</code>
+                  </div>
+                  {(["t", "ct"] as Side[]).map((side) => (
+                    <div key={side} className="al-side">
+                      <div className="al-side-head">
+                        <span className={`side-tag ${side === "t" ? "side-t" : "side-ct"}`}>{side.toUpperCase()}</span>
+                        <span className="muted">{side === "t" ? "Terrorist" : "Counter-Terrorist"}</span>
+                      </div>
+                      {sideRows(side).length === 0 ? (
+                        <p className="empty-hint small">Nothing on this side yet.</p>
+                      ) : (
+                        <div className="loadout-rows">
+                          {sideRows(side).map(({ slot, item }) => (
+                            <div key={`${slot}-${item.id}`} className="loadout-row">
+                              {/* eslint-disable-next-line @next/next/no-img-element */}
+                              <img src={item.image} alt="" />
+                              <div className="loadout-row-text">
+                                <strong>{skinLabel(item.skinName)}</strong>
+                                <span className="muted">{slot}</span>
+                              </div>
+                              <button className="lo-unequip" title="Unequip" onClick={() => unequipSlot(side, item)}>
+                                ✕
+                              </button>
+                            </div>
+                          ))}
+                        </div>
+                      )}
+                    </div>
+                  ))}
+                </div>
+              )}
+            </>
+          )}
+
+          {rightTab === "items" && (
+            <div className="saved-items">
+              {store.items.length === 0 ? (
+                <p className="empty-hint">Nothing saved yet — build a weapon and it lands here.</p>
+              ) : (
+                store.items.map((item) => {
+                  const sides = equippedSides(activeLoadout, item);
+                  return (
+                    <div key={item.id} className={`saved-item ${sides.length ? "equipped" : ""}`}>
+                      {/* eslint-disable-next-line @next/next/no-img-element */}
+                      <img src={item.image} alt="" loading="lazy" />
+                      <div className="si-text">
+                        <strong>
+                          {item.statTrak ? "StatTrak™ " : ""}
+                          {skinLabel(item.skinName)}
+                        </strong>
+                        <span className="muted">
+                          {item.weaponName}
+                          {sides.length ? ` · ${sides.map((s) => s.toUpperCase()).join(" + ")}` : ""}
+                        </span>
+                        <div className="si-actions">
+                          <button className="btn small" onClick={() => equipItem(item, "t")}>
+                            T
+                          </button>
+                          <button className="btn small" onClick={() => equipItem(item, "ct")}>
+                            CT
+                          </button>
+                          <button className="btn small" onClick={() => equipItem(item, "both")}>
+                            Both
+                          </button>
+                          <button className="btn small secondary" onClick={() => editItem(item)}>
+                            Edit
+                          </button>
+                          <button className="btn small danger" onClick={() => deleteItem(item)}>
+                            ✕
+                          </button>
+                        </div>
+                      </div>
+                    </div>
+                  );
+                })
+              )}
+            </div>
+          )}
+        </aside>
+      </div>
 
       {toast && <div className="toast">{toast}</div>}
     </>
