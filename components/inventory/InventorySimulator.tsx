@@ -40,6 +40,9 @@ type FeaturedPreset = { key: string; name: string; ownerName: string | null; ima
 type SkinSort = "name" | "quality" | "newest" | "fav";
 type LoSort = "custom" | "name" | "color";
 
+// Keys of loadouts THIS user has featured (to show toggle state + prevent duplicates).
+type OwnFeaturedEntry = { key: string; loadoutId: string };
+
 const CATEGORY_ORDER = ["Rifles", "Snipers", "SMGs", "Pistols", "Heavy", "Knives", "Gloves"];
 
 // Signature guns shown in the T/CT preview.
@@ -109,6 +112,8 @@ export default function InventorySimulator() {
   const [importKey, setImportKey] = useState("");
   const [featured, setFeatured] = useState<FeaturedPreset[]>([]);
   const [shareBusy, setShareBusy] = useState(false);
+  // Tracks which loadout ids are already featured (keyed by loadoutId -> shareKey)
+  const [ownFeatured, setOwnFeatured] = useState<OwnFeaturedEntry[]>([]);
 
   const stageRef = useRef<HTMLDivElement>(null);
   const dragSlot = useRef<number | null>(null);
@@ -211,9 +216,28 @@ export default function InventorySimulator() {
   const slotItemFor = useCallback(
     (def: number, kind: ItemKind, s: Side, loadout = activeLoadout): InventoryItem | undefined => {
       if (!loadout) return undefined;
-      if (kind === "knife") return itemById(s === "t" ? loadout.knifeT : loadout.knifeCT);
-      if (kind === "gloves") return itemById(s === "t" ? loadout.glovesT : loadout.glovesCT);
+      if (kind === "knife") {
+        // Only return the knife item if it matches this specific weapon def.
+        const item = itemById(s === "t" ? loadout.knifeT : loadout.knifeCT);
+        return item?.weaponDef === def ? item : undefined;
+      }
+      if (kind === "gloves") {
+        const item = itemById(s === "t" ? loadout.glovesT : loadout.glovesCT);
+        return item?.weaponDef === def ? item : undefined;
+      }
       return itemById((s === "t" ? loadout.equippedT : loadout.equippedCT)[def]);
+    },
+    [activeLoadout, itemById]
+  );
+
+  // For the chooser head / sticker stage: resolve knife/gloves without def check
+  // (the user has already clicked that specific weapon entry).
+  const slotItemForChooser = useCallback(
+    (def: number, kind: ItemKind, s: Side): InventoryItem | undefined => {
+      if (!activeLoadout) return undefined;
+      if (kind === "knife") return itemById(s === "t" ? activeLoadout.knifeT : activeLoadout.knifeCT);
+      if (kind === "gloves") return itemById(s === "t" ? activeLoadout.glovesT : activeLoadout.glovesCT);
+      return itemById((s === "t" ? activeLoadout.equippedT : activeLoadout.equippedCT)[def]);
     },
     [activeLoadout, itemById]
   );
@@ -224,7 +248,7 @@ export default function InventorySimulator() {
     setSkinSearch("");
     setCollectionFilter("");
     setShowStickers(false);
-    const existing = slotItemFor(w.def, kindOfCategory(w.category), side);
+    const existing = slotItemForChooser(w.def, kindOfCategory(w.category), side);
     if (existing) {
       setWear(existing.wear);
       setSeed(existing.seed);
@@ -247,7 +271,7 @@ export default function InventorySimulator() {
     setStore((cur) => {
       const loadout = cur.loadouts.find((l) => l.id === cur.activeLoadoutId);
       if (!loadout) return cur;
-      const existing = slotItemFor(weapon.def, kind, side, loadout);
+      const existing = slotItemForChooser(weapon.def, kind, side, loadout);
       let items = cur.items;
       let itemId: string;
       let nextUid = cur.nextUid;
@@ -427,6 +451,22 @@ export default function InventorySimulator() {
   const shareLoadout = async (l: Loadout, asFeatured = false) => {
     setShareBusy(true);
     try {
+      // If already featured, toggle it off (un-feature).
+      if (asFeatured) {
+        const existing = ownFeatured.find((f) => f.loadoutId === l.id);
+        if (existing) {
+          const res = await fetch(`/api/loadout/featured/${existing.key}`, { method: "DELETE" });
+          if (res.ok) {
+            setOwnFeatured((cur) => cur.filter((f) => f.loadoutId !== l.id));
+            setFeatured((cur) => cur.filter((f) => f.key !== existing.key));
+            showToast("Removed from featured");
+          } else {
+            showToast("Could not unfeature");
+          }
+          return;
+        }
+      }
+
       const res = await fetch("/api/loadout/share", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
@@ -438,8 +478,13 @@ export default function InventorySimulator() {
         return;
       }
       await navigator.clipboard?.writeText(j.key).catch(() => {});
-      showToast(asFeatured ? `Featured! Key ${j.key} copied` : `Key ${j.key} copied · /borrow ${j.key}`);
-      if (asFeatured) fetch("/api/loadout/featured").then((r) => r.json()).then((d) => setFeatured(d.presets ?? []));
+      if (asFeatured) {
+        setOwnFeatured((cur) => [...cur.filter((f) => f.loadoutId !== l.id), { key: j.key, loadoutId: l.id }]);
+        showToast(`Featured! Key ${j.key} copied`);
+        fetch("/api/loadout/featured").then((r) => r.json()).then((d) => setFeatured(d.presets ?? []));
+      } else {
+        showToast(`Key ${j.key} copied · /borrow ${j.key}`);
+      }
     } finally {
       setShareBusy(false);
     }
@@ -472,7 +517,7 @@ export default function InventorySimulator() {
     return Array.from(set).sort();
   }, [skins]);
 
-  const currentSkinId = weapon ? slotItemFor(weapon.def, builderKind, side)?.skinId : undefined;
+  const currentSkinId = weapon ? slotItemForChooser(weapon.def, builderKind, side)?.skinId : undefined;
 
   const shownSkins = useMemo(() => {
     let list = skins.filter((s) => skinLabel(s.name).toLowerCase().includes(skinSearch.toLowerCase()));
@@ -544,6 +589,17 @@ export default function InventorySimulator() {
                 <button className="inv3-lo-pick" onClick={() => setActiveLoadout(l.id)}>
                   <span className="inv3-lo-name">{l.name}</span>
                   <span className="inv3-lo-count">{loadoutSize(l)} items</span>
+                  {/* Mini preview strip */}
+                  <div className="inv3-lo-preview">
+                    {[...Object.values(l.equippedT), l.knifeT, l.glovesT]
+                      .slice(0, 4)
+                      .map((id) => store.items.find((i) => i.id === id))
+                      .filter(Boolean)
+                      .map((item) => (
+                        // eslint-disable-next-line @next/next/no-img-element
+                        <img key={item!.id} src={item!.image} alt={item!.skinName} loading="lazy" />
+                      ))}
+                  </div>
                 </button>
                 {canDrag && <span className="inv3-lo-grip" title="Drag to reorder">⠿</span>}
               </div>
@@ -568,7 +624,16 @@ export default function InventorySimulator() {
               <button className="btn small secondary" onClick={() => renameLoadout(activeLoadout)}>✎</button>
               <button className="btn small secondary" onClick={() => duplicateLoadout(activeLoadout)}>⧉</button>
               <button className="btn small secondary" onClick={() => shareLoadout(activeLoadout)} disabled={shareBusy}>↗</button>
-              {isAdmin && <button className="btn small secondary" title="Feature" onClick={() => shareLoadout(activeLoadout, true)}>★</button>}
+              {isAdmin && (
+                <button
+                  className={`btn small secondary ${ownFeatured.some((f) => f.loadoutId === activeLoadout.id) ? "featured-active" : ""}`}
+                  title={ownFeatured.some((f) => f.loadoutId === activeLoadout.id) ? "Remove from featured" : "Feature"}
+                  onClick={() => shareLoadout(activeLoadout, true)}
+                  disabled={shareBusy}
+                >
+                  {ownFeatured.some((f) => f.loadoutId === activeLoadout.id) ? "★ Unstar" : "☆ Star"}
+                </button>
+              )}
               {store.loadouts.length > 1 && <button className="btn small danger" onClick={() => deleteLoadout(activeLoadout)}>✕</button>}
             </div>
           </div>
@@ -656,7 +721,7 @@ export default function InventorySimulator() {
               <button className="btn small secondary" onClick={() => setWeapon(null)}>← Back</button>
               <strong>{weapon.name}</strong>
               <span className="muted">— {side.toUpperCase()} skin</span>
-              {slotItemFor(weapon.def, builderKind, side) && (
+              {slotItemForChooser(weapon.def, builderKind, side) && (
                 <button className="btn small danger" onClick={() => { clearSlot(weapon.def, builderKind); setWeapon(null); }}>
                   Remove skin
                 </button>
@@ -705,9 +770,9 @@ export default function InventorySimulator() {
             {showStickers && supportsStickers && (
               <div className="inv3-stickers">
                 <div ref={stageRef} className="sticker-stage" onPointerMove={onStageMove} onPointerUp={endDrag} onPointerLeave={endDrag}>
-                  {(slotItemFor(weapon.def, builderKind, side)?.image ?? shownSkins[0]?.image) && (
+                  {(slotItemForChooser(weapon.def, builderKind, side)?.image ?? shownSkins[0]?.image) && (
                     // eslint-disable-next-line @next/next/no-img-element
-                    <img className="weapon-img" src={slotItemFor(weapon.def, builderKind, side)?.image ?? shownSkins[0]?.image} alt="" />
+                    <img className="weapon-img" src={slotItemForChooser(weapon.def, builderKind, side)?.image ?? shownSkins[0]?.image} alt="" />
                   )}
                   {stickers.map((st, slot) =>
                     st ? (

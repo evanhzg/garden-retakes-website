@@ -2515,8 +2515,10 @@ body {
   opacity: 1;
 }
 
-/* Overlay group — fades + slides in/out as a single unit */
+/* Overlay group — covers the full stage so children keep absolute positioning */
 .ps-overlays {
+  position: absolute;
+  inset: 0;
   transition:
     opacity 0.4s cubic-bezier(0.4, 0, 0.2, 1),
     transform 0.4s cubic-bezier(0.4, 0, 0.2, 1);
@@ -3007,11 +3009,36 @@ body {
 }
 .inv3-lo-btns {
   display: flex;
-  gap: 4px;
+  gap: 5px;
   flex-wrap: wrap;
 }
 .inv3-lo-btns .btn.small {
-  padding: 5px 9px;
+  flex: 1;
+}
+
+/* Mini skin strip inside each loadout row */
+.inv3-lo-preview {
+  display: flex;
+  gap: 4px;
+  margin-top: 4px;
+  align-items: center;
+}
+.inv3-lo-preview img {
+  width: 28px;
+  height: 18px;
+  object-fit: contain;
+  opacity: 0.75;
+  filter: drop-shadow(0 1px 2px rgba(0,0,0,0.12));
+  transition: opacity 0.15s ease;
+}
+.inv3-lo:hover .inv3-lo-preview img,
+.inv3-lo.active .inv3-lo-preview img {
+  opacity: 1;
+}
+/* Star button active state */
+.btn.small.secondary.featured-active {
+  color: #f59e0b;
+  border-color: #f59e0b;
 }
 .inv3-borrow {
   border-top: 1px solid var(--border);
@@ -3238,6 +3265,7 @@ body {
   overflow: hidden;
   border-bottom: 3px solid var(--rarity, var(--border));
   transition: transform 0.15s ease, box-shadow 0.15s ease;
+  min-height: 110px;
 }
 .inv3-skin:hover {
   transform: translateY(-3px);
@@ -3257,7 +3285,7 @@ body {
 }
 .inv3-skin-pick img {
   width: 100%;
-  height: 48px;
+  height: 72px;
   object-fit: contain;
 }
 .inv3-skin-name {
