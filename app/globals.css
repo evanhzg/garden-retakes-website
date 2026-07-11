@@ -2493,3 +2493,345 @@ body {
 .fc-text .muted {
   font-size: 0.74rem;
 }
+
+/* ============================================================
+   Profile showcase — full character image with overlays above it
+   ============================================================ */
+.profile-showcase {
+  margin-bottom: 22px;
+  animation: fadeInUp 0.5s cubic-bezier(0.22, 1, 0.36, 1) both;
+}
+.ps-stage {
+  position: relative;
+  border-radius: 22px;
+  overflow: hidden;
+  box-shadow: var(--shadow-hover);
+  border: 1px solid var(--border);
+  background: #14100f;
+}
+.ps-bg {
+  display: block;
+  width: 100%;
+  height: auto;
+}
+.ps-scrim {
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  background:
+    linear-gradient(180deg, rgba(10, 6, 14, 0.55), transparent 22%),
+    linear-gradient(90deg, rgba(10, 6, 14, 0.5), transparent 26%),
+    linear-gradient(270deg, rgba(10, 6, 14, 0.5), transparent 30%);
+}
+
+/* Username — top center */
+@keyframes psDropCenter {
+  from {
+    opacity: 0;
+    transform: translate(-50%, -10px);
+  }
+  to {
+    opacity: 1;
+    transform: translate(-50%, 0);
+  }
+}
+@keyframes psSlideLeft {
+  from {
+    opacity: 0;
+    transform: translate(-16px, -50%);
+  }
+  to {
+    opacity: 1;
+    transform: translate(0, -50%);
+  }
+}
+@keyframes psSlideRight {
+  from {
+    opacity: 0;
+    transform: translate(16px, -50%);
+  }
+  to {
+    opacity: 1;
+    transform: translate(0, -50%);
+  }
+}
+
+.ps-username {
+  position: absolute;
+  top: 20px;
+  left: 50%;
+  transform: translateX(-50%);
+  z-index: 3;
+  text-align: center;
+  animation: psDropCenter 0.5s ease both;
+}
+.ps-name {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  background: none;
+  border: none;
+  cursor: pointer;
+  font-size: 2rem;
+  font-weight: 900;
+  color: #fff;
+  text-shadow: 0 2px 16px rgba(0, 0, 0, 0.7);
+  letter-spacing: -0.01em;
+}
+.ps-name-edit-icon {
+  font-size: 0.9rem;
+  opacity: 0;
+  transition: opacity 0.2s ease;
+}
+.ps-name:hover .ps-name-edit-icon {
+  opacity: 0.8;
+}
+.ps-name-edit {
+  display: flex;
+  gap: 6px;
+}
+.ps-name-edit .input {
+  width: 220px;
+}
+.ps-steamid {
+  font-size: 0.72rem;
+  color: rgba(255, 255, 255, 0.7);
+  font-family: ui-monospace, monospace;
+  margin-top: 2px;
+  text-shadow: 0 1px 6px rgba(0, 0, 0, 0.8);
+}
+
+/* Glass panel base for the overlays */
+.ps-stats,
+.ps-loadout {
+  position: absolute;
+  top: 50%;
+  transform: translateY(-50%);
+  z-index: 3;
+}
+.ps-stats {
+  left: 22px;
+  display: flex;
+  flex-direction: column;
+  gap: 7px;
+  animation: psSlideLeft 0.5s ease 0.06s both;
+}
+.ps-stat {
+  display: flex;
+  flex-direction: column;
+  min-width: 138px;
+  padding: 7px 14px;
+  border-radius: 12px;
+  background: rgba(20, 14, 26, 0.55);
+  backdrop-filter: blur(10px);
+  border: 1px solid rgba(255, 255, 255, 0.13);
+  color: #fff;
+}
+.ps-stat .v {
+  font-size: 1.15rem;
+  font-weight: 800;
+}
+.ps-stat.big .v {
+  font-size: 1.9rem;
+  background: var(--gradient);
+  -webkit-background-clip: text;
+  background-clip: text;
+  color: transparent;
+}
+.ps-stat .k {
+  font-size: 0.68rem;
+  color: rgba(255, 255, 255, 0.65);
+  text-transform: uppercase;
+  letter-spacing: 0.03em;
+}
+
+/* Loadout preview — right */
+.ps-loadout {
+  right: 22px;
+  width: 290px;
+  padding: 14px;
+  border-radius: 16px;
+  background: rgba(20, 14, 26, 0.6);
+  backdrop-filter: blur(12px);
+  border: 1px solid rgba(255, 255, 255, 0.13);
+  color: #fff;
+  animation: psSlideRight 0.5s ease 0.12s both;
+}
+.ps-lo-controls {
+  display: flex;
+  gap: 8px;
+  margin-bottom: 10px;
+}
+.ps-lo-select {
+  flex: 1;
+  min-width: 0;
+  background: rgba(255, 255, 255, 0.1);
+  color: #fff;
+  border-color: rgba(255, 255, 255, 0.2);
+}
+.ps-lo-select option {
+  color: #2b2233;
+}
+.ps-side-toggle {
+  display: flex;
+  gap: 6px;
+  margin-bottom: 12px;
+}
+.ps-side {
+  flex: 1;
+  padding: 6px;
+  border-radius: 8px;
+  border: 1px solid rgba(255, 255, 255, 0.2);
+  background: rgba(255, 255, 255, 0.08);
+  color: rgba(255, 255, 255, 0.8);
+  font-weight: 800;
+  font-size: 0.8rem;
+  cursor: pointer;
+  transition: all 0.15s ease;
+}
+.ps-side.active.side-t {
+  background: linear-gradient(120deg, #f59e0b, #f97316);
+  color: #fff;
+  border-color: transparent;
+}
+.ps-side.active.side-ct {
+  background: linear-gradient(120deg, #3b82f6, #6366f1);
+  color: #fff;
+  border-color: transparent;
+}
+.ps-guns {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 8px;
+}
+.ps-gun {
+  background: rgba(255, 255, 255, 0.06);
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  border-radius: 10px;
+  padding: 6px;
+  min-height: 74px;
+  display: flex;
+  flex-direction: column;
+  justify-content: space-between;
+  transition: transform 0.15s ease;
+}
+.ps-gun.has-skin {
+  border-color: rgba(168, 85, 247, 0.5);
+}
+.ps-gun:hover {
+  transform: translateY(-2px);
+}
+.ps-gun img {
+  width: 100%;
+  height: 40px;
+  object-fit: contain;
+}
+.ps-gun-ph {
+  width: 100%;
+  height: 40px;
+  border-radius: 6px;
+  background: repeating-linear-gradient(45deg, rgba(255, 255, 255, 0.05), rgba(255, 255, 255, 0.05) 6px, transparent 6px, transparent 12px);
+}
+.ps-gun-label {
+  margin-top: 4px;
+  text-align: center;
+}
+.ps-gun-name {
+  font-size: 0.66rem;
+  color: rgba(255, 255, 255, 0.8);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  display: block;
+}
+.ps-m4-toggle {
+  display: flex;
+  gap: 3px;
+}
+.ps-m4-toggle button {
+  flex: 1;
+  font-size: 0.58rem;
+  font-weight: 700;
+  padding: 2px 3px;
+  border-radius: 5px;
+  border: 1px solid rgba(255, 255, 255, 0.18);
+  background: transparent;
+  color: rgba(255, 255, 255, 0.7);
+  cursor: pointer;
+}
+.ps-m4-toggle button.active {
+  background: var(--accent);
+  color: #fff;
+  border-color: transparent;
+}
+.ps-edit-loadouts {
+  margin-top: 12px;
+  width: 100%;
+  justify-content: center;
+}
+
+/* ---- Profile showcase: tablet + phone (overlays flow below the image) ---- */
+@media (max-width: 820px) {
+  .ps-stage {
+    display: flex;
+    flex-direction: column;
+  }
+  .ps-scrim {
+    display: none;
+  }
+  .ps-username,
+  .ps-stats,
+  .ps-loadout {
+    position: static;
+    transform: none;
+    width: auto;
+  }
+  .ps-username {
+    order: -1;
+    padding: 14px 12px 0;
+  }
+  .ps-name {
+    font-size: 1.5rem;
+    color: var(--text);
+    text-shadow: none;
+  }
+  .ps-steamid {
+    color: var(--muted);
+    text-shadow: none;
+  }
+  .ps-stats {
+    flex-direction: row;
+    flex-wrap: wrap;
+    gap: 6px;
+    padding: 12px;
+    justify-content: center;
+  }
+  .ps-stat {
+    min-width: 96px;
+    background: var(--bg-soft);
+    border-color: var(--border);
+    color: var(--text);
+  }
+  .ps-stat .k {
+    color: var(--muted);
+  }
+  .ps-loadout {
+    margin: 0 12px 14px;
+    background: var(--bg-soft);
+    border-color: var(--border);
+    color: var(--text);
+  }
+  .ps-lo-select {
+    background: #fff;
+    color: var(--text);
+    border-color: var(--border);
+  }
+  .ps-side,
+  .ps-gun-name {
+    color: var(--muted);
+  }
+  .ps-gun {
+    background: #fff;
+    border-color: var(--border);
+  }
+}
