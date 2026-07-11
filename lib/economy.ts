@@ -54,6 +54,8 @@ export type SkinEntry = {
   name: string;
   image: string;
   rarity: string;
+  /** Collection / case name (for grouping & filtering). */
+  collection: string;
 };
 
 export type StickerEntry = {
@@ -184,6 +186,7 @@ export function getSkinsForWeapon(def: number): SkinEntry[] {
       name: item.name,
       image: item.getImage(),
       rarity: item.rarity ?? "#b0c3d9",
+      collection: item.collectionName ?? "",
     });
   }
   skins.sort((a, b) => a.name.localeCompare(b.name));

@@ -66,15 +66,39 @@ export type Loadout = {
   knifeT?: string;
   glovesCT?: string;
   glovesT?: string;
+  /** Accent colour for visibility & sorting (hex, from LOADOUT_COLORS). */
+  color?: string;
+  /** Preferred CT rifle def for the profile preview: 16 = M4A4, 60 = M4A1-S. */
+  preferredM4?: number;
 };
 
 export type InventoryStore = {
   items: InventoryItem[];
+  /** Canonical order = the array order (drag-drop reorders + persists it). */
   loadouts: Loadout[];
   activeLoadoutId: string;
   /** Monotonic counter so every item gets a unique, stable plugin uid. */
   nextUid: number;
+  /** Favourited catalog skins, as "def:paint" keys. */
+  favorites?: string[];
 };
+
+/** Preset loadout accent colours (label + hex). */
+export const LOADOUT_COLORS: { name: string; hex: string }[] = [
+  { name: "Purple", hex: "#a855f7" },
+  { name: "Pink", hex: "#ec4899" },
+  { name: "Blue", hex: "#3b82f6" },
+  { name: "Teal", hex: "#14b8a6" },
+  { name: "Green", hex: "#22c55e" },
+  { name: "Amber", hex: "#f59e0b" },
+  { name: "Red", hex: "#ef4444" },
+  { name: "Slate", hex: "#64748b" },
+];
+
+/** Stable key for a catalog skin (used for favourites). */
+export function skinKey(def: number, paint: number): string {
+  return `${def}:${paint}`;
+}
 
 const STORAGE_KEY = "garden-inventory-v2";
 
@@ -130,6 +154,8 @@ function normaliseLoadout(raw: LegacyLoadout, itemTeam: (id: string) => Team): L
     knifeT: raw.knifeT,
     glovesCT: raw.glovesCT,
     glovesT: raw.glovesT,
+    color: raw.color,
+    preferredM4: raw.preferredM4,
   };
 
   // v2 -> v3: split the single map by the item's native team.
@@ -162,6 +188,7 @@ export function normaliseStore(parsed: Partial<InventoryStore> | null | undefine
     loadouts: (parsed.loadouts as LegacyLoadout[]).map((l) => normaliseLoadout(l, teamOf)),
     activeLoadoutId: parsed.activeLoadoutId ?? parsed.loadouts[0].id,
     nextUid: parsed.nextUid && parsed.nextUid > 0 ? parsed.nextUid : 1,
+    favorites: Array.isArray(parsed.favorites) ? parsed.favorites.filter((f) => typeof f === "string") : [],
   };
   if (!store.loadouts.some((l) => l.id === store.activeLoadoutId)) {
     store.activeLoadoutId = store.loadouts[0].id;
