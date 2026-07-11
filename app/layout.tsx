@@ -50,10 +50,10 @@ export default async function RootLayout({ children }: { children: React.ReactNo
           <span className="orb orb-3" />
         </div>
         
+        <NavBar avatarPlayers={avatarPlayers} />
         <div className="layout-wrapper">
           <LeftSidebar players={avatarPlayers} />
           <div className="main-content">
-            <NavBar avatarPlayers={avatarPlayers} />
             <main className="container">{children}</main>
             <footer className="site-footer">
               Powered by GardenRankings · stats update live from the game server

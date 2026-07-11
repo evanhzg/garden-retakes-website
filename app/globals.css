@@ -4005,8 +4005,8 @@ body {
 .left-sidebar {
   width: 100px;
   position: sticky;
-  top: 0;
-  height: 100vh;
+  top: 62px; /* Offset for the sticky header */
+  height: calc(100vh - 62px);
   /* Removed overflow to prevent clipping the scale(3) avatars */
   padding: 16px 8px;
   display: flex;
