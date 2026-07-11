@@ -2501,6 +2501,36 @@ body {
   margin-bottom: 22px;
   animation: fadeInUp 0.5s cubic-bezier(0.22, 1, 0.36, 1) both;
 }
+
+/* Toggle button — bottom-right corner */
+.ps-overlay-toggle {
+  position: absolute;
+  bottom: 14px;
+  right: 14px;
+  z-index: 10;
+  opacity: 0.72;
+  transition: opacity 0.2s ease;
+}
+.ps-stage:hover .ps-overlay-toggle {
+  opacity: 1;
+}
+
+/* Overlay group — fades + slides in/out as a single unit */
+.ps-overlays {
+  transition:
+    opacity 0.4s cubic-bezier(0.4, 0, 0.2, 1),
+    transform 0.4s cubic-bezier(0.4, 0, 0.2, 1);
+}
+.ps-overlays.visible {
+  opacity: 1;
+  transform: translateY(0);
+  pointer-events: auto;
+}
+.ps-overlays.hidden {
+  opacity: 0;
+  transform: translateY(-8px);
+  pointer-events: none;
+}
 .ps-stage {
   position: relative;
   border-radius: 22px;

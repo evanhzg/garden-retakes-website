@@ -50,6 +50,7 @@ export default function ProfileShowcase({
   const [editingName, setEditingName] = useState(false);
   const [nameDraft, setNameDraft] = useState(initialName);
   const [saving, setSaving] = useState(false);
+  const [overlaysVisible, setOverlaysVisible] = useState(true);
 
   // ---------- Load loadouts + base weapon images ----------
 
@@ -170,6 +171,18 @@ export default function ProfileShowcase({
           onError={(e) => { (e.currentTarget as HTMLImageElement).src = "/default_character.PNG"; }}
         />
         <div className="ps-scrim" aria-hidden="true" />
+
+        {/* Overlay toggle button */}
+        <button
+          className="ps-overlay-toggle btn small secondary"
+          onClick={() => setOverlaysVisible((v) => !v)}
+          title={overlaysVisible ? "Hide overlays" : "Show overlays"}
+        >
+          {overlaysVisible ? "Hide overlays" : "Show overlays"}
+        </button>
+
+        {/* All overlays — animated in/out */}
+        <div className={`ps-overlays ${overlaysVisible ? "visible" : "hidden"}`}>
 
         {/* Username — top center */}
         <div className="ps-username">
@@ -329,6 +342,8 @@ export default function ProfileShowcase({
             Edit loadouts →
           </a>
         </div>
+
+        </div>{/* end ps-overlays */}
       </div>
     </section>
   );

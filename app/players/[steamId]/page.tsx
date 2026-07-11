@@ -54,7 +54,18 @@ export default async function PlayerPage({
   return (
     <>
       {/* ---------- Character image hero ---------- */}
-      <CharacterHero steamId={params.steamId} />
+      <CharacterHero
+        steamId={params.steamId}
+        playerName={name}
+        stats={[
+          { label: "Rating", value: total.rating.toFixed(2), big: true },
+          { label: `CS Rating${seasonStats?.PeakElo ? ` · peak ${seasonStats.PeakElo}` : ""}`, value: String(seasonStats?.Elo ?? "—") },
+          { label: "K/D", value: total.kd.toFixed(2) },
+          { label: "ADR", value: total.adr.toFixed(0) },
+          { label: `Win rate · ${total.rounds} rds`, value: `${total.winPct.toFixed(0)}%` },
+          { label: `Clutches · ${total.openingKills} OK`, value: String(total.clutches) },
+        ]}
+      />
 
       {/* ---------- Hero ---------- */}
       <section className="panel">
