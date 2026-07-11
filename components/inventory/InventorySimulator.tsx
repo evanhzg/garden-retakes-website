@@ -233,11 +233,11 @@ export default function InventorySimulator() {
   // For the chooser head / sticker stage: resolve knife/gloves without def check
   // (the user has already clicked that specific weapon entry).
   const slotItemForChooser = useCallback(
-    (def: number, kind: ItemKind, s: Side): InventoryItem | undefined => {
-      if (!activeLoadout) return undefined;
-      if (kind === "knife") return itemById(s === "t" ? activeLoadout.knifeT : activeLoadout.knifeCT);
-      if (kind === "gloves") return itemById(s === "t" ? activeLoadout.glovesT : activeLoadout.glovesCT);
-      return itemById((s === "t" ? activeLoadout.equippedT : activeLoadout.equippedCT)[def]);
+    (def: number, kind: ItemKind, s: Side, loadout = activeLoadout): InventoryItem | undefined => {
+      if (!loadout) return undefined;
+      if (kind === "knife") return itemById(s === "t" ? loadout.knifeT : loadout.knifeCT);
+      if (kind === "gloves") return itemById(s === "t" ? loadout.glovesT : loadout.glovesCT);
+      return itemById((s === "t" ? loadout.equippedT : loadout.equippedCT)[def]);
     },
     [activeLoadout, itemById]
   );
