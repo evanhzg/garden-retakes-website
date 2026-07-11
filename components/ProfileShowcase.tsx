@@ -92,6 +92,17 @@ export default function ProfileShowcase({
     return { image: baseImages.get(def) ?? null, hasSkin: false };
   };
 
+  const slotItemKG = (kind: "knife" | "gloves"): { image: string | null; hasSkin: boolean; name?: string } => {
+    if (!store || !loadout) return { image: null, hasSkin: false };
+    const itemId =
+      kind === "knife"
+        ? side === "t" ? loadout.knifeT : loadout.knifeCT
+        : side === "t" ? loadout.glovesT : loadout.glovesCT;
+    const item = itemId ? store.items.find((i) => i.id === itemId) : undefined;
+    if (item) return { image: item.image, hasSkin: true, name: item.skinName };
+    return { image: null, hasSkin: false };
+  };
+
   // ---------- Persist helpers ----------
 
   const persist = useCallback((next: InventoryStore) => {
@@ -285,6 +296,29 @@ export default function ProfileShowcase({
                     ) : (
                       <span className="ps-gun-name">{hasSkin ? skinName?.split(" | ")[1] ?? slot.label : slot.label}</span>
                     )}
+                  </div>
+                </div>
+              );
+            })}
+          </div>
+
+          {/* Knife + Gloves */}
+          <div className="ps-guns ps-extras">
+            {(["knife", "gloves"] as const).map((kind) => {
+              const label = kind === "knife" ? "🗡 Knife" : "🧤 Gloves";
+              const { image, hasSkin, name: skinName } = slotItemKG(kind);
+              return (
+                <div key={kind} className={`ps-gun ${hasSkin ? "has-skin" : "empty"}`}>
+                  {image ? (
+                    // eslint-disable-next-line @next/next/no-img-element
+                    <img src={image} alt={label} loading="lazy" />
+                  ) : (
+                    <div className="ps-gun-ph" />
+                  )}
+                  <div className="ps-gun-label">
+                    <span className="ps-gun-name">
+                      {hasSkin ? skinName?.split(" | ")[1] ?? label : label}
+                    </span>
                   </div>
                 </div>
               );
