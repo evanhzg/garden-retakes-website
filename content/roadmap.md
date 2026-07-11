@@ -458,6 +458,16 @@ collected 2026-07-09 so nothing gets lost:
   placement, last-session standout hero (`lib/hero.ts`); NavBar Admin/Profile links; cursor +
   animation polish. Typecheck clean; client pages verified in the dev server (DB-backed pages need
   Evan's live MySQL). Remaining: Evan's production cutover + R12 build/deploy; `npx prisma generate`.
+- 2026-07-11 (28): **Spotlight module** (fun) added — watches configured player(s) (default
+  Damien/vz7y). Push alerts: `!pushzone add <name> [radius]` defines per-map spheres
+  (`spotlight_zones/<map>.json`); when a watched T is inside one during the first
+  `AlertWindowSeconds` after freeze end, the audience (CTs by default) gets "⚠ Damien is pushing
+  short!" (chat + center), once per zone per round. Gags (Admin): `!reveal [player] [secs]`
+  (through-walls glow via the pawn's own CGlowProperty, GlowType 3), `!nojump [player]` (OnTick
+  cancels upward velocity for the round). Auto per-round via `Spotlight.AutoReveal` /
+  `AutoNoJump`. Config = `GardenSettings.Spotlight`. Builds green + 146 tests still pass. COMMANDS.md
+  (+ website mirror, which was re-synced) updated. **Glow + no-jump need in-server confirmation**
+  (CS2 glow transmit / velocity feel can vary) — logic is sound but untested live.
 - 2026-07-11 (27): **Garden-retakes builds GREEN on the .NET 10 SDK** (0 errors; official CSS
   1.0.371 resolved from nuget.org — local feed no longer needed) and **all 146 tests pass**
   (GardenRetakes 51 + RetakesAllocator 56 + GardenRankings 39). Added `GardenWebProfiles` to the

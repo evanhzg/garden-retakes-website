@@ -2,7 +2,8 @@
 
 Every command works from chat with `!` or `/` (e.g. `!guns`) and from console as `css_*`
 (e.g. `css_guns`). **Levels**: Everyone · Mod · Admin · Owner (Garden admin registry;
-`@css/root` counts as Owner).
+`@css/root` counts as Owner). *Keep this file updated whenever commands change —
+it feeds the website `/commands` page (ROADMAP Phase W).*
 
 ## Players — weapons (allocator)
 
@@ -58,22 +59,28 @@ Every command works from chat with `!` or `/` (e.g. `!guns`) and from console as
 | `!grcon <command...>` | Owner | Run any server command |
 
 All moderation actions are written to the `GardenAdminLog` DB table (who, what, when).
+With `GardenSettings.Admin.EnableShortAliases` on (post-transition), the short names
+`!admin`, `!kick`, `!slay`, `!map`, `!rcon` work too.
 
 ## Game modes
 
 | Command | Level | Description |
 |---|---|---|
-| `!gamemode` / `!gmode [mode]` | Admin to change | Show or switch mode: retakes, **duels**, **executes**, faststrat |
+| `!gamemode` / `!gmode [mode]` | Admin to change | Show or switch mode: retakes, duels, executes, faststrat, **edit** |
+| `!gedit` | Admin | Edit mode: open/close the editor menu (R cycle · E select · TAB close — works while moving/noclipping) |
+| `!name <...>` | Admin | Answer an editor name prompt (multi-word names OK, e.g. `!name A Site VS Long`) |
 | `!duelscore` | Everyone | Duel scoreboard (Duels mode) |
+| `!duelscore arenas` | Everyone | Per-arena stats (duels played, best fighter) |
 | `!duel <player> [firstTo]` | Everyone | Challenge a player to a private duel (no rotation; first-to-X or infinite) |
 | `!duel accept` / `decline` / `stop` | Everyone | Answer or cancel a challenge |
 | `!garena new <name>` | Admin | Create a named duel arena (end A = where you stand) |
 | `!garena setb <name>` / `seta <name>` | Admin | Set/re-set the arena ends |
 | `!garena list` / `del <name>` | Admin | Manage named arenas |
-| `!gexec new <name> <a\|b>` | Admin | Create an execute strategy (and start editing it) |
+| `!gexec new <a\|b> <name...>` | Admin | Create an execute strategy (multi-word names OK; starts editing it) |
 | `!gexec edit <name>` | Admin | Edit an existing strategy |
 | `!gexec tstart` / `!gexec ctsetup` | Admin | Add a T-start / CT-setup position where you stand |
-| `!gexec nade [delay]` | Admin | Save your last thrown grenade as an auto-throw lineup |
+| `!gexec nade [delay]` | Admin | Save your last thrown grenade as an auto-throw lineup (T or CT side = your side when thrown) |
+| `!gexec weight <0-100>` | Admin | Random-pick weight of the edited strategy (0 = manual only) |
 | `!gexec list` / `info [name]` / `del <name>` | Admin | Manage strategies |
 | `!gexec play <name>` / `!gexec random` | Admin | Force one strategy / back to random |
 | `!strat <name\|list>` | Everyone (T side) | Fast-strat: vote the T strategy for next round |
@@ -83,7 +90,7 @@ All moderation actions are written to the `GardenAdminLog` DB table (who, what, 
 | `!forcebombsite <A\|B>` / `!forcebombsitestop` | root | Force retakes onto one site |
 | `!scramble` | admin | Scramble teams next round |
 
-## Admins — spawn editor
+## Admins — spawn editor (Garden, R1)
 
 | Command | Level | Description |
 |---|---|---|
@@ -111,6 +118,27 @@ Base editor equivalents still exist: `!showspawns <A|B>`, `!add`, `!remove`, `!n
 | `!print_config [name]` | root | Print allocator config |
 | `!mapconfig <name>` / `!mapconfigs` | root | Force/list retakes map configs |
 | `!debugqueues` | root | Dump the queue state |
+
+## Spotlight (fun — watch a specific player)
+
+Keeps an eye on configured player(s) (default: **Damien** / vz7y). Warns the CTs
+when a watched T pushes a defined zone in the first seconds of the round, plus a
+couple of gag effects. Config: `GardenSettings.Spotlight` (targets, alias,
+`AlertWindowSeconds`, `AlertAudience`, `AutoReveal`, `AutoNoJump`). Zones are
+per-map in `spotlight_zones/<map>.json`.
+
+| Command | Level | Description |
+|---|---|---|
+| `!spotlight` | any | Show status (targets, alias, window, audience, zones, auto-flags) |
+| `!pushzone list` | any | List this map's push zones |
+| `!pushzone add <name> [radius]` | Admin | Save a zone at your feet (default radius 300u) |
+| `!pushzone del <name>` / `!pushzone clear` | Admin | Remove one / all zones on the map |
+| `!reveal [player] [seconds]` | Admin | Glow a player through walls for **everyone** (default target = Damien, default 30s) |
+| `!nojump [player]` | Admin | Toggle: the player can't jump for the round (default target = Damien) |
+
+When a watched player enters a zone in the alert window, everyone in the audience
+(CTs by default) gets `⚠ Damien is pushing short!` in chat + center-screen, once
+per zone per round.
 
 ## Test commands (root)
 
