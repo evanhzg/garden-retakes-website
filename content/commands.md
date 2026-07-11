@@ -68,7 +68,7 @@ With `GardenSettings.Admin.EnableShortAliases` on (post-transition), the short n
 | Command | Level | Description |
 |---|---|---|
 | `!gamemode` / `!gmode [mode]` | Admin to change | Show or switch mode: retakes, duels, executes, faststrat, **edit** |
-| `!gedit` | Admin | Edit mode: open/close the editor menu (R cycle · E select · TAB close — works while moving/noclipping) |
+| `!gedit` | Admin | Edit mode: open/close the editor menu (R cycle · E select · TAB close — works while moving/noclipping). Menu scrolls (▲/▼) so all rows are reachable; Executes category can cycle a strategy's saved nades to **preview** (throws it) or **delete** them |
 | `!name <...>` | Admin | Answer an editor name prompt (multi-word names OK, e.g. `!name A Site VS Long`) |
 | `!duelscore` | Everyone | Duel scoreboard (Duels mode) |
 | `!duelscore arenas` | Everyone | Per-arena stats (duels played, best fighter) |

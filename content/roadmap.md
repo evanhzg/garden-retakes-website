@@ -458,6 +458,13 @@ collected 2026-07-09 so nothing gets lost:
   placement, last-session standout hero (`lib/hero.ts`); NavBar Admin/Profile links; cursor +
   animation polish. Typecheck clean; client pages verified in the dev server (DB-backed pages need
   Evan's live MySQL). Remaining: Evan's production cutover + R12 build/deploy; `npx prisma generate`.
+- 2026-07-11 (29): Executes/edit fixes (builds green, 146 tests pass). **Executes nade detonation**:
+  the spawner teleported the projectile BEFORE `DispatchSpawn`, which reset physics so nades bounced
+  forever and never bloomed — reordered to seed InitialPosition/Velocity → DispatchSpawn → Teleport
+  → InitializeSpawnFromWorld, + Elasticity 0.45 (ExecutesModule.ThrowUtility). **`!gedit` menu**:
+  center-HTML could only show a few rows — added a scrolling window (▲/▼ "N more"); Executes category
+  now cycles a strategy's saved nades to **preview** (throws via ThrowUtility, now allowed in Edit
+  mode) or **delete** them (EditModeModule). Pending Evan's in-server confirmation of the nade bloom.
 - 2026-07-11 (28): **Spotlight module** (fun) added — watches configured player(s) (default
   Damien/vz7y). Push alerts: `!pushzone add <name> [radius]` defines per-map spheres
   (`spotlight_zones/<map>.json`); when a watched T is inside one during the first
