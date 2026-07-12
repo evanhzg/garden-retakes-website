@@ -3314,10 +3314,12 @@ body {
   .ps-stage {
     display: flex;
     flex-direction: column;
+    padding-bottom: 16px;
   }
 
-  .ps-scrim {
-    display: none;
+  .ps-scrim,
+  .ps-overlay-toggle {
+    display: none !important;
   }
 
   .ps-overlays {
@@ -3329,58 +3331,23 @@ body {
     flex-direction: column;
   }
 
-  .ps-overlay-toggle {
+  /* On mobile the showcase is just the character image + the loadout below it.
+     Username and stats already appear in the sections further down the page, so
+     don't overlay or duplicate them on the image here. */
+  .ps-username,
+  .ps-stats {
     display: none !important;
   }
 
-  .ps-username,
-  .ps-stats,
   .ps-loadout {
     position: static;
     transform: none;
     width: auto;
-  }
-
-  .ps-username {
-    order: -1;
-    padding: 14px 12px 0;
-  }
-
-  .ps-name {
-    font-size: 1.5rem;
-    color: var(--text);
-    text-shadow: none;
-  }
-
-  .ps-steamid {
-    color: var(--muted);
-    text-shadow: none;
-  }
-
-  .ps-stats {
-    flex-direction: row;
-    flex-wrap: wrap;
-    gap: 6px;
-    padding: 12px;
-    justify-content: center;
-  }
-
-  .ps-stat {
-    min-width: 96px;
+    margin: 12px;
     background: var(--bg-soft);
     border-color: var(--border);
     color: var(--text);
-  }
-
-  .ps-stat .k {
-    color: var(--muted);
-  }
-
-  .ps-loadout {
-    margin: 0 12px 14px;
-    background: var(--bg-soft);
-    border-color: var(--border);
-    color: var(--text);
+    animation: none;
   }
 
   .ps-lo-select {
