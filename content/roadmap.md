@@ -458,10 +458,19 @@ collected 2026-07-09 so nothing gets lost:
   placement, last-session standout hero (`lib/hero.ts`); NavBar Admin/Profile links; cursor +
   animation polish. Typecheck clean; client pages verified in the dev server (DB-backed pages need
   Evan's live MySQL). Remaining: Evan's production cutover + R12 build/deploy; `npx prisma generate`.
-- 2026-07-11 (29): Executes/edit fixes (builds green, 146 tests pass). **Executes nade detonation**:
-  the spawner teleported the projectile BEFORE `DispatchSpawn`, which reset physics so nades bounced
-  forever and never bloomed — reordered to seed InitialPosition/Velocity → DispatchSpawn → Teleport
-  → InitializeSpawnFromWorld, + Elasticity 0.45 (ExecutesModule.ThrowUtility). **`!gedit` menu**:
+- 2026-07-11 (30): **Executes nade detonation — real fix**. Prior attempts (Thrower + reorder +
+  InitializeSpawnFromWorld) still never detonated for ANY type. Root cause: a grenade's own `Spawn()`
+  (run by `DispatchSpawn`) reads `InitialPosition`/`InitialVelocity` to schedule its detonation think,
+  so `DispatchSpawn` must be the LAST call — after seeding Initial*, Thrower, and the Teleport.
+  Spawning first initialised it from zeroes (flew but never detonated); `InitializeSpawnFromWorld`
+  didn't recover it and is now removed (ExecutesModule.ThrowUtility). Also fixes the `!gedit` preview.
+  Builds green. **`!reveal` fix**: pawn self-glow doesn't network in CS2 — switched to the two-prop
+  FollowEntity glow (relay + glow clone) so the target glows through walls for everyone
+  (SpotlightModule). **No-weapons fix**: `GameModeModule.OnMapStart` now resets any non-Retakes mode
+  (esp. the editor) back to Retakes so the allocator isn't left gated.
+- 2026-07-11 (29): Executes/edit fixes (builds green, 146 tests pass). **Executes nade detonation**
+  (first attempt, superseded by (30)): reordered spawn + InitializeSpawnFromWorld + Elasticity 0.45.
+  **`!gedit` menu**:
   center-HTML could only show a few rows — added a scrolling window (▲/▼ "N more"); Executes category
   now cycles a strategy's saved nades to **preview** (throws via ThrowUtility, now allowed in Edit
   mode) or **delete** them (EditModeModule). Pending Evan's in-server confirmation of the nade bloom.
