@@ -153,6 +153,16 @@ export const formatDate = (dateStr: string | Date) => {
   return d.toLocaleDateString('en-GB', { day: '2-digit', month: '2-digit', year: 'numeric' });
 };
 
+export function formatPlaytime(totalSeconds: number): string {
+  if (!totalSeconds) return "0h 0m";
+  const hours = Math.floor(totalSeconds / 3600);
+  const minutes = Math.floor((totalSeconds % 3600) / 60);
+  if (hours > 0) {
+    return `${hours}h ${minutes}m`;
+  }
+  return `${minutes}m`;
+}
+
 /** HLTV-style rating color class. */
 export function ratingClass(rating: number): string {
   if (rating >= 1.05) return "rating-good";

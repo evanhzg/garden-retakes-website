@@ -1,7 +1,7 @@
 import Link from "next/link";
 import { getActiveSeason, prisma } from "@/lib/db";
 import { getSession } from "@/lib/auth";
-import { dayKey, fetchRows, groupBy, ratingClass, sideName, summarize, formatDate } from "@/lib/stats";
+import { dayKey, fetchRows, groupBy, ratingClass, sideName, summarize, formatDate, formatPlaytime } from "@/lib/stats";
 import CharacterHero from "@/components/CharacterHero";
 import AvatarImage from "@/components/AvatarImage";
 import ProfileActivity from "@/components/ProfileActivity";
@@ -96,7 +96,7 @@ export default async function ProPage({
               {webProfile?.Country ? ` · ${webProfile.Country}` : ""}
               {rankedOnly ? " · ranked rounds only" : " · all rounds"}
             </div>
-            <ProfileActivity steamId={steamId.toString()} lastConnectedUtc={profile?.LastConnectedUtc} />
+            <ProfileActivity steamId={steamId.toString()} lastConnectedUtc={profile?.LastSeenAtUtc} />
             {webProfile?.Bio && <p className="player-bio">{webProfile.Bio}</p>}
           </div>
           <div className="player-hero-actions">
@@ -150,6 +150,10 @@ export default async function ProPage({
           <div className="bigstat">
             <div className="num rating-neutral">{total.rounds}</div>
             <div className="cap">Rounds · {byMap.length} maps</div>
+          </div>
+          <div className="bigstat">
+            <div className="num rating-neutral">{formatPlaytime(profile?.TimeSpentSeconds ?? 0)}</div>
+            <div className="cap">Playtime</div>
           </div>
         </div>
 
