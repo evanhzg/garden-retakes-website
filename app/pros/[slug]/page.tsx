@@ -66,6 +66,7 @@ export default async function ProPage({
       <CharacterHero
         steamId={steamId.toString()}
         playerName={name}
+        characterSrc={`/pros/${params.slug}_character.png`}
         stats={[
           { label: "Rating", value: total.rating.toFixed(2), big: true },
           { label: `CS Rating${seasonStats?.PeakElo ? ` · peak ${seasonStats.PeakElo}` : ""}`, value: String(seasonStats?.Elo ?? "—") },
@@ -80,7 +81,7 @@ export default async function ProPage({
       <section className="panel">
         <div className="player-hero">
           <div className="player-avatar">
-            <AvatarImage steamId={steamId.toString()} />
+            <AvatarImage steamId={steamId.toString()} src={webProfile.AvatarUrl || `/pros/${params.slug}_pp.png`} />
           </div>
           <div style={{ flex: 1, minWidth: 220 }}>
             <h1 className="hero-name flex items-center gap-2">

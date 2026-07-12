@@ -33,10 +33,12 @@ export default function CharacterHero({
   steamId,
   playerName,
   stats,
+  characterSrc,
 }: {
   steamId: string;
   playerName: string;
   stats: StatEntry[];
+  characterSrc?: string | null;
 }) {
   const [loadout, setLoadout] = useState<PublicLoadout | null>(null);
   const [side, setSide] = useState<"t" | "ct">("t");
@@ -59,7 +61,7 @@ export default function CharacterHero({
         {/* eslint-disable-next-line @next/next/no-img-element */}
         <img
           className="ps-bg"
-          src={`/${steamId}_character.PNG`}
+          src={characterSrc || `/${steamId}_character.PNG`}
           alt=""
           onError={(e) => {
             (e.currentTarget as HTMLImageElement).src = "/default_character.PNG";
