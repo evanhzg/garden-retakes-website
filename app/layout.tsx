@@ -36,26 +36,11 @@ export default async function RootLayout({ children }: { children: React.ReactNo
     select: { SteamId: true, LastKnownName: true },
   });
 
-  const proProfiles = await prisma.gardenWebProfile.findMany({
-    where: { IsPro: true },
-  });
-
   const avatarPlayers = profiles.map((p) => ({
     steamId: p.SteamId.toString(),
     name: p.LastKnownName,
     avatarSrc: `/${p.SteamId.toString()}_pp.png`,
   }));
-
-  for (const pro of proProfiles) {
-    if (pro.ProSlug) {
-      const profile = await prisma.playerProfile.findUnique({ where: { SteamId: pro.SteamId } });
-      avatarPlayers.push({
-        steamId: pro.ProSlug, // Using slug as steamId for LeftSidebar routing logic
-        name: profile?.LastKnownName || pro.ProSlug,
-        avatarSrc: pro.AvatarUrl || `/${pro.SteamId.toString()}_pp.png`,
-      });
-    }
-  }
 
   return (
     <html lang="en" suppressHydrationWarning>
