@@ -4,10 +4,15 @@ import HeatmapClient from "./HeatmapClient";
 export const dynamic = "force-dynamic";
 
 export default async function HeatmapPage() {
-  const users = await prisma.playerProfile.findMany({
-    select: { SteamId: true, Name: true, AvatarUrl: true },
-    take: 50 // In real app, we might paginate or search
+  const profiles = await prisma.playerProfile.findMany({
+    select: { SteamId: true, LastKnownName: true },
+    take: 50,
+    orderBy: { LastSeenAtUtc: "desc" },
   });
+  const users = profiles.map(p => ({
+    SteamId: p.SteamId,
+    Name: p.LastKnownName,
+  }));
 
   return (
     <main className="container">
