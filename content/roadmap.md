@@ -458,6 +458,17 @@ collected 2026-07-09 so nothing gets lost:
   placement, last-session standout hero (`lib/hero.ts`); NavBar Admin/Profile links; cursor +
   animation polish. Typecheck clean; client pages verified in the dev server (DB-backed pages need
   Evan's live MySQL). Remaining: Evan's production cutover + R12 build/deploy; `npx prisma generate`.
+- 2026-07-12 (32): Two post-deploy fixes (built + FTP-deployed to DatHost + RCON-reloaded by me).
+  **Nade type**: MatchZy's native `Create()` signatures mis-resolved on the server's build — every
+  nade detonated but as a FLASHBANG. Dropped the native-signature path (deleted GrenadeFunctions.cs)
+  and spawn each type by classname (`CreateEntityByName<CSmokeGrenadeProjectile>("smokegrenade_projectile")`
+  etc.) + the full flashbang-proven wiring (DispatchSpawn, Initial/Vel/AngVelocity, Teleport,
+  Globalname, Thrower/OriginalThrower/OwnerEntity) on all types — correct type guaranteed.
+  **`/gedit` lag**: the menu re-sent `PrintToCenterHtml` every tick (64/s), choking clients
+  (rollbacks/TPs) — now throttled to on-change + a ~6/s heartbeat (EditModeModule). Deploy: FTP to
+  `addons/counterstrikesharp/plugins/RetakesPlugin/RetakesPlugin.dll`, `css_plugins reload` (the
+  "Could not reload" RCON reply is a lie — the CSS log shows a clean reload). RCON creds: server
+  console at the DatHost server; treat as secrets.
 - 2026-07-11 (31): **Executes nade detonation — the actual fix (MatchZy technique)**. Attempts (29)/(30)
   via `CreateEntityByName` + `DispatchSpawn` never detonated because that path can't run the game's
   own projectile setup. Ported MatchZy's approach (github.com/shobhit-pathak/MatchZy —
