@@ -3,7 +3,7 @@ import { PrismaClient } from '@prisma/client';
 const prisma = new PrismaClient();
 
 async function main() {
-  const zywooSteamId = 76561197984683050n; // Use ZywOo's actual SteamID or a fake big one
+  const zywooSteamId = 76561198113666193; // Use ZywOo's actual SteamID or a fake big one
 
   console.log("Seeding ZywOo profile...");
 
