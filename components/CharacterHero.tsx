@@ -64,7 +64,14 @@ export default function CharacterHero({
           src={characterSrc || `/${steamId}_character.PNG`}
           alt=""
           onError={(e) => {
-            (e.currentTarget as HTMLImageElement).src = "/default_character.PNG";
+            const target = e.currentTarget as HTMLImageElement;
+            if (target.src.includes("/default_character.PNG")) return;
+            
+            if (target.src.endsWith(".png")) {
+              target.src = target.src.replace(/\.png$/, ".PNG");
+            } else {
+              target.src = "/default_character.PNG";
+            }
           }}
         />
         <div className="ps-scrim" aria-hidden="true" />
