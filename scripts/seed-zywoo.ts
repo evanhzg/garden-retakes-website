@@ -26,7 +26,7 @@ async function main() {
   await prisma.gardenWebProfile.upsert({
     where: { SteamId: zywooSteamId },
     update: {
-      AvatarUrl: '/pros/zywoo_character/pp.png',
+      AvatarUrl: '/pros/zywoo_pp.png',
       Bio: 'Professional CS2 Player for Team Vitality',
       Country: 'FR',
       IsPro: true,
@@ -34,7 +34,7 @@ async function main() {
     },
     create: {
       SteamId: zywooSteamId,
-      AvatarUrl: '/pros/zywoo_character/pp.png',
+      AvatarUrl: '/pros/zywoo_pp.png',
       Bio: 'Professional CS2 Player for Team Vitality',
       Country: 'FR',
       IsPro: true,
