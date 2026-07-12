@@ -58,13 +58,6 @@ export default async function StatsPage() {
 
   return (
     <>
-      <section className="panel">
-        <h2>Global Stats — {season.Name}</h2>
-        <div className="chip-row">
-          <Link href="/stats" className="chip active">Overview</Link>
-          <Link href="/stats/heatmaps" className="chip">Map Heatmaps</Link>
-        </div>
-      </section>
 
       <div className="split-cards" style={{ marginTop: 16 }}>
         <div className="side-card">

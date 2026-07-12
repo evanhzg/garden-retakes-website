@@ -115,12 +115,15 @@ export default function HeatmapClient({ users }: { users: any[] }) {
         </div>
       </div>
 
-      <div className="flex-1 w-full max-w-3xl">
-        <div className="relative w-full aspect-square rounded-2xl overflow-hidden border-2 border-zinc-800 shadow-2xl bg-black/80">
+      <div className="flex-1 w-full max-w-[800px] mx-auto">
+        <div 
+          className="relative w-full rounded-2xl overflow-hidden border-2 border-[var(--border)] shadow-2xl bg-black"
+          style={{ aspectRatio: "1/1", maxHeight: "80vh" }}
+        >
           {loading && (
             <div className="absolute inset-0 z-20 flex items-center justify-center bg-black/50 backdrop-blur-sm">
-              <div className="flex flex-col items-center gap-4 text-emerald-400 font-bold animate-pulse">
-                <div className="w-8 h-8 border-4 border-emerald-400 border-t-transparent rounded-full animate-spin" />
+              <div className="flex flex-col items-center gap-4 text-[var(--accent)] font-bold animate-pulse">
+                <div className="w-8 h-8 border-4 border-[var(--accent)] border-t-transparent rounded-full animate-spin" />
                 Computing Densities...
               </div>
             </div>
@@ -130,7 +133,7 @@ export default function HeatmapClient({ users }: { users: any[] }) {
               src={`/maps/${map.id}.png`}
               alt={map.name}
               fill
-              className="object-cover opacity-70 mix-blend-screen pointer-events-none"
+              className="object-contain opacity-70 mix-blend-screen pointer-events-none"
               unoptimized
             />
           </div>
@@ -139,6 +142,7 @@ export default function HeatmapClient({ users }: { users: any[] }) {
             width={1024}
             height={1024}
             className="absolute inset-0 w-full h-full z-10 pointer-events-none"
+            style={{ objectFit: 'contain' }}
           />
         </div>
       </div>

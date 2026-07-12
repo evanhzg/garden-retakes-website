@@ -1,5 +1,6 @@
 import Link from "next/link";
 import { prisma } from "@/lib/db";
+import { formatDate } from "@/lib/stats";
 
 export const revalidate = 60;
 
@@ -52,8 +53,8 @@ export default async function SeasonsPage() {
                 {season.Name}
               </td>
               <td className="muted">
-                {season.StartedAtUtc.toISOString().slice(0, 10)} →{" "}
-                {season.EndedAtUtc ? season.EndedAtUtc.toISOString().slice(0, 10) : "ongoing"}
+                {formatDate(season.StartedAtUtc.toISOString().slice(0, 10))} →{" "}
+                {season.EndedAtUtc ? formatDate(season.EndedAtUtc.toISOString().slice(0, 10)) : "ongoing"}
               </td>
               <td>
                 {best ? (

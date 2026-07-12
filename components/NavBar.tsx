@@ -8,10 +8,8 @@ import { ThemeToggle } from "./ThemeToggle";
 const LINKS = [
   { href: "/", label: "Ladder" },
   { href: "/stats", label: "Stats" },
-  { href: "/compare", label: "Compare" },
   { href: "/teams", label: "CR Teams" },
   { href: "/duels", label: "Duels" },
-  { href: "/seasons", label: "Seasons" },
   { href: "/inventory", label: "Inventory" },
   { href: "/commands", label: "Commands" },
   { href: "/roadmap", label: "Roadmap" },
@@ -35,11 +33,34 @@ export default function NavBar({ avatarPlayers = [] }: { avatarPlayers?: AvatarP
   const pathname = usePathname();
   const [session, setSession] = useState<Session>({ authenticated: false });
   const [isMenuOpen, setIsMenuOpen] = useState(false);
+  const [isLive, setIsLive] = useState(false);
 
   // Close menu when navigating
   useEffect(() => {
     setIsMenuOpen(false);
   }, [pathname]);
+
+  // Check if server is live with players
+  useEffect(() => {
+    const checkLive = async () => {
+      try {
+        const res = await fetch("/api/live");
+        if (res.ok) {
+          const json = await res.json();
+          if (json.live && json.data?.Players?.length > 0) {
+            setIsLive(true);
+            return;
+          }
+        }
+        setIsLive(false);
+      } catch (e) {
+        setIsLive(false);
+      }
+    };
+    checkLive();
+    const iv = setInterval(checkLive, 10000);
+    return () => clearInterval(iv);
+  }, []);
 
   // Lock body scroll when mobile menu is open
   useEffect(() => {
@@ -70,7 +91,7 @@ export default function NavBar({ avatarPlayers = [] }: { avatarPlayers?: AvatarP
         </Link>
         <nav className="desktop-nav">
           <Link href="/live" className={`live-link ${isActive("/live") ? "active" : ""}`}>
-            LIVE <div className="inline-block w-2 h-2 ml-1 rounded-full bg-red-500 animate-pulse" />
+            LIVE {isLive && <div className="inline-block w-2 h-2 ml-1 rounded-full bg-red-500 animate-pulse" />}
           </Link>
           {LINKS.map((l) => (
             <Link key={l.href} href={l.href} className={isActive(l.href) ? "active" : ""}>
@@ -117,6 +138,9 @@ export default function NavBar({ avatarPlayers = [] }: { avatarPlayers?: AvatarP
       <div className={`mobile-menu-overlay ${isMenuOpen ? "open" : ""}`}>
         <div className="mobile-menu-content">
           <nav className="mobile-nav-links">
+            <Link href="/live" className={`live-link ${isActive("/live") ? "active" : ""}`}>
+              LIVE {isLive && <div className="inline-block w-2 h-2 ml-1 rounded-full bg-red-500 animate-pulse" />}
+            </Link>
             {LINKS.map((l) => (
               <Link key={l.href} href={l.href} className={isActive(l.href) ? "active" : ""}>
                 {l.label}

@@ -257,8 +257,31 @@ a:hover {
   border-radius: var(--radius);
   padding: 24px;
   margin-bottom: 22px;
-  box-shadow: var(--shadow);
+  box-shadow: 0 4px 20px -10px rgba(0, 0, 0, 0.1);
   animation: fadeInUp 0.5s cubic-bezier(0.22, 1, 0.36, 1) both;
+  transition: transform 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275), box-shadow 0.3s ease;
+  position: relative;
+  overflow: hidden;
+}
+
+.panel::before {
+  content: "";
+  position: absolute;
+  inset: 0;
+  background: linear-gradient(135deg, var(--accent-soft) 0%, transparent 40%);
+  opacity: 0.2;
+  pointer-events: none;
+  z-index: 0;
+}
+
+.panel > * {
+  position: relative;
+  z-index: 1;
+}
+
+.panel:hover {
+  transform: translateY(-2px);
+  box-shadow: var(--shadow);
 }
 
 .panel:nth-child(2) {
@@ -410,13 +433,35 @@ tbody tr:hover {
 }
 
 .stat-card {
-  background: linear-gradient(180deg, var(--panel), var(--bg-soft));
+  background: linear-gradient(145deg, var(--panel), var(--bg-soft));
   border: 1px solid var(--border);
   border-radius: 12px;
   padding: 16px 12px;
   text-align: center;
-  transition: transform 0.2s ease, box-shadow 0.2s ease;
+  position: relative;
+  overflow: hidden;
+  transition: transform 0.3s ease, box-shadow 0.3s ease, border-color 0.3s ease;
   animation: popIn 0.4s ease both;
+}
+
+.stat-card::before {
+  content: "";
+  position: absolute;
+  inset: 0;
+  background: radial-gradient(circle at center, var(--accent-soft) 0%, transparent 100%);
+  opacity: 0;
+  transition: opacity 0.3s ease;
+  pointer-events: none;
+  z-index: 0;
+}
+
+.stat-card:hover::before {
+  opacity: 0.5;
+}
+
+.stat-card > * {
+  position: relative;
+  z-index: 1;
 }
 
 .stat-card:hover {
@@ -1234,7 +1279,27 @@ tbody tr:hover {
   border: 1px solid var(--border);
   border-radius: 12px;
   padding: 16px;
-  background: linear-gradient(180deg, #fff, var(--bg-soft));
+  background: linear-gradient(150deg, var(--panel), var(--bg-soft));
+  position: relative;
+  overflow: hidden;
+  transition: transform 0.3s ease, box-shadow 0.3s ease;
+}
+
+.side-card::after {
+  content: "";
+  position: absolute;
+  top: 0;
+  right: 0;
+  width: 150px;
+  height: 150px;
+  background: radial-gradient(circle at top right, var(--accent-soft), transparent 70%);
+  opacity: 0.3;
+  pointer-events: none;
+}
+
+.side-card:hover {
+  transform: translateY(-2px);
+  box-shadow: var(--shadow);
 }
 
 .side-card h3 {
@@ -2019,6 +2084,34 @@ textarea.input {
   color: var(--text);
   font-size: 1.25rem;
   font-weight: 800;
+}
+
+/* ---- Activity Indicator ---- */
+.activity-indicator {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  margin-top: 6px;
+  font-size: 0.85rem;
+  font-weight: 600;
+  color: var(--muted);
+}
+.activity-indicator .dot {
+  width: 10px;
+  height: 10px;
+  border-radius: 50%;
+  border: 2px solid var(--panel);
+}
+.activity-indicator .dot.online {
+  background: rgb(16, 185, 129);
+  box-shadow: 0 0 8px rgba(16, 185, 129, 0.8);
+}
+.activity-indicator .dot.idle {
+  background: rgb(249, 115, 22);
+  box-shadow: 0 0 8px rgba(249, 115, 22, 0.8);
+}
+.activity-indicator .dot.offline {
+  background: rgb(113, 113, 122);
 }
 
 /* ---- home: ladder redesign + session link ---- */
@@ -4088,15 +4181,15 @@ body {
 .mobile-menu-overlay {
   position: fixed;
   inset: 0;
-  top: 70px; /* Below the header */
+  top: 0;
+  padding-top: 80px; /* Space for the header */
   background: var(--bg);
-  z-index: 90;
+  z-index: 15;
   overflow-y: auto;
   opacity: 0;
   pointer-events: none;
-  transform: translateY(-20px);
+  transform: translateY(-10px);
   transition: opacity 0.3s ease, transform 0.3s ease;
-  border-top: 1px solid var(--border);
 }
 
 .mobile-menu-overlay.open {
@@ -4194,9 +4287,68 @@ body.inv-fullscreen .site-footer {
   .mobile-only {
     display: block;
   }
+  
+  .site-header {
+    background: var(--bg); /* Make header pop more on mobile */
+    padding: 14px 20px;
+    border-bottom: 1px solid var(--border);
+  }
 
   body.inv-fullscreen .site-footer {
     display: block;
+  }
+  
+  /* Tables */
+  .ladder-table {
+    display: block;
+    overflow-x: auto;
+    white-space: nowrap;
+  }
+  
+  table {
+    display: block;
+    overflow-x: auto;
+    white-space: nowrap;
+  }
+
+  /* Connect button */
+  .hero-inner .connect-btn-wrapper,
+  .hero-inner a[href^="steam://"] {
+    display: none !important;
+  }
+  
+  /* Profile Layout */
+  .player-hero {
+    flex-direction: column;
+    text-align: center;
+  }
+  .player-avatar {
+    margin: 0 auto 16px;
+  }
+  .player-hero-actions {
+    justify-content: center;
+    width: 100%;
+  }
+  .bigstat-row {
+    flex-direction: column;
+  }
+  .split-cards {
+    flex-direction: column;
+  }
+  
+  /* Padding fix */
+  .container {
+    padding: 20px 14px 60px;
+  }
+  .panel {
+    padding: 20px;
+  }
+  
+  /* Spotlight fix */
+  .ps-bg {
+    object-position: center top;
+    object-fit: cover;
+    transform: none;
   }
 }
 

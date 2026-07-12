@@ -148,6 +148,11 @@ export const sideName = (teamNum: number) => (teamNum === 2 ? "T" : "CT");
 
 export const dayKey = (date: Date) => date.toISOString().slice(0, 10);
 
+export const formatDate = (dateStr: string | Date) => {
+  const d = new Date(dateStr);
+  return d.toLocaleDateString('en-GB', { day: '2-digit', month: '2-digit', year: 'numeric' });
+};
+
 /** HLTV-style rating color class. */
 export function ratingClass(rating: number): string {
   if (rating >= 1.05) return "rating-good";

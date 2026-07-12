@@ -1,9 +1,10 @@
 import Link from "next/link";
 import { getActiveSeason, prisma } from "@/lib/db";
 import { getSession } from "@/lib/auth";
-import { dayKey, fetchRows, groupBy, ratingClass, sideName, summarize } from "@/lib/stats";
+import { dayKey, fetchRows, groupBy, ratingClass, sideName, summarize, formatDate } from "@/lib/stats";
 import CharacterHero from "@/components/CharacterHero";
 import AvatarImage from "@/components/AvatarImage";
+import ProfileActivity from "@/components/ProfileActivity";
 import { notFound } from "next/navigation";
 
 export const dynamic = "force-dynamic";
@@ -95,6 +96,7 @@ export default async function ProPage({
               {webProfile?.Country ? ` · ${webProfile.Country}` : ""}
               {rankedOnly ? " · ranked rounds only" : " · all rounds"}
             </div>
+            <ProfileActivity steamId={steamId.toString()} lastConnectedUtc={profile?.LastConnectedUtc} />
             {webProfile?.Bio && <p className="player-bio">{webProfile.Bio}</p>}
           </div>
           <div className="player-hero-actions">
@@ -301,7 +303,7 @@ export default async function ProPage({
             <tbody>
               {byDay.map(([day, s]) => (
                 <tr key={day}>
-                  <td style={{ fontWeight: 700 }}>{day}</td>
+                  <td style={{ fontWeight: 700 }}>{formatDate(day)}</td>
                   <td>{s.rounds}</td>
                   <td>{s.winPct.toFixed(0)}%</td>
                   <td>
