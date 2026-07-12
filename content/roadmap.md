@@ -458,6 +458,16 @@ collected 2026-07-09 so nothing gets lost:
   placement, last-session standout hero (`lib/hero.ts`); NavBar Admin/Profile links; cursor +
   animation polish. Typecheck clean; client pages verified in the dev server (DB-backed pages need
   Evan's live MySQL). Remaining: Evan's production cutover + R12 build/deploy; `npx prisma generate`.
+- 2026-07-12 (33): **Executes nade detonation — diagnosis + settle-monitor fix.** A diagnostic log
+  proved the native `Create()` path resolves the smoke signature to the FLASHBANG function on this
+  server's build (`requested=Smoke -> designer=flashbang_projectile`); MatchZy main==dev sigs are
+  identical, so no upstream fix and no way to derive correct sigs without the server binary. Final
+  approach (ExecutesModule): spawn each type by classname (TYPE always correct) + full wiring, then
+  a 0.1s `MonitorPendingNades` timer force-detonates each pending nade once it settles (speed²<400
+  after a 0.4s grace, or 5s hard timeout) by writing `m_flDetonateTime` via Schema. Timer-fused
+  types (HE/flash) self-detonate first and are dropped when their entity goes invalid. Deleted
+  GrenadeFunctions.cs. Built + deployed + reloaded. Needs Evan's in-game `!gexec` preview to confirm
+  the bloom (can't observe visuals over RCON).
 - 2026-07-12 (32): Two post-deploy fixes (built + FTP-deployed to DatHost + RCON-reloaded by me).
   **Nade type**: MatchZy's native `Create()` signatures mis-resolved on the server's build — every
   nade detonated but as a FLASHBANG. Dropped the native-signature path (deleted GrenadeFunctions.cs)
