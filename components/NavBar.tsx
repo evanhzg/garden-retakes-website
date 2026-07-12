@@ -68,6 +68,9 @@ export default function NavBar({ avatarPlayers = [] }: { avatarPlayers?: AvatarP
           🌿 Garden Retakes
         </Link>
         <nav className="desktop-nav">
+          <Link href="/live" className={`live-link ${isActive("/live") ? "active" : ""}`}>
+            LIVE <div className="inline-block w-2 h-2 ml-1 rounded-full bg-red-500 animate-pulse" />
+          </Link>
           {LINKS.map((l) => (
             <Link key={l.href} href={l.href} className={isActive(l.href) ? "active" : ""}>
               {l.label}

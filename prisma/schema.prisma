@@ -226,3 +226,11 @@ model SharedLoadout {
   @@index([Featured])
   @@map("SharedLoadouts")
 }
+
+model WebLiveMatch {
+  ServerId     Int      @id
+  Data         String   @db.LongText
+  UpdatedAtUtc DateTime @db.DateTime(6)
+  
+  @@map("WebLiveMatches")
+}
