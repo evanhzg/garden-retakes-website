@@ -458,6 +458,17 @@ collected 2026-07-09 so nothing gets lost:
   placement, last-session standout hero (`lib/hero.ts`); NavBar Admin/Profile links; cursor +
   animation polish. Typecheck clean; client pages verified in the dev server (DB-backed pages need
   Evan's live MySQL). Remaining: Evan's production cutover + R12 build/deploy; `npx prisma generate`.
+- 2026-07-11 (31): **Executes nade detonation — the actual fix (MatchZy technique)**. Attempts (29)/(30)
+  via `CreateEntityByName` + `DispatchSpawn` never detonated because that path can't run the game's
+  own projectile setup. Ported MatchZy's approach (github.com/shobhit-pathak/MatchZy —
+  GrenadeProjectiles.cs / GrenadeThrownData.cs): a new `GrenadeFunctions` static class holds
+  signature-scanned `MemoryFunctionWithReturn` pointers to the native
+  `CSmokeGrenadeProjectile/CHEGrenadeProjectile/CMolotovProjectile/CDecoyProjectile::Create()`
+  statics; `ThrowUtility` now `.Invoke()`s the right one (smoke's Create takes team + self-inits;
+  HE/molotov get trajectory + Thrower/OriginalThrower/OwnerEntity/AngVelocity wired after; flash
+  stays CreateEntityByName+DispatchSpawn — no Create sig). Builds green + 146 tests pass.
+  **GOTCHA**: these signatures are game-build specific — if a CS2 update breaks executes/fast-strat
+  utility, refresh the byte patterns from MatchZy's latest GrenadeProjectiles.cs (server is Linux).
 - 2026-07-11 (30): **Executes nade detonation — real fix**. Prior attempts (Thrower + reorder +
   InitializeSpawnFromWorld) still never detonated for ANY type. Root cause: a grenade's own `Spawn()`
   (run by `DispatchSpawn`) reads `InitialPosition`/`InitialVelocity` to schedule its detonation think,
