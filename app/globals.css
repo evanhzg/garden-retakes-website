@@ -18,12 +18,12 @@
 
 .dark {
   color-scheme: dark;
-  --bg: #09090b;
-  --bg-soft: #121214;
-  --panel: #18181b;
-  --border: #27272a;
-  --text: #f4f4f5;
-  --muted: #a1a1aa;
+  --bg: #0b0710;
+  --bg-soft: #140d1c;
+  --panel: #1d132b;
+  --border: #322445;
+  --text: #fdfcff;
+  --muted: #bdaecf;
   --accent: #c084fc;
   --accent-2: #f472b6;
   --accent-3: #e879f9;

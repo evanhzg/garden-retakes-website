@@ -168,6 +168,8 @@ model GardenWebProfile {
   AvatarUrl String?
   Bio       String?
   Country   String?
+  IsPro     Boolean  @default(false)
+  ProSlug   String?  @unique
   UpdatedAt DateTime @updatedAt
 
   @@map("GardenWebProfiles")

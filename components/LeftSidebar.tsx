@@ -66,9 +66,9 @@ export default function LeftSidebar({ players }: { players: AvatarPlayer[] }) {
         }
 
         return (
-          <Link key={p.steamId} href={`/players/${p.steamId}`} title={p.name} className="ls-avatar-link relative inline-block">
-            <div className={`absolute top-0 left-0 w-3.5 h-3.5 rounded-full border-[2px] border-[#18181b] z-20 ${dotColor} transition-colors duration-500`} />
-            <img src={p.avatarSrc} alt={p.name} className="w-full h-full object-cover relative z-10" />
+          <Link key={p.steamId} href={p.steamId === "zywoo" ? `/pros/zywoo` : `/players/${p.steamId}`} title={p.name} className="ls-avatar-link relative inline-block">
+            <div className={`absolute top-0 right-0 w-3.5 h-3.5 rounded-full border-[2px] border-[#18181b] z-20 ${dotColor} transition-colors duration-500`} style={{ transform: 'translate(25%, -25%)' }} />
+            <img src={p.avatarSrc} alt={p.name} className="w-full h-full object-cover relative z-10 rounded-lg" />
           </Link>
         );
       })}

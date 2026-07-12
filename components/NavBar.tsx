@@ -83,7 +83,7 @@ export default function NavBar({ avatarPlayers = [] }: { avatarPlayers?: AvatarP
             </Link>
           )}
         </nav>
-        <div className="nav-account desktop-nav flex items-center gap-4">
+        <div className="nav-account desktop-nav flex items-center gap-5">
           <ThemeToggle />
           {session.authenticated ? (
             <Link className="account-chip" href="/profile" title="Edit your profile">

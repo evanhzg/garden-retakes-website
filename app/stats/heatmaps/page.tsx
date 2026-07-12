@@ -17,7 +17,7 @@ export default async function HeatmapPage() {
   return (
     <main className="container">
       <div className="panel">
-        <h2 className="text-2xl font-black mb-4 uppercase tracking-wider bg-gradient-to-r from-amber-400 to-red-400 bg-clip-text text-transparent">
+        <h2 className="text-2xl font-black mb-4 uppercase tracking-wider bg-gradient-to-r from-purple-400 to-pink-400 bg-clip-text text-transparent">
           Advanced Positional Heatmaps
         </h2>
         <HeatmapClient users={users} />

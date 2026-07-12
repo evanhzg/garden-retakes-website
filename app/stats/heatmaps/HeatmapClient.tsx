@@ -125,13 +125,15 @@ export default function HeatmapClient({ users }: { users: any[] }) {
               </div>
             </div>
           )}
-          <Image
-            src={`/maps/${map.id}.png`}
-            alt={map.name}
-            fill
-            className="object-contain z-0 opacity-70 mix-blend-screen pointer-events-none"
-            unoptimized
-          />
+          <div className="absolute inset-0 z-0">
+            <Image
+              src={`/maps/${map.id}.png`}
+              alt={map.name}
+              fill
+              className="object-cover opacity-70 mix-blend-screen pointer-events-none"
+              unoptimized
+            />
+          </div>
           <canvas
             ref={canvasRef}
             width={1024}
