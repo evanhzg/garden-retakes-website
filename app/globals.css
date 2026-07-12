@@ -16,6 +16,24 @@
   --radius: 14px;
 }
 
+@media (prefers-color-scheme: dark) {
+  :root {
+    color-scheme: dark;
+    --bg: #09090b;
+    --bg-soft: #121214;
+    --panel: #18181b;
+    --border: #27272a;
+    --text: #f4f4f5;
+    --muted: #a1a1aa;
+    --accent: #c084fc;
+    --accent-2: #f472b6;
+    --accent-3: #e879f9;
+    --accent-soft: #3b0764;
+    --shadow: 0 10px 30px -12px rgba(192, 132, 252, 0.15);
+    --shadow-hover: 0 18px 40px -12px rgba(232, 121, 249, 0.25);
+  }
+}
+
 * {
   box-sizing: border-box;
 }
@@ -2349,7 +2367,7 @@ body {
 
   /* Wide data tables scroll horizontally in their own box instead of pushing
      the whole page wide. display:block keeps thead+tbody aligned in one scroller. */
-  .panel table {
+  table {
     display: block;
     width: 100%;
     overflow-x: auto;
@@ -3315,6 +3333,13 @@ body {
     display: flex;
     flex-direction: column;
     padding-bottom: 16px;
+  }
+
+  .ps-bg {
+    width: 100%;
+    height: 320px;
+    object-fit: cover;
+    object-position: center 15%;
   }
 
   .ps-scrim,

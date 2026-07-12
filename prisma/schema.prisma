@@ -234,3 +234,25 @@ model WebLiveMatch {
   
   @@map("WebLiveMatches")
 }
+
+model GardenHeatmap {
+  Id              BigInt   @id @default(autoincrement())
+  VictimSteamId   BigInt
+  AttackerSteamId BigInt
+  MapName         String   @db.VarChar(128)
+  VictimX         Float    @db.Float
+  VictimY         Float    @db.Float
+  VictimZ         Float    @db.Float
+  AttackerX       Float    @db.Float
+  AttackerY       Float    @db.Float
+  AttackerZ       Float    @db.Float
+  Weapon          String   @db.VarChar(64)
+  IsHeadshot      Boolean
+  IsRanked        Boolean
+  CreatedAtUtc    DateTime @db.DateTime(6)
+
+  @@index([MapName])
+  @@index([VictimSteamId])
+  @@index([AttackerSteamId])
+  @@map("GardenHeatmaps")
+}

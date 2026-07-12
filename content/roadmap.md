@@ -458,6 +458,7 @@ collected 2026-07-09 so nothing gets lost:
   placement, last-session standout hero (`lib/hero.ts`); NavBar Admin/Profile links; cursor +
   animation polish. Typecheck clean; client pages verified in the dev server (DB-backed pages need
   Evan's live MySQL). Remaining: Evan's production cutover + R12 build/deploy; `npx prisma generate`.
+- 2026-07-12 (34): **Admin/Host QoL Features Shipped**. Added `!pause`/`!unpause` functionality for Competitive Retakes. Added `!ghost`/`!freecam` command to allow admins to enter an invisible spectator mode and place spawns using the editor while out of the match.
 - 2026-07-12 (33): **Executes nade detonation — diagnosis + settle-monitor fix.** A diagnostic log
   proved the native `Create()` path resolves the smoke signature to the FLASHBANG function on this
   server's build (`requested=Smoke -> designer=flashbang_projectile`); MatchZy main==dev sigs are
