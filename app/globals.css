@@ -16,22 +16,20 @@
   --radius: 14px;
 }
 
-@media (prefers-color-scheme: dark) {
-  :root {
-    color-scheme: dark;
-    --bg: #09090b;
-    --bg-soft: #121214;
-    --panel: #18181b;
-    --border: #27272a;
-    --text: #f4f4f5;
-    --muted: #a1a1aa;
-    --accent: #c084fc;
-    --accent-2: #f472b6;
-    --accent-3: #e879f9;
-    --accent-soft: #3b0764;
-    --shadow: 0 10px 30px -12px rgba(192, 132, 252, 0.15);
-    --shadow-hover: 0 18px 40px -12px rgba(232, 121, 249, 0.25);
-  }
+.dark {
+  color-scheme: dark;
+  --bg: #09090b;
+  --bg-soft: #121214;
+  --panel: #18181b;
+  --border: #27272a;
+  --text: #f4f4f5;
+  --muted: #a1a1aa;
+  --accent: #c084fc;
+  --accent-2: #f472b6;
+  --accent-3: #e879f9;
+  --accent-soft: #3b0764;
+  --shadow: 0 10px 30px -12px rgba(192, 132, 252, 0.15);
+  --shadow-hover: 0 18px 40px -12px rgba(232, 121, 249, 0.25);
 }
 
 * {
@@ -384,7 +382,7 @@ tbody tr:hover {
   padding: 10px 14px;
   border-radius: 10px;
   border: 1.5px solid var(--border);
-  background: #fff;
+  background: var(--panel);
   color: var(--text);
   font-size: 0.95rem;
   outline: none;
@@ -412,7 +410,7 @@ tbody tr:hover {
 }
 
 .stat-card {
-  background: linear-gradient(180deg, #fff, var(--bg-soft));
+  background: linear-gradient(180deg, var(--panel), var(--bg-soft));
   border: 1px solid var(--border);
   border-radius: 12px;
   padding: 16px 12px;
@@ -466,7 +464,7 @@ tbody tr:hover {
 }
 
 .tabs button.active {
-  background: #fff;
+  background: var(--panel);
   color: var(--accent);
   box-shadow: 0 4px 14px -6px rgba(168, 85, 247, 0.4);
 }
@@ -480,7 +478,7 @@ tbody tr:hover {
 
 .chip {
   border: 1.5px solid var(--border);
-  background: #fff;
+  background: var(--panel);
   color: var(--muted);
   padding: 7px 16px;
   border-radius: 999px;
@@ -509,7 +507,7 @@ tbody tr:hover {
 }
 
 .item-card {
-  background: linear-gradient(180deg, #fff, var(--bg-soft));
+  background: linear-gradient(180deg, var(--panel), var(--bg-soft));
   border: 1.5px solid var(--border);
   border-radius: 12px;
   padding: 10px;
@@ -4200,4 +4198,34 @@ body.inv-fullscreen .site-footer {
   body.inv-fullscreen .site-footer {
     display: block;
   }
+}
+
+/* ---------- Theme Toggle ---------- */
+
+.theme-toggle {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 36px;
+  height: 36px;
+  border-radius: 12px;
+  background: var(--bg-soft);
+  color: var(--text);
+  border: 1px solid var(--border);
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.theme-toggle:hover {
+  background: var(--panel);
+  border-color: var(--accent);
+  color: var(--accent);
+  transform: translateY(-1px);
+}
+
+.theme-toggle svg {
+  transition: transform 0.5s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+}
+.theme-toggle:active svg {
+  transform: scale(0.8) rotate(-10deg);
 }

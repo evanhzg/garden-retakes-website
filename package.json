@@ -13,6 +13,7 @@
     "@ianlucas/cs2-lib": "^8.0.3",
     "@prisma/client": "^6.19.3",
     "next": "^14.2.5",
+    "next-themes": "^0.4.6",
     "react": "^18.3.1",
     "react-dom": "^18.3.1",
     "react-markdown": "^9.0.1",

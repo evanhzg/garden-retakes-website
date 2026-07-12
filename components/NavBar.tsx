@@ -3,6 +3,7 @@
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { useEffect, useState } from "react";
+import { ThemeToggle } from "./ThemeToggle";
 
 const LINKS = [
   { href: "/", label: "Ladder" },
@@ -82,7 +83,8 @@ export default function NavBar({ avatarPlayers = [] }: { avatarPlayers?: AvatarP
             </Link>
           )}
         </nav>
-        <div className="nav-account desktop-nav">
+        <div className="nav-account desktop-nav flex items-center gap-4">
+          <ThemeToggle />
           {session.authenticated ? (
             <Link className="account-chip" href="/profile" title="Edit your profile">
               {session.avatar && (

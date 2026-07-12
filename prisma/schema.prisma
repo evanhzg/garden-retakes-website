@@ -1,6 +1,9 @@
 // Maps directly onto the tables created by GardenRankings (EF Core).
 // Point DATABASE_URL at the same MySQL the plugin uses
 // (DatabaseProvider = MySql in the plugin config).
+//
+// IMPORTANT: EF creates DateTime(6) and UnsignedBigInt columns.
+// We must annotate them here so `prisma db push` doesn't try to cast them.
 
 generator client {
   provider = "prisma-client-js"
@@ -11,11 +14,13 @@ datasource db {
   url      = env("DATABASE_URL")
 }
 
+// ──────────────── EF-managed tables (plugin writes these) ────────────────
+
 model Season {
   Id           Int       @id @default(autoincrement())
   Name         String
-  StartedAtUtc DateTime
-  EndedAtUtc   DateTime?
+  StartedAtUtc DateTime  @db.DateTime(6)
+  EndedAtUtc   DateTime? @db.DateTime(6)
   IsActive     Boolean
 
   @@map("Seasons")
@@ -24,8 +29,8 @@ model Season {
 model PlayerProfile {
   SteamId        BigInt   @id
   LastKnownName  String
-  FirstSeenAtUtc DateTime
-  LastSeenAtUtc  DateTime
+  FirstSeenAtUtc DateTime @db.DateTime(6)
+  LastSeenAtUtc  DateTime @db.DateTime(6)
 
   @@map("PlayerProfiles")
 }
@@ -39,8 +44,8 @@ model PlayerSeasonStats {
   RankedRoundsPlayed   Int
   RankedRoundsWon      Int
   UnrankedRoundsPlayed Int
-  LastRankedRoundAtUtc DateTime?
-  UpdatedAtUtc         DateTime
+  LastRankedRoundAtUtc DateTime? @db.DateTime(6)
+  UpdatedAtUtc         DateTime  @db.DateTime(6)
 
   @@unique([SeasonId, SteamId])
   @@map("PlayerSeasonStats")
@@ -51,7 +56,7 @@ model PlayerRoundRecord {
   RoundRecordId      BigInt
   SeasonId           Int
   Map                String
-  PlayedAtUtc        DateTime
+  PlayedAtUtc        DateTime @db.DateTime(6)
   IsRanked           Boolean
   SteamId            BigInt
   PlayerName         String
@@ -90,11 +95,31 @@ model PlayerRoundRecord {
   @@map("PlayerRoundRecords")
 }
 
+// EF-managed: one row per played round. Referenced by PlayerRoundRecord.
+model RoundRecord {
+  Id                   BigInt   @id @default(autoincrement())
+  SeasonId             Int
+  Map                  String
+  PlayedAtUtc          DateTime @db.DateTime(6)
+  RoundTypeOrdinal     Int      @default(-1)
+  IsRanked             Boolean
+  TPlayerCount         Int
+  CtPlayerCount        Int
+  WinnerTeamNum        Int
+  BombSite             String?  @db.VarChar(8)
+  BombPlanted          Boolean
+  BombDefused          Boolean
+  BombExploded         Boolean
+  RoundDurationSeconds Float
+
+  @@map("RoundRecords")
+}
+
 model CrTeamStats {
   Id            Int      @id @default(autoincrement())
   SeasonId      Int
   TeamKey       String
-  PlayerNames   String
+  PlayerNames   String   @db.VarChar(256)
   TeamSize      Int
   Elo           Int
   PeakElo       Int
@@ -103,7 +128,7 @@ model CrTeamStats {
   MatchesDrawn  Int
   RoundsWon     Int
   RoundsLost    Int
-  UpdatedAtUtc  DateTime
+  UpdatedAtUtc  DateTime @db.DateTime(6)
 
   @@unique([SeasonId, TeamKey])
   @@map("CrTeamStats")
@@ -121,18 +146,18 @@ model WebInventory {
 
 // Garden (W2): bans, display-name overrides, web profiles.
 model GardenBan {
-  SteamId     BigInt    @id
-  Name        String
-  Reason      String
-  BannedBy    BigInt
-  BannedAtUtc DateTime
+  SteamId      BigInt    @id
+  Name         String
+  Reason       String
+  BannedBy     BigInt
+  BannedAtUtc  DateTime
   ExpiresAtUtc DateTime?
 
   @@map("GardenBans")
 }
 
 model GardenNameOverride {
-  SteamId BigInt @id
+  SteamId BigInt @id @db.UnsignedBigInt
   Name    String
 
   @@map("GardenNameOverrides")
@@ -153,7 +178,7 @@ model DuelRecord {
   Id             BigInt   @id @default(autoincrement())
   SeasonId       Int
   Map            String
-  PlayedAtUtc    DateTime
+  PlayedAtUtc    DateTime @db.DateTime(6)
   ArenaName      String
   WinnerSteamId  BigInt
   WinnerName     String
@@ -168,24 +193,24 @@ model DuelRecord {
 
 // Garden-retakes merged plugin (R3): admin storage + audit log.
 model GardenAdmin {
-  SteamId    BigInt   @id
+  SteamId    BigInt   @id @db.UnsignedBigInt
   Name       String
   Level      Int
-  AddedBy    BigInt
-  AddedAtUtc DateTime
+  AddedBy    BigInt   @db.UnsignedBigInt
+  AddedAtUtc DateTime @db.DateTime(6)
 
   @@map("GardenAdmins")
 }
 
 model GardenAdminLogEntry {
   Id            BigInt   @id @default(autoincrement())
-  AtUtc         DateTime
-  ActorSteamId  BigInt
+  AtUtc         DateTime @db.DateTime(6)
+  ActorSteamId  BigInt   @db.UnsignedBigInt
   ActorName     String
   Action        String
-  TargetSteamId BigInt
+  TargetSteamId BigInt   @db.UnsignedBigInt
   TargetName    String
-  Detail        String
+  Detail        String   @db.VarChar(256)
 
   @@map("GardenAdminLog")
 }
@@ -194,12 +219,12 @@ model CrMatch {
   Id           BigInt    @id @default(autoincrement())
   SeasonId     Int
   Map          String
-  StartedAtUtc DateTime
-  EndedAtUtc   DateTime?
+  StartedAtUtc DateTime  @db.DateTime(6)
+  EndedAtUtc   DateTime? @db.DateTime(6)
   TeamAKey     String
   TeamBKey     String
-  TeamAName    String
-  TeamBName    String
+  TeamAName    String    @db.VarChar(256)
+  TeamBName    String    @db.VarChar(256)
   TeamSize     Int
   ScoreA       Int
   ScoreB       Int
@@ -216,12 +241,12 @@ model CrMatch {
 // key on the website or in-game with /borrow <key>. Featured = curated presets.
 model SharedLoadout {
   ShareKey     String   @id @db.VarChar(16)
-  OwnerSteamId BigInt
+  OwnerSteamId BigInt   @db.UnsignedBigInt
   OwnerName    String?
   Name         String
   Data         String   @db.LongText
   Featured     Boolean  @default(false)
-  CreatedAt    DateTime @default(now())
+  CreatedAt    DateTime @default(now()) @db.DateTime(6)
 
   @@index([Featured])
   @@map("SharedLoadouts")
@@ -231,7 +256,7 @@ model WebLiveMatch {
   ServerId     Int      @id
   Data         String   @db.LongText
   UpdatedAtUtc DateTime @db.DateTime(6)
-  
+
   @@map("WebLiveMatches")
 }
 
@@ -249,10 +274,29 @@ model GardenHeatmap {
   Weapon          String   @db.VarChar(64)
   IsHeadshot      Boolean
   IsRanked        Boolean
+  Site            String?  @db.VarChar(16)
   CreatedAtUtc    DateTime @db.DateTime(6)
 
   @@index([MapName])
   @@index([VictimSteamId])
   @@index([AttackerSteamId])
   @@map("GardenHeatmaps")
+}
+
+// ──────────────── Legacy / EF-internal tables (preserve, don't drop) ────────────────
+
+// EF Core migration history — must keep or EF can't track what it's applied.
+model EFMigrationsHistory {
+  MigrationId    String @id @db.VarChar(150)
+  ProductVersion String @db.VarChar(32)
+
+  @@map("__EFMigrationsHistory")
+}
+
+// Allocator plugin: weapon preferences per user (JSON blob in a text column).
+model UserSettings {
+  UserId            BigInt @id
+  WeaponPreferences String @db.Text
+
+  @@map("UserSettings")
 }
