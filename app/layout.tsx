@@ -16,6 +16,7 @@ export const viewport: Viewport = {
   initialScale: 1,
   viewportFit: "cover",
 };
+import { ThemeProvider } from "@/components/ThemeProvider";
 
 export default async function RootLayout({ children }: { children: React.ReactNode }) {
   // Find all players with custom avatars
@@ -42,24 +43,26 @@ export default async function RootLayout({ children }: { children: React.ReactNo
   }));
 
   return (
-    <html lang="en">
+    <html lang="en" suppressHydrationWarning>
       <body>
-        <div className="bg-orbs" aria-hidden="true">
-          <span className="orb orb-1" />
-          <span className="orb orb-2" />
-          <span className="orb orb-3" />
-        </div>
-        
-        <NavBar avatarPlayers={avatarPlayers} />
-        <div className="layout-wrapper">
-          <LeftSidebar players={avatarPlayers} />
-          <div className="main-content">
-            <main className="container">{children}</main>
-            <footer className="site-footer">
-              Powered by GardenRankings · stats update live from the game server
-            </footer>
+        <ThemeProvider attribute="class" defaultTheme="system" enableSystem>
+          <div className="bg-orbs" aria-hidden="true">
+            <span className="orb orb-1" />
+            <span className="orb orb-2" />
+            <span className="orb orb-3" />
           </div>
-        </div>
+          
+          <NavBar avatarPlayers={avatarPlayers} />
+          <div className="layout-wrapper">
+            <LeftSidebar players={avatarPlayers} />
+            <div className="main-content">
+              <main className="container">{children}</main>
+              <footer className="site-footer">
+                Powered by GardenRankings · stats update live from the game server
+              </footer>
+            </div>
+          </div>
+        </ThemeProvider>
       </body>
     </html>
   );

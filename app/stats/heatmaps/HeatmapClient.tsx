@@ -64,62 +64,80 @@ export default function HeatmapClient({ users }: { users: any[] }) {
   }, [points, map]);
 
   return (
-    <div>
-      <div className="flex gap-4 mb-6">
-        <select 
-          className="input flex-1"
-          value={map.id} 
-          onChange={e => setMap(MAPS.find(m => m.id === e.target.value)!)}
-        >
-          {MAPS.map(m => <option key={m.id} value={m.id}>{m.name}</option>)}
-        </select>
-        
-        <select 
-          className="input flex-1"
-          value={steamId}
-          onChange={e => setSteamId(e.target.value)}
-        >
-          <option value="default">Server Default (Top 5 Avg Retake Spots)</option>
-          <option value="ZywOo">ZywOo (Demo Data)</option>
-          <optgroup label="Players">
-            {users.map(u => (
-              <option key={u.SteamId.toString()} value={u.SteamId.toString()}>
-                {u.Name}
-              </option>
-            ))}
-          </optgroup>
-        </select>
-      </div>
-
-      <div className="relative w-full max-w-[1024px] aspect-square mx-auto rounded-xl overflow-hidden border border-zinc-800 shadow-xl bg-black">
-        {loading && (
-          <div className="absolute inset-0 z-20 flex items-center justify-center bg-black/50 backdrop-blur-sm text-emerald-400 font-bold animate-pulse">
-            Loading analytics...
+    <div className="flex flex-col lg:flex-row gap-8 items-start">
+      <div className="w-full lg:w-80 shrink-0 flex flex-col gap-6">
+        <div className="panel flex flex-col gap-4">
+          <h3 className="font-bold text-lg border-b border-zinc-800 pb-2">Analysis Controls</h3>
+          
+          <div className="flex flex-col gap-2">
+            <label className="text-sm font-semibold text-zinc-400 uppercase tracking-wider">Map</label>
+            <select 
+              className="input w-full"
+              value={map.id} 
+              onChange={e => setMap(MAPS.find(m => m.id === e.target.value)!)}
+            >
+              {MAPS.map(m => <option key={m.id} value={m.id}>{m.name}</option>)}
+            </select>
           </div>
-        )}
-        <Image
-          src={`/maps/${map.id}.png`}
-          alt={map.name}
-          fill
-          className="object-contain z-0 opacity-80"
-          unoptimized
-        />
-        <canvas
-          ref={canvasRef}
-          width={1024}
-          height={1024}
-          className="absolute inset-0 z-10 w-full h-full pointer-events-none"
-        />
+          
+          <div className="flex flex-col gap-2">
+            <label className="text-sm font-semibold text-zinc-400 uppercase tracking-wider">Player Focus</label>
+            <select 
+              className="input w-full"
+              value={steamId}
+              onChange={e => setSteamId(e.target.value)}
+            >
+              <option value="default">Server Default (Top Spots)</option>
+              <option value="ZywOo">ZywOo (Demo Data)</option>
+              <optgroup label="Players">
+                {users.map(u => (
+                  <option key={u.SteamId.toString()} value={u.SteamId.toString()}>
+                    {u.Name}
+                  </option>
+                ))}
+              </optgroup>
+            </select>
+          </div>
+        </div>
+
+        <div className="panel flex flex-col gap-4">
+          <h3 className="font-bold text-lg border-b border-zinc-800 pb-2">Legend</h3>
+          <div className="flex flex-col gap-3 text-sm font-semibold text-zinc-300">
+            <div className="flex items-center gap-3">
+              <div className="w-4 h-4 rounded-full bg-emerald-400 opacity-80 border border-black/50 shadow-[0_0_8px_rgba(52,211,153,0.4)]" />
+              Kill Position
+            </div>
+            <div className="flex items-center gap-3">
+              <div className="w-4 h-4 rounded-full bg-red-400 opacity-80 border border-black/50 shadow-[0_0_8px_rgba(248,113,113,0.4)]" />
+              Death Position
+            </div>
+          </div>
+        </div>
       </div>
 
-      <div className="flex gap-6 justify-center mt-6 text-sm font-semibold text-zinc-400">
-        <div className="flex items-center gap-2">
-          <div className="w-4 h-4 rounded-full bg-emerald-400 opacity-70 border border-black/50" />
-          Kills
-        </div>
-        <div className="flex items-center gap-2">
-          <div className="w-4 h-4 rounded-full bg-red-400 opacity-70 border border-black/50" />
-          Deaths
+      <div className="flex-1 w-full max-w-3xl">
+        <div className="relative w-full aspect-square rounded-2xl overflow-hidden border-2 border-zinc-800 shadow-2xl bg-black/80">
+          {loading && (
+            <div className="absolute inset-0 z-20 flex items-center justify-center bg-black/50 backdrop-blur-sm">
+              <div className="flex flex-col items-center gap-4 text-emerald-400 font-bold animate-pulse">
+                <div className="w-8 h-8 border-4 border-emerald-400 border-t-transparent rounded-full animate-spin" />
+                Computing Densities...
+              </div>
+            </div>
+          )}
+          <Image
+            src={`/maps/${map.id}.png`}
+            alt={map.name}
+            fill
+            className="object-contain z-0 opacity-70 mix-blend-screen pointer-events-none"
+            unoptimized
+          />
+          <canvas
+            ref={canvasRef}
+            width={1024}
+            height={1024}
+            className="absolute inset-0 w-full h-full z-10 pointer-events-none"
+          />
         </div>
       </div>
     </div>

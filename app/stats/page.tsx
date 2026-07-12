@@ -62,7 +62,7 @@ export default async function StatsPage() {
         <h2>Global Stats — {season.Name}</h2>
         <div className="chip-row">
           <Link href="/stats" className="chip active">Overview</Link>
-          <Link href="/stats/maps" className="chip">Map Heatmaps</Link>
+          <Link href="/stats/heatmaps" className="chip">Map Heatmaps</Link>
         </div>
       </section>
 
