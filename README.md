@@ -1,6 +1,6 @@
 <div align="center">
 
-# 🌿 Garden Retakes — Website
+# Garden Retakes — Website
 
 **Season ladder, player stats, inventory builder, admin panel and more — for [retakes.fr](https://retakes.fr).**
 
@@ -14,7 +14,7 @@
 
 ---
 
-This is the companion website for the **Garden Retakes** CS2 server.  
+This is the companion website for the **Garden Retakes** private CS2 server. The website is tied to a private server, your data won't be linked. If you plan on using this project, I would recommend using your own database to prevent any data leaks or issues.
 It reads the same MySQL database that the [garden-retakes plugin](https://github.com/evanhzg/garden-retakes) writes to — no API layer, no sync jobs — and is deployed on [Vercel](https://vercel.com) at **[retakes.fr](https://retakes.fr)**.
 
 ---
