@@ -4381,3 +4381,17 @@ body.inv-fullscreen .site-footer {
 .theme-toggle:active svg {
   transform: scale(0.8) rotate(-10deg);
 }
+ @ k e y f r a m e s   p u l s e   { 
+     0 % ,   1 0 0 %   {   o p a c i t y :   1 ;   } 
+     5 0 %   {   o p a c i t y :   0 . 3 ;   } 
+ } 
+ . l i v e - d o t   { 
+     d i s p l a y :   i n l i n e - b l o c k ; 
+     w i d t h :   8 p x ; 
+     h e i g h t :   8 p x ; 
+     m a r g i n - l e f t :   4 p x ; 
+     b o r d e r - r a d i u s :   5 0 % ; 
+     b a c k g r o u n d - c o l o r :   # e f 4 4 4 4 ; 
+     a n i m a t i o n :   p u l s e   2 s   c u b i c - b e z i e r ( 0 . 4 ,   0 ,   0 . 6 ,   1 )   i n f i n i t e ; 
+ }  
+ 

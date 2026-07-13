@@ -3,8 +3,14 @@
 import { useEffect, useState } from "react";
 import { formatDate } from "@/lib/stats";
 
+function formatMapName(map: string) {
+  if (!map) return "Unknown";
+  let name = map.startsWith("de_") ? map.slice(3) : map;
+  return name.charAt(0).toUpperCase() + name.slice(1);
+}
+
 export default function ProfileActivity({ steamId, lastConnectedUtc }: { steamId: string, lastConnectedUtc?: Date | null }) {
-  const [livePlayers, setLivePlayers] = useState<{ steamId: string, team: string }[] | null>(null);
+  const [liveData, setLiveData] = useState<{ players: { steamId: string, team: string }[], map: string, mode: string } | null>(null);
 
   useEffect(() => {
     const fetchLive = async () => {
@@ -13,13 +19,17 @@ export default function ProfileActivity({ steamId, lastConnectedUtc }: { steamId
         if (res.ok) {
           const json = await res.json();
           if (json.live && json.data?.Players) {
-            setLivePlayers(json.data.Players.map((p: any) => ({ steamId: p.SteamId, team: p.Team })));
+            setLiveData({
+              players: json.data.Players.map((p: any) => ({ steamId: p.SteamId, team: p.Team })),
+              map: json.data.Map,
+              mode: json.data.Mode
+            });
             return;
           }
         }
-        setLivePlayers([]);
+        setLiveData({ players: [], map: "", mode: "" });
       } catch (err) {
-        setLivePlayers([]);
+        setLiveData({ players: [], map: "", mode: "" });
       }
     };
     fetchLive();
@@ -27,9 +37,9 @@ export default function ProfileActivity({ steamId, lastConnectedUtc }: { steamId
     return () => clearInterval(interval);
   }, []);
 
-  const playerLive = livePlayers?.find(p => p.steamId === steamId);
+  const playerLive = liveData?.players.find(p => p.steamId === steamId);
   
-  if (!livePlayers) return null; // loading
+  if (!liveData) return null; // loading
 
   if (playerLive) {
     if (playerLive.team === "Spectator" || playerLive.team === "1") {
@@ -43,7 +53,7 @@ export default function ProfileActivity({ steamId, lastConnectedUtc }: { steamId
       return (
         <div className="activity-indicator">
           <span className="dot online"></span>
-          Playing online
+          Playing {liveData.mode} on {formatMapName(liveData.map)}
         </div>
       );
     }

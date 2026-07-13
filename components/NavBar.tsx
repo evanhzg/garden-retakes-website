@@ -91,7 +91,7 @@ export default function NavBar({ avatarPlayers = [] }: { avatarPlayers?: AvatarP
         </Link>
         <nav className="desktop-nav">
           <Link href="/live" className={`live-link ${isActive("/live") ? "active" : ""}`}>
-            LIVE {isLive && <div className="inline-block w-2 h-2 ml-1 rounded-full bg-red-500 animate-pulse" />}
+            LIVE {isLive && <div className="live-dot" />}
           </Link>
           {LINKS.map((l) => (
             <Link key={l.href} href={l.href} className={isActive(l.href) ? "active" : ""}>
@@ -139,7 +139,7 @@ export default function NavBar({ avatarPlayers = [] }: { avatarPlayers?: AvatarP
         <div className="mobile-menu-content">
           <nav className="mobile-nav-links">
             <Link href="/live" className={`live-link ${isActive("/live") ? "active" : ""}`}>
-              LIVE {isLive && <div className="inline-block w-2 h-2 ml-1 rounded-full bg-red-500 animate-pulse" />}
+              LIVE {isLive && <div className="live-dot" />}
             </Link>
             {LINKS.map((l) => (
               <Link key={l.href} href={l.href} className={isActive(l.href) ? "active" : ""}>

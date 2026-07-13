@@ -15,7 +15,7 @@ export default async function HeatmapPage() {
   }));
 
   return (
-    <div className="panel">
+    <div className="w-full">
       <HeatmapClient users={users} />
     </div>
   );

@@ -56,18 +56,28 @@ export default function LeftSidebar({ players }: { players: AvatarPlayer[] }) {
     <aside className="left-sidebar">
       {sortedPlayers.map((p) => {
         const liveStatus = livePlayers.find(lp => lp.steamId === p.steamId);
-        let dotColor = "bg-zinc-500 shadow-none";
+        let dotBg = "#71717a";
+        let dotShadow = "none";
         if (liveStatus) {
            if (liveStatus.team === "Spectator" || liveStatus.team === "1") {
-             dotColor = "bg-orange-500 shadow-[0_0_8px_rgba(249,115,22,0.8)]";
+             dotBg = "#f97316";
+             dotShadow = "0 0 8px rgba(249,115,22,0.8)";
            } else {
-             dotColor = "bg-emerald-500 shadow-[0_0_8px_rgba(16,185,129,0.8)]";
+             dotBg = "#10b981";
+             dotShadow = "0 0 8px rgba(16,185,129,0.8)";
            }
         }
 
         return (
           <Link key={p.steamId} href={`/players/${p.steamId}`} title={p.name} className="ls-avatar-link relative inline-block">
-            <div className={`absolute top-0 right-0 w-3.5 h-3.5 rounded-full border-[2px] border-[#18181b] z-20 ${dotColor} transition-colors duration-500`} style={{ transform: 'translate(25%, -25%)' }} />
+            <div 
+              style={{ 
+                position: 'absolute', top: 0, right: 0, width: '14px', height: '14px', 
+                borderRadius: '50%', border: '2px solid #18181b', zIndex: 20,
+                backgroundColor: dotBg, boxShadow: dotShadow,
+                transform: 'translate(25%, -25%)', transition: 'background-color 0.5s ease'
+              }} 
+            />
             <img src={p.avatarSrc} alt={p.name} className="w-full h-full object-cover relative z-10 rounded-lg" />
           </Link>
         );
