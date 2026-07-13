@@ -237,6 +237,8 @@ a:hover {
 
 .container {
   max-width: 1040px;
+  width: 100%;
+  min-width: 0;
   margin: 0 auto;
   padding: 30px 18px 80px;
 }
