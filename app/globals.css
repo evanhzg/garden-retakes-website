@@ -3181,6 +3181,7 @@ body {
   transform: translateX(-50%);
   z-index: 3;
   text-align: center;
+  max-width: 90vw;
   animation: psDropCenter 0.5s ease both;
 }
 
@@ -3196,6 +3197,9 @@ body {
   color: #fff;
   text-shadow: 0 2px 16px rgba(0, 0, 0, 0.7);
   letter-spacing: -0.01em;
+  max-width: 100%;
+  word-break: break-all;
+  white-space: normal;
 }
 
 .ps-name-edit-icon {
@@ -4330,10 +4334,10 @@ body.inv-fullscreen .site-footer {
     width: 100%;
   }
   .bigstat-row {
-    flex-direction: column;
+    grid-template-columns: 1fr 1fr;
   }
   .split-cards {
-    flex-direction: column;
+    grid-template-columns: 1fr;
   }
   
   /* Padding fix */
@@ -4346,8 +4350,9 @@ body.inv-fullscreen .site-footer {
   
   /* Spotlight fix */
   .ps-bg {
-    object-position: center top;
+    object-position: center center;
     object-fit: cover;
+    min-height: 480px;
     transform: none;
   }
 }
