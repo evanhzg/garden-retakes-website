@@ -276,7 +276,7 @@ a:hover {
   z-index: 0;
 }
 
-.panel > * {
+.panel>* {
   position: relative;
   z-index: 1;
 }
@@ -461,7 +461,7 @@ tbody tr:hover {
   opacity: 0.5;
 }
 
-.stat-card > * {
+.stat-card>* {
   position: relative;
   z-index: 1;
 }
@@ -2098,20 +2098,24 @@ textarea.input {
   font-weight: 600;
   color: var(--muted);
 }
+
 .activity-indicator .dot {
   width: 10px;
   height: 10px;
   border-radius: 50%;
   border: 2px solid var(--panel);
 }
+
 .activity-indicator .dot.online {
   background: rgb(16, 185, 129);
   box-shadow: 0 0 8px rgba(16, 185, 129, 0.8);
 }
+
 .activity-indicator .dot.idle {
   background: rgb(249, 115, 22);
   box-shadow: 0 0 8px rgba(249, 115, 22, 0.8);
 }
+
 .activity-indicator .dot.offline {
   background: rgb(113, 113, 122);
 }
@@ -4109,7 +4113,8 @@ body {
 .left-sidebar {
   width: 100px;
   position: sticky;
-  top: 62px; /* Offset for the sticky header */
+  top: 62px;
+  /* Offset for the sticky header */
   height: calc(100vh - 62px);
   /* Removed overflow to prevent clipping the scale(3) avatars */
   padding: 16px 8px;
@@ -4179,16 +4184,25 @@ body {
   transform-origin: left center;
 }
 
-.burger-icon.open span:nth-child(1) { transform: translateY(8.5px) rotate(45deg); }
-.burger-icon.open span:nth-child(2) { opacity: 0; }
-.burger-icon.open span:nth-child(3) { transform: translateY(-8.5px) rotate(-45deg); }
+.burger-icon.open span:nth-child(1) {
+  transform: translateY(8.5px) rotate(45deg);
+}
+
+.burger-icon.open span:nth-child(2) {
+  opacity: 0;
+}
+
+.burger-icon.open span:nth-child(3) {
+  transform: translateY(-8.5px) rotate(-45deg);
+}
 
 /* Full-page Mobile Menu Overlay */
 .mobile-menu-overlay {
   position: fixed;
   inset: 0;
   top: 0;
-  padding-top: 80px; /* Space for the header */
+  padding-top: 80px;
+  /* Space for the header */
   background: var(--bg);
   z-index: 15;
   overflow-y: auto;
@@ -4279,6 +4293,7 @@ body.inv-fullscreen .site-footer {
 }
 
 @media (max-width: 900px) {
+
   /* Hide the left sidebar on mobile */
   .left-sidebar {
     display: none;
@@ -4293,9 +4308,10 @@ body.inv-fullscreen .site-footer {
   .mobile-only {
     display: block;
   }
-  
+
   .site-header {
-    background: var(--bg); /* Make header pop more on mobile */
+    background: var(--bg);
+    /* Make header pop more on mobile */
     padding: 14px 20px;
     border-bottom: 1px solid var(--border);
   }
@@ -4303,14 +4319,14 @@ body.inv-fullscreen .site-footer {
   body.inv-fullscreen .site-footer {
     display: block;
   }
-  
+
   /* Tables */
   .ladder-table {
     display: block;
     overflow-x: auto;
     white-space: nowrap;
   }
-  
+
   table {
     display: block;
     overflow-x: auto;
@@ -4322,34 +4338,39 @@ body.inv-fullscreen .site-footer {
   .hero-inner a[href^="steam://"] {
     display: none !important;
   }
-  
+
   /* Profile Layout */
   .player-hero {
     flex-direction: column;
     text-align: center;
   }
+
   .player-avatar {
     margin: 0 auto 16px;
   }
+
   .player-hero-actions {
     justify-content: center;
     width: 100%;
   }
+
   .bigstat-row {
     grid-template-columns: 1fr 1fr;
   }
+
   .split-cards {
     grid-template-columns: 1fr;
   }
-  
+
   /* Padding fix */
   .container {
     padding: 20px 14px 60px;
   }
+
   .panel {
     padding: 20px;
   }
-  
+
   /* Spotlight fix */
   .ps-bg {
     object-position: center center;
@@ -4385,14 +4406,23 @@ body.inv-fullscreen .site-footer {
 .theme-toggle svg {
   transition: transform 0.5s cubic-bezier(0.175, 0.885, 0.32, 1.275);
 }
+
 .theme-toggle:active svg {
   transform: scale(0.8) rotate(-10deg);
 }
 
 @keyframes pulse {
-  0%, 100% { opacity: 1; }
-  50% { opacity: 0.3; }
+
+  0%,
+  100% {
+    opacity: 1;
+  }
+
+  50% {
+    opacity: 0.3;
+  }
 }
+
 .live-dot {
   display: inline-block;
   width: 8px;
@@ -4401,6 +4431,7 @@ body.inv-fullscreen .site-footer {
   border-radius: 50%;
   background-color: #ef4444;
   animation: pulse 2s cubic-bezier(0.4, 0, 0.6, 1) infinite;
+}
 
 /* ---------- SpellTakers Lobby Aesthetics ---------- */
 
@@ -4473,8 +4504,15 @@ body.inv-fullscreen .site-footer {
 }
 
 @keyframes pulseOrb {
-  0% { transform: scale(1); opacity: 0.6; }
-  100% { transform: scale(1.2); opacity: 1; }
+  0% {
+    transform: scale(1);
+    opacity: 0.6;
+  }
+
+  100% {
+    transform: scale(1.2);
+    opacity: 1;
+  }
 }
 
 .st-btn-primary {
@@ -4605,8 +4643,15 @@ body.inv-fullscreen .site-footer {
 }
 
 @keyframes popIn {
-  0% { transform: scale(0.8); opacity: 0; }
-  100% { transform: scale(1); opacity: 1; }
+  0% {
+    transform: scale(0.8);
+    opacity: 0;
+  }
+
+  100% {
+    transform: scale(1);
+    opacity: 1;
+  }
 }
 
 /* Map Veto */
@@ -4658,7 +4703,7 @@ body.inv-fullscreen .site-footer {
 .st-map-overlay {
   position: absolute;
   inset: 0;
-  background: linear-gradient(to top, rgba(0,0,0,0.9) 0%, rgba(0,0,0,0.2) 60%, transparent 100%);
+  background: linear-gradient(to top, rgba(0, 0, 0, 0.9) 0%, rgba(0, 0, 0, 0.2) 60%, transparent 100%);
   display: flex;
   align-items: flex-end;
   padding: 20px;
@@ -4669,7 +4714,7 @@ body.inv-fullscreen .site-footer {
   font-size: 1.4rem;
   color: #fff;
   font-weight: 800;
-  text-shadow: 0 2px 10px rgba(0,0,0,0.8);
+  text-shadow: 0 2px 10px rgba(0, 0, 0, 0.8);
 }
 
 .st-banned-stamp {
@@ -4707,8 +4752,15 @@ body.inv-fullscreen .site-footer {
 }
 
 @keyframes stampDown {
-  0% { transform: translate(-50%, -50%) scale(2); opacity: 0; }
-  100% { transform: translate(-50%, -50%) scale(1); opacity: 1; }
+  0% {
+    transform: translate(-50%, -50%) scale(2);
+    opacity: 0;
+  }
+
+  100% {
+    transform: translate(-50%, -50%) scale(1);
+    opacity: 1;
+  }
 }
 
 /* Class Draft */
@@ -4761,7 +4813,7 @@ body.inv-fullscreen .site-footer {
   border-color: var(--theme-color);
   background: rgba(0, 0, 0, 0.6);
   transform: translateY(-8px) scale(1.02);
-  box-shadow: 0 15px 40px rgba(0,0,0,0.4), 0 0 30px var(--theme-color) inset;
+  box-shadow: 0 15px 40px rgba(0, 0, 0, 0.4), 0 0 30px var(--theme-color) inset;
 }
 
 .st-class-card.selected::before {
@@ -4773,7 +4825,7 @@ body.inv-fullscreen .site-footer {
   margin-bottom: 20px;
   position: relative;
   z-index: 1;
-  filter: drop-shadow(0 4px 10px rgba(0,0,0,0.5));
+  filter: drop-shadow(0 4px 10px rgba(0, 0, 0, 0.5));
   transition: transform 0.3s ease;
 }
 
@@ -4806,10 +4858,10 @@ body.inv-fullscreen .site-footer {
   color: var(--muted);
   line-height: 1.8;
   margin: 20px 0;
-  background: rgba(0,0,0,0.3);
+  background: rgba(0, 0, 0, 0.3);
   padding: 20px;
   border-radius: 12px;
-  border: 1px solid rgba(255,255,255,0.05);
+  border: 1px solid rgba(255, 255, 255, 0.05);
 }
 
 .st-match-details strong {
@@ -4823,4 +4875,3 @@ body.inv-fullscreen .site-footer {
   margin-top: 20px;
   opacity: 0.7;
 }
-
