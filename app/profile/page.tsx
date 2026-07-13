@@ -102,6 +102,7 @@ export default async function ProfilePage({
         initialName={name}
         steamName={session.name ?? null}
         stats={stats}
+        initialPopConfig={webProfile?.PopConfig ?? null}
       />
 
       {/* ---------- Player info + season selector (from /players/[steamId]) ---------- */}

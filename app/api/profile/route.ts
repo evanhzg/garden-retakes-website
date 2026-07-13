@@ -46,6 +46,7 @@ export async function GET() {
     avatarUrl: profile?.AvatarUrl ?? null,
     bio: profile?.Bio ?? null,
     country: profile?.Country ?? null,
+    popConfig: profile?.PopConfig ?? null,
   });
 }
 
@@ -91,6 +92,8 @@ export async function POST(req: Request) {
     return NextResponse.json({ error: "Avatar must be an https:// URL." }, { status: 400 });
   }
 
+  const popConfigRaw = typeof body.popConfig === "string" ? body.popConfig.trim().slice(0, 512) : undefined;
+
   await prisma.gardenWebProfile.upsert({
     where: { SteamId: steamId },
     create: {
@@ -98,11 +101,13 @@ export async function POST(req: Request) {
       AvatarUrl: avatarUrl,
       Bio: bioRaw,
       Country: countryRaw,
+      ...(popConfigRaw !== undefined && { PopConfig: popConfigRaw }),
     },
     update: {
       AvatarUrl: avatarUrl,
       Bio: bioRaw,
       Country: countryRaw,
+      ...(popConfigRaw !== undefined && { PopConfig: popConfigRaw }),
     },
   });
 

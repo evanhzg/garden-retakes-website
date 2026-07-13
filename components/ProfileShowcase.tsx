@@ -3,12 +3,15 @@
 import { useCallback, useEffect, useMemo, useState } from "react";
 import { useRouter } from "next/navigation";
 import {
+import {
   emptyLoadout,
   normaliseStore,
   type InventoryStore,
   type Loadout,
 } from "@/lib/inventory";
 import type { ProfileStats } from "@/app/profile/page";
+import GardenPop, { GardenPopConfig, defaultPopConfig } from "./GardenPop";
+import GardenPopEditor from "./GardenPopEditor";
 
 type Side = "t" | "ct";
 type WeaponEntry = { def: number; name: string; image: string };
@@ -35,11 +38,13 @@ export default function ProfileShowcase({
   initialName,
   steamName,
   stats,
+  initialPopConfig,
 }: {
   steamId: string;
   initialName: string;
   steamName: string | null;
   stats: ProfileStats;
+  initialPopConfig: string | null;
 }) {
   const router = useRouter();
   const [store, setStore] = useState<InventoryStore | null>(null);
@@ -51,6 +56,19 @@ export default function ProfileShowcase({
   const [nameDraft, setNameDraft] = useState(initialName);
   const [saving, setSaving] = useState(false);
   const [overlaysVisible, setOverlaysVisible] = useState(true);
+
+  // Parse initial pop config
+  const parsedPopConfig = useMemo(() => {
+    if (!initialPopConfig) return defaultPopConfig;
+    try {
+      return { ...defaultPopConfig, ...JSON.parse(initialPopConfig) };
+    } catch {
+      return defaultPopConfig;
+    }
+  }, [initialPopConfig]);
+
+  const [popConfig, setPopConfig] = useState<GardenPopConfig>(parsedPopConfig);
+  const [editingPop, setEditingPop] = useState(false);
 
   // ---------- Load loadouts + base weapon images ----------
 
@@ -158,27 +176,48 @@ export default function ProfileShowcase({
     }
   };
 
+  const savePopConfig = async (newConfig: GardenPopConfig) => {
+    try {
+      const res = await fetch("/api/profile", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ popConfig: JSON.stringify(newConfig) }),
+      });
+      if (res.ok) {
+        setPopConfig(newConfig);
+        setEditingPop(false);
+      }
+    } catch (err) {
+      console.error(err);
+    }
+  };
+
   // ---------- Render ----------
 
   return (
     <section className="profile-showcase">
       <div className="ps-stage">
-        {/* eslint-disable-next-line @next/next/no-img-element */}
-        <img
-          className="ps-bg"
-          src={`/${steamId}_character.PNG`}
-          alt=""
-          onError={(e) => { (e.currentTarget as HTMLImageElement).src = "/default_character.PNG"; }}
-        />
+        
+        <div style={{ position: "absolute", inset: 0, display: "flex", alignItems: "center", justifyContent: "center" }}>
+          <GardenPop config={popConfig} className="ps-bg" />
+        </div>
+        
         <div className="ps-scrim" aria-hidden="true" />
 
-        {/* Overlay toggle button */}
         <button
           className="ps-overlay-toggle btn small secondary"
           onClick={() => setOverlaysVisible((v) => !v)}
           title={overlaysVisible ? "Hide overlays" : "Show overlays"}
         >
           {overlaysVisible ? "Hide overlays" : "Show overlays"}
+        </button>
+
+        <button
+          className="btn small"
+          style={{ position: "absolute", top: "16px", left: "16px", zIndex: 10 }}
+          onClick={() => setEditingPop(true)}
+        >
+          Customize Garden-Pop
         </button>
 
         {/* All overlays — animated in/out */}
@@ -345,6 +384,14 @@ export default function ProfileShowcase({
 
         </div>{/* end ps-overlays */}
       </div>
+
+      {editingPop && (
+        <GardenPopEditor
+          initialConfig={popConfig}
+          onSave={savePopConfig}
+          onCancel={() => setEditingPop(false)}
+        />
+      )}
     </section>
   );
 }

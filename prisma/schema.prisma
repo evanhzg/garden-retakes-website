@@ -171,6 +171,7 @@ model GardenWebProfile {
   Country   String?
   IsPro     Boolean  @default(false)
   ProSlug   String?  @unique
+  PopConfig String?  @db.VarChar(512)
   UpdatedAt DateTime @updatedAt
 
   @@map("GardenWebProfiles")

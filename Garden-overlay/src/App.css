@@ -1,0 +1,163 @@
+/* Make the entire app background transparent to allow CS2 to show through */
+:root {
+  background-color: transparent !important;
+}
+
+body {
+  margin: 0;
+  padding: 0;
+  background-color: transparent !important;
+  font-family: 'Inter', system-ui, -apple-system, sans-serif;
+  overflow: hidden; /* Prevent scrollbars on the overlay */
+}
+
+.overlay-container {
+  width: 100vw;
+  height: 100vh;
+  position: relative;
+  /* Add subtle shadow inside the window to give it depth, optional */
+  box-shadow: inset 0 0 100px rgba(0,0,0,0.3);
+  pointer-events: none; /* Crucial: lets clicks pass through to the game if Tauri hasn't fully ignored them */
+}
+
+/* Re-enable pointer events for specific UI elements if we ever need clicking */
+.tower-health-container, .hotbar-container, .ws-status {
+  pointer-events: auto; 
+}
+
+/* Tower Health Bar (Top Center) */
+.tower-health-container {
+  position: absolute;
+  top: 40px;
+  left: 50%;
+  transform: translateX(-50%);
+  width: 500px;
+  text-align: center;
+  background: rgba(0, 0, 0, 0.6);
+  backdrop-filter: blur(10px);
+  padding: 15px 20px;
+  border-radius: 12px;
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  box-shadow: 0 10px 30px rgba(0,0,0,0.5);
+}
+
+.tower-health-title {
+  color: #fff;
+  font-weight: 800;
+  letter-spacing: 0.2em;
+  font-size: 0.9rem;
+  margin-bottom: 8px;
+  text-shadow: 0 2px 4px rgba(0,0,0,0.8);
+}
+
+.tower-health-bar-bg {
+  width: 100%;
+  height: 24px;
+  background: rgba(0, 0, 0, 0.8);
+  border-radius: 6px;
+  overflow: hidden;
+  border: 2px solid rgba(255, 255, 255, 0.2);
+  position: relative;
+}
+
+.tower-health-bar-fill {
+  height: 100%;
+  transition: width 0.3s ease-out, background-color 0.3s ease;
+  box-shadow: 0 0 20px rgba(255,255,255,0.2) inset;
+}
+
+.tower-health-text {
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -20%);
+  color: #fff;
+  font-weight: 900;
+  font-size: 1.1rem;
+  text-shadow: 0 2px 5px rgba(0,0,0,1);
+}
+
+/* WebSocket Status (Top Right) */
+.ws-status {
+  position: absolute;
+  top: 20px;
+  right: 20px;
+  background: rgba(0, 0, 0, 0.5);
+  padding: 8px 12px;
+  border-radius: 8px;
+  color: #fff;
+  font-size: 0.8rem;
+  font-weight: 600;
+  border: 1px solid rgba(255, 255, 255, 0.1);
+}
+
+.ws-status .online { color: #10b981; }
+.ws-status .offline { color: #ef4444; }
+
+/* Hotbar (Bottom Center) */
+.hotbar-container {
+  position: absolute;
+  bottom: 40px;
+  left: 50%;
+  transform: translateX(-50%);
+  display: flex;
+  gap: 15px;
+  background: rgba(0, 0, 0, 0.4);
+  padding: 15px;
+  border-radius: 20px;
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  backdrop-filter: blur(8px);
+}
+
+.ability-slot {
+  width: 64px;
+  height: 64px;
+  background: linear-gradient(135deg, rgba(255,255,255,0.1), rgba(0,0,0,0.5));
+  border: 2px solid rgba(255, 255, 255, 0.2);
+  border-radius: 12px;
+  position: relative;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 2rem;
+  box-shadow: 0 5px 15px rgba(0,0,0,0.5);
+  transition: transform 0.1s;
+}
+
+.ability-slot:not(.on-cooldown):hover {
+  transform: translateY(-5px);
+  border-color: #a855f7;
+  box-shadow: 0 10px 25px rgba(168, 85, 247, 0.5);
+}
+
+.ability-key {
+  position: absolute;
+  bottom: -10px;
+  right: -10px;
+  background: #2dd4bf;
+  color: #000;
+  font-weight: 900;
+  font-size: 0.8rem;
+  padding: 4px 8px;
+  border-radius: 4px;
+  border: 2px solid #000;
+}
+
+.on-cooldown {
+  filter: grayscale(100%) brightness(0.5);
+  border-color: rgba(255,0,0,0.5);
+}
+
+.cooldown-overlay {
+  position: absolute;
+  inset: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 2rem;
+  font-weight: 900;
+  color: #ef4444;
+  text-shadow: 0 2px 10px rgba(0,0,0,1);
+  background: rgba(0,0,0,0.6);
+  border-radius: 10px;
+}
