@@ -304,3 +304,75 @@ model UserSettings {
 
   @@map("UserSettings")
 }
+// ---------------- Web Games / Social Features ----------------
+
+model WebFriendship {
+  Id           Int      @id @default(autoincrement())
+  RequesterId  BigInt   @db.UnsignedBigInt
+  AddresseeId  BigInt   @db.UnsignedBigInt
+  Status       String   @default("PENDING") // PENDING, ACCEPTED, BLOCKED
+  CreatedAtUtc DateTime @default(now()) @db.DateTime(6)
+
+  @@unique([RequesterId, AddresseeId])
+  @@index([AddresseeId])
+  @@map("WebFriendships")
+}
+
+model WebGameLobby {
+  Id           String   @id @default(uuid())
+  GameType     String
+  HostSteamId  BigInt   @db.UnsignedBigInt
+  Status       String   @default("WAITING") // WAITING, PLAYING, FINISHED
+  MaxPlayers   Int      @default(4)
+  CreatedAtUtc DateTime @default(now()) @db.DateTime(6)
+  
+  Players      WebLobbyPlayer[]
+
+  @@map("WebGameLobbies")
+}
+
+model WebLobbyPlayer {
+  Id           Int      @id @default(autoincrement())
+  LobbyId      String
+  SteamId      BigInt   @db.UnsignedBigInt
+  JoinedAtUtc  DateTime @default(now()) @db.DateTime(6)
+
+  Lobby        WebGameLobby @relation(fields: [LobbyId], references: [Id], onDelete: Cascade)
+
+  @@unique([LobbyId, SteamId])
+  @@map("WebLobbyPlayers")
+}
+
+model WebMessage {
+  Id               Int      @id @default(autoincrement())
+  SenderSteamId    BigInt   @db.UnsignedBigInt
+  RecipientSteamId BigInt?  @db.UnsignedBigInt // null if lobby message
+  LobbyId          String?  // null if direct message
+  Content          String   @db.Text
+  CreatedAtUtc     DateTime @default(now()) @db.DateTime(6)
+
+  @@index([RecipientSteamId])
+  @@index([LobbyId])
+  @@map("WebMessages")
+}
+
+model WebNotification {
+  Id           Int      @id @default(autoincrement())
+  SteamId      BigInt   @db.UnsignedBigInt
+  Type         String   // FRIEND_REQUEST, GAME_INVITE, SYSTEM
+  Content      String   @db.VarChar(256)
+  IsRead       Boolean  @default(false)
+  ActionUrl    String?  @db.VarChar(256)
+  CreatedAtUtc DateTime @default(now()) @db.DateTime(6)
+
+  @@index([SteamId])
+  @@map("WebNotifications")
+}
+model NemesisRecord {
+  KillerSteamId BigInt @db.UnsignedBigInt
+  VictimSteamId BigInt @db.UnsignedBigInt
+  Kills         Int
+
+  @@id([KillerSteamId, VictimSteamId])
+  @@map("NemesisRecords")
+}

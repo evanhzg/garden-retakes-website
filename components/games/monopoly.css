@@ -1,0 +1,429 @@
+/* Monopoly Game Layout */
+.monopoly-container {
+  position: fixed;
+  top: 0;
+  left: 0;
+  height: 100vh;
+  width: 100vw;
+  z-index: 10;
+  margin-left: calc(-50vw + 50%);
+  background: radial-gradient(circle at top right, #1a202c 0%, #000000 100%);
+  color: white;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  overflow: hidden;
+  position: relative;
+}
+
+/* Modifiers Pre-Game Lobby */
+.mono-lobby-modal {
+  background: rgba(20, 20, 20, 0.95);
+  backdrop-filter: blur(20px);
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  border-radius: 24px;
+  padding: 3rem;
+  width: 800px;
+  max-width: 90vw;
+  box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.5);
+  display: flex;
+  flex-direction: column;
+  gap: 2rem;
+  z-index: 50;
+}
+
+.mono-lobby-modal h1 {
+  font-size: 3rem;
+  font-weight: 900;
+  text-align: center;
+  margin: 0;
+  background: linear-gradient(135deg, #00cc00, #ffcc00, #ff0000);
+  -webkit-background-clip: text;
+  color: transparent;
+}
+
+/* 3D Board Wrapper */
+.mono-board-wrapper {
+  perspective: 1500px;
+  width: 70vmin;
+  height: 70vmin;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  margin-top: -80px;
+}
+
+/* Game Board 11x11 Grid */
+.mono-board {
+  display: grid;
+  grid-template-columns: repeat(11, 1fr);
+  grid-template-rows: repeat(11, 1fr);
+  gap: 2px;
+  width: 100%;
+  height: 100%;
+  background: #111;
+  border: 8px solid #222;
+  border-radius: 12px;
+  padding: 4px;
+  box-shadow: 0 50px 100px rgba(0,0,0,0.8), inset 0 0 50px rgba(0,0,0,0.5);
+  transform-style: preserve-3d;
+  transform: rotateX(40deg) rotateZ(45deg);
+  transition: transform 0.5s;
+}
+
+/* Center Action Area */
+.mono-center {
+  grid-column: 2 / 11;
+  grid-row: 2 / 11;
+  background: #222;
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  align-items: center;
+  gap: 1.5rem;
+  color: white;
+  padding: 2rem;
+  text-align: center;
+  position: relative;
+}
+
+/* Spaces */
+.mono-space {
+  background: #e0e0e0;
+  border: 1px solid #999;
+  display: flex;
+  flex-direction: column;
+  justify-content: flex-start;
+  align-items: center;
+  text-align: center;
+  color: #000;
+  font-weight: bold;
+  font-size: 0.6rem;
+  position: relative;
+  overflow: hidden;
+  cursor: pointer;
+  transition: transform 0.2s, box-shadow 0.2s;
+  transform-style: preserve-3d;
+}
+
+.mono-space:hover {
+  transform: translateZ(10px);
+  box-shadow: 0 0 20px rgba(255, 255, 255, 0.5);
+  z-index: 50;
+}
+
+.mono-space.mortgaged {
+  filter: grayscale(1) brightness(0.5);
+}
+
+/* Colors for spaces */
+.color-bar {
+  width: 100%;
+  height: 25%;
+  border-bottom: 2px solid #000;
+}
+.brown { background-color: #8b4513; }
+.lightblue { background-color: #87ceeb; }
+.pink { background-color: #ff69b4; }
+.orange { background-color: #ff8c00; }
+.red { background-color: #ff0000; }
+.yellow { background-color: #ffd700; }
+.green { background-color: #008000; }
+.blue { background-color: #0000ff; }
+
+/* 40 Space Mappings (11x11 Grid) */
+.s0 { grid-column: 11; grid-row: 11; }
+.s1 { grid-column: 10; grid-row: 11; }
+.s2 { grid-column: 9; grid-row: 11; }
+.s3 { grid-column: 8; grid-row: 11; }
+.s4 { grid-column: 7; grid-row: 11; }
+.s5 { grid-column: 6; grid-row: 11; }
+.s6 { grid-column: 5; grid-row: 11; }
+.s7 { grid-column: 4; grid-row: 11; }
+.s8 { grid-column: 3; grid-row: 11; }
+.s9 { grid-column: 2; grid-row: 11; }
+.s10 { grid-column: 1; grid-row: 11; }
+.s11 { grid-column: 1; grid-row: 10; }
+.s12 { grid-column: 1; grid-row: 9; }
+.s13 { grid-column: 1; grid-row: 8; }
+.s14 { grid-column: 1; grid-row: 7; }
+.s15 { grid-column: 1; grid-row: 6; }
+.s16 { grid-column: 1; grid-row: 5; }
+.s17 { grid-column: 1; grid-row: 4; }
+.s18 { grid-column: 1; grid-row: 3; }
+.s19 { grid-column: 1; grid-row: 2; }
+.s20 { grid-column: 1; grid-row: 1; }
+.s21 { grid-column: 2; grid-row: 1; }
+.s22 { grid-column: 3; grid-row: 1; }
+.s23 { grid-column: 4; grid-row: 1; }
+.s24 { grid-column: 5; grid-row: 1; }
+.s25 { grid-column: 6; grid-row: 1; }
+.s26 { grid-column: 7; grid-row: 1; }
+.s27 { grid-column: 8; grid-row: 1; }
+.s28 { grid-column: 9; grid-row: 1; }
+.s29 { grid-column: 10; grid-row: 1; }
+.s30 { grid-column: 11; grid-row: 1; }
+.s31 { grid-column: 11; grid-row: 2; }
+.s32 { grid-column: 11; grid-row: 3; }
+.s33 { grid-column: 11; grid-row: 4; }
+.s34 { grid-column: 11; grid-row: 5; }
+.s35 { grid-column: 11; grid-row: 6; }
+.s36 { grid-column: 11; grid-row: 7; }
+.s37 { grid-column: 11; grid-row: 8; }
+.s38 { grid-column: 11; grid-row: 9; }
+.s39 { grid-column: 11; grid-row: 10; }
+
+/* Corner Space Adjustments */
+.mono-space.corner {
+  justify-content: center;
+  font-size: 1rem;
+  background: #e6f7ff;
+}
+
+/* 3D Player Tokens */
+.player-token {
+  position: absolute;
+  width: 25px;
+  height: 25px;
+  border-radius: 50%;
+  border: 3px solid #fff;
+  box-shadow: 0 10px 20px rgba(0,0,0,0.8);
+  z-index: 100;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 12px;
+  font-weight: bold;
+  transform-style: preserve-3d;
+  /* Counter-rotate to stand up straight */
+  transform: rotateZ(-45deg) rotateX(-40deg) translateZ(20px);
+  transition: transform 0.1s;
+}
+
+/* 3D Houses/Hotels */
+.house-icon {
+  width: 10px;
+  height: 10px;
+  background: #00cc00;
+  border: 1px solid #000;
+  margin: 1px;
+  display: inline-block;
+  transform-style: preserve-3d;
+  transform: rotateZ(-45deg) rotateX(-40deg) translateZ(5px);
+  box-shadow: 2px 2px 5px rgba(0,0,0,0.5);
+}
+.hotel-icon {
+  width: 14px;
+  height: 14px;
+  background: #ff0000;
+  border: 1px solid #000;
+  margin: 1px;
+  display: inline-block;
+  transform-style: preserve-3d;
+  transform: rotateZ(-45deg) rotateX(-40deg) translateZ(5px);
+  box-shadow: 2px 2px 5px rgba(0,0,0,0.5);
+}
+.houses-container {
+  position: absolute;
+  bottom: 2px;
+  display: flex;
+  justify-content: center;
+  width: 100%;
+}
+
+/* Property Owner Marker */
+.owner-marker {
+  position: absolute;
+  bottom: 0; left: 0; right: 0;
+  height: 6px;
+  box-shadow: inset 0 -2px 5px rgba(0,0,0,0.5);
+}
+
+/* UI Elements */
+.dice-container {
+  display: flex;
+  gap: 1rem;
+  font-size: 2.5rem;
+  font-weight: 900;
+  transform: rotateZ(-45deg) rotateX(-40deg) translateZ(40px); /* Counter rotate */
+  transform-style: preserve-3d;
+}
+
+.mono-dice {
+  background: #fff;
+  color: #000;
+  width: 60px;
+  height: 60px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 12px;
+  border: 2px solid #ccc;
+  box-shadow: 
+    -2px 2px 0 #ccc,
+    -4px 4px 0 #999,
+    -6px 6px 0 #666,
+    -8px 8px 10px rgba(0,0,0,0.5);
+  transform: rotateZ(15deg);
+}
+
+.mono-btn {
+  padding: 1rem 2rem;
+  font-size: 1.25rem;
+  font-weight: bold;
+  background: linear-gradient(45deg, #00cc00, #0066ff);
+  border: none;
+  border-radius: 12px;
+  color: #fff;
+  cursor: pointer;
+  transition: transform 0.2s, box-shadow 0.2s;
+  box-shadow: 0 5px 15px rgba(0,204,0,0.3);
+}
+.mono-btn:hover:not(:disabled) {
+  transform: scale(1.05);
+  box-shadow: 0 8px 25px rgba(0,204,0,0.5);
+}
+.mono-btn:disabled {
+  background: #555;
+  cursor: not-allowed;
+  box-shadow: none;
+}
+
+/* Logs */
+.action-logs {
+  position: absolute;
+  top: 5rem;
+  right: 4rem;
+  width: 320px;
+  max-height: 250px;
+  overflow-y: auto;
+  font-size: 0.9rem;
+  color: #fff;
+  text-align: left;
+  border: 1px solid rgba(255,255,255,0.1);
+  background: rgba(10, 10, 20, 0.85);
+  backdrop-filter: blur(10px);
+  padding: 1rem;
+  border-radius: 12px;
+  box-shadow: 0 10px 30px rgba(0,0,0,0.5);
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+  z-index: 200;
+}
+
+.log-entry {
+  padding: 10px;
+  border-radius: 8px;
+  background: rgba(255,255,255,0.05);
+  border-left: 4px solid #666;
+  animation: popIn 0.3s ease;
+}
+.log-entry.buy { border-left-color: #00cc00; background: rgba(0,204,0,0.05); }
+.log-entry.pay { border-left-color: #ff3333; background: rgba(255,51,51,0.05); }
+.log-entry.jail { border-left-color: #ff9900; background: rgba(255,153,0,0.05); }
+.log-entry.card { border-left-color: #3366ff; background: rgba(51,102,255,0.05); }
+
+/* Player Positioning */
+.mono-players {
+  /* removed flex container, players are absolute now */
+}
+
+.mono-player-card {
+  position: absolute;
+  background: rgba(0,0,0,0.8);
+  border: 2px solid;
+  padding: 1rem;
+  border-radius: 12px;
+  backdrop-filter: blur(10px);
+  width: 200px;
+  color: white;
+  box-shadow: 0 10px 30px rgba(0,0,0,0.5);
+  z-index: 200;
+  transition: all 0.3s;
+}
+
+.pos-0 {
+  bottom: calc(50vh - 42vmin);
+  right: calc(50vw - 45vmin);
+  transform: scale(1.15);
+}
+.pos-1 {
+  bottom: calc(50vh - 40vmin);
+  left: calc(50vw - 45vmin);
+}
+.pos-2 {
+  top: calc(50vh - 45vmin);
+  left: calc(50vw - 45vmin);
+}
+.pos-3 {
+  top: calc(50vh - 45vmin);
+  right: calc(50vw - 45vmin);
+}
+
+
+
+/* Property Modal Overlay */
+.property-modal-overlay {
+  position: fixed;
+  top: 0; left: 0; right: 0; bottom: 0;
+  background: rgba(0,0,0,0.8);
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  z-index: 1000;
+  backdrop-filter: blur(5px);
+}
+
+.property-modal {
+  background: #fff;
+  color: #000;
+  width: 300px;
+  border-radius: 12px;
+  padding: 0;
+  overflow: hidden;
+  box-shadow: 0 25px 50px rgba(0,0,0,0.5);
+  display: flex;
+  flex-direction: column;
+}
+
+.property-modal-header {
+  height: 80px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 1.5rem;
+  font-weight: 900;
+  color: #000;
+  text-align: center;
+  border-bottom: 2px solid #000;
+}
+
+.property-modal-body {
+  padding: 1.5rem;
+  text-align: center;
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+}
+
+.property-modal-actions {
+  padding: 1rem;
+  background: #eee;
+  display: flex;
+  justify-content: space-around;
+  gap: 1rem;
+}
+
+.modal-btn {
+  padding: 0.5rem 1rem;
+  border: none;
+  border-radius: 8px;
+  font-weight: bold;
+  cursor: pointer;
+  background: #3366ff;
+  color: white;
+}
+.modal-btn.danger { background: #ff3333; }
+.modal-btn:disabled { background: #999; cursor: not-allowed; }

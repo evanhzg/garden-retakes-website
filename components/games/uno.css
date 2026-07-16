@@ -1,0 +1,390 @@
+/* UNO Game Layout */
+.uno-container {
+  position: fixed;
+  top: 0;
+  left: 0;
+  height: 100vh;
+  width: 100vw;
+  background: radial-gradient(circle at center, #1a1a1a 0%, #000000 100%);
+  color: white;
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+  z-index: 10;
+}
+
+/* Modifiers Pre-Game Lobby */
+.uno-lobby-modal {
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  background: rgba(20, 20, 20, 0.95);
+  backdrop-filter: blur(20px);
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  border-radius: 24px;
+  padding: 3rem;
+  width: 800px;
+  max-width: 90vw;
+  box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.5);
+  z-index: 150;
+  display: flex;
+  flex-direction: column;
+  gap: 2rem;
+}
+
+.uno-lobby-modal h1 {
+  font-size: 3rem;
+  font-weight: 900;
+  text-align: center;
+  margin: 0;
+  background: linear-gradient(135deg, #ff0000, #ffcc00, #00cc00, #0066ff);
+  -webkit-background-clip: text;
+  color: transparent;
+}
+
+.modifiers-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 1rem;
+}
+
+.modifier-card {
+  background: rgba(255,255,255,0.05);
+  border: 1px solid rgba(255,255,255,0.1);
+  padding: 1rem;
+  border-radius: 12px;
+  display: flex;
+  flex-direction: column;
+  transition: all 0.2s;
+}
+
+.modifier-card.active {
+  border-color: #00cc00;
+  background: rgba(0, 204, 0, 0.05);
+}
+
+.modifier-card h3 {
+  margin: 0 0 0.5rem 0;
+  font-size: 1.1rem;
+}
+
+.modifier-card p {
+  margin: 0;
+  font-size: 0.85rem;
+  color: #aaa;
+}
+
+.btn-start-game {
+  padding: 1rem 2rem;
+  font-size: 1.25rem;
+  font-weight: bold;
+  background: linear-gradient(45deg, #ff0000, #ffcc00);
+  border: none;
+  border-radius: 12px;
+  color: #fff;
+  cursor: pointer;
+  transition: transform 0.2s;
+  text-shadow: 1px 1px 2px rgba(0,0,0,0.5);
+}
+.btn-start-game:hover {
+  transform: scale(1.05);
+}
+.btn-start-game:disabled {
+  filter: grayscale(1);
+  cursor: not-allowed;
+  transform: none;
+}
+
+/* UNO Game Board - Circular Layout */
+.uno-board {
+  flex: 1;
+  position: relative;
+  width: 100%;
+  height: 100vh;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  perspective: 1000px;
+}
+
+/* Center Table */
+.center-table {
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 3rem;
+  z-index: 10;
+}
+
+.deck, .discard {
+  position: relative;
+  width: 140px;
+  height: 200px;
+}
+
+.deck-glow {
+  box-shadow: 0 0 20px 5px #00ff00;
+  border-radius: 12px;
+}
+
+/* Player/Opponent Placements */
+.player-hand-container {
+  position: absolute;
+  bottom: 5vh;
+  left: 50%;
+  transform: translateX(-50%);
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  z-index: 20;
+}
+
+.opponent-container {
+  position: absolute;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  z-index: 5;
+}
+
+.opponent-top {
+  top: 5vh;
+  left: 50%;
+  transform: translateX(-50%) rotate(180deg);
+}
+
+.opponent-left {
+  left: 5vw;
+  top: 50%;
+  transform: translateY(-50%) rotate(90deg);
+}
+
+.opponent-right {
+  right: 5vw;
+  top: 50%;
+  transform: translateY(-50%) rotate(-90deg);
+}
+
+/* Avatar info */
+.opponent-info {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  margin-bottom: -40px;
+  z-index: 10;
+  transform: rotate(0deg); /* Counter rotate for avatars so they stay upright? We'll manage in TSX */
+}
+
+.opponent-avatar {
+  width: 60px;
+  height: 60px;
+  border-radius: 50%;
+  background: #333;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 1.5rem;
+  border: 3px solid transparent;
+  box-shadow: 0 5px 15px rgba(0,0,0,0.5);
+}
+.active-turn .opponent-avatar {
+  border-color: #ffcc00;
+  box-shadow: 0 0 20px #ffcc00;
+}
+
+.player-hand {
+  display: flex;
+  justify-content: center;
+  gap: -30px; /* Negative gap for overlap */
+  align-items: center;
+}
+
+/* CSS Cards */
+.uno-card {
+  width: 130px;
+  height: 190px;
+  border-radius: 12px;
+  border: 6px solid #fff;
+  display: flex;
+  flex-direction: column;
+  justify-content: space-between;
+  padding: 8px;
+  position: relative;
+  box-shadow: 0 10px 20px rgba(0,0,0,0.5);
+  cursor: pointer;
+  user-select: none;
+  font-family: 'Arial Black', sans-serif;
+  background-color: #fff;
+  margin-left: -40px;
+  transform-style: preserve-3d;
+}
+.uno-card:first-child {
+  margin-left: 0;
+}
+
+/* Theming & Highlights */
+.uno-card.playable {
+  box-shadow: 0 -10px 20px #00ff00, 0 10px 20px rgba(0,0,0,0.5);
+}
+
+.uno-card.red { background-color: #ff3333; }
+.uno-card.yellow { background-color: #ffcc00; }
+.uno-card.green { background-color: #33cc33; }
+.uno-card.blue { background-color: #3366ff; }
+.uno-card.wild { background-color: #222; }
+
+/* Themes */
+.uno-card.theme-midnight {
+  background-color: #111;
+  border-color: #444;
+  box-shadow: 0 10px 20px rgba(0,0,0,0.8);
+}
+.uno-card.theme-midnight .inner-oval {
+  background: #222;
+  box-shadow: inset 0 0 15px rgba(0,0,0,0.5);
+}
+.uno-card.theme-midnight .value-top-left, .uno-card.theme-midnight .value-bottom-right {
+  color: #aaa;
+}
+
+.uno-card.theme-glass {
+  background: rgba(255, 255, 255, 0.1);
+  backdrop-filter: blur(10px);
+  border: 2px solid rgba(255, 255, 255, 0.2);
+}
+.uno-card.theme-glass .inner-oval {
+  background: rgba(255, 255, 255, 0.2);
+}
+.uno-card.theme-glass.red { background: rgba(255, 51, 51, 0.2); border-color: rgba(255, 51, 51, 0.5); }
+.uno-card.theme-glass.blue { background: rgba(51, 102, 255, 0.2); border-color: rgba(51, 102, 255, 0.5); }
+.uno-card.theme-glass.green { background: rgba(51, 204, 51, 0.2); border-color: rgba(51, 204, 51, 0.5); }
+.uno-card.theme-glass.yellow { background: rgba(255, 204, 0, 0.2); border-color: rgba(255, 204, 0, 0.5); }
+.uno-card.theme-glass.wild { background: rgba(34, 34, 34, 0.5); border-color: rgba(255, 255, 255, 0.3); }
+
+/* Card Back Design */
+.card-back {
+  width: 100%;
+  height: 100%;
+  position: absolute;
+  top: 0; left: 0;
+  background: #222;
+  border: 6px solid #fff;
+  border-radius: 12px;
+  box-sizing: border-box;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  backface-visibility: hidden;
+}
+
+.card-back::after {
+  content: 'UNO';
+  font-size: 2rem;
+  font-weight: 900;
+  font-style: italic;
+  color: #ff0000;
+  text-shadow: 2px 2px 0 #fff;
+  box-shadow: -2px 2px 0 #111, -4px 4px 0 #222, -6px 6px 0 #111;
+  background: #222;
+  border: 3px solid #fff;
+  border-radius: 50%;
+  width: 80%;
+  height: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transform: rotate(-15deg);
+}
+
+.uno-card .inner-oval {
+  position: absolute;
+  top: 15px; left: 15px; right: 15px; bottom: 15px;
+  background: #fff;
+  border-radius: 50%;
+  transform: skew(-15deg);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  box-shadow: inset 0 0 10px rgba(0,0,0,0.2);
+}
+
+.uno-card .value-center {
+  font-size: 4rem;
+  font-weight: 900;
+  text-shadow: 2px 2px 0 #000;
+  z-index: 2;
+  transform: skew(15deg);
+}
+.uno-card.red .value-center { color: #ff3333; }
+.uno-card.yellow .value-center { color: #ffcc00; }
+.uno-card.green .value-center { color: #33cc33; }
+.uno-card.blue .value-center { color: #3366ff; }
+.uno-card.wild .value-center { color: #fff; text-shadow: 2px 2px 0 #000, -2px -2px 0 #ff3333, 2px -2px 0 #3366ff; }
+
+.uno-card .value-top-left, .uno-card .value-bottom-right {
+  font-size: 1.2rem;
+  font-weight: 900;
+  color: #fff;
+  text-shadow: 1px 1px 0 #000;
+  z-index: 2;
+}
+
+.uno-card .value-bottom-right {
+  align-self: flex-end;
+  transform: rotate(180deg);
+}
+
+/* Color Picker Modal */
+.color-picker {
+  position: absolute;
+  top: 50%; left: 50%; transform: translate(-50%, -50%);
+  background: rgba(0,0,0,0.9);
+  padding: 2rem;
+  border-radius: 20px;
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 1rem;
+  z-index: 200;
+}
+.color-btn {
+  width: 80px; height: 80px;
+  border-radius: 12px;
+  border: 4px solid #fff;
+  cursor: pointer;
+  transition: transform 0.2s;
+}
+.color-btn:hover { transform: scale(1.1); }
+.color-btn.red { background: #ff3333; }
+.color-btn.yellow { background: #ffcc00; }
+.color-btn.green { background: #33cc33; }
+.color-btn.blue { background: #3366ff; }
+
+/* Deck stack representation */
+.deck::after {
+  content: 'UNO';
+  position: absolute;
+  top: 0; left: 0; right: 0; bottom: 0;
+  background: #222;
+  border: 4px solid #fff;
+  border-radius: 12px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 2rem;
+  font-weight: 900;
+  font-style: italic;
+  color: #ff0000;
+  text-shadow: 2px 2px 0 #fff;
+  cursor: pointer;
+  box-shadow: -2px 2px 0 #111, -4px 4px 0 #222, -6px 6px 0 #111;
+  transition: transform 0.2s;
+}
+.deck:hover::after {
+  transform: translateY(-5px);
+}
+

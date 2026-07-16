@@ -360,6 +360,10 @@ collected 2026-07-09 so nothing gets lost:
       ladder (wins/losses/winrate/challenges won) + last 20 duels; NavBar link.
 - [x] Discord D4/D5 — DONE (see Phase D): D4 stats slash-commands (2026-07-09),
       D5 DB-polling event posts (2026-07-10). Both shipped.
+- [x] **Live Spectator Dashboard overhaul** — DONE 2026-07-13: analytics, role-based admin controls, custom player avatars.
+- [x] **Player Profile enhancements** — DONE 2026-07-13: dynamic sidebars, real-time server status.
+- [x] **Garden-Pop 3D Customizer** — DONE 2026-07-13: UI improvements, responsive design.
+- [x] **CI/CD Pipeline** — DONE 2026-07-13: GitHub Actions setup for CS2 plugins using GitHub Packages.
 
 ---
 
@@ -533,3 +537,18 @@ collected 2026-07-09 so nothing gets lost:
   (published today with the regenerated item catalog) — run `npm update @ianlucas/cs2-lib` to
   refresh the lockfile before redeploying. The inventory simulator picks the new collections up
   automatically (runtime catalog + cdn.cstrike.app images). Same recipe for future drops.
+- 2026-07-13 (35): **Garden-Pop 3D Customizer**. Finalized aesthetic adjustments, fixed interactive layout issues, and ensured seamless camera controls for the 3D character customization interface.
+- 2026-07-13 (36): **Live Spectator Dashboard & Player Profiles**. Added richer player analytics, role-based admin controls directly into the dashboard, custom player avatars, dynamic sidebars, and real-time server status indicators.
+- 2026-07-13 (37): **Plugin Infrastructure Fixes**. Resolved InventorySimulator "garbage collected delegate" crashes (`CSS.NextWorldUpdate` wrapper), fixed localization bundling (en.json, fr.json deployed correctly), and set up GitHub Actions CI/CD pipeline for CS2 plugins using GitHub Packages.
+- 2026-07-17 (38): **Games Hub & Universal Lobby overhaul** (glass theme + reliability). Hub: game
+  cards got their gradients back (`data-game` attr), the public-lobby list now loads on page open
+  (was empty until a lobby changed), lobby cards show the resolved host name + live status, and an
+  invite-code/link box joins any lobby directly. Create modal: EN/FR language picker, glass styling.
+  Lobby: full glass restyle on the site palette (light+dark), resolved player names/avatars
+  (`/api/players/resolve` batch endpoint), invite-link copy button, host-only kick for *any* player,
+  garden-named bots (Sprout, Fern…), chat history replay for late joiners + autoscroll, coherent
+  ready flow (host starts, everyone else readies — same rule public & private, enforced server-side),
+  and per-player disconnect grace (10s "RECONNECTING…" instead of instant kick on refresh/navigation).
+  Server: authenticate ack (`authenticated`) removes the 300ms join race, merged duplicate disconnect
+  handlers, soft errors now toast instead of nuking the lobby screen, empty lobbies clean up after
+  their last human leaves. Mobile: lobby stacks and scrolls properly.
