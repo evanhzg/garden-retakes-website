@@ -12,9 +12,23 @@ const { PrismaClient } = require("@prisma/client");
 const prisma = new PrismaClient();
 
 const httpServer = createServer();
+
+// Allowed browser origins. Override/extend with SOCKET_CORS_ORIGINS (comma-separated).
+const corsOrigins = process.env.SOCKET_CORS_ORIGINS
+  ? process.env.SOCKET_CORS_ORIGINS.split(",").map((o) => o.trim())
+  : [
+      "https://retakes.fr",
+      "https://www.retakes.fr",
+      "https://games.retakes.fr",
+      "https://pkmn.retakes.fr",
+      "https://docs.retakes.fr",
+      "http://localhost:3000",
+      "http://localhost:3131",
+    ];
+
 const io = new Server(httpServer, {
   cors: {
-    origin: "*", // Adjust this in production
+    origin: corsOrigins,
     methods: ["GET", "POST"]
   }
 });
