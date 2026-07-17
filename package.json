@@ -11,6 +11,8 @@
     },
     "dependencies": {
         "@ianlucas/cs2-lib": "^8.0.3",
+        "@pkmn/dex": "^0.10.11",
+        "@pkmn/sim": "^0.10.11",
         "@prisma/client": "^6.19.3",
         "@react-three/drei": "^9.122.0",
         "@react-three/fiber": "^8.18.0",
@@ -18,6 +20,7 @@
         "framer-motion": "^12.42.2",
         "next": "^14.2.5",
         "next-themes": "^0.4.6",
+        "phaser": "^4.2.1",
         "react": "^18.3.1",
         "react-dom": "^18.3.1",
         "react-markdown": "^9.0.1",

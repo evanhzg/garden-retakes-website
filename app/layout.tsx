@@ -4,17 +4,33 @@ import path from "path";
 import { prisma } from "@/lib/db";
 import NavBar from "@/components/NavBar";
 import LeftSidebar from "@/components/LeftSidebar";
+import PageLoader from "@/components/PageLoader";
 import "./globals.css";
 
 export const metadata: Metadata = {
-  title: "Garden Retakes",
-  description: "Rankings, stats and seasons for the Garden Retakes server",
+  metadataBase: new URL(process.env.NEXT_PUBLIC_SITE_URL || "https://retakes.fr"),
+  title: {
+    default: "Garden Retakes",
+    template: "%s · Garden Retakes",
+  },
+  description: "Rankings, stats, seasons, inventory and games for the Garden Retakes server",
+  openGraph: {
+    siteName: "Garden Retakes",
+    type: "website",
+    locale: "en_US",
+    images: [{ url: "/api/og", width: 1200, height: 630, alt: "Garden Retakes" }],
+  },
+  twitter: {
+    card: "summary_large_image",
+    images: ["/api/og"],
+  },
 };
 
 export const viewport: Viewport = {
   width: "device-width",
   initialScale: 1,
   viewportFit: "cover",
+  themeColor: "#a855f7",
 };
 import { ThemeProvider } from "@/components/ThemeProvider";
 
@@ -45,6 +61,7 @@ export default async function RootLayout({ children }: { children: React.ReactNo
   return (
     <html lang="en" suppressHydrationWarning>
       <body>
+        <PageLoader />
         <ThemeProvider attribute="class" defaultTheme="system" enableSystem>
           <div className="bg-orbs" aria-hidden="true">
             <span className="orb orb-1" />

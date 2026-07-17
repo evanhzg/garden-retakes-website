@@ -1,14 +1,15 @@
 "use client";
 
 import React, { useState, useEffect } from "react";
+import { createPortal } from "react-dom";
 import { SocketProvider, useSocket } from "@/components/games/SocketProvider";
+import { usePlayerNames, displayNameFor } from "@/components/games/hooks";
 import { motion, AnimatePresence } from "framer-motion";
 import "./uno.css";
 
-const DUMMY_STEAM_ID = "765611980" + Math.floor(Math.random() * 100000); 
-
 export default function UnoGame() {
-  const { socket, isConnected } = useSocket();
+  const { socket, isConnected, steamId } = useSocket();
+  const mySteamId = steamId ?? "";
   const [gameState, setGameState] = useState<any>(null);
   const [lobbyIdInput, setLobbyIdInput] = useState("");
   const [showColorPicker, setShowColorPicker] = useState<string | null>(null);
@@ -44,6 +45,12 @@ export default function UnoGame() {
     };
   }, [socket]);
 
+  // Resolve display names for everyone at the table (hook must run before any early return)
+  const tableIds = gameState ? (gameState.players as string[]) : [];
+  const names = usePlayerNames(tableIds);
+  const nameOf = (id: string) =>
+    id.startsWith("BOT_") ? `Bot ${id.slice(-3)}` : displayNameFor(id, names);
+
   const passTurn = () => socket?.emit("uno_pass_turn");
   const callUno = () => socket?.emit("uno_call_uno");
   const catchUno = (targetId: string) => socket?.emit("uno_catch_uno", { targetId });
@@ -67,24 +74,42 @@ export default function UnoGame() {
     return null; // The Universal Lobby will handle waiting state.
   }
 
-  const isMyTurn = gameState.currentTurn === DUMMY_STEAM_ID;
-  const myIndex = gameState.players.indexOf(DUMMY_STEAM_ID);
+  const isMyTurn = gameState.currentTurn === mySteamId;
 
   const getOpponentPosition = (pId: string) => {
-    if (myIndex === -1) return 'top';
-    const pIndex = gameState.players.indexOf(pId);
-    const diff = (pIndex - myIndex + gameState.players.length) % gameState.players.length;
-    if (gameState.players.length === 2) return 'top';
-    if (gameState.players.length === 3) {
-      if (diff === 1) return 'left';
-      if (diff === 2) return 'right';
-    }
-    if (gameState.players.length === 4) {
-      if (diff === 1) return 'left';
-      if (diff === 2) return 'top';
-      if (diff === 3) return 'right';
-    }
-    return 'top';
+    const opponents = gameState.players.filter((id: string) => id !== mySteamId);
+    const totalOpponents = opponents.length;
+    if (totalOpponents === 0) return { containerStyle: {}, infoRotation: 0 };
+
+    const indexInOpponents = opponents.indexOf(pId);
+    let angleDeg = 90; 
+    if (totalOpponents === 1) angleDeg = 90;
+    else if (totalOpponents === 2) angleDeg = indexInOpponents === 0 ? 180 : 0;
+    else if (totalOpponents === 3) angleDeg = indexInOpponents === 0 ? 180 : indexInOpponents === 1 ? 90 : 0;
+    else angleDeg = 180 - ((indexInOpponents / (totalOpponents - 1)) * 180);
+
+    const rad = (angleDeg * Math.PI) / 180;
+
+    // Keep them near the edges
+    const rx = 42; // vw
+    const ry = 35; // vh
+
+    const leftVw = 50 + Math.cos(rad) * rx;
+    const topVh = 45 - Math.sin(rad) * ry; // shifted up slightly to give space to player
+
+    // Orient cards to face center
+    const rotation = 270 - angleDeg;
+
+    return {
+      containerStyle: {
+        // Clamp so a seat's (rotated) box never leaves the screen; the px
+        // bounds shrink with the viewport alongside the --card-* sizes.
+        left: `clamp(min(175px, 24vw), ${leftVw}vw, calc(100vw - min(175px, 24vw)))`,
+        top: `clamp(min(150px, 20vh), ${topVh}vh, calc(100vh - min(280px, 45vh)))`,
+        transform: `translate(-50%, -50%) rotate(${rotation}deg)`
+      },
+      infoRotation: -rotation
+    };
   };
 
   const isPlayable = (card: any) => {
@@ -103,7 +128,9 @@ export default function UnoGame() {
     return '#222';
   };
 
-  return (
+  // Portal to <body>: the site layout animates ancestors with transforms, which
+  // would otherwise capture this fixed-position board and shift it off-center.
+  return createPortal(
     <div className="uno-container">
       <div className="uno-board">
         
@@ -113,13 +140,12 @@ export default function UnoGame() {
           const isOppTurn = gameState.currentTurn === steamId;
           const oppCards = Array.from({ length: data.count || 0 });
           const isVulnerable = data.count === 1 && !data.calledUno;
-          const counterRotation = pos === 'top' ? 180 : pos === 'left' ? -90 : pos === 'right' ? 90 : 0;
-          const oppName = steamId.startsWith('BOT_') ? `Bot ${steamId.substring(steamId.length - 3)}` : `Player ${steamId.substring(steamId.length - 3)}`;
+          const oppName = nameOf(steamId);
           
           return (
-            <div key={steamId} className={`opponent-container opponent-${pos} ${isOppTurn ? 'active-turn' : ''}`}>
-              <div className="opponent-info" style={{transform: `rotate(${counterRotation}deg)`}}>
-                <div className="opponent-avatar" title={steamId}>{(steamId as string).substring(0,2)}</div>
+            <div key={steamId} className={`opponent-container ${isOppTurn ? 'active-turn' : ''}`} style={pos.containerStyle}>
+              <div className="opponent-info" style={{transform: `rotate(${pos.infoRotation}deg)`}}>
+                <div className="opponent-avatar" title={oppName}>{oppName.substring(0, 2).toUpperCase()}</div>
                 <div style={{fontSize: '0.85rem', fontWeight: 'bold', marginTop: '5px', background: 'rgba(0,0,0,0.5)', padding: '2px 6px', borderRadius: '4px'}}>{oppName}</div>
                 <span style={{fontSize: '0.8rem', background: 'rgba(0,0,0,0.8)', padding: '4px 10px', borderRadius: '12px', marginTop: '5px', zIndex: 100}}>
                   {data.count || 0} Cards
@@ -134,16 +160,16 @@ export default function UnoGame() {
                 )}
               </div>
               
-              <div style={{position: 'relative', width: `${130 + (data.count - 1)*20}px`, height: '190px', display: 'flex'}}>
+              <div style={{position: 'relative', width: `calc(var(--card-width) + ${(data.count - 1)} * var(--card-overlap))`, height: 'var(--card-height)', display: 'flex'}}>
                 <AnimatePresence>
                   {oppCards.map((_, i) => (
                     <motion.div 
                       key={`${steamId}-${i}`}
-                      initial={{ opacity: 0, x: 0 }}
-                      animate={{ opacity: 1, x: i * 20 }}
+                      initial={{ opacity: 0 }}
+                      animate={{ opacity: 1 }}
                       exit={{ opacity: 0 }}
-                      transition={{ type: "tween", ease: "easeOut", duration: 0.3 }}
-                      style={{ position: 'absolute', top: 0, left: 0, zIndex: i }}
+                      transition={{ duration: 0.3 }}
+                      style={{ position: 'absolute', top: 0, left: `calc(${i} * var(--card-overlap))`, zIndex: i, transition: 'left 0.3s ease-out' }}
                     >
                       <UnoCardBack theme={cardTheme} />
                     </motion.div>
@@ -254,9 +280,9 @@ export default function UnoGame() {
               initial={{ scale: 0.8, opacity: 0 }} animate={{ scale: 1, opacity: 1 }} exit={{ scale: 0.8, opacity: 0 }}
             >
               <h3 style={{color: 'white', margin: 0, textShadow: '0 2px 4px rgba(0,0,0,0.5)'}}>Swap Hands With:</h3>
-              {gameState.players.filter((p: string) => p !== DUMMY_STEAM_ID).map((p: string) => (
+              {gameState.players.filter((p: string) => p !== mySteamId).map((p: string) => (
                 <button key={p} className="btn-start-game" style={{padding: '10px', fontSize: '1rem'}} onClick={() => playCard({id: showTargetPicker, value: '7', color: gameState.hand.find((c: any) => c.id === showTargetPicker)?.color}, undefined, p)}>
-                  {p.startsWith('BOT_') ? 'Bot' : 'Player'} {p.substring(p.length - 4)}
+                  {nameOf(p)}
                 </button>
               ))}
             </motion.div>
@@ -267,8 +293,8 @@ export default function UnoGame() {
         {gameState.status === 'FINISHED' && (
           <div className="color-picker" style={{display: 'flex', flexDirection: 'column', alignItems: 'center'}}>
             <h1 style={{color: '#ffcc00', margin: '0 0 1rem 0'}}>GAME OVER</h1>
-            <p style={{fontSize: '1.5rem', margin: '0 0 2rem 0'}}>{gameState.winner === DUMMY_STEAM_ID ? 'YOU WON! 🎉' : 'Someone else won.'}</p>
-            {gameState.players[0] === DUMMY_STEAM_ID && (
+            <p style={{fontSize: '1.5rem', margin: '0 0 2rem 0'}}>{gameState.winner === mySteamId ? 'YOU WON! 🎉' : `${nameOf(gameState.winner)} won!`}</p>
+            {gameState.players[0] === mySteamId && (
               <button onClick={returnLobby} className="btn-start-game">
                 Return to Lobby
               </button>
@@ -277,7 +303,8 @@ export default function UnoGame() {
         )}
 
       </div>
-    </div>
+    </div>,
+    document.body
   );
 }
 

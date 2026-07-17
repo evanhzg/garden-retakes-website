@@ -1,4 +1,7 @@
 import Link from "next/link";
+import type { Metadata } from "next";
+import fs from "fs";
+import path from "path";
 import { getActiveSeason, prisma } from "@/lib/db";
 import { getSession } from "@/lib/auth";
 import { dayKey, fetchRows, groupBy, ratingClass, sideName, summarize, formatDate, formatPlaytime } from "@/lib/stats";
@@ -8,6 +11,67 @@ import ProfileActivity from "@/components/ProfileActivity";
 
 export const dynamic = "force-dynamic";
 export const revalidate = 30;
+
+// Rich link previews (Discord embeds etc.): player card with ELO + key stats,
+// rendered by /api/og?type=player. Uses cheap aggregates, not the full row fetch.
+export async function generateMetadata({ params }: { params: { steamId: string } }): Promise<Metadata> {
+  try {
+    const steamId = BigInt(params.steamId);
+    const activeSeason = await getActiveSeason();
+    const seasonId = activeSeason?.Id ?? 0;
+    const roundWhere = { SeasonId: seasonId, SteamId: steamId, WasAfk: false };
+
+    const [profile, override, webProfile, seasonStats, agg, deaths, wins] = await Promise.all([
+      prisma.playerProfile.findUnique({ where: { SteamId: steamId } }),
+      prisma.gardenNameOverride.findUnique({ where: { SteamId: steamId } }),
+      prisma.gardenWebProfile.findUnique({ where: { SteamId: steamId } }),
+      prisma.playerSeasonStats.findFirst({ where: { SeasonId: seasonId, SteamId: steamId } }),
+      prisma.playerRoundRecord.aggregate({
+        where: roundWhere,
+        _count: { _all: true },
+        _avg: { Rating: true, Damage: true },
+        _sum: { Kills: true },
+      }),
+      prisma.playerRoundRecord.count({ where: { ...roundWhere, Died: true } }),
+      prisma.playerRoundRecord.count({ where: { ...roundWhere, WonRound: true } }),
+    ]);
+
+    const name = override?.Name ?? profile?.LastKnownName ?? params.steamId;
+    const rounds = agg._count._all;
+
+    const og = new URLSearchParams({ type: "player", name });
+    if (activeSeason?.Name) og.set("season", activeSeason.Name);
+    if (seasonStats?.Elo) og.set("elo", String(seasonStats.Elo));
+    if (rounds > 0) {
+      og.set("rating", (agg._avg.Rating ?? 0).toFixed(2));
+      og.set("kd", ((agg._sum.Kills ?? 0) / Math.max(1, deaths)).toFixed(2));
+      og.set("adr", (agg._avg.Damage ?? 0).toFixed(0));
+      og.set("wr", `${((wins / rounds) * 100).toFixed(0)}%`);
+    }
+
+    // Avatar: web-profile URL first, else the custom _pp.png if it exists on disk
+    if (webProfile?.AvatarUrl?.startsWith("https://")) {
+      og.set("avatar", webProfile.AvatarUrl);
+    } else if (fs.existsSync(path.join(process.cwd(), "public", `${params.steamId}_pp.png`))) {
+      const base = process.env.NEXT_PUBLIC_SITE_URL || "https://retakes.fr";
+      og.set("avatar", `${base}/${params.steamId}_pp.png`);
+    }
+
+    const description = rounds > 0
+      ? `ELO ${seasonStats?.Elo ?? "—"} · Rating ${(agg._avg.Rating ?? 0).toFixed(2)} · ${rounds} rounds${activeSeason?.Name ? ` · ${activeSeason.Name}` : ""}`
+      : "Player profile on Garden Retakes";
+    const image = `/api/og?${og.toString()}`;
+
+    return {
+      title: name,
+      description,
+      openGraph: { title: `${name} — Garden Retakes`, description, images: [{ url: image, width: 1200, height: 630 }] },
+      twitter: { card: "summary_large_image", title: `${name} — Garden Retakes`, description, images: [image] },
+    };
+  } catch {
+    return { title: "Player profile" };
+  }
+}
 
 export default async function PlayerPage({
   params,

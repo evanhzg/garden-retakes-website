@@ -1,4 +1,50 @@
 /* UNO Game Layout */
+:root {
+  --card-width: 130px;
+  --card-height: 190px;
+  --card-overlap: 20px;
+  --player-card-overlap: -30px;
+  --deck-width: 140px;
+  --deck-height: 200px;
+  --center-scale: 1;
+}
+
+@media (max-width: 1200px) {
+  :root {
+    --card-width: 100px;
+    --card-height: 146px;
+    --card-overlap: 15px;
+    --player-card-overlap: -20px;
+    --deck-width: 110px;
+    --deck-height: 156px;
+    --center-scale: 0.8;
+  }
+}
+
+@media (max-width: 768px) {
+  :root {
+    --card-width: 70px;
+    --card-height: 102px;
+    --card-overlap: 12px;
+    --player-card-overlap: -15px;
+    --deck-width: 80px;
+    --deck-height: 112px;
+    --center-scale: 0.75;
+  }
+}
+
+@media (max-width: 480px) {
+  :root {
+    --card-width: 50px;
+    --card-height: 73px;
+    --card-overlap: 10px;
+    --player-card-overlap: -10px;
+    --deck-width: 60px;
+    --deck-height: 83px;
+    --center-scale: 0.6;
+  }
+}
+
 .uno-container {
   position: fixed;
   top: 0;
@@ -123,8 +169,8 @@
 
 .deck, .discard {
   position: relative;
-  width: 140px;
-  height: 200px;
+  width: var(--deck-width);
+  height: var(--deck-height);
 }
 
 .deck-glow {
@@ -150,24 +196,6 @@
   flex-direction: column;
   align-items: center;
   z-index: 5;
-}
-
-.opponent-top {
-  top: 5vh;
-  left: 50%;
-  transform: translateX(-50%) rotate(180deg);
-}
-
-.opponent-left {
-  left: 5vw;
-  top: 50%;
-  transform: translateY(-50%) rotate(90deg);
-}
-
-.opponent-right {
-  right: 5vw;
-  top: 50%;
-  transform: translateY(-50%) rotate(-90deg);
 }
 
 /* Avatar info */
@@ -200,14 +228,16 @@
 .player-hand {
   display: flex;
   justify-content: center;
-  gap: -30px; /* Negative gap for overlap */
+  gap: var(--player-card-overlap);
   align-items: center;
+  flex-wrap: wrap;
+  max-width: 90vw;
 }
 
 /* CSS Cards */
 .uno-card {
-  width: 130px;
-  height: 190px;
+  width: var(--card-width);
+  height: var(--card-height);
   border-radius: 12px;
   border: 6px solid #fff;
   display: flex;

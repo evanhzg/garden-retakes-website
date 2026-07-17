@@ -5,7 +5,11 @@ const MonopolyGame = require("./scripts/monopolyLogic");
 const CodenamesGame = require("./scripts/codenamesLogic");
 const CahGame = require("./scripts/cahLogic");
 const MemeGame = require("./scripts/memeLogic");
+const pkmnBattleManager = require("./scripts/pkmnBattleManager");
 const SkribblGame = require("./scripts/skribblLogic");
+const { PrismaClient } = require("@prisma/client");
+
+const prisma = new PrismaClient();
 
 const httpServer = createServer();
 const io = new Server(httpServer, {
@@ -35,6 +39,50 @@ const cahGames = new Map();
 const cahTimers = new Map();
 const memeGames = new Map();
 const skribblGames = new Map();
+
+// ==========================================
+// GARDEN PKMN GLOBAL STATE
+// ==========================================
+const pkmnMaps = new Map(); // mapId -> { players: { steamId: { x, y, facing, steamId } }, npcs: { ... } }
+
+const getPkmnMap = (mapId) => {
+  if (!pkmnMaps.has(mapId)) {
+    pkmnMaps.set(mapId, { 
+      players: {},
+      npcs: {
+        npc_joey: { x: 320, y: 320, name: 'Youngster Joey', facing: 'down' }
+      }
+    });
+  }
+  return pkmnMaps.get(mapId);
+};
+
+const handlePkmnLeave = async (socket, io) => {
+  if (socket.pkmnMap && socket.steamId) {
+    const mapId = socket.pkmnMap;
+    const mapState = getPkmnMap(mapId);
+    const pData = mapState.players[socket.steamId];
+    
+    if (pData) {
+      try {
+        await prisma.pkmnTrainer.update({
+          where: { SteamId: BigInt(socket.steamId) },
+          data: {
+            CurrentMap: mapId,
+            PosX: Math.round(pData.x),
+            PosY: Math.round(pData.y),
+            Facing: pData.facing
+          }
+        });
+      } catch(e) { console.error("Failed to save PKMN trainer state", e); }
+      
+      delete mapState.players[socket.steamId];
+      io.to(`pkmn_map_${mapId}`).emit("pkmn_player_left", { steamId: socket.steamId });
+      socket.leave(`pkmn_map_${mapId}`);
+    }
+    socket.pkmnMap = null;
+  }
+};
 
 io.on("connection", (socket) => {
   console.log(`Socket connected: ${socket.id}`);
@@ -416,8 +464,9 @@ io.on("connection", (socket) => {
     }
   });
 
-  socket.on("disconnect", () => {
+  socket.on("disconnect", async () => {
     console.log(`Socket disconnected: ${socket.id}`);
+    await handlePkmnLeave(socket, io);
 
     // Only run presence/lobby cleanup if this socket is still the user's
     // current one (a page navigation opens the new socket before the old
@@ -1032,6 +1081,133 @@ io.on("connection", (socket) => {
   socket.on("skribbl_clear", () => { if(socket.lobbyId&&socket.steamId){const g=skribblGames.get(socket.lobbyId); if(g&&g.clearCanvas(socket.steamId)){io.to(`lobby_${socket.lobbyId}`).emit("skribbl_draw",{type:'clear'});}} });
   socket.on("skribbl_guess", (d) => { if(socket.lobbyId&&socket.steamId){const g=skribblGames.get(socket.lobbyId); if(g){const r=g.guess(socket.steamId,d.text);broadcastSkribblState(socket.lobbyId);}} });
   socket.on("skribbl_next_turn", () => { if(socket.lobbyId&&socket.steamId){const g=skribblGames.get(socket.lobbyId); if(g&&g.nextTurn(socket.steamId)){const tid=skribblTimers.get(socket.lobbyId);if(tid)clearInterval(tid);broadcastSkribblState(socket.lobbyId);}} });
+
+  // ==========================================
+  // GARDEN PKMN SOCKET EVENTS
+  // ==========================================
+  
+  socket.on("pkmn_join", async (data) => {
+    if (!socket.steamId) return;
+    const mapId = data?.mapId || "pallet_town";
+
+    // Leave current map if any
+    await handlePkmnLeave(socket, io);
+
+    let trainer;
+    try {
+      trainer = await prisma.pkmnTrainer.findUnique({
+        where: { SteamId: BigInt(socket.steamId) }
+      });
+      if (!trainer) {
+        trainer = await prisma.pkmnTrainer.create({
+          data: {
+            SteamId: BigInt(socket.steamId),
+            CurrentMap: mapId,
+            PosX: 400,
+            PosY: 300,
+            Facing: "down",
+            Inventory: "{}",
+            Badges: "[]"
+          }
+        });
+      }
+    } catch(e) {
+      console.error("PKMN DB Error:", e);
+      return;
+    }
+
+    const actualMap = trainer.CurrentMap;
+    const mapState = getPkmnMap(actualMap);
+    
+    const pData = {
+      steamId: socket.steamId,
+      x: trainer.PosX,
+      y: trainer.PosY,
+      facing: trainer.Facing
+    };
+    
+    mapState.players[socket.steamId] = pData;
+    socket.pkmnMap = actualMap;
+    socket.join(`pkmn_map_${actualMap}`);
+    
+    socket.emit("pkmn_map_state", {
+      mapId: actualMap,
+      players: mapState.players
+    });
+    
+    socket.to(`pkmn_map_${actualMap}`).emit("pkmn_player_joined", pData);
+  });
+
+  socket.on("pkmn_move", (data) => {
+    if (!socket.steamId || !socket.pkmnMap) return;
+    const mapState = getPkmnMap(socket.pkmnMap);
+    const pData = mapState.players[socket.steamId];
+    if (pData) {
+      pData.x = data.x;
+      pData.y = data.y;
+      pData.facing = data.facing;
+      
+      socket.to(`pkmn_map_${socket.pkmnMap}`).emit("pkmn_player_moved", pData);
+    }
+  });
+
+  socket.on("pkmn_leave", async () => {
+    await handlePkmnLeave(socket, io);
+  });
+
+  socket.on("pkmn_chat", async (data) => {
+    if (!socket.steamId || !socket.pkmnMap) return;
+    
+    if (data.message === '/heal') {
+      await prisma.PkmnMon.updateMany({
+        where: { OwnerId: BigInt(socket.steamId) },
+        data: { Hp: 20 } // Max generic HP for now
+      });
+      socket.emit("pkmn_chat_message", {
+        steamId: 'SERVER',
+        message: 'Your party was fully healed!'
+      });
+      return;
+    }
+
+    socket.to(`pkmn_map_${socket.pkmnMap}`).emit("pkmn_chat_message", {
+      steamId: socket.steamId,
+      message: data.message
+    });
+  });
+
+  socket.on("pkmn_get_party", async () => {
+    if (!socket.steamId) return;
+    const mons = await prisma.PkmnMon.findMany({
+      where: { OwnerId: BigInt(socket.steamId), BoxId: null }
+    });
+    // Serialize BigInt correctly or convert to string. OwnerId is BigInt
+    const safeMons = mons.map(m => ({
+      ...m,
+      OwnerId: m.OwnerId.toString()
+    }));
+    socket.emit("pkmn_party_data", safeMons);
+  });
+
+  socket.on("pkmn_encounter", async () => {
+    if (!socket.steamId) return;
+    await pkmnBattleManager.startEncounter(socket, socket.steamId, prisma);
+  });
+
+  socket.on("pkmn_interact", async (data) => {
+    if (!socket.steamId) return;
+    if (data.npcId === 'npc_joey') {
+      await pkmnBattleManager.startTrainerBattle(socket, socket.steamId, prisma, {
+        name: 'Youngster Joey',
+        team: [{ species: 'Rattata', level: 5, moves: ['tackle', 'tailwhip'], ability: 'runaway', nature: 'hardy', evs: { hp:0,atk:0,def:0,spa:0,spd:0,spe:0 }, ivs: { hp:15,atk:15,def:15,spa:15,spd:15,spe:15 } }]
+      });
+    }
+  });
+
+  socket.on("pkmn_battle_action", async (data) => {
+    if (!socket.steamId) return;
+    await pkmnBattleManager.handleBattleAction(socket, socket.steamId, data, prisma);
+  });
 });
 
 const PORT = process.env.WS_PORT || 3001;

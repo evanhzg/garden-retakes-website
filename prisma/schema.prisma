@@ -376,3 +376,56 @@ model NemesisRecord {
   @@id([KillerSteamId, VictimSteamId])
   @@map("NemesisRecords")
 }
+
+// ---------------- Garden PKMN ----------------
+
+model PkmnTrainer {
+  SteamId       BigInt    @id
+  Money         Int       @default(0)
+  CurrentMap    String    @default("pallet_town")
+  PosX          Int       @default(400)
+  PosY          Int       @default(300)
+  Facing        String    @default("down")
+  Inventory     String    @db.LongText // JSON
+  Badges        String    @db.LongText // JSON
+  
+  Party         PkmnMon[] @relation("TrainerParty")
+  Boxes         PkmnBox[] 
+
+  @@map("PkmnTrainers")
+}
+
+model PkmnMon {
+  Id            String    @id @default(cuid())
+  OwnerId       BigInt    
+  Species       String
+  Nickname      String?
+  Level         Int
+  Exp           Int
+  Hp            Int
+  Status        String?
+  
+  Ability       String
+  Nature        String
+  
+  Moves         String    @db.LongText // JSON
+  Ivs           String    @db.LongText // JSON
+  Evs           String    @db.LongText // JSON
+  
+  Trainer       PkmnTrainer @relation("TrainerParty", fields: [OwnerId], references: [SteamId], onDelete: Cascade)
+  Box           PkmnBox?    @relation(fields: [BoxId], references: [Id], onDelete: SetNull)
+  BoxId         String?
+
+  @@map("PkmnMons")
+}
+
+model PkmnBox {
+  Id            String    @id @default(cuid())
+  OwnerId       BigInt    
+  Name          String    @default("Box 1")
+  
+  Pokemon       PkmnMon[]
+  Trainer       PkmnTrainer @relation(fields: [OwnerId], references: [SteamId], onDelete: Cascade)
+
+  @@map("PkmnBoxes")
+}

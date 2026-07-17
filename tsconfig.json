@@ -18,5 +18,5 @@
     }
   },
   "include": ["next-env.d.ts", "**/*.ts", "**/*.tsx", ".next/types/**/*.ts"],
-  "exclude": ["node_modules", "Garden-overlay"]
+  "exclude": ["node_modules", "Garden-overlay", "scratch"]
 }

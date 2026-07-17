@@ -14,12 +14,14 @@ Everything lives in sibling folders under `CS2 Mod Dev/`.
 
 | Repo | What it is | Stack |
 |---|---|---|
-| `Garden-allocator` | Fork of yonilerner/cs2-retakes-allocator. Weapon/utility allocator, heavily customized. | CounterStrikeSharp (C#, net8.0) |
-| `Garden-rankings` | Built from scratch. Seasons, ELO (Premier-like, start 5000), HLTV-like per-round rating, Ranked Retakes (auto ≥4 humans), Competitive Retakes (/cr, 2v2/3v3 MR12), clutch rounds, mode cvar profiles, AFK handling, per-round raw stats. | CounterStrikeSharp + EF Core (MySQL/SQLite) |
-| `Garden-website` | Ladder, HLTV-style player pages, /compare, CR team ladder, seasons, inventory simulator (per-side loadouts, knives/gloves, 2D sticker placement, Steam OpenID). Deployed on Vercel. | Next.js 14 + Prisma 6 + Aiven MySQL |
-| `Garden-inventory` | Fork of ianlucas/cs2-inventory-simulator-plugin. Added `css_loadout <name>` (switch active loadout via website API), URL sanitizing. | CounterStrikeSharp |
-| `Garden-discord` | **NEW (Phase D)** Discord bot: live presence + auto-updating status embed; future stats commands. | Node.js + discord.js + gamedig + mysql2 |
-| `Garden-retakes` | **PLANNED (Phase R)** Fork of B3none/cs2-retakes. Will absorb allocator + rankings into ONE signature plugin + all new game modes. | CounterStrikeSharp |
+| `Garden-retakes` | **THE merged signature plugin (live on the server)** — retakes core + allocator + rankings + admin + Duels/Executes/FastStrat/SmallServer/Edit modes + Spotlight. Fork of B3none/cs2-retakes; absorbed the two donor repos below. | CounterStrikeSharp (C#, net10.0, CSS 1.0.371) |
+| `Garden-allocator` | *Read-only donor* (absorbed into Garden-retakes R0). Fork of yonilerner/cs2-retakes-allocator. | CounterStrikeSharp |
+| `Garden-rankings` | *Read-only donor* (absorbed into Garden-retakes R0). Seasons, ELO, HLTV-like rating, Ranked/Competitive Retakes, clutch rounds. | CounterStrikeSharp + EF Core (MySQL/SQLite) |
+| `Garden-website` | Ladder, HLTV-style player pages + pros section, /compare, CR team ladder, duels ladder, seasons, live spectator dashboard + heatmaps, inventory simulator (per-side loadouts, knives/gloves, stickers, Steam OpenID, /borrow share-keys), profile showcase + Garden-Pops 3D customizer + 3D avatars, admin panel + RCON console, **Games Hub** (6 socket mini-games + universal lobbies + friends/social), roadmap + commands + API docs pages. Deployed on Vercel (socket server needs its own host — see Phase G). | Next.js 14 + Prisma 6 + Aiven MySQL + Socket.IO + three.js |
+| `Garden-website/Garden-overlay` | Tauri desktop overlay companion app (in-repo subfolder, excluded from the site's tsconfig). | Tauri (Rust) + Vite |
+| `Garden-website /spelltakers` | **FOUNDATIONS ONLY** — SpellTakers page + lobby component + `install.ps1`; gameplay TBD. | Next.js page |
+| `Garden-inventory` | Fork of ianlucas/cs2-inventory-simulator-plugin. `css_loadout` menu/random, URL sanitizing, auto-random-per-map convar. | CounterStrikeSharp |
+| `Garden-discord` | Discord bot: live presence, status embed, /ladder /stats /compare /seasons, DB-polling event posts. | Node.js + discord.js + gamedig + mysql2 |
 
 Shared infra:
 - **DB**: Aiven MySQL (`defaultdb`), shared by rankings plugin, website, and Discord bot.
@@ -365,6 +367,121 @@ collected 2026-07-09 so nothing gets lost:
 - [x] **Garden-Pop 3D Customizer** — DONE 2026-07-13: UI improvements, responsive design.
 - [x] **CI/CD Pipeline** — DONE 2026-07-13: GitHub Actions setup for CS2 plugins using GitHub Packages.
 
+### Phase G — Games Hub & Social platform (`/games`)
+
+Six socket-based mini-games behind universal lobbies, plus a friends/social layer.
+Foundation scaffolded with Antigravity 2026-07 (server.js + scripts/*Logic.js + game
+components), overhauled 2026-07-17 (commit 48b4a2d).
+
+**Shipped**
+- [x] G1. Socket server (`server.js`, port 3001, run via `npm run dev` concurrently):
+      presence, notifications, DMs, universal lobbies, per-game event routing + bot AI turns.
+- [x] G2. Universal lobby (`scripts/universalLobby.js` + `/games/lobby/[id]`): public/private
+      (+password), host/kick/ready flow (host starts, all other humans ready — enforced
+      server-side), per-player 10s disconnect grace, chat with 50-msg history replay,
+      EN/FR per game, garden-named bots, invite links, glass UI (light+dark), mobile layout.
+- [x] G3. Games: UNO (stacking/jump-in/7-0/play-on-draw), Monopoly (Business-Tour-like, 3D dice),
+      Codenames, Cards Against (custom cards + LanguageTool cleanup), Make-it-Meme, Skribbl
+      (canvas + fuzzy match). All with bot support.
+- [x] G4. Social: friends sidebar (requests via `/api/friends`), online presence, toasts
+      (`components/social/`); Prisma models WebFriendship etc.
+- [x] G5. Name/avatar resolution: `POST /api/players/resolve` + `components/games/hooks.ts`.
+
+**Open**
+- [ ] G6. **Per-game UI/UX pass** — each game needs the treatment the lobby got (glass theme,
+      responsive, correct layouts). **UNO DONE 2026-07-17**: opponents seated W/N/E on an ellipse
+      with viewport clamps (fits down to 375px, no overflow), `--card-*` CSS vars scale per
+      breakpoint, board portaled to `<body>` (site layout transforms were capturing
+      `position:fixed` and shifting it), fixed identity bug (component compared turns against a
+      random DUMMY_STEAM_ID — humans could never play), resolved names everywhere.
+      Remaining: Monopoly, Codenames, CAH, Meme, Skribbl.
+- [ ] G7. **Socket-server production hosting** — Vercel can't run `server.js`; host it on the
+      VPS (or a small node host) + `NEXT_PUBLIC_SOCKET_URL` + CORS allowlist (currently `*` —
+      tighten before prod). WSS via reverse proxy.
+- [ ] G8. Game-end flow: return-to-lobby for everyone (lobby_return is host-only), rematch vote,
+      per-lobby match history.
+- [ ] G9. 3D-avatar identity: player pops (profile showcase avatars, animations in progress by
+      Evan) become the cross-game identity — lobby cards, in-game seats, victory poses.
+- [ ] G10. Persistence: per-game win/loss stats per SteamID in the shared DB; hub leaderboards;
+      Discord bot announces big wins.
+- [ ] G11. Spectators: join a PLAYING lobby as spectator (currently blocked); watch UNO/Skribbl live.
+- [ ] G12. SpellTakers: define gameplay (foundations page + lobby component + install.ps1 exist).
+
+### Phase DOCS — API documentation (docs.retakes.fr)
+
+- [x] DOC1. Docs site — DONE 2026-07-17: `/docs` route group, data-driven from `lib/apiDocs.ts`
+      (single source of truth), glass sidebar + endpoint cards (method/auth/params/examples),
+      sections: auth, players, inventory, loadouts (plugin contract), live, admin, social, socket.
+- [x] DOC2. Subdomain routing — code DONE 2026-07-17: `middleware.ts` rewrites `docs.*` hosts to
+      `/docs/...`. REMAINING (Evan): DNS CNAME `docs` → Vercel + add the domain to the project.
+- [x] DOC3. Socket protocol reference — DONE 2026-07-17 (`/docs/socket`): lobby + presence +
+      per-game event tables with payload shapes.
+- [ ] DOC4. Keep-in-sync rule: any new/changed API route or socket event MUST update its docs
+      page in the same commit (add to working agreement).
+- [ ] DOC5. Later: OpenAPI JSON generated from a single source of truth + "try it" console for
+      the public read-only endpoints; auto-listed changelog of API-affecting commits.
+
+### Phase P — "Garden PKMN": browser PokeMMO-like at pkmn.retakes.fr
+
+**Vision**: a persistent, multiplayer, Pokémon-style overworld + battle game, fully playable in
+the browser at `pkmn.retakes.fr`, tied to the Garden account system (Steam login, pops/avatars,
+site economy). Long-haul project — phases land independently and each one is playable.
+
+**Tooling decision (evaluate in P0, current best picks)**
+- *Battle engine*: **`@pkmn/sim` + `@pkmn/dex`** (Pokémon Showdown's battle simulator as npm
+  packages) — battle-accurate mechanics, damage calc, formats; runs server-side in Node. This is
+  the single biggest lever: we never hand-write battle logic.
+- *Client*: **Phaser 3** (TypeScript) for the overworld (tilemaps, sprites, camera, input);
+  embedded in a Next.js page or served as its own Vite app under the subdomain.
+- *Maps*: **Tiled** (.tmx/.tmj) — first-class Phaser support; collision/encounter layers as
+  custom tile properties.
+- *Content design*: **Pokémon Studio / PSDK** evaluated as DATA AUTHORING tools only (their
+  runtime is desktop Ruby/RGSS — not web-exportable). If their editors beat hand-editing, write
+  a converter PSDK data → our JSON; otherwise author encounters/trainers directly in JSON +
+  @pkmn/dex ids.
+- *Netcode*: reuse the Garden socket stack (Socket.IO) OR **Colyseus** (room state-sync
+  framework, built for this) — decide in P1 spike; Colyseus likely wins for interest-area
+  filtering + reconnection.
+- *Persistence*: Prisma + the shared Aiven MySQL (`PkmnTrainer`, `PkmnMon`, `PkmnBox`, …).
+- *Assets*: community free sprite/tile packs (Gen-4-like); NO ripped commercial assets on the
+  public site; fan-project, non-commercial, no payments ever (legal posture).
+
+**Phases**
+- [x] P0. Discovery & spike — DONE 2026-07 (Antigravity): `@pkmn/sim` battle stream PoC
+      (`scripts/pkmnSpike.js`), Phaser grid-movement demo, decisions locked in
+      `content/PKMN-DESIGN.md` — @pkmn/sim battles, Phaser 3 client, Socket.IO rooms (Colyseus
+      rejected to keep one stack), custom JSON + Tiled data (PSDK too desktop-centric).
+- [x] P1. World server v1 — DONE 2026-07 (Antigravity, in server.js): `pkmn_join/move/leave/chat`,
+      map rooms, DB-backed trainer persistence (position/facing/map saved on leave), NPC state.
+      **Still open: server-side movement validation** (server currently trusts client x/y) —
+      required before public exposure.
+- [x] P2. Client v1 — DONE 2026-07 (Antigravity, `app/pkmn/PhaserGame.tsx`): Phaser overworld with
+      Tiled map + collision layer, other players + name tags (resolved via /api/players/resolve),
+      camera follow, chat bubbles, virtual D-pad for touch, NPC interaction (space).
+- [ ] P3. Data layer: species/moves/items from `@pkmn/dex`; our own JSON for maps, encounter
+      tables (per map zone + rate), trainers, shops; validation script in CI.
+- [ ] P4. Wild battles: grass-step encounter roll → server-side `@pkmn/sim` battle vs generated
+      wild mon; battle UI (menu-driven: Fight/Bag/Pokémon/Run) as a Phaser scene or DOM overlay;
+      catching (ball mechanics via sim), XP/levels/evolution persisted.
+- [ ] P5. Party & storage: party of 6, PC boxes, summary screens, healing center; full Prisma
+      persistence; starter choice flow for new trainers.
+- [ ] P6. Trainers & progression: scripted NPC trainers (vision cones, dialogue), badges/gyms,
+      pokédex tracking, money + shop items.
+- [ ] P7. PvP & trading: challenge another online player (lobby-style invite reusing Games Hub
+      social layer) → `@pkmn/sim` PvP battle with both clients driving choices; 1:1 trade UI with
+      server-side escrow; spectate battles.
+- [ ] P8. Region v1: a coherent 8-10 map starter region authored in Tiled (routes, one town, one
+      gym, one cave), day/night cycle, encounter variety; content pipeline documented so maps can
+      be added without code.
+- [ ] P9. Website integration: trainer card on the Garden profile (pop/avatar as trainer skin),
+      pokédex/ladder pages on the main site, Discord bot announcements (badges, shinies, PvP
+      results), shared economy hooks (site currency ↔ in-game money, cosmetic-only).
+- [ ] P10. Ops & hardening: `pkmn.retakes.fr` DNS + reverse proxy (client static + WSS), server
+      anti-cheat (all mutations server-authoritative, rate limits, movement validation), DB
+      backups, session reconnect, load test to target CCU, monitoring.
+- [ ] P11. Beta & polish: soft-launch to the Garden community, feedback loop, balance pass,
+      onboarding/tutorial, sound, shiny odds/fun events.
+
 ---
 
 ## 5. Working agreement with the AI
@@ -552,3 +669,28 @@ collected 2026-07-09 so nothing gets lost:
   Server: authenticate ack (`authenticated`) removes the 300ms join race, merged duplicate disconnect
   handlers, soft errors now toast instead of nuking the lobby screen, empty lobbies clean up after
   their last human leaves. Mobile: lobby stacks and scrolls properly.
+- 2026-07-17 (39): **Roadmap deep refresh + two new programs.** Ecosystem table rewritten to match
+  reality (Garden-retakes = the live merged plugin; donors read-only; website row now lists games
+  hub/social/3D pops/overlay; Garden-overlay + SpellTakers foundations noted). New **Phase G**
+  (Games Hub & Social) with shipped G1-G5 and open G6-G12 (per-game UI pass — UNO first, socket
+  prod hosting, game-end flow, 3D-avatar identity, persistence, spectators, SpellTakers). New
+  **Phase DOCS** (docs.retakes.fr API documentation, DOC1-DOC5). New **Phase P** ("Garden PKMN",
+  pkmn.retakes.fr): exhaustive P0-P11 plan for a browser PokeMMO-like — tooling picks: @pkmn/sim +
+  @pkmn/dex (Showdown battle engine as npm packages), Phaser 3 client, Tiled maps, Pokémon
+  Studio/PSDK evaluated as data-authoring only (desktop runtime, not web-exportable), Colyseus vs
+  Socket.IO netcode spike, Prisma/MySQL persistence, Steam-session auth handoff, fan-project
+  non-commercial posture.
+- 2026-07-17 (40): **Docs shipped, link previews, UNO fixed, PKMN P0-P2 landed.**
+  *Docs*: DOC1-DOC3 built (`/docs` from `lib/apiDocs.ts`, glass UI, socket protocol page,
+  `middleware.ts` host rewrite) — Evan still needs the `docs` CNAME + Vercel domain.
+  *Link previews (Discord embeds)*: dynamic `/api/og` card renderer (satori; note: it doesn't
+  support sized radial-gradients — use `circle at`), site-wide `metadataBase`/title template,
+  player profiles embed a live stat card (name, avatar, ELO, rating, K/D, ADR, win% via cheap
+  aggregates in `generateMetadata`), Games Hub page card, lobby invite links get a "You're
+  invited" card. *UNO (G6 first slice)*: real session identity (was a random DUMMY_STEAM_ID —
+  humans could never take a turn), W/N/E elliptical seating with viewport clamps, board portaled
+  to `<body>` (a stuck `.page-enter` transform was capturing position:fixed), resolved names,
+  responsive down to 375px. *PKMN*: Antigravity's P0 spike + P1 world server + P2 Phaser client
+  committed (typecheck fixed: typed sceneRefs, socket narrowing, sprite types); wild battles,
+  catching, XP and Youngster Joey already prototype-working (parts of P4/P6). `scratch/` (963MB
+  of map/tileset experiments) added to .gitignore and excluded from tsconfig.
