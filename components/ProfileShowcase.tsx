@@ -2,13 +2,8 @@
 
 import { useCallback, useEffect, useMemo, useState } from "react";
 import { useRouter } from "next/navigation";
-import {
-import {
-  emptyLoadout,
-  normaliseStore,
-  type InventoryStore,
-  type Loadout,
-} from "@/lib/inventory";
+import { emptyLoadout, normaliseStore } from "@/lib/inventory";
+import type { InventoryStore, Loadout } from "@/lib/inventory";
 import type { ProfileStats } from "@/app/profile/page";
 import GardenPop, { GardenPopConfig, defaultPopConfig } from "./GardenPop";
 import GardenPopEditor from "./GardenPopEditor";
@@ -61,7 +56,15 @@ export default function ProfileShowcase({
   const parsedPopConfig = useMemo(() => {
     if (!initialPopConfig) return defaultPopConfig;
     try {
-      return { ...defaultPopConfig, ...JSON.parse(initialPopConfig) };
+      const parsed = JSON.parse(initialPopConfig);
+      return {
+        ...defaultPopConfig,
+        ...parsed,
+        hair: parsed.hair || defaultPopConfig.hair,
+        stache: parsed.stache || defaultPopConfig.stache,
+        color: parsed.color || defaultPopConfig.color,
+        hairColor: parsed.hairColor || defaultPopConfig.hairColor
+      };
     } catch {
       return defaultPopConfig;
     }
@@ -91,7 +94,7 @@ export default function ProfileShowcase({
         }
         setBaseImages(map);
       })
-      .catch(() => {});
+      .catch(() => { });
   }, []);
 
   const loadout: Loadout | undefined = useMemo(
@@ -129,7 +132,7 @@ export default function ProfileShowcase({
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify(next),
-    }).catch(() => {});
+    }).catch(() => { });
   }, []);
 
   const setPreferredM4 = (def: number) => {
@@ -197,11 +200,20 @@ export default function ProfileShowcase({
   return (
     <section className="profile-showcase">
       <div className="ps-stage">
-        
-        <div style={{ position: "absolute", inset: 0, display: "flex", alignItems: "center", justifyContent: "center" }}>
-          <GardenPop config={popConfig} className="ps-bg" />
+        {/* Structural background image to provide container height */}
+        {/* eslint-disable-next-line @next/next/no-img-element */}
+        <img
+          className="ps-bg"
+          src="/template_showcase.png"
+          alt=""
+          style={{ width: "100%", height: "auto", display: "block" }}
+        />
+
+        {/* 3D Model Overlay */}
+        <div style={{ position: "absolute", inset: 0, display: "flex", alignItems: "center", justifyContent: "center", zIndex: 1 }}>
+          <GardenPop config={popConfig} className="ps-bg" cameraDistance={17} enableZoom={true} />
         </div>
-        
+
         <div className="ps-scrim" aria-hidden="true" />
 
         <button
@@ -221,166 +233,166 @@ export default function ProfileShowcase({
         </button>
 
         {/* All overlays — animated in/out */}
-        <div className={`ps-overlays ${overlaysVisible ? "visible" : "hidden"}`}>
+        <div className={`ps-overlays ${overlaysVisible ? "visible" : "hidden"}`} style={{ zIndex: 10 }}>
 
-        {/* Username — top center */}
-        <div className="ps-username">
-          {editingName ? (
-            <div className="ps-name-edit">
-              <input
-                className="input"
-                value={nameDraft}
-                maxLength={32}
-                autoFocus
-                onChange={(e) => setNameDraft(e.target.value)}
-                onKeyDown={(e) => {
-                  if (e.key === "Enter") saveName();
-                  if (e.key === "Escape") setEditingName(false);
+          {/* Username — top center */}
+          <div className="ps-username">
+            {editingName ? (
+              <div className="ps-name-edit">
+                <input
+                  className="input"
+                  value={nameDraft}
+                  maxLength={32}
+                  autoFocus
+                  onChange={(e) => setNameDraft(e.target.value)}
+                  onKeyDown={(e) => {
+                    if (e.key === "Enter") saveName();
+                    if (e.key === "Escape") setEditingName(false);
+                  }}
+                />
+                <button className="btn small" onClick={saveName} disabled={saving}>
+                  {saving ? "…" : "Save"}
+                </button>
+              </div>
+            ) : (
+              <button
+                className="ps-name"
+                title="Click to edit your name"
+                onClick={() => {
+                  setNameDraft(name);
+                  setEditingName(true);
                 }}
-              />
-              <button className="btn small" onClick={saveName} disabled={saving}>
-                {saving ? "…" : "Save"}
+              >
+                {name}
+                <span className="ps-name-edit-icon">✎</span>
+              </button>
+            )}
+            <div className="ps-steamid">SteamID64 {steamId}</div>
+          </div>
+
+          {/* Stats — left */}
+          <div className="ps-stats">
+            <div className="ps-stat big">
+              <span className="v">{stats.rating.toFixed(2)}</span>
+              <span className="k">Rating</span>
+            </div>
+            <div className="ps-stat">
+              <span className="v">{stats.elo ?? "—"}</span>
+              <span className="k">CS Rating{stats.peakElo ? ` · peak ${stats.peakElo}` : ""}</span>
+            </div>
+            <div className="ps-stat">
+              <span className="v">{stats.kd.toFixed(2)}</span>
+              <span className="k">K/D</span>
+            </div>
+            <div className="ps-stat">
+              <span className="v">{stats.adr.toFixed(0)}</span>
+              <span className="k">ADR</span>
+            </div>
+            <div className="ps-stat">
+              <span className="v">{stats.winPct.toFixed(0)}%</span>
+              <span className="k">Win rate · {stats.rounds} rds</span>
+            </div>
+            <div className="ps-stat">
+              <span className="v">{stats.clutches}</span>
+              <span className="k">Clutches · {stats.openingKills} OK</span>
+            </div>
+          </div>
+
+          {/* Loadout preview — right */}
+          <div className="ps-loadout">
+            <div className="ps-lo-controls">
+              <select
+                className="input ps-lo-select"
+                value={selectedId}
+                onChange={(e) => setSelectedId(e.target.value)}
+              >
+                {(store?.loadouts ?? []).map((l) => (
+                  <option key={l.id} value={l.id}>
+                    {l.name}
+                  </option>
+                ))}
+              </select>
+              <button className="btn small" title="Create a new loadout" onClick={addLoadout}>
+                +
               </button>
             </div>
-          ) : (
-            <button
-              className="ps-name"
-              title="Click to edit your name"
-              onClick={() => {
-                setNameDraft(name);
-                setEditingName(true);
-              }}
-            >
-              {name}
-              <span className="ps-name-edit-icon">✎</span>
-            </button>
-          )}
-          <div className="ps-steamid">SteamID64 {steamId}</div>
-        </div>
 
-        {/* Stats — left */}
-        <div className="ps-stats">
-          <div className="ps-stat big">
-            <span className="v">{stats.rating.toFixed(2)}</span>
-            <span className="k">Rating</span>
-          </div>
-          <div className="ps-stat">
-            <span className="v">{stats.elo ?? "—"}</span>
-            <span className="k">CS Rating{stats.peakElo ? ` · peak ${stats.peakElo}` : ""}</span>
-          </div>
-          <div className="ps-stat">
-            <span className="v">{stats.kd.toFixed(2)}</span>
-            <span className="k">K/D</span>
-          </div>
-          <div className="ps-stat">
-            <span className="v">{stats.adr.toFixed(0)}</span>
-            <span className="k">ADR</span>
-          </div>
-          <div className="ps-stat">
-            <span className="v">{stats.winPct.toFixed(0)}%</span>
-            <span className="k">Win rate · {stats.rounds} rds</span>
-          </div>
-          <div className="ps-stat">
-            <span className="v">{stats.clutches}</span>
-            <span className="k">Clutches · {stats.openingKills} OK</span>
-          </div>
-        </div>
-
-        {/* Loadout preview — right */}
-        <div className="ps-loadout">
-          <div className="ps-lo-controls">
-            <select
-              className="input ps-lo-select"
-              value={selectedId}
-              onChange={(e) => setSelectedId(e.target.value)}
-            >
-              {(store?.loadouts ?? []).map((l) => (
-                <option key={l.id} value={l.id}>
-                  {l.name}
-                </option>
+            <div className="ps-side-toggle">
+              {(["t", "ct"] as Side[]).map((s) => (
+                <button
+                  key={s}
+                  className={`ps-side ${side === s ? "active" : ""} side-${s}`}
+                  onClick={() => setSide(s)}
+                >
+                  {s.toUpperCase()}
+                </button>
               ))}
-            </select>
-            <button className="btn small" title="Create a new loadout" onClick={addLoadout}>
-              +
-            </button>
-          </div>
+            </div>
 
-          <div className="ps-side-toggle">
-            {(["t", "ct"] as Side[]).map((s) => (
-              <button
-                key={s}
-                className={`ps-side ${side === s ? "active" : ""} side-${s}`}
-                onClick={() => setSide(s)}
-              >
-                {s.toUpperCase()}
-              </button>
-            ))}
-          </div>
-
-          <div className="ps-guns">
-            {slots.map((slot) => {
-              const def = "m4" in slot && slot.m4 ? preferredM4 : slot.def;
-              const { image, hasSkin, name: skinName } = slotImage(def);
-              return (
-                <div key={slot.label} className={`ps-gun ${hasSkin ? "has-skin" : "empty"}`}>
-                  {image ? (
-                    // eslint-disable-next-line @next/next/no-img-element
-                    <img src={image} alt={slot.label} loading="lazy" />
-                  ) : (
-                    <div className="ps-gun-ph" />
-                  )}
-                  <div className="ps-gun-label">
-                    {"m4" in slot && slot.m4 ? (
-                      <span className="ps-m4-toggle">
-                        <button
-                          className={preferredM4 === M4A4 ? "active" : ""}
-                          onClick={() => setPreferredM4(M4A4)}
-                        >
-                          M4A4
-                        </button>
-                        <button
-                          className={preferredM4 === M4A1S ? "active" : ""}
-                          onClick={() => setPreferredM4(M4A1S)}
-                        >
-                          M4A1-S
-                        </button>
-                      </span>
+            <div className="ps-guns">
+              {slots.map((slot) => {
+                const def = "m4" in slot && slot.m4 ? preferredM4 : slot.def;
+                const { image, hasSkin, name: skinName } = slotImage(def);
+                return (
+                  <div key={slot.label} className={`ps-gun ${hasSkin ? "has-skin" : "empty"}`}>
+                    {image ? (
+                      // eslint-disable-next-line @next/next/no-img-element
+                      <img src={image} alt={slot.label} loading="lazy" />
                     ) : (
-                      <span className="ps-gun-name">{hasSkin ? skinName?.split(" | ")[1] ?? slot.label : slot.label}</span>
+                      <div className="ps-gun-ph" />
                     )}
+                    <div className="ps-gun-label">
+                      {"m4" in slot && slot.m4 ? (
+                        <span className="ps-m4-toggle">
+                          <button
+                            className={preferredM4 === M4A4 ? "active" : ""}
+                            onClick={() => setPreferredM4(M4A4)}
+                          >
+                            M4A4
+                          </button>
+                          <button
+                            className={preferredM4 === M4A1S ? "active" : ""}
+                            onClick={() => setPreferredM4(M4A1S)}
+                          >
+                            M4A1-S
+                          </button>
+                        </span>
+                      ) : (
+                        <span className="ps-gun-name">{hasSkin ? skinName?.split(" | ")[1] ?? slot.label : slot.label}</span>
+                      )}
+                    </div>
                   </div>
-                </div>
-              );
-            })}
-          </div>
+                );
+              })}
+            </div>
 
-          {/* Knife + Gloves */}
-          <div className="ps-guns ps-extras">
-            {(["knife", "gloves"] as const).map((kind) => {
-              const label = kind === "knife" ? "🗡 Knife" : "🧤 Gloves";
-              const { image, hasSkin, name: skinName } = slotItemKG(kind);
-              return (
-                <div key={kind} className={`ps-gun ${hasSkin ? "has-skin" : "empty"}`}>
-                  {image ? (
-                    // eslint-disable-next-line @next/next/no-img-element
-                    <img src={image} alt={label} loading="lazy" />
-                  ) : (
-                    <div className="ps-gun-ph" />
-                  )}
-                  <div className="ps-gun-label">
-                    <span className="ps-gun-name">
-                      {hasSkin ? skinName?.split(" | ")[1] ?? label : label}
-                    </span>
+            {/* Knife + Gloves */}
+            <div className="ps-guns ps-extras">
+              {(["knife", "gloves"] as const).map((kind) => {
+                const label = kind === "knife" ? "🗡 Knife" : "🧤 Gloves";
+                const { image, hasSkin, name: skinName } = slotItemKG(kind);
+                return (
+                  <div key={kind} className={`ps-gun ${hasSkin ? "has-skin" : "empty"}`}>
+                    {image ? (
+                      // eslint-disable-next-line @next/next/no-img-element
+                      <img src={image} alt={label} loading="lazy" />
+                    ) : (
+                      <div className="ps-gun-ph" />
+                    )}
+                    <div className="ps-gun-label">
+                      <span className="ps-gun-name">
+                        {hasSkin ? skinName?.split(" | ")[1] ?? label : label}
+                      </span>
+                    </div>
                   </div>
-                </div>
-              );
-            })}
-          </div>
+                );
+              })}
+            </div>
 
-          <a className="btn small secondary ps-edit-loadouts" href="/inventory">
-            Edit loadouts →
-          </a>
-        </div>
+            <a className="btn small secondary ps-edit-loadouts" href="/inventory">
+              Edit loadouts →
+            </a>
+          </div>
 
         </div>{/* end ps-overlays */}
       </div>

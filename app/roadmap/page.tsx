@@ -1,27 +1,59 @@
 import fs from "node:fs";
 import path from "node:path";
-import ReactMarkdown from "react-markdown";
-import remarkGfm from "remark-gfm";
+import RoadmapClient, { RoadmapSection } from "./RoadmapClient";
 
 export const metadata = {
   title: "Roadmap — Garden Retakes",
   description: "Everything shipped and everything coming to the Garden Retakes server.",
 };
 
-// The markdown mirror is bundled with the deploy; no revalidation needed.
 export const dynamic = "force-static";
 
-function loadRoadmap(): string {
+function parseRoadmap(markdown: string) {
+  const lines = markdown.split("\n");
+  const sections: RoadmapSection[] = [];
+  let currentSection: RoadmapSection | null = null;
+  let intro = "";
+
+  for (const line of lines) {
+    if (line.startsWith("## ")) {
+      const fullTitle = line.replace("## ", "").trim();
+      // Remove leading "1. " or "2. "
+      const cleanTitle = fullTitle.replace(/^\d+\.\s*/, "").split("(")[0].trim();
+      
+      currentSection = {
+        title: fullTitle,
+        cleanTitle: cleanTitle,
+        content: "",
+      };
+      sections.push(currentSection);
+      continue;
+    }
+
+    if (!currentSection) {
+      if (!line.startsWith("# ")) {
+        intro += line + "\n";
+      }
+    } else {
+      currentSection.content += line + "\n";
+    }
+  }
+
+  return { intro: intro.trim(), sections };
+}
+
+function loadRoadmap() {
   const filePath = path.join(process.cwd(), "content", "roadmap.md");
   try {
-    return fs.readFileSync(filePath, "utf8");
+    const raw = fs.readFileSync(filePath, "utf8");
+    return parseRoadmap(raw);
   } catch {
-    return "# Roadmap\n\nThe roadmap file is missing from this deployment.";
+    return { intro: "The roadmap file is missing from this deployment.", sections: [] };
   }
 }
 
 export default function RoadmapPage() {
-  const markdown = loadRoadmap();
+  const { intro, sections } = loadRoadmap();
 
   return (
     <>
@@ -39,11 +71,7 @@ export default function RoadmapPage() {
         </div>
       </section>
 
-      <div className="panel roadmap-panel">
-        <div className="roadmap-content">
-          <ReactMarkdown remarkPlugins={[remarkGfm]}>{markdown}</ReactMarkdown>
-        </div>
-      </div>
+      <RoadmapClient intro={intro} sections={sections} />
     </>
   );
 }

@@ -290,7 +290,8 @@ function PlayerTable({
                       <img 
                         src={`/${p.SteamId}_pp.png`} 
                         alt={p.Name} 
-                        className="w-10 h-10 rounded shadow-md border border-zinc-800 object-cover bg-zinc-900"
+                        style={{ width: '40px', height: '40px', borderRadius: '4px', objectFit: 'cover' }}
+                        className="shadow-md border border-zinc-800 bg-zinc-900"
                         onError={(e) => { e.currentTarget.src = "/default_pp.png"; }}
                       />
                     </Link>
