@@ -725,3 +725,14 @@ site economy). Long-haul project — phases land independently and each one is p
   socket CORS allows *.localhost:3131, server.js only honors host-injected PORT in production
   (it was stealing next dev's port). E2E-verified over a raw socket client: join → starter →
   pallet_town Weedle L2 → named move → HP-scaled catch attempt.
+- 2026-07-18 (43): **`!gmenu` live server-config menu (Garden-retakes).** New ServerControlModule +
+  `!gmenu`/`!config`/`!gsettings` (Admin) opens a native center menu (WASD/E) to flip the settings
+  admins change most: friendly fire (TK), force-camera, freeze/round time, buy-anywhere, infinite
+  ammo, half-buy & pistol frequency (allocator RoundTypePercentages), auto-ranked, scramble each
+  round, competitive (2v2/3v3) on/off. Every toggle applies live, saves, and **stays consistent
+  across maps**: cvar toggles are stored in GardenSettings.ServerControl and re-applied on each map
+  start (module added last so it wins the rankings ModeCvars pass); round-economy/ranked/scramble
+  toggles are written into the allocator & rankings configs those systems already read per map.
+  Builds green on the .NET 10 SDK (0 errors). Not per-team yet: half-buy T-only/CT-only needs a
+  per-team allocation override in the allocator (single round-type per round today) — noted for
+  later. COMMANDS.md + website mirror updated. Needs Evan's in-server check (menu render + toggles).
