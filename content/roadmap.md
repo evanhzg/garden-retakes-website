@@ -708,3 +708,20 @@ site economy). Long-haul project — phases land independently and each one is p
   sliver), wheel-delta accumulation (1 mouse notch = 1 item, trackpad flicks accumulate,
   direction flips reset residue, horizontal deltas work), hover-peek replaced by a solid
   open/closed state, glass arc + gradient active pill + bottom notch indicator.
+- 2026-07-18 (42): **PKMN feels like Pokémon now (P4/P5 slices).** *Battle scene rebuilt*
+  (BattleOverlay + pkmn.css): GBA-style arena — animated Showdown sprites (gen5ani front/back,
+  static fallback) on platforms, chunky cream info boxes with Lv + green/yellow/red HP bars
+  (blink on red), damage shake + faint drop animations, Pokémon cries on appear/faint
+  (play.pokemonshowdown.com CDN, helpers in components/games/pkmn/sprites.ts), FIGHT opens a
+  real 4-move menu (moves come from the server), richer log lines (super effective/crit/miss/
+  status/stat changes), classic FIGHT/BALL/PKMN/RUN buttons. *Starter choice*: brand-new
+  trainers pick Bulbasaur/Charmander/Squirtle (server-guarded, once per trainer); guests get a
+  Steam sign-in gate (trainer rows are SteamID-keyed). *Server*: per-map weighted encounter
+  tables with level ranges (pallet_town + default incl. rare Pikachu), species movesets, catch
+  odds now scale with the wild mon's remaining HP (25% full → 90% near-KO, tracked by parsing
+  the sim's damage lines), battle_start ships the player's mon (species/level/moves).
+  *Party menu*: sprite icons, HP bars, movesets. *Dev plumbing*: socket URL falls back to
+  localhost:3001 in dev (Render host stays the prod fallback; .env.development.local override),
+  socket CORS allows *.localhost:3131, server.js only honors host-injected PORT in production
+  (it was stealing next dev's port). E2E-verified over a raw socket client: join → starter →
+  pallet_town Weedle L2 → named move → HP-scaled catch attempt.

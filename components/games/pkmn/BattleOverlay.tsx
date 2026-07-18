@@ -1,26 +1,37 @@
 import React, { useEffect, useState, useRef } from 'react';
 import { useSocket } from "@/components/games/SocketProvider";
 import PartyMenu from './PartyMenu';
+import { frontSprite, backSprite, staticSprite, playCry } from './sprites';
+import './pkmn.css';
+
+type BattleMon = { species: string; level?: number; moves?: string[]; nickname?: string | null };
+
+const prettyMove = (m: string) =>
+  m.replace(/([a-z])([A-Z])/g, "$1 $2").replace(/^./, (c) => c.toUpperCase());
 
 export default function BattleOverlay({ onBattleEnd }: { onBattleEnd: () => void }) {
   const { socket } = useSocket();
   const [logs, setLogs] = useState<string[]>([]);
-  const [wildPokemon, setWildPokemon] = useState<any>(null);
+  const [wildPokemon, setWildPokemon] = useState<BattleMon | null>(null);
+  const [playerMon, setPlayerMon] = useState<BattleMon | null>(null);
+  const [trainerName, setTrainerName] = useState<string | null>(null);
   const [playerHp, setPlayerHp] = useState<number>(100);
   const [playerMaxHp, setPlayerMaxHp] = useState<number>(100);
   const [enemyHp, setEnemyHp] = useState<number>(100);
   const [enemyMaxHp, setEnemyMaxHp] = useState<number>(100);
   const [canAct, setCanAct] = useState<boolean>(false);
   const [showParty, setShowParty] = useState(false);
+  const [showMoves, setShowMoves] = useState(false);
   const [party, setParty] = useState<any[]>([]);
+  const [enemyHit, setEnemyHit] = useState(false);
+  const [playerHit, setPlayerHit] = useState(false);
+  const [enemyFainted, setEnemyFainted] = useState(false);
+  const [playerFainted, setPlayerFainted] = useState(false);
   const logsEndRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
     socket?.emit("pkmn_get_party");
-    
-    const handleParty = (data: any) => {
-      setParty(data);
-    };
+    const handleParty = (data: any) => setParty(data);
     socket?.on("pkmn_party_data", handleParty);
     return () => { socket?.off("pkmn_party_data", handleParty); }
   }, [socket]);
@@ -30,11 +41,15 @@ export default function BattleOverlay({ onBattleEnd }: { onBattleEnd: () => void
 
     const handleStart = (data: any) => {
       setWildPokemon(data.wildPokemon);
-      setLogs(prev => [...prev, `Wild ${data.wildPokemon.species} appeared!`]);
+      if (data.playerPokemon) setPlayerMon(data.playerPokemon);
+      setTrainerName(data.trainerName ?? null);
+      setLogs([data.trainerName
+        ? `${data.trainerName} wants to battle! They sent out ${data.wildPokemon.species}!`
+        : `A wild ${data.wildPokemon.species} appeared!`]);
+      playCry(data.wildPokemon.species);
     };
 
     const handleChunk = (chunk: string) => {
-      console.log("BATTLE CHUNK", chunk);
       const lines = chunk.split('\n');
       const newLogs: string[] = [];
 
@@ -42,169 +57,204 @@ export default function BattleOverlay({ onBattleEnd }: { onBattleEnd: () => void
         if (!line.trim()) continue;
         const parts = line.split('|');
         if (parts.length < 2) continue;
-        
         const cmd = parts[1];
-        
+
+        const monName = (ref: string) => {
+          const isPlayer = ref.startsWith('p1');
+          return isPlayer
+            ? (playerMon?.nickname || playerMon?.species || 'Your Pokémon').toUpperCase()
+            : `${trainerName ? "Foe" : "Wild"} ${(wildPokemon?.species || 'Pokémon').toUpperCase()}`;
+        };
+
         if (cmd === 'turn') {
-          newLogs.push(`--- Turn ${parts[2]} ---`);
           setCanAct(true);
         } else if (cmd === 'move') {
-          const user = parts[2].replace('p1a: Player', 'You').replace('p2a: Wild Pokémon', `Wild ${wildPokemon?.species || 'Pokémon'}`);
-          const move = parts[3];
-          newLogs.push(`${user} used ${move}!`);
-        } else if (cmd === '-damage') {
+          newLogs.push(`${monName(parts[2])} used ${parts[3].toUpperCase()}!`);
+        } else if (cmd === '-damage' || cmd === '-heal') {
           const target = parts[2];
-          const hpPart = parts[3].split(' ')[0]; // e.g. "15/20"
+          const hpPart = parts[3].split(' ')[0];
           const [current, max] = hpPart.split('/');
-          
+          const cur = parseInt(current) || 0;
           if (target.startsWith('p1')) {
-            setPlayerHp(parseInt(current));
+            setPlayerHp(cur);
             if (max) setPlayerMaxHp(parseInt(max));
+            if (cmd === '-damage') { setPlayerHit(true); setTimeout(() => setPlayerHit(false), 400); }
           } else {
-            setEnemyHp(parseInt(current));
+            setEnemyHp(cur);
             if (max) setEnemyMaxHp(parseInt(max));
+            if (cmd === '-damage') { setEnemyHit(true); setTimeout(() => setEnemyHit(false), 400); }
           }
-          newLogs.push(`${target.includes('p1') ? 'You' : 'The wild Pokémon'} took damage!`);
+        } else if (cmd === '-supereffective') {
+          newLogs.push(`It's super effective!`);
+        } else if (cmd === '-resisted') {
+          newLogs.push(`It's not very effective…`);
+        } else if (cmd === '-crit') {
+          newLogs.push(`A critical hit!`);
+        } else if (cmd === '-miss') {
+          newLogs.push(`The attack missed!`);
+        } else if (cmd === '-status') {
+          newLogs.push(`${monName(parts[2])} is ${parts[3] === 'brn' ? 'burned' : parts[3] === 'psn' ? 'poisoned' : parts[3] === 'par' ? 'paralyzed' : parts[3]}!`);
+        } else if (cmd === '-boost' || cmd === '-unboost') {
+          newLogs.push(`${monName(parts[2])}'s ${parts[3].toUpperCase()} ${cmd === '-boost' ? 'rose' : 'fell'}!`);
         } else if (cmd === 'faint') {
-          const target = parts[2];
-          newLogs.push(`${target.includes('p1') ? 'You' : 'The wild Pokémon'} fainted!`);
+          const isPlayer = parts[2].startsWith('p1');
+          newLogs.push(`${monName(parts[2])} fainted!`);
+          if (isPlayer) setPlayerFainted(true); else setEnemyFainted(true);
+          const sp = isPlayer ? playerMon?.species : wildPokemon?.species;
+          if (sp) playCry(sp, 0.25);
         } else if (cmd === 'win') {
-          const winner = parts[2];
-          newLogs.push(`${winner} won the battle!`);
+          newLogs.push(parts[2] === 'Player' ? `You won the battle!` : `You were defeated…`);
           setTimeout(() => onBattleEnd(), 3000);
         } else if (cmd === 'error') {
-          newLogs.push(`Error: ${parts[2]}`);
+          newLogs.push(`It failed!`);
           setCanAct(true);
         } else if (cmd === 'message') {
           newLogs.push(parts[2]);
+          if (parts[2].startsWith('Gotcha!')) setEnemyFainted(true);
+        } else if (cmd === 'switch' && parts[2]?.startsWith('p1a')) {
+          // Player switched: update shown mon (details like "Charmander, L5")
+          const details = (parts[3] || '').split(',');
+          const species = details[0]?.trim();
+          const lvl = parseInt((details[1] || '').replace(/[^0-9]/g, ''));
+          if (species) {
+            setPlayerMon(prev => ({ ...prev, species, level: lvl || prev?.level, moves: prev?.moves }));
+            setPlayerFainted(false);
+            newLogs.push(`Go! ${species.toUpperCase()}!`);
+          }
         }
       }
-
-      if (newLogs.length > 0) {
-        setLogs(prev => [...prev, ...newLogs]);
-      }
+      if (newLogs.length > 0) setLogs(prev => [...prev.slice(-30), ...newLogs]);
     };
 
     const handleEnd = () => {
+      socket.emit("pkmn_get_party"); // refresh party (XP, catches) for the overworld
       onBattleEnd();
     };
 
     socket.on('pkmn_battle_start', handleStart);
     socket.on('pkmn_battle_chunk', handleChunk);
     socket.on('pkmn_battle_end', handleEnd);
-
     return () => {
       socket.off('pkmn_battle_start', handleStart);
       socket.off('pkmn_battle_chunk', handleChunk);
       socket.off('pkmn_battle_end', handleEnd);
     };
-  }, [socket, wildPokemon, onBattleEnd]);
+  }, [socket, wildPokemon, playerMon, trainerName, onBattleEnd]);
 
   useEffect(() => {
-    logsEndRef.current?.scrollIntoView({ behavior: 'smooth' });
+    logsEndRef.current?.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
   }, [logs]);
 
-  const doMove = (moveIdx: number) => {
+  const act = (payload: any) => {
     if (!canAct) return;
     setCanAct(false);
-    socket?.emit('pkmn_battle_action', { type: 'move', move: moveIdx });
-  };
-
-  const doCatch = () => {
-    if (!canAct) return;
-    setCanAct(false);
-    socket?.emit('pkmn_battle_action', { type: 'catch' });
-  };
-
-  const doSwitch = (idx: number) => {
-    if (!canAct) return;
-    setCanAct(false);
+    setShowMoves(false);
     setShowParty(false);
-    socket?.emit('pkmn_battle_action', { type: 'switch', switchIdx: idx });
+    socket?.emit('pkmn_battle_action', payload);
   };
 
-  const doRun = () => {
-    if (!canAct) return;
-    setCanAct(false);
-    socket?.emit('pkmn_battle_action', { type: 'run' });
+  const hpClass = (hp: number, maxHp: number) => {
+    const r = hp / Math.max(1, maxHp);
+    return r > 0.5 ? 'hp-green' : r > 0.2 ? 'hp-yellow' : 'hp-red';
   };
 
-  const hpBarColor = (hp: number, maxHp: number) => {
-    const ratio = hp / maxHp;
-    if (ratio > 0.5) return '#4ade80'; // Green
-    if (ratio > 0.2) return '#eab308'; // Yellow
-    return '#ef4444'; // Red
-  };
+  const moves = playerMon?.moves ?? [];
 
   return (
-    <div style={{
-      position: 'absolute', top: 0, left: 0, right: 0, bottom: 0,
-      background: 'rgba(0,0,0,0.9)', zIndex: 100, display: 'flex', flexDirection: 'column'
-    }}>
-      {/* Top Half: Battle Scene */}
-      <div style={{ flex: 1, position: 'relative', display: 'flex', justifyContent: 'space-between', padding: 32 }}>
-        
-        {/* Enemy UI */}
-        <div style={{ background: '#fff', color: '#000', padding: 16, borderRadius: 8, minWidth: 200, alignSelf: 'flex-start', border: '4px solid #000' }}>
-          <h3>Wild {wildPokemon ? wildPokemon.species : 'Pokémon'}</h3>
-          <div style={{ height: 10, background: '#ccc', borderRadius: 5, marginTop: 8, overflow: 'hidden' }}>
-            <div style={{ height: '100%', width: `${(enemyHp/enemyMaxHp)*100}%`, background: hpBarColor(enemyHp, enemyMaxHp), transition: 'width 0.3s' }} />
+    <div className="pkb-overlay">
+      {/* Battle arena */}
+      <div className="pkb-arena">
+        {/* Enemy info box (top-left) */}
+        <div className="pkb-infobox pkb-enemy-box">
+          <div className="pkb-info-name">
+            <span>{(wildPokemon?.species || '…').toUpperCase()}</span>
+            <span className="pkb-level">Lv{wildPokemon?.level ?? '?'}</span>
+          </div>
+          <div className="pkb-hp-row">
+            <span className="pkb-hp-tag">HP</span>
+            <div className="pkb-hp-track">
+              <div className={`pkb-hp-fill ${hpClass(enemyHp, enemyMaxHp)}`} style={{ width: `${(enemyHp / Math.max(1, enemyMaxHp)) * 100}%` }} />
+            </div>
           </div>
         </div>
 
-        {/* Player UI */}
-        <div style={{ background: '#fff', color: '#000', padding: 16, borderRadius: 8, minWidth: 200, alignSelf: 'flex-end', border: '4px solid #000' }}>
-          <h3>Your Pokémon</h3>
-          <div style={{ height: 10, background: '#ccc', borderRadius: 5, marginTop: 8, overflow: 'hidden' }}>
-            <div style={{ height: '100%', width: `${(playerHp/playerMaxHp)*100}%`, background: hpBarColor(playerHp, playerMaxHp), transition: 'width 0.3s' }} />
+        {/* Enemy sprite (top-right platform) */}
+        <div className={`pkb-slot pkb-enemy-slot ${enemyHit ? 'hit' : ''} ${enemyFainted ? 'fainted' : ''}`}>
+          <div className="pkb-platform" />
+          {wildPokemon && (
+            <img
+              className="pkb-sprite"
+              src={frontSprite(wildPokemon.species)}
+              onError={(e) => { (e.target as HTMLImageElement).src = staticSprite(wildPokemon.species); }}
+              alt={wildPokemon.species}
+            />
+          )}
+        </div>
+
+        {/* Player sprite (bottom-left platform) */}
+        <div className={`pkb-slot pkb-player-slot ${playerHit ? 'hit' : ''} ${playerFainted ? 'fainted' : ''}`}>
+          <div className="pkb-platform" />
+          {playerMon && (
+            <img
+              className="pkb-sprite pkb-back"
+              src={backSprite(playerMon.species)}
+              onError={(e) => { (e.target as HTMLImageElement).src = staticSprite(playerMon.species); }}
+              alt={playerMon.species}
+            />
+          )}
+        </div>
+
+        {/* Player info box (bottom-right) */}
+        <div className="pkb-infobox pkb-player-box">
+          <div className="pkb-info-name">
+            <span>{(playerMon?.nickname || playerMon?.species || 'YOUR PKMN').toUpperCase()}</span>
+            <span className="pkb-level">Lv{playerMon?.level ?? '?'}</span>
           </div>
-          <p style={{ margin: '4px 0 0', fontSize: 12, textAlign: 'right' }}>{playerHp} / {playerMaxHp}</p>
+          <div className="pkb-hp-row">
+            <span className="pkb-hp-tag">HP</span>
+            <div className="pkb-hp-track">
+              <div className={`pkb-hp-fill ${hpClass(playerHp, playerMaxHp)}`} style={{ width: `${(playerHp / Math.max(1, playerMaxHp)) * 100}%` }} />
+            </div>
+          </div>
+          <div className="pkb-hp-num">{playerHp} / {playerMaxHp}</div>
         </div>
       </div>
 
-      {/* Bottom Half: Logs and Menu */}
-      <div style={{ height: 200, borderTop: '4px solid #fff', display: 'flex' }}>
-        <div style={{ flex: 1, padding: 16, overflowY: 'auto', background: '#222', fontSize: 18, lineHeight: 1.5 }}>
-          {logs.map((l, i) => (
-            <div key={i}>{l}</div>
-          ))}
+      {/* Dialog + actions */}
+      <div className="pkb-bottom">
+        <div className="pkb-dialog">
+          {logs.slice(-4).map((l, i) => <div key={`${i}-${l}`} className="pkb-line">{l}</div>)}
           <div ref={logsEndRef} />
         </div>
-        
-        <div style={{ width: 250, borderLeft: '4px solid #fff', background: '#333', display: 'grid', gridTemplateColumns: '1fr 1fr', gridTemplateRows: '1fr 1fr', gap: 4, padding: 8 }}>
-          <button 
-            disabled={!canAct} 
-            onClick={() => doMove(1)}
-            style={{ fontSize: 20, cursor: canAct ? 'pointer' : 'not-allowed', background: '#ef4444', color: '#fff', border: '2px solid #fff', borderRadius: 4, opacity: canAct ? 1 : 0.5 }}>
-            FIGHT
-          </button>
-          <button 
-            disabled={!canAct} 
-            onClick={doCatch}
-            style={{ fontSize: 20, cursor: canAct ? 'pointer' : 'not-allowed', background: '#eab308', color: '#fff', border: '2px solid #fff', borderRadius: 4, opacity: canAct ? 1 : 0.5 }}>
-            BAG (Pokéball)
-          </button>
-          <button 
-            disabled={!canAct} 
-            onClick={() => setShowParty(true)}
-            style={{ fontSize: 20, cursor: canAct ? 'pointer' : 'not-allowed', background: '#3b82f6', color: '#fff', border: '2px solid #fff', borderRadius: 4, opacity: canAct ? 1 : 0.5 }}>
-            PKMN
-          </button>
-          <button 
-            disabled={!canAct} 
-            onClick={doRun}
-            style={{ fontSize: 20, cursor: canAct ? 'pointer' : 'not-allowed', background: '#10b981', color: '#fff', border: '2px solid #fff', borderRadius: 4, opacity: canAct ? 1 : 0.5 }}>
-            RUN
-          </button>
-        </div>
+
+        {showMoves ? (
+          <div className="pkb-actions pkb-moves">
+            {moves.slice(0, 4).map((m) => (
+              <button key={m} disabled={!canAct} className="pkb-btn pkb-move" onClick={() => act({ type: 'move', move: m })}>
+                {prettyMove(m)}
+              </button>
+            ))}
+            {Array.from({ length: Math.max(0, 4 - moves.length) }).map((_, i) => (
+              <div key={i} className="pkb-btn pkb-empty">—</div>
+            ))}
+            <button className="pkb-btn pkb-cancel" onClick={() => setShowMoves(false)}>◀ BACK</button>
+          </div>
+        ) : (
+          <div className="pkb-actions">
+            <button disabled={!canAct} className="pkb-btn pkb-fight" onClick={() => (moves.length ? setShowMoves(true) : act({ type: 'move', move: 1 }))}>FIGHT</button>
+            <button disabled={!canAct || !!trainerName} className="pkb-btn pkb-ball" onClick={() => act({ type: 'catch' })}>BALL</button>
+            <button disabled={!canAct} className="pkb-btn pkb-pkmn" onClick={() => setShowParty(true)}>PKMN</button>
+            <button disabled={!canAct} className="pkb-btn pkb-run" onClick={() => act({ type: 'run' })}>RUN</button>
+          </div>
+        )}
       </div>
-      
+
       {showParty && (
-        <PartyMenu 
-          party={party} 
-          onClose={() => setShowParty(false)} 
-          isBattleMode={true} 
-          onSwitch={doSwitch} 
+        <PartyMenu
+          party={party}
+          onClose={() => setShowParty(false)}
+          isBattleMode={true}
+          onSwitch={(idx) => act({ type: 'switch', switchIdx: idx })}
         />
       )}
     </div>

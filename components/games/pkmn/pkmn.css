@@ -1,0 +1,247 @@
+/* ============================================
+   GARDEN PKMN — battle scene, starter pick, party
+   Classic handheld look: chunky boxes, pixel font
+   ============================================ */
+
+.pkb-overlay {
+  position: absolute;
+  inset: 0;
+  z-index: 100;
+  display: flex;
+  flex-direction: column;
+  font-family: "Segoe UI", system-ui, sans-serif;
+  image-rendering: pixelated;
+}
+
+/* ---- Arena ---- */
+.pkb-arena {
+  flex: 1;
+  position: relative;
+  background: linear-gradient(180deg, #a7d8f0 0%, #c9ecc9 62%, #8fce8f 62%, #7cba6e 100%);
+  overflow: hidden;
+}
+
+.pkb-slot { position: absolute; width: 220px; height: 170px; }
+.pkb-enemy-slot { top: 8%; right: 10%; }
+.pkb-player-slot { bottom: -4%; left: 8%; }
+
+.pkb-platform {
+  position: absolute;
+  bottom: 8px;
+  left: 50%;
+  transform: translateX(-50%);
+  width: 200px;
+  height: 52px;
+  border-radius: 50%;
+  background: radial-gradient(ellipse at center, rgba(90, 140, 80, 0.55), rgba(90, 140, 80, 0.15) 70%, transparent 75%);
+}
+
+.pkb-sprite {
+  position: absolute;
+  bottom: 22px;
+  left: 50%;
+  transform: translateX(-50%);
+  max-height: 130px;
+  max-width: 170px;
+  filter: drop-shadow(0 6px 6px rgba(0, 0, 0, 0.25));
+}
+.pkb-back { max-height: 150px; max-width: 190px; }
+
+.pkb-slot.hit .pkb-sprite { animation: pkbShake 0.35s ease; }
+.pkb-slot.fainted .pkb-sprite { animation: pkbFaint 0.6s ease forwards; }
+
+@keyframes pkbShake {
+  0%, 100% { transform: translateX(-50%); }
+  25% { transform: translateX(calc(-50% - 10px)); filter: brightness(2) drop-shadow(0 6px 6px rgba(0,0,0,0.25)); }
+  75% { transform: translateX(calc(-50% + 10px)); }
+}
+@keyframes pkbFaint {
+  to { transform: translateX(-50%) translateY(60px); opacity: 0; }
+}
+
+/* ---- Info boxes ---- */
+.pkb-infobox {
+  position: absolute;
+  background: #f8f8e8;
+  border: 3px solid #2b2b2b;
+  border-radius: 10px;
+  box-shadow: 3px 3px 0 rgba(0, 0, 0, 0.35);
+  padding: 8px 12px;
+  min-width: 210px;
+  color: #222;
+}
+.pkb-enemy-box { top: 10%; left: 6%; }
+.pkb-player-box { bottom: 10%; right: 6%; }
+
+.pkb-info-name {
+  display: flex;
+  justify-content: space-between;
+  gap: 12px;
+  font-weight: 800;
+  font-size: 0.95rem;
+  letter-spacing: 0.5px;
+}
+.pkb-level { color: #444; }
+
+.pkb-hp-row { display: flex; align-items: center; gap: 6px; margin-top: 6px; }
+.pkb-hp-tag {
+  font-size: 0.6rem;
+  font-weight: 900;
+  background: #4a4a4a;
+  color: #f8d030;
+  padding: 1px 5px;
+  border-radius: 4px;
+  letter-spacing: 1px;
+}
+.pkb-hp-track {
+  flex: 1;
+  height: 8px;
+  background: #555;
+  border-radius: 4px;
+  overflow: hidden;
+  border: 1px solid #2b2b2b;
+}
+.pkb-hp-fill { height: 100%; border-radius: 3px; transition: width 0.5s ease; }
+.hp-green { background: #58c85a; }
+.hp-yellow { background: #f0c030; }
+.hp-red { background: #e85038; animation: pkbHpBlink 0.8s infinite; }
+@keyframes pkbHpBlink { 50% { opacity: 0.55; } }
+
+.pkb-hp-num { text-align: right; font-size: 0.75rem; font-weight: 700; margin-top: 3px; }
+
+/* ---- Bottom: dialog + actions ---- */
+.pkb-bottom {
+  height: 168px;
+  display: flex;
+  background: #303030;
+  border-top: 4px solid #2b2b2b;
+  padding: 8px;
+  gap: 8px;
+}
+
+.pkb-dialog {
+  flex: 1;
+  background: #f8f8e8;
+  border: 3px solid #6b6bd8;
+  border-radius: 8px;
+  padding: 10px 14px;
+  overflow-y: auto;
+  color: #222;
+  font-weight: 700;
+  font-size: 1rem;
+  line-height: 1.5;
+}
+.pkb-line { animation: pkbTextIn 0.25s ease; }
+@keyframes pkbTextIn { from { opacity: 0; transform: translateY(4px); } }
+
+.pkb-actions {
+  width: 280px;
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  grid-auto-rows: 1fr;
+  gap: 6px;
+}
+.pkb-moves { grid-template-rows: 1fr 1fr 34px; }
+.pkb-moves .pkb-cancel { grid-column: 1 / -1; }
+
+.pkb-btn {
+  border: 3px solid #2b2b2b;
+  border-radius: 8px;
+  background: #f8f8e8;
+  color: #222;
+  font-weight: 900;
+  font-size: 0.95rem;
+  letter-spacing: 0.5px;
+  cursor: pointer;
+  box-shadow: 2px 2px 0 rgba(0, 0, 0, 0.35);
+  transition: transform 0.08s ease, box-shadow 0.08s ease;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+.pkb-btn:hover:not(:disabled) { transform: translate(-1px, -1px); box-shadow: 3px 3px 0 rgba(0, 0, 0, 0.4); }
+.pkb-btn:active:not(:disabled) { transform: translate(1px, 1px); box-shadow: 1px 1px 0 rgba(0, 0, 0, 0.3); }
+.pkb-btn:disabled { opacity: 0.45; cursor: default; }
+
+.pkb-fight { background: #e85038; color: #fff; text-shadow: 1px 1px 0 rgba(0,0,0,0.3); }
+.pkb-ball { background: #f0c030; }
+.pkb-pkmn { background: #58c85a; color: #fff; text-shadow: 1px 1px 0 rgba(0,0,0,0.3); }
+.pkb-run { background: #6b9be8; color: #fff; text-shadow: 1px 1px 0 rgba(0,0,0,0.3); }
+.pkb-move { font-size: 0.82rem; }
+.pkb-empty { opacity: 0.35; cursor: default; }
+.pkb-cancel { background: #ddd; font-size: 0.78rem; }
+
+/* ---- Starter pick ---- */
+.pks-overlay {
+  position: absolute;
+  inset: 0;
+  z-index: 120;
+  background: rgba(12, 8, 20, 0.88);
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 20px;
+  color: #fff;
+  text-align: center;
+  padding: 20px;
+}
+.pks-title { font-size: 1.5rem; font-weight: 900; margin: 0; }
+.pks-sub { color: #cbb8e0; margin: 0; font-weight: 600; }
+.pks-grid { display: flex; gap: 18px; flex-wrap: wrap; justify-content: center; }
+.pks-card {
+  width: 168px;
+  background: #f8f8e8;
+  color: #222;
+  border: 3px solid #2b2b2b;
+  border-radius: 12px;
+  box-shadow: 4px 4px 0 rgba(0, 0, 0, 0.4);
+  padding: 14px 10px;
+  cursor: pointer;
+  transition: transform 0.12s ease;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 6px;
+}
+.pks-card:hover { transform: translateY(-6px) scale(1.03); }
+.pks-card img { height: 96px; image-rendering: pixelated; }
+.pks-card strong { font-size: 1rem; letter-spacing: 0.5px; }
+.pks-type { font-size: 0.68rem; font-weight: 900; padding: 2px 10px; border-radius: 999px; color: #fff; letter-spacing: 1px; }
+.pks-grass { background: #58c85a; }
+.pks-fire { background: #e85038; }
+.pks-water { background: #6b9be8; }
+
+/* ---- Party menu ---- */
+.pkp-overlay {
+  position: absolute;
+  inset: 0;
+  z-index: 110;
+  background: rgba(20, 40, 30, 0.92);
+  padding: 24px;
+  color: #fff;
+  display: flex;
+  flex-direction: column;
+  overflow-y: auto;
+}
+.pkp-head { display: flex; justify-content: space-between; align-items: center; margin-bottom: 16px; }
+.pkp-head h2 { margin: 0; font-size: 1.2rem; letter-spacing: 1px; }
+.pkp-close {
+  border: 3px solid #2b2b2b; border-radius: 8px; background: #e85038; color: #fff;
+  font-weight: 900; padding: 6px 16px; cursor: pointer; box-shadow: 2px 2px 0 rgba(0,0,0,0.4);
+}
+.pkp-grid { display: grid; gap: 12px; grid-template-columns: repeat(auto-fill, minmax(260px, 1fr)); }
+.pkp-card {
+  background: #f8f8e8; color: #222; border: 3px solid #2b2b2b; border-radius: 10px;
+  box-shadow: 3px 3px 0 rgba(0,0,0,0.35); padding: 10px 12px;
+  display: flex; align-items: center; gap: 12px;
+}
+.pkp-card img { width: 64px; height: 64px; object-fit: contain; image-rendering: pixelated; }
+.pkp-info { flex: 1; min-width: 0; }
+.pkp-name { font-weight: 900; font-size: 0.9rem; display: flex; justify-content: space-between; gap: 8px; }
+.pkp-moves { font-size: 0.68rem; color: #555; font-weight: 600; margin-top: 3px; }
+.pkp-switch {
+  border: 3px solid #2b2b2b; border-radius: 8px; background: #58c85a; color: #fff;
+  font-weight: 900; padding: 8px 12px; cursor: pointer; box-shadow: 2px 2px 0 rgba(0,0,0,0.35);
+  font-size: 0.75rem;
+}

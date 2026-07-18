@@ -25,8 +25,12 @@ export const SocketProvider = ({ children, steamId }: { children: React.ReactNod
   const [isAuthed, setIsAuthed] = useState(false);
 
   useEffect(() => {
-    // In production, this should point to your actual domain
-    const socketInstance = io(process.env.NEXT_PUBLIC_SOCKET_URL || 'https://node-sockets-reeeeetakes.onrender.com');
+    // NEXT_PUBLIC_SOCKET_URL wins; else localhost in dev, the Render host in prod
+    const socketUrl = process.env.NEXT_PUBLIC_SOCKET_URL
+      || (process.env.NODE_ENV === "development"
+        ? "http://localhost:3001"
+        : "https://node-sockets-reeeeetakes.onrender.com");
+    const socketInstance = io(socketUrl);
 
     socketInstance.on('connect', () => {
       console.log('Connected to Game Hub Socket:', socketInstance.id);

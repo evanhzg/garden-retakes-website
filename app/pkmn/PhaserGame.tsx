@@ -5,6 +5,7 @@ import { useSocket } from "@/components/games/SocketProvider";
 import { usePlayerNames, displayNameFor } from "@/components/games/hooks";
 import BattleOverlay from "@/components/games/pkmn/BattleOverlay";
 import PartyMenu from "@/components/games/pkmn/PartyMenu";
+import StarterPick from "@/components/games/pkmn/StarterPick";
 
 export default function PhaserGame() {
   const gameContainerRef = useRef<HTMLDivElement>(null);
@@ -12,6 +13,7 @@ export default function PhaserGame() {
   const [mapState, setMapState] = useState<any>(null);
   const [isBattling, setIsBattling] = useState(false);
   const [showParty, setShowParty] = useState(false);
+  const [showStarter, setShowStarter] = useState(false);
   const [party, setParty] = useState<any[]>([]);
   
   // React state for chat
@@ -43,6 +45,12 @@ export default function PhaserGame() {
       setShowParty(false); // Close party if battle starts
     });
 
+    socket.on("pkmn_choose_starter", () => setShowStarter(true));
+    socket.on("pkmn_starter_confirmed", () => {
+      setShowStarter(false);
+      socket.emit("pkmn_get_party");
+    });
+
     const handleParty = (data: any) => {
       setParty(data);
     };
@@ -64,6 +72,8 @@ export default function PhaserGame() {
       socket.off("pkmn_map_state");
       socket.off("pkmn_chat_message");
       socket.off("pkmn_battle_start");
+      socket.off("pkmn_choose_starter");
+      socket.off("pkmn_starter_confirmed");
       socket.off("pkmn_party_data", handleParty);
       window.removeEventListener('keydown', handleKeyDown);
       socket.emit("pkmn_leave");
@@ -512,6 +522,11 @@ export default function PhaserGame() {
             {/* Phaser Game Canvas */}
             <div ref={gameContainerRef} style={{ border: '4px solid #fff', borderRadius: '8px', overflow: 'hidden', width: '100%', height: 600 }} />
             
+            {/* Starter choice for brand-new trainers */}
+            {showStarter && !isBattling && (
+              <StarterPick onPick={(species) => socket?.emit("pkmn_pick_starter", { species })} />
+            )}
+
             {/* Battle Overlay */}
             {isBattling && (
               <BattleOverlay onBattleEnd={() => {

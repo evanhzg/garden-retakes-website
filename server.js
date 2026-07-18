@@ -24,6 +24,10 @@ const corsOrigins = process.env.SOCKET_CORS_ORIGINS
       "https://docs.retakes.fr",
       "http://localhost:3000",
       "http://localhost:3131",
+      // dev subdomain origins (middleware host-routing)
+      "http://games.localhost:3131",
+      "http://pkmn.localhost:3131",
+      "http://docs.localhost:3131",
     ];
 
 const io = new Server(httpServer, {
@@ -1148,8 +1152,14 @@ io.on("connection", (socket) => {
       mapId: actualMap,
       players: mapState.players
     });
-    
+
     socket.to(`pkmn_map_${actualMap}`).emit("pkmn_player_joined", pData);
+
+    // Fresh trainer (no mons yet): offer the starter choice
+    try {
+      const monCount = await prisma.PkmnMon.count({ where: { OwnerId: BigInt(socket.steamId) } });
+      if (monCount === 0) socket.emit("pkmn_choose_starter");
+    } catch (e) { /* non-fatal */ }
   });
 
   socket.on("pkmn_move", (data) => {
@@ -1205,7 +1215,21 @@ io.on("connection", (socket) => {
 
   socket.on("pkmn_encounter", async () => {
     if (!socket.steamId) return;
-    await pkmnBattleManager.startEncounter(socket, socket.steamId, prisma);
+    await pkmnBattleManager.startEncounter(socket, socket.steamId, prisma, socket.pkmnMap || "pallet_town");
+  });
+
+  // Starter choice: new trainers (no mons) pick Bulbasaur/Charmander/Squirtle
+  socket.on("pkmn_pick_starter", async (data) => {
+    if (!socket.steamId) return;
+    try {
+      const mon = await pkmnBattleManager.createStarter(prisma, socket.steamId, data?.species);
+      if (mon) {
+        socket.emit("pkmn_starter_confirmed", { species: mon.Species });
+        socket.emit("pkmn_chat_message", { steamId: "SERVER", message: `You chose ${mon.Species}! Take good care of it.` });
+      }
+    } catch (e) {
+      console.error("PKMN starter error:", e);
+    }
   });
 
   socket.on("pkmn_interact", async (data) => {
@@ -1224,7 +1248,11 @@ io.on("connection", (socket) => {
   });
 });
 
-const PORT = process.env.PORT || process.env.WS_PORT || 3001;
+// WS_PORT wins; the host-injected PORT only applies in production (in dev the
+// harness sets PORT for next dev, which would collide with the socket server).
+const PORT = process.env.WS_PORT
+  || (process.env.NODE_ENV === "production" ? process.env.PORT : null)
+  || 3001;
 httpServer.listen(PORT, () => {
   console.log(`WebSocket server running on port ${PORT}`);
 });

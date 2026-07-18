@@ -9,3 +9,4 @@ next-env.d.ts
 # local experiments / downloaded asset packs (963MB+)
 scratch/
 public/pkmn/*.rar
+.env.development.local
