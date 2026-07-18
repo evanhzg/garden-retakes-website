@@ -1,7 +1,9 @@
 "use client";
 
 import React, { useState, useEffect, useRef } from "react";
+import { createPortal } from "react-dom";
 import { SocketProvider, useSocket } from "@/components/games/SocketProvider";
+import { usePlayerNames, displayNameFor } from "@/components/games/hooks";
 import { motion, AnimatePresence } from "framer-motion";
 import dynamic from "next/dynamic";
 import "./monopoly.css";
@@ -11,7 +13,8 @@ const DiceRoller = dynamic(() => import("./DiceRoller"), { ssr: false });
 const DUMMY_STEAM_ID = "765611980" + Math.floor(Math.random() * 100000); 
 
 export default function MonopolyGame() {
-  const { socket, isConnected } = useSocket();
+  const { socket, isConnected, steamId } = useSocket();
+  const mySteamId = steamId ?? DUMMY_STEAM_ID;
   const [gameState, setGameState] = useState<any>(null);
   const [selectedSpaceId, setSelectedSpaceId] = useState<number | null>(null);
   
@@ -60,45 +63,56 @@ export default function MonopolyGame() {
     return null;
   }
 
-  const isMyTurn = gameState.currentTurn === DUMMY_STEAM_ID;
-  const myState = gameState.playerStates[DUMMY_STEAM_ID];
+  const isMyTurn = gameState.currentTurn === mySteamId;
+  const myState = gameState.playerStates[mySteamId];
   
-  const renderDice = () => {
-    if (!gameState.lastRoll) return null;
-    return (
-      <div className="dice-container" style={{ opacity: isDiceRolling ? 0 : 1, transition: 'opacity 0.3s ease' }}>
-        <div className="mono-dice static">
-          {gameState.lastRoll[0]}
-        </div>
-        <div className="mono-dice static">
-          {gameState.lastRoll[1]}
-        </div>
-      </div>
-    );
+  const getPlayerPosition = (pId: string) => {
+    const totalPlayers = gameState.players.length;
+    if (totalPlayers === 0) return { left: '50%', top: '50%' };
+
+    const index = gameState.players.indexOf(pId);
+    // Evenly space players around a circle
+    const angleDeg = (index / totalPlayers) * 360;
+    const rad = (angleDeg * Math.PI) / 180;
+
+    // Ellipse radii to keep cards near the edges
+    const rx = 38; // vw
+    const ry = 35; // vh
+
+    const leftVw = 50 + Math.cos(rad) * rx;
+    const topVh = 50 - Math.sin(rad) * ry;
+
+    return {
+      left: `clamp(10vw, ${leftVw}vw, 90vw)`,
+      top: `clamp(10vh, ${topVh}vh, 90vh)`,
+      transform: `translate(-50%, -50%)`
+    };
   };
 
   const selectedSpace = selectedSpaceId !== null ? gameState.board[selectedSpaceId] : null;
 
-  return (
+  return createPortal(
     <div className="monopoly-container">
       {/* Player List */}
       <div className="mono-players">
         {gameState.players.map((pId: string) => {
           const s = gameState.playerStates[pId];
-          let posClass = 'pos-1';
-          if (pId === DUMMY_STEAM_ID) posClass = 'pos-0';
-          else {
-            const others = gameState.players.filter((p: string) => p !== DUMMY_STEAM_ID);
-            const otherIdx = others.indexOf(pId);
-            posClass = `pos-${otherIdx + 1}`;
-          }
+          const pos = getPlayerPosition(pId);
+          const isTurn = gameState.currentTurn === pId;
 
           return (
-            <div key={pId} className={`mono-player-card ${posClass}`} style={{borderColor: s.color, boxShadow: gameState.currentTurn === pId ? `0 0 15px ${s.color}` : 'none'}}>
-              <h3 style={{margin: 0, color: s.color}}>
+            <div 
+              key={pId} 
+              className={`mono-player-card ${isTurn ? 'active' : ''}`} 
+              style={{...pos, borderColor: s.color, boxShadow: isTurn ? `0 0 25px ${s.color}` : 'none'}}
+            >
+              <div className="mono-player-avatar" style={{color: s.color}}>
+                {pId.substring(pId.length-2).toUpperCase()}
+              </div>
+              <h3 style={{margin: 0, color: s.color, fontSize: '1rem'}}>
                 {pId.startsWith('BOT') ? `Bot ${pId.substring(pId.length-4)}` : `Player ${pId.substring(pId.length-4)}`}
               </h3>
-              <p style={{margin: '5px 0 0 0', fontSize: '1.5rem', fontWeight: 'bold'}}>${s.money}</p>
+              <p style={{margin: '0', fontSize: '1.25rem', fontWeight: 'bold'}}>${s.money}</p>
             </div>
           );
         })}
@@ -163,7 +177,14 @@ export default function MonopolyGame() {
 
           {/* Center Area */}
           <div className="mono-center">
-            {renderDice()}
+            {/* Overlay the 3D dice here so they sit in the center of the board */}
+            {gameState?.lastRoll && (
+              <DiceRoller 
+                lastRoll={gameState.lastRoll} 
+                rollKey={rollTriggerKey} 
+                onAnimationComplete={() => setIsDiceRolling(false)} 
+              />
+            )}
             
             <div style={{display: 'flex', gap: '10px', marginTop: '1rem'}}>
               <button className="mono-btn" disabled={!isMyTurn || gameState.turnPhase !== 'ROLL' || isDiceRolling} onClick={rollDice}>
@@ -188,13 +209,6 @@ export default function MonopolyGame() {
           </div>
         </div>
 
-        {isDiceRolling && gameState?.lastRoll && (
-          <DiceRoller 
-            lastRoll={gameState.lastRoll} 
-            rollKey={rollTriggerKey} 
-            onAnimationComplete={() => setIsDiceRolling(false)} 
-          />
-        )}
       </div>
 
       <div className="action-logs">
@@ -268,6 +282,7 @@ export default function MonopolyGame() {
         )}
       </AnimatePresence>
 
-    </div>
+    </div>,
+    document.body
   );
 }

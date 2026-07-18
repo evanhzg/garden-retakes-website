@@ -6,7 +6,6 @@
   height: 100vh;
   width: 100vw;
   z-index: 10;
-  margin-left: calc(-50vw + 50%);
   background: radial-gradient(circle at top right, #1a202c 0%, #000000 100%);
   color: white;
   display: flex;
@@ -14,7 +13,6 @@
   align-items: center;
   justify-content: center;
   overflow: hidden;
-  position: relative;
 }
 
 /* Modifiers Pre-Game Lobby */
@@ -46,12 +44,17 @@
 /* 3D Board Wrapper */
 .mono-board-wrapper {
   perspective: 1500px;
-  width: 70vmin;
-  height: 70vmin;
+  /* Shrink board to allow space for players */
+  width: clamp(300px, 60vmin, 800px);
+  height: clamp(300px, 60vmin, 800px);
   display: flex;
   align-items: center;
   justify-content: center;
-  margin-top: -80px;
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  z-index: 5;
 }
 
 /* Game Board 11x11 Grid */
@@ -241,33 +244,6 @@
 }
 
 /* UI Elements */
-.dice-container {
-  display: flex;
-  gap: 1rem;
-  font-size: 2.5rem;
-  font-weight: 900;
-  transform: rotateZ(-45deg) rotateX(-40deg) translateZ(40px); /* Counter rotate */
-  transform-style: preserve-3d;
-}
-
-.mono-dice {
-  background: #fff;
-  color: #000;
-  width: 60px;
-  height: 60px;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  border-radius: 12px;
-  border: 2px solid #ccc;
-  box-shadow: 
-    -2px 2px 0 #ccc,
-    -4px 4px 0 #999,
-    -6px 6px 0 #666,
-    -8px 8px 10px rgba(0,0,0,0.5);
-  transform: rotateZ(15deg);
-}
-
 .mono-btn {
   padding: 1rem 2rem;
   font-size: 1.25rem;
@@ -327,42 +303,50 @@
 
 /* Player Positioning */
 .mono-players {
-  /* removed flex container, players are absolute now */
+  position: absolute;
+  top: 0; left: 0; right: 0; bottom: 0;
+  pointer-events: none;
+  z-index: 200;
 }
 
 .mono-player-card {
   position: absolute;
-  background: rgba(0,0,0,0.8);
+  background: rgba(20, 20, 30, 0.85);
   border: 2px solid;
-  padding: 1rem;
-  border-radius: 12px;
-  backdrop-filter: blur(10px);
-  width: 200px;
+  padding: 1.2rem;
+  border-radius: 16px;
+  backdrop-filter: blur(12px);
+  width: 220px;
   color: white;
   box-shadow: 0 10px 30px rgba(0,0,0,0.5);
-  z-index: 200;
-  transition: all 0.3s;
+  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+  pointer-events: auto;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  text-align: center;
+  gap: 0.5rem;
 }
 
-.pos-0 {
-  bottom: calc(50vh - 42vmin);
-  right: calc(50vw - 45vmin);
-  transform: scale(1.15);
-}
-.pos-1 {
-  bottom: calc(50vh - 40vmin);
-  left: calc(50vw - 45vmin);
-}
-.pos-2 {
-  top: calc(50vh - 45vmin);
-  left: calc(50vw - 45vmin);
-}
-.pos-3 {
-  top: calc(50vh - 45vmin);
-  right: calc(50vw - 45vmin);
+.mono-player-card.active {
+  transform: scale(1.05);
+  box-shadow: 0 0 25px currentColor;
+  z-index: 210;
 }
 
-
+.mono-player-avatar {
+  width: 60px;
+  height: 60px;
+  border-radius: 50%;
+  background: #333;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 1.5rem;
+  border: 3px solid currentColor;
+  box-shadow: 0 5px 15px rgba(0,0,0,0.5);
+  margin-bottom: 5px;
+}
 
 /* Property Modal Overlay */
 .property-modal-overlay {

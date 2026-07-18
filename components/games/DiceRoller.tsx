@@ -5,7 +5,7 @@ import { Canvas, useFrame, useThree } from "@react-three/fiber";
 import * as THREE from "three";
 import * as CANNON from "cannon-es";
 
-const DICE_SIZE = 0.35;
+const DICE_SIZE = 0.15;
 
 function getTopFace(quaternion: CANNON.Quaternion) {
   const up = new CANNON.Vec3(0, 1, 0);
@@ -260,17 +260,21 @@ export default function DiceRoller({ lastRoll, rollKey, onAnimationComplete }: {
     if (lastRoll && rollKey > 0) {
       setActiveRoll(lastRoll);
     }
-  }, [rollKey]); // trigger on rollKey change
+  }, [rollKey, lastRoll]); 
 
+  // Instead of unmounting when activeRoll is null, we just wait until the first roll
   if (!activeRoll) return null;
 
   return (
     <div style={{ position: "absolute", inset: 0, pointerEvents: "none", zIndex: 100 }}>
-      <Canvas shadows camera={{ position: [0, 8, 8], fov: 45 }}>
-        <DiceSimulation roll={activeRoll} onRest={() => {
-          setActiveRoll(null);
-          onAnimationComplete();
-        }} />
+      <Canvas shadows camera={{ position: [0, 5, 5], fov: 45 }}>
+        <DiceSimulation 
+          key={rollKey} // Force remount on new roll
+          roll={activeRoll} 
+          onRest={() => {
+            onAnimationComplete();
+          }} 
+        />
       </Canvas>
     </div>
   );
