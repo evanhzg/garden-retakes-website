@@ -71,23 +71,16 @@ export function middleware(req: NextRequest) {
   if (isKnownSubdomain) {
     const base = SUBDOMAIN_ROUTES[subdomain];
     
-    // Check if the user went to games.retakes.fr/games/...
+    // Check if the user went to games.retakes.fr/games/... (redundant prefix)
     if (url.pathname === base || url.pathname.startsWith(`${base}/`)) {
       url.pathname = url.pathname.substring(base.length) || "/";
       return NextResponse.redirect(url);
     }
 
-    // If it's NOT the root path, and doesn't match the subdomain base logic
-    if (url.pathname !== "/") {
-      url.host = baseHost;
-      return NextResponse.redirect(url);
-    }
-
-    // Otherwise, rewrite / to the base route
-    if (url.pathname === "/") {
-      url.pathname = base;
-      return NextResponse.rewrite(url);
-    }
+    // Rewrite all paths to the internal route group.
+    // e.g. games.retakes.fr/lobby/abc → serves /games/lobby/abc internally
+    url.pathname = `${base}${url.pathname}`;
+    return NextResponse.rewrite(url);
   }
 
   return NextResponse.next();
