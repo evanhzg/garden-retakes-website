@@ -89,6 +89,7 @@
   padding: 2rem;
   text-align: center;
   position: relative;
+  transform: translateZ(10px);
 }
 
 /* Spaces */
@@ -278,9 +279,10 @@
   position: relative;
   z-index: 1000;
   pointer-events: auto;
+  user-select: none;
 }
 .mono-btn:hover:not(:disabled) {
-  transform: scale(1.05);
+  transform: scale(1.05) translateZ(10px);
   box-shadow: 0 8px 25px rgba(0,204,0,0.5);
 }
 .mono-btn:disabled {

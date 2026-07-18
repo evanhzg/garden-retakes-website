@@ -204,30 +204,41 @@ export default function MonopolyGame() {
                 onAnimationComplete={() => setIsDiceRolling(false)} 
               />
             )}
-            
-            <div style={{display: 'flex', gap: '10px', marginTop: '1rem'}}>
-              <button className="mono-btn" disabled={!isMyTurn || gameState.turnPhase !== 'ROLL' || isDiceRolling} onClick={rollDice}>
-                ROLL DICE
-              </button>
-              
-              <button className="mono-btn" disabled={!isMyTurn || gameState.turnPhase !== 'ACTION' || isDiceRolling} onClick={buyProperty} style={{background: 'linear-gradient(45deg, #cc00cc, #6600ff)'}}>
-                BUY
-              </button>
-
-              <button className="mono-btn" disabled={!isMyTurn || (gameState.turnPhase !== 'END' && gameState.turnPhase !== 'ACTION') || isDiceRolling} onClick={endTurn} style={{background: 'linear-gradient(45deg, #ff3333, #ff9900)'}}>
-                END TURN
-              </button>
-            </div>
-
-            {myState?.jailed && (
-               <button className="mono-btn" disabled={!isMyTurn || gameState.turnPhase !== 'ROLL'} onClick={payJail} style={{background: '#ff0000', marginTop: '10px'}}>
-                 PAY $50 TO LEAVE JAIL
-               </button>
-            )}
-
           </div>
         </div>
+      </div>
 
+      {/* Action Buttons (Rendered Flat, outside of 3D context) */}
+      <div style={{
+        position: 'absolute', 
+        top: '60%', 
+        left: '50%', 
+        transform: 'translate(-50%, -50%)', 
+        display: 'flex', 
+        flexDirection: 'column', 
+        alignItems: 'center', 
+        gap: '10px',
+        zIndex: 1000
+      }}>
+        <div style={{display: 'flex', gap: '10px'}}>
+          <button className="mono-btn" disabled={!isMyTurn || gameState.turnPhase !== 'ROLL' || isDiceRolling} onClick={rollDice}>
+            ROLL DICE
+          </button>
+          
+          <button className="mono-btn" disabled={!isMyTurn || gameState.turnPhase !== 'ACTION' || isDiceRolling} onClick={buyProperty} style={{background: 'linear-gradient(45deg, #cc00cc, #6600ff)'}}>
+            BUY
+          </button>
+
+          <button className="mono-btn" disabled={!isMyTurn || (gameState.turnPhase !== 'END' && gameState.turnPhase !== 'ACTION') || isDiceRolling} onClick={endTurn} style={{background: 'linear-gradient(45deg, #ff3333, #ff9900)'}}>
+            END TURN
+          </button>
+        </div>
+
+        {myState?.jailed && (
+           <button className="mono-btn" disabled={!isMyTurn || gameState.turnPhase !== 'ROLL'} onClick={payJail} style={{background: '#ff0000'}}>
+             PAY $50 TO LEAVE JAIL
+           </button>
+        )}
       </div>
 
       <div className="action-logs">

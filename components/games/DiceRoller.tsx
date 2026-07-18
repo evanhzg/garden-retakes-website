@@ -5,13 +5,7 @@ import { Canvas, useFrame, useThree } from "@react-three/fiber";
 import * as THREE from "three";
 import * as CANNON from "cannon-es";
 
-// Let users override dice size in the browser console by setting `window.DICE_SIZE = 0.15`
-const getDiceSize = () => {
-  if (typeof window !== "undefined" && (window as any).DICE_SIZE) {
-    return (window as any).DICE_SIZE;
-  }
-  return 0.08;
-};
+const DICE_SIZE = 0.15;
 
 function getTopFace(quaternion: CANNON.Quaternion) {
   const up = new CANNON.Vec3(0, 1, 0);
@@ -73,9 +67,8 @@ function findTrajectoryForPair(target1: number, target2: number) {
 
   createWalls(world);
 
-  const size = getDiceSize();
-  const dice1 = new CANNON.Body({ mass: 1, shape: new CANNON.Box(new CANNON.Vec3(size, size, size)) });
-  const dice2 = new CANNON.Body({ mass: 1, shape: new CANNON.Box(new CANNON.Vec3(size, size, size)) });
+  const dice1 = new CANNON.Body({ mass: 1, shape: new CANNON.Box(new CANNON.Vec3(DICE_SIZE, DICE_SIZE, DICE_SIZE)) });
+  const dice2 = new CANNON.Body({ mass: 1, shape: new CANNON.Box(new CANNON.Vec3(DICE_SIZE, DICE_SIZE, DICE_SIZE)) });
   world.addBody(dice1);
   world.addBody(dice2);
 
@@ -93,7 +86,7 @@ function findTrajectoryForPair(target1: number, target2: number) {
     dice1.quaternion.setFromEuler(Math.random() * Math.PI * 2, Math.random() * Math.PI * 2, Math.random() * Math.PI * 2);
     const initialQuat1 = dice1.quaternion.clone();
     const force1 = new CANNON.Vec3(Math.random() * 4, Math.random() * 2 - 1, Math.random() * 4);
-    const offset1 = new CANNON.Vec3((Math.random() - 0.5) * size, (Math.random() - 0.5) * size, (Math.random() - 0.5) * size);
+    const offset1 = new CANNON.Vec3((Math.random() - 0.5) * DICE_SIZE, (Math.random() - 0.5) * DICE_SIZE, (Math.random() - 0.5) * DICE_SIZE);
     dice1.applyImpulse(force1, offset1);
 
     dice2.position.copy(startPos2);
@@ -102,13 +95,13 @@ function findTrajectoryForPair(target1: number, target2: number) {
     dice2.quaternion.setFromEuler(Math.random() * Math.PI * 2, Math.random() * Math.PI * 2, Math.random() * Math.PI * 2);
     const initialQuat2 = dice2.quaternion.clone();
     const force2 = new CANNON.Vec3(-(Math.random() * 4), Math.random() * 2 - 1, -(Math.random() * 4));
-    const offset2 = new CANNON.Vec3((Math.random() - 0.5) * size, (Math.random() - 0.5) * size, (Math.random() - 0.5) * size);
+    const offset2 = new CANNON.Vec3((Math.random() - 0.5) * DICE_SIZE, (Math.random() - 0.5) * DICE_SIZE, (Math.random() - 0.5) * DICE_SIZE);
     dice2.applyImpulse(force2, offset2);
 
     let resting = false;
     for (let i = 0; i < 300; i++) {
       world.step(1 / 60);
-      if (dice1.position.y < size * 1.5 && dice2.position.y < size * 1.5 && 
+      if (dice1.position.y < DICE_SIZE * 1.5 && dice2.position.y < DICE_SIZE * 1.5 && 
           dice1.velocity.lengthSquared() < 0.05 && dice2.velocity.lengthSquared() < 0.05 &&
           dice1.angularVelocity.lengthSquared() < 0.05 && dice2.angularVelocity.lengthSquared() < 0.05) {
         resting = true;
@@ -229,15 +222,14 @@ function DiceSimulation({ roll, onRest }: { roll: [number, number]; onRest: () =
     const trajectory = findTrajectoryForPair(roll[0], roll[1]);
 
     if (trajectory) {
-      const size = getDiceSize();
       // Setup visible simulation bodies
-      const body1 = new CANNON.Body({ mass: 1, shape: new CANNON.Box(new CANNON.Vec3(size, size, size)) });
+      const body1 = new CANNON.Body({ mass: 1, shape: new CANNON.Box(new CANNON.Vec3(DICE_SIZE, DICE_SIZE, DICE_SIZE)) });
       body1.position.copy(trajectory.dice1.startPos);
       body1.quaternion.copy(trajectory.dice1.startQuat);
       body1.applyImpulse(trajectory.dice1.impulse, trajectory.dice1.offset);
       world.addBody(body1);
 
-      const body2 = new CANNON.Body({ mass: 1, shape: new CANNON.Box(new CANNON.Vec3(size, size, size)) });
+      const body2 = new CANNON.Body({ mass: 1, shape: new CANNON.Box(new CANNON.Vec3(DICE_SIZE, DICE_SIZE, DICE_SIZE)) });
       body2.position.copy(trajectory.dice2.startPos);
       body2.quaternion.copy(trajectory.dice2.startQuat);
       body2.applyImpulse(trajectory.dice2.impulse, trajectory.dice2.offset);
@@ -271,21 +263,19 @@ function DiceSimulation({ roll, onRest }: { roll: [number, number]; onRest: () =
     if (diceBodies.current.length > 0) {
       const b1 = diceBodies.current[0];
       const b2 = diceBodies.current[1];
-      const size = getDiceSize();
       if (b1.velocity.lengthSquared() < 0.05 && b2.velocity.lengthSquared() < 0.05 &&
           b1.angularVelocity.lengthSquared() < 0.05 && b2.angularVelocity.lengthSquared() < 0.05 &&
-          b1.position.y < size * 1.5 && b2.position.y < size * 1.5) {
+          b1.position.y < DICE_SIZE * 1.5 && b2.position.y < DICE_SIZE * 1.5) {
         hasSettled.current = true;
         setTimeout(() => onRest(), 1000); // Wait 1 sec before calling onRest (fadeout)
       }
     }
   });
 
-  const size = getDiceSize();
   return (
     <>
-      <mesh ref={(el) => { if(el) diceMeshes.current[0] = el; }} geometry={roundedBoxGeometry} material={materials} castShadow receiveShadow scale={[size*2, size*2, size*2]} />
-      <mesh ref={(el) => { if(el) diceMeshes.current[1] = el; }} geometry={roundedBoxGeometry} material={materials} castShadow receiveShadow scale={[size*2, size*2, size*2]} />
+      <mesh ref={(el) => { if(el) diceMeshes.current[0] = el; }} geometry={roundedBoxGeometry} material={materials} castShadow receiveShadow scale={[DICE_SIZE*2, DICE_SIZE*2, DICE_SIZE*2]} />
+      <mesh ref={(el) => { if(el) diceMeshes.current[1] = el; }} geometry={roundedBoxGeometry} material={materials} castShadow receiveShadow scale={[DICE_SIZE*2, DICE_SIZE*2, DICE_SIZE*2]} />
       <ambientLight intensity={1.5} />
       <directionalLight position={[5, 10, 5]} intensity={2} castShadow />
     </>
