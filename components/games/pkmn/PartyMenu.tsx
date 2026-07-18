@@ -25,7 +25,7 @@ export default function PartyMenu({
           const moves: string[] = (() => {
             try { return JSON.parse(mon.Moves || "[]"); } catch { return []; }
           })();
-          const maxHp = 20; // generic until real HP persistence lands
+          const maxHp = mon.MaxHp || 20;
           const ratio = Math.min(1, (mon.Hp ?? 0) / maxHp);
           return (
             <div key={mon.Id} className="pkp-card">

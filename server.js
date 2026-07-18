@@ -6,6 +6,7 @@ const CodenamesGame = require("./scripts/codenamesLogic");
 const CahGame = require("./scripts/cahLogic");
 const MemeGame = require("./scripts/memeLogic");
 const pkmnBattleManager = require("./scripts/pkmnBattleManager");
+const { ITEMS, maxHpForMon, parseInv, buildBagList } = require("./scripts/pkmnItems");
 const SkribblGame = require("./scripts/skribblLogic");
 const { PrismaClient } = require("@prisma/client");
 
@@ -1205,17 +1206,63 @@ io.on("connection", (socket) => {
     });
   });
 
-  socket.on("pkmn_get_party", async () => {
-    if (!socket.steamId) return;
+  const emitParty = async () => {
     const mons = await prisma.PkmnMon.findMany({
       where: { OwnerId: BigInt(socket.steamId), BoxId: null }
     });
-    // Serialize BigInt correctly or convert to string. OwnerId is BigInt
-    const safeMons = mons.map(m => ({
+    // BigInt isn't JSON-serialisable; also attach real max HP for the bars.
+    socket.emit("pkmn_party_data", mons.map(m => ({
       ...m,
-      OwnerId: m.OwnerId.toString()
-    }));
-    socket.emit("pkmn_party_data", safeMons);
+      OwnerId: m.OwnerId.toString(),
+      MaxHp: maxHpForMon(m),
+    })));
+  };
+
+  const emitBag = async () => {
+    const trainer = await prisma.pkmnTrainer.findUnique({ where: { SteamId: BigInt(socket.steamId) } });
+    socket.emit("pkmn_bag_data", buildBagList(parseInv(trainer?.Inventory)));
+  };
+
+  socket.on("pkmn_get_party", async () => {
+    if (!socket.steamId) return;
+    await emitParty();
+  });
+
+  socket.on("pkmn_get_bag", async () => {
+    if (!socket.steamId) return;
+    await emitBag();
+  });
+
+  // Overworld item use — heal a party member with a potion.
+  socket.on("pkmn_use_item", async (data) => {
+    if (!socket.steamId) return;
+    const item = ITEMS[data?.item];
+    if (!item || item.kind !== 'heal') return;
+    try {
+      const trainer = await prisma.pkmnTrainer.findUnique({ where: { SteamId: BigInt(socket.steamId) } });
+      const inv = parseInv(trainer?.Inventory);
+      if (!inv[data.item] || inv[data.item] <= 0) {
+        socket.emit("pkmn_chat_message", { steamId: "SERVER", message: `No ${item.name} left.` });
+        return;
+      }
+      const mon = await prisma.PkmnMon.findFirst({ where: { Id: data.monId, OwnerId: BigInt(socket.steamId) } });
+      if (!mon) return;
+      const maxHp = maxHpForMon(mon);
+      if (mon.Hp >= maxHp) {
+        socket.emit("pkmn_chat_message", { steamId: "SERVER", message: `${mon.Species} is already at full HP.` });
+        return;
+      }
+      const newHp = Math.min(maxHp, mon.Hp + item.heal);
+      inv[data.item] -= 1;
+      if (inv[data.item] <= 0) delete inv[data.item];
+      await prisma.PkmnMon.update({ where: { Id: mon.Id }, data: { Hp: newHp } });
+      await prisma.pkmnTrainer.update({ where: { SteamId: BigInt(socket.steamId) }, data: { Inventory: JSON.stringify(inv) } });
+      socket.emit("pkmn_chat_message", { steamId: "SERVER", message: `Restored ${newHp - mon.Hp} HP to ${mon.Nickname || mon.Species}.` });
+      await emitParty();
+      await emitBag();
+    } catch (e) {
+      console.error("PKMN use item error:", e);
+    }
   });
 
   socket.on("pkmn_encounter", async () => {

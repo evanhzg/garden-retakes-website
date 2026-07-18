@@ -1,6 +1,7 @@
 import React, { useEffect, useState, useRef } from 'react';
 import { useSocket } from "@/components/games/SocketProvider";
 import PartyMenu from './PartyMenu';
+import BagMenu, { BagItem } from './BagMenu';
 import { frontSprite, backSprite, staticSprite, playCry } from './sprites';
 import './pkmn.css';
 
@@ -22,6 +23,8 @@ export default function BattleOverlay({ onBattleEnd }: { onBattleEnd: () => void
   const [canAct, setCanAct] = useState<boolean>(false);
   const [showParty, setShowParty] = useState(false);
   const [showMoves, setShowMoves] = useState(false);
+  const [showBag, setShowBag] = useState(false);
+  const [bag, setBag] = useState<BagItem[]>([]);
   const [party, setParty] = useState<any[]>([]);
   const [enemyHit, setEnemyHit] = useState(false);
   const [playerHit, setPlayerHit] = useState(false);
@@ -30,10 +33,20 @@ export default function BattleOverlay({ onBattleEnd }: { onBattleEnd: () => void
   const logsEndRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
-    socket?.emit("pkmn_get_party");
+    if (!socket) return;
+    socket.emit("pkmn_get_party");
+    socket.emit("pkmn_get_bag");
     const handleParty = (data: any) => setParty(data);
-    socket?.on("pkmn_party_data", handleParty);
-    return () => { socket?.off("pkmn_party_data", handleParty); }
+    const handleBag = (data: BagItem[]) => setBag(data);
+    const handleCanAct = () => setCanAct(true); // free item use → re-enable buttons
+    socket.on("pkmn_party_data", handleParty);
+    socket.on("pkmn_bag_data", handleBag);
+    socket.on("pkmn_can_act", handleCanAct);
+    return () => {
+      socket.off("pkmn_party_data", handleParty);
+      socket.off("pkmn_bag_data", handleBag);
+      socket.off("pkmn_can_act", handleCanAct);
+    };
   }, [socket]);
 
   useEffect(() => {
@@ -41,7 +54,13 @@ export default function BattleOverlay({ onBattleEnd }: { onBattleEnd: () => void
 
     const handleStart = (data: any) => {
       setWildPokemon(data.wildPokemon);
-      if (data.playerPokemon) setPlayerMon(data.playerPokemon);
+      if (data.playerPokemon) {
+        setPlayerMon(data.playerPokemon);
+        if (data.playerPokemon.maxHp) {
+          setPlayerMaxHp(data.playerPokemon.maxHp);
+          setPlayerHp(data.playerPokemon.hp ?? data.playerPokemon.maxHp);
+        }
+      }
       setTrainerName(data.trainerName ?? null);
       setLogs([data.trainerName
         ? `${data.trainerName} wants to battle! They sent out ${data.wildPokemon.species}!`
@@ -150,8 +169,13 @@ export default function BattleOverlay({ onBattleEnd }: { onBattleEnd: () => void
     setCanAct(false);
     setShowMoves(false);
     setShowParty(false);
+    setShowBag(false);
     socket?.emit('pkmn_battle_action', payload);
   };
+
+  // Bag in battle: throwing a ball or using a potion both go through the "item"
+  // action. Balls consume the turn; potions are free (server re-enables via pkmn_can_act).
+  const useBattleItem = (itemId: string) => act({ type: 'item', item: itemId });
 
   const hpClass = (hp: number, maxHp: number) => {
     const r = hp / Math.max(1, maxHp);
@@ -242,12 +266,22 @@ export default function BattleOverlay({ onBattleEnd }: { onBattleEnd: () => void
         ) : (
           <div className="pkb-actions">
             <button disabled={!canAct} className="pkb-btn pkb-fight" onClick={() => (moves.length ? setShowMoves(true) : act({ type: 'move', move: 1 }))}>FIGHT</button>
-            <button disabled={!canAct || !!trainerName} className="pkb-btn pkb-ball" onClick={() => act({ type: 'catch' })}>BALL</button>
+            <button disabled={!canAct} className="pkb-btn pkb-ball" onClick={() => { socket?.emit('pkmn_get_bag'); setShowBag(true); }}>BAG</button>
             <button disabled={!canAct} className="pkb-btn pkb-pkmn" onClick={() => setShowParty(true)}>PKMN</button>
             <button disabled={!canAct} className="pkb-btn pkb-run" onClick={() => act({ type: 'run' })}>RUN</button>
           </div>
         )}
       </div>
+
+      {showBag && (
+        <BagMenu
+          items={bag}
+          mode="battle"
+          onThrowBall={(id) => useBattleItem(id)}
+          onUseItem={(id) => useBattleItem(id)}
+          onClose={() => setShowBag(false)}
+        />
+      )}
 
       {showParty && (
         <PartyMenu

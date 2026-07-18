@@ -245,3 +245,33 @@
   font-weight: 900; padding: 8px 12px; cursor: pointer; box-shadow: 2px 2px 0 rgba(0,0,0,0.35);
   font-size: 0.75rem;
 }
+
+/* ---- Bag menu (battle + overworld) ---- */
+.pkg-overlay {
+  position: absolute; inset: 0; z-index: 115;
+  background: rgba(20, 30, 45, 0.94);
+  padding: 20px; color: #fff; display: flex; flex-direction: column; overflow-y: auto;
+}
+.pkg-head { display: flex; justify-content: space-between; align-items: center; margin-bottom: 14px; }
+.pkg-head h2 { margin: 0; font-size: 1.2rem; letter-spacing: 2px; }
+.pkg-empty { text-align: center; color: #bcd; margin-top: 30px; }
+.pkg-list, .pkg-targets { display: flex; flex-direction: column; gap: 10px; }
+.pkg-item, .pkg-target {
+  display: flex; align-items: center; gap: 12px; text-align: left;
+  background: #f8f8e8; color: #222; border: 3px solid #2b2b2b; border-radius: 10px;
+  box-shadow: 3px 3px 0 rgba(0,0,0,0.35); padding: 10px 14px; cursor: pointer;
+  transition: transform 0.1s ease;
+}
+.pkg-item:hover:not(.pkg-disabled), .pkg-target:hover:not(.pkg-disabled) { transform: translate(-1px,-1px); }
+.pkg-disabled { opacity: 0.5; cursor: default; box-shadow: 1px 1px 0 rgba(0,0,0,0.3); }
+.pkg-icon { width: 34px; height: 34px; border-radius: 50%; flex-shrink: 0; border: 2px solid #2b2b2b; }
+.pkg-ball { background: radial-gradient(circle at 50% 38%, #fff 0 30%, #e85038 31% 100%); }
+.pkg-potion { background: linear-gradient(#f0a030, #e85038); }
+.pkg-item-info { display: flex; flex-direction: column; }
+.pkg-item-name { font-weight: 900; font-size: 0.95rem; }
+.pkg-item-desc { font-size: 0.72rem; color: #556; }
+.pkg-target-head { display: flex; justify-content: space-between; align-items: center; font-weight: 800; margin-bottom: 10px; }
+.pkg-target img { width: 46px; height: 46px; object-fit: contain; image-rendering: pixelated; }
+.pkg-target-info { display: flex; flex-direction: column; gap: 4px; flex: 1; font-weight: 800; }
+.pkg-target-info small { color: #667; }
+.pkg-hp-num { font-size: 0.72rem; font-weight: 700; margin-left: 6px; }

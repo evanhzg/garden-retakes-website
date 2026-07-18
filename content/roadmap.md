@@ -736,3 +736,16 @@ site economy). Long-haul project — phases land independently and each one is p
   Builds green on the .NET 10 SDK (0 errors). Not per-team yet: half-buy T-only/CT-only needs a
   per-team allocation override in the allocator (single round-type per round today) — noted for
   later. COMMANDS.md + website mirror updated. Needs Evan's in-server check (menu render + toggles).
+- 2026-07-19 (44): **PKMN — bag (in & out of combat), real HP, grass encounters.** New item system
+  (`scripts/pkmnItems.js`): Poké/Great/Ultra Balls + Potion/Super/Hyper Potion, real max-HP from
+  `@pkmn/dex` base stats. Trainers start with 5 Poké Balls + 3 Potions. In battle the BALL button
+  became **BAG** (`BagMenu.tsx`): balls throw with per-ball catch modifiers (consume the turn),
+  potions heal the active mon in the live sim (free action, server re-enables via `pkmn_can_act`),
+  both decrement the bag. Out of battle: 🎒 Bag button / `B` key opens the bag to heal a chosen
+  party member (`pkmn_use_item`). Post-battle HP now persists to the DB, and party/battle HP bars
+  use real max-HP. Encounters now fire **only on the map`\s tall-grass (`battles`) layer** (18%),
+  not every step. E2E-verified over a socket client: starter items → battle → potion (re-enable) →
+  ball catch → HP persisted 19/20 → overworld potion → 20/20. The 4-move FIGHT menu was already in.
+  NOTE on the authentic **LGFR/Kanto map**: mmmulani/pokemap extracts from a FireRed **ROM** (needs
+  the copyrighted binary) — not something reproducible here; the existing 200×200 Tiled map now
+  behaves like Pokémon via grass-only encounters. A ROM-based generator remains an Evan-run option.

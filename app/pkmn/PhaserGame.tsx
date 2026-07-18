@@ -6,6 +6,7 @@ import { usePlayerNames, displayNameFor } from "@/components/games/hooks";
 import BattleOverlay from "@/components/games/pkmn/BattleOverlay";
 import PartyMenu from "@/components/games/pkmn/PartyMenu";
 import StarterPick from "@/components/games/pkmn/StarterPick";
+import BagMenu, { BagItem } from "@/components/games/pkmn/BagMenu";
 
 export default function PhaserGame() {
   const gameContainerRef = useRef<HTMLDivElement>(null);
@@ -13,6 +14,8 @@ export default function PhaserGame() {
   const [mapState, setMapState] = useState<any>(null);
   const [isBattling, setIsBattling] = useState(false);
   const [showParty, setShowParty] = useState(false);
+  const [showBag, setShowBag] = useState(false);
+  const [bag, setBag] = useState<BagItem[]>([]);
   const [showStarter, setShowStarter] = useState(false);
   const [party, setParty] = useState<any[]>([]);
   
@@ -55,15 +58,20 @@ export default function PhaserGame() {
       setParty(data);
     };
     socket.on("pkmn_party_data", handleParty);
+    const handleBag = (data: BagItem[]) => setBag(data);
+    socket.on("pkmn_bag_data", handleBag);
 
     const handleKeyDown = (e: KeyboardEvent) => {
+      if (gameInterface.current?.isBattling) return;
+      // Don't steal keys while typing in the chat box
+      if ((e.target as HTMLElement)?.tagName === 'INPUT') return;
       if (e.key === 'Enter') {
-        if (!gameInterface.current?.isBattling) {
-          setShowParty(prev => !prev);
-          if (!showParty) {
-            socket.emit("pkmn_get_party");
-          }
-        }
+        setShowParty(prev => !prev);
+        socket.emit("pkmn_get_party");
+      } else if (e.key === 'b' || e.key === 'B') {
+        setShowBag(prev => !prev);
+        socket.emit("pkmn_get_bag");
+        socket.emit("pkmn_get_party");
       }
     };
     window.addEventListener('keydown', handleKeyDown);
@@ -75,6 +83,7 @@ export default function PhaserGame() {
       socket.off("pkmn_choose_starter");
       socket.off("pkmn_starter_confirmed");
       socket.off("pkmn_party_data", handleParty);
+      socket.off("pkmn_bag_data", handleBag);
       window.removeEventListener('keydown', handleKeyDown);
       socket.emit("pkmn_leave");
     };
@@ -125,8 +134,9 @@ export default function PhaserGame() {
         names: any;
         dpad: string | null;
         collisionsLayer: Phaser.Tilemaps.TilemapLayer | Phaser.Tilemaps.TilemapGPULayer | null;
+        battlesLayer: Phaser.Tilemaps.TilemapLayer | Phaser.Tilemaps.TilemapGPULayer | null;
         map: Phaser.Tilemaps.Tilemap | null;
-      } = { otherPlayers: {}, npcs: {}, names: {}, dpad: null, collisionsLayer: null, map: null };
+      } = { otherPlayers: {}, npcs: {}, names: {}, dpad: null, collisionsLayer: null, battlesLayer: null, map: null };
 
       gameInterface.current = {
         isBattling: false,
@@ -233,6 +243,11 @@ export default function PhaserGame() {
                 // Also try setting collision for any non-zero tile on the collision layer just in case
                 layer.setCollisionByExclusion([-1, 0]);
                 sceneRefs.collisionsLayer = layer;
+              }
+
+              // The "battles" layer marks tall grass — wild encounters only fire on it.
+              if (layerData.name.toLowerCase().includes('battle')) {
+                sceneRefs.battlesLayer = layer;
               }
             }
           });
@@ -413,8 +428,12 @@ export default function PhaserGame() {
             p.isMoving = false;
             sock.emit("pkmn_move", { x: p.x, y: p.y, facing: p.facing });
 
-            // Random Encounter Check (Only if not battling)
-            if (!gameInterface.current?.isBattling && Math.random() < 0.1) {
+            // Wild encounters fire only on tall grass (the "battles" layer). If the
+            // map has no such layer, fall back to a low any-step chance so it still works.
+            const bl = sceneRefs.battlesLayer as Phaser.Tilemaps.TilemapLayer | null;
+            const onGrass = bl ? !!bl.getTileAtWorldXY(p.x / 2, p.y / 2) : false;
+            const rate = onGrass ? 0.18 : (bl ? 0 : 0.08);
+            if (!gameInterface.current?.isBattling && rate > 0 && Math.random() < rate) {
               gameInterface.current.isBattling = true; // Block further moves
               sock.emit("pkmn_encounter");
             }
@@ -562,13 +581,38 @@ export default function PhaserGame() {
             {/* Overworld Party Menu */}
             {showParty && !isBattling && (
               <div style={{ position: 'absolute', top: 0, left: 0, right: 0, bottom: 0, zIndex: 50 }}>
-                <PartyMenu 
-                  party={party} 
-                  onClose={() => setShowParty(false)} 
-                  isBattleMode={false} 
+                <PartyMenu
+                  party={party}
+                  onClose={() => setShowParty(false)}
+                  isBattleMode={false}
                 />
               </div>
             )}
+
+            {/* Overworld Bag */}
+            {showBag && !isBattling && (
+              <div style={{ position: 'absolute', top: 0, left: 0, right: 0, bottom: 0, zIndex: 55 }}>
+                <BagMenu
+                  items={bag}
+                  mode="overworld"
+                  party={party}
+                  onUseItem={(item, monId) => socket?.emit("pkmn_use_item", { item, monId })}
+                  onClose={() => setShowBag(false)}
+                />
+              </div>
+            )}
+
+            {/* Menu buttons (top-right) */}
+            <div style={{ position: 'absolute', top: 12, right: 12, display: 'flex', gap: 8, zIndex: 40 }}>
+              <button
+                onClick={() => { setShowBag(v => !v); socket?.emit("pkmn_get_bag"); socket?.emit("pkmn_get_party"); }}
+                style={{ padding: '6px 14px', background: '#f0c030', color: '#222', border: '2px solid #2b2b2b', borderRadius: 6, fontWeight: 800, cursor: 'pointer' }}
+              >🎒 Bag</button>
+              <button
+                onClick={() => { setShowParty(v => !v); socket?.emit("pkmn_get_party"); }}
+                style={{ padding: '6px 14px', background: '#58c85a', color: '#fff', border: '2px solid #2b2b2b', borderRadius: 6, fontWeight: 800, cursor: 'pointer' }}
+              >Party</button>
+            </div>
 
             {/* Virtual D-Pad Overlay (bottom right) */}
             <div style={{ position: 'absolute', bottom: 16, right: 16, display: 'grid', gridTemplateColumns: 'repeat(3, 40px)', gridTemplateRows: 'repeat(3, 40px)', gap: 4 }}>
