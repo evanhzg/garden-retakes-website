@@ -694,3 +694,17 @@ site economy). Long-haul project — phases land independently and each one is p
   committed (typecheck fixed: typed sceneRefs, socket narrowing, sprite types); wild battles,
   catching, XP and Youngster Joey already prototype-working (parts of P4/P6). `scratch/` (963MB
   of map/tileset experiments) added to .gitignore and excluded from tsconfig.
+- 2026-07-18 (41): **Stats overhaul + compare fix + nav wheel repair.** */compare 404 fixed*: the
+  tool lives at /stats/compare; a query-preserving redirect now catches every old link
+  (profile/player/pros buttons + Discord embeds) and CompareInteractive pushes the right path.
+  *Compare upgrades*: radar "profile shape" (6 axes scaled to the better player), daily-rating
+  form trend (two lines, shared day axis), T/CT side-split cards, metrics grown 12 → 18.
+  *Stats page*: season total tiles (rounds/players/kills/damage/clutches/plants/defuses/4k+),
+  rounds-per-day columns (14d), player rating histogram, most-played-maps bars, per-map T/CT
+  side-balance splits, leaderboards grown 4 → 10 (HS%, util dmg, trades, plants+defuses,
+  multi-kills, rounds). All charts are dependency-free SVG (`components/stats/charts.tsx`) on
+  validated palettes (dataviz six-checks, light+dark: A/B purple/sky, T/CT amber/blue as
+  `--chart-*` vars). *Nav wheel*: full-band invisible hitbox while open (was a thin circle
+  sliver), wheel-delta accumulation (1 mouse notch = 1 item, trackpad flicks accumulate,
+  direction flips reset residue, horizontal deltas work), hover-peek replaced by a solid
+  open/closed state, glass arc + gradient active pill + bottom notch indicator.

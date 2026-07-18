@@ -1,7 +1,7 @@
 import fs from "fs";
 import path from "path";
 import { getActiveSeason, prisma } from "@/lib/db";
-import { fetchRows, ratingClass, summarize, StatSummary } from "@/lib/stats";
+import { fetchRows, ratingClass, summarize, dayKey, StatSummary, RoundRow } from "@/lib/stats";
 
 export const revalidate = 30;
 
@@ -22,9 +22,15 @@ const METRICS = [
   { label: "HS %", key: "hs", format: "pct" },
   { label: "Round win %", key: "winPct", format: "pct" },
   { label: "Kills / round", key: "kpr", format: "fixed2" },
+  { label: "Assists", key: "assists", format: "raw" },
   { label: "Opening kills", key: "openingKills", format: "raw" },
+  { label: "Opening deaths", key: "openingDeaths", format: "raw", lowerIsBetter: true },
   { label: "Clutches won", key: "clutches", format: "raw" },
   { label: "Multi-kill rounds", key: "multiKills", format: "raw" },
+  { label: "Trade kills", key: "tradeKills", format: "raw" },
+  { label: "Enemies flashed", key: "enemiesFlashed", format: "raw" },
+  { label: "Bomb plants", key: "plants", format: "raw" },
+  { label: "Bomb defuses", key: "defuses", format: "raw" },
   { label: "Util dmg / round", key: "utilPerRound", format: "fixed1" },
   { label: "Rounds played", key: "rounds", format: "raw" },
 ];
@@ -100,6 +106,41 @@ export default async function ComparePage({
     Object.entries(groupByMap(rowsB)).map(([m, r]: [string, any]) => [m, summarize(r)])
   ) : null;
 
+  // T/CT side splits for each player
+  const sideSplit = (rows: RoundRow[] | null) =>
+    rows
+      ? {
+          t: summarize(rows.filter((r) => r.TeamNum === 2)),
+          ct: summarize(rows.filter((r) => r.TeamNum === 3)),
+        }
+      : null;
+  const sidesA = sideSplit(rowsA);
+  const sidesB = sideSplit(rowsB);
+
+  // Daily average rating series (shared day axis, last 14 active days)
+  const dayAvg = (rows: RoundRow[] | null) => {
+    const map = new Map<string, { sum: number; n: number }>();
+    for (const r of rows ?? []) {
+      if (r.WasAfk) continue;
+      const k = dayKey(r.PlayedAtUtc);
+      const cur = map.get(k) ?? { sum: 0, n: 0 };
+      cur.sum += r.Rating;
+      cur.n += 1;
+      map.set(k, cur);
+    }
+    return map;
+  };
+  const daysA = dayAvg(rowsA);
+  const daysB = dayAvg(rowsB);
+  const sharedDays = Array.from(
+    new Set([...Array.from(daysA.keys()), ...Array.from(daysB.keys())])
+  ).sort().slice(-14);
+  const trendPoints = sharedDays.map((d) => ({
+    label: d.slice(5),
+    a: daysA.has(d) ? daysA.get(d)!.sum / daysA.get(d)!.n : null,
+    b: daysB.has(d) ? daysB.get(d)!.sum / daysB.get(d)!.n : null,
+  }));
+
   const nameA = idA ? nameOf.get(idA.toString()) ?? searchParams.a : null;
   const nameB = idB ? nameOf.get(idB.toString()) ?? searchParams.b : null;
 
@@ -114,6 +155,9 @@ export default async function ComparePage({
       statsB={statsB}
       mapStatsA={mapStatsA}
       mapStatsB={mapStatsB}
+      sidesA={sidesA}
+      sidesB={sidesB}
+      trendPoints={trendPoints}
       nameA={nameA ?? null}
       nameB={nameB ?? null}
       playerAInfo={playerAInfo}

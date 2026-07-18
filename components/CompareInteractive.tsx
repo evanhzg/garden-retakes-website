@@ -3,6 +3,7 @@
 import { useState } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 import { ratingClass } from "@/lib/stats";
+import { RadarCompare, TrendCompare } from "@/components/stats/charts";
 
 type PlayerSummary = {
   steamId: string;
@@ -22,6 +23,9 @@ export default function CompareInteractive({
   statsB,
   mapStatsA,
   mapStatsB,
+  sidesA,
+  sidesB,
+  trendPoints,
   nameA,
   nameB,
   playerAInfo,
@@ -35,6 +39,9 @@ export default function CompareInteractive({
   statsB: any;
   mapStatsA: any;
   mapStatsB: any;
+  sidesA?: { t: any; ct: any } | null;
+  sidesB?: { t: any; ct: any } | null;
+  trendPoints?: { label: string; a: number | null; b: number | null }[];
   nameA: string | null;
   nameB: string | null;
   playerAInfo?: PlayerSummary;
@@ -59,14 +66,14 @@ export default function CompareInteractive({
       setPickA(steamId);
     } else if (!pickB && steamId !== pickA) {
       setPickB(steamId);
-      router.push(`/compare?a=${pickA}&b=${steamId}${rankedOnly ? "&ranked=1" : ""}`);
+      router.push(`/stats/compare?a=${pickA}&b=${steamId}${rankedOnly ? "&ranked=1" : ""}`);
     }
   };
 
   const reset = () => {
     setPickA(null);
     setPickB(null);
-    router.push(`/compare${rankedOnly ? "?ranked=1" : ""}`);
+    router.push(`/stats/compare${rankedOnly ? "?ranked=1" : ""}`);
   };
 
   // Render Roster Selection
@@ -84,8 +91,8 @@ export default function CompareInteractive({
                 type="checkbox" 
                 checked={rankedOnly} 
                 onChange={(e) => {
-                  router.push(`/compare?${e.target.checked ? "ranked=1" : ""}`);
-                }} 
+                  router.push(`/stats/compare?${e.target.checked ? "ranked=1" : ""}`);
+                }}
               />
               Ranked only
             </label>
@@ -180,6 +187,71 @@ export default function CompareInteractive({
           </div>
         </div>
       </section>
+
+      {/* Profile shape + form charts */}
+      <div className="chart-grid-2">
+        <section className="panel">
+          <h3 style={{ marginBottom: 8, textAlign: "center" }}>Profile shape</h3>
+          <p className="muted" style={{ fontSize: "0.75rem", textAlign: "center", margin: "0 0 6px" }}>
+            Each axis scaled to the better of the two players.
+          </p>
+          <RadarCompare
+            nameA={nameA || "A"}
+            nameB={nameB || "B"}
+            axes={[
+              { key: "rating", label: "Rating" },
+              { key: "kd", label: "K/D" },
+              { key: "adr", label: "ADR" },
+              { key: "kast", label: "KAST" },
+              { key: "hs", label: "HS%" },
+              { key: "utilPerRound", label: "Util" },
+            ].map(({ key, label }) => {
+              const a = statsA[key] ?? 0;
+              const b = statsB[key] ?? 0;
+              const max = Math.max(a, b, 0.001);
+              return { label, a: a / max, b: b / max };
+            })}
+          />
+        </section>
+        <section className="panel">
+          <h3 style={{ marginBottom: 8, textAlign: "center" }}>Form — daily rating</h3>
+          {trendPoints && trendPoints.length >= 2 ? (
+            <TrendCompare points={trendPoints} nameA={nameA || "A"} nameB={nameB || "B"} />
+          ) : (
+            <p className="muted" style={{ textAlign: "center" }}>Not enough shared play days yet.</p>
+          )}
+        </section>
+      </div>
+
+      {/* T/CT side split */}
+      {sidesA && sidesB && (
+        <section className="panel">
+          <h3 style={{ marginBottom: 16, textAlign: "center" }}>By side</h3>
+          <div className="side-compare-grid">
+            {(["t", "ct"] as const).map((side) => {
+              const sA = sidesA[side];
+              const sB = sidesB[side];
+              return (
+                <div key={side} className="side-compare-card">
+                  <div className={`side-compare-title side-${side}`}>{side === "t" ? "T side" : "CT side"}</div>
+                  {[
+                    { label: "Rating", a: sA.rating, b: sB.rating, fmt: (v: number) => v.toFixed(2) },
+                    { label: "ADR", a: sA.adr, b: sB.adr, fmt: (v: number) => v.toFixed(0) },
+                    { label: "Win %", a: sA.winPct, b: sB.winPct, fmt: (v: number) => `${v.toFixed(0)}%` },
+                    { label: "Rounds", a: sA.rounds, b: sB.rounds, fmt: (v: number) => String(v) },
+                  ].map((row) => (
+                    <div key={row.label} className="side-compare-row">
+                      <span className={row.a > row.b ? "scr-val win" : "scr-val"}>{row.fmt(row.a)}</span>
+                      <span className="scr-label">{row.label}</span>
+                      <span className={row.b > row.a ? "scr-val win" : "scr-val"}>{row.fmt(row.b)}</span>
+                    </div>
+                  ))}
+                </div>
+              );
+            })}
+          </div>
+        </section>
+      )}
 
       <section className="panel">
         <h3 style={{ marginBottom: 24, textAlign: "center" }}>Overall Stats</h3>

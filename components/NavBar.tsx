@@ -103,20 +103,33 @@ export default function NavBar({ avatarPlayers = [] }: { avatarPlayers?: AvatarP
     }
   }, [pathname, links.length, actualCenterIdx]);
 
-  // We use a native event listener to reliably prevent default body scrolling
+  // Native wheel listener (to preventDefault body scroll) with delta
+  // ACCUMULATION: trackpads fire dozens of tiny deltas per flick — stepping on
+  // every event made the wheel spin wildly. We bank deltas and step once per
+  // ~55px, allowing multiple steps for big flicks.
+  const wheelAccum = useRef(0);
   useEffect(() => {
     const el = wheelRef.current;
     if (!el) return;
-    
+
+    const STEP = 100; // one mouse-wheel notch (~120) = one item; trackpads accumulate
     const handleNativeWheel = (e: WheelEvent) => {
       e.preventDefault(); // Reliably stops body scroll
-      if (e.deltaY > 0) {
-        setScrollIndex(prev => Math.max(prev - 1, -(links.length - 1 - actualCenterIdx)));
-      } else {
-        setScrollIndex(prev => Math.min(prev + 1, actualCenterIdx));
+      // Dominant axis so horizontal trackpad swipes also turn the wheel
+      const delta = Math.abs(e.deltaX) > Math.abs(e.deltaY) ? e.deltaX : e.deltaY;
+      // Direction change: drop residue so the first opposite notch registers
+      if (Math.sign(delta) !== Math.sign(wheelAccum.current)) wheelAccum.current = 0;
+      wheelAccum.current += delta;
+
+      const steps = Math.trunc(wheelAccum.current / STEP);
+      if (steps !== 0) {
+        wheelAccum.current -= steps * STEP;
+        setScrollIndex(prev =>
+          Math.min(actualCenterIdx, Math.max(prev - steps, -(links.length - 1 - actualCenterIdx)))
+        );
       }
     };
-    
+
     el.addEventListener("wheel", handleNativeWheel, { passive: false });
     return () => el.removeEventListener("wheel", handleNativeWheel);
   }, [links.length, actualCenterIdx]);
@@ -184,14 +197,15 @@ export default function NavBar({ avatarPlayers = [] }: { avatarPlayers?: AvatarP
       </header>
 
       {/* Wheel Nav Area */}
-      <div 
-        className="wheel-nav-container"
+      <div
+        className={`wheel-nav-container ${showWheel ? "open" : ""}`}
         onTouchStart={handleTouchStart}
         onTouchMove={handleTouchMove}
         ref={wheelRef}
-        style={{ opacity: showWheel ? 1 : 0, pointerEvents: showWheel ? 'auto' : 'none', transition: 'opacity 0.3s ease' }}
       >
+        <div className="wheel-hit" />
         <div className="wheel-background" />
+        <div className="wheel-notch" aria-hidden="true" />
         <div className="wheel-circle">
           {links.map((l, idx) => {
             // angle from bottom center (90 deg)
