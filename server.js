@@ -1224,7 +1224,7 @@ io.on("connection", (socket) => {
   });
 });
 
-const PORT = process.env.WS_PORT || 3001;
+const PORT = process.env.PORT || process.env.WS_PORT || 3001;
 httpServer.listen(PORT, () => {
   console.log(`WebSocket server running on port ${PORT}`);
 });
