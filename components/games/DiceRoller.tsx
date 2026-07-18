@@ -5,7 +5,7 @@ import { Canvas, useFrame, useThree } from "@react-three/fiber";
 import * as THREE from "three";
 import * as CANNON from "cannon-es";
 
-const DICE_SIZE = 0.15;
+const DICE_SIZE = 0.08;
 
 function getTopFace(quaternion: CANNON.Quaternion) {
   const up = new CANNON.Vec3(0, 1, 0);
@@ -32,6 +32,30 @@ function getTopFace(quaternion: CANNON.Quaternion) {
   return topFace;
 }
 
+function createWalls(world: CANNON.World) {
+  const wallMaterial = new CANNON.Material();
+  const wallShape = new CANNON.Box(new CANNON.Vec3(10, 10, 0.5));
+  
+  // North
+  const wallN = new CANNON.Body({ mass: 0, shape: wallShape, material: wallMaterial });
+  wallN.position.set(0, 5, -2.5);
+  world.addBody(wallN);
+  // South
+  const wallS = new CANNON.Body({ mass: 0, shape: wallShape, material: wallMaterial });
+  wallS.position.set(0, 5, 2.5);
+  world.addBody(wallS);
+  // East
+  const wallE = new CANNON.Body({ mass: 0, shape: wallShape, material: wallMaterial });
+  wallE.position.set(2.5, 5, 0);
+  wallE.quaternion.setFromEuler(0, Math.PI / 2, 0);
+  world.addBody(wallE);
+  // West
+  const wallW = new CANNON.Body({ mass: 0, shape: wallShape, material: wallMaterial });
+  wallW.position.set(-2.5, 5, 0);
+  wallW.quaternion.setFromEuler(0, Math.PI / 2, 0);
+  world.addBody(wallW);
+}
+
 function findTrajectoryForPair(target1: number, target2: number) {
   const world = new CANNON.World({ gravity: new CANNON.Vec3(0, -60, 0) });
   world.defaultContactMaterial.restitution = 0.4;
@@ -41,13 +65,16 @@ function findTrajectoryForPair(target1: number, target2: number) {
   floor.quaternion.setFromEuler(-Math.PI / 2, 0, 0);
   world.addBody(floor);
 
+  createWalls(world);
+
   const dice1 = new CANNON.Body({ mass: 1, shape: new CANNON.Box(new CANNON.Vec3(DICE_SIZE, DICE_SIZE, DICE_SIZE)) });
   const dice2 = new CANNON.Body({ mass: 1, shape: new CANNON.Box(new CANNON.Vec3(DICE_SIZE, DICE_SIZE, DICE_SIZE)) });
   world.addBody(dice1);
   world.addBody(dice2);
 
-  const startPos1 = new CANNON.Vec3(-5, 12, -2);
-  const startPos2 = new CANNON.Vec3(5, 12, 2);
+  // Start closer to center to fit inside the new 2.5x2.5 boundary
+  const startPos1 = new CANNON.Vec3(-1, 8, -1);
+  const startPos2 = new CANNON.Vec3(1, 8, 1);
 
   let attempts = 0;
   while (attempts < 2000) {
@@ -58,7 +85,7 @@ function findTrajectoryForPair(target1: number, target2: number) {
     dice1.angularVelocity.setZero();
     dice1.quaternion.setFromEuler(Math.random() * Math.PI * 2, Math.random() * Math.PI * 2, Math.random() * Math.PI * 2);
     const initialQuat1 = dice1.quaternion.clone();
-    const force1 = new CANNON.Vec3(Math.random() * 4 + 2, Math.random() * 4 - 2, Math.random() * 6 - 3);
+    const force1 = new CANNON.Vec3(Math.random() * 4, Math.random() * 2 - 1, Math.random() * 4);
     const offset1 = new CANNON.Vec3((Math.random() - 0.5) * DICE_SIZE, (Math.random() - 0.5) * DICE_SIZE, (Math.random() - 0.5) * DICE_SIZE);
     dice1.applyImpulse(force1, offset1);
 
@@ -67,7 +94,7 @@ function findTrajectoryForPair(target1: number, target2: number) {
     dice2.angularVelocity.setZero();
     dice2.quaternion.setFromEuler(Math.random() * Math.PI * 2, Math.random() * Math.PI * 2, Math.random() * Math.PI * 2);
     const initialQuat2 = dice2.quaternion.clone();
-    const force2 = new CANNON.Vec3(-(Math.random() * 4 + 2), Math.random() * 4 - 2, Math.random() * 6 - 3);
+    const force2 = new CANNON.Vec3(-(Math.random() * 4), Math.random() * 2 - 1, -(Math.random() * 4));
     const offset2 = new CANNON.Vec3((Math.random() - 0.5) * DICE_SIZE, (Math.random() - 0.5) * DICE_SIZE, (Math.random() - 0.5) * DICE_SIZE);
     dice2.applyImpulse(force2, offset2);
 
@@ -189,6 +216,8 @@ function DiceSimulation({ roll, onRest }: { roll: [number, number]; onRest: () =
     floor.quaternion.setFromEuler(-Math.PI / 2, 0, 0);
     world.addBody(floor);
 
+    createWalls(world);
+
     // run pre-simulation to find trajectory
     const trajectory = findTrajectoryForPair(roll[0], roll[1]);
 
@@ -266,8 +295,12 @@ export default function DiceRoller({ lastRoll, rollKey, onAnimationComplete }: {
   if (!activeRoll) return null;
 
   return (
-    <div style={{ position: "absolute", inset: 0, pointerEvents: "none", zIndex: 100 }}>
-      <Canvas shadows camera={{ position: [0, 5, 5], fov: 45 }}>
+    <div style={{ position: "absolute", inset: 0, pointerEvents: "none", zIndex: 10 }}>
+      {/* 
+        OrthographicCamera or perspective from straight above prevents the board's CSS 
+        transform from visually mismatching the Canvas perspective.
+      */}
+      <Canvas shadows camera={{ position: [0, 6, 0], fov: 35 }}>
         <DiceSimulation 
           key={rollKey} // Force remount on new roll
           roll={activeRoll} 

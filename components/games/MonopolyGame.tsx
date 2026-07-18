@@ -18,6 +18,9 @@ export default function MonopolyGame() {
   const [gameState, setGameState] = useState<any>(null);
   const [selectedSpaceId, setSelectedSpaceId] = useState<number | null>(null);
   
+  const [hoveredSpace, setHoveredSpace] = useState<any>(null);
+  const [mousePos, setMousePos] = useState({ x: 0, y: 0 });
+
   const [isDiceRolling, setIsDiceRolling] = useState(false);
   const [rollTriggerKey, setRollTriggerKey] = useState(0);
   const prevRollIdRef = useRef<string | null>(null);
@@ -99,20 +102,27 @@ export default function MonopolyGame() {
           const s = gameState.playerStates[pId];
           const pos = getPlayerPosition(pId);
           const isTurn = gameState.currentTurn === pId;
+          const isMe = pId === mySteamId;
+          const isMinimized = !isMe && !isTurn;
 
           return (
             <div 
               key={pId} 
-              className={`mono-player-card ${isTurn ? 'active' : ''}`} 
+              className={`mono-player-card ${isTurn ? 'active' : ''} ${isMinimized ? 'minimized' : ''}`} 
               style={{...pos, borderColor: s.color, boxShadow: isTurn ? `0 0 25px ${s.color}` : 'none'}}
             >
               <div className="mono-player-avatar" style={{color: s.color}}>
                 {pId.substring(pId.length-2).toUpperCase()}
               </div>
-              <h3 style={{margin: 0, color: s.color, fontSize: '1rem'}}>
-                {pId.startsWith('BOT') ? `Bot ${pId.substring(pId.length-4)}` : `Player ${pId.substring(pId.length-4)}`}
-              </h3>
-              <p style={{margin: '0', fontSize: '1.25rem', fontWeight: 'bold'}}>${s.money}</p>
+              
+              <div className="compact-money" style={{color: s.color}}>${s.money}</div>
+
+              <div className="details">
+                <h3 style={{margin: 0, color: s.color, fontSize: '1rem'}}>
+                  {pId.startsWith('BOT') ? `Bot ${pId.substring(pId.length-4)}` : `Player ${pId.substring(pId.length-4)}`}
+                </h3>
+                <p style={{margin: '0', fontSize: '1.25rem', fontWeight: 'bold'}}>${s.money}</p>
+              </div>
             </div>
           );
         })}
@@ -129,12 +139,21 @@ export default function MonopolyGame() {
             return (
               <div 
                 key={space.id} 
-                className={`mono-space s${space.id} ${isCorner ? 'corner' : ''} ${space.mortgaged ? 'mortgaged' : ''}`}
+                className={`mono-space s${space.id} ${isCorner ? 'corner' : ''} ${space.mortgaged ? 'mortgaged' : ''} ${space.group ? space.group + '-bg' : ''}`}
                 onClick={() => { if(space.type === 'property' || space.type === 'rail' || space.type === 'util') setSelectedSpaceId(space.id) }}
+                onMouseEnter={(e) => {
+                  if (space.name && space.name.length > 8 && !isCorner) {
+                    setHoveredSpace(space);
+                  }
+                }}
+                onMouseMove={(e) => {
+                  setMousePos({ x: e.clientX, y: e.clientY });
+                }}
+                onMouseLeave={() => setHoveredSpace(null)}
               >
                 {space.group && <div className={`color-bar ${space.group}`} />}
                 
-                <div style={{padding: '2px', fontSize: isCorner ? '1rem' : '0.6rem'}}>{space.name}</div>
+                <div className="space-name" style={{fontSize: isCorner ? '1rem' : '0.6rem'}}>{space.name}</div>
                 {space.price && <div style={{marginTop: 'auto', marginBottom: '8px', fontSize: '0.6rem'}}>${space.price}</div>}
                 
                 {/* Houses / Hotels rendering */}
@@ -281,6 +300,20 @@ export default function MonopolyGame() {
           </motion.div>
         )}
       </AnimatePresence>
+
+      {/* Tooltip for long board names */}
+      {hoveredSpace && (
+        <div 
+          className="mono-tooltip" 
+          style={{
+            left: Math.min(mousePos.x + 15, typeof window !== 'undefined' ? window.innerWidth - 150 : 0), 
+            top: mousePos.y + 15
+          }}
+        >
+          <strong style={{display: 'block', fontSize: '1rem', color: '#ffcc00'}}>{hoveredSpace.name}</strong>
+          {hoveredSpace.price && <span style={{fontSize: '0.8rem', color: '#aaa'}}>${hoveredSpace.price}</span>}
+        </div>
+      )}
 
     </div>,
     document.body
