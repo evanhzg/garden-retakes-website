@@ -17,6 +17,7 @@ export const useSocket = () => useContext(SocketContext);
 
 import FriendsSidebar from "../social/FriendsSidebar";
 import NotificationToast from "../social/NotificationToast";
+import SocketStatusBanner from "../social/SocketStatusBanner";
 
 export const SocketProvider = ({ children, steamId }: { children: React.ReactNode, steamId?: string }) => {
   const [socket, setSocket] = useState<Socket | null>(null);
@@ -25,7 +26,7 @@ export const SocketProvider = ({ children, steamId }: { children: React.ReactNod
 
   useEffect(() => {
     // In production, this should point to your actual domain
-    const socketInstance = io(process.env.NEXT_PUBLIC_SOCKET_URL || 'http://localhost:3001');
+    const socketInstance = io(process.env.NEXT_PUBLIC_SOCKET_URL || 'https://node-sockets-reeeeetakes.onrender.com');
 
     socketInstance.on('connect', () => {
       console.log('Connected to Game Hub Socket:', socketInstance.id);
@@ -56,6 +57,7 @@ export const SocketProvider = ({ children, steamId }: { children: React.ReactNod
   return (
     <SocketContext.Provider value={{ socket, isConnected, isAuthed, steamId }}>
       {children}
+      <SocketStatusBanner />
       {steamId && <FriendsSidebar />}
       {steamId && <NotificationToast />}
     </SocketContext.Provider>
