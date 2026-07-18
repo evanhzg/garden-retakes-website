@@ -46,7 +46,15 @@ type AvatarPlayer = {
   avatarSrc: string;
 };
 
-export default function NavBar({ avatarPlayers = [] }: { avatarPlayers?: AvatarPlayer[] }) {
+export default function NavBar({ 
+  avatarPlayers = [], 
+  host = "retakes.fr", 
+  protocol = "https" 
+}: { 
+  avatarPlayers?: AvatarPlayer[], 
+  host?: string, 
+  protocol?: string 
+}) {
   const pathname = usePathname();
   const router = useRouter();
   const [session, setSession] = useState<Session>({ authenticated: false });
@@ -61,6 +69,29 @@ export default function NavBar({ avatarPlayers = [] }: { avatarPlayers?: AvatarP
   const isGamesSection = pathname.startsWith("/games");
   const baseLinks = isGamesSection ? GAMES_LINKS : CS2_LINKS;
   const links = baseLinks.filter(l => !l.adminOnly || (session.adminLevel ?? 0) > 0);
+
+  const getHref = (path: string) => {
+    const subdomain = host.split(".")[0];
+    const isKnownSubdomain = ["games", "docs", "pkmn"].includes(subdomain);
+    const baseHost = isKnownSubdomain ? host.substring(subdomain.length + 1) : host;
+
+    const targetSubMatch = ["/games", "/docs", "/pkmn"].find(s => path === s || path.startsWith(`${s}/`));
+    
+    let targetHost = baseHost;
+    let targetPath = path;
+
+    if (targetSubMatch) {
+      const sub = targetSubMatch.replace("/", "");
+      targetHost = `${sub}.${baseHost}`;
+      targetPath = path.substring(targetSubMatch.length) || "/";
+    }
+
+    if (targetHost === host) {
+      return targetPath;
+    } else {
+      return `${protocol}://${targetHost}${targetPath}`;
+    }
+  };
 
   // Find center index (index of /live for CS2, or middle for games)
   const defaultCenterIdx = isGamesSection ? Math.floor(links.length / 2) : links.findIndex(l => l.href === "/live");
@@ -162,7 +193,7 @@ export default function NavBar({ avatarPlayers = [] }: { avatarPlayers?: AvatarP
   return (
     <>
       <header className="site-header minimal">
-        <Link href="/" className="logo sober-logo">
+        <Link href={getHref("/")} className="logo sober-logo">
           <span>R</span>
           <span>E</span>
           <span className="loader-e-extra">E</span>
@@ -184,7 +215,7 @@ export default function NavBar({ avatarPlayers = [] }: { avatarPlayers?: AvatarP
           </button>
           <ThemeToggle />
           {session.authenticated ? (
-            <Link className="account-chip" href="/profile" title="Edit your profile">
+            <Link className="account-chip" href={getHref("/profile")} title="Edit your profile">
               {session.avatar && <img src={session.avatar} alt="" />}
               <span>{session.name ?? "Signed in"}</span>
             </Link>
@@ -232,7 +263,12 @@ export default function NavBar({ avatarPlayers = [] }: { avatarPlayers?: AvatarP
                 }}
                 onClick={() => {
                   setScrollIndex(actualCenterIdx - idx);
-                  router.push(l.href);
+                  const newHref = getHref(l.href);
+                  if (newHref.startsWith("http")) {
+                    window.location.href = newHref;
+                  } else {
+                    router.push(newHref);
+                  }
                 }}
               >
                 {l.label}

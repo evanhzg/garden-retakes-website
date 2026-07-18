@@ -9,7 +9,15 @@ type AvatarPlayer = {
   avatarSrc: string;
 };
 
-export default function LeftSidebar({ players }: { players: AvatarPlayer[] }) {
+export default function LeftSidebar({ 
+  players, 
+  host = "retakes.fr", 
+  protocol = "https" 
+}: { 
+  players: AvatarPlayer[], 
+  host?: string, 
+  protocol?: string 
+}) {
   const [livePlayers, setLivePlayers] = useState<{ steamId: string, team: string }[]>([]);
 
   useEffect(() => {
@@ -34,6 +42,30 @@ export default function LeftSidebar({ players }: { players: AvatarPlayer[] }) {
   }, []);
 
   if (players.length === 0) return null;
+
+  const getHref = (path: string) => {
+    const subdomain = host.split(".")[0];
+    const isKnownSubdomain = ["games", "docs", "pkmn"].includes(subdomain);
+    const baseHost = isKnownSubdomain ? host.substring(subdomain.length + 1) : host;
+
+    // LeftSidebar links are typically main domain paths like /players/id
+    const targetSubMatch = ["/games", "/docs", "/pkmn"].find(s => path === s || path.startsWith(`${s}/`));
+    
+    let targetHost = baseHost;
+    let targetPath = path;
+
+    if (targetSubMatch) {
+      const sub = targetSubMatch.replace("/", "");
+      targetHost = `${sub}.${baseHost}`;
+      targetPath = path.substring(targetSubMatch.length) || "/";
+    }
+
+    if (targetHost === host) {
+      return targetPath;
+    } else {
+      return `${protocol}://${targetHost}${targetPath}`;
+    }
+  };
 
   const sortedPlayers = [...players].sort((a, b) => {
     const aLive = livePlayers.find(p => p.steamId === a.steamId);
@@ -69,7 +101,7 @@ export default function LeftSidebar({ players }: { players: AvatarPlayer[] }) {
         }
 
         return (
-          <Link key={p.steamId} href={`/players/${p.steamId}`} title={p.name} className="ls-avatar-link relative inline-block">
+          <Link key={p.steamId} href={getHref(`/players/${p.steamId}`)} title={p.name} className="ls-avatar-link relative inline-block">
             <div 
               style={{ 
                 position: 'absolute', top: 0, right: 0, width: '14px', height: '14px', 

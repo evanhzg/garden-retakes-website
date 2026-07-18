@@ -5,10 +5,10 @@ export const speciesId = (species: string) =>
   species.toLowerCase().replace(/[^a-z0-9]/g, "");
 
 export const frontSprite = (species: string) =>
-  `https://play.pokemonshowdown.com/sprites/gen5ani/${speciesId(species)}.gif`;
+  `https://play.pokemonshowdown.com/sprites/ani/${speciesId(species)}.gif`;
 
 export const backSprite = (species: string) =>
-  `https://play.pokemonshowdown.com/sprites/gen5ani-back/${speciesId(species)}.gif`;
+  `https://play.pokemonshowdown.com/sprites/ani-back/${speciesId(species)}.gif`;
 
 export const staticSprite = (species: string) =>
   `https://play.pokemonshowdown.com/sprites/gen5/${speciesId(species)}.png`;

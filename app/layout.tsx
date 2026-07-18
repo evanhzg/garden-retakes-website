@@ -33,8 +33,12 @@ export const viewport: Viewport = {
   themeColor: "#a855f7",
 };
 import { ThemeProvider } from "@/components/ThemeProvider";
+import { headers } from "next/headers";
 
 export default async function RootLayout({ children }: { children: React.ReactNode }) {
+  const headersList = headers();
+  const host = headersList.get("host") || "retakes.fr";
+  const protocol = headersList.get("x-forwarded-proto") || "https";
   // Find all players with custom avatars
   const publicDir = path.join(process.cwd(), "public");
   let customAvatarIds: string[] = [];
@@ -69,9 +73,9 @@ export default async function RootLayout({ children }: { children: React.ReactNo
             <span className="orb orb-3" />
           </div>
           
-          <NavBar avatarPlayers={avatarPlayers} />
+          <NavBar avatarPlayers={avatarPlayers} host={host} protocol={protocol} />
           <div className="layout-wrapper">
-            <LeftSidebar players={avatarPlayers} />
+            <LeftSidebar players={avatarPlayers} host={host} protocol={protocol} />
             <div className="main-content">
               <main className="container">{children}</main>
               <footer className="site-footer">

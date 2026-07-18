@@ -221,6 +221,8 @@ async function startEncounter(socket, steamId, prisma, mapId) {
     });
   } catch (err) {
     console.error("Failed to start encounter:", err);
+    activeBattles.delete(steamId);
+    socket.emit("pkmn_battle_end");
   }
 }
 
@@ -285,6 +287,8 @@ async function startTrainerBattle(socket, steamId, prisma, trainerData) {
     });
   } catch (err) {
     console.error("Failed to start trainer battle:", err);
+    activeBattles.delete(steamId);
+    socket.emit("pkmn_battle_end");
   }
 }
 

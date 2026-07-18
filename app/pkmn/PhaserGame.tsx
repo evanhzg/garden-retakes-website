@@ -224,19 +224,25 @@ export default function PhaserGame() {
           // Typical Tiled maps have layer data we can iterate over.
           map.layers.forEach((layerData) => {
             const layer = map.createLayer(layerData.name, tileset, 0, 0);
-            
-            // Check for collision layer (usually named "Collisions" or has collision properties)
-            if (layer && (layerData.name.toLowerCase() === 'collisions' || layerData.name.toLowerCase() === 'collision')) {
-              layer.setCollisionByProperty({ collides: true });
-              // Also try setting collision for any non-zero tile on the collision layer just in case
-              layer.setCollisionByExclusion([-1, 0]);
-              sceneRefs.collisionsLayer = layer;
+            if (layer) {
+              layer.setScale(2);
+              
+              // Check for collision layer (the user spells it 'colisions' or 'collisions')
+              if (layerData.name.toLowerCase().includes('collision') || layerData.name.toLowerCase().includes('colision')) {
+                layer.setCollisionByProperty({ collides: true });
+                // Also try setting collision for any non-zero tile on the collision layer just in case
+                layer.setCollisionByExclusion([-1, 0]);
+                sceneRefs.collisionsLayer = layer;
+              }
             }
           });
           sceneRefs.map = map;
         }
 
-        this.physics.world.setBounds(0, 0, map.widthInPixels || 2000, map.heightInPixels || 2000);
+        const mapWidth = (map.widthInPixels || 2000) * 2;
+        const mapHeight = (map.heightInPixels || 2000) * 2;
+
+        this.physics.world.setBounds(0, 0, mapWidth, mapHeight);
 
         const myData = mapState.players[steamId as string] || { x: 400, y: 300, facing: 'down' };
         localPlayer = createPlayer(this, myData.x, myData.y, 'mySprite', steamId as string);
@@ -264,7 +270,7 @@ export default function PhaserGame() {
         }
 
         // Camera follow
-        this.cameras.main.setBounds(0, 0, map.widthInPixels || 2000, map.heightInPixels || 2000);
+        this.cameras.main.setBounds(0, 0, mapWidth, mapHeight);
         this.cameras.main.startFollow(localPlayer, true, 0.1, 0.1);
 
         for (const [sId, pData] of Object.entries(mapState.players)) {
@@ -400,7 +406,7 @@ export default function PhaserGame() {
           
           (localPlayer as Phaser.GameObjects.Sprite).play(`mySprite-${p.facing}-walk`, true);
           
-          if (dist < 2) {
+          if (dist < 10) {
             p.x = p.targetPosition.x;
             p.y = p.targetPosition.y;
             p.body.setVelocity(0, 0);
@@ -449,10 +455,12 @@ export default function PhaserGame() {
             // Predict collisions
             let canMove = true;
             if (sceneRefs.collisionsLayer) {
-              // Get the tile at the center of the target position
+              // Get the tile at the center of the target position. Since layer is scaled by 2,
+              // world coords need to be halved, or we can use the camera. Phaser getTileAtWorldXY handles scale automatically if given camera,
+              // but for safety we use the unscaled tile coords by dividing by the scale factor (2).
               const tile = sceneRefs.collisionsLayer.getTileAtWorldXY(
-                p.targetPosition.x, 
-                p.targetPosition.y, 
+                p.targetPosition.x / 2, 
+                p.targetPosition.y / 2, 
                 true
               );
               
@@ -462,8 +470,10 @@ export default function PhaserGame() {
             }
 
             // Keep inside bounds
-            p.targetPosition.x = Phaser.Math.Clamp(p.targetPosition.x, 16, (sceneRefs.map?.widthInPixels || 2000) - 16);
-            p.targetPosition.y = Phaser.Math.Clamp(p.targetPosition.y, 16, (sceneRefs.map?.heightInPixels || 2000) - 16);
+            const mapWidth = (sceneRefs.map?.widthInPixels || 2000) * 2;
+            const mapHeight = (sceneRefs.map?.heightInPixels || 2000) * 2;
+            p.targetPosition.x = Phaser.Math.Clamp(p.targetPosition.x, 16, mapWidth - 16);
+            p.targetPosition.y = Phaser.Math.Clamp(p.targetPosition.y, 16, mapHeight - 16);
             
             if (canMove && (p.targetPosition.x !== p.x || p.targetPosition.y !== p.y)) {
               p.isMoving = true;
