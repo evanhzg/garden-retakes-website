@@ -22,9 +22,14 @@ const corsOrigins = process.env.SOCKET_CORS_ORIGINS
       "https://games.retakes.fr",
       "https://pkmn.retakes.fr",
       "https://docs.retakes.fr",
+      // Preview / dev environment
+      "https://dev.retakes.fr",
+      "https://games.dev.retakes.fr",
+      "https://pkmn.dev.retakes.fr",
+      "https://docs.dev.retakes.fr",
+      // Local dev
       "http://localhost:3000",
       "http://localhost:3131",
-      // dev subdomain origins (middleware host-routing)
       "http://games.localhost:3131",
       "http://pkmn.localhost:3131",
       "http://docs.localhost:3131",
