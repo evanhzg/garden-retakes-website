@@ -388,11 +388,47 @@ model PkmnTrainer {
   Facing        String    @default("down")
   Inventory     String    @db.LongText // JSON
   Badges        String    @db.LongText // JSON
-  
+
   Party         PkmnMon[] @relation("TrainerParty")
-  Boxes         PkmnBox[] 
+  Boxes         PkmnBox[]
+  ApiTokens     PkmnApiToken[]
 
   @@map("PkmnTrainers")
+}
+
+// Standalone game client (Unity) auth: one row per linked device/session, so
+// a trainer can list ("signed in on N devices") and individually revoke
+// access. The raw bearer token is never stored — only its SHA-256 hash.
+model PkmnApiToken {
+  Id            String    @id @default(cuid())
+  SteamId       BigInt
+  TokenHash     String    @unique
+  DeviceName    String?
+  CreatedAtUtc  DateTime  @default(now())
+  LastUsedAtUtc DateTime  @default(now())
+  ExpiresAtUtc  DateTime
+  RevokedAtUtc  DateTime?
+
+  Trainer       PkmnTrainer @relation(fields: [SteamId], references: [SteamId], onDelete: Cascade)
+
+  @@index([SteamId])
+  @@map("PkmnApiTokens")
+}
+
+// Device-authorization pairing (RFC 8628-style, same shape Steam/consoles
+// use): the game client requests a short human code, the player confirms
+// it's them at pkmn.retakes.fr/link (already Steam-logged-in on the site),
+// and the client polls until the code carries an issued bearer token.
+model PkmnLinkCode {
+  Code          String    @id
+  PollToken     String    @unique
+  DeviceName    String?
+  SteamId       BigInt?
+  CreatedAtUtc  DateTime  @default(now())
+  ExpiresAtUtc  DateTime
+  ConsumedAtUtc DateTime?
+
+  @@map("PkmnLinkCodes")
 }
 
 model PkmnMon {

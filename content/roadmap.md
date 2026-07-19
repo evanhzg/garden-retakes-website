@@ -749,3 +749,32 @@ site economy). Long-haul project — phases land independently and each one is p
   NOTE on the authentic **LGFR/Kanto map**: mmmulani/pokemap extracts from a FireRed **ROM** (needs
   the copyrighted binary) — not something reproducible here; the existing 200×200 Tiled map now
   behaves like Pokémon via grass-only encounters. A ROM-based generator remains an Evan-run option.
+- 2026-07-19 (45): **PKMN pivot: standalone Unity client — auth + save-data API generated.**
+  Evan is moving Garden PKMN off the web Phaser client onto a standalone Unity executable talking to
+  pkmn.retakes.fr over REST + the existing Socket.IO world server. Built the first API slice:
+  *Auth* (`lib/pkmnAuth.ts` + `app/api/pkmn/auth/*`): device-authorization pairing (RFC 8628-style,
+  same shape Steam/consoles use) — `device/start` issues a short human code, the player confirms at
+  `pkmn.retakes.fr/link` (new page, reuses the existing Steam cookie session), the client polls
+  `device/poll` until it gets a 90-day bearer token. Tokens are DB-backed (`PkmnApiToken`, hash only
+  — raw token never stored) so devices can be listed and individually revoked (`GET/DELETE
+  /auth/sessions`), plus `/auth/refresh` (rotate) and `/auth/logout`. Domain-tagged HMAC signing
+  (reuses AUTH_SECRET but a distinct "pkmn_access:" domain) so a web session cookie can never double
+  as an API token or vice versa. *Save data* (`app/api/pkmn/v1/*`, all bearer-authed): `me`, `trainer`
+  (GET full blob incl. party+bag+badges / PUT position+map+facing+money checkpoint), `party`, `boxes`
+  (list/create, 12-box cap), `mon/:id` (rename/DELETE release) + `mon/:id/move` (party<->box, enforces
+  the 6-mon party cap and "can't box your last Pokémon"), `inventory` (GET/PATCH signed-delta,
+  validated against the existing item catalog), `badges` (idempotent award), `stats` (honest — only
+  reports fields actually tracked), `leaderboard` (species-caught / badges, real queries).
+  *Security fix along the way*: `realtime/connect-info` issues a 60s signed ticket so the standalone
+  client's Socket.IO handshake is cryptographically verified (server.js's `authenticate` handler now
+  checks a ticket when one is sent) instead of trusting a raw client-claimed steamId — the browser
+  mini-games still use the old trust-the-claim path for now (flagged as a follow-up, not fixed here
+  to avoid touching working code out of scope).
+  **Schema added, NOT pushed to the live DB**: `PkmnApiToken` + `PkmnLinkCode` (fully additive, zero
+  changes to existing tables) are in schema.prisma and `prisma generate` ran (safe, local codegen
+  only). This project uses a `prisma db push` workflow against the shared production Aiven MySQL —
+  per standing practice on this repo I did not run it myself. **Until `npx prisma db push` runs, none
+  of the new endpoints work** (their tables don't exist yet) — full typecheck is clean (0 errors) and
+  a comprehensive E2E script is written and ready (pairing flow, all v1 CRUD, ticket-based socket
+  auth, refresh/revoke) but has NOT been run for the same reason. Docs site (docs.retakes.fr) not yet
+  updated with this surface — follow-up.

@@ -1,4 +1,5 @@
 const { createServer } = require("http");
+const crypto = require("crypto");
 const { Server } = require("socket.io");
 const UnoGame = require("./scripts/unoLogic");
 const MonopolyGame = require("./scripts/monopolyLogic");
@@ -11,6 +12,34 @@ const SkribblGame = require("./scripts/skribblLogic");
 const { PrismaClient } = require("@prisma/client");
 
 const prisma = new PrismaClient();
+
+// Verifies a short-lived realtime ticket issued by GET /api/pkmn/v1/realtime/connect-info
+// (lib/pkmnAuth.ts: issueRealtimeTicket). Mirrors that file's signing scheme
+// (domain-tagged HMAC-SHA256 over "pkmn_ticket:<body>") without importing it,
+// since this file runs outside the Next build as a plain Node process.
+// AUTH_SECRET reaches process.env here as a side effect of `new PrismaClient()`
+// above (Prisma's generated client loads the project .env on init) — there is
+// no explicit dotenv usage in this file.
+function verifyPkmnTicket(ticket) {
+  const authSecret = process.env.AUTH_SECRET;
+  if (!authSecret || typeof ticket !== "string") return null;
+  const [body, sig] = ticket.split(".");
+  if (!body || !sig) return null;
+
+  const expected = crypto.createHmac("sha256", authSecret).update(`pkmn_ticket:${body}`).digest("base64url");
+  const a = Buffer.from(sig);
+  const b = Buffer.from(expected);
+  if (a.length !== b.length || !crypto.timingSafeEqual(a, b)) return null;
+
+  try {
+    const payload = JSON.parse(Buffer.from(body, "base64url").toString());
+    if (typeof payload.steamId !== "string" || typeof payload.exp !== "number") return null;
+    if (payload.exp < Date.now()) return null;
+    return payload.steamId;
+  } catch {
+    return null;
+  }
+}
 
 const httpServer = createServer();
 
@@ -113,7 +142,18 @@ io.on("connection", (socket) => {
 
   // When a user authenticates with the websocket
   socket.on("authenticate", (data) => {
-    const { steamId } = data;
+    // The standalone (Unity) client sends a signed ticket from
+    // GET /api/pkmn/v1/realtime/connect-info — verified here, so the socket
+    // server never has to trust a client-asserted steamId for it. The
+    // browser mini-games (UNO, PKMN web client, ...) still send a raw
+    // steamId from their own site session; that trust boundary is unchanged
+    // for now (tracked as a follow-up — see the roadmap).
+    const ticketSteamId = data?.ticket ? verifyPkmnTicket(data.ticket) : null;
+    if (data?.ticket && !ticketSteamId) {
+      socket.emit("auth_error", { message: "Invalid or expired connect ticket." });
+      return;
+    }
+    const steamId = ticketSteamId || data?.steamId;
     if (steamId) {
       connectedUsers.set(steamId.toString(), socket.id);
       socket.steamId = steamId.toString();
