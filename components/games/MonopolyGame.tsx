@@ -10,9 +10,12 @@ import {
   Lang, money, spaceName, spaceShort, GROUP_LABEL, cardTitle, cardBody,
   t, localizeLog, logCategory, UI,
 } from "@/components/games/monopolyData";
+import SoundControls from "@/components/games/sound/SoundControls";
+import { sound, type SoundName } from "@/components/games/sound/SoundManager";
 import "./monopoly.css";
 
-const DiceRoller = dynamic(() => import("./DiceRoller"), { ssr: false });
+// The 3D board (react-three-fiber) is client-only.
+const Board3D = dynamic(() => import("./monopoly3d/Board3D"), { ssr: false });
 
 // ---------------------------------------------------------------------------
 // 3D-styled pawn — a little colour-shaded figure that stands on the board.
@@ -51,8 +54,6 @@ function tileEdge(id: number): "top" | "right" | "bottom" | "left" | "corner" {
   return "left";                               // right col → bar on left
 }
 
-const CORNER_ICON: Record<number, string> = { 0: "→", 10: "🔒", 20: "🅿️", 30: "🚓" };
-
 export default function MonopolyGame() {
   const { socket, steamId } = useSocket();
   const mySteamId = steamId ?? DUMMY_STEAM_ID;
@@ -68,6 +69,9 @@ export default function MonopolyGame() {
   // Card popup shown when the server reports a freshly drawn card.
   const [shownCard, setShownCard] = useState<any>(null);
   const prevDrawIdRef = useRef<string | null>(null);
+
+  // Sound: fire an SFX when the newest log entry changes.
+  const prevLogIdRef = useRef<string | null>(null);
 
   useEffect(() => {
     document.body.style.overflow = "hidden";
@@ -86,6 +90,7 @@ export default function MonopolyGame() {
       setRollTriggerKey((k) => k + 1);
       setIsDiceRolling(true);
       prevRollIdRef.current = gameState.rollId;
+      sound.play("dice");
     } else if (!gameState.rollId) {
       // Turn was reset (no dice on the board): never leave controls stuck in the
       // "rolling" state — the dice unmount without firing onAnimationComplete.
@@ -113,6 +118,23 @@ export default function MonopolyGame() {
     const timer = setTimeout(() => setIsDiceRolling(false), 5500);
     return () => clearTimeout(timer);
   }, [isDiceRolling, rollTriggerKey]);
+
+  // Map the newest activity-log entry to a sound effect.
+  useEffect(() => {
+    const top = gameState?.logs?.[0];
+    if (!top) return;
+    if (top.id === prevLogIdRef.current) return;
+    const first = prevLogIdRef.current === null;
+    prevLogIdRef.current = top.id;
+    if (first) return; // don't replay a sound for pre-existing state on mount
+    const map: Record<string, SoundName> = {
+      buy: "buy", build: "build", pay_rent: "rent", pay_tax: "tax",
+      pass_go: "passGo", jail_enter: "jail", card: "card",
+      bankrupt: "bankrupt", win: "win",
+    };
+    const sfx = map[top.key];
+    if (sfx) sound.play(sfx);
+  }, [gameState?.logs]);
 
   const lang: Lang = (gameState?.lang === "fr" ? "fr" : "en");
 
@@ -187,6 +209,7 @@ export default function MonopolyGame() {
               t("turnOf", lang, { name: nameOf(gameState.currentTurn) })
             )}
           </div>
+          <SoundControls />
           <button className="mono-exit" onClick={exitGame} title={lang === "fr" ? "Quitter la partie" : "Leave game"}>✕</button>
         </div>
       </header>
@@ -225,95 +248,28 @@ export default function MonopolyGame() {
           })}
         </aside>
 
-        {/* ================= BOARD ================= */}
-        <div className="mono-board-cell">
-          <div className="mono-board">
-            {gameState.board.map((space: any) => {
-              const edge = tileEdge(space.id);
-              const playersHere = gameState.players.filter(
-                (p: string) => gameState.playerStates[p].position === space.id
-              );
-              const houses = space.houses || 0;
-              const ownerColor = space.owner ? gameState.playerStates[space.owner]?.color : null;
-              const clickable = ["property", "rail", "util"].includes(space.type);
-
-              return (
-                <div
-                  key={space.id}
-                  className={`mono-tile s${space.id} edge-${edge} ${space.mortgaged ? "mortgaged" : ""}`}
-                  style={ownerColor ? ({ ["--owner" as any]: ownerColor, boxShadow: `inset 0 0 0 2px ${ownerColor}` }) : undefined}
-                  onClick={() => clickable && setSelectedSpaceId(space.id)}
-                  onMouseEnter={() => setHoveredSpace(space)}
-                  onMouseMove={(e) => setMousePos({ x: e.clientX, y: e.clientY })}
-                  onMouseLeave={() => setHoveredSpace(null)}
-                >
-                  {space.group && <div className={`mono-colorbar ${space.group}`} />}
-
-                  {edge === "corner" ? (
-                    <div className="mono-tile-corner">
-                      <span className="mono-corner-icon">{CORNER_ICON[space.id]}</span>
-                      <span className="mono-corner-name">{spaceShort(space.id, lang)}</span>
-                    </div>
-                  ) : (
-                    <div className="mono-tile-content">
-                      {space.type === "chance" && <span className="mono-tile-glyph chance">?</span>}
-                      {space.type === "chest" && <span className="mono-tile-glyph chest">🧰</span>}
-                      {space.type === "tax" && <span className="mono-tile-glyph">💸</span>}
-                      {space.type === "rail" && <span className="mono-tile-glyph">🚂</span>}
-                      {space.type === "util" && <span className="mono-tile-glyph">{space.id === 12 ? "💡" : "🚰"}</span>}
-                      <span className="mono-tile-name">{spaceShort(space.id, lang)}</span>
-                      {space.price != null && <span className="mono-tile-price">{money(space.price, lang)}</span>}
-                    </div>
-                  )}
-
-                  {/* houses / hotel pips on the colour bar */}
-                  {houses > 0 && (
-                    <div className="mono-buildings">
-                      {houses === 5
-                        ? <span className="mono-hotel" />
-                        : Array.from({ length: houses }).map((_, i) => <span key={i} className="mono-house" />)}
-                    </div>
-                  )}
-
-                  {/* pawns */}
-                  <div className="mono-pawns">
-                    <AnimatePresence>
-                      {playersHere.map((pid: string, i: number) => (
-                        <motion.div
-                          key={pid}
-                          layoutId={`pawn-${pid}`}
-                          className="mono-pawn-wrap"
-                          style={{ ["--i" as any]: i }}
-                          transition={{ type: "spring", stiffness: 130, damping: 17 }}
-                        >
-                          <Pawn color={gameState.playerStates[pid].color} size={20} active={gameState.currentTurn === pid} />
-                        </motion.div>
-                      ))}
-                    </AnimatePresence>
-                  </div>
-                </div>
-              );
-            })}
-
-            {/* center hub: dice + branding */}
-            <div className="mono-center">
-              <div className="mono-center-logo">MONOPOLY</div>
-              <div className="mono-dice-zone">
-                {gameState.lastRoll && (
-                  <DiceRoller
-                    lastRoll={gameState.lastRoll}
-                    rollKey={rollTriggerKey}
-                    onAnimationComplete={() => setIsDiceRolling(false)}
-                  />
-                )}
-              </div>
-              {gameState.lastRoll && (
-                <div className="mono-roll-readout">
-                  {t("rolled", lang, { a: gameState.lastRoll[0], b: gameState.lastRoll[1], t: gameState.lastRoll[0] + gameState.lastRoll[1] })}
-                </div>
-              )}
+        {/* ================= BOARD (3D) ================= */}
+        <div className="mono-board3d">
+          <Board3D
+            gameState={gameState}
+            lang={lang}
+            onSelectSpace={setSelectedSpaceId}
+            onHoverSpace={(space, e) => {
+              setHoveredSpace(space);
+              const ne: any = (e as any)?.nativeEvent;
+              if (ne) setMousePos({ x: ne.clientX, y: ne.clientY });
+            }}
+            onHoverEnd={() => setHoveredSpace(null)}
+            rollKey={rollTriggerKey}
+            lastRoll={gameState.lastRoll}
+            onDiceSettled={() => setIsDiceRolling(false)}
+          />
+          <div className="mono-board3d-hint">🖱 {lang === "fr" ? "Glissez pour tourner · molette pour zoomer" : "Drag to orbit · scroll to zoom"}</div>
+          {gameState.lastRoll && (
+            <div className="mono-roll-readout mono-roll-readout-3d">
+              {t("rolled", lang, { a: gameState.lastRoll[0], b: gameState.lastRoll[1], t: gameState.lastRoll[0] + gameState.lastRoll[1] })}
             </div>
-          </div>
+          )}
         </div>
 
         {/* ================= ACTIVITY LOG ================= */}

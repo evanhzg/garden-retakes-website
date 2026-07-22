@@ -219,7 +219,7 @@ for (let i = 0; i < posAttr.count; i++) {
 }
 roundedBoxGeometry.computeVertexNormals();
 
-function DiceSimulation({ roll, onRest }: { roll: [number, number]; onRest: () => void }) {
+export function DiceSimulation({ roll, onRest }: { roll: [number, number]; onRest: () => void }) {
   const { scene } = useThree();
   const worldRef = useRef<CANNON.World | null>(null);
   const diceBodies = useRef<CANNON.Body[]>([]);
