@@ -6,25 +6,30 @@ import type { ThreeEvent } from "@react-three/fiber";
 import type { Lang } from "@/components/games/monopolyData";
 import { tileTransform } from "./layout";
 import { tileFaceTexture } from "./tileFaceTexture";
-import { TILE_H, PALETTE } from "./theme";
+import { TILE_H, resolveTheme } from "./theme";
 
 type Props = {
   space: any;
   lang: Lang;
+  boardMeta: any;
   ownerColor: string | null;
   onSelect: (id: number) => void;
   onHover: (space: any, e: ThreeEvent<PointerEvent>) => void;
   onHoverEnd: () => void;
 };
 
-function Tile3DImpl({ space, lang, ownerColor, onSelect, onHover, onHoverEnd }: Props) {
-  const t = useMemo(() => tileTransform(space.id), [space.id]);
+function Tile3DImpl({ space, lang, boardMeta, ownerColor, onSelect, onHover, onHoverEnd }: Props) {
+  const perSide = boardMeta?.perSide ?? 9;
+  const t = useMemo(() => tileTransform(space.id, perSide), [space.id, perSide]);
   const [w, d] = t.size;
   const isCorner = space.type === "corner";
   const clickable = ["property", "rail", "util"].includes(space.type);
-  const face = useMemo(() => tileFaceTexture(space, lang), [space.id, lang]);
+  const face = useMemo(
+    () => tileFaceTexture(space, lang, boardMeta),
+    [space.id, lang, boardMeta?.boardId]
+  );
+  const theme = useMemo(() => resolveTheme(boardMeta?.theme), [boardMeta?.theme]);
 
-  // Owner-colour outline around the tile top (only when owned).
   const outline = useMemo(
     () => (ownerColor ? new THREE.EdgesGeometry(new THREE.BoxGeometry(w * 0.99, TILE_H * 0.7, d * 0.99)) : null),
     [ownerColor, w, d]
@@ -45,7 +50,7 @@ function Tile3DImpl({ space, lang, ownerColor, onSelect, onHover, onHoverEnd }: 
       >
         <boxGeometry args={[w, TILE_H, d]} />
         <meshStandardMaterial
-          color={space.mortgaged ? "#9aa0a6" : isCorner ? PALETTE.tileBaseCorner : PALETTE.tileBase}
+          color={space.mortgaged ? "#9aa0a6" : isCorner ? theme.tileBaseCorner : theme.tileBase}
           roughness={0.72}
           metalness={0.06}
           emissive={owned ? new THREE.Color(ownerColor!) : new THREE.Color("#000000")}
@@ -53,7 +58,6 @@ function Tile3DImpl({ space, lang, ownerColor, onSelect, onHover, onHoverEnd }: 
         />
       </mesh>
 
-      {/* localized top-face label */}
       {face && (
         <mesh position={[0, TILE_H + 0.002, 0]} rotation={[-Math.PI / 2, 0, 0]}>
           <planeGeometry args={[w * 0.985, d * 0.985]} />

@@ -1,38 +1,54 @@
-// Board layout math: maps a classic-board tile id (0–39) to a 3D transform on
+// Board layout math, parameterized by tiles-per-side so it works for any square
+// board (classic = 9/side = 40 tiles). Maps a tile index to a 3D transform on
 // the square track, plus the direction helpers used to place pawns / houses and
-// to animate a pawn hopping from tile to tile.
+// animate a pawn hopping between tiles.
 //
 // World frame: +X = right (east), +Z = toward the viewer (south), +Y = up.
-// GO (0) sits at the near-right corner; travel goes anticlockwise as ids rise
-// (bottom row right→left, up the left side, top row left→right, down the right).
+// GO (index 0) sits at the near-right corner; travel goes anticlockwise as the
+// index rises (bottom row right→left, up the left side, top row left→right,
+// down the right).
 
-import { HALF, CORNER, TILE_W, TILE_D } from "./theme";
+import { CORNER, TILE_W, TILE_D } from "./theme";
 
 export type Edge = "bottom" | "left" | "top" | "right" | "corner";
 
-// Which side of the board a tile lives on.
-export function tileSide(id: number): Edge {
-  if (id === 0 || id === 10 || id === 20 || id === 30) return "corner";
-  if (id >= 1 && id <= 9) return "bottom";  // +Z side
-  if (id >= 11 && id <= 19) return "left";  // -X side
-  if (id >= 21 && id <= 29) return "top";   // -Z side
-  return "right";                            // +X side (31–39)
+// Geometry derived from tiles-per-side. Corner tiles are square; `perSide` edge
+// tiles sit between each pair of corners.
+export function boardGeometry(perSide: number) {
+  const sideLen = 2 * CORNER + perSide * TILE_W;
+  const half = sideLen / 2;
+  return {
+    perSide,
+    total: perSide * 4 + 4,
+    sideLen,
+    half,
+    fieldHalf: half - TILE_D,
+    edgeC: half - TILE_D / 2, // edge-tile centre distance from board centre
+    cornC: half - CORNER / 2, // corner-tile centre distance
+    inner: half - CORNER,     // inner edge of a corner (along-edge origin)
+  };
 }
 
-// Distance from board centre to an edge-tile centre (or corner centre).
-const EDGE_C = HALF - TILE_D / 2;   // edge tiles
-const CORN_C = HALF - CORNER / 2;   // corner tiles
-// Along-edge origin: inner edge of the start corner.
-const INNER = HALF - CORNER;
+const cornerIndices = (perSide: number) => [0, perSide + 1, 2 * (perSide + 1), 3 * (perSide + 1)];
+
+// Which side of the board a tile lives on, plus its 0-based index within that
+// side's run (for edge tiles).
+export function tileSide(index: number, perSide: number): { edge: Edge; k: number } {
+  const c1 = perSide + 1, c2 = 2 * (perSide + 1), c3 = 3 * (perSide + 1);
+  if (index === 0 || index === c1 || index === c2 || index === c3) return { edge: "corner", k: 0 };
+  if (index < c1) return { edge: "bottom", k: index - 1 };
+  if (index < c2) return { edge: "left", k: index - (c1 + 1) };
+  if (index < c3) return { edge: "top", k: index - (c2 + 1) };
+  return { edge: "right", k: index - (c3 + 1) };
+}
 
 export type TileTransform = {
-  position: [number, number, number]; // world XZ (Y=0 at plinth top plane)
-  yaw: number;                        // rotation about Y so the face reads outward
+  position: [number, number, number];
+  yaw: number;
   edge: Edge;
-  size: [number, number];            // [alongPerimeter, towardCentre]
+  size: [number, number];
 };
 
-// Yaw that orients a tile's inward face (texture top) toward the board centre.
 const EDGE_YAW: Record<Exclude<Edge, "corner">, number> = {
   bottom: 0,
   left: -Math.PI / 2,
@@ -40,34 +56,35 @@ const EDGE_YAW: Record<Exclude<Edge, "corner">, number> = {
   right: Math.PI / 2,
 };
 
-export function tileTransform(id: number): TileTransform {
-  const side = tileSide(id);
-  if (side === "corner") {
+export function tileTransform(index: number, perSide: number): TileTransform {
+  const g = boardGeometry(perSide);
+  const { edge, k } = tileSide(index, perSide);
+
+  if (edge === "corner") {
+    const [c0, c1, c2, c3] = cornerIndices(perSide);
     const map: Record<number, [number, number]> = {
-      0: [CORN_C, CORN_C],   // near-right
-      10: [-CORN_C, CORN_C], // near-left
-      20: [-CORN_C, -CORN_C],// far-left
-      30: [CORN_C, -CORN_C], // far-right
+      [c0]: [g.cornC, g.cornC],    // near-right (GO)
+      [c1]: [-g.cornC, g.cornC],   // near-left  (Jail)
+      [c2]: [-g.cornC, -g.cornC],  // far-left   (Free Parking)
+      [c3]: [g.cornC, -g.cornC],   // far-right  (Go To Jail)
     };
-    const [x, z] = map[id];
-    // Corner tiles stay axis-aligned (square); their faces are drawn upright.
+    const [x, z] = map[index];
     return { position: [x, 0, z], yaw: 0, edge: "corner", size: [CORNER, CORNER] };
   }
 
-  // k = 0..8 index along the side in travel direction.
-  let x = 0, z = 0, k = 0;
-  if (side === "bottom") { k = id - 1;  x = INNER - (k + 0.5) * TILE_W; z = EDGE_C; }
-  if (side === "left")   { k = id - 11; x = -EDGE_C; z = INNER - (k + 0.5) * TILE_W; }
-  if (side === "top")    { k = id - 21; x = -INNER + (k + 0.5) * TILE_W; z = -EDGE_C; }
-  if (side === "right")  { k = id - 31; x = EDGE_C; z = -INNER + (k + 0.5) * TILE_W; }
+  let x = 0, z = 0;
+  if (edge === "bottom") { x = g.inner - (k + 0.5) * TILE_W; z = g.edgeC; }
+  if (edge === "left")   { x = -g.edgeC; z = g.inner - (k + 0.5) * TILE_W; }
+  if (edge === "top")    { x = -g.inner + (k + 0.5) * TILE_W; z = -g.edgeC; }
+  if (edge === "right")  { x = g.edgeC; z = -g.inner + (k + 0.5) * TILE_W; }
 
-  return { position: [x, 0, z], yaw: EDGE_YAW[side], edge: side, size: [TILE_W, TILE_D] };
+  return { position: [x, 0, z], yaw: EDGE_YAW[edge], edge, size: [TILE_W, TILE_D] };
 }
 
 // Unit world directions for a tile: `inward` points to the board centre (where
 // the colour bar / houses go), `along` runs parallel to the edge.
-export function tileDirs(id: number): { inward: [number, number]; along: [number, number] } {
-  switch (tileSide(id)) {
+export function tileDirs(index: number, perSide: number): { inward: [number, number]; along: [number, number] } {
+  switch (tileSide(index, perSide).edge) {
     case "bottom": return { inward: [0, -1], along: [1, 0] };
     case "left":   return { inward: [1, 0], along: [0, 1] };
     case "top":    return { inward: [0, 1], along: [1, 0] };
@@ -76,34 +93,31 @@ export function tileDirs(id: number): { inward: [number, number]; along: [number
   }
 }
 
-// World XZ centre of a tile (convenience over tileTransform().position).
-export function tileCenter(id: number): [number, number] {
-  const t = tileTransform(id);
+export function tileCenter(index: number, perSide: number): [number, number] {
+  const t = tileTransform(index, perSide);
   return [t.position[0], t.position[2]];
 }
 
 // A small stable per-slot offset so several pawns sharing a tile don't overlap.
-// Returns a world XZ offset for pawn index `i` on a tile of the given id.
-export function pawnSlotOffset(id: number, i: number): [number, number] {
-  const { inward, along } = tileDirs(id);
-  const col = i % 2;          // two columns
-  const row = Math.floor(i / 2); // stacked rows toward centre
-  const a = (col - 0.5) * 0.34;         // along the edge
-  const b = 0.12 + row * 0.34;          // toward centre
+export function pawnSlotOffset(index: number, i: number, perSide: number): [number, number] {
+  const { inward, along } = tileDirs(index, perSide);
+  const col = i % 2;
+  const row = Math.floor(i / 2);
+  const a = (col - 0.5) * 0.34;
+  const b = 0.12 + row * 0.34;
   return [along[0] * a + inward[0] * b, along[1] * a + inward[1] * b];
 }
 
-// Ordered list of tile ids a pawn passes through moving from `from` to `to`.
-// Normal (short, forward) moves step tile-by-tile so the hop animation reads
-// like a board game; long jumps (teleport cards, "go back") return just the
-// endpoints so the pawn arcs directly there.
-export function pathBetween(from: number, to: number): number[] {
-  const forward = (to - from + 40) % 40;
+// Ordered list of tile indices a pawn passes through moving from `from` to `to`
+// on a board of `total` tiles. Short forward moves step tile-by-tile (board-game
+// hop); long jumps (teleport cards) return just the endpoints so it arcs there.
+export function pathBetween(from: number, to: number, total: number): number[] {
+  const forward = (to - from + total) % total;
   if (forward === 0) return [from];
   if (forward <= 12) {
     const out: number[] = [];
-    for (let s = 0; s <= forward; s++) out.push((from + s) % 40);
+    for (let s = 0; s <= forward; s++) out.push((from + s) % total);
     return out;
   }
-  return [from, to]; // teleport / long jump — single arc
+  return [from, to];
 }

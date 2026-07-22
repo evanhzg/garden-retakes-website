@@ -42,10 +42,10 @@ function Building({
   );
 }
 
-export function Buildings3D({ space }: { space: any }) {
+export function Buildings3D({ space, perSide = 9 }: { space: any; perSide?: number }) {
   if (space.type !== "property" || !space.houses) return null;
-  const [cx, cz] = tileCenter(space.id);
-  const { inward, along } = tileDirs(space.id);
+  const [cx, cz] = tileCenter(space.id, perSide);
+  const { inward, along } = tileDirs(space.id, perSide);
   const inset = TILE_D * 0.28;
 
   const worldAt = (a: number): [number, number, number] => [

@@ -12,6 +12,15 @@ export function money(amount: number, lang: Lang): string {
   return lang === "fr" ? `${n.toLocaleString("fr-FR")} €` : `$${n.toLocaleString("en-US")}`;
 }
 
+// A board may declare its own currency (data-driven boards). When one is given
+// we honour it; otherwise fall back to the localized classic $/€ formatting.
+export type Currency = { symbol: string; position: "prefix" | "suffix" };
+export function fmtMoney(amount: number, lang: Lang, currency?: Currency | null): string {
+  if (!currency) return money(amount, lang);
+  const n = Math.round(amount).toLocaleString(lang === "fr" ? "fr-FR" : "en-US");
+  return currency.position === "suffix" ? `${n} ${currency.symbol}` : `${currency.symbol}${n}`;
+}
+
 // ---------------------------------------------------------------------------
 // Board — full + short names per space id. The French column is the authentic
 // Paris edition board.
@@ -69,6 +78,20 @@ export function spaceShort(id: number, lang: Lang): string {
   const n = BOARD_NAMES[id];
   if (!n) return `#${id}`;
   return (lang === "fr" ? n.shortFr : n.shortEn) ?? n[lang];
+}
+
+// The classic board uses the localized name tables (keyed by tile id); themed /
+// custom boards carry their own single-language names on each tile.
+export function tileFullName(space: any, boardId: string, lang: Lang): string {
+  return boardId === "classic" ? spaceName(space.id, lang) : (space.name || `#${space.id}`);
+}
+export function tileShortName(space: any, boardId: string, lang: Lang): string {
+  return boardId === "classic" ? spaceShort(space.id, lang) : (space.name || `#${space.id}`);
+}
+export function groupLabelOf(space: any, boardId: string, lang: Lang): string {
+  const key = space.group || space.type;
+  if (boardId === "classic") return GROUP_LABEL[space.group]?.[lang] || GROUP_LABEL[space.type]?.[lang] || "";
+  return key ? key.charAt(0).toUpperCase() + key.slice(1) : "";
 }
 
 // Colour-group display labels (for the property card header).
@@ -194,15 +217,25 @@ export function t(key: keyof typeof UI, lang: Lang, params?: Record<string, stri
 // Log localization. The server sends { key, params }; we render a sentence.
 // `nameOf` resolves a player id to a display name.
 // ---------------------------------------------------------------------------
-export type LogCtx = { lang: Lang; nameOf: (pid: string) => string };
+export type LogCtx = {
+  lang: Lang;
+  nameOf: (pid: string) => string;
+  currency?: Currency | null;
+  boardId?: string;
+  board?: any[]; // active board tiles, for board-authored place names
+};
 
 export function localizeLog(key: string, params: any, ctx: LogCtx): string {
   const { lang, nameOf } = ctx;
   const P = params || {};
   const who = P.pid ? nameOf(P.pid) : "";
   const other = P.otherPid ? nameOf(P.otherPid) : "";
-  const place = P.spaceId != null ? spaceName(P.spaceId, lang) : "";
-  const amt = P.amount != null ? money(P.amount, lang) : "";
+  const boardId = ctx.boardId || "classic";
+  const placeTile = P.spaceId != null && ctx.board ? ctx.board[P.spaceId] : null;
+  const place = P.spaceId != null
+    ? (placeTile ? tileFullName(placeTile, boardId, lang) : spaceName(P.spaceId, lang))
+    : "";
+  const amt = P.amount != null ? fmtMoney(P.amount, lang, ctx.currency) : "";
   // "You" needs different grammar than a name in the possessive turn-start line.
   const isYou = P.pid && nameOf(P.pid) === (lang === "fr" ? "Vous" : "You");
 
@@ -211,7 +244,7 @@ export function localizeLog(key: string, params: any, ctx: LogCtx): string {
       case "game_start": return "The game begins. Good luck!";
       case "turn_start": return isYou ? "Your turn." : `${who}'s turn.`;
       case "roll": return `${who} rolled ${P.d1} + ${P.d2} = ${P.d1 + P.d2}.`;
-      case "pass_go": return `${who} passed GO and collected $200.`;
+      case "pass_go": return `${who} passed GO and collected ${amt || "$200"}.`;
       case "land": return `${who} landed on ${place}.`;
       case "buy": return `${who} bought ${place}.`;
       case "pay_rent": return `${who} paid ${amt} rent to ${other}.`;
@@ -238,7 +271,7 @@ export function localizeLog(key: string, params: any, ctx: LogCtx): string {
       case "game_start": return "La partie commence. Bonne chance !";
       case "turn_start": return isYou ? "À vous de jouer." : `Au tour de ${who}.`;
       case "roll": return `${who} a lancé ${P.d1} + ${P.d2} = ${P.d1 + P.d2}.`;
-      case "pass_go": return `${who} passe par le Départ et reçoit 200 €.`;
+      case "pass_go": return `${who} passe par le Départ et reçoit ${amt || "200 €"}.`;
       case "land": return `${who} arrive sur ${place}.`;
       case "buy": return `${who} achète ${place}.`;
       case "pay_rent": return `${who} paie ${amt} de loyer à ${other}.`;

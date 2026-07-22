@@ -3,6 +3,7 @@ const crypto = require("crypto");
 const { Server } = require("socket.io");
 const UnoGame = require("./scripts/unoLogic");
 const MonopolyGame = require("./scripts/monopolyLogic");
+const { getBoard, boardSummaries, validateBoard } = require("./scripts/boardDefs");
 const CodenamesGame = require("./scripts/codenamesLogic");
 const CahGame = require("./scripts/cahLogic");
 const MemeGame = require("./scripts/memeLogic");
@@ -430,6 +431,28 @@ io.on("connection", (socket) => {
     }
   });
 
+  // Built-in board summaries for the Monopoly board picker.
+  socket.on("get_boards", () => {
+    socket.emit("boards_list", boardSummaries());
+  });
+
+  // Host picks the Monopoly board (built-in by id, or a validated custom def).
+  socket.on("lobby_select_board", (data) => {
+    if (!socket.lobbyId || !socket.steamId) return;
+    const lobby = universalLobbies.get(socket.lobbyId);
+    if (!lobby || lobby.host !== socket.steamId) return;
+    if (data && data.boardDef) {
+      const v = validateBoard(data.boardDef);
+      if (!v.ok) { socket.emit("lobby_toast", { message: `Invalid board: ${v.error}` }); return; }
+      lobby.customBoardDef = data.boardDef;
+      lobby.selectedBoardId = data.boardDef.id || 'custom';
+    } else {
+      lobby.customBoardDef = null;
+      lobby.selectedBoardId = (data && data.boardId) || 'classic';
+    }
+    broadcastLobbyState(lobby.id);
+  });
+
   socket.on("lobby_start_game", (data) => {
     if (socket.lobbyId && socket.steamId) {
       const lobbyId = socket.lobbyId;
@@ -458,10 +481,14 @@ io.on("connection", (socket) => {
           if (data?.modifiers) gameInstance.modifiers = data.modifiers;
           unoGames.set(lobbyId, gameInstance);
           break;
-        case 'monopoly':
-          gameInstance = new MonopolyGame(lobbyId, lang);
+        case 'monopoly': {
+          const boardDef = lobby.customBoardDef
+            ? lobby.customBoardDef
+            : getBoard(lobby.selectedBoardId || 'classic');
+          gameInstance = new MonopolyGame(lobbyId, lang, boardDef);
           monopolyGames.set(lobbyId, gameInstance);
           break;
+        }
         case 'codenames':
           gameInstance = new CodenamesGame(lobbyId);
           codenamesGames.set(lobbyId, gameInstance);

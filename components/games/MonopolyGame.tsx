@@ -7,7 +7,8 @@ import { usePlayerNames } from "@/components/games/hooks";
 import { motion, AnimatePresence } from "framer-motion";
 import dynamic from "next/dynamic";
 import {
-  Lang, money, spaceName, spaceShort, GROUP_LABEL, cardTitle, cardBody,
+  Lang, money, fmtMoney, spaceName, spaceShort, GROUP_LABEL, cardTitle, cardBody,
+  tileFullName, tileShortName, groupLabelOf,
   t, localizeLog, logCategory, UI,
 } from "@/components/games/monopolyData";
 import SoundControls from "@/components/games/sound/SoundControls";
@@ -169,6 +170,15 @@ export default function MonopolyGame() {
 
   if (!gameState || gameState.status === "WAITING") return null;
 
+  // Board-aware formatting: the classic board keeps its localized names/$; themed
+  // or custom boards carry their own names + currency in boardMeta.
+  const boardMeta = gameState.boardMeta;
+  const boardId = boardMeta?.boardId || gameState.boardId || "classic";
+  const currency = boardId === "classic" ? null : boardMeta?.currency;
+  const fmt = (a: number) => fmtMoney(a, lang, currency);
+  const nameFull = (space: any) => tileFullName(space, boardId, lang);
+  const nameShort = (space: any) => tileShortName(space, boardId, lang);
+
   const isMyTurn = gameState.currentTurn === mySteamId;
   const myState = gameState.playerStates[mySteamId];
   const phase = gameState.turnPhase;
@@ -236,7 +246,7 @@ export default function MonopolyGame() {
                     <span className="mono-pcard-name">{nameOf(pid)}{pid === mySteamId ? " ★" : ""}</span>
                     {s.jailCards > 0 && <span className="mono-chip">🎟 {s.jailCards}</span>}
                   </div>
-                  <div className="mono-pcard-cash">{money(s.money, lang)}</div>
+                  <div className="mono-pcard-cash">{fmt(s.money)}</div>
                   <div className="mono-pcard-meta">
                     <span title={t("properties", lang)}>🏠 {propertyCount(pid)}</span>
                     {s.jailed && <span className="mono-jail-tag">⛓ {t("inJail", lang)}</span>}
@@ -253,6 +263,7 @@ export default function MonopolyGame() {
           <Board3D
             gameState={gameState}
             lang={lang}
+            boardMeta={boardMeta}
             onSelectSpace={setSelectedSpaceId}
             onHoverSpace={(space, e) => {
               setHoveredSpace(space);
@@ -285,7 +296,7 @@ export default function MonopolyGame() {
                   animate={{ opacity: 1, x: 0 }}
                   className={`mono-log-entry ${logCategory(l.key)}`}
                 >
-                  {localizeLog(l.key, l.params, { lang, nameOf })}
+                  {localizeLog(l.key, l.params, { lang, nameOf, currency, boardId, board: gameState.board })}
                 </motion.div>
               ))}
             </AnimatePresence>
@@ -305,7 +316,7 @@ export default function MonopolyGame() {
             {phase === "ACTION" && canBuyHere && (
               <>
                 <button className="mono-btn buy" disabled={isDiceRolling} onClick={buyProperty}>
-                  💰 {t("buy", lang)} · {spaceShort(currentSpace.id, lang)} · {money(currentSpace.price, lang)}
+                  💰 {t("buy", lang)} · {nameShort(currentSpace)} · {fmt(currentSpace.price)}
                 </button>
                 <button className="mono-btn ghost" disabled={isDiceRolling} onClick={skipBuy}>
                   {t("skip", lang)}
@@ -326,7 +337,7 @@ export default function MonopolyGame() {
             {myState.jailed && phase === "ROLL" && (
               <>
                 <button className="mono-btn jail" disabled={myState.money < 50} onClick={payJail}>
-                  🔓 {t("payJail", lang, { amt: money(50, lang) })}
+                  🔓 {t("payJail", lang, { amt: fmt(50) })}
                 </button>
                 {myState.jailCards > 0 && (
                   <button className="mono-btn jail" onClick={useJailCard}>🎟 {t("useCard", lang)}</button>
@@ -385,22 +396,22 @@ export default function MonopolyGame() {
             >
               <div className={`mono-deed-header ${selectedSpace.group || selectedSpace.type}`}>
                 <span className="mono-deed-group">
-                  {GROUP_LABEL[selectedSpace.group]?.[lang] || GROUP_LABEL[selectedSpace.type]?.[lang] || ""}
+                  {groupLabelOf(selectedSpace, boardId, lang)}
                 </span>
-                <span className="mono-deed-name">{spaceName(selectedSpace.id, lang)}</span>
+                <span className="mono-deed-name">{nameFull(selectedSpace)}</span>
               </div>
 
               <div className="mono-deed-body">
                 {selectedSpace.type === "property" && (
                   <table className="mono-rent-table">
                     <tbody>
-                      <tr><td>{t("baseRent", lang)}</td><td>{money(selectedSpace.rent[0], lang)}</td></tr>
-                      <tr><td>{t("withSet", lang)}</td><td>{money(selectedSpace.rent[0] * 2, lang)}</td></tr>
-                      <tr><td>{t("withHouses", lang, { n: 1 })}</td><td>{money(selectedSpace.rent[1], lang)}</td></tr>
-                      <tr><td>{t("withHouses", lang, { n: 2 })}</td><td>{money(selectedSpace.rent[2], lang)}</td></tr>
-                      <tr><td>{t("withHouses", lang, { n: 3 })}</td><td>{money(selectedSpace.rent[3], lang)}</td></tr>
-                      <tr><td>{t("withHouses", lang, { n: 4 })}</td><td>{money(selectedSpace.rent[4], lang)}</td></tr>
-                      <tr className="hotel-row"><td>{t("withHotel", lang)}</td><td>{money(selectedSpace.rent[5], lang)}</td></tr>
+                      <tr><td>{t("baseRent", lang)}</td><td>{fmt(selectedSpace.rent[0])}</td></tr>
+                      <tr><td>{t("withSet", lang)}</td><td>{fmt(selectedSpace.rent[0] * 2)}</td></tr>
+                      <tr><td>{t("withHouses", lang, { n: 1 })}</td><td>{fmt(selectedSpace.rent[1])}</td></tr>
+                      <tr><td>{t("withHouses", lang, { n: 2 })}</td><td>{fmt(selectedSpace.rent[2])}</td></tr>
+                      <tr><td>{t("withHouses", lang, { n: 3 })}</td><td>{fmt(selectedSpace.rent[3])}</td></tr>
+                      <tr><td>{t("withHouses", lang, { n: 4 })}</td><td>{fmt(selectedSpace.rent[4])}</td></tr>
+                      <tr className="hotel-row"><td>{t("withHotel", lang)}</td><td>{fmt(selectedSpace.rent[5])}</td></tr>
                     </tbody>
                   </table>
                 )}
@@ -408,8 +419,8 @@ export default function MonopolyGame() {
                 {selectedSpace.type === "util" && <p className="mono-deed-note">{t("utilRent", lang)}</p>}
 
                 <div className="mono-deed-facts">
-                  {selectedSpace.price != null && <span>{t("price", lang)}: <b>{money(selectedSpace.price, lang)}</b></span>}
-                  {selectedSpace.type === "property" && <span>{t("perHouse", lang)}: <b>{money(selectedSpace.houseCost, lang)}</b></span>}
+                  {selectedSpace.price != null && <span>{t("price", lang)}: <b>{fmt(selectedSpace.price)}</b></span>}
+                  {selectedSpace.type === "property" && <span>{t("perHouse", lang)}: <b>{fmt(selectedSpace.houseCost)}</b></span>}
                   <span>
                     {selectedSpace.owner
                       ? t("ownedBy", lang, { name: nameOf(selectedSpace.owner) })
@@ -423,22 +434,22 @@ export default function MonopolyGame() {
                 <div className="mono-deed-actions">
                   {selectedSpace.type === "property" && selectedSpace.houses < 5 && ownsFullGroup(selectedSpace) && !selectedSpace.mortgaged && (
                     <button className="mono-mini-btn build" disabled={myState.money < selectedSpace.houseCost} onClick={() => buildHouse(selectedSpace.id)}>
-                      {selectedSpace.houses === 4 ? t("buildHotel", lang) : t("buildHouse", lang)} · {money(selectedSpace.houseCost, lang)}
+                      {selectedSpace.houses === 4 ? t("buildHotel", lang) : t("buildHouse", lang)} · {fmt(selectedSpace.houseCost)}
                     </button>
                   )}
                   {selectedSpace.type === "property" && selectedSpace.houses > 0 && (
                     <button className="mono-mini-btn" onClick={() => sellHouse(selectedSpace.id)}>
-                      {t("sellHouse", lang)} · +{money(Math.floor(selectedSpace.houseCost / 2), lang)}
+                      {t("sellHouse", lang)} · +{fmt(Math.floor(selectedSpace.houseCost / 2))}
                     </button>
                   )}
                   {!selectedSpace.mortgaged && selectedSpace.houses === 0 && (
                     <button className="mono-mini-btn danger" onClick={() => mortgage(selectedSpace.id)}>
-                      {t("mortgage", lang)} · +{money(Math.floor(selectedSpace.price / 2), lang)}
+                      {t("mortgage", lang)} · +{fmt(Math.floor(selectedSpace.price / 2))}
                     </button>
                   )}
                   {selectedSpace.mortgaged && (
                     <button className="mono-mini-btn" disabled={myState.money < Math.ceil((selectedSpace.price / 2) * 1.1)} onClick={() => unmortgage(selectedSpace.id)}>
-                      {t("unmortgage", lang)} · {money(Math.ceil((selectedSpace.price / 2) * 1.1), lang)}
+                      {t("unmortgage", lang)} · {fmt(Math.ceil((selectedSpace.price / 2) * 1.1))}
                     </button>
                   )}
                 </div>
@@ -471,8 +482,8 @@ export default function MonopolyGame() {
             top: mousePos.y + 16,
           }}
         >
-          <strong>{spaceName(hoveredSpace.id, lang)}</strong>
-          {hoveredSpace.price != null && <span>{money(hoveredSpace.price, lang)}</span>}
+          <strong>{nameFull(hoveredSpace)}</strong>
+          {hoveredSpace.price != null && <span>{fmt(hoveredSpace.price)}</span>}
           {hoveredSpace.owner && <span className="mono-tt-owner">{t("ownedBy", lang, { name: nameOf(hoveredSpace.owner) })}</span>}
         </div>
       )}

@@ -1,8 +1,8 @@
-// Shared constants for the 3D Monopoly board. Colours mirror the 2D board's
-// CSS (components/games/monopoly.css) so the classic content reads identically;
-// the presentation is the modern "Business Tour"-style 3D scene.
+// Constants + fallbacks for the 3D board. A live game's colours/theme come from
+// `gameState.boardMeta.theme`; these values are the defaults used when no board
+// meta is available (e.g. the editor preview before a theme is chosen).
 
-// Colour-group hexes — must match the `.brown`, `.lightblue`, … rules in the CSS.
+// Fallback colour-group hexes (classic board).
 export const GROUP_COLORS: Record<string, string> = {
   brown: "#7b4a12",
   lightblue: "#8fd0ef",
@@ -16,13 +16,14 @@ export const GROUP_COLORS: Record<string, string> = {
   util: "#8aa0b8",
 };
 
-// Building colours (match .mono-house / .mono-hotel).
+// Building colours.
 export const HOUSE_COLOR = "#16a34a";
 export const HOTEL_COLOR = "#dc2626";
 
 // ---------------------------------------------------------------------------
-// Board geometry (world units). The classic board is an 11×11 square: four
-// corner tiles + nine edge tiles per side.
+// Per-tile geometry (world units) — constant regardless of board size. The
+// board's overall extent is derived from these plus the tiles-per-side in
+// layout.ts, so bigger boards simply grow outward.
 // ---------------------------------------------------------------------------
 export const TILE_W = 1.0;    // edge-tile width, along the perimeter
 export const TILE_D = 1.32;   // edge-tile depth, toward the centre
@@ -30,21 +31,23 @@ export const CORNER = 1.32;   // corner tiles are square
 export const TILE_H = 0.18;   // tile slab thickness
 export const SURFACE_Y = TILE_H; // top surface where pawns / houses / dice sit
 
-// Side length = 2 corners + 9 edge tiles; half-extent to the outer edge.
-export const SIDE_LEN = 2 * CORNER + 9 * TILE_W;
-export const HALF = SIDE_LEN / 2;
-// Inner playfield half-extent (where the centre panel / dice live).
-export const FIELD_HALF = HALF - TILE_D;
-
-// Palette for the board plinth / centre panel — deep, glossy, on-brand with
-// the surrounding .mono-root gradient (dark navy + green/blue accents).
+// Fallback material palette (used when boardMeta.theme is absent).
 export const PALETTE = {
   plinth: "#0a1a12",
-  plinthEdge: "#05120c",
   field: "#0c3b28",
-  fieldLine: "#1f6f4a",
+  accent: "#22c55e",
   tileBase: "#f4efdf",
   tileBaseCorner: "#eae3cd",
-  accentGreen: "#22c55e",
-  accentBlue: "#3b82f6",
 };
+
+// Resolve a theme object from board meta, filling any gaps with fallbacks.
+export function resolveTheme(theme?: any) {
+  return {
+    groupColors: { ...GROUP_COLORS, ...(theme?.groupColors || {}) },
+    tileBase: theme?.tileBase ?? PALETTE.tileBase,
+    tileBaseCorner: theme?.tileBaseCorner ?? PALETTE.tileBaseCorner,
+    plinth: theme?.plinth ?? PALETTE.plinth,
+    field: theme?.field ?? PALETTE.field,
+    accent: theme?.accent ?? PALETTE.accent,
+  };
+}

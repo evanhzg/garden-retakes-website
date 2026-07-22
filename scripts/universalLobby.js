@@ -11,6 +11,8 @@ class UniversalLobby {
     this.isPrivate = isPrivate;
     this.password = password;
     this.currentGame = 'none'; // e.g. 'uno_en', 'monopoly_fr' — 'none' when just hanging out
+    this.selectedBoardId = 'classic'; // Monopoly board choice
+    this.customBoardDef = null;        // set when a user-authored board is chosen
     this.status = 'WAITING'; // WAITING, PLAYING
     this.maxPlayers = 8;
     this.players = []; // Array of { steamId, ready, isBot, connected, botName? }
@@ -87,6 +89,8 @@ class UniversalLobby {
       name: this.name,
       isPrivate: this.isPrivate,
       currentGame: this.currentGame,
+      selectedBoardId: this.selectedBoardId,
+      customBoardName: this.customBoardDef ? this.customBoardDef.name : null,
       status: this.status,
       maxPlayers: this.maxPlayers,
       players: this.players,

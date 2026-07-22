@@ -57,6 +57,7 @@ function LobbyClient({ lobbyId, mySteamId }: { lobbyId: string; mySteamId: strin
   const [chatMessages, setChatMessages] = useState<ChatMsg[]>([]);
   const [chatInput, setChatInput] = useState("");
   const [copied, setCopied] = useState(false);
+  const [boards, setBoards] = useState<any[]>([]);
   const chatEndRef = useRef<HTMLDivElement | null>(null);
   const passwordRef = useRef("");
 
@@ -97,6 +98,10 @@ function LobbyClient({ lobbyId, mySteamId }: { lobbyId: string; mySteamId: strin
       }
     });
 
+    // Monopoly board choices for the board picker.
+    socket.on("boards_list", (list: any[]) => setBoards(list));
+    socket.emit("get_boards");
+
     // Server acked authentication (isAuthed), so this join is race-free
     socket.emit("lobby_join", { lobbyId, password: passwordRef.current });
 
@@ -108,6 +113,7 @@ function LobbyClient({ lobbyId, mySteamId }: { lobbyId: string; mySteamId: strin
       socket.off("lobby_kicked");
       socket.off("chat_history");
       socket.off("new_message");
+      socket.off("boards_list");
     };
   }, [socket, isConnected, isAuthed, lobbyId, router]);
 
@@ -139,6 +145,7 @@ function LobbyClient({ lobbyId, mySteamId }: { lobbyId: string; mySteamId: strin
   const handleReady = () => socket?.emit("lobby_ready");
   const handleStartGame = () => socket?.emit("lobby_start_game");
   const handleChangeGame = (game: string) => socket?.emit("lobby_change_game", { game });
+  const handleSelectBoard = (boardId: string) => socket?.emit("lobby_select_board", { boardId });
   const handleAddBot = () => socket?.emit("lobby_add_bot");
   const handleKick = (steamId: string) => socket?.emit("lobby_kick", steamId);
 
@@ -327,6 +334,40 @@ function LobbyClient({ lobbyId, mySteamId }: { lobbyId: string; mySteamId: strin
               })}
             </div>
           </div>
+
+          {/* Monopoly board picker */}
+          {baseGame === "monopoly" && boards.length > 0 && (
+            <div className="lobby-board-picker">
+              <div className="picker-header">
+                <h3>Board</h3>
+                {!isHost && <span className="picker-hint">Only the host picks the board</span>}
+              </div>
+              <div className="board-picker-grid">
+                {boards.map((b) => {
+                  const isSel = (lobbyState.selectedBoardId || "classic") === b.id;
+                  const swatches = Object.values(b.groupColors || {}).slice(0, 8) as string[];
+                  return (
+                    <button
+                      key={b.id}
+                      className={`board-pick-card ${isSel ? "selected" : ""}`}
+                      onClick={() => isHost && handleSelectBoard(b.id)}
+                      disabled={!isHost}
+                      style={{ ["--accent" as any]: b.accent }}
+                      title={b.name}
+                    >
+                      <span className="board-pick-swatches">
+                        {swatches.map((c, i) => (
+                          <span key={i} style={{ background: c }} />
+                        ))}
+                      </span>
+                      <span className="board-pick-name">{b.name}</span>
+                      <span className="board-pick-meta">{b.tileCount} tiles</span>
+                    </button>
+                  );
+                })}
+              </div>
+            </div>
+          )}
 
           {/* Players */}
           <div className="lobby-players-section">

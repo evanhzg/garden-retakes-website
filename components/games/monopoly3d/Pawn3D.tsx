@@ -19,9 +19,11 @@ type Props = {
   color: string;
   active: boolean;
   slotIndex: number;
+  perSide: number;
+  total: number;         // board tile count
 };
 
-function Pawn3DImpl({ position, color, active, slotIndex }: Props) {
+function Pawn3DImpl({ position, color, active, slotIndex, perSide, total }: Props) {
   const ref = useRef<THREE.Group>(null);
   const matRef = useRef<THREE.MeshStandardMaterial>(null);
 
@@ -42,9 +44,9 @@ function Pawn3DImpl({ position, color, active, slotIndex }: Props) {
       return;
     }
     if (position === lastPos.current) return;
-    const p = pathBetween(lastPos.current, position);
+    const p = pathBetween(lastPos.current, position, total);
     const steps = p.length - 1;
-    const forward = (position - lastPos.current + 40) % 40;
+    const forward = (position - lastPos.current + total) % total;
     const teleport = p.length === 2 && forward !== 1;
     path.current = p;
     u.current = 0;
@@ -64,9 +66,9 @@ function Pawn3DImpl({ position, color, active, slotIndex }: Props) {
     const idxF = u.current * last;
     const i = Math.min(Math.floor(idxF), Math.max(0, last - 1));
     const f = last === 0 ? 0 : idxF - i;
-    const a = tileCenter(p[i]);
-    const b = tileCenter(p[Math.min(i + 1, last)]);
-    const off = pawnSlotOffset(position, slotIndex);
+    const a = tileCenter(p[i], perSide);
+    const b = tileCenter(p[Math.min(i + 1, last)], perSide);
+    const off = pawnSlotOffset(position, slotIndex, perSide);
 
     const x = a[0] + (b[0] - a[0]) * f + off[0];
     const z = a[1] + (b[1] - a[1]) * f + off[1];

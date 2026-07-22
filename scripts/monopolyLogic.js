@@ -5,48 +5,9 @@
 
 const PLAYER_COLORS = ['#ef4444', '#3b82f6', '#22c55e', '#eab308', '#a855f7', '#ec4899', '#f97316', '#14b8a6'];
 
-const RAILROADS = [5, 15, 25, 35];
-const UTILITIES = [12, 28];
-
-// Chance deck — actions are executed server-side; text lives on the client.
-const CHANCE = [
-  { id: 'ch_go',        action: 'move_to',     pos: 0,  collectGo: false },
-  { id: 'ch_illinois',  action: 'move_to',     pos: 24, collectGo: true },
-  { id: 'ch_charles',   action: 'move_to',     pos: 11, collectGo: true },
-  { id: 'ch_util',      action: 'nearest_util' },
-  { id: 'ch_rail',      action: 'nearest_rail' },
-  { id: 'ch_dividend',  action: 'collect',     amount: 50 },
-  { id: 'ch_gojf',      action: 'gojf' },
-  { id: 'ch_back3',     action: 'move_by',     steps: -3 },
-  { id: 'ch_jail',      action: 'jail' },
-  { id: 'ch_repairs',   action: 'repairs',     perHouse: 25, perHotel: 100 },
-  { id: 'ch_speeding',  action: 'pay',         amount: 15 },
-  { id: 'ch_reading',   action: 'move_to',     pos: 5,  collectGo: true },
-  { id: 'ch_boardwalk', action: 'move_to',     pos: 39, collectGo: false },
-  { id: 'ch_chairman',  action: 'pay_each',    amount: 50 },
-  { id: 'ch_loan',      action: 'collect',     amount: 150 },
-  { id: 'ch_crossword', action: 'collect',     amount: 100 },
-];
-
-// Community Chest deck.
-const CHEST = [
-  { id: 'cc_go',        action: 'move_to',     pos: 0,  collectGo: false },
-  { id: 'cc_bankerror', action: 'collect',     amount: 200 },
-  { id: 'cc_doctor',    action: 'pay',         amount: 50 },
-  { id: 'cc_stock',     action: 'collect',     amount: 50 },
-  { id: 'cc_gojf',      action: 'gojf' },
-  { id: 'cc_jail',      action: 'jail' },
-  { id: 'cc_holiday',   action: 'collect',     amount: 100 },
-  { id: 'cc_taxrefund', action: 'collect',     amount: 20 },
-  { id: 'cc_birthday',  action: 'collect_each', amount: 10 },
-  { id: 'cc_lifeins',   action: 'collect',     amount: 100 },
-  { id: 'cc_hospital',  action: 'pay',         amount: 50 },
-  { id: 'cc_school',    action: 'pay',         amount: 50 },
-  { id: 'cc_consult',   action: 'collect',     amount: 25 },
-  { id: 'cc_streets',   action: 'repairs',     perHouse: 40, perHotel: 115 },
-  { id: 'cc_beauty',    action: 'collect',     amount: 10 },
-  { id: 'cc_inherit',   action: 'collect',     amount: 100 },
-];
+// Board definitions (tiles + card decks) live in a shared, data-driven module
+// so both this engine and the client can consume any board.
+const { getBoard, DEFAULT_CHANCE, DEFAULT_CHEST } = require('./boardDefs');
 
 function shuffle(arr) {
   const a = arr.slice();
@@ -60,14 +21,29 @@ function shuffle(arr) {
 const rid = () => Math.random().toString(36).slice(2, 11);
 
 class MonopolyGame {
-  constructor(lobbyId, lang = 'en') {
+  constructor(lobbyId, lang = 'en', boardDef = null) {
     this.lobbyId = lobbyId;
     this.lang = lang === 'fr' ? 'fr' : 'en';
+
+    // Board is data-driven: everything special about the board (its size, corner
+    // roles, economy, theme, card decks) comes from the definition.
+    const def = boardDef || getBoard('classic');
+    this.boardId = def.id;
+    this.boardName = def.name;
+    this.perSide = def.perSide;
+    this.roles = def.roles;                 // { go, jail, goToJail, freeParking }
+    this.startingMoney = def.startingMoney;
+    this.passGo = def.passGo;
+    this.theme = def.theme;
+    this.currency = def.currency;
+
     this.players = [];
     this.playerStates = {};
     this.status = 'WAITING';
     this.currentTurnIndex = 0;
-    this.board = this.generateBoard();
+    this.board = this.buildBoard(def);
+    this.railIndices = this.board.filter(s => s.type === 'rail').map(s => s.id);
+    this.utilIndices = this.board.filter(s => s.type === 'util').map(s => s.id);
     this.winner = null;
     this.turnPhase = 'ROLL'; // ROLL, ACTION, END
     this.lastRoll = null;
@@ -76,55 +52,24 @@ class MonopolyGame {
     this.doublesCount = 0;
     this.logs = [];
     this.activeCard = null; // { deck, cardId, drawId, pid } for the client card popup
-    this.chanceDeck = shuffle(CHANCE);
-    this.chestDeck = shuffle(CHEST);
+
+    const decks = def.decks || { chance: DEFAULT_CHANCE, chest: DEFAULT_CHEST };
+    this.chanceDeck = shuffle(decks.chance);
+    this.chestDeck = shuffle(decks.chest);
   }
 
-  generateBoard() {
-    // `name` is kept only as an internal English fallback; the client renders
-    // localized names keyed by `id`. Prices/rents are identical across editions.
-    return [
-      { id: 0, name: 'GO', type: 'corner' },
-      { id: 1, name: 'Mediterranean Avenue', type: 'property', group: 'brown', price: 60, rent: [2, 10, 30, 90, 160, 250], houseCost: 50, houses: 0, mortgaged: false, owner: null },
-      { id: 2, name: 'Community Chest', type: 'chest' },
-      { id: 3, name: 'Baltic Avenue', type: 'property', group: 'brown', price: 60, rent: [4, 20, 60, 180, 320, 450], houseCost: 50, houses: 0, mortgaged: false, owner: null },
-      { id: 4, name: 'Income Tax', type: 'tax', amount: 200 },
-      { id: 5, name: 'Reading Railroad', type: 'rail', group: 'rail', price: 200, rent: [25, 50, 100, 200], mortgaged: false, owner: null },
-      { id: 6, name: 'Oriental Avenue', type: 'property', group: 'lightblue', price: 100, rent: [6, 30, 90, 270, 400, 550], houseCost: 50, houses: 0, mortgaged: false, owner: null },
-      { id: 7, name: 'Chance', type: 'chance' },
-      { id: 8, name: 'Vermont Avenue', type: 'property', group: 'lightblue', price: 100, rent: [6, 30, 90, 270, 400, 550], houseCost: 50, houses: 0, mortgaged: false, owner: null },
-      { id: 9, name: 'Connecticut Avenue', type: 'property', group: 'lightblue', price: 120, rent: [8, 40, 100, 300, 450, 600], houseCost: 50, houses: 0, mortgaged: false, owner: null },
-      { id: 10, name: 'Jail', type: 'corner' },
-      { id: 11, name: 'St. Charles Place', type: 'property', group: 'pink', price: 140, rent: [10, 50, 150, 450, 625, 750], houseCost: 100, houses: 0, mortgaged: false, owner: null },
-      { id: 12, name: 'Electric Company', type: 'util', group: 'util', price: 150, mortgaged: false, owner: null },
-      { id: 13, name: 'States Avenue', type: 'property', group: 'pink', price: 140, rent: [10, 50, 150, 450, 625, 750], houseCost: 100, houses: 0, mortgaged: false, owner: null },
-      { id: 14, name: 'Virginia Avenue', type: 'property', group: 'pink', price: 160, rent: [12, 60, 180, 500, 700, 900], houseCost: 100, houses: 0, mortgaged: false, owner: null },
-      { id: 15, name: 'Pennsylvania Railroad', type: 'rail', group: 'rail', price: 200, rent: [25, 50, 100, 200], mortgaged: false, owner: null },
-      { id: 16, name: 'St. James Place', type: 'property', group: 'orange', price: 180, rent: [14, 70, 200, 550, 750, 950], houseCost: 100, houses: 0, mortgaged: false, owner: null },
-      { id: 17, name: 'Community Chest', type: 'chest' },
-      { id: 18, name: 'Tennessee Avenue', type: 'property', group: 'orange', price: 180, rent: [14, 70, 200, 550, 750, 950], houseCost: 100, houses: 0, mortgaged: false, owner: null },
-      { id: 19, name: 'New York Avenue', type: 'property', group: 'orange', price: 200, rent: [16, 80, 220, 600, 800, 1000], houseCost: 100, houses: 0, mortgaged: false, owner: null },
-      { id: 20, name: 'Free Parking', type: 'corner' },
-      { id: 21, name: 'Kentucky Avenue', type: 'property', group: 'red', price: 220, rent: [18, 90, 250, 700, 875, 1050], houseCost: 150, houses: 0, mortgaged: false, owner: null },
-      { id: 22, name: 'Chance', type: 'chance' },
-      { id: 23, name: 'Indiana Avenue', type: 'property', group: 'red', price: 220, rent: [18, 90, 250, 700, 875, 1050], houseCost: 150, houses: 0, mortgaged: false, owner: null },
-      { id: 24, name: 'Illinois Avenue', type: 'property', group: 'red', price: 240, rent: [20, 100, 300, 750, 925, 1100], houseCost: 150, houses: 0, mortgaged: false, owner: null },
-      { id: 25, name: 'B. & O. Railroad', type: 'rail', group: 'rail', price: 200, rent: [25, 50, 100, 200], mortgaged: false, owner: null },
-      { id: 26, name: 'Atlantic Avenue', type: 'property', group: 'yellow', price: 260, rent: [22, 110, 330, 800, 975, 1150], houseCost: 150, houses: 0, mortgaged: false, owner: null },
-      { id: 27, name: 'Ventnor Avenue', type: 'property', group: 'yellow', price: 260, rent: [22, 110, 330, 800, 975, 1150], houseCost: 150, houses: 0, mortgaged: false, owner: null },
-      { id: 28, name: 'Water Works', type: 'util', group: 'util', price: 150, mortgaged: false, owner: null },
-      { id: 29, name: 'Marvin Gardens', type: 'property', group: 'yellow', price: 280, rent: [24, 120, 360, 850, 1025, 1200], houseCost: 150, houses: 0, mortgaged: false, owner: null },
-      { id: 30, name: 'Go To Jail', type: 'corner' },
-      { id: 31, name: 'Pacific Avenue', type: 'property', group: 'green', price: 300, rent: [26, 130, 390, 900, 1100, 1275], houseCost: 200, houses: 0, mortgaged: false, owner: null },
-      { id: 32, name: 'North Carolina Avenue', type: 'property', group: 'green', price: 300, rent: [26, 130, 390, 900, 1100, 1275], houseCost: 200, houses: 0, mortgaged: false, owner: null },
-      { id: 33, name: 'Community Chest', type: 'chest' },
-      { id: 34, name: 'Pennsylvania Avenue', type: 'property', group: 'green', price: 320, rent: [28, 150, 450, 1000, 1200, 1400], houseCost: 200, houses: 0, mortgaged: false, owner: null },
-      { id: 35, name: 'Short Line Railroad', type: 'rail', group: 'rail', price: 200, rent: [25, 50, 100, 200], mortgaged: false, owner: null },
-      { id: 36, name: 'Chance', type: 'chance' },
-      { id: 37, name: 'Park Place', type: 'property', group: 'blue', price: 350, rent: [35, 175, 500, 1100, 1300, 1500], houseCost: 200, houses: 0, mortgaged: false, owner: null },
-      { id: 38, name: 'Luxury Tax', type: 'tax', amount: 100 },
-      { id: 39, name: 'Boardwalk', type: 'property', group: 'blue', price: 400, rent: [50, 200, 600, 1400, 1700, 2000], houseCost: 200, houses: 0, mortgaged: false, owner: null },
-    ];
+  // Build the runtime board from a definition: id is normalised to the tile's
+  // index, and ownable tiles get their mutable runtime fields.
+  buildBoard(def) {
+    return def.tiles.map((t, i) => {
+      const tile = { ...t, id: i };
+      if (t.type === 'property' || t.type === 'rail' || t.type === 'util') {
+        tile.owner = null;
+        tile.mortgaged = false;
+      }
+      if (t.type === 'property') tile.houses = 0;
+      return tile;
+    });
   }
 
   // ---- player lifecycle -------------------------------------------------
@@ -135,8 +80,8 @@ class MonopolyGame {
     const idx = this.players.length;
     this.players.push(steamId);
     this.playerStates[steamId] = {
-      position: 0,
-      money: 1500,
+      position: this.roles.go,
+      money: this.startingMoney,
       jailed: false,
       jailTurns: 0,
       jailCards: 0,
@@ -309,7 +254,7 @@ class MonopolyGame {
   sendToJail(steamId, reason) {
     const state = this.playerStates[steamId];
     if (!state) return;
-    state.position = 10;
+    state.position = this.roles.jail;
     state.jailed = true;
     state.jailTurns = 0;
     this.currentRollDouble = false;
@@ -338,8 +283,8 @@ class MonopolyGame {
   moveTo(steamId, pos, { collectGo = true } = {}) {
     const state = this.playerStates[steamId];
     if (pos < state.position && collectGo) {
-      state.money += 200;
-      this.log('pass_go', { pid: steamId });
+      state.money += this.passGo;
+      this.log('pass_go', { pid: steamId, amount: this.passGo });
     }
     state.position = pos;
   }
@@ -352,7 +297,7 @@ class MonopolyGame {
     const space = this.board[state.position];
     this.log('land', { pid: steamId, spaceId: space.id });
 
-    if (space.id === 30) { this.sendToJail(steamId, 'space'); return; }
+    if (space.id === this.roles.goToJail) { this.sendToJail(steamId, 'space'); return; }
 
     switch (space.type) {
       case 'property':
@@ -432,11 +377,12 @@ class MonopolyGame {
     }
 
     const move = die1 + die2;
+    const N = this.board.length;
     let pos = state.position + move;
-    if (pos >= 40) {
-      pos -= 40;
-      state.money += 200;
-      this.log('pass_go', { pid: steamId });
+    if (pos >= N) {
+      pos -= N;
+      state.money += this.passGo;
+      this.log('pass_go', { pid: steamId, amount: this.passGo });
     }
     state.position = pos;
 
@@ -485,20 +431,29 @@ class MonopolyGame {
         this.moveTo(steamId, card.pos, { collectGo: card.collectGo });
         this.resolveLanding(steamId, { fromCard: true });
         break;
+      case 'move_to_go':
+        // Generalized "advance to GO" for non-classic decks: land on GO and
+        // collect the GO salary.
+        state.position = this.roles.go;
+        this.credit(steamId, this.passGo);
+        this.log('pass_go', { pid: steamId, amount: this.passGo });
+        this.resolveLanding(steamId, { fromCard: true });
+        break;
       case 'move_by': {
-        state.position = (state.position + card.steps + 40) % 40;
+        const N = this.board.length;
+        state.position = (state.position + card.steps + N) % N;
         this.resolveLanding(steamId, { fromCard: true });
         break;
       }
       case 'nearest_rail': {
-        const target = RAILROADS.find(r => r > state.position);
-        this.moveTo(steamId, target != null ? target : RAILROADS[0], { collectGo: true });
+        const target = this.railIndices.find(r => r > state.position);
+        this.moveTo(steamId, target != null ? target : this.railIndices[0], { collectGo: true });
         this.resolveLanding(steamId, { fromCard: true, rentMultiplier: 2 });
         break;
       }
       case 'nearest_util': {
-        const target = UTILITIES.find(u => u > state.position);
-        this.moveTo(steamId, target != null ? target : UTILITIES[0], { collectGo: true });
+        const target = this.utilIndices.find(u => u > state.position);
+        this.moveTo(steamId, target != null ? target : this.utilIndices[0], { collectGo: true });
         const roll = (Math.floor(Math.random() * 6) + 1) + (Math.floor(Math.random() * 6) + 1);
         // Card rule: pay 10x the fresh roll regardless of how many utilities owned.
         this.resolveLanding(steamId, { fromCard: true, utilForceTotal: roll * 2.5 });
@@ -657,6 +612,19 @@ class MonopolyGame {
       currentTurn: this.status === 'PLAYING' ? this.players[this.currentTurnIndex] : null,
       turnPhase: this.turnPhase,
       board: this.board,
+      boardId: this.boardId,
+      // Everything the client needs to render an arbitrary board with no prior
+      // knowledge of it.
+      boardMeta: {
+        boardId: this.boardId,
+        name: this.boardName,
+        perSide: this.perSide,
+        roles: this.roles,
+        theme: this.theme,
+        currency: this.currency,
+        startingMoney: this.startingMoney,
+        passGo: this.passGo,
+      },
       winner: this.winner,
       lastRoll: this.lastRoll,
       rollId: this.rollId,
