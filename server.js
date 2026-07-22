@@ -59,6 +59,9 @@ const corsOrigins = process.env.SOCKET_CORS_ORIGINS
       "https://docs.dev.retakes.fr",
       // Local dev
       "http://localhost:3000",
+      "http://games.localhost:3000",
+      "http://pkmn.localhost:3000",
+      "http://docs.localhost:3000",
       "http://localhost:3131",
       "http://games.localhost:3131",
       "http://pkmn.localhost:3131",
@@ -456,7 +459,7 @@ io.on("connection", (socket) => {
           unoGames.set(lobbyId, gameInstance);
           break;
         case 'monopoly':
-          gameInstance = new MonopolyGame(lobbyId);
+          gameInstance = new MonopolyGame(lobbyId, lang);
           monopolyGames.set(lobbyId, gameInstance);
           break;
         case 'codenames':
@@ -482,9 +485,10 @@ io.on("connection", (socket) => {
       }
 
       if (gameInstance) {
-        // Add all lobby players to the game instance
+        // Add all lobby players to the game instance (bot names are passed
+        // through so games that localize display names can use them).
         lobby.players.forEach(p => {
-          gameInstance.addPlayer(p.steamId);
+          gameInstance.addPlayer(p.steamId, { isBot: p.isBot, name: p.botName });
         });
 
         lobby.status = 'PLAYING';
@@ -779,8 +783,10 @@ io.on("connection", (socket) => {
       if (!currentBotId || !currentBotId.startsWith('BOT_')) return;
 
       if (game.turnPhase === 'ROLL') {
-        if (game.playerStates[currentBotId].jailed && game.playerStates[currentBotId].money > 500) {
-           game.payJail(currentBotId);
+        const bs = game.playerStates[currentBotId];
+        if (bs.jailed) {
+          if (bs.jailCards > 0) game.useJailCard(currentBotId);
+          else if (bs.money > 500) game.payJail(currentBotId);
         }
         game.rollDice(currentBotId);
       } else if (game.turnPhase === 'ACTION') {
@@ -789,20 +795,25 @@ io.on("connection", (socket) => {
         if (space && (space.type === 'property' || space.type === 'rail' || space.type === 'util') && space.owner === null && state.money >= space.price) {
           game.buyProperty(currentBotId);
         } else {
-          if (state.money > 500) {
-            const owned = game.board.filter(s => s.owner === currentBotId && s.type === 'property');
-            for (const s of owned) {
-               if (game.buildHouse(currentBotId, s.id)) break; 
-            }
-          }
-          game.endTurn(currentBotId);
+          game.skipBuy(currentBotId);
         }
       } else if (game.turnPhase === 'END') {
+        // Invest surplus cash into houses (evenly, keeping a cash buffer) so bot
+        // games actually develop and reach a conclusion.
+        let built = true, guard = 0;
+        while (built && guard++ < 40 && game.playerStates[currentBotId].money > 350) {
+          built = false;
+          for (const s of game.board) {
+            if (s.owner === currentBotId && s.type === 'property' && s.houses < 5) {
+              if (game.buildHouse(currentBotId, s.id)) { built = true; break; }
+            }
+          }
+        }
         game.endTurn(currentBotId);
       }
 
       broadcastMonopolyState(lobbyId);
-    }, 1500);
+    }, 2000);
   };
 
   const broadcastMonopolyState = (lobbyId) => {
@@ -864,6 +875,42 @@ io.on("connection", (socket) => {
     if (socket.lobbyId && socket.steamId) {
       const game = monopolyGames.get(socket.lobbyId);
       if (game && game.payJail(socket.steamId)) {
+        broadcastMonopolyState(socket.lobbyId);
+      }
+    }
+  });
+
+  socket.on("monopoly_use_card", () => {
+    if (socket.lobbyId && socket.steamId) {
+      const game = monopolyGames.get(socket.lobbyId);
+      if (game && game.useJailCard(socket.steamId)) {
+        broadcastMonopolyState(socket.lobbyId);
+      }
+    }
+  });
+
+  socket.on("monopoly_skip", () => {
+    if (socket.lobbyId && socket.steamId) {
+      const game = monopolyGames.get(socket.lobbyId);
+      if (game && game.skipBuy(socket.steamId)) {
+        broadcastMonopolyState(socket.lobbyId);
+      }
+    }
+  });
+
+  socket.on("monopoly_sell", (data) => {
+    if (socket.lobbyId && socket.steamId) {
+      const game = monopolyGames.get(socket.lobbyId);
+      if (game && game.sellHouse(socket.steamId, data.spaceId)) {
+        broadcastMonopolyState(socket.lobbyId);
+      }
+    }
+  });
+
+  socket.on("monopoly_unmortgage", (data) => {
+    if (socket.lobbyId && socket.steamId) {
+      const game = monopolyGames.get(socket.lobbyId);
+      if (game && game.unmortgageProperty(socket.steamId, data.spaceId)) {
         broadcastMonopolyState(socket.lobbyId);
       }
     }

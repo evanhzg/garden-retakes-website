@@ -6,6 +6,10 @@ import * as THREE from "three";
 import * as CANNON from "cannon-es";
 
 const DICE_SIZE = 0.15;
+// Interior half-width of the rolling arena. Kept small so both dice always
+// come to rest near the centre of the board.
+const ARENA_HALF = 1.0;
+const GRAVITY = -30;
 
 function getTopFace(quaternion: CANNON.Quaternion) {
   const up = new CANNON.Vec3(0, 1, 0);
@@ -32,97 +36,115 @@ function getTopFace(quaternion: CANNON.Quaternion) {
   return topFace;
 }
 
-function createWalls(world: CANNON.World) {
+// Box the dice into a tight arena of interior half-width `half` so they settle
+// near the centre. Walls sit just outside the interior and are tall.
+function createWalls(world: CANNON.World, half = ARENA_HALF) {
   const wallMaterial = new CANNON.Material();
-  const wallShape = new CANNON.Box(new CANNON.Vec3(10, 10, 0.5));
-  
-  // North
-  const wallN = new CANNON.Body({ mass: 0, shape: wallShape, material: wallMaterial });
-  wallN.position.set(0, 5, -2.5);
-  world.addBody(wallN);
-  // South
-  const wallS = new CANNON.Body({ mass: 0, shape: wallShape, material: wallMaterial });
-  wallS.position.set(0, 5, 2.5);
-  world.addBody(wallS);
-  // East
-  const wallE = new CANNON.Body({ mass: 0, shape: wallShape, material: wallMaterial });
-  wallE.position.set(2.5, 5, 0);
-  wallE.quaternion.setFromEuler(0, Math.PI / 2, 0);
-  world.addBody(wallE);
-  // West
-  const wallW = new CANNON.Body({ mass: 0, shape: wallShape, material: wallMaterial });
-  wallW.position.set(-2.5, 5, 0);
-  wallW.quaternion.setFromEuler(0, Math.PI / 2, 0);
-  world.addBody(wallW);
+  const t = 0.4; // wall thickness
+  const h = 6;   // wall height
+  const shapeNS = new CANNON.Box(new CANNON.Vec3(half + t, h, t));
+  const shapeEW = new CANNON.Box(new CANNON.Vec3(t, h, half + t));
+  const add = (shape: CANNON.Box, x: number, z: number) => {
+    const b = new CANNON.Body({ mass: 0, shape, material: wallMaterial });
+    b.position.set(x, h - 1, z);
+    world.addBody(b);
+  };
+  add(shapeNS, 0, -(half + t)); // north
+  add(shapeNS, 0, half + t);    // south
+  add(shapeEW, half + t, 0);    // east
+  add(shapeEW, -(half + t), 0); // west
 }
 
+// Orientation that rests the given face pointing straight up (static fallback).
+function restingQuaternionForFace(face: number): CANNON.Quaternion {
+  const axes: Record<number, [number, number, number]> = {
+    1: [0, 1, 0], 6: [0, -1, 0], 2: [1, 0, 0], 5: [-1, 0, 0], 3: [0, 0, 1], 4: [0, 0, -1],
+  };
+  const a = new THREE.Vector3(...(axes[face] || [0, 1, 0]));
+  const q = new THREE.Quaternion().setFromUnitVectors(a, new THREE.Vector3(0, 1, 0));
+  return new CANNON.Quaternion(q.x, q.y, q.z, q.w);
+}
+
+// Pre-simulate throws until we find one that (a) lands showing the target pair
+// and (b) rests near the centre without overlap. Deterministic single-step
+// physics so the on-screen sim reproduces it exactly.
 function findTrajectoryForPair(target1: number, target2: number) {
-  const world = new CANNON.World({ gravity: new CANNON.Vec3(0, -60, 0) });
-  world.defaultContactMaterial.restitution = 0.4;
-  world.defaultContactMaterial.friction = 0.5;
+  const world = new CANNON.World({ gravity: new CANNON.Vec3(0, GRAVITY, 0) });
+  world.defaultContactMaterial.restitution = 0.3;
+  world.defaultContactMaterial.friction = 0.6;
 
   const floor = new CANNON.Body({ type: CANNON.Body.STATIC, shape: new CANNON.Plane() });
   floor.quaternion.setFromEuler(-Math.PI / 2, 0, 0);
   world.addBody(floor);
 
-  createWalls(world);
+  createWalls(world, ARENA_HALF);
 
   const dice1 = new CANNON.Body({ mass: 1, shape: new CANNON.Box(new CANNON.Vec3(DICE_SIZE, DICE_SIZE, DICE_SIZE)) });
   const dice2 = new CANNON.Body({ mass: 1, shape: new CANNON.Box(new CANNON.Vec3(DICE_SIZE, DICE_SIZE, DICE_SIZE)) });
   world.addBody(dice1);
   world.addBody(dice2);
 
-  // Start closer to center to fit inside the new 2.5x2.5 boundary
-  const startPos1 = new CANNON.Vec3(-1, 8, -1);
-  const startPos2 = new CANNON.Vec3(1, 8, 1);
+  const startPos1 = new CANNON.Vec3(-0.4, 2.2, 0.18);
+  const startPos2 = new CANNON.Vec3(0.4, 2.2, -0.18);
+  const minSep = DICE_SIZE * 2.4;
 
-  let attempts = 0;
-  while (attempts < 2000) {
-    attempts++;
+  let best: any = null;
+  let bestScore = Infinity;
 
+  // Bounded search — cheap enough to run synchronously (and twice under dev
+  // StrictMode) without stalling the UI. `best` guarantees a usable result.
+  for (let attempt = 0; attempt < 500; attempt++) {
     dice1.position.copy(startPos1);
     dice1.velocity.setZero();
     dice1.angularVelocity.setZero();
     dice1.quaternion.setFromEuler(Math.random() * Math.PI * 2, Math.random() * Math.PI * 2, Math.random() * Math.PI * 2);
-    const initialQuat1 = dice1.quaternion.clone();
-    const force1 = new CANNON.Vec3(Math.random() * 4, Math.random() * 2 - 1, Math.random() * 4);
-    const offset1 = new CANNON.Vec3((Math.random() - 0.5) * DICE_SIZE, (Math.random() - 0.5) * DICE_SIZE, (Math.random() - 0.5) * DICE_SIZE);
-    dice1.applyImpulse(force1, offset1);
+    const q1 = dice1.quaternion.clone();
+    const f1 = new CANNON.Vec3((Math.random() - 0.5) * 1.4, Math.random() * 0.6, (Math.random() - 0.5) * 1.4);
+    const o1 = new CANNON.Vec3((Math.random() - 0.5) * DICE_SIZE, (Math.random() - 0.5) * DICE_SIZE, (Math.random() - 0.5) * DICE_SIZE);
+    dice1.applyImpulse(f1, o1);
 
     dice2.position.copy(startPos2);
     dice2.velocity.setZero();
     dice2.angularVelocity.setZero();
     dice2.quaternion.setFromEuler(Math.random() * Math.PI * 2, Math.random() * Math.PI * 2, Math.random() * Math.PI * 2);
-    const initialQuat2 = dice2.quaternion.clone();
-    const force2 = new CANNON.Vec3(-(Math.random() * 4), Math.random() * 2 - 1, -(Math.random() * 4));
-    const offset2 = new CANNON.Vec3((Math.random() - 0.5) * DICE_SIZE, (Math.random() - 0.5) * DICE_SIZE, (Math.random() - 0.5) * DICE_SIZE);
-    dice2.applyImpulse(force2, offset2);
+    const q2 = dice2.quaternion.clone();
+    const f2 = new CANNON.Vec3((Math.random() - 0.5) * 1.4, Math.random() * 0.6, (Math.random() - 0.5) * 1.4);
+    const o2 = new CANNON.Vec3((Math.random() - 0.5) * DICE_SIZE, (Math.random() - 0.5) * DICE_SIZE, (Math.random() - 0.5) * DICE_SIZE);
+    dice2.applyImpulse(f2, o2);
 
     let resting = false;
-    for (let i = 0; i < 300; i++) {
+    for (let i = 0; i < 190; i++) {
       world.step(1 / 60);
-      if (dice1.position.y < DICE_SIZE * 1.5 && dice2.position.y < DICE_SIZE * 1.5 && 
-          dice1.velocity.lengthSquared() < 0.05 && dice2.velocity.lengthSquared() < 0.05 &&
-          dice1.angularVelocity.lengthSquared() < 0.05 && dice2.angularVelocity.lengthSquared() < 0.05) {
+      if (dice1.position.y < DICE_SIZE * 1.6 && dice2.position.y < DICE_SIZE * 1.6 &&
+          dice1.velocity.lengthSquared() < 0.03 && dice2.velocity.lengthSquared() < 0.03 &&
+          dice1.angularVelocity.lengthSquared() < 0.03 && dice2.angularVelocity.lengthSquared() < 0.03) {
         resting = true;
         break;
       }
     }
+    if (!resting) continue;
 
-    if (resting) {
-      const result1 = getTopFace(dice1.quaternion);
-      const result2 = getTopFace(dice2.quaternion);
-      
-      if ((result1 === target1 && result2 === target2) || (result1 === target2 && result2 === target1)) {
-        return {
-          dice1: { startPos: startPos1, startQuat: initialQuat1, impulse: force1, offset: offset1, finalNum: result1 },
-          dice2: { startPos: startPos2, startQuat: initialQuat2, impulse: force2, offset: offset2, finalNum: result2 }
-        };
-      }
-    }
+    const r1 = getTopFace(dice1.quaternion);
+    const r2 = getTopFace(dice2.quaternion);
+    const match = (r1 === target1 && r2 === target2) || (r1 === target2 && r2 === target1);
+    if (!match) continue;
+
+    const d1 = Math.hypot(dice1.position.x, dice1.position.z);
+    const d2 = Math.hypot(dice2.position.x, dice2.position.z);
+    const sep = Math.hypot(dice1.position.x - dice2.position.x, dice1.position.z - dice2.position.z);
+    const cand = {
+      dice1: { startPos: startPos1.clone(), startQuat: q1, impulse: f1, offset: o1, finalNum: r1 },
+      dice2: { startPos: startPos2.clone(), startQuat: q2, impulse: f2, offset: o2, finalNum: r2 },
+    };
+
+    // Good enough — both reasonably centred and separated: stop searching early.
+    if (d1 < 0.8 && d2 < 0.8 && sep > minSep) return cand;
+
+    const score = d1 + d2 + (sep < minSep ? 4 : 0);
+    if (score < bestScore) { bestScore = score; best = cand; }
   }
-  
-  return null;
+
+  return best;
 }
 
 function createDiceTexture(number: number) {
@@ -204,53 +226,75 @@ function DiceSimulation({ roll, onRest }: { roll: [number, number]; onRest: () =
   const diceMeshes = useRef<THREE.Mesh[]>([]);
   
   const hasSettled = useRef(false);
+  const settleFrames = useRef(0);
+
+  // Fire onRest exactly once, then keep the settled dice on screen.
+  const finish = () => {
+    if (hasSettled.current) return;
+    hasSettled.current = true;
+    setTimeout(() => onRest(), 1200);
+  };
 
   useEffect(() => {
-    // initialize physics
-    const world = new CANNON.World({ gravity: new CANNON.Vec3(0, -60, 0) });
-    world.defaultContactMaterial.restitution = 0.4;
-    world.defaultContactMaterial.friction = 0.5;
+    hasSettled.current = false;
+    settleFrames.current = 0;
+    // initialize physics — identical parameters to the pre-simulation so the
+    // on-screen roll reproduces the pre-computed result exactly.
+    const world = new CANNON.World({ gravity: new CANNON.Vec3(0, GRAVITY, 0) });
+    world.defaultContactMaterial.restitution = 0.3;
+    world.defaultContactMaterial.friction = 0.6;
     worldRef.current = world;
 
     const floor = new CANNON.Body({ type: CANNON.Body.STATIC, shape: new CANNON.Plane() });
     floor.quaternion.setFromEuler(-Math.PI / 2, 0, 0);
     world.addBody(floor);
 
-    createWalls(world);
+    createWalls(world, ARENA_HALF);
 
-    // run pre-simulation to find trajectory
     const trajectory = findTrajectoryForPair(roll[0], roll[1]);
 
+    const body1 = new CANNON.Body({ mass: 1, shape: new CANNON.Box(new CANNON.Vec3(DICE_SIZE, DICE_SIZE, DICE_SIZE)) });
+    const body2 = new CANNON.Body({ mass: 1, shape: new CANNON.Box(new CANNON.Vec3(DICE_SIZE, DICE_SIZE, DICE_SIZE)) });
+
     if (trajectory) {
-      // Setup visible simulation bodies
-      const body1 = new CANNON.Body({ mass: 1, shape: new CANNON.Box(new CANNON.Vec3(DICE_SIZE, DICE_SIZE, DICE_SIZE)) });
       body1.position.copy(trajectory.dice1.startPos);
       body1.quaternion.copy(trajectory.dice1.startQuat);
       body1.applyImpulse(trajectory.dice1.impulse, trajectory.dice1.offset);
-      world.addBody(body1);
-
-      const body2 = new CANNON.Body({ mass: 1, shape: new CANNON.Box(new CANNON.Vec3(DICE_SIZE, DICE_SIZE, DICE_SIZE)) });
       body2.position.copy(trajectory.dice2.startPos);
       body2.quaternion.copy(trajectory.dice2.startQuat);
       body2.applyImpulse(trajectory.dice2.impulse, trajectory.dice2.offset);
-      world.addBody(body2);
-
-      diceBodies.current = [body1, body2];
+    } else {
+      // Fallback (should be rare): place the dice centred, already showing the
+      // requested faces, so we never leave the roll unresolved.
+      body1.position.set(-0.35, DICE_SIZE, 0.15);
+      body1.quaternion.copy(restingQuaternionForFace(roll[0]));
+      body2.position.set(0.35, DICE_SIZE, -0.15);
+      body2.quaternion.copy(restingQuaternionForFace(roll[1]));
     }
 
+    world.addBody(body1);
+    world.addBody(body2);
+    diceBodies.current = [body1, body2];
+
+    // Hard failsafe: the dice can occasionally come to rest leaning together in a
+    // pose the motion test doesn't catch. Never leave the roll unresolved —
+    // guarantee onRest fires so play controls always re-enable.
+    const failSafe = setTimeout(() => finish(), 4000);
+
     return () => {
-      // cleanup meshes and bodies
+      clearTimeout(failSafe);
       if (worldRef.current) {
         diceBodies.current.forEach(b => worldRef.current?.removeBody(b));
       }
     };
   }, [roll]);
 
-  useFrame((state, delta) => {
+  useFrame(() => {
     if (!worldRef.current || hasSettled.current) return;
 
-    // limit delta to avoid exploding physics on tab lag
-    worldRef.current.step(1/60, Math.min(delta, 0.1), 3);
+    // Single fixed step per frame — matches the pre-sim's stepping, keeping the
+    // visible faces identical to the target roll regardless of frame rate.
+    worldRef.current.step(1 / 60);
 
     diceBodies.current.forEach((body, idx) => {
       const mesh = diceMeshes.current[idx];
@@ -260,15 +304,21 @@ function DiceSimulation({ roll, onRest }: { roll: [number, number]; onRest: () =
       }
     });
 
-    if (diceBodies.current.length > 0) {
-      const b1 = diceBodies.current[0];
-      const b2 = diceBodies.current[1];
-      if (b1.velocity.lengthSquared() < 0.05 && b2.velocity.lengthSquared() < 0.05 &&
-          b1.angularVelocity.lengthSquared() < 0.05 && b2.angularVelocity.lengthSquared() < 0.05 &&
-          b1.position.y < DICE_SIZE * 1.5 && b2.position.y < DICE_SIZE * 1.5) {
-        hasSettled.current = true;
-        setTimeout(() => onRest(), 1000); // Wait 1 sec before calling onRest (fadeout)
-      }
+    const b1 = diceBodies.current[0];
+    const b2 = diceBodies.current[1];
+    if (!b1 || !b2) return;
+
+    // Consider the roll settled once both dice have been nearly motionless for a
+    // few consecutive frames (position-independent, so tilted rests still count).
+    const still =
+      b1.velocity.lengthSquared() < 0.02 && b2.velocity.lengthSquared() < 0.02 &&
+      b1.angularVelocity.lengthSquared() < 0.02 && b2.angularVelocity.lengthSquared() < 0.02;
+
+    if (still) {
+      settleFrames.current++;
+      if (settleFrames.current > 10) finish();
+    } else {
+      settleFrames.current = 0;
     }
   });
 
@@ -300,7 +350,7 @@ export default function DiceRoller({ lastRoll, rollKey, onAnimationComplete }: {
         OrthographicCamera or perspective from straight above prevents the board's CSS 
         transform from visually mismatching the Canvas perspective.
       */}
-      <Canvas shadows camera={{ position: [0, 6, 0], fov: 35 }}>
+      <Canvas shadows camera={{ position: [0, 4.4, 0], fov: 30 }}>
         <DiceSimulation 
           key={rollKey} // Force remount on new roll
           roll={activeRoll} 

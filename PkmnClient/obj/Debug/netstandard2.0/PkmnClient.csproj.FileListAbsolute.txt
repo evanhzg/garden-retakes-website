@@ -1,0 +1,11 @@
+C:\Users\evan\Documents\CS2 Mod Dev\Garden-website\PkmnClient\obj\Debug\netstandard2.0\PkmnClient.csproj.AssemblyReference.cache
+C:\Users\evan\Documents\CS2 Mod Dev\Garden-website\PkmnClient\obj\Debug\netstandard2.0\PkmnClient.GeneratedMSBuildEditorConfig.editorconfig
+C:\Users\evan\Documents\CS2 Mod Dev\Garden-website\PkmnClient\obj\Debug\netstandard2.0\PkmnClient.AssemblyInfoInputs.cache
+C:\Users\evan\Documents\CS2 Mod Dev\Garden-website\PkmnClient\obj\Debug\netstandard2.0\PkmnClient.AssemblyInfo.cs
+C:\Users\evan\Documents\CS2 Mod Dev\Garden-website\PkmnClient\obj\Debug\netstandard2.0\PkmnClient.csproj.CoreCompileInputs.cache
+C:\Users\evan\Documents\CS2 Mod Dev\Garden-website\PkmnClient\obj\Debug\netstandard2.0\PkmnClient.sourcelink.json
+C:\Users\evan\Documents\CS2 Mod Dev\Garden-website\PkmnClient\bin\Debug\netstandard2.0\PkmnClient.deps.json
+C:\Users\evan\Documents\CS2 Mod Dev\Garden-website\PkmnClient\bin\Debug\netstandard2.0\PkmnClient.dll
+C:\Users\evan\Documents\CS2 Mod Dev\Garden-website\PkmnClient\bin\Debug\netstandard2.0\PkmnClient.pdb
+C:\Users\evan\Documents\CS2 Mod Dev\Garden-website\PkmnClient\obj\Debug\netstandard2.0\PkmnClient.dll
+C:\Users\evan\Documents\CS2 Mod Dev\Garden-website\PkmnClient\obj\Debug\netstandard2.0\PkmnClient.pdb
