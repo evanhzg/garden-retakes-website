@@ -5,12 +5,12 @@ import dynamic from "next/dynamic";
 import { SocketProvider, useSocket } from "@/components/games/SocketProvider";
 import { useGameIdentity } from "@/components/games/hooks";
 import BoardPanel from "@/components/games/editor/BoardPanel";
-import TilePanel from "@/components/games/editor/TilePanel";
+import TileMenu from "@/components/games/editor/TileMenu";
 import TileRibbon from "@/components/games/editor/TileRibbon";
 import {
-  type BoardDef, type TileType, type Tile,
-  makeBlankBoard, cloneDef, resizeBoard, normalizeBoard, moveTile,
-  updateTile, coerceTileForType, defToGameState, validateBoardClient, cornerIndicesOf,
+  type BoardDef, type TileType,
+  makeBlankBoard, cloneDef, resizeBoard, normalizeBoard, moveTile, deleteTile,
+  updateTile, coerceTileForType, defToGameState, validateBoardClient, cornersOf,
 } from "@/components/games/monopoly3d/boardSchema";
 import { listBoards, saveBoard, deleteBoard, downloadBoard, exportJson, importJson } from "@/components/games/editor/boardStore";
 import "@/components/games/editor/editor.css";
@@ -47,29 +47,26 @@ function EditorClient() {
   }, [socket]);
 
   const gs = useMemo(() => defToGameState(def), [def]);
-  const selectedTile: Tile | null = selectedId != null ? def.tiles[selectedId] ?? null : null;
   const validity = useMemo(() => validateBoardClient(def), [def]);
 
-  // ---- mutations ----
-  const patchTile = (patch: Partial<Tile>) => { if (selectedId != null) setDef((d) => updateTile(d, selectedId, patch)); };
-  const changeType = (type: TileType) => {
-    if (selectedId == null) return;
-    setDef((d) => ({ ...d, tiles: d.tiles.map((t) => (t.id === selectedId ? coerceTileForType(t, type) : t)) }));
-  };
-  const moveSelected = (dir: -1 | 1) => {
-    if (selectedId == null) return;
+  // ---- mutations (bound to a tile id so the floating menu works per-tile) ----
+  const patchTileId = (id: number, patch: any) => setDef((d) => updateTile(d, id, patch));
+  const changeTypeId = (id: number, type: TileType) =>
+    setDef((d) => ({ ...d, tiles: d.tiles.map((t) => (t.id === id ? coerceTileForType(t, type) : t)) }));
+  const moveById = (id: number, dir: -1 | 1) => {
     setDef((d) => {
-      const corners = new Set(cornerIndicesOf(d.perSide));
-      if (corners.has(selectedId)) return d;
+      const corners = new Set(cornersOf(d));
+      if (corners.has(id)) return d;
       const nc = d.tiles.filter((t) => !corners.has(t.id));
-      const pos = nc.findIndex((t) => t.id === selectedId);
+      const pos = nc.findIndex((t) => t.id === id);
       const np = pos + dir;
       if (np < 0 || np >= nc.length) return d;
       const targetId = nc[np].id;
       setSelectedId(targetId);
-      return normalizeBoard(moveTile(d, selectedId, targetId));
+      return normalizeBoard(moveTile(d, id, targetId));
     });
   };
+  const removeTile = (id: number) => { setDef((d) => deleteTile(d, id)); setSelectedId(null); };
   const reorder = (fromId: number, toId: number) => {
     setDef((d) => normalizeBoard(moveTile(d, fromId, toId)));
     setSelectedId(toId);
@@ -83,6 +80,7 @@ function EditorClient() {
     setDef((d) => ({ ...d, theme: { ...d.theme, groupColors: { ...d.theme.groupColors, [key]: value } } }));
   const setSurfaceColor = (key: any, value: string) =>
     setDef((d) => ({ ...d, theme: { ...d.theme, [key]: value } }));
+  const patchTheme = (patch: any) => setDef((d) => ({ ...d, theme: { ...d.theme, ...patch } }));
 
   // ---- toolbar actions ----
   const startFrom = (template: BoardDef | null) => {
@@ -150,8 +148,8 @@ function EditorClient() {
       </div>
 
       {/* body */}
-      <div className="ed-body">
-        <BoardPanel def={def} onResize={resize} onBoard={patchBoard} onGroupColor={setGroupColor} onSurfaceColor={setSurfaceColor} />
+      <div className="ed-body two-col">
+        <BoardPanel def={def} onResize={resize} onBoard={patchBoard} onGroupColor={setGroupColor} onSurfaceColor={setSurfaceColor} onTheme={patchTheme} />
 
         <div className="ed-board3d">
           <Board3D
@@ -162,6 +160,23 @@ function EditorClient() {
             selectedId={selectedId}
             onSelectTile={setSelectedId}
             onReorder={reorder}
+            onDeleteTile={removeTile}
+            renderTileMenu={(id: number) => {
+              const t = def.tiles[id];
+              if (!t) return null;
+              return (
+                <TileMenu
+                  tile={t}
+                  theme={def.theme}
+                  total={def.tiles.length}
+                  onPatch={(p) => patchTileId(id, p)}
+                  onChangeType={(ty) => changeTypeId(id, ty)}
+                  onMove={(dir) => moveById(id, dir)}
+                  onDelete={() => removeTile(id)}
+                  onClose={() => setSelectedId(null)}
+                />
+              );
+            }}
             onSelectSpace={() => {}}
             onHoverSpace={() => {}}
             onHoverEnd={() => {}}
@@ -169,10 +184,8 @@ function EditorClient() {
             lastRoll={null}
             onDiceSettled={() => {}}
           />
-          <div className="ed-hint">🖱 Click a tile to edit · drag a tile to reorder · drag empty space to orbit</div>
+          <div className="ed-hint">🖱 Click a tile to edit · drag it to reorder · drag off the board to delete · drag empty space to orbit</div>
         </div>
-
-        <TilePanel tile={selectedTile} theme={def.theme} onPatch={patchTile} onChangeType={changeType} onMove={moveSelected} />
       </div>
 
       {/* ribbon */}

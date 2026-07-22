@@ -12,6 +12,10 @@ const cache = new Map<string, THREE.CanvasTexture>();
 const CORNER_ICON: Record<number, string> = { 0: "→", 10: "🔒", 20: "🅿️", 30: "🚓" };
 const TYPE_GLYPH: Record<string, string> = { chance: "?", chest: "🧰", tax: "💸", rail: "🚂" };
 const UTIL_GLYPH: Record<number, string> = { 12: "💡", 28: "🚰" };
+const EFFECT_GLYPH: Record<string, string> = {
+  reward: "🎁", fee: "💸", collectAll: "🤝", payAll: "💰", teleport: "🌀", jail: "🚓",
+  extraRoll: "🎲", skipTurn: "⏭️", drawChance: "❓", drawChest: "🧰", safe: "🏖️",
+};
 
 export function tileFaceTexture(space: any, lang: Lang, boardMeta: any): THREE.CanvasTexture | null {
   if (typeof document === "undefined") return null;
@@ -29,7 +33,7 @@ export function tileFaceTexture(space: any, lang: Lang, boardMeta: any): THREE.C
   const roles = boardMeta?.roles || { go: 0, jail: 10, goToJail: 30, freeParking: 20 };
   const cornerIcon = space.icon
     ? space.icon
-    : space.id === roles.go ? "→"
+    : space.id === roles.go ? "←"        // travel leaves GO toward the bottom row (−X)
     : space.id === roles.jail ? "🔒"
     : space.id === roles.freeParking ? "🅿️"
     : space.id === roles.goToJail ? "🚓"
@@ -63,32 +67,45 @@ export function tileFaceTexture(space: any, lang: Lang, boardMeta: any): THREE.C
     return finalize(canvas, key);
   }
 
-  const band = (theme.groupColors as Record<string, string>)[space.group];
-  const bandH = 78;
-  if (band && space.type === "property") {
+  // Face style preset (per-tile override, else board default).
+  const faceStyle = space.faceStyle || boardMeta?.theme?.tileStyle || "standard";
+  const minimal = faceStyle === "minimal";
+  const bold = faceStyle === "bold";
+
+  // Colour band: per-tile override wins; properties use their group colour;
+  // special (POI) tiles use their colour or the board accent.
+  const band = space.color
+    || (space.type === "property" ? (theme.groupColors as Record<string, string>)[space.group]
+      : space.type === "special" ? theme.accent : null);
+  const bandH = bold ? 100 : 78;
+  if (band && (space.type === "property" || space.type === "special")) {
     ctx.fillStyle = band;
     ctx.fillRect(0, 0, W, bandH);
     ctx.fillStyle = "rgba(0,0,0,0.28)";
     ctx.fillRect(0, bandH - 3, W, 3);
   }
 
-  const glyph = space.icon || (space.type === "util" ? (UTIL_GLYPH[space.id] || "🚰") : TYPE_GLYPH[space.type]);
+  const glyph = space.icon
+    || (space.type === "special" ? (EFFECT_GLYPH[space.effect?.type] || "✨")
+      : space.type === "util" ? (UTIL_GLYPH[space.id] || "🚰")
+      : TYPE_GLYPH[space.type]);
   let textTop = bandH + 26;
-  if (glyph) {
+  if (glyph && !minimal) {
     ctx.font = "700 76px 'Segoe UI Emoji', 'Segoe UI', sans-serif";
     if (space.type === "chance") { ctx.fillStyle = "#e8730c"; ctx.font = "900 italic 84px 'Segoe UI', sans-serif"; }
     ctx.fillText(glyph, W / 2, bandH + 60);
     ctx.fillStyle = "#14210f";
     textTop = bandH + 132;
   }
+  if (minimal) textTop = H / 2 - 10;
 
-  ctx.font = "800 34px 'Segoe UI', sans-serif";
-  const lines = wrapText(ctx, tileShortName(space, boardId, lang), W / 2, textTop, W - 26, 36, 3);
+  ctx.font = `800 ${bold ? 42 : 34}px 'Segoe UI', sans-serif`;
+  const lines = wrapText(ctx, tileShortName(space, boardId, lang), W / 2, textTop, W - 26, bold ? 44 : 36, 3);
 
-  if (space.price != null) {
+  if (space.price != null && !minimal) {
     ctx.fillStyle = "#3b5a2f";
     ctx.font = "800 34px 'Segoe UI', sans-serif";
-    ctx.fillText(fmtMoney(space.price, lang, currency), W / 2, textTop + lines * 36 + 26);
+    ctx.fillText(fmtMoney(space.price, lang, currency), W / 2, textTop + lines * (bold ? 44 : 36) + 26);
   }
 
   return finalize(canvas, key);

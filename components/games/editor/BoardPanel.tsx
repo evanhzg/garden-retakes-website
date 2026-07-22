@@ -1,7 +1,7 @@
 "use client";
 
 import React from "react";
-import { type BoardDef, GROUP_KEYS } from "@/components/games/monopoly3d/boardSchema";
+import { type BoardDef, GROUP_KEYS, BUILDING_STYLES, FACE_STYLES } from "@/components/games/monopoly3d/boardSchema";
 
 type Props = {
   def: BoardDef;
@@ -9,6 +9,7 @@ type Props = {
   onBoard: (patch: Partial<BoardDef>) => void;
   onGroupColor: (key: string, value: string) => void;
   onSurfaceColor: (key: "tileBase" | "tileBaseCorner" | "field" | "plinth" | "accent", value: string) => void;
+  onTheme: (patch: any) => void;
 };
 
 const num = (v: string, fallback = 0) => {
@@ -18,17 +19,29 @@ const num = (v: string, fallback = 0) => {
 
 const SURFACE_KEYS = ["field", "plinth", "accent", "tileBase", "tileBaseCorner"] as const;
 
-export default function BoardPanel({ def, onResize, onBoard, onGroupColor, onSurfaceColor }: Props) {
+export default function BoardPanel({ def, onResize, onBoard, onGroupColor, onSurfaceColor, onTheme }: Props) {
   return (
     <div className="ed-panel">
       <div className="ed-section-title">Layout</div>
       <div className="ed-field">
-        <label>Tiles per side (board size)</label>
+        <label>Regenerate square board (tiles/side)</label>
         <div className="ed-slider-row">
           <input type="range" min={3} max={15} value={def.perSide}
             onChange={(e) => onResize(num(e.target.value, 9))} />
-          <span className="ed-slider-val">{def.perSide}×4+4 = {def.perSide * 4 + 4}</span>
+          <span className="ed-slider-val">{def.tiles.length} tiles</span>
         </div>
+      </div>
+
+      <div className="ed-section-title">Style</div>
+      <div className="ed-row">
+        <div className="ed-field"><label>Houses</label>
+          <select value={def.theme.buildingStyle || "classic"} onChange={(e) => onTheme({ buildingStyle: e.target.value })}>
+            {BUILDING_STYLES.map((b) => <option key={b} value={b}>{b}</option>)}
+          </select></div>
+        <div className="ed-field"><label>Tile face</label>
+          <select value={def.theme.tileStyle || "standard"} onChange={(e) => onTheme({ tileStyle: e.target.value })}>
+            {FACE_STYLES.map((f) => <option key={f} value={f}>{f}</option>)}
+          </select></div>
       </div>
 
       <div className="ed-section-title">Economy</div>

@@ -47,6 +47,51 @@
 
 /* ---------- body ---------- */
 .ed-body { display: grid; grid-template-columns: 288px minmax(0, 1fr) 312px; min-height: 0; }
+.ed-body.two-col { grid-template-columns: 288px minmax(0, 1fr); }
+
+/* ---------- floating tile menu (anchored above a tile in 3D) ---------- */
+.tm {
+  pointer-events: auto;
+  transform: translate(-50%, -115%);
+  width: 232px;
+  background: rgba(10, 16, 28, 0.96);
+  border: 1px solid rgba(56, 189, 248, 0.4);
+  border-radius: 12px;
+  box-shadow: 0 18px 50px rgba(0, 0, 0, 0.6);
+  padding: 10px;
+  color: #e8edf5;
+  font-family: "Segoe UI", system-ui, sans-serif;
+  font-size: 0.8rem;
+}
+.tm::after {
+  content: ""; position: absolute; left: 50%; bottom: -8px; transform: translateX(-50%);
+  border: 8px solid transparent; border-top-color: rgba(10, 16, 28, 0.96); border-bottom: 0;
+}
+.tm-head { display: flex; align-items: center; justify-content: space-between; font-weight: 700; margin-bottom: 8px; color: #38bdf8; }
+.tm-x { background: none; border: none; color: #94a3b8; cursor: pointer; font-size: 0.9rem; }
+.tm-x:hover { color: #fca5a5; }
+.tm-row { display: flex; align-items: center; gap: 8px; margin-bottom: 6px; }
+.tm-row > span { flex: 0 0 52px; color: #9fb0c3; font-size: 0.72rem; }
+.tm-row input, .tm-row select {
+  flex: 1 1 0; min-width: 0; background: rgba(255, 255, 255, 0.06);
+  border: 1px solid rgba(255, 255, 255, 0.14); color: #fff; border-radius: 6px; padding: 4px 6px; font-size: 0.78rem;
+}
+.tm-row input[type="color"] { padding: 0; height: 24px; }
+.tm-2col { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; }
+.tm-2col .tm-row > span { flex-basis: 40px; }
+.tm-label { font-size: 0.68rem; color: #9fb0c3; margin: 4px 0 3px; }
+.tm-rents { display: grid; grid-template-columns: repeat(3, 1fr); gap: 4px; margin-bottom: 6px; }
+.tm-rents input { background: rgba(255, 255, 255, 0.06); border: 1px solid rgba(255, 255, 255, 0.14); color: #fff; border-radius: 6px; padding: 4px; font-size: 0.72rem; width: 100%; }
+.tm-swatches { display: flex; gap: 4px; margin-bottom: 8px; }
+.tm-swatches button { flex: 1 1 0; height: 18px; border-radius: 4px; border: 1px solid rgba(0,0,0,0.4); cursor: pointer; }
+.tm-note { font-size: 0.72rem; color: #94a3b8; padding: 4px 0; }
+.tm-actions { display: flex; gap: 6px; margin-top: 8px; }
+.tm-actions button {
+  background: rgba(255,255,255,0.08); border: 1px solid rgba(255,255,255,0.15); color: #e2e8f0;
+  border-radius: 6px; padding: 4px 8px; cursor: pointer; font-size: 0.75rem;
+}
+.tm-actions .tm-del { margin-left: auto; }
+.tm-actions .tm-del:hover { background: rgba(239, 68, 68, 0.25); border-color: rgba(239, 68, 68, 0.5); }
 .ed-panel {
   overflow-y: auto; min-height: 0; padding: 14px;
   background: rgba(255, 255, 255, 0.02);

@@ -85,6 +85,7 @@ class MonopolyGame {
       jailed: false,
       jailTurns: 0,
       jailCards: 0,
+      skipNext: false,
       bankrupt: false,
       color: PLAYER_COLORS[idx % PLAYER_COLORS.length],
       token: idx % PLAYER_COLORS.length,
@@ -232,6 +233,15 @@ class MonopolyGame {
 
   beginTurn() {
     if (this.status !== 'PLAYING') return;
+    // A "skip turn" POI effect makes a player miss their next turn.
+    const pid = this.players[this.currentTurnIndex];
+    const ps = this.playerStates[pid];
+    if (ps && ps.skipNext) {
+      ps.skipNext = false;
+      this.log('skip_turn', { pid });
+      this.currentTurnIndex = (this.currentTurnIndex + 1) % this.players.length;
+      return this.beginTurn(); // each skipped player clears its own flag → terminates
+    }
     this.turnPhase = 'ROLL';
     this.lastRoll = null;
     this.rollId = null;
@@ -328,8 +338,41 @@ class MonopolyGame {
       case 'chest':
         this.drawCard(steamId, space.type);
         break;
+      case 'special':
+        this.applySpecial(steamId, space.effect || { type: 'safe' }, opts);
+        break;
       default: // GO, Jail (visiting), Free Parking
         this.endOrRoll(steamId);
+    }
+  }
+
+  // Predefined POI effects (data-driven "custom rules").
+  applySpecial(steamId, eff, opts = {}) {
+    const state = this.playerStates[steamId];
+    if (!state) return;
+    this.log('special', { pid: steamId, spaceId: state.position, effect: eff.type, amount: eff.amount });
+    switch (eff.type) {
+      case 'reward': this.credit(steamId, eff.amount || 0); this.endOrRoll(steamId); break;
+      case 'fee': this.charge(steamId, eff.amount || 0, null); this.endOrRoll(steamId); break;
+      case 'collectAll':
+        for (const p of this.players) if (p !== steamId) this.charge(p, eff.amount || 0, steamId);
+        this.endOrRoll(steamId); break;
+      case 'payAll':
+        for (const p of [...this.players]) { if (p !== steamId) this.charge(steamId, eff.amount || 0, p); if (!this.playerStates[steamId]) return; }
+        this.endOrRoll(steamId); break;
+      case 'teleport': {
+        const tgt = ((Number.isInteger(eff.target) ? eff.target : 0) % this.board.length + this.board.length) % this.board.length;
+        state.position = tgt;
+        if (!opts._tp) this.resolveLanding(steamId, { _tp: true }); else this.endOrRoll(steamId);
+        break;
+      }
+      case 'jail': this.sendToJail(steamId, 'special'); break;
+      case 'extraRoll': this.turnPhase = 'ROLL'; break;
+      case 'skipTurn': state.skipNext = true; this.endOrRoll(steamId); break;
+      case 'drawChance': this.drawCard(steamId, 'chance'); break;
+      case 'drawChest': this.drawCard(steamId, 'chest'); break;
+      case 'safe':
+      default: this.endOrRoll(steamId);
     }
   }
 

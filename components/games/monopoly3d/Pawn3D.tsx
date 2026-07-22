@@ -3,7 +3,7 @@
 import React, { useRef, useEffect } from "react";
 import { useFrame } from "@react-three/fiber";
 import * as THREE from "three";
-import { tileCenter, pawnSlotOffset, pathBetween } from "./layout";
+import { slotOffset, pathBetween, type Layout } from "./layout";
 import { SURFACE_Y } from "./theme";
 
 // Classic pawn silhouette (radius, height) revolved into a solid.
@@ -19,11 +19,11 @@ type Props = {
   color: string;
   active: boolean;
   slotIndex: number;
-  perSide: number;
+  layout: Layout;
   total: number;         // board tile count
 };
 
-function Pawn3DImpl({ position, color, active, slotIndex, perSide, total }: Props) {
+function Pawn3DImpl({ position, color, active, slotIndex, layout, total }: Props) {
   const ref = useRef<THREE.Group>(null);
   const matRef = useRef<THREE.MeshStandardMaterial>(null);
 
@@ -66,9 +66,9 @@ function Pawn3DImpl({ position, color, active, slotIndex, perSide, total }: Prop
     const idxF = u.current * last;
     const i = Math.min(Math.floor(idxF), Math.max(0, last - 1));
     const f = last === 0 ? 0 : idxF - i;
-    const a = tileCenter(p[i], perSide);
-    const b = tileCenter(p[Math.min(i + 1, last)], perSide);
-    const off = pawnSlotOffset(position, slotIndex, perSide);
+    const a = layout.center(p[i]);
+    const b = layout.center(p[Math.min(i + 1, last)]);
+    const off = slotOffset(layout.dirs(position), slotIndex);
 
     const x = a[0] + (b[0] - a[0]) * f + off[0];
     const z = a[1] + (b[1] - a[1]) * f + off[1];

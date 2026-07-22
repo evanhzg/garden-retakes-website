@@ -206,22 +206,20 @@ function boardSummaries() {
   }));
 }
 
-const TILE_TYPES = new Set(['corner', 'property', 'rail', 'util', 'tax', 'chance', 'chest']);
+const TILE_TYPES = new Set(['corner', 'property', 'rail', 'util', 'tax', 'chance', 'chest', 'special']);
 
-// Validate a (possibly user-authored) board definition. Returns { ok, error }.
+// Validate a (possibly user-authored) board definition. Boards may be arbitrary
+// size / uneven, but must be a ring of 12–80 tiles with exactly 4 corners at the
+// 4 role indices. Returns { ok, error }.
 function validateBoard(def) {
   if (!def || typeof def !== 'object') return { ok: false, error: 'not an object' };
-  const perSide = def.perSide;
-  if (!Number.isInteger(perSide) || perSide < 3 || perSide > 15) return { ok: false, error: 'perSide must be 3–15' };
-  const expected = perSide * 4 + 4;
-  if (!Array.isArray(def.tiles) || def.tiles.length !== expected) {
-    return { ok: false, error: `expected ${expected} tiles, got ${def.tiles && def.tiles.length}` };
-  }
+  const total = def.tiles && def.tiles.length;
+  if (!Array.isArray(def.tiles) || total < 12 || total > 80) return { ok: false, error: 'board needs 12–80 tiles' };
+  const corners = def.tiles.filter(t => t && t.type === 'corner').map(t => t.id);
+  if (corners.length !== 4) return { ok: false, error: `need exactly 4 corners (has ${corners.length})` };
   const roles = def.roles || {};
   for (const r of ['go', 'jail', 'goToJail', 'freeParking']) {
-    if (!Number.isInteger(roles[r]) || roles[r] < 0 || roles[r] >= expected) {
-      return { ok: false, error: `role ${r} out of range` };
-    }
+    if (!Number.isInteger(roles[r]) || !corners.includes(roles[r])) return { ok: false, error: `role ${r} must be a corner` };
   }
   for (let i = 0; i < def.tiles.length; i++) {
     const t = def.tiles[i];
@@ -231,10 +229,9 @@ function validateBoard(def) {
         return { ok: false, error: `property tile ${i} needs price, 6 rents, houseCost` };
       }
     }
-    if ((t.type === 'rail' || t.type === 'util') && !(t.price > 0)) {
-      return { ok: false, error: `tile ${i} needs a price` };
-    }
+    if ((t.type === 'rail' || t.type === 'util') && !(t.price > 0)) return { ok: false, error: `tile ${i} needs a price` };
     if (t.type === 'tax' && !(t.amount > 0)) return { ok: false, error: `tax tile ${i} needs amount` };
+    if (t.type === 'special' && !(t.effect && t.effect.type)) return { ok: false, error: `special tile ${i} needs an effect` };
   }
   if (!(def.startingMoney > 0) || !(def.passGo >= 0)) return { ok: false, error: 'bad startingMoney/passGo' };
   return { ok: true };

@@ -261,6 +261,16 @@ export function localizeLog(key: string, params: any, ctx: LogCtx): string {
       case "jail_fine": return `${who} paid the $50 Jail fine.`;
       case "card": return `${who} drew ${P.deck === "chance" ? "Chance" : "Community Chest"}: “${cardTitle(P.cardId, lang)}”.`;
       case "bankrupt": return P.creditor ? `${who} went bankrupt to ${nameOf(P.creditor)}.` : `${who} went bankrupt.`;
+      case "skip_turn": return `${who} skips a turn.`;
+      case "special": {
+        const m: Record<string, string> = {
+          reward: `collected ${amt}`, fee: `paid ${amt}`, collectAll: `collected ${amt} from everyone`,
+          payAll: `paid ${amt} to everyone`, teleport: "was teleported", jail: "was sent to Jail",
+          extraRoll: "rolls again", skipTurn: "will skip a turn", drawChance: "drew a Chance card",
+          drawChest: "drew a Community Chest card", safe: "reached a safe space",
+        };
+        return `${who} — ${m[P.effect] || "special event"}${place ? ` (${place})` : ""}.`;
+      }
       case "win": return `${who} wins the game! 🏆`;
       default: return "";
     }
@@ -288,6 +298,16 @@ export function localizeLog(key: string, params: any, ctx: LogCtx): string {
       case "jail_fine": return `${who} paie l'amende de 50 € de la prison.`;
       case "card": return `${who} pioche ${P.deck === "chance" ? "Chance" : "Caisse de Communauté"} : « ${cardTitle(P.cardId, lang)} ».`;
       case "bankrupt": return P.creditor ? `${who} fait faillite au profit de ${nameOf(P.creditor)}.` : `${who} fait faillite.`;
+      case "skip_turn": return `${who} passe son tour.`;
+      case "special": {
+        const m: Record<string, string> = {
+          reward: `reçoit ${amt}`, fee: `paie ${amt}`, collectAll: `reçoit ${amt} de chaque joueur`,
+          payAll: `paie ${amt} à chaque joueur`, teleport: "est téléporté", jail: "est envoyé en prison",
+          extraRoll: "rejoue", skipTurn: "passera un tour", drawChance: "pioche une carte Chance",
+          drawChest: "pioche une carte Caisse", safe: "arrive sur une case sûre",
+        };
+        return `${who} — ${m[P.effect] || "événement"}${place ? ` (${place})` : ""}.`;
+      }
       case "win": return `${who} remporte la partie ! 🏆`;
       default: return "";
     }

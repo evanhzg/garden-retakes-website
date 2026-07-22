@@ -1,10 +1,11 @@
 "use client";
 
-import React, { useMemo } from "react";
+import React, { useMemo, useRef } from "react";
+import { useFrame } from "@react-three/fiber";
 import * as THREE from "three";
 import type { ThreeEvent } from "@react-three/fiber";
 import type { Lang } from "@/components/games/monopolyData";
-import { tileTransform } from "./layout";
+import type { TileXform } from "./layout";
 import { tileFaceTexture } from "./tileFaceTexture";
 import { TILE_H, resolveTheme } from "./theme";
 
@@ -12,15 +13,18 @@ type Props = {
   space: any;
   lang: Lang;
   boardMeta: any;
+  xform: TileXform;
+  targetPos?: [number, number, number];
+  followPoint?: [number, number] | null;
   ownerColor: string | null;
   onSelect: (id: number) => void;
   onHover: (space: any, e: ThreeEvent<PointerEvent>) => void;
   onHoverEnd: () => void;
-  // editor mode
   editable?: boolean;
   selected?: boolean;
   dragging?: boolean;
   dropTarget?: boolean;
+  deleteMode?: boolean;
   accent?: string;
   onDragStart?: (id: number, e: ThreeEvent<PointerEvent>) => void;
   onDragMove?: (e: ThreeEvent<PointerEvent>) => void;
@@ -29,36 +33,52 @@ type Props = {
 
 function Tile3DImpl(props: Props) {
   const {
-    space, lang, boardMeta, ownerColor, onSelect, onHover, onHoverEnd,
-    editable, selected, dragging, dropTarget, accent = "#22c55e",
+    space, lang, boardMeta, xform, targetPos, followPoint, ownerColor, onSelect, onHover, onHoverEnd,
+    editable, selected, dragging, dropTarget, deleteMode, accent = "#22c55e",
     onDragStart, onDragMove, onDragEnd,
   } = props;
 
-  const perSide = boardMeta?.perSide ?? 9;
-  const t = useMemo(() => tileTransform(space.id, perSide), [space.id, perSide]);
-  const [w, d] = t.size;
+  const [w, d] = xform?.size ?? [1, 1.32];
+  const basePos = xform?.position ?? [0, 0, 0];
+  const yaw = xform?.yaw ?? 0;
   const isCorner = space.type === "corner";
   const clickable = ["property", "rail", "util"].includes(space.type);
   const face = useMemo(
     () => tileFaceTexture(space, lang, boardMeta),
-    // recompute when any face-affecting field changes (live editing)
-    [space.id, lang, boardMeta?.boardId, space.type, space.name, space.group, space.price, space.icon, boardMeta?.theme]
+    [space.id, lang, boardMeta?.boardId, space.type, space.name, space.group, space.price, space.icon,
+     space.color, space.faceStyle, space.effect?.type, boardMeta?.theme]
   );
   const theme = useMemo(() => resolveTheme(boardMeta?.theme), [boardMeta?.theme]);
 
-  const highlight = dragging ? accent : selected ? accent : dropTarget ? accent : ownerColor;
+  const highlight = deleteMode ? "#ef4444" : dragging || selected || dropTarget ? accent : ownerColor;
   const highlightGeo = useMemo(
     () => (highlight ? new THREE.EdgesGeometry(new THREE.BoxGeometry(w * 0.99, TILE_H * 0.7, d * 0.99)) : null),
     [highlight, w, d]
   );
-
   const emissiveColor = highlight || "#000000";
-  const emissiveIntensity = dragging ? 0.6 : selected ? 0.4 : dropTarget ? 0.28 : (ownerColor && !space.mortgaged ? 0.16 : 0);
+  const emissiveIntensity = deleteMode ? 0.7 : dragging ? 0.6 : selected ? 0.4 : dropTarget ? 0.28
+    : (ownerColor && !space.mortgaged ? 0.16 : 0);
 
-  const liftY = dragging ? 0.6 : 0;
+  // Destination: dragged tile follows the pointer; others slide to targetPos.
+  const liftY = dragging ? 0.65 : 0;
+  const destX = followPoint ? followPoint[0] : (targetPos ?? basePos)[0];
+  const destZ = followPoint ? followPoint[1] : (targetPos ?? basePos)[2];
+
+  const groupRef = useRef<THREE.Group>(null);
+  const inited = useRef(false);
+  useFrame((_, dt) => {
+    const g = groupRef.current;
+    if (!g) return;
+    if (!inited.current) { g.position.set(destX, liftY, destZ); inited.current = true; return; }
+    const k = editable ? Math.min(1, dt * 13) : 1;
+    g.position.x += (destX - g.position.x) * k;
+    g.position.y += (liftY - g.position.y) * k;
+    g.position.z += (destZ - g.position.z) * k;
+    g.rotation.z = dragging ? Math.sin(performance.now() / 200) * 0.05 : 0; // slight wobble while flying
+  });
 
   return (
-    <group position={[t.position[0], liftY, t.position[2]]} rotation-y={t.yaw}>
+    <group ref={groupRef} rotation-y={yaw}>
       <mesh
         castShadow
         receiveShadow
