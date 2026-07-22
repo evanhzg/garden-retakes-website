@@ -67,6 +67,9 @@ function Scene(props: SceneProps) {
   const theme = useMemo(() => resolveTheme(boardMeta?.theme), [boardMeta?.theme]);
   const logo = useCenterLogo(boardMeta?.name || "MONOPOLY");
   const half = layout.half;
+  // Stable roll reference: only changes on a genuinely new roll (rollKey), so
+  // the dice physics doesn't re-simulate on every unrelated state broadcast.
+  const diceRoll = useMemo(() => lastRoll, [rollKey]); // eslint-disable-line react-hooks/exhaustive-deps
 
   const slotOf = useMemo(() => {
     const counts: Record<number, number> = {};
@@ -141,8 +144,8 @@ function Scene(props: SceneProps) {
         position={[half * 1.5, half * 3, half * 1.9]}
         intensity={1.35}
         castShadow
-        shadow-mapSize-width={2048}
-        shadow-mapSize-height={2048}
+        shadow-mapSize-width={1024}
+        shadow-mapSize-height={1024}
         shadow-camera-left={-half}
         shadow-camera-right={half}
         shadow-camera-top={half}
@@ -197,9 +200,15 @@ function Scene(props: SceneProps) {
         />
       ))}
 
-      {/* houses / hotels */}
+      {/* houses / hotels + owned-tile decoration */}
       {gameState.board.map((space: any) => (
-        <Buildings3D key={`b${space.id}`} space={space} layout={layout} boardMeta={boardMeta} />
+        <Buildings3D
+          key={`b${space.id}`}
+          space={space}
+          layout={layout}
+          boardMeta={boardMeta}
+          ownerColor={space.owner ? gameState.playerStates[space.owner]?.color ?? null : null}
+        />
       ))}
 
       {/* pawns */}
@@ -227,9 +236,9 @@ function Scene(props: SceneProps) {
       )}
 
       {/* dice roll physically on the centre field */}
-      {lastRoll && rollKey > 0 && (
+      {diceRoll && rollKey > 0 && (
         <group position={[0, DICE_Y, 0]} scale={DICE_SCALE}>
-          <DiceSimulation key={rollKey} roll={lastRoll} onRest={onDiceSettled} />
+          <DiceSimulation key={rollKey} roll={diceRoll} onRest={onDiceSettled} />
         </group>
       )}
 
@@ -284,8 +293,8 @@ export default function Board3D(props: Omit<SceneProps, "boardMeta"> & { boardMe
       {ready && (
         <Canvas
           shadows
-          dpr={[1, 2]}
-          gl={{ alpha: true, antialias: true }}
+          dpr={[1, 1.5]}
+          gl={{ alpha: true, antialias: true, powerPreference: "high-performance" }}
           camera={{ position: [0, half * 2.32, half * 2.5], fov: 42, near: 0.1, far: half * 20 }}
         >
           <Scene {...(props as SceneProps)} />

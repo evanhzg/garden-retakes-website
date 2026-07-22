@@ -1,13 +1,15 @@
 "use client";
 
 import React, { useMemo, useRef } from "react";
-import { useFrame } from "@react-three/fiber";
+import { useFrame, useThree } from "@react-three/fiber";
 import * as THREE from "three";
 import type { ThreeEvent } from "@react-three/fiber";
 import type { Lang } from "@/components/games/monopolyData";
 import type { TileXform } from "./layout";
 import { tileFaceTexture } from "./tileFaceTexture";
 import { TILE_H, resolveTheme } from "./theme";
+
+const HOVER_LIFT = 0.12;
 
 type Props = {
   space: any;
@@ -49,6 +51,7 @@ function Tile3DImpl(props: Props) {
      space.color, space.faceStyle, space.effect?.type, boardMeta?.theme]
   );
   const theme = useMemo(() => resolveTheme(boardMeta?.theme), [boardMeta?.theme]);
+  const domEl = useThree((s) => s.gl.domElement);
 
   const highlight = deleteMode ? "#ef4444" : dragging || selected || dropTarget ? accent : ownerColor;
   const highlightGeo = useMemo(
@@ -59,23 +62,28 @@ function Tile3DImpl(props: Props) {
   const emissiveIntensity = deleteMode ? 0.7 : dragging ? 0.6 : selected ? 0.4 : dropTarget ? 0.28
     : (ownerColor && !space.mortgaged ? 0.16 : 0);
 
-  // Destination: dragged tile follows the pointer; others slide to targetPos.
   const liftY = dragging ? 0.65 : 0;
   const destX = followPoint ? followPoint[0] : (targetPos ?? basePos)[0];
   const destZ = followPoint ? followPoint[1] : (targetPos ?? basePos)[2];
 
   const groupRef = useRef<THREE.Group>(null);
   const inited = useRef(false);
+  const hovered = useRef(false);
+
   useFrame((_, dt) => {
     const g = groupRef.current;
     if (!g) return;
-    if (!inited.current) { g.position.set(destX, liftY, destZ); inited.current = true; return; }
-    const k = editable ? Math.min(1, dt * 13) : 1;
-    g.position.x += (destX - g.position.x) * k;
-    g.position.y += (liftY - g.position.y) * k;
-    g.position.z += (destZ - g.position.z) * k;
-    g.rotation.z = dragging ? Math.sin(performance.now() / 200) * 0.05 : 0; // slight wobble while flying
+    const targetY = dragging ? 0.65 : hovered.current ? HOVER_LIFT : 0;
+    if (!inited.current) { g.position.set(destX, targetY, destZ); inited.current = true; return; }
+    const dx = destX - g.position.x, dy = targetY - g.position.y, dz = destZ - g.position.z;
+    // idle tiles cost almost nothing — skip the lerp when already settled.
+    if (dx * dx + dy * dy + dz * dz < 1e-6 && !dragging) return;
+    const k = Math.min(1, dt * 13);
+    g.position.x += dx * k; g.position.y += dy * k; g.position.z += dz * k;
+    g.rotation.z = dragging ? Math.sin(performance.now() / 200) * 0.05 : 0;
   });
+
+  const setCursor = (c: string) => { if (domEl) domEl.style.cursor = c; };
 
   return (
     <group ref={groupRef} rotation-y={yaw}>
@@ -84,11 +92,23 @@ function Tile3DImpl(props: Props) {
         receiveShadow
         position={[0, TILE_H / 2, 0]}
         onClick={!editable && clickable ? (e) => { e.stopPropagation(); onSelect(space.id); } : undefined}
+        onPointerOver={(e) => {
+          e.stopPropagation();
+          hovered.current = true;
+          setCursor(editable ? "grab" : clickable ? "pointer" : "default");
+          if (!editable && !isCorner) onHover(space, e);
+        }}
+        onPointerOut={() => {
+          hovered.current = false;
+          setCursor("");
+          if (!editable && !isCorner) onHoverEnd();
+        }}
         onPointerDown={editable ? (e) => {
           e.stopPropagation();
           onSelect(space.id);
           if (!isCorner && onDragStart) {
             try { (e.target as any).setPointerCapture(e.pointerId); } catch {}
+            setCursor("grabbing");
             onDragStart(space.id, e);
           }
         } : undefined}
@@ -99,10 +119,9 @@ function Tile3DImpl(props: Props) {
         }
         onPointerUp={editable ? (e) => {
           try { (e.target as any).releasePointerCapture(e.pointerId); } catch {}
+          setCursor("grab");
           onDragEnd?.(e);
         } : undefined}
-        onPointerOver={!editable && !isCorner ? (e) => { e.stopPropagation(); onHover(space, e); } : undefined}
-        onPointerOut={!editable && !isCorner ? () => onHoverEnd() : undefined}
       >
         <boxGeometry args={[w, TILE_H, d]} />
         <meshStandardMaterial
