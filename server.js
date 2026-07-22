@@ -3,7 +3,7 @@ const crypto = require("crypto");
 const { Server } = require("socket.io");
 const UnoGame = require("./scripts/unoLogic");
 const MonopolyGame = require("./scripts/monopolyLogic");
-const { getBoard, boardSummaries, validateBoard } = require("./scripts/boardDefs");
+const { BOARDS, getBoard, boardSummaries, validateBoard } = require("./scripts/boardDefs");
 const CodenamesGame = require("./scripts/codenamesLogic");
 const CahGame = require("./scripts/cahLogic");
 const MemeGame = require("./scripts/memeLogic");
@@ -434,6 +434,11 @@ io.on("connection", (socket) => {
   // Built-in board summaries for the Monopoly board picker.
   socket.on("get_boards", () => {
     socket.emit("boards_list", boardSummaries());
+  });
+
+  // Full built-in board defs — templates for the board editor.
+  socket.on("get_board_defs", () => {
+    socket.emit("board_defs", Object.values(BOARDS));
   });
 
   // Host picks the Monopoly board (built-in by id, or a validated custom def).

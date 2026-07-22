@@ -16,14 +16,20 @@ const UTIL_GLYPH: Record<number, string> = { 12: "💡", 28: "🚰" };
 export function tileFaceTexture(space: any, lang: Lang, boardMeta: any): THREE.CanvasTexture | null {
   if (typeof document === "undefined") return null;
   const boardId = boardMeta?.boardId || "classic";
-  const key = `${boardId}|${space.id}|${lang}`;
+  const theme = resolveTheme(boardMeta?.theme);
+  const currency = boardId === "classic" ? null : boardMeta?.currency;
+  // Signature so live edits (name/type/group/price/icon/colours) regenerate the
+  // texture; during a game these are stable, so it still caches.
+  const sig = [space.type, space.name, space.group, space.price, space.icon,
+    theme.groupColors[space.group], theme.tileBase, theme.tileBaseCorner].join("~");
+  const key = `${boardId}|${space.id}|${lang}|${sig}`;
   const hit = cache.get(key);
   if (hit) return hit;
 
-  const theme = resolveTheme(boardMeta?.theme);
-  const currency = boardId === "classic" ? null : boardMeta?.currency;
   const roles = boardMeta?.roles || { go: 0, jail: 10, goToJail: 30, freeParking: 20 };
-  const cornerIcon = space.id === roles.go ? "→"
+  const cornerIcon = space.icon
+    ? space.icon
+    : space.id === roles.go ? "→"
     : space.id === roles.jail ? "🔒"
     : space.id === roles.freeParking ? "🅿️"
     : space.id === roles.goToJail ? "🚓"
@@ -66,7 +72,7 @@ export function tileFaceTexture(space: any, lang: Lang, boardMeta: any): THREE.C
     ctx.fillRect(0, bandH - 3, W, 3);
   }
 
-  const glyph = space.type === "util" ? (UTIL_GLYPH[space.id] || "🚰") : TYPE_GLYPH[space.type];
+  const glyph = space.icon || (space.type === "util" ? (UTIL_GLYPH[space.id] || "🚰") : TYPE_GLYPH[space.type]);
   let textTop = bandH + 26;
   if (glyph) {
     ctx.font = "700 76px 'Segoe UI Emoji', 'Segoe UI', sans-serif";

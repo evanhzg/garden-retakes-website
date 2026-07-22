@@ -9,8 +9,8 @@ import { DiceSimulation } from "@/components/games/DiceRoller";
 import { Tile3D } from "./Tile3D";
 import { Buildings3D } from "./Buildings3D";
 import { Pawn3D } from "./Pawn3D";
-import { TILE_H, resolveTheme } from "./theme";
-import { boardGeometry } from "./layout";
+import { TILE_H, SURFACE_Y, resolveTheme } from "./theme";
+import { boardGeometry, tileCenter } from "./layout";
 
 const DICE_Y = 0.13;      // dice roll on the recessed centre field
 const DICE_SCALE = 2.2;   // scale the small dice arena up onto the board
@@ -47,15 +47,60 @@ type SceneProps = {
   rollKey: number;
   lastRoll: [number, number] | null;
   onDiceSettled: () => void;
+  // editor mode
+  editable?: boolean;
+  selectedId?: number | null;
+  onSelectTile?: (id: number) => void;
+  onReorder?: (fromId: number, toId: number) => void;
 };
 
 function Scene(props: SceneProps) {
-  const { gameState, lang, boardMeta, onSelectSpace, onHoverSpace, onHoverEnd, rollKey, lastRoll, onDiceSettled } = props;
+  const {
+    gameState, lang, boardMeta, onSelectSpace, onHoverSpace, onHoverEnd, rollKey, lastRoll, onDiceSettled,
+    editable, selectedId, onSelectTile, onReorder,
+  } = props;
   const perSide = boardMeta?.perSide ?? 9;
   const geo = useMemo(() => boardGeometry(perSide), [perSide]);
   const theme = useMemo(() => resolveTheme(boardMeta?.theme), [boardMeta?.theme]);
   const logo = useCenterLogo(boardMeta?.name || "MONOPOLY");
   const total = gameState.board.length;
+
+  // --- editor drag-to-reorder ---
+  const [draggingId, setDraggingId] = useState<number | null>(null);
+  const [dropTargetId, setDropTargetId] = useState<number | null>(null);
+  const cornerSet = useMemo(() => {
+    const r = boardMeta?.roles || {};
+    return new Set<number>([r.go, r.jail, r.goToJail, r.freeParking]);
+  }, [boardMeta?.roles]);
+
+  const nearestNonCorner = (x: number, z: number): number => {
+    let best = -1, bestD = Infinity;
+    for (let i = 0; i < total; i++) {
+      if (cornerSet.has(i)) continue;
+      const [cx, cz] = tileCenter(i, perSide);
+      const dd = (cx - x) * (cx - x) + (cz - z) * (cz - z);
+      if (dd < bestD) { bestD = dd; best = i; }
+    }
+    return best;
+  };
+
+  const handleDragStart = (id: number) => { setDraggingId(id); setDropTargetId(id); };
+  const handleDragMove = (e: ThreeEvent<PointerEvent>) => {
+    const r: any = (e as any).ray;
+    if (!r || Math.abs(r.direction.y) < 1e-6) return;
+    const ty = (SURFACE_Y - r.origin.y) / r.direction.y;
+    const gx = r.origin.x + ty * r.direction.x;
+    const gz = r.origin.z + ty * r.direction.z;
+    const near = nearestNonCorner(gx, gz);
+    if (near >= 0) setDropTargetId(near);
+  };
+  const handleDragEnd = () => {
+    if (draggingId != null && dropTargetId != null && draggingId !== dropTargetId) {
+      onReorder?.(draggingId, dropTargetId);
+    }
+    setDraggingId(null);
+    setDropTargetId(null);
+  };
 
   const slotOf = useMemo(() => {
     const counts: Record<number, number> = {};
@@ -114,9 +159,17 @@ function Scene(props: SceneProps) {
           lang={lang}
           boardMeta={boardMeta}
           ownerColor={space.owner ? gameState.playerStates[space.owner]?.color ?? null : null}
-          onSelect={onSelectSpace}
+          onSelect={editable ? (onSelectTile ?? (() => {})) : onSelectSpace}
           onHover={onHoverSpace}
           onHoverEnd={onHoverEnd}
+          editable={editable}
+          selected={editable ? selectedId === space.id : false}
+          dragging={editable ? draggingId === space.id : false}
+          dropTarget={editable ? draggingId != null && dropTargetId === space.id && draggingId !== space.id : false}
+          accent={theme.accent}
+          onDragStart={handleDragStart}
+          onDragMove={handleDragMove}
+          onDragEnd={handleDragEnd}
         />
       ))}
 
@@ -151,6 +204,7 @@ function Scene(props: SceneProps) {
 
       <OrbitControls
         makeDefault
+        enabled={draggingId === null}
         target={[0, 0.3, 0]}
         enablePan
         enableDamping

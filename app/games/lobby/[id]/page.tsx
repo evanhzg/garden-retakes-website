@@ -12,6 +12,7 @@ import CahGameWrapper from "@/components/games/CahGame";
 import CodenamesGameWrapper from "@/components/games/CodenamesGame";
 import MemeGameWrapper from "@/components/games/MemeGame";
 import SkribblGameWrapper from "@/components/games/SkribblGame";
+import { listBoards } from "@/components/games/editor/boardStore";
 
 import "./lobby.css";
 
@@ -58,6 +59,7 @@ function LobbyClient({ lobbyId, mySteamId }: { lobbyId: string; mySteamId: strin
   const [chatInput, setChatInput] = useState("");
   const [copied, setCopied] = useState(false);
   const [boards, setBoards] = useState<any[]>([]);
+  const [savedBoards, setSavedBoards] = useState<any[]>([]);
   const chatEndRef = useRef<HTMLDivElement | null>(null);
   const passwordRef = useRef("");
 
@@ -117,6 +119,9 @@ function LobbyClient({ lobbyId, mySteamId }: { lobbyId: string; mySteamId: strin
     };
   }, [socket, isConnected, isAuthed, lobbyId, router]);
 
+  // Custom boards from the editor (localStorage) for the board picker.
+  useEffect(() => { setSavedBoards(listBoards()); }, []);
+
   // Autoscroll chat
   useEffect(() => {
     chatEndRef.current?.scrollIntoView({ behavior: "smooth", block: "nearest" });
@@ -146,6 +151,7 @@ function LobbyClient({ lobbyId, mySteamId }: { lobbyId: string; mySteamId: strin
   const handleStartGame = () => socket?.emit("lobby_start_game");
   const handleChangeGame = (game: string) => socket?.emit("lobby_change_game", { game });
   const handleSelectBoard = (boardId: string) => socket?.emit("lobby_select_board", { boardId });
+  const handleSelectCustomBoard = (def: any) => socket?.emit("lobby_select_board", { boardDef: def });
   const handleAddBot = () => socket?.emit("lobby_add_bot");
   const handleKick = (steamId: string) => socket?.emit("lobby_kick", steamId);
 
@@ -340,8 +346,9 @@ function LobbyClient({ lobbyId, mySteamId }: { lobbyId: string; mySteamId: strin
             <div className="lobby-board-picker">
               <div className="picker-header">
                 <h3>Board</h3>
-                {!isHost && <span className="picker-hint">Only the host picks the board</span>}
+                <a className="picker-hint editor-link" href="/board-editor">✎ Create / edit boards</a>
               </div>
+              {!isHost && <span className="picker-hint">Only the host picks the board</span>}
               <div className="board-picker-grid">
                 {boards.map((b) => {
                   const isSel = (lobbyState.selectedBoardId || "classic") === b.id;
@@ -356,12 +363,30 @@ function LobbyClient({ lobbyId, mySteamId }: { lobbyId: string; mySteamId: strin
                       title={b.name}
                     >
                       <span className="board-pick-swatches">
-                        {swatches.map((c, i) => (
-                          <span key={i} style={{ background: c }} />
-                        ))}
+                        {swatches.map((c, i) => <span key={i} style={{ background: c }} />)}
                       </span>
                       <span className="board-pick-name">{b.name}</span>
                       <span className="board-pick-meta">{b.tileCount} tiles</span>
+                    </button>
+                  );
+                })}
+                {savedBoards.map((b) => {
+                  const isSel = lobbyState.selectedBoardId === b.id;
+                  const swatches = Object.values(b.theme?.groupColors || {}).slice(0, 8) as string[];
+                  return (
+                    <button
+                      key={b.id}
+                      className={`board-pick-card ${isSel ? "selected" : ""}`}
+                      onClick={() => isHost && handleSelectCustomBoard(b)}
+                      disabled={!isHost}
+                      style={{ ["--accent" as any]: b.theme?.accent || "#38bdf8" }}
+                      title={b.name}
+                    >
+                      <span className="board-pick-swatches">
+                        {swatches.map((c, i) => <span key={i} style={{ background: c as string }} />)}
+                      </span>
+                      <span className="board-pick-name">{b.name} <span className="board-pick-custom">custom</span></span>
+                      <span className="board-pick-meta">{b.tiles?.length ?? 0} tiles</span>
                     </button>
                   );
                 })}

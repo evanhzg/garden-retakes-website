@@ -293,6 +293,9 @@
 }
 .board-pick-name { font-weight: 700; color: var(--text, #e8edf5); font-size: 0.95rem; }
 .board-pick-meta { font-size: 0.72rem; color: var(--text-dim, #94a3b8); }
+.board-pick-custom { font-size: 0.6rem; color: #38bdf8; background: rgba(56, 189, 248, 0.15); padding: 1px 5px; border-radius: 6px; margin-left: 4px; vertical-align: middle; }
+.editor-link { color: #38bdf8; text-decoration: none; font-weight: 600; font-size: 0.8rem; }
+.editor-link:hover { text-decoration: underline; }
 
 .game-pick-icon {
   font-size: 1.5rem;
