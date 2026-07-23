@@ -149,10 +149,12 @@ export function Buildings3D({ space, layout, boardMeta, ownerColor }: { space: a
     );
   }
 
-  // Owned but undeveloped → a decoration so the tile reads as claimed.
+  // Owned but undeveloped → a decoration so the tile reads as claimed. Kept on
+  // the inner half (toward centre) so pawns, which sit on the outer half, never
+  // overlap it.
   if (ownerColor && !space.mortgaged) {
-    if (space.type === "property") return <PopIn position={worldAt(0, TILE_D * 0.12)}><GardenDecor ownerColor={ownerColor} /></PopIn>;
-    if (space.type === "rail" || space.type === "util") return <PopIn position={worldAt(0, TILE_D * 0.12)}><OwnerFlag ownerColor={ownerColor} /></PopIn>;
+    if (space.type === "property") return <PopIn position={worldAt(0, TILE_D * 0.24)}><GardenDecor ownerColor={ownerColor} /></PopIn>;
+    if (space.type === "rail" || space.type === "util") return <PopIn position={worldAt(0, TILE_D * 0.24)}><OwnerFlag ownerColor={ownerColor} /></PopIn>;
   }
   return null;
 }

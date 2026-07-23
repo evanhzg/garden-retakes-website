@@ -126,11 +126,13 @@ export function buildLayout(roles: any, total: number): Layout {
 }
 
 // A small stable per-slot offset so several pawns sharing a tile don't overlap.
+// Pawns sit on the OUTER half of the tile (negative `inward`) so they never walk
+// on the owner decorations / houses, which occupy the inner half toward centre.
 export function slotOffset(dirs: { inward: [number, number]; along: [number, number] }, i: number): [number, number] {
   const col = i % 2;
   const row = Math.floor(i / 2);
   const a = (col - 0.5) * 0.34;
-  const b = 0.12 + row * 0.34;
+  const b = -0.2 - row * 0.24; // outward from tile centre; TILE_D/2 ≈ 0.66 keeps rows on-tile
   return [dirs.along[0] * a + dirs.inward[0] * b, dirs.along[1] * a + dirs.inward[1] * b];
 }
 
