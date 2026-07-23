@@ -13,6 +13,7 @@ import {
 } from "@/components/games/monopolyData";
 import SoundControls from "@/components/games/sound/SoundControls";
 import { sound, type SoundName } from "@/components/games/sound/SoundManager";
+import { GROUP_COLORS } from "./monopoly3d/theme";
 import "./monopoly.css";
 
 // The 3D board (react-three-fiber) is client-only.
@@ -41,6 +42,22 @@ function Pawn({ color, size = 26, active = false }: { color: string; size?: numb
       <path d="M24 14 C20 14 18 18 19 24 C12 28 7 42 7 54" fill="none" stroke="rgba(255,255,255,.35)" strokeWidth="1.6" strokeLinecap="round" />
       <ellipse cx="20.5" cy="9" rx="3" ry="3.8" fill="rgba(255,255,255,.6)" />
     </svg>
+  );
+}
+
+// Colour-set pips: one chip per property group the player owns ≥1 of; a fully
+// owned set (monopoly) gets a bright ring.
+function SetPips({ stats, colorOf }: { stats: Record<string, { total: number; owned: number }>; colorOf: (g: string) => string }) {
+  const groups = Object.keys(stats).filter((g) => stats[g].owned > 0);
+  if (!groups.length) return null;
+  return (
+    <span className="mono-pips">
+      {groups.map((g) => {
+        const { owned, total } = stats[g];
+        const mono = owned === total;
+        return <span key={g} className={`mono-pip${mono ? " mono" : ""}`} style={{ background: colorOf(g) }} title={`${g} ${owned}/${total}`} />;
+      })}
+    </span>
   );
 }
 
@@ -200,6 +217,31 @@ export default function MonopolyGame() {
   const propertyCount = (pid: string) =>
     gameState.board.filter((s: any) => s.owner === pid).length;
 
+  // ---- richer per-player derived stats (for the cards + own HUD) ----
+  const typeCount = (pid: string, type: string) =>
+    gameState.board.filter((s: any) => s.owner === pid && s.type === type).length;
+  const holdingsValue = (pid: string) =>
+    gameState.board.reduce((sum: number, s: any) => {
+      if (s.owner !== pid) return sum;
+      let v = 0;
+      if (s.price) v += s.mortgaged ? Math.floor(s.price / 2) : s.price;
+      if (s.houses && s.houseCost) v += s.houseCost * s.houses;
+      return sum + v;
+    }, 0);
+  const netWorth = (pid: string) => (gameState.playerStates[pid]?.money || 0) + holdingsValue(pid);
+  const groupStats = (pid: string): Record<string, { total: number; owned: number }> => {
+    const stats: Record<string, { total: number; owned: number }> = {};
+    for (const s of gameState.board) {
+      if (s.type !== "property" || !s.group) continue;
+      let g = stats[s.group];
+      if (!g) g = stats[s.group] = { total: 0, owned: 0 };
+      g.total++;
+      if (s.owner === pid) g.owned++;
+    }
+    return stats;
+  };
+  const groupColorOf = (g: string) => boardMeta?.theme?.groupColors?.[g] || GROUP_COLORS[g] || "#888";
+
   const selectedSpace = selectedSpaceId !== null ? gameState.board[selectedSpaceId] : null;
 
   const ownsFullGroup = (space: any) => {
@@ -237,11 +279,13 @@ export default function MonopolyGame() {
       </header>
 
       <div className="mono-stage">
-        {/* ================= PLAYER PANEL ================= */}
+        {/* ================= PLAYER PANEL (opponents) ================= */}
         <aside className="mono-players-col">
-          {gameState.players.map((pid: string) => {
+          {gameState.players.filter((pid: string) => !myState || pid !== mySteamId).map((pid: string) => {
             const s = gameState.playerStates[pid];
             const isTurn = gameState.currentTurn === pid;
+            const rails = typeCount(pid, "rail");
+            const utils = typeCount(pid, "util");
             return (
               <motion.div
                 layout
@@ -255,12 +299,22 @@ export default function MonopolyGame() {
                 </div>
                 <div className="mono-pcard-body">
                   <div className="mono-pcard-top">
-                    <span className="mono-pcard-name">{nameOf(pid)}{pid === mySteamId ? " ★" : ""}</span>
+                    <span className="mono-pcard-name">{nameOf(pid)}</span>
                     {s.jailCards > 0 && <span className="mono-chip">🎟 {s.jailCards}</span>}
                   </div>
-                  <div className="mono-pcard-cash">{fmt(s.money)}</div>
+                  <div className="mono-pcard-cash">
+                    {fmt(s.money)}
+                    {!s.bankrupt && <span className="mono-pcard-net">{lang === "fr" ? "val." : "net"} {fmt(netWorth(pid))}</span>}
+                  </div>
+                  <div className="mono-pcard-holdings">
+                    <SetPips stats={groupStats(pid)} colorOf={groupColorOf} />
+                    <span className="mono-pcard-counts">
+                      <span title={t("properties", lang)}>🏠 {propertyCount(pid)}</span>
+                      {rails > 0 && <span title="rail">🚂 {rails}</span>}
+                      {utils > 0 && <span title="utility">💡 {utils}</span>}
+                    </span>
+                  </div>
                   <div className="mono-pcard-meta">
-                    <span title={t("properties", lang)}>🏠 {propertyCount(pid)}</span>
                     {s.jailed && <span className="mono-jail-tag">⛓ {t("inJail", lang)}</span>}
                     {s.bankrupt && <span className="mono-jail-tag">💀 {t("bankrupt", lang)}</span>}
                   </div>
@@ -319,53 +373,82 @@ export default function MonopolyGame() {
         </aside>
       </div>
 
-      {/* ================= ACTION DOCK ================= */}
-      <div className="mono-dock">
-        {isMyTurn && myState && !myState.bankrupt ? (
-          <>
-            {phase === "ROLL" && (
-              <button className="mono-btn primary" disabled={isDiceRolling} onClick={rollDice}>
-                🎲 {isDiceRolling ? t("rolling", lang) : t("rollDice", lang)}
-              </button>
-            )}
-            {phase === "ACTION" && canBuyHere && (
-              <>
-                <button className="mono-btn buy" disabled={isDiceRolling} onClick={buyProperty}>
-                  💰 {t("buy", lang)} · {nameShort(currentSpace)} · {fmt(currentSpace.price)}
+      {/* ================= BOTTOM HUD (own card + actions) ================= */}
+      <div className="mono-hud">
+        {myState && !myState.bankrupt && (
+          <div className={`mono-hud-me ${isMyTurn ? "active" : ""}`} style={{ ["--pc" as any]: myState.color }}>
+            <div className="mono-hud-token">
+              <Pawn color={myState.color} size={40} active={isMyTurn} />
+            </div>
+            <div className="mono-hud-info">
+              <div className="mono-hud-name">
+                {nameOf(mySteamId)} <span className="mono-hud-you">{lang === "fr" ? "VOUS" : "YOU"}</span>
+                {myState.jailCards > 0 && <span className="mono-chip">🎟 {myState.jailCards}</span>}
+                {myState.jailed && <span className="mono-jail-tag">⛓ {t("inJail", lang)}</span>}
+              </div>
+              <div className="mono-hud-money">
+                <span className="mono-hud-cash">{fmt(myState.money)}</span>
+                <span className="mono-hud-net">{lang === "fr" ? "Valeur nette" : "Net worth"} · {fmt(netWorth(mySteamId))}</span>
+              </div>
+              <div className="mono-hud-holdings">
+                <SetPips stats={groupStats(mySteamId)} colorOf={groupColorOf} />
+                <span className="mono-pcard-counts">
+                  <span title={t("properties", lang)}>🏠 {propertyCount(mySteamId)}</span>
+                  {typeCount(mySteamId, "rail") > 0 && <span title="rail">🚂 {typeCount(mySteamId, "rail")}</span>}
+                  {typeCount(mySteamId, "util") > 0 && <span title="utility">💡 {typeCount(mySteamId, "util")}</span>}
+                </span>
+              </div>
+            </div>
+          </div>
+        )}
+
+        <div className="mono-hud-actions">
+          {isMyTurn && myState && !myState.bankrupt ? (
+            <>
+              {phase === "ROLL" && (
+                <button className="mono-btn primary" disabled={isDiceRolling} onClick={rollDice}>
+                  🎲 {isDiceRolling ? t("rolling", lang) : t("rollDice", lang)}
                 </button>
+              )}
+              {phase === "ACTION" && canBuyHere && (
+                <>
+                  <button className="mono-btn buy" disabled={isDiceRolling} onClick={buyProperty}>
+                    💰 {t("buy", lang)} · {nameShort(currentSpace)} · {fmt(currentSpace.price)}
+                  </button>
+                  <button className="mono-btn ghost" disabled={isDiceRolling} onClick={skipBuy}>
+                    {t("skip", lang)}
+                  </button>
+                </>
+              )}
+              {phase === "ACTION" && !canBuyHere && (
                 <button className="mono-btn ghost" disabled={isDiceRolling} onClick={skipBuy}>
                   {t("skip", lang)}
                 </button>
-              </>
-            )}
-            {phase === "ACTION" && !canBuyHere && (
-              <button className="mono-btn ghost" disabled={isDiceRolling} onClick={skipBuy}>
-                {t("skip", lang)}
-              </button>
-            )}
-            {phase === "END" && (
-              <button className="mono-btn end" disabled={isDiceRolling} onClick={endTurn}>
-                {t("endTurn", lang)} ▸
-              </button>
-            )}
-
-            {myState.jailed && phase === "ROLL" && (
-              <>
-                <button className="mono-btn jail" disabled={myState.money < 50} onClick={payJail}>
-                  🔓 {t("payJail", lang, { amt: fmt(50) })}
+              )}
+              {phase === "END" && (
+                <button className="mono-btn end" disabled={isDiceRolling} onClick={endTurn}>
+                  {t("endTurn", lang)} ▸
                 </button>
-                {myState.jailCards > 0 && (
-                  <button className="mono-btn jail" onClick={useJailCard}>🎟 {t("useCard", lang)}</button>
-                )}
-              </>
-            )}
-          </>
-        ) : (
-          <div className="mono-dock-waiting">
-            <Pawn color={gameState.playerStates[gameState.currentTurn]?.color || "#888"} size={22} active />
-            {t("turnOf", lang, { name: nameOf(gameState.currentTurn) })}
-          </div>
-        )}
+              )}
+
+              {myState.jailed && phase === "ROLL" && (
+                <>
+                  <button className="mono-btn jail" disabled={myState.money < 50} onClick={payJail}>
+                    🔓 {t("payJail", lang, { amt: fmt(50) })}
+                  </button>
+                  {myState.jailCards > 0 && (
+                    <button className="mono-btn jail" onClick={useJailCard}>🎟 {t("useCard", lang)}</button>
+                  )}
+                </>
+              )}
+            </>
+          ) : (
+            <div className="mono-dock-waiting">
+              <Pawn color={gameState.playerStates[gameState.currentTurn]?.color || "#888"} size={22} active />
+              {t("turnOf", lang, { name: nameOf(gameState.currentTurn) })}
+            </div>
+          )}
+        </div>
       </div>
 
       {/* ================= CARD POPUP ================= */}
