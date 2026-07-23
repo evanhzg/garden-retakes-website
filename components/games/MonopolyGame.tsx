@@ -184,6 +184,8 @@ export default function MonopolyGame() {
   const rollDice = () => socket?.emit("monopoly_roll");
   const buyProperty = () => socket?.emit("monopoly_buy");
   const skipBuy = () => socket?.emit("monopoly_skip");
+  const placeBid = (amount: number) => socket?.emit("monopoly_bid", { amount });
+  const passAuction = () => socket?.emit("monopoly_auction_pass");
   const endTurn = () => socket?.emit("monopoly_end_turn");
   const payJail = () => socket?.emit("monopoly_pay_jail");
   const useJailCard = () => socket?.emit("monopoly_use_card");
@@ -490,6 +492,44 @@ export default function MonopolyGame() {
             </motion.div>
           </motion.div>
         )}
+      </AnimatePresence>
+
+      {/* ================= AUCTION MODAL ================= */}
+      <AnimatePresence>
+        {gameState.turnPhase === "AUCTION" && gameState.moduleState?.auction && (() => {
+          const a = gameState.moduleState.auction;
+          const tile = gameState.board[a.spaceId];
+          const myTurnToBid = a.activePid === mySteamId;
+          const nextBid = a.highBid + a.increment;
+          const canAfford = myState && myState.money >= nextBid && !myState.bankrupt;
+          return (
+            <motion.div className="mono-modal-overlay" initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}>
+              <motion.div className="mono-auction" initial={{ y: 40, scale: 0.92, opacity: 0 }} animate={{ y: 0, scale: 1, opacity: 1 }} exit={{ y: 40, opacity: 0 }}>
+                <div className="mono-auction-head">🔨 {lang === "fr" ? "Enchères" : "Auction"}</div>
+                <div className="mono-auction-tile">{nameFull(tile)}</div>
+                <div className="mono-auction-bid">
+                  <span className="mono-auction-label">{lang === "fr" ? "Meilleure offre" : "Top bid"}</span>
+                  <span className="mono-auction-amount">{a.highBid > 0 ? fmt(a.highBid) : "—"}</span>
+                  {a.highBidder && <span className="mono-auction-by">{nameOf(a.highBidder)}</span>}
+                </div>
+                {myTurnToBid ? (
+                  <div className="mono-auction-actions">
+                    <button className="mono-btn primary" disabled={!canAfford} onClick={() => placeBid(nextBid)}>
+                      {lang === "fr" ? "Miser" : "Bid"} {fmt(nextBid)}
+                    </button>
+                    <button className="mono-btn ghost" onClick={passAuction}>{lang === "fr" ? "Passer" : "Pass"}</button>
+                  </div>
+                ) : (
+                  <div className="mono-auction-waiting">
+                    {a.activePid
+                      ? t("turnOf", lang, { name: nameOf(a.activePid) })
+                      : (lang === "fr" ? "Résolution…" : "Resolving…")}
+                  </div>
+                )}
+              </motion.div>
+            </motion.div>
+          );
+        })()}
       </AnimatePresence>
 
       {/* ================= PROPERTY MODAL ================= */}

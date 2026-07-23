@@ -27,8 +27,8 @@ export const MODULE_LABELS: Record<ModuleType, string> = {
   jackpot: "Free-Parking Jackpot — fees pile into a pot",
   auction: "Auction — declined tiles go to the highest bidder",
 };
-// Modules exposed in the editor today (auction lands in a follow-up).
-export const EDITOR_MODULES: ModuleType[] = ["worldCup", "jackpot"];
+// Modules exposed in the editor.
+export const EDITOR_MODULES: ModuleType[] = ["worldCup", "jackpot", "auction"];
 
 export type Tile = {
   id: number;

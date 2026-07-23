@@ -273,6 +273,10 @@ export function localizeLog(key: string, params: any, ctx: LogCtx): string {
       }
       case "world_cup_move": return `🏆 The World Cup moved to ${place} (rent ×${P.level}).`;
       case "jackpot_win": return `🅿️ ${who} scooped the jackpot: ${amt}!`;
+      case "auction_start": return `🔨 ${place} goes to auction.`;
+      case "auction_bid": return `🔨 ${who} bid ${amt}.`;
+      case "auction_won": return `🔨 ${who} won ${place} at auction for ${amt}.`;
+      case "auction_none": return `🔨 No bids — ${place} stays unowned.`;
       case "win": return `${who} wins the game! 🏆`;
       default: return "";
     }
@@ -312,6 +316,10 @@ export function localizeLog(key: string, params: any, ctx: LogCtx): string {
       }
       case "world_cup_move": return `🏆 La Coupe du Monde passe sur ${place} (loyer ×${P.level}).`;
       case "jackpot_win": return `🅿️ ${who} rafle la cagnotte : ${amt} !`;
+      case "auction_start": return `🔨 ${place} est mis aux enchères.`;
+      case "auction_bid": return `🔨 ${who} mise ${amt}.`;
+      case "auction_won": return `🔨 ${who} remporte ${place} aux enchères pour ${amt}.`;
+      case "auction_none": return `🔨 Aucune mise — ${place} reste libre.`;
       case "win": return `${who} remporte la partie ! 🏆`;
       default: return "";
     }

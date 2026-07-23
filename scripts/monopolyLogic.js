@@ -101,6 +101,7 @@ class MonopolyGame {
     this.worldCup = null;
     this.jackpot = null;
     this.auctionEnabled = false;
+    this.auction = null;
     const ownable = this.ownableIds();
     for (const m of this.moduleDefs) {
       if (!m) continue;
@@ -124,6 +125,83 @@ class MonopolyGame {
     this.worldCup.hostTileId = ownable[(cur + 1) % ownable.length];
     this.worldCup.level += this.worldCup.step;
     this.log('world_cup_move', { pid: byPid, spaceId: this.worldCup.hostTileId, level: this.worldCup.level });
+  }
+
+  // ---- auction module (turn-based ascending) ----------------------------
+
+  auctionIncrement(price) { return Math.max(10, Math.round((price || 0) * 0.1)); }
+
+  // Open an auction for an unowned tile that the current player declined.
+  startAuction(spaceId) {
+    const space = this.board[spaceId];
+    if (!space) return false;
+    this.auction = {
+      spaceId, price: space.price || 0, increment: this.auctionIncrement(space.price),
+      highBid: 0, highBidder: null, passed: [], order: this.players.filter(p => !this.playerStates[p].bankrupt),
+      cursor: 0, triggerPid: this.players[this.currentTurnIndex], activePid: null,
+    };
+    this.turnPhase = 'AUCTION';
+    this.log('auction_start', { pid: this.auction.triggerPid, spaceId });
+    this.advanceAuction();
+    return true;
+  }
+
+  // Pick the next player who must act (not passed, not the current high bidder,
+  // and able to raise). Resolve the auction when nobody can act.
+  advanceAuction() {
+    const a = this.auction;
+    if (!a) return;
+    const n = a.order.length;
+    for (let step = 0; step < n; step++) {
+      const pid = a.order[(a.cursor + step) % n];
+      const st = this.playerStates[pid];
+      if (!st || st.bankrupt) continue;
+      if (a.passed.includes(pid)) continue;
+      if (pid === a.highBidder) continue;
+      if (st.money < a.highBid + a.increment) continue;
+      a.activePid = pid;
+      a.cursor = (a.order.indexOf(pid) + 1) % n;
+      return;
+    }
+    this.resolveAuction();
+  }
+
+  auctionBid(pid, amount) {
+    const a = this.auction;
+    if (!a || this.turnPhase !== 'AUCTION' || a.activePid !== pid) return false;
+    const st = this.playerStates[pid];
+    amount = Math.floor(Number(amount));
+    if (!(amount >= a.highBid + a.increment) || amount > st.money) return false;
+    a.highBid = amount;
+    a.highBidder = pid;
+    this.log('auction_bid', { pid, amount, spaceId: a.spaceId });
+    this.advanceAuction();
+    return true;
+  }
+
+  auctionPass(pid) {
+    const a = this.auction;
+    if (!a || this.turnPhase !== 'AUCTION' || a.activePid !== pid) return false;
+    if (!a.passed.includes(pid)) a.passed.push(pid);
+    this.advanceAuction();
+    return true;
+  }
+
+  resolveAuction() {
+    const a = this.auction;
+    if (!a) return;
+    const winner = a.highBidder;
+    const trigger = a.triggerPid;
+    if (winner && a.highBid > 0 && this.playerStates[winner]) {
+      this.playerStates[winner].money -= a.highBid; // pay the bank directly (not the jackpot)
+      this.board[a.spaceId].owner = winner;
+      this.log('auction_won', { pid: winner, amount: a.highBid, spaceId: a.spaceId });
+    } else {
+      this.log('auction_none', { spaceId: a.spaceId });
+    }
+    this.auction = null;
+    // Resume the turn of whoever triggered the auction.
+    if (this.status === 'PLAYING') this.endOrRoll(trigger);
   }
 
   // ---- player lifecycle -------------------------------------------------
@@ -629,9 +707,14 @@ class MonopolyGame {
   }
 
   // Decline to buy the property just landed on (respects the doubles re-roll).
+  // With the auction module on, declining an unowned tile opens an auction.
   skipBuy(steamId) {
     if (this.status !== 'PLAYING') return false;
     if (this.players[this.currentTurnIndex] !== steamId || this.turnPhase !== 'ACTION') return false;
+    const space = this.board[this.playerStates[steamId].position];
+    if (this.auctionEnabled && space && ['property', 'rail', 'util'].includes(space.type) && space.owner == null) {
+      return this.startAuction(space.id);
+    }
     this.endOrRoll(steamId);
     return true;
   }

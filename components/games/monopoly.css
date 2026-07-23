@@ -413,6 +413,25 @@
   background: rgba(255,255,255,0.05); border: 1px solid rgba(255,255,255,0.1);
 }
 
+/* ---------- auction modal ---------- */
+.mono-auction {
+  width: min(420px, 92vw); border-radius: 18px; padding: 22px 24px;
+  background: linear-gradient(160deg, #17233b, #0b1220);
+  border: 1px solid rgba(56,189,248,0.35); box-shadow: 0 24px 70px -20px rgba(0,0,0,0.8);
+  text-align: center; color: #e8edf5;
+}
+.mono-auction-head { font-size: 1.15rem; font-weight: 900; letter-spacing: 0.5px; }
+.mono-auction-tile { font-size: 1.4rem; font-weight: 800; margin: 6px 0 14px; color: #fff; }
+.mono-auction-bid { display: flex; flex-direction: column; align-items: center; gap: 2px; margin-bottom: 16px; }
+.mono-auction-label { font-size: 0.72rem; text-transform: uppercase; letter-spacing: 1px; color: #94a3b8; }
+.mono-auction-amount { font-size: 2rem; font-weight: 900; color: #38bdf8; line-height: 1.1; }
+.mono-auction-by { font-size: 0.85rem; color: #cbd5e1; }
+.mono-auction-actions { display: flex; gap: 10px; justify-content: center; }
+.mono-auction-waiting {
+  font-size: 0.95rem; font-weight: 700; color: #cbd5e1;
+  padding: 10px 16px; border-radius: 12px; background: rgba(255,255,255,0.05);
+}
+
 /* ---------- board modules (World Cup marker, jackpot readout) ---------- */
 .mono-wc-marker {
   transform: translateY(-4px);

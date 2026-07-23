@@ -834,7 +834,7 @@ io.on("connection", (socket) => {
 
   const handleMonopolyBotTurn = (game, lobbyId) => {
     setTimeout(() => {
-      if (game.status !== 'PLAYING') return;
+      if (game.status !== 'PLAYING' || game.turnPhase === 'AUCTION') return;
       const currentBotId = game.players[game.currentTurnIndex];
       if (!currentBotId || !currentBotId.startsWith('BOT_')) return;
 
@@ -872,13 +872,33 @@ io.on("connection", (socket) => {
     }, 2000);
   };
 
+  // Drive a bot that is the active bidder in an auction.
+  const handleMonopolyAuctionBot = (game, lobbyId) => {
+    setTimeout(() => {
+      if (game.status !== 'PLAYING' || game.turnPhase !== 'AUCTION' || !game.auction) return;
+      const a = game.auction;
+      const pid = a.activePid;
+      if (!pid || !pid.startsWith('BOT_')) return;
+      const st = game.playerStates[pid];
+      // Value a tile up to ~65% of its price, keeping a cash buffer.
+      const cap = Math.min(st.money - 100, Math.round((a.price || 0) * 0.65));
+      const next = a.highBid + a.increment;
+      if (next <= cap) game.auctionBid(pid, next);
+      else game.auctionPass(pid);
+      broadcastMonopolyState(lobbyId);
+    }, 1200);
+  };
+
   const broadcastMonopolyState = (lobbyId) => {
     const game = monopolyGames.get(lobbyId);
     if (!game) return;
     io.to(`lobby_${lobbyId}`).emit("monopoly_state", game.getState());
 
-    if (game.status === 'PLAYING' && game.players[game.currentTurnIndex]?.startsWith('BOT_')) {
+    if (game.status === 'PLAYING' && game.turnPhase !== 'AUCTION' && game.players[game.currentTurnIndex]?.startsWith('BOT_')) {
       handleMonopolyBotTurn(game, lobbyId);
+    }
+    if (game.status === 'PLAYING' && game.turnPhase === 'AUCTION' && game.auction && game.auction.activePid && game.auction.activePid.startsWith('BOT_')) {
+      handleMonopolyAuctionBot(game, lobbyId);
     }
   };
 
@@ -949,6 +969,24 @@ io.on("connection", (socket) => {
     if (socket.lobbyId && socket.steamId) {
       const game = monopolyGames.get(socket.lobbyId);
       if (game && game.skipBuy(socket.steamId)) {
+        broadcastMonopolyState(socket.lobbyId);
+      }
+    }
+  });
+
+  socket.on("monopoly_bid", (data) => {
+    if (socket.lobbyId && socket.steamId) {
+      const game = monopolyGames.get(socket.lobbyId);
+      if (game && game.auctionBid(socket.steamId, data && data.amount)) {
+        broadcastMonopolyState(socket.lobbyId);
+      }
+    }
+  });
+
+  socket.on("monopoly_auction_pass", () => {
+    if (socket.lobbyId && socket.steamId) {
+      const game = monopolyGames.get(socket.lobbyId);
+      if (game && game.auctionPass(socket.steamId)) {
         broadcastMonopolyState(socket.lobbyId);
       }
     }
