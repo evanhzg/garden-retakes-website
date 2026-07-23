@@ -67,6 +67,14 @@ export default function MonopolyGame() {
   const [rollTriggerKey, setRollTriggerKey] = useState(0);
   const prevRollIdRef = useRef<string | null>(null);
 
+  // 3D orbit vs locked top-down 2D view (persisted).
+  const [viewMode, setViewMode] = useState<"3d" | "2d">("3d");
+  useEffect(() => {
+    const v = typeof window !== "undefined" ? window.localStorage.getItem("mono_view") : null;
+    if (v === "2d" || v === "3d") setViewMode(v);
+  }, []);
+  const chooseView = (v: "3d" | "2d") => { setViewMode(v); try { window.localStorage.setItem("mono_view", v); } catch {} };
+
   // Card popup shown when the server reports a freshly drawn card.
   const [shownCard, setShownCard] = useState<any>(null);
   const prevDrawIdRef = useRef<string | null>(null);
@@ -219,6 +227,10 @@ export default function MonopolyGame() {
               t("turnOf", lang, { name: nameOf(gameState.currentTurn) })
             )}
           </div>
+          <div className="mono-view-toggle" role="group" aria-label="View">
+            <button className={viewMode === "3d" ? "on" : ""} onClick={() => chooseView("3d")}>3D</button>
+            <button className={viewMode === "2d" ? "on" : ""} onClick={() => chooseView("2d")}>2D</button>
+          </div>
           <SoundControls />
           <button className="mono-exit" onClick={exitGame} title={lang === "fr" ? "Quitter la partie" : "Leave game"}>✕</button>
         </div>
@@ -264,6 +276,7 @@ export default function MonopolyGame() {
             gameState={gameState}
             lang={lang}
             boardMeta={boardMeta}
+            viewMode={viewMode}
             onSelectSpace={setSelectedSpaceId}
             onHoverSpace={(space, e) => {
               setHoveredSpace(space);
@@ -275,7 +288,9 @@ export default function MonopolyGame() {
             lastRoll={gameState.lastRoll}
             onDiceSettled={() => setIsDiceRolling(false)}
           />
-          <div className="mono-board3d-hint">🖱 {lang === "fr" ? "Glissez pour tourner · molette pour zoomer" : "Drag to orbit · scroll to zoom"}</div>
+          <div className="mono-board3d-hint">🖱 {viewMode === "2d"
+            ? (lang === "fr" ? "Glissez pour déplacer · molette pour zoomer" : "Drag to pan · scroll to zoom")
+            : (lang === "fr" ? "Glissez pour tourner · molette pour zoomer" : "Drag to orbit · scroll to zoom")}</div>
           {gameState.lastRoll && (
             <div className="mono-roll-readout mono-roll-readout-3d">
               {t("rolled", lang, { a: gameState.lastRoll[0], b: gameState.lastRoll[1], t: gameState.lastRoll[0] + gameState.lastRoll[1] })}

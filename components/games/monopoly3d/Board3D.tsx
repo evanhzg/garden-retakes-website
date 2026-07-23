@@ -2,7 +2,7 @@
 
 import React, { useMemo, useRef, useState, useEffect } from "react";
 import { Canvas, type ThreeEvent } from "@react-three/fiber";
-import { OrbitControls, Html } from "@react-three/drei";
+import { OrbitControls, OrthographicCamera, Html } from "@react-three/drei";
 import * as THREE from "three";
 import type { Lang } from "@/components/games/monopolyData";
 import { DiceSimulation } from "@/components/games/DiceRoller";
@@ -47,6 +47,7 @@ type SceneProps = {
   rollKey: number;
   lastRoll: [number, number] | null;
   onDiceSettled: () => void;
+  viewMode?: "3d" | "2d";
   // editor mode
   editable?: boolean;
   selectedId?: number | null;
@@ -59,8 +60,10 @@ type SceneProps = {
 function Scene(props: SceneProps) {
   const {
     gameState, lang, boardMeta, onSelectSpace, onHoverSpace, onHoverEnd, rollKey, lastRoll, onDiceSettled,
+    viewMode = "3d",
     editable, selectedId, onSelectTile, onReorder, onDeleteTile, renderTileMenu,
   } = props;
+  const is2D = viewMode === "2d";
   const total = gameState.board.length;
   const roles = boardMeta?.roles || DEFAULT_ROLES;
   const layout: Layout = useMemo(() => buildLayout(roles, total), [roles, total]);
@@ -242,12 +245,26 @@ function Scene(props: SceneProps) {
         </group>
       )}
 
+      {/* 2D view: a locked overhead orthographic camera (orbit disabled). up=−Z
+          keeps GO at the bottom-right, matching the 3D default framing. */}
+      {is2D && (
+        <OrthographicCamera
+          makeDefault
+          position={[0, half * 8, 0]}
+          up={[0, 0, -1]}
+          zoom={Math.round(268 / half)}
+          near={0.1}
+          far={half * 40}
+        />
+      )}
+
       <OrbitControls
         ref={controlsRef}
         makeDefault
-        target={[0, 0.3, 0]}
+        target={[0, is2D ? 0 : 0.3, 0]}
         enablePan
-        enableDamping
+        enableRotate={!is2D}
+        enableDamping={!is2D}
         dampingFactor={0.08}
         minDistance={half * 1.55}
         maxDistance={half * 5.2}
