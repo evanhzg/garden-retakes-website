@@ -21,8 +21,89 @@ function PopIn({ position, children }: { position: [number, number, number]; chi
   return <group ref={ref} position={position} scale={0}>{children}</group>;
 }
 
+// A unit gable (ridged) roof — a triangular prism, base 1×1, height 1, ridge
+// running front↔back so the triangular gable end faces the front (door side).
+const _roofShape = new THREE.Shape();
+_roofShape.moveTo(-0.5, 0);
+_roofShape.lineTo(0.5, 0);
+_roofShape.lineTo(0, 1);
+_roofShape.closePath();
+const GABLE_ROOF_GEOM = new THREE.ExtrudeGeometry(_roofShape, { depth: 1, bevelEnabled: false });
+GABLE_ROOF_GEOM.translate(0, 0, -0.5);
+GABLE_ROOF_GEOM.computeVertexNormals();
+
+const WINDOW_MAT = { color: "#bfe3f5", emissive: "#7fb8d8", emissiveIntensity: 0.22, roughness: 0.3, metalness: 0.35 } as const;
+
+// A cute little low-poly cottage: walls, a pitched gable roof, a door, two side
+// windows and a chimney. Roof colour carries the house/hotel colour coding.
+function HouseModel({ scale, roofColor }: { scale: number; roofColor: string }) {
+  const w = 0.2 * scale, wh = 0.17 * scale, d = 0.2 * scale, rh = 0.15 * scale;
+  return (
+    <group>
+      <mesh castShadow receiveShadow position={[0, wh / 2, 0]}>
+        <boxGeometry args={[w, wh, d]} />
+        <meshStandardMaterial color="#efe7d4" roughness={0.78} />
+      </mesh>
+      <mesh castShadow geometry={GABLE_ROOF_GEOM} position={[0, wh, 0]} scale={[w * 1.14, rh, d * 1.14]}>
+        <meshStandardMaterial color={roofColor} roughness={0.62} />
+      </mesh>
+      {/* door on the front gable end */}
+      <mesh position={[0, wh * 0.34, d / 2 + 0.003]}>
+        <boxGeometry args={[w * 0.34, wh * 0.62, 0.02]} />
+        <meshStandardMaterial color="#6b4423" roughness={0.6} />
+      </mesh>
+      {/* windows on the long sides */}
+      <mesh position={[w / 2 + 0.002, wh * 0.58, 0]}>
+        <boxGeometry args={[0.02, wh * 0.34, d * 0.36]} />
+        <meshStandardMaterial {...WINDOW_MAT} />
+      </mesh>
+      <mesh position={[-w / 2 - 0.002, wh * 0.58, 0]}>
+        <boxGeometry args={[0.02, wh * 0.34, d * 0.36]} />
+        <meshStandardMaterial {...WINDOW_MAT} />
+      </mesh>
+      {/* chimney */}
+      <mesh castShadow position={[w * 0.26, wh + rh * 0.55, -d * 0.2]}>
+        <boxGeometry args={[0.05 * scale, 0.13 * scale, 0.05 * scale]} />
+        <meshStandardMaterial color="#8a5a3a" roughness={0.72} />
+      </mesh>
+    </group>
+  );
+}
+
+// A grander building for a fully-developed property (a "hotel"): a wider block
+// with rows of windows, a red hip roof and an entrance awning.
+function HotelModel({ scale }: { scale: number }) {
+  const w = 0.36 * scale, wh = 0.3 * scale, d = 0.26 * scale;
+  return (
+    <group>
+      <mesh castShadow receiveShadow position={[0, wh / 2, 0]}>
+        <boxGeometry args={[w, wh, d]} />
+        <meshStandardMaterial color="#f0e9d8" roughness={0.72} />
+      </mesh>
+      {/* red hip roof (a shallow 4-sided pyramid) */}
+      <mesh castShadow position={[0, wh + 0.06 * scale, 0]} rotation={[0, Math.PI / 4, 0]}>
+        <coneGeometry args={[w * 0.82, 0.14 * scale, 4]} />
+        <meshStandardMaterial color="#c0392b" roughness={0.55} />
+      </mesh>
+      {/* window grid on the front */}
+      {[-1, 0, 1].map((cx) => [0, 1].map((cy) => (
+        <mesh key={`${cx}-${cy}`} position={[cx * w * 0.28, wh * 0.34 + cy * wh * 0.34, d / 2 + 0.003]}>
+          <boxGeometry args={[w * 0.15, wh * 0.2, 0.02]} />
+          <meshStandardMaterial {...WINDOW_MAT} />
+        </mesh>
+      )))}
+      {/* entrance awning */}
+      <mesh position={[0, wh * 0.15, d / 2 + 0.006]}>
+        <boxGeometry args={[w * 0.26, wh * 0.26, 0.02]} />
+        <meshStandardMaterial color="#7a1e14" roughness={0.6} />
+      </mesh>
+    </group>
+  );
+}
+
 function BuildingBody({ scale, color, roofColor, style }: { scale: number; color: string; roofColor: string; style: BuildingStyle }) {
   const bw = 0.2 * scale;
+  if (style === "classic") return <HouseModel scale={scale} roofColor={roofColor} />;
   if (style === "tower") {
     return (
       <mesh castShadow position={[0, 0.16 * scale, 0]}>
@@ -160,14 +241,20 @@ export function Buildings3D({ space, layout, boardMeta, ownerColor, bt }: { spac
     const style: BuildingStyle = space.buildingStyle || boardMeta?.theme?.buildingStyle || "classic";
     const inset = TILE_D * 0.28;
     if (space.houses >= 5) {
-      return <PopIn position={worldAt(0, inset)}><BuildingBody scale={1.9} color={HOTEL_COLOR} roofColor="#7f1010" style={style} /></PopIn>;
+      return (
+        <PopIn position={worldAt(0, inset)}>
+          {style === "classic"
+            ? <HotelModel scale={1.15} />
+            : <BuildingBody scale={1.9} color={HOTEL_COLOR} roofColor="#7f1010" style={style} />}
+        </PopIn>
+      );
     }
     const n = space.houses, gap = 0.26;
     return (
       <>
         {Array.from({ length: n }).map((_, k) => (
           <PopIn key={k} position={worldAt((k - (n - 1) / 2) * gap, inset)}>
-            <BuildingBody scale={1} color={HOUSE_COLOR} roofColor="#0a3d1c" style={style} />
+            <BuildingBody scale={1} color={HOUSE_COLOR} roofColor="#2e8b57" style={style} />
           </PopIn>
         ))}
       </>
