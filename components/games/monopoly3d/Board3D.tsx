@@ -231,6 +231,22 @@ function Scene(props: SceneProps) {
         );
       })}
 
+      {/* World Cup marker: a floating trophy + multiplier over its host tile */}
+      {gameState.moduleState?.worldCup && layout.tiles[gameState.moduleState.worldCup.hostTileId] && (
+        <Html
+          position={[
+            layout.center(gameState.moduleState.worldCup.hostTileId)[0],
+            TILE_H + 0.55,
+            layout.center(gameState.moduleState.worldCup.hostTileId)[1],
+          ]}
+          center
+          zIndexRange={[40, 0]}
+          style={{ pointerEvents: "none" }}
+        >
+          <div className="mono-wc-marker">🏆 ×{gameState.moduleState.worldCup.level}</div>
+        </Html>
+      )}
+
       {/* floating tile menu (editor) */}
       {editable && selectedCenter && renderTileMenu && draggingId == null && (
         <Html position={[selectedCenter[0], TILE_H + 0.5, selectedCenter[1]]} zIndexRange={[60, 0]} style={{ pointerEvents: "none" }}>

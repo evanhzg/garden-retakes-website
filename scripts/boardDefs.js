@@ -234,6 +234,12 @@ function validateBoard(def) {
     if (t.type === 'special' && !(t.effect && t.effect.type)) return { ok: false, error: `special tile ${i} needs an effect` };
   }
   if (!(def.startingMoney > 0) || !(def.passGo >= 0)) return { ok: false, error: 'bad startingMoney/passGo' };
+  if (def.modules != null) {
+    if (!Array.isArray(def.modules)) return { ok: false, error: 'modules must be a list' };
+    for (const m of def.modules) {
+      if (!m || !['worldCup', 'jackpot', 'auction'].includes(m.type)) return { ok: false, error: 'unknown module type' };
+    }
+  }
   return { ok: true };
 }
 

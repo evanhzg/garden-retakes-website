@@ -1,7 +1,7 @@
 "use client";
 
 import React from "react";
-import { type BoardDef, GROUP_KEYS, BUILDING_STYLES, FACE_STYLES, FACE_FILLS, FACE_BORDERS } from "@/components/games/monopoly3d/boardSchema";
+import { type BoardDef, type BoardModule, type ModuleType, GROUP_KEYS, BUILDING_STYLES, FACE_STYLES, FACE_FILLS, FACE_BORDERS, EDITOR_MODULES, MODULE_LABELS } from "@/components/games/monopoly3d/boardSchema";
 
 type Props = {
   def: BoardDef;
@@ -10,6 +10,7 @@ type Props = {
   onGroupColor: (key: string, value: string) => void;
   onSurfaceColor: (key: "tileBase" | "tileBaseCorner" | "field" | "plinth" | "accent", value: string) => void;
   onTheme: (patch: any) => void;
+  onModules: (modules: BoardModule[]) => void;
 };
 
 const num = (v: string, fallback = 0) => {
@@ -19,7 +20,14 @@ const num = (v: string, fallback = 0) => {
 
 const SURFACE_KEYS = ["field", "plinth", "accent", "tileBase", "tileBaseCorner"] as const;
 
-export default function BoardPanel({ def, onResize, onBoard, onGroupColor, onSurfaceColor, onTheme }: Props) {
+export default function BoardPanel({ def, onResize, onBoard, onGroupColor, onSurfaceColor, onTheme, onModules }: Props) {
+  const modules = def.modules || [];
+  const getModule = (t: ModuleType) => modules.find((m) => m.type === t) as any;
+  const setModule = (t: ModuleType, patch: any) => onModules(modules.map((m) => (m.type === t ? { ...m, ...patch } : m)));
+  const toggleModule = (t: ModuleType, on: boolean) => {
+    if (on) onModules([...modules.filter((m) => m.type !== t), (t === "worldCup" ? { type: t, startTile: 1, multiplierStep: 1 } : { type: t }) as BoardModule]);
+    else onModules(modules.filter((m) => m.type !== t));
+  };
   return (
     <div className="ed-panel">
       <div className="ed-section-title">Layout</div>
@@ -77,6 +85,30 @@ export default function BoardPanel({ def, onResize, onBoard, onGroupColor, onSur
             <option value="suffix">suffix (100 €)</option>
           </select></div>
       </div>
+
+      <div className="ed-section-title">Modules</div>
+      {EDITOR_MODULES.map((mt) => {
+        const active = modules.some((m) => m.type === mt);
+        const wc = mt === "worldCup" ? getModule("worldCup") : null;
+        return (
+          <div className="ed-field" key={mt}>
+            <label className="ed-check">
+              <input type="checkbox" checked={active} onChange={(e) => toggleModule(mt, e.target.checked)} />
+              <span>{MODULE_LABELS[mt]}</span>
+            </label>
+            {mt === "worldCup" && active && wc && (
+              <div className="ed-row" style={{ marginTop: 6 }}>
+                <div className="ed-field"><label>Start tile #</label>
+                  <input type="number" min={0} max={def.tiles.length - 1} value={wc.startTile ?? 1}
+                    onChange={(e) => setModule("worldCup", { startTile: num(e.target.value, 1) })} /></div>
+                <div className="ed-field"><label>Multiplier step</label>
+                  <input type="number" min={1} value={wc.multiplierStep ?? 1}
+                    onChange={(e) => setModule("worldCup", { multiplierStep: Math.max(1, num(e.target.value, 1)) })} /></div>
+              </div>
+            )}
+          </div>
+        );
+      })}
 
       <div className="ed-section-title">Group colours</div>
       {[...GROUP_KEYS, "rail", "util"].map((g) => (

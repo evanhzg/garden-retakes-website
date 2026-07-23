@@ -34,6 +34,19 @@ export default function TileMenu({ tile, theme, total, onPatch, onChangeType, on
         <input type="text" value={tile.icon || ""} maxLength={4} placeholder="🏠 ✈ ★"
           onChange={(e) => onPatch({ icon: e.target.value || undefined })} /></label>
 
+      {isCorner && (
+        <>
+          <label className="tm-row"><span>Role</span>
+            <select value={tile.role || "go"} onChange={(e) => onPatch({ role: e.target.value as any })}>
+              <option value="go">GO</option>
+              <option value="jail">Jail</option>
+              <option value="freeParking">Free Parking</option>
+              <option value="goToJail">Go To Jail</option>
+            </select></label>
+          <div className="tm-note">Roles stay unique — picking one swaps it with the corner that had it.</div>
+        </>
+      )}
+
       {!isCorner && (
         <label className="tm-row"><span>Type</span>
           <select value={tile.type} onChange={(e) => onChangeType(e.target.value as TileType)}>

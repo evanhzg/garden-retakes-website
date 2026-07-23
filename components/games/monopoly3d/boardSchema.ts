@@ -16,6 +16,20 @@ export type EffectType =
 
 export type Effect = { type: EffectType; amount?: number; target?: number };
 
+// Board-level "modules" — game-wide mechanics beyond per-tile landing effects.
+export type ModuleType = "worldCup" | "jackpot" | "auction";
+export type BoardModule =
+  | { type: "worldCup"; startTile?: number; multiplierStep?: number }
+  | { type: "jackpot" }
+  | { type: "auction" };
+export const MODULE_LABELS: Record<ModuleType, string> = {
+  worldCup: "World Cup — relocating rent multiplier",
+  jackpot: "Free-Parking Jackpot — fees pile into a pot",
+  auction: "Auction — declined tiles go to the highest bidder",
+};
+// Modules exposed in the editor today (auction lands in a follow-up).
+export const EDITOR_MODULES: ModuleType[] = ["worldCup", "jackpot"];
+
 export type Tile = {
   id: number;
   type: TileType;
@@ -60,6 +74,7 @@ export type BoardDef = {
   currency: Currency;
   theme: Theme;
   tiles: Tile[];
+  modules?: BoardModule[];
 };
 
 export const GROUP_KEYS = ["brown", "lightblue", "pink", "orange", "red", "yellow", "green", "blue"];
@@ -140,7 +155,23 @@ export function makeBlankBoard(perSide = 9, name = "My Board"): BoardDef {
   return {
     id: "custom_" + rid(), name, perSide, startingMoney: 1500, passGo: 200,
     roles: { go: corners[0], jail: corners[1], freeParking: corners[2], goToJail: corners[3] },
-    currency: { symbol: "$", position: "prefix" }, theme: structuredCloneSafe(DEFAULT_THEME), tiles,
+    currency: { symbol: "$", position: "prefix" }, theme: structuredCloneSafe(DEFAULT_THEME), tiles, modules: [],
+  };
+}
+
+// Runtime preview of a board's modules, mirroring the engine's initial state, so
+// the editor's 3D preview can show the World Cup marker / jackpot pot.
+export function moduleStatePreview(def: BoardDef): any {
+  const mods = def.modules || [];
+  const ownable = def.tiles.filter((t) => t.type === "property" || t.type === "rail" || t.type === "util").map((t) => t.id);
+  const wc = mods.find((m) => m.type === "worldCup") as any;
+  const jp = mods.find((m) => m.type === "jackpot");
+  return {
+    worldCup: wc
+      ? { hostTileId: Number.isInteger(wc.startTile) && ownable.includes(wc.startTile) ? wc.startTile : (ownable[0] ?? null), level: 2, step: wc.multiplierStep > 0 ? wc.multiplierStep : 1 }
+      : null,
+    jackpot: jp ? { pot: 0 } : null,
+    auction: null,
   };
 }
 
@@ -231,9 +262,11 @@ export function defToGameState(def: BoardDef): any {
     })),
     players: [], playerStates: {}, currentTurn: null, lastRoll: null,
     boardId: def.id,
+    moduleState: moduleStatePreview(def),
     boardMeta: {
       boardId: def.id, name: def.name, perSide: def.perSide, roles: def.roles,
       theme: def.theme, currency: def.currency, startingMoney: def.startingMoney, passGo: def.passGo,
+      modules: def.modules || [],
     },
   };
 }
@@ -259,5 +292,11 @@ export function validateBoardClient(def: BoardDef): { ok: boolean; error?: strin
     if (t.type === "special" && !t.effect?.type) return { ok: false, error: `special "${t.name || i}" needs an effect` };
   }
   if (!(def.startingMoney > 0) || !(def.passGo >= 0)) return { ok: false, error: "bad starting money / GO salary" };
+  if (def.modules != null) {
+    if (!Array.isArray(def.modules)) return { ok: false, error: "modules must be a list" };
+    for (const m of def.modules) {
+      if (!m || !["worldCup", "jackpot", "auction"].includes((m as any).type)) return { ok: false, error: "unknown module type" };
+    }
+  }
   return { ok: true };
 }

@@ -271,6 +271,8 @@ export function localizeLog(key: string, params: any, ctx: LogCtx): string {
         };
         return `${who} — ${m[P.effect] || "special event"}${place ? ` (${place})` : ""}.`;
       }
+      case "world_cup_move": return `🏆 The World Cup moved to ${place} (rent ×${P.level}).`;
+      case "jackpot_win": return `🅿️ ${who} scooped the jackpot: ${amt}!`;
       case "win": return `${who} wins the game! 🏆`;
       default: return "";
     }
@@ -308,6 +310,8 @@ export function localizeLog(key: string, params: any, ctx: LogCtx): string {
         };
         return `${who} — ${m[P.effect] || "événement"}${place ? ` (${place})` : ""}.`;
       }
+      case "world_cup_move": return `🏆 La Coupe du Monde passe sur ${place} (loyer ×${P.level}).`;
+      case "jackpot_win": return `🅿️ ${who} rafle la cagnotte : ${amt} !`;
       case "win": return `${who} remporte la partie ! 🏆`;
       default: return "";
     }
@@ -318,10 +322,10 @@ export function localizeLog(key: string, params: any, ctx: LogCtx): string {
 
 // Coarse category for log styling.
 export function logCategory(key: string): string {
-  if (key === "buy" || key === "build" || key === "pass_go") return "gain";
+  if (key === "buy" || key === "build" || key === "pass_go" || key === "jackpot_win") return "gain";
   if (key === "pay_rent" || key === "pay_tax" || key === "bankrupt" || key === "jail_fine") return "loss";
   if (key.startsWith("jail")) return "jail";
-  if (key === "card") return "card";
+  if (key === "card" || key === "world_cup_move") return "card";
   if (key === "win") return "win";
   return "";
 }

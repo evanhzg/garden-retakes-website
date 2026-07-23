@@ -8,7 +8,7 @@ import BoardPanel from "@/components/games/editor/BoardPanel";
 import TileMenu from "@/components/games/editor/TileMenu";
 import TileRibbon from "@/components/games/editor/TileRibbon";
 import {
-  type BoardDef, type TileType,
+  type BoardDef, type TileType, type BoardModule,
   makeBlankBoard, cloneDef, resizeBoard, normalizeBoard, moveTile, deleteTile,
   updateTile, coerceTileForType, defToGameState, validateBoardClient, cornersOf,
 } from "@/components/games/monopoly3d/boardSchema";
@@ -16,6 +16,19 @@ import { listBoards, saveBoard, deleteBoard, downloadBoard, exportJson, importJs
 import "@/components/games/editor/editor.css";
 
 const Board3D = dynamic(() => import("@/components/games/monopoly3d/Board3D"), { ssr: false });
+
+// Reassign a corner tile's role, swapping with whichever corner currently holds
+// it so all four roles stay present exactly once.
+function reassignCornerRole(def: BoardDef, id: number, role: string): BoardDef {
+  const tiles = def.tiles.map((t) => ({ ...t }));
+  const target = tiles.find((t) => t.id === id);
+  if (!target || target.type !== "corner") return def;
+  const oldRole = target.role;
+  const holder = tiles.find((t) => t.type === "corner" && t.role === role && t.id !== id);
+  target.role = role as any;
+  if (holder) holder.role = oldRole;
+  return normalizeBoard({ ...def, tiles });
+}
 
 export default function BoardEditorPage() {
   const steamId = useGameIdentity();
@@ -50,7 +63,8 @@ function EditorClient() {
   const validity = useMemo(() => validateBoardClient(def), [def]);
 
   // ---- mutations (bound to a tile id so the floating menu works per-tile) ----
-  const patchTileId = (id: number, patch: any) => setDef((d) => updateTile(d, id, patch));
+  const patchTileId = (id: number, patch: any) =>
+    setDef((d) => (patch && patch.role ? reassignCornerRole(d, id, patch.role) : updateTile(d, id, patch)));
   const changeTypeId = (id: number, type: TileType) =>
     setDef((d) => ({ ...d, tiles: d.tiles.map((t) => (t.id === id ? coerceTileForType(t, type) : t)) }));
   const moveById = (id: number, dir: -1 | 1) => {
@@ -81,6 +95,7 @@ function EditorClient() {
   const setSurfaceColor = (key: any, value: string) =>
     setDef((d) => ({ ...d, theme: { ...d.theme, [key]: value } }));
   const patchTheme = (patch: any) => setDef((d) => ({ ...d, theme: { ...d.theme, ...patch } }));
+  const setModules = (modules: BoardModule[]) => setDef((d) => ({ ...d, modules }));
 
   // ---- toolbar actions ----
   const startFrom = (template: BoardDef | null) => {
@@ -149,7 +164,7 @@ function EditorClient() {
 
       {/* body */}
       <div className="ed-body two-col">
-        <BoardPanel def={def} onResize={resize} onBoard={patchBoard} onGroupColor={setGroupColor} onSurfaceColor={setSurfaceColor} onTheme={patchTheme} />
+        <BoardPanel def={def} onResize={resize} onBoard={patchBoard} onGroupColor={setGroupColor} onSurfaceColor={setSurfaceColor} onTheme={patchTheme} onModules={setModules} />
 
         <div className="ed-board3d">
           <Board3D

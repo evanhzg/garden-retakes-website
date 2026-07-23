@@ -350,6 +350,11 @@ export default function MonopolyGame() {
               {t("rolled", lang, { a: gameState.lastRoll[0], b: gameState.lastRoll[1], t: gameState.lastRoll[0] + gameState.lastRoll[1] })}
             </div>
           )}
+          {gameState.moduleState?.jackpot && (
+            <div className="mono-jackpot-readout" title={lang === "fr" ? "Cagnotte du Parc Gratuit" : "Free-Parking jackpot"}>
+              🅿️ {lang === "fr" ? "Cagnotte" : "Jackpot"} · {fmt(gameState.moduleState.jackpot.pot)}
+            </div>
+          )}
         </div>
 
         {/* ================= ACTIVITY LOG ================= */}

@@ -402,6 +402,23 @@
   background: rgba(255,255,255,0.05); border: 1px solid rgba(255,255,255,0.1);
 }
 
+/* ---------- board modules (World Cup marker, jackpot readout) ---------- */
+.mono-wc-marker {
+  transform: translateY(-4px);
+  font-size: 0.8rem; font-weight: 900; white-space: nowrap;
+  padding: 3px 10px; border-radius: 999px;
+  background: linear-gradient(135deg, #f4d200, #f59e0b); color: #3b2a05;
+  border: 1px solid rgba(0,0,0,0.35);
+  box-shadow: 0 6px 16px -6px rgba(0,0,0,0.7);
+}
+.mono-jackpot-readout {
+  position: absolute; top: 10px; right: 12px;
+  font-size: 0.85rem; font-weight: 800; color: #fde68a;
+  padding: 6px 12px; border-radius: 999px;
+  background: rgba(10,16,24,0.7); border: 1px solid rgba(250,204,21,0.4);
+  pointer-events: none;
+}
+
 /* ---------- bottom HUD (own player card + actions) ---------- */
 .mono-hud {
   flex: 0 0 auto;

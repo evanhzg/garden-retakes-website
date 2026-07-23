@@ -44,6 +44,11 @@ class MonopolyGame {
     this.board = this.buildBoard(def);
     this.railIndices = this.board.filter(s => s.type === 'rail').map(s => s.id);
     this.utilIndices = this.board.filter(s => s.type === 'util').map(s => s.id);
+
+    // Board-level "modules" (World Cup relocating multiplier, Free-Parking
+    // jackpot, …). Runtime state lives on the game and is broadcast in getState.
+    this.moduleDefs = Array.isArray(def.modules) ? def.modules : [];
+    this.initModules();
     this.winner = null;
     this.turnPhase = 'ROLL'; // ROLL, ACTION, END
     this.lastRoll = null;
@@ -70,6 +75,41 @@ class MonopolyGame {
       if (t.type === 'property') tile.houses = 0;
       return tile;
     });
+  }
+
+  // ---- board modules ----------------------------------------------------
+
+  ownableIds() {
+    return this.board.filter(s => s.type === 'property' || s.type === 'rail' || s.type === 'util').map(s => s.id);
+  }
+
+  initModules() {
+    this.worldCup = null;
+    this.jackpot = null;
+    this.auctionEnabled = false;
+    const ownable = this.ownableIds();
+    for (const m of this.moduleDefs) {
+      if (!m) continue;
+      if (m.type === 'worldCup') {
+        const start = Number.isInteger(m.startTile) && ownable.includes(m.startTile) ? m.startTile : (ownable.length ? ownable[0] : null);
+        if (start != null) this.worldCup = { hostTileId: start, level: 2, step: m.multiplierStep > 0 ? m.multiplierStep : 1 };
+      } else if (m.type === 'jackpot') {
+        this.jackpot = { pot: 0 };
+      } else if (m.type === 'auction') {
+        this.auctionEnabled = true; // interactive auction handled separately
+      }
+    }
+  }
+
+  // Move the World Cup marker one ownable tile forward and grow its multiplier.
+  relocateWorldCup(byPid) {
+    if (!this.worldCup) return;
+    const ownable = this.ownableIds();
+    if (!ownable.length) return;
+    const cur = ownable.indexOf(this.worldCup.hostTileId);
+    this.worldCup.hostTileId = ownable[(cur + 1) % ownable.length];
+    this.worldCup.level += this.worldCup.step;
+    this.log('world_cup_move', { pid: byPid, spaceId: this.worldCup.hostTileId, level: this.worldCup.level });
   }
 
   // ---- player lifecycle -------------------------------------------------
@@ -198,6 +238,7 @@ class MonopolyGame {
     }
     state.money -= amount;
     if (creditor && this.playerStates[creditor]) this.playerStates[creditor].money += amount;
+    else if (!creditor && this.jackpot) this.jackpot.pot += amount; // fees/taxes feed the pot
   }
 
   credit(steamId, amount) {
@@ -309,6 +350,10 @@ class MonopolyGame {
 
     if (space.id === this.roles.goToJail) { this.sendToJail(steamId, 'space'); return; }
 
+    // World Cup marker sits on an ownable tile: landing there charges boosted
+    // rent, then the marker relocates and its multiplier grows.
+    const wcHere = !!(this.worldCup && space.id === this.worldCup.hostTileId);
+
     switch (space.type) {
       case 'property':
       case 'rail':
@@ -320,6 +365,7 @@ class MonopolyGame {
             : (this.lastRoll ? this.lastRoll[0] + this.lastRoll[1] : 0);
           let rent = this.getRent(space, opts.utilForceTotal != null ? opts.utilForceTotal : total);
           if (opts.rentMultiplier) rent *= opts.rentMultiplier;
+          if (wcHere) rent = Math.round(rent * this.worldCup.level);
           this.log('pay_rent', { pid: steamId, otherPid: space.owner, amount: rent, spaceId: space.id });
           this.charge(steamId, rent, space.owner);
           this.endOrRoll(steamId);
@@ -342,8 +388,18 @@ class MonopolyGame {
         this.applySpecial(steamId, space.effect || { type: 'safe' }, opts);
         break;
       default: // GO, Jail (visiting), Free Parking
+        // Free-Parking jackpot: landing scoops the accumulated pot.
+        if (space.id === this.roles.freeParking && this.jackpot && this.jackpot.pot > 0) {
+          const amt = this.jackpot.pot;
+          this.jackpot.pot = 0;
+          this.credit(steamId, amt);
+          this.log('jackpot_win', { pid: steamId, amount: amt });
+        }
         this.endOrRoll(steamId);
     }
+
+    // Marker moves after the landing it affected is resolved.
+    if (wcHere && this.worldCup) this.relocateWorldCup(steamId);
   }
 
   // Predefined POI effects (data-driven "custom rules").
@@ -667,6 +723,12 @@ class MonopolyGame {
         currency: this.currency,
         startingMoney: this.startingMoney,
         passGo: this.passGo,
+        modules: this.moduleDefs,
+      },
+      moduleState: {
+        worldCup: this.worldCup,
+        jackpot: this.jackpot,
+        auction: this.auction || null,
       },
       winner: this.winner,
       lastRoll: this.lastRoll,

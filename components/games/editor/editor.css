@@ -123,6 +123,9 @@
 .ed-section-title:first-child { margin-top: 0; }
 .ed-field { display: flex; flex-direction: column; gap: 4px; margin-bottom: 10px; }
 .ed-field label { font-size: 0.78rem; color: #cbd5e1; }
+.ed-check { display: flex; align-items: center; gap: 8px; cursor: pointer; }
+.ed-check input { accent-color: #38bdf8; width: 15px; height: 15px; flex: 0 0 auto; }
+.ed-check span { font-size: 0.8rem; color: #e2e8f0; }
 .ed-field input[type="text"], .ed-field input[type="number"], .ed-field select {
   background: rgba(255, 255, 255, 0.06); border: 1px solid rgba(255, 255, 255, 0.14);
   color: #fff; border-radius: 7px; padding: 6px 8px; font-size: 0.85rem; width: 100%;
