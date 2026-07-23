@@ -60,7 +60,8 @@ function Tile3DImpl(props: Props) {
   );
   const emissiveColor = highlight || "#000000";
   const emissiveIntensity = deleteMode ? 0.7 : dragging ? 0.6 : selected ? 0.4 : dropTarget ? 0.28
-    : (ownerColor && !space.mortgaged ? 0.16 : 0);
+    : (ownerColor && !space.mortgaged ? 0.22 : 0);
+  const showOwnerBar = !!ownerColor && !space.mortgaged && !isCorner;
 
   const liftY = dragging ? 0.65 : 0;
   const destX = followPoint ? followPoint[0] : (targetPos ?? basePos)[0];
@@ -144,6 +145,15 @@ function Tile3DImpl(props: Props) {
         <lineSegments geometry={highlightGeo} position={[0, TILE_H * 0.55, 0]}>
           <lineBasicMaterial color={highlight!} toneMapped={false} />
         </lineSegments>
+      )}
+
+      {/* Owner marker: a glowing bar in the owner's colour along the tile's outer
+          rim, so ownership (and by whom) reads at a glance even without houses. */}
+      {showOwnerBar && (
+        <mesh position={[0, TILE_H + 0.012, d * 0.5 - 0.05]}>
+          <boxGeometry args={[w * 0.82, 0.05, 0.08]} />
+          <meshStandardMaterial color={ownerColor!} emissive={new THREE.Color(ownerColor!)} emissiveIntensity={0.7} roughness={0.4} toneMapped={false} />
+        </mesh>
       )}
     </group>
   );

@@ -95,12 +95,12 @@ export const EFFECT_HAS_AMOUNT = new Set<EffectType>(["reward", "fee", "collectA
 
 export const DEFAULT_THEME: Theme = {
   groupColors: {
-    brown: "#7b4a12", lightblue: "#8fd0ef", pink: "#d63b8f", orange: "#ef8c1c",
-    red: "#e2231a", yellow: "#f4d200", green: "#1f9e4a", blue: "#1f5fd0",
-    rail: "#2b3444", util: "#8aa0b8",
+    brown: "#9a6a43", lightblue: "#82c4e2", pink: "#d95d9c", orange: "#ef9440",
+    red: "#e15554", yellow: "#efc04c", green: "#3fa96b", blue: "#4571c6",
+    rail: "#3a4557", util: "#93a7bc",
   },
-  tileBase: "#f4efdf", tileBaseCorner: "#eae3cd",
-  plinth: "#0a1a12", field: "#0c3b28", accent: "#22c55e",
+  tileBase: "#f6f2e8", tileBaseCorner: "#ece5d4",
+  plinth: "#0b1a13", field: "#0e4632", accent: "#2fb464",
   buildingStyle: "classic", tileStyle: "standard",
   faceFill: "band", textColor: "#14210f", faceBorder: "thin",
 };

@@ -83,8 +83,8 @@ export function tileFaceTexture(space: any, lang: Lang, boardMeta: any): THREE.C
     if (space.id === roles.go && !explicitText) ctx.fillStyle = "#16a34a";
     ctx.fillText(cornerIcon, W / 2, H / 2 - 22);
     ctx.fillStyle = textColor;
-    ctx.font = "800 30px 'Segoe UI', sans-serif";
-    wrapText(ctx, tileShortName(space, boardId, lang).toUpperCase(), W / 2, H / 2 + 66, W - 30, 30, 2);
+    ctx.font = "800 32px 'Segoe UI', sans-serif";
+    wrapText(ctx, tileShortName(space, boardId, lang).toUpperCase(), W / 2, H / 2 + 66, W - 30, 32, 2, outlineFor(textColor));
     return finalize(canvas, key);
   }
 
@@ -119,14 +119,17 @@ export function tileFaceTexture(space: any, lang: Lang, boardMeta: any): THREE.C
   }
   if (minimal) textTop = H / 2 - 10;
 
-  ctx.font = `800 ${bold ? 42 : 34}px 'Segoe UI', sans-serif`;
+  ctx.font = `800 ${bold ? 42 : 36}px 'Segoe UI', sans-serif`;
   ctx.fillStyle = textColor;
-  const lines = wrapText(ctx, tileShortName(space, boardId, lang), W / 2, textTop, W - 26, bold ? 44 : 36, 3);
+  const lineH = bold ? 44 : 38;
+  const lines = wrapText(ctx, tileShortName(space, boardId, lang), W / 2, textTop, W - 26, lineH, 3, outlineFor(textColor));
 
   if (space.price != null && !minimal) {
-    ctx.fillStyle = fullFill ? withAlpha(textColor, 0.82) : "#3b5a2f";
+    const priceColor = fullFill ? withAlpha(textColor, 0.9) : "#2f5a2a";
     ctx.font = "800 34px 'Segoe UI', sans-serif";
-    ctx.fillText(fmtMoney(space.price, lang, currency), W / 2, textTop + lines * (bold ? 44 : 36) + 26);
+    ctx.fillStyle = priceColor;
+    if (fullFill) { ctx.lineJoin = "round"; ctx.strokeStyle = outlineFor(textColor); ctx.lineWidth = 3.5; ctx.strokeText(fmtMoney(space.price, lang, currency), W / 2, textTop + lines * lineH + 26); }
+    ctx.fillText(fmtMoney(space.price, lang, currency), W / 2, textTop + lines * lineH + 26);
   }
 
   return finalize(canvas, key);
@@ -163,9 +166,18 @@ function finalize(canvas: HTMLCanvasElement, key: string): THREE.CanvasTexture {
   return tex;
 }
 
+// Pick an outline colour that contrasts with the given text colour so names stay
+// legible over any band / fill colour.
+function outlineFor(textHex: string): string {
+  const rgb = hexRgb(textHex);
+  if (!rgb) return "rgba(0,0,0,0.55)";
+  const L = (0.299 * rgb[0] + 0.587 * rgb[1] + 0.114 * rgb[2]) / 255;
+  return L > 0.55 ? "rgba(0,0,0,0.55)" : "rgba(255,255,255,0.7)";
+}
+
 function wrapText(
   ctx: CanvasRenderingContext2D, text: string, cx: number, top: number,
-  maxW: number, lineH: number, maxLines: number
+  maxW: number, lineH: number, maxLines: number, outline?: string
 ): number {
   const words = text.split(" ");
   const rows: string[] = [];
@@ -181,6 +193,11 @@ function wrapText(
     if (rows.length >= maxLines) break;
   }
   if (line && rows.length < maxLines) rows.push(line);
-  rows.slice(0, maxLines).forEach((r, i) => ctx.fillText(r, cx, top + i * lineH));
+  if (outline) { ctx.lineJoin = "round"; ctx.strokeStyle = outline; ctx.lineWidth = 4; }
+  rows.slice(0, maxLines).forEach((r, i) => {
+    const y = top + i * lineH;
+    if (outline) ctx.strokeText(r, cx, y);
+    ctx.fillText(r, cx, y);
+  });
   return Math.min(rows.length, maxLines);
 }
