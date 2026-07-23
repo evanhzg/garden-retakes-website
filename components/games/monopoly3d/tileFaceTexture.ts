@@ -96,13 +96,20 @@ export function tileFaceTexture(space: any, lang: Lang, boardMeta: any, bt = fal
 
   // Colour band — only in "band" fill mode ("full" already tints the whole face,
   // "none" shows no colour). Properties/POIs get the band.
-  const bandH = bold ? 100 : 78;
+  const bandH = bold ? 104 : 84;
   const banded = faceFill === "band" && !!tileColor && (space.type === "property" || space.type === "special");
   if (banded) {
-    ctx.fillStyle = tileColor!;
+    // BT-style header: a colour block with a soft top highlight and a crisp
+    // dark divider under it.
+    const grad = ctx.createLinearGradient(0, 0, 0, bandH);
+    grad.addColorStop(0, lighten(tileColor!, 0.22));
+    grad.addColorStop(1, tileColor!);
+    ctx.fillStyle = grad;
     ctx.fillRect(0, 0, W, bandH);
-    ctx.fillStyle = "rgba(0,0,0,0.28)";
-    ctx.fillRect(0, bandH - 3, W, 3);
+    ctx.fillStyle = "rgba(255,255,255,0.16)";
+    ctx.fillRect(0, 0, W, 4);
+    ctx.fillStyle = "rgba(0,0,0,0.32)";
+    ctx.fillRect(0, bandH - 4, W, 4);
   }
   const contentTop = banded ? bandH : 0;
 
@@ -120,18 +127,29 @@ export function tileFaceTexture(space: any, lang: Lang, boardMeta: any, bt = fal
   }
   if (minimal) textTop = H / 2 - 10;
 
+  const priced = space.price != null && !minimal;
   ctx.font = `800 ${Math.round((bold ? 42 : 36) * T)}px 'Segoe UI', sans-serif`;
   ctx.fillStyle = textColor;
   const lineH = Math.round((bold ? 44 : 38) * T);
-  const lines = wrapText(ctx, tileShortName(space, boardId, lang), W / 2, textTop, W - 22, lineH, 3, outlineFor(textColor));
+  // Priced tiles cap the name at 2 lines so the price badge always has room.
+  wrapText(ctx, tileShortName(space, boardId, lang), W / 2, textTop, W - 22, lineH, priced ? 2 : 3, outlineFor(textColor));
 
-  if (space.price != null && !minimal) {
-    const priceColor = fullFill ? withAlpha(textColor, 0.9) : "#2f5a2a";
-    ctx.font = `800 ${Math.round(34 * T)}px 'Segoe UI', sans-serif`;
-    ctx.fillStyle = priceColor;
-    const py = textTop + lines * lineH + 26;
-    if (fullFill) { ctx.lineJoin = "round"; ctx.strokeStyle = outlineFor(textColor); ctx.lineWidth = 3.5; ctx.strokeText(fmtMoney(space.price, lang, currency), W / 2, py); }
-    ctx.fillText(fmtMoney(space.price, lang, currency), W / 2, py);
+  // BT-style price badge — a rounded pill along the bottom of the tile.
+  if (priced) {
+    const label = fmtMoney(space.price, lang, currency);
+    ctx.font = `800 ${Math.round(30 * T)}px 'Segoe UI', sans-serif`;
+    const tw = ctx.measureText(label).width;
+    const ph = Math.round(46 * T);
+    const pw = Math.min(W - 18, tw + 40);
+    const px = (W - pw) / 2;
+    const py = H - ph - 16;
+    const pillColor = fullFill ? "rgba(9,15,11,0.72)"
+      : (tileColor && (space.type === "property" || space.type === "special") ? tileColor : "#28351f");
+    roundRect(ctx, px, py, pw, ph, ph / 2);
+    ctx.fillStyle = pillColor; ctx.fill();
+    ctx.strokeStyle = "rgba(0,0,0,0.28)"; ctx.lineWidth = 2; ctx.stroke();
+    ctx.fillStyle = fullFill ? "#ffffff" : readableOn(pillColor);
+    ctx.fillText(label, W / 2, py + ph / 2 + 1);
   }
 
   return finalize(canvas, key);
@@ -158,6 +176,25 @@ function readableOn(hex: string): string {
 function withAlpha(color: string, a: number): string {
   const rgb = hexRgb(color);
   return rgb ? `rgba(${rgb[0]},${rgb[1]},${rgb[2]},${a})` : color;
+}
+
+// Mix a hex colour toward white by `amt` (0..1).
+function lighten(hex: string, amt: number): string {
+  const rgb = hexRgb(hex);
+  if (!rgb) return hex;
+  const m = (v: number) => Math.round(v + (255 - v) * amt);
+  return `rgb(${m(rgb[0])},${m(rgb[1])},${m(rgb[2])})`;
+}
+
+function roundRect(ctx: CanvasRenderingContext2D, x: number, y: number, w: number, h: number, r: number) {
+  const rr = Math.min(r, h / 2, w / 2);
+  ctx.beginPath();
+  ctx.moveTo(x + rr, y);
+  ctx.arcTo(x + w, y, x + w, y + h, rr);
+  ctx.arcTo(x + w, y + h, x, y + h, rr);
+  ctx.arcTo(x, y + h, x, y, rr);
+  ctx.arcTo(x, y, x + w, y, rr);
+  ctx.closePath();
 }
 
 function finalize(canvas: HTMLCanvasElement, key: string): THREE.CanvasTexture {
