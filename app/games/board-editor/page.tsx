@@ -159,6 +159,7 @@ function EditorClient() {
         <div className="ed-spacer" />
         <span className={`ed-status ${validity.ok ? "ok" : "bad"}`}>{validity.ok ? "✓ valid" : "✕ " + validity.error}</span>
         <button className="ed-btn primary" onClick={saveAndPlay}>Save &amp; Play →</button>
+        <a className="ed-btn" href="/sandbox" style={{ textDecoration: "none" }}>🧪 Sandbox</a>
         <button className="ed-btn" onClick={() => (window.location.href = "/")}>Exit</button>
       </div>
 

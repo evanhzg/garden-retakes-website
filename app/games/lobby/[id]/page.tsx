@@ -349,6 +349,7 @@ function LobbyClient({ lobbyId, mySteamId }: { lobbyId: string; mySteamId: strin
               <div className="picker-header">
                 <h3>Board</h3>
                 <a className="picker-hint editor-link" href="/board-editor">✎ Create / edit boards</a>
+                <a className="picker-hint editor-link" href="/sandbox">🧪 Test buildings</a>
               </div>
               {!isHost && <span className="picker-hint">Only the host picks the board</span>}
               <div className="board-picker-grid">
