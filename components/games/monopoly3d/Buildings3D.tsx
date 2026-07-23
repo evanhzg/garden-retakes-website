@@ -67,6 +67,25 @@ function BuildingBody({ scale, color, roofColor, style }: { scale: number; color
   );
 }
 
+// Business-Tour style building: a single glossy tower that grows taller with the
+// development level (1..5), tinted in the owner's colour.
+function BTTower({ level, color }: { level: number; color: string }) {
+  const h = 0.2 + Math.min(level, 5) * 0.17;
+  const w = 0.22;
+  return (
+    <group>
+      <mesh castShadow position={[0, h / 2, 0]}>
+        <boxGeometry args={[w, h, w]} />
+        <meshStandardMaterial color={color} metalness={0.6} roughness={0.24} emissive={new THREE.Color(color)} emissiveIntensity={0.14} />
+      </mesh>
+      <mesh position={[0, h + 0.03, 0]} castShadow>
+        <boxGeometry args={[w * 0.5, 0.06, w * 0.5]} />
+        <meshStandardMaterial color="#ffd84d" metalness={0.8} roughness={0.2} emissive="#ffd84d" emissiveIntensity={0.5} />
+      </mesh>
+    </group>
+  );
+}
+
 // A little garden shown on an owned-but-undeveloped property: a tree, a couple
 // of shrubs and a flag in the owner's colour.
 function GardenDecor({ ownerColor }: { ownerColor: string }) {
@@ -121,7 +140,7 @@ function OwnerFlag({ ownerColor }: { ownerColor: string }) {
   );
 }
 
-export function Buildings3D({ space, layout, boardMeta, ownerColor }: { space: any; layout: Layout; boardMeta: any; ownerColor: string | null }) {
+export function Buildings3D({ space, layout, boardMeta, ownerColor, bt }: { space: any; layout: Layout; boardMeta: any; ownerColor: string | null; bt?: boolean }) {
   const [cx, cz] = layout.center(space.id);
   const { inward, along } = layout.dirs(space.id);
   const worldAt = (a: number, inset: number): [number, number, number] => [
@@ -129,6 +148,11 @@ export function Buildings3D({ space, layout, boardMeta, ownerColor }: { space: a
     SURFACE_Y,
     cz + inward[1] * inset + along[1] * a,
   ];
+
+  // BT style: developed properties become one glossy tower that grows with level.
+  if (bt && space.type === "property" && space.houses) {
+    return <PopIn position={worldAt(0, TILE_D * 0.28)}><BTTower level={space.houses} color={ownerColor || "#7dd3fc"} /></PopIn>;
+  }
 
   // Houses / hotel take precedence on developed properties.
   if (space.type === "property" && space.houses) {

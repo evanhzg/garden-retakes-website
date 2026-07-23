@@ -60,6 +60,7 @@
 .mono-view-toggle button + button { border-left: 1px solid rgba(255,255,255,0.12); }
 .mono-view-toggle button:hover { color: #e2e8f0; }
 .mono-view-toggle button.on { background: linear-gradient(135deg, #22c55e, #15803d); color: #fff; }
+.mono-view-toggle button.on.bt { background: linear-gradient(135deg, #38bdf8, #6366f1); }
 .mono-exit {
   width: 38px; height: 38px; border-radius: 10px; flex: 0 0 auto;
   display: flex; align-items: center; justify-content: center;

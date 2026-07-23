@@ -22,9 +22,10 @@ type Props = {
   slotIndex: number;
   layout: Layout;
   total: number;         // board tile count
+  bt?: boolean;          // Business-Tour style: bigger tokens
 };
 
-function Pawn3DImpl({ position, color, active, slotIndex, layout, total }: Props) {
+function Pawn3DImpl({ position, color, active, slotIndex, layout, total, bt }: Props) {
   const ref = useRef<THREE.Group>(null);
   const matRef = useRef<THREE.MeshStandardMaterial>(null);
 
@@ -102,7 +103,7 @@ function Pawn3DImpl({ position, color, active, slotIndex, layout, total }: Props
   });
 
   return (
-    <group ref={ref}>
+    <group ref={ref} scale={bt ? 1.32 : 1}>
       <mesh geometry={PAWN_GEOM} castShadow>
         <meshStandardMaterial
           ref={matRef}

@@ -28,6 +28,7 @@ type Props = {
   dropTarget?: boolean;
   deleteMode?: boolean;
   accent?: string;
+  bt?: boolean;
   onDragStart?: (id: number, e: ThreeEvent<PointerEvent>) => void;
   onDragMove?: (e: ThreeEvent<PointerEvent>) => void;
   onDragEnd?: (e: ThreeEvent<PointerEvent>) => void;
@@ -36,7 +37,7 @@ type Props = {
 function Tile3DImpl(props: Props) {
   const {
     space, lang, boardMeta, xform, targetPos, followPoint, ownerColor, onSelect, onHover, onHoverEnd,
-    editable, selected, dragging, dropTarget, deleteMode, accent = "#22c55e",
+    editable, selected, dragging, dropTarget, deleteMode, accent = "#22c55e", bt,
     onDragStart, onDragMove, onDragEnd,
   } = props;
 
@@ -127,8 +128,8 @@ function Tile3DImpl(props: Props) {
         <boxGeometry args={[w, TILE_H, d]} />
         <meshStandardMaterial
           color={space.mortgaged ? "#9aa0a6" : isCorner ? theme.tileBaseCorner : theme.tileBase}
-          roughness={0.72}
-          metalness={0.06}
+          roughness={bt ? 0.32 : 0.72}
+          metalness={bt ? 0.5 : 0.06}
           emissive={new THREE.Color(emissiveColor)}
           emissiveIntensity={emissiveIntensity}
         />

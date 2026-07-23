@@ -84,13 +84,13 @@ export default function MonopolyGame() {
   const [rollTriggerKey, setRollTriggerKey] = useState(0);
   const prevRollIdRef = useRef<string | null>(null);
 
-  // 3D orbit vs locked top-down 2D view (persisted).
-  const [viewMode, setViewMode] = useState<"3d" | "2d">("3d");
+  // View mode: 3D orbit · locked top-down 2D · Business Tour hero style (persisted).
+  const [viewMode, setViewMode] = useState<"3d" | "2d" | "bt">("3d");
   useEffect(() => {
     const v = typeof window !== "undefined" ? window.localStorage.getItem("mono_view") : null;
-    if (v === "2d" || v === "3d") setViewMode(v);
+    if (v === "2d" || v === "3d" || v === "bt") setViewMode(v);
   }, []);
-  const chooseView = (v: "3d" | "2d") => { setViewMode(v); try { window.localStorage.setItem("mono_view", v); } catch {} };
+  const chooseView = (v: "3d" | "2d" | "bt") => { setViewMode(v); try { window.localStorage.setItem("mono_view", v); } catch {} };
 
   // Card popup shown when the server reports a freshly drawn card.
   const [shownCard, setShownCard] = useState<any>(null);
@@ -280,6 +280,7 @@ export default function MonopolyGame() {
           <div className="mono-view-toggle" role="group" aria-label="View">
             <button className={viewMode === "3d" ? "on" : ""} onClick={() => chooseView("3d")}>3D</button>
             <button className={viewMode === "2d" ? "on" : ""} onClick={() => chooseView("2d")}>2D</button>
+            <button className={viewMode === "bt" ? "on bt" : "bt"} onClick={() => chooseView("bt")} title="Business Tour style">BT</button>
           </div>
           <SoundControls />
           <button className="mono-exit" onClick={exitGame} title={lang === "fr" ? "Quitter la partie" : "Leave game"}>✕</button>
