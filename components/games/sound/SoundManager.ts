@@ -6,7 +6,7 @@
 // created lazily on the first play() and resumed if suspended.
 
 export type SoundName =
-  | "click" | "dice" | "diceLand" | "hop" | "land" | "buy" | "build" | "rent" | "tax"
+  | "click" | "dice" | "diceBounce" | "diceLand" | "hop" | "land" | "buy" | "build" | "rent" | "tax"
   | "mortgage" | "unmortgage" | "sell" | "special" | "worldCup" | "jackpot" | "auction"
   | "passGo" | "jail" | "card" | "win" | "bankrupt";
 
@@ -128,6 +128,11 @@ class SoundManager {
       case "dice":
         // a short rattle: several filtered noise ticks (the shake before it lands)
         for (let i = 0; i < 5; i++) this.noise(0.05, 2600 + Math.random() * 1200, 0.16, t + i * 0.055, 2);
+        break;
+      case "diceBounce":
+        // a light knock each time a die bounces on the board
+        this.tone(240, 0.045, "sine", 0.12, t, 150);
+        this.noise(0.02, 1500, 0.06, t, 3);
         break;
       case "diceLand":
         // the dice settling on the board — a small wooden thunk + tick

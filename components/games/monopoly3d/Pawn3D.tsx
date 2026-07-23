@@ -103,7 +103,7 @@ function Pawn3DImpl({ position, color, active, slotIndex, layout, total, bt }: P
   });
 
   return (
-    <group ref={ref} scale={bt ? 1.32 : 1}>
+    <group ref={ref} scale={bt ? 1.7 : 1.15}>
       <mesh geometry={PAWN_GEOM} castShadow>
         <meshStandardMaterial
           ref={matRef}

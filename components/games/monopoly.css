@@ -20,6 +20,37 @@
   overflow: hidden;
 }
 
+/* ---------- selectable background themes ---------- */
+.mono-root[data-bg="midnight"] {
+  background:
+    radial-gradient(1200px 700px at 15% -10%, rgba(56,189,248,0.16), transparent 60%),
+    radial-gradient(1000px 600px at 100% 110%, rgba(99,102,241,0.18), transparent 55%),
+    linear-gradient(160deg, #070d1e 0%, #02040c 100%);
+}
+.mono-root[data-bg="sunset"] {
+  background:
+    radial-gradient(1200px 700px at 8% -10%, rgba(251,146,60,0.2), transparent 60%),
+    radial-gradient(1000px 700px at 100% 110%, rgba(217,70,160,0.2), transparent 55%),
+    linear-gradient(160deg, #1c1018 0%, #0a0510 100%);
+}
+.mono-root[data-bg="neon"] {
+  background:
+    radial-gradient(1100px 700px at 12% -10%, rgba(168,85,247,0.22), transparent 60%),
+    radial-gradient(1000px 700px at 100% 110%, rgba(34,211,238,0.18), transparent 55%),
+    linear-gradient(160deg, #0b0622 0%, #05030f 100%);
+}
+.mono-root[data-bg="aurora"] {
+  background:
+    radial-gradient(1100px 700px at 15% -10%, rgba(52,211,153,0.2), transparent 60%),
+    radial-gradient(1000px 700px at 100% 110%, rgba(45,212,191,0.16), transparent 55%),
+    linear-gradient(160deg, #061713 0%, #02100c 100%);
+}
+.mono-root[data-bg="charcoal"] {
+  background:
+    radial-gradient(1200px 700px at 50% -20%, rgba(148,163,184,0.12), transparent 60%),
+    linear-gradient(160deg, #171a20 0%, #0a0b0e 100%);
+}
+
 /* ---------- top bar ---------- */
 .mono-topbar {
   display: flex;
@@ -61,6 +92,11 @@
 .mono-view-toggle button:hover { color: #e2e8f0; }
 .mono-view-toggle button.on { background: linear-gradient(135deg, #22c55e, #15803d); color: #fff; }
 .mono-view-toggle button.on.bt { background: linear-gradient(135deg, #38bdf8, #6366f1); }
+.mono-bg-select {
+  flex: 0 0 auto; background: rgba(255,255,255,0.06); border: 1px solid rgba(255,255,255,0.14);
+  color: #e2e8f0; border-radius: 10px; padding: 7px 9px; font-size: 0.76rem; font-weight: 700; cursor: pointer;
+}
+.mono-bg-select option { background: #12203a; color: #e8edf5; }
 .mono-exit {
   width: 38px; height: 38px; border-radius: 10px; flex: 0 0 auto;
   display: flex; align-items: center; justify-content: center;

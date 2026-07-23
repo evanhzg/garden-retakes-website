@@ -63,6 +63,13 @@ function SetPips({ stats, colorOf }: { stats: Record<string, { total: number; ow
 
 const DUMMY_STEAM_ID = "765611980" + Math.floor(Math.random() * 100000);
 
+// Selectable scene background themes (applied via data-bg on .mono-root).
+const BG_THEMES = ["casino", "midnight", "sunset", "neon", "aurora", "charcoal"] as const;
+const BG_LABELS: Record<string, string> = {
+  casino: "🟢 Casino", midnight: "🔵 Midnight", sunset: "🟠 Sunset",
+  neon: "🟣 Neon", aurora: "🟢 Aurora", charcoal: "⚫ Charcoal",
+};
+
 // Which inner edge a tile's colour bar / content faces (toward the board centre).
 function tileEdge(id: number): "top" | "right" | "bottom" | "left" | "corner" {
   if ([0, 10, 20, 30].includes(id)) return "corner";
@@ -91,6 +98,14 @@ export default function MonopolyGame() {
     if (v === "2d" || v === "3d" || v === "bt") setViewMode(v);
   }, []);
   const chooseView = (v: "3d" | "2d" | "bt") => { setViewMode(v); try { window.localStorage.setItem("mono_view", v); } catch {} };
+
+  // Scene background theme (persisted).
+  const [bgTheme, setBgTheme] = useState<string>("casino");
+  useEffect(() => {
+    const b = typeof window !== "undefined" ? window.localStorage.getItem("mono_bg") : null;
+    if (b && (BG_THEMES as readonly string[]).includes(b)) setBgTheme(b);
+  }, []);
+  const chooseBg = (b: string) => { setBgTheme(b); try { window.localStorage.setItem("mono_bg", b); } catch {} };
 
   // Card popup shown when the server reports a freshly drawn card.
   const [shownCard, setShownCard] = useState<any>(null);
@@ -259,7 +274,7 @@ export default function MonopolyGame() {
   };
 
   return createPortal(
-    <div className="mono-root" data-lang={lang}>
+    <div className="mono-root" data-lang={lang} data-bg={bgTheme}>
       {/* ================= TOP BAR ================= */}
       <header className="mono-topbar">
         <div className="mono-brand">
@@ -282,6 +297,9 @@ export default function MonopolyGame() {
             <button className={viewMode === "2d" ? "on" : ""} onClick={() => chooseView("2d")}>2D</button>
             <button className={viewMode === "bt" ? "on bt" : "bt"} onClick={() => chooseView("bt")} title="Business Tour style">BT</button>
           </div>
+          <select className="mono-bg-select" value={bgTheme} onChange={(e) => chooseBg(e.target.value)} title={lang === "fr" ? "Thème de fond" : "Background theme"}>
+            {BG_THEMES.map((b) => <option key={b} value={b}>{BG_LABELS[b]}</option>)}
+          </select>
           <SoundControls />
           <button className="mono-exit" onClick={exitGame} title={lang === "fr" ? "Quitter la partie" : "Leave game"}>✕</button>
         </div>
@@ -358,6 +376,8 @@ export default function MonopolyGame() {
           />
           <div className="mono-board3d-hint">🖱 {viewMode === "2d"
             ? (lang === "fr" ? "Glissez pour déplacer · molette pour zoomer" : "Drag to pan · scroll to zoom")
+            : viewMode === "bt"
+            ? (lang === "fr" ? "Affichage fixe · molette pour zoomer" : "Fixed display · scroll to zoom")
             : (lang === "fr" ? "Glissez pour tourner · molette pour zoomer" : "Drag to orbit · scroll to zoom")}</div>
           {gameState.lastRoll && (
             <div className="mono-roll-readout mono-roll-readout-3d">

@@ -4,6 +4,7 @@ import React, { useEffect, useRef, useState } from "react";
 import { Canvas, useFrame, useThree } from "@react-three/fiber";
 import * as THREE from "three";
 import * as CANNON from "cannon-es";
+import { sound } from "@/components/games/sound/SoundManager";
 
 const DICE_SIZE = 0.15;
 // Interior half-width of the rolling arena. Kept small so both dice always
@@ -227,6 +228,7 @@ export function DiceSimulation({ roll, onRest }: { roll: [number, number]; onRes
   
   const hasSettled = useRef(false);
   const settleFrames = useRef(0);
+  const lastBounce = useRef(0); // throttle bounce SFX
 
   // Fire onRest exactly once, then keep the settled dice on screen.
   const finish = () => {
@@ -275,6 +277,20 @@ export function DiceSimulation({ roll, onRest }: { roll: [number, number]; onRes
     world.addBody(body1);
     world.addBody(body2);
     diceBodies.current = [body1, body2];
+
+    // Play a knock each time a die bounces hard enough (throttled so a burst of
+    // micro-contacts doesn't machine-gun the SFX).
+    const onCollide = (e: any) => {
+      const now = performance.now();
+      if (now - lastBounce.current < 55) return;
+      let v = 0;
+      try { v = Math.abs(e.contact.getImpactVelocityAlongNormal()); } catch {}
+      if (v < 1.4) return;
+      lastBounce.current = now;
+      sound.play("diceBounce");
+    };
+    body1.addEventListener("collide", onCollide);
+    body2.addEventListener("collide", onCollide);
 
     // Hard failsafe: the dice can occasionally come to rest leaning together in a
     // pose the motion test doesn't catch. Never leave the roll unresolved —

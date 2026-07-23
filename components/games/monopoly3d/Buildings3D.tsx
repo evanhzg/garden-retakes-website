@@ -22,7 +22,7 @@ function PopIn({ position, children }: { position: [number, number, number]; chi
 }
 
 function BuildingBody({ scale, color, roofColor, style }: { scale: number; color: string; roofColor: string; style: BuildingStyle }) {
-  const bw = 0.16 * scale;
+  const bw = 0.2 * scale;
   if (style === "tower") {
     return (
       <mesh castShadow position={[0, 0.16 * scale, 0]}>
@@ -70,16 +70,17 @@ function BuildingBody({ scale, color, roofColor, style }: { scale: number; color
 // Business-Tour style building: a single glossy tower that grows taller with the
 // development level (1..5), tinted in the owner's colour.
 function BTTower({ level, color }: { level: number; color: string }) {
-  const h = 0.2 + Math.min(level, 5) * 0.17;
-  const w = 0.22;
+  const h = 0.32 + Math.min(level, 5) * 0.24;
+  const w = 0.32;
   return (
     <group>
       <mesh castShadow position={[0, h / 2, 0]}>
         <boxGeometry args={[w, h, w]} />
         <meshStandardMaterial color={color} metalness={0.6} roughness={0.24} emissive={new THREE.Color(color)} emissiveIntensity={0.14} />
       </mesh>
-      <mesh position={[0, h + 0.03, 0]} castShadow>
-        <boxGeometry args={[w * 0.5, 0.06, w * 0.5]} />
+      {/* glowing crown */}
+      <mesh position={[0, h + 0.04, 0]} castShadow>
+        <boxGeometry args={[w * 0.55, 0.08, w * 0.55]} />
         <meshStandardMaterial color="#ffd84d" metalness={0.8} roughness={0.2} emissive="#ffd84d" emissiveIntensity={0.5} />
       </mesh>
     </group>
@@ -90,7 +91,7 @@ function BTTower({ level, color }: { level: number; color: string }) {
 // of shrubs and a flag in the owner's colour.
 function GardenDecor({ ownerColor }: { ownerColor: string }) {
   return (
-    <>
+    <group scale={1.3}>
       <mesh castShadow position={[0, 0.05, 0]}>
         <cylinderGeometry args={[0.02, 0.028, 0.1, 6]} />
         <meshStandardMaterial color="#6b4423" roughness={0.8} />
@@ -120,7 +121,7 @@ function GardenDecor({ ownerColor }: { ownerColor: string }) {
         <planeGeometry args={[0.08, 0.05]} />
         <meshStandardMaterial color={ownerColor} side={THREE.DoubleSide} emissive={new THREE.Color(ownerColor)} emissiveIntensity={0.25} />
       </mesh>
-    </>
+    </group>
   );
 }
 
@@ -159,9 +160,9 @@ export function Buildings3D({ space, layout, boardMeta, ownerColor, bt }: { spac
     const style: BuildingStyle = space.buildingStyle || boardMeta?.theme?.buildingStyle || "classic";
     const inset = TILE_D * 0.28;
     if (space.houses >= 5) {
-      return <PopIn position={worldAt(0, inset)}><BuildingBody scale={1.7} color={HOTEL_COLOR} roofColor="#7f1010" style={style} /></PopIn>;
+      return <PopIn position={worldAt(0, inset)}><BuildingBody scale={1.9} color={HOTEL_COLOR} roofColor="#7f1010" style={style} /></PopIn>;
     }
-    const n = space.houses, gap = 0.23;
+    const n = space.houses, gap = 0.26;
     return (
       <>
         {Array.from({ length: n }).map((_, k) => (

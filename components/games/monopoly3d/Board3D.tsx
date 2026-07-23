@@ -62,7 +62,7 @@ function TileNameLabel({ name, position }: { name: string; position: [number, nu
 }
 function ChampionshipTrophy({ position, accent }: { position: [number, number, number]; accent: string }) {
   return (
-    <group position={position}>
+    <group position={position} scale={1.5}>
       <mesh position={[0, 0.04, 0]} castShadow>
         <cylinderGeometry args={[0.17, 0.21, 0.08, 20]} />
         <meshStandardMaterial color="#2a2416" metalness={0.5} roughness={0.4} />
@@ -372,18 +372,19 @@ function Scene(props: SceneProps) {
         />
       )}
 
-      {/* BT view: a lower, more cinematic hero angle. */}
+      {/* BT view: a fixed 3/4 corner display (GO corner toward the viewer),
+          locked — no orbit or pan, everything faces the camera. */}
       {isBT && (
-        <PerspectiveCamera makeDefault position={[half * 0.12, half * 1.5, half * 2.8]} fov={40} near={0.1} far={half * 24} />
+        <PerspectiveCamera makeDefault position={[half * 2.0, half * 2.25, half * 2.0]} fov={38} near={0.1} far={half * 24} />
       )}
 
       <OrbitControls
         ref={controlsRef}
         makeDefault
         target={[0, is2D ? 0 : 0.3, 0]}
-        enablePan
-        enableRotate={!is2D}
-        enableDamping={!is2D}
+        enablePan={!is2D && !isBT}
+        enableRotate={!is2D && !isBT}
+        enableDamping={!is2D && !isBT}
         dampingFactor={0.08}
         minDistance={half * 1.55}
         maxDistance={half * 5.2}
