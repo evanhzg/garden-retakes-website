@@ -48,7 +48,7 @@ function Tile3DImpl(props: Props) {
   const face = useMemo(
     () => tileFaceTexture(space, lang, boardMeta),
     [space.id, lang, boardMeta?.boardId, space.type, space.name, space.group, space.price, space.icon,
-     space.color, space.faceStyle, space.effect?.type, boardMeta?.theme]
+     space.color, space.faceStyle, space.fill, space.textColor, space.faceBorder, space.effect?.type, boardMeta?.theme]
   );
   const theme = useMemo(() => resolveTheme(boardMeta?.theme), [boardMeta?.theme]);
   const domEl = useThree((s) => s.gl.domElement);

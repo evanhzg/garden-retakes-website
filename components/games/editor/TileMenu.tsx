@@ -3,7 +3,7 @@
 import React from "react";
 import {
   type Tile, type TileType, type Theme, type EffectType,
-  GROUP_KEYS, TILE_TYPES, BUILDING_STYLES, FACE_STYLES, EFFECT_TYPES, EFFECT_LABELS, EFFECT_HAS_AMOUNT,
+  GROUP_KEYS, TILE_TYPES, BUILDING_STYLES, FACE_STYLES, FACE_FILLS, FACE_BORDERS, EFFECT_TYPES, EFFECT_LABELS, EFFECT_HAS_AMOUNT,
 } from "@/components/games/monopoly3d/boardSchema";
 
 type Props = {
@@ -111,13 +111,27 @@ export default function TileMenu({ tile, theme, total, onPatch, onChangeType, on
                 <option value="">(default)</option>
                 {FACE_STYLES.map((f) => <option key={f} value={f}>{f}</option>)}
               </select></label>
+            <label className="tm-row"><span>Fill</span>
+              <select value={tile.fill || ""} onChange={(e) => onPatch({ fill: (e.target.value || undefined) as any })}>
+                <option value="">(default)</option>
+                {FACE_FILLS.map((f) => <option key={f} value={f}>{f}</option>)}
+              </select></label>
+          </div>
+          <div className="tm-2col">
+            <label className="tm-row"><span>Border</span>
+              <select value={tile.faceBorder || ""} onChange={(e) => onPatch({ faceBorder: (e.target.value || undefined) as any })}>
+                <option value="">(default)</option>
+                {FACE_BORDERS.map((b) => <option key={b} value={b}>{b}</option>)}
+              </select></label>
             <label className="tm-row"><span>Colour</span>
               <input type="color" value={tile.color || "#888888"} onChange={(e) => onPatch({ color: e.target.value })} /></label>
           </div>
+          <label className="tm-row"><span>Text</span>
+            <input type="color" value={tile.textColor || "#14210f"} onChange={(e) => onPatch({ textColor: e.target.value })} /></label>
           <div className="tm-actions">
             <button onClick={() => onMove(-1)}>◀</button>
             <button onClick={() => onMove(1)}>▶</button>
-            {tile.color && <button onClick={() => onPatch({ color: undefined })}>clear ✎</button>}
+            {(tile.color || tile.textColor) && <button onClick={() => onPatch({ color: undefined, textColor: undefined })}>clear ✎</button>}
             <button className="tm-del" onClick={onDelete}>🗑 Delete</button>
           </div>
         </>

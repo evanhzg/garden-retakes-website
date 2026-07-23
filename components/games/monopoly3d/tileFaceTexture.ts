@@ -22,10 +22,18 @@ export function tileFaceTexture(space: any, lang: Lang, boardMeta: any): THREE.C
   const boardId = boardMeta?.boardId || "classic";
   const theme = resolveTheme(boardMeta?.theme);
   const currency = boardId === "classic" ? null : boardMeta?.currency;
-  // Signature so live edits (name/type/group/price/icon/colours) regenerate the
-  // texture; during a game these are stable, so it still caches.
+
+  // Tile-look presets: per-tile override wins over the board-level theme default.
+  const faceFill: string = space.fill || boardMeta?.theme?.faceFill || "band";
+  const faceBorder: string = space.faceBorder || boardMeta?.theme?.faceBorder || "thin";
+  const explicitText: string | undefined = space.textColor || boardMeta?.theme?.textColor;
+
+  // Signature so live edits (name/type/group/price/icon/colours/look) regenerate
+  // the texture; during a game these are stable, so it still caches.
   const sig = [space.type, space.name, space.group, space.price, space.icon,
-    theme.groupColors[space.group], theme.tileBase, theme.tileBaseCorner].join("~");
+    theme.groupColors[space.group], theme.tileBase, theme.tileBaseCorner,
+    space.color, faceFill, faceBorder, explicitText, space.faceStyle,
+    boardMeta?.theme?.tileStyle, theme.accent].join("~");
   const key = `${boardId}|${space.id}|${lang}|${sig}`;
   const hit = cache.get(key);
   if (hit) return hit;
@@ -47,21 +55,34 @@ export function tileFaceTexture(space: any, lang: Lang, boardMeta: any): THREE.C
   canvas.height = H;
   const ctx = canvas.getContext("2d")!;
 
-  ctx.fillStyle = isCorner ? theme.tileBaseCorner : theme.tileBase;
-  ctx.fillRect(0, 0, W, H);
-  ctx.strokeStyle = "rgba(20,33,15,0.18)";
-  ctx.lineWidth = 4;
-  ctx.strokeRect(2, 2, W - 4, H - 4);
+  // The tile's signature colour (per-tile override, else its group / accent).
+  const tileColor: string | null = space.color
+    || (space.type === "property" ? (theme.groupColors as Record<string, string>)[space.group]
+      : space.type === "special" ? theme.accent : null);
+  const fullFill = !isCorner && faceFill === "full" && !!tileColor;
+  const textColor = explicitText || (fullFill ? readableOn(tileColor!) : "#14210f");
 
-  ctx.fillStyle = "#14210f";
+  // Base face fill.
+  ctx.fillStyle = fullFill ? tileColor! : (isCorner ? theme.tileBaseCorner : theme.tileBase);
+  ctx.fillRect(0, 0, W, H);
+
+  // Outline weight.
+  if (faceBorder !== "none") {
+    const lw = faceBorder === "bold" ? 9 : 4;
+    ctx.strokeStyle = faceBorder === "bold" ? "rgba(20,33,15,0.42)" : "rgba(20,33,15,0.18)";
+    ctx.lineWidth = lw;
+    ctx.strokeRect(lw / 2 + 1, lw / 2 + 1, W - lw - 2, H - lw - 2);
+  }
+
+  ctx.fillStyle = textColor;
   ctx.textAlign = "center";
   ctx.textBaseline = "middle";
 
   if (isCorner) {
     ctx.font = "700 96px 'Segoe UI Emoji', 'Segoe UI', sans-serif";
-    if (space.id === roles.go) ctx.fillStyle = "#16a34a";
+    if (space.id === roles.go && !explicitText) ctx.fillStyle = "#16a34a";
     ctx.fillText(cornerIcon, W / 2, H / 2 - 22);
-    ctx.fillStyle = "#14210f";
+    ctx.fillStyle = textColor;
     ctx.font = "800 30px 'Segoe UI', sans-serif";
     wrapText(ctx, tileShortName(space, boardId, lang).toUpperCase(), W / 2, H / 2 + 66, W - 30, 30, 2);
     return finalize(canvas, key);
@@ -72,43 +93,66 @@ export function tileFaceTexture(space: any, lang: Lang, boardMeta: any): THREE.C
   const minimal = faceStyle === "minimal";
   const bold = faceStyle === "bold";
 
-  // Colour band: per-tile override wins; properties use their group colour;
-  // special (POI) tiles use their colour or the board accent.
-  const band = space.color
-    || (space.type === "property" ? (theme.groupColors as Record<string, string>)[space.group]
-      : space.type === "special" ? theme.accent : null);
+  // Colour band — only in "band" fill mode ("full" already tints the whole face,
+  // "none" shows no colour). Properties/POIs get the band.
   const bandH = bold ? 100 : 78;
-  if (band && (space.type === "property" || space.type === "special")) {
-    ctx.fillStyle = band;
+  const banded = faceFill === "band" && !!tileColor && (space.type === "property" || space.type === "special");
+  if (banded) {
+    ctx.fillStyle = tileColor!;
     ctx.fillRect(0, 0, W, bandH);
     ctx.fillStyle = "rgba(0,0,0,0.28)";
     ctx.fillRect(0, bandH - 3, W, 3);
   }
+  const contentTop = banded ? bandH : 0;
 
   const glyph = space.icon
     || (space.type === "special" ? (EFFECT_GLYPH[space.effect?.type] || "✨")
       : space.type === "util" ? (UTIL_GLYPH[space.id] || "🚰")
       : TYPE_GLYPH[space.type]);
-  let textTop = bandH + 26;
+  let textTop = contentTop + 26;
   if (glyph && !minimal) {
     ctx.font = "700 76px 'Segoe UI Emoji', 'Segoe UI', sans-serif";
-    if (space.type === "chance") { ctx.fillStyle = "#e8730c"; ctx.font = "900 italic 84px 'Segoe UI', sans-serif"; }
-    ctx.fillText(glyph, W / 2, bandH + 60);
-    ctx.fillStyle = "#14210f";
-    textTop = bandH + 132;
+    if (space.type === "chance" && !explicitText && !fullFill) { ctx.fillStyle = "#e8730c"; ctx.font = "900 italic 84px 'Segoe UI', sans-serif"; }
+    ctx.fillText(glyph, W / 2, contentTop + 60);
+    ctx.fillStyle = textColor;
+    textTop = contentTop + 132;
   }
   if (minimal) textTop = H / 2 - 10;
 
   ctx.font = `800 ${bold ? 42 : 34}px 'Segoe UI', sans-serif`;
+  ctx.fillStyle = textColor;
   const lines = wrapText(ctx, tileShortName(space, boardId, lang), W / 2, textTop, W - 26, bold ? 44 : 36, 3);
 
   if (space.price != null && !minimal) {
-    ctx.fillStyle = "#3b5a2f";
+    ctx.fillStyle = fullFill ? withAlpha(textColor, 0.82) : "#3b5a2f";
     ctx.font = "800 34px 'Segoe UI', sans-serif";
     ctx.fillText(fmtMoney(space.price, lang, currency), W / 2, textTop + lines * (bold ? 44 : 36) + 26);
   }
 
   return finalize(canvas, key);
+}
+
+// Parse a #rgb / #rrggbb hex into [r,g,b] (0–255), or null if not a hex colour.
+function hexRgb(hex: string): [number, number, number] | null {
+  const c = hex.replace("#", "");
+  const n = c.length === 3 ? c.split("").map((x) => x + x).join("") : c;
+  if (n.length < 6) return null;
+  const r = parseInt(n.slice(0, 2), 16), g = parseInt(n.slice(2, 4), 16), b = parseInt(n.slice(4, 6), 16);
+  if ([r, g, b].some((v) => Number.isNaN(v))) return null;
+  return [r, g, b];
+}
+
+// Pick dark or light text for legibility on a given fill colour.
+function readableOn(hex: string): string {
+  const rgb = hexRgb(hex);
+  if (!rgb) return "#ffffff";
+  const L = (0.299 * rgb[0] + 0.587 * rgb[1] + 0.114 * rgb[2]) / 255;
+  return L > 0.6 ? "#14210f" : "#ffffff";
+}
+
+function withAlpha(color: string, a: number): string {
+  const rgb = hexRgb(color);
+  return rgb ? `rgba(${rgb[0]},${rgb[1]},${rgb[2]},${a})` : color;
 }
 
 function finalize(canvas: HTMLCanvasElement, key: string): THREE.CanvasTexture {

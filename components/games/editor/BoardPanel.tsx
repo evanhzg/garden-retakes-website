@@ -1,7 +1,7 @@
 "use client";
 
 import React from "react";
-import { type BoardDef, GROUP_KEYS, BUILDING_STYLES, FACE_STYLES } from "@/components/games/monopoly3d/boardSchema";
+import { type BoardDef, GROUP_KEYS, BUILDING_STYLES, FACE_STYLES, FACE_FILLS, FACE_BORDERS } from "@/components/games/monopoly3d/boardSchema";
 
 type Props = {
   def: BoardDef;
@@ -42,6 +42,21 @@ export default function BoardPanel({ def, onResize, onBoard, onGroupColor, onSur
           <select value={def.theme.tileStyle || "standard"} onChange={(e) => onTheme({ tileStyle: e.target.value })}>
             {FACE_STYLES.map((f) => <option key={f} value={f}>{f}</option>)}
           </select></div>
+      </div>
+      <div className="ed-row">
+        <div className="ed-field"><label>Tile fill</label>
+          <select value={def.theme.faceFill || "band"} onChange={(e) => onTheme({ faceFill: e.target.value })}>
+            {FACE_FILLS.map((f) => <option key={f} value={f}>{f}</option>)}
+          </select></div>
+        <div className="ed-field"><label>Border</label>
+          <select value={def.theme.faceBorder || "thin"} onChange={(e) => onTheme({ faceBorder: e.target.value })}>
+            {FACE_BORDERS.map((b) => <option key={b} value={b}>{b}</option>)}
+          </select></div>
+      </div>
+      <div className="ed-color-row">
+        <span>Tile text</span>
+        <input type="color" value={def.theme.textColor || "#14210f"}
+          onChange={(e) => onTheme({ textColor: e.target.value })} />
       </div>
 
       <div className="ed-section-title">Economy</div>

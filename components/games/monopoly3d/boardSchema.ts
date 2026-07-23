@@ -7,6 +7,8 @@ export type TileType = "corner" | "property" | "rail" | "util" | "tax" | "chance
 export type CornerRole = "go" | "jail" | "freeParking" | "goToJail";
 export type BuildingStyle = "classic" | "modern" | "tower" | "tent";
 export type FaceStyle = "standard" | "minimal" | "bold";
+export type FaceFill = "band" | "full" | "none";
+export type FaceBorder = "none" | "thin" | "bold";
 
 export type EffectType =
   | "reward" | "fee" | "collectAll" | "payAll" | "teleport" | "jail"
@@ -25,9 +27,12 @@ export type Tile = {
   amount?: number;         // tax
   effect?: Effect;         // special / POI tiles
   icon?: string;           // custom emoji/glyph
-  color?: string;          // per-tile band colour override
+  color?: string;          // per-tile band / fill colour override
   buildingStyle?: BuildingStyle;
   faceStyle?: FaceStyle;
+  fill?: FaceFill;         // band (default) | full-face colour | none
+  textColor?: string;      // per-tile text colour override
+  faceBorder?: FaceBorder; // outline weight
   role?: CornerRole;       // corner tiles only
 };
 
@@ -40,6 +45,9 @@ export type Theme = {
   accent: string;
   buildingStyle?: BuildingStyle;
   tileStyle?: FaceStyle;
+  faceFill?: FaceFill;     // board-default tile fill mode
+  textColor?: string;      // board-default tile text colour
+  faceBorder?: FaceBorder; // board-default tile outline weight
 };
 
 export type BoardDef = {
@@ -58,6 +66,8 @@ export const GROUP_KEYS = ["brown", "lightblue", "pink", "orange", "red", "yello
 export const TILE_TYPES: TileType[] = ["property", "rail", "util", "tax", "chance", "chest", "special"];
 export const BUILDING_STYLES: BuildingStyle[] = ["classic", "modern", "tower", "tent"];
 export const FACE_STYLES: FaceStyle[] = ["standard", "minimal", "bold"];
+export const FACE_FILLS: FaceFill[] = ["band", "full", "none"];
+export const FACE_BORDERS: FaceBorder[] = ["none", "thin", "bold"];
 export const EFFECT_TYPES: EffectType[] = [
   "reward", "fee", "collectAll", "payAll", "teleport", "jail", "extraRoll", "skipTurn", "drawChance", "drawChest", "safe",
 ];
@@ -77,6 +87,7 @@ export const DEFAULT_THEME: Theme = {
   tileBase: "#f4efdf", tileBaseCorner: "#eae3cd",
   plinth: "#0a1a12", field: "#0c3b28", accent: "#22c55e",
   buildingStyle: "classic", tileStyle: "standard",
+  faceFill: "band", textColor: "#14210f", faceBorder: "thin",
 };
 
 export const cornerIndicesOf = (perSide: number) => [0, perSide + 1, 2 * (perSide + 1), 3 * (perSide + 1)];
@@ -163,7 +174,7 @@ export function resizeBoard(def: BoardDef, perSide: number): BoardDef {
 }
 
 export function coerceTileForType(tile: Tile, type: TileType): Tile {
-  const base: Tile = { id: tile.id, type, name: tile.name, icon: tile.icon, color: tile.color, faceStyle: tile.faceStyle };
+  const base: Tile = { id: tile.id, type, name: tile.name, icon: tile.icon, color: tile.color, faceStyle: tile.faceStyle, fill: tile.fill, textColor: tile.textColor, faceBorder: tile.faceBorder };
   if (type === "property") {
     const price = tile.price && tile.price > 0 ? tile.price : 100;
     return { ...base, group: tile.group && GROUP_KEYS.includes(tile.group) ? tile.group : "brown", price, rent: tile.rent && tile.rent.length === 6 ? tile.rent : rentFor(price), houseCost: tile.houseCost && tile.houseCost > 0 ? tile.houseCost : 50, buildingStyle: tile.buildingStyle };
