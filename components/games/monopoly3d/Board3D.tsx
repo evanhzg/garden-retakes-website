@@ -2,9 +2,9 @@
 
 import React, { useMemo, useRef, useState, useEffect } from "react";
 import { Canvas, type ThreeEvent } from "@react-three/fiber";
-import { OrbitControls, OrthographicCamera, PerspectiveCamera, Html } from "@react-three/drei";
+import { OrbitControls, OrthographicCamera, Html } from "@react-three/drei";
 import * as THREE from "three";
-import { tileShortName, type Lang } from "@/components/games/monopolyData";
+import type { Lang } from "@/components/games/monopolyData";
 import { DiceSimulation } from "@/components/games/DiceRoller";
 import { Tile3D } from "./Tile3D";
 import { Buildings3D } from "./Buildings3D";
@@ -17,49 +17,8 @@ const DICE_SCALE = 2.2;
 const DEFAULT_ROLES = { go: 0, jail: 10, goToJail: 30, freeParking: 20 };
 
 // ---------------------------------------------------------------------------
-// Business-Tour style helpers (floating name tags + a championship trophy).
+// Business-Tour championship trophy.
 // ---------------------------------------------------------------------------
-const labelCache = new Map<string, THREE.CanvasTexture>();
-function roundRectPath(ctx: CanvasRenderingContext2D, x: number, y: number, w: number, h: number, r: number) {
-  ctx.beginPath();
-  ctx.moveTo(x + r, y);
-  ctx.arcTo(x + w, y, x + w, y + h, r);
-  ctx.arcTo(x + w, y + h, x, y + h, r);
-  ctx.arcTo(x, y + h, x, y, r);
-  ctx.arcTo(x, y, x + w, y, r);
-  ctx.closePath();
-}
-function labelTexture(name: string): THREE.CanvasTexture | null {
-  if (typeof document === "undefined") return null;
-  const hit = labelCache.get(name);
-  if (hit) return hit;
-  const W = 256, H = 72;
-  const c = document.createElement("canvas");
-  c.width = W; c.height = H;
-  const ctx = c.getContext("2d")!;
-  roundRectPath(ctx, 4, 14, W - 8, H - 28, 18);
-  ctx.fillStyle = "rgba(8,14,26,0.82)"; ctx.fill();
-  ctx.strokeStyle = "rgba(56,189,248,0.65)"; ctx.lineWidth = 3; ctx.stroke();
-  ctx.textAlign = "center"; ctx.textBaseline = "middle";
-  let fs = 30; ctx.font = `800 ${fs}px 'Segoe UI', sans-serif`;
-  while (ctx.measureText(name).width > W - 30 && fs > 13) { fs -= 2; ctx.font = `800 ${fs}px 'Segoe UI', sans-serif`; }
-  ctx.lineJoin = "round"; ctx.strokeStyle = "rgba(0,0,0,0.6)"; ctx.lineWidth = 4;
-  ctx.strokeText(name, W / 2, H / 2);
-  ctx.fillStyle = "#ffffff"; ctx.fillText(name, W / 2, H / 2);
-  const tex = new THREE.CanvasTexture(c);
-  tex.needsUpdate = true;
-  labelCache.set(name, tex);
-  return tex;
-}
-function TileNameLabel({ name, position }: { name: string; position: [number, number, number] }) {
-  const tex = useMemo(() => labelTexture(name), [name]);
-  if (!tex) return null;
-  return (
-    <sprite position={position} scale={[1.55, 0.44, 1]}>
-      <spriteMaterial map={tex} transparent depthWrite={false} />
-    </sprite>
-  );
-}
 function ChampionshipTrophy({ position, accent }: { position: [number, number, number]; accent: string }) {
   return (
     <group position={position} scale={1.5}>
@@ -310,13 +269,6 @@ function Scene(props: SceneProps) {
         );
       })}
 
-      {/* BT mode: floating bold city-name tags above every tile. */}
-      {isBT && gameState.board.map((space: any) => {
-        if (space.type === "corner" || !layout.tiles[space.id]) return null;
-        const [lx, lz] = layout.center(space.id);
-        return <TileNameLabel key={`lbl${space.id}`} name={tileShortName(space, boardMeta?.boardId || "classic", lang)} position={[lx, TILE_H + 0.52, lz]} />;
-      })}
-
       {/* BT mode: a trophy + festival banner on the championship city. */}
       {isBT && gameState.moduleState?.worldCup && layout.tiles[gameState.moduleState.worldCup.hostTileId] && (
         <ChampionshipTrophy
@@ -372,10 +324,17 @@ function Scene(props: SceneProps) {
         />
       )}
 
-      {/* BT view: a fixed 3/4 corner display (GO corner toward the viewer),
-          locked — no orbit or pan, everything faces the camera. */}
+      {/* BT view: a fixed 3/4 corner display using an ORTHOGRAPHIC camera — a
+          "fake 3D" isometric look where every tile stays the same size (no
+          perspective foreshortening). Locked: no orbit / pan, zoom only. */}
       {isBT && (
-        <PerspectiveCamera makeDefault position={[half * 2.0, half * 2.25, half * 2.0]} fov={38} near={0.1} far={half * 24} />
+        <OrthographicCamera
+          makeDefault
+          position={[half * 2.0, half * 1.7, half * 2.0]}
+          zoom={Math.round(340 / half)}
+          near={0.1}
+          far={half * 30}
+        />
       )}
 
       <OrbitControls

@@ -17,8 +17,9 @@ const EFFECT_GLYPH: Record<string, string> = {
   extraRoll: "🎲", skipTurn: "⏭️", drawChance: "❓", drawChest: "🧰", safe: "🏖️",
 };
 
-export function tileFaceTexture(space: any, lang: Lang, boardMeta: any): THREE.CanvasTexture | null {
+export function tileFaceTexture(space: any, lang: Lang, boardMeta: any, bt = false): THREE.CanvasTexture | null {
   if (typeof document === "undefined") return null;
+  const T = bt ? 1.42 : 1; // BT view: bigger, clearer on-tile text
   const boardId = boardMeta?.boardId || "classic";
   const theme = resolveTheme(boardMeta?.theme);
   const currency = boardId === "classic" ? null : boardMeta?.currency;
@@ -33,7 +34,7 @@ export function tileFaceTexture(space: any, lang: Lang, boardMeta: any): THREE.C
   const sig = [space.type, space.name, space.group, space.price, space.icon,
     theme.groupColors[space.group], theme.tileBase, theme.tileBaseCorner,
     space.color, faceFill, faceBorder, explicitText, space.faceStyle,
-    boardMeta?.theme?.tileStyle, theme.accent].join("~");
+    boardMeta?.theme?.tileStyle, theme.accent, bt ? "bt" : ""].join("~");
   const key = `${boardId}|${space.id}|${lang}|${sig}`;
   const hit = cache.get(key);
   if (hit) return hit;
@@ -83,8 +84,8 @@ export function tileFaceTexture(space: any, lang: Lang, boardMeta: any): THREE.C
     if (space.id === roles.go && !explicitText) ctx.fillStyle = "#16a34a";
     ctx.fillText(cornerIcon, W / 2, H / 2 - 22);
     ctx.fillStyle = textColor;
-    ctx.font = "800 32px 'Segoe UI', sans-serif";
-    wrapText(ctx, tileShortName(space, boardId, lang).toUpperCase(), W / 2, H / 2 + 66, W - 30, 32, 2, outlineFor(textColor));
+    ctx.font = `800 ${Math.round(32 * T)}px 'Segoe UI', sans-serif`;
+    wrapText(ctx, tileShortName(space, boardId, lang).toUpperCase(), W / 2, H / 2 + 66, W - 24, Math.round(32 * T), 2, outlineFor(textColor));
     return finalize(canvas, key);
   }
 
@@ -119,17 +120,18 @@ export function tileFaceTexture(space: any, lang: Lang, boardMeta: any): THREE.C
   }
   if (minimal) textTop = H / 2 - 10;
 
-  ctx.font = `800 ${bold ? 42 : 36}px 'Segoe UI', sans-serif`;
+  ctx.font = `800 ${Math.round((bold ? 42 : 36) * T)}px 'Segoe UI', sans-serif`;
   ctx.fillStyle = textColor;
-  const lineH = bold ? 44 : 38;
-  const lines = wrapText(ctx, tileShortName(space, boardId, lang), W / 2, textTop, W - 26, lineH, 3, outlineFor(textColor));
+  const lineH = Math.round((bold ? 44 : 38) * T);
+  const lines = wrapText(ctx, tileShortName(space, boardId, lang), W / 2, textTop, W - 22, lineH, 3, outlineFor(textColor));
 
   if (space.price != null && !minimal) {
     const priceColor = fullFill ? withAlpha(textColor, 0.9) : "#2f5a2a";
-    ctx.font = "800 34px 'Segoe UI', sans-serif";
+    ctx.font = `800 ${Math.round(34 * T)}px 'Segoe UI', sans-serif`;
     ctx.fillStyle = priceColor;
-    if (fullFill) { ctx.lineJoin = "round"; ctx.strokeStyle = outlineFor(textColor); ctx.lineWidth = 3.5; ctx.strokeText(fmtMoney(space.price, lang, currency), W / 2, textTop + lines * lineH + 26); }
-    ctx.fillText(fmtMoney(space.price, lang, currency), W / 2, textTop + lines * lineH + 26);
+    const py = textTop + lines * lineH + 26;
+    if (fullFill) { ctx.lineJoin = "round"; ctx.strokeStyle = outlineFor(textColor); ctx.lineWidth = 3.5; ctx.strokeText(fmtMoney(space.price, lang, currency), W / 2, py); }
+    ctx.fillText(fmtMoney(space.price, lang, currency), W / 2, py);
   }
 
   return finalize(canvas, key);
