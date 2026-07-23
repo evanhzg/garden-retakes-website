@@ -154,6 +154,8 @@ function LobbyClient({ lobbyId, mySteamId }: { lobbyId: string; mySteamId: strin
   const handleSelectCustomBoard = (def: any) => socket?.emit("lobby_select_board", { boardDef: def });
   const handleAddBot = () => socket?.emit("lobby_add_bot");
   const handleKick = (steamId: string) => socket?.emit("lobby_kick", steamId);
+  const handleSetTeamMode = (mode: string) => socket?.emit("lobby_set_team_mode", { mode });
+  const handleSetTeam = (steamId: string, team: number) => socket?.emit("lobby_set_team", { steamId, team });
 
   const handleCopyInvite = () => {
     navigator.clipboard.writeText(window.location.href).then(() => {
@@ -394,6 +396,28 @@ function LobbyClient({ lobbyId, mySteamId }: { lobbyId: string; mySteamId: strin
             </div>
           )}
 
+          {/* Monopoly team mode (2v2 allies) */}
+          {baseGame === "monopoly" && (
+            <div className="lobby-team-picker">
+              <div className="picker-header"><h3>Mode</h3></div>
+              <div className="team-mode-toggle">
+                <button
+                  className={(lobbyState.teamMode || "ffa") === "ffa" ? "on" : ""}
+                  onClick={() => isHost && handleSetTeamMode("ffa")}
+                  disabled={!isHost}
+                >Free-for-all</button>
+                <button
+                  className={lobbyState.teamMode === "2v2" ? "on" : ""}
+                  onClick={() => isHost && handleSetTeamMode("2v2")}
+                  disabled={!isHost}
+                >2v2 Allies</button>
+              </div>
+              {lobbyState.teamMode === "2v2" && (
+                <span className="picker-hint">2v2 needs exactly 4 players, 2 per team · teammates pay no rent to each other</span>
+              )}
+            </div>
+          )}
+
           {/* Players */}
           <div className="lobby-players-section">
             <div className="players-header">
@@ -412,6 +436,9 @@ function LobbyClient({ lobbyId, mySteamId }: { lobbyId: string; mySteamId: strin
                   isMe={p.steamId === mySteamId}
                   canKick={isHost && p.steamId !== mySteamId}
                   onKick={() => handleKick(p.steamId)}
+                  teamMode={lobbyState.teamMode || "ffa"}
+                  canSetTeam={isHost}
+                  onSetTeam={(team: number) => handleSetTeam(p.steamId, team)}
                 />
               ))}
               {Array.from({ length: Math.max(0, maxPlayers - playerCount) }).map((_, index) => (
@@ -495,20 +522,25 @@ function LobbyClient({ lobbyId, mySteamId }: { lobbyId: string; mySteamId: strin
   );
 }
 
-function PlayerCard({ player, names, isHostPlayer, isMe, canKick, onKick }: {
+function PlayerCard({ player, names, isHostPlayer, isMe, canKick, onKick, teamMode = "ffa", canSetTeam = false, onSetTeam }: {
   player: any;
   names: PlayerNameMap;
   isHostPlayer: boolean;
   isMe: boolean;
   canKick: boolean;
   onKick: () => void;
+  teamMode?: string;
+  canSetTeam?: boolean;
+  onSetTeam?: (team: number) => void;
 }) {
   const name = displayNameFor(player.steamId, names, player);
   const avatar = names[player.steamId]?.avatar || null;
   const disconnected = player.connected === false;
+  const team = player.team;
+  const teamLetter = team === 0 ? "A" : team === 1 ? "B" : null;
 
   return (
-    <div className={`player-card ${player.ready ? "ready" : ""} ${disconnected ? "disconnected" : ""} ${isMe ? "me" : ""}`}>
+    <div className={`player-card ${player.ready ? "ready" : ""} ${disconnected ? "disconnected" : ""} ${isMe ? "me" : ""} ${teamMode === "2v2" && team != null ? `team-t${team}` : ""}`}>
       <div className="player-avatar">
         {player.isBot ? "🤖" : avatar ? <img src={avatar} alt="" /> : name.charAt(0).toUpperCase()}
         {isHostPlayer && <span className="host-crown">👑</span>}
@@ -519,6 +551,16 @@ function PlayerCard({ player, names, isHostPlayer, isMe, canKick, onKick }: {
           {disconnected ? "RECONNECTING…" : isHostPlayer ? "HOST" : player.isBot ? "BOT" : player.ready ? "READY" : "NOT READY"}
         </span>
       </div>
+      {teamMode === "2v2" && (
+        canSetTeam ? (
+          <div className="team-switch">
+            <button className={`team-btn t0 ${team === 0 ? "on" : ""}`} onClick={() => onSetTeam?.(0)} title="Team A">A</button>
+            <button className={`team-btn t1 ${team === 1 ? "on" : ""}`} onClick={() => onSetTeam?.(1)} title="Team B">B</button>
+          </div>
+        ) : (
+          teamLetter && <span className={`team-badge t${team}`}>{teamLetter}</span>
+        )
+      )}
       {canKick && (
         <button onClick={onKick} className="btn-kick" title={`Kick ${name}`}>✕</button>
       )}

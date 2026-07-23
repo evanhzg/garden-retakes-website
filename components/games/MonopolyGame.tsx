@@ -206,6 +206,9 @@ export default function MonopolyGame() {
 
   const isMyTurn = gameState.currentTurn === mySteamId;
   const myState = gameState.playerStates[mySteamId];
+  const teamMode = gameState.teamMode === "2v2" ? "2v2" : "ffa";
+  const myTeam = myState?.team;
+  const teamLabel = (team: number | null | undefined) => (team === 0 ? "A" : team === 1 ? "B" : null);
   const phase = gameState.turnPhase;
   const currentSpace = myState ? gameState.board[myState.position] : null;
   const canBuyHere =
@@ -290,7 +293,7 @@ export default function MonopolyGame() {
               <motion.div
                 layout
                 key={pid}
-                className={`mono-pcard ${isTurn ? "active" : ""} ${s.bankrupt ? "bankrupt" : ""}`}
+                className={`mono-pcard ${isTurn ? "active" : ""} ${s.bankrupt ? "bankrupt" : ""} ${teamMode === "2v2" && s.team === myTeam ? "ally" : ""}`}
                 style={{ ["--pc" as any]: s.color }}
                 transition={{ type: "spring", stiffness: 200, damping: 24 }}
               >
@@ -300,6 +303,11 @@ export default function MonopolyGame() {
                 <div className="mono-pcard-body">
                   <div className="mono-pcard-top">
                     <span className="mono-pcard-name">{nameOf(pid)}</span>
+                    {teamMode === "2v2" && teamLabel(s.team) && (
+                      <span className={`mono-team-chip t${s.team}${s.team === myTeam ? " mine" : ""}`}>
+                        {teamLabel(s.team)}{s.team === myTeam ? ` · ${lang === "fr" ? "allié" : "ally"}` : ""}
+                      </span>
+                    )}
                     {s.jailCards > 0 && <span className="mono-chip">🎟 {s.jailCards}</span>}
                   </div>
                   <div className="mono-pcard-cash">
@@ -388,6 +396,7 @@ export default function MonopolyGame() {
             <div className="mono-hud-info">
               <div className="mono-hud-name">
                 {nameOf(mySteamId)} <span className="mono-hud-you">{lang === "fr" ? "VOUS" : "YOU"}</span>
+                {teamMode === "2v2" && teamLabel(myTeam) && <span className={`mono-team-chip t${myTeam} mine`}>{lang === "fr" ? "Équipe" : "Team"} {teamLabel(myTeam)}</span>}
                 {myState.jailCards > 0 && <span className="mono-chip">🎟 {myState.jailCards}</span>}
                 {myState.jailed && <span className="mono-jail-tag">⛓ {t("inJail", lang)}</span>}
               </div>
@@ -568,9 +577,25 @@ export default function MonopolyGame() {
           <motion.div className="mono-win-overlay" initial={{ opacity: 0 }} animate={{ opacity: 1 }}>
             <motion.div className="mono-win-card" initial={{ scale: 0.7, y: 30 }} animate={{ scale: 1, y: 0 }} transition={{ type: "spring", stiffness: 140, damping: 14 }}>
               <div className="mono-win-trophy">🏆</div>
-              <Pawn color={gameState.playerStates[gameState.winner]?.color || "#ffcc00"} size={64} active />
-              <h1>{t("winner", lang, { name: nameOf(gameState.winner) })}</h1>
-              <p>{t("gameOver", lang)}</p>
+              {gameState.winnerTeam != null ? (() => {
+                const winners = gameState.players.filter((pid: string) => gameState.playerStates[pid]?.team === gameState.winnerTeam);
+                return (
+                  <>
+                    <div className="mono-win-pawns">
+                      {winners.map((pid: string) => <Pawn key={pid} color={gameState.playerStates[pid]?.color || "#ffcc00"} size={56} active />)}
+                    </div>
+                    <h1>{lang === "fr" ? `L'équipe ${teamLabel(gameState.winnerTeam)} gagne !` : `Team ${teamLabel(gameState.winnerTeam)} wins!`}</h1>
+                    <p className="mono-win-team-names">{winners.map((pid: string) => nameOf(pid)).join(" & ")}</p>
+                    <p>{t("gameOver", lang)}</p>
+                  </>
+                );
+              })() : (
+                <>
+                  <Pawn color={gameState.playerStates[gameState.winner]?.color || "#ffcc00"} size={64} active />
+                  <h1>{t("winner", lang, { name: nameOf(gameState.winner) })}</h1>
+                  <p>{t("gameOver", lang)}</p>
+                </>
+              )}
             </motion.div>
           </motion.div>
         )}

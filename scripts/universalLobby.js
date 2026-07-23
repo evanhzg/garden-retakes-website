@@ -15,7 +15,8 @@ class UniversalLobby {
     this.customBoardDef = null;        // set when a user-authored board is chosen
     this.status = 'WAITING'; // WAITING, PLAYING
     this.maxPlayers = 8;
-    this.players = []; // Array of { steamId, ready, isBot, connected, botName? }
+    this.teamMode = 'ffa';   // 'ffa' | '2v2' (Monopoly allies mode)
+    this.players = []; // Array of { steamId, ready, isBot, connected, team, botName? }
     this.chatHistory = []; // last 50 lobby messages, replayed to late joiners
     this.gameInstance = null;
     this.createdAt = Date.now();
@@ -24,12 +25,38 @@ class UniversalLobby {
   addPlayer(steamId, isBot = false) {
     if (this.players.find(p => p.steamId === steamId)) return false;
     if (this.players.length >= this.maxPlayers) return false;
-    const player = { steamId, ready: false, isBot, connected: true };
+    const player = { steamId, ready: false, isBot, connected: true, team: null };
     if (isBot) {
       const used = new Set(this.players.filter(p => p.botName).map(p => p.botName));
       player.botName = BOT_NAMES.find(n => !used.has(n)) || `Bot ${steamId.slice(-4)}`;
     }
     this.players.push(player);
+    if (this.teamMode === '2v2') this.assignTeam(player);
+    return true;
+  }
+
+  // ---- teams (2v2) ----
+  assignTeam(player) {
+    const c0 = this.players.filter(p => p.team === 0).length;
+    const c1 = this.players.filter(p => p.team === 1).length;
+    player.team = c0 <= c1 ? 0 : 1;
+  }
+
+  autoAssignTeams() {
+    this.players.forEach((p, i) => { p.team = i % 2; });
+  }
+
+  setTeamMode(mode) {
+    this.teamMode = mode === '2v2' ? '2v2' : 'ffa';
+    if (this.teamMode === '2v2') this.autoAssignTeams();
+    else this.players.forEach(p => { p.team = null; });
+    return true;
+  }
+
+  setPlayerTeam(steamId, team) {
+    const p = this.getPlayer(steamId);
+    if (!p || (team !== 0 && team !== 1)) return false;
+    p.team = team;
     return true;
   }
 
@@ -93,6 +120,7 @@ class UniversalLobby {
       customBoardName: this.customBoardDef ? this.customBoardDef.name : null,
       status: this.status,
       maxPlayers: this.maxPlayers,
+      teamMode: this.teamMode,
       players: this.players,
       playerCount: this.players.length,
       createdAt: this.createdAt

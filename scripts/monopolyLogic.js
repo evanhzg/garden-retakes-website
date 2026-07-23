@@ -21,9 +21,12 @@ function shuffle(arr) {
 const rid = () => Math.random().toString(36).slice(2, 11);
 
 class MonopolyGame {
-  constructor(lobbyId, lang = 'en', boardDef = null) {
+  constructor(lobbyId, lang = 'en', boardDef = null, opts = {}) {
     this.lobbyId = lobbyId;
     this.lang = lang === 'fr' ? 'fr' : 'en';
+    // Team mode: 'ffa' (free-for-all) or '2v2' (allies — no teammate rent, a
+    // team wins when the other team is fully out).
+    this.teamMode = opts.teamMode === '2v2' ? '2v2' : 'ffa';
 
     // Board is data-driven: everything special about the board (its size, corner
     // roles, economy, theme, card decks) comes from the definition.
@@ -50,6 +53,7 @@ class MonopolyGame {
     this.moduleDefs = Array.isArray(def.modules) ? def.modules : [];
     this.initModules();
     this.winner = null;
+    this.winnerTeam = null;
     this.turnPhase = 'ROLL'; // ROLL, ACTION, END
     this.lastRoll = null;
     this.rollId = null;
@@ -75,6 +79,16 @@ class MonopolyGame {
       if (t.type === 'property') tile.houses = 0;
       return tile;
     });
+  }
+
+  // ---- teams ------------------------------------------------------------
+
+  // True when a and b are allies in 2v2 (so no rent flows between them).
+  sameTeam(a, b) {
+    if (this.teamMode !== '2v2') return false;
+    const ta = this.playerStates[a] && this.playerStates[a].team;
+    const tb = this.playerStates[b] && this.playerStates[b].team;
+    return ta != null && ta === tb;
   }
 
   // ---- board modules ----------------------------------------------------
@@ -131,6 +145,7 @@ class MonopolyGame {
       token: idx % PLAYER_COLORS.length,
       isBot: !!meta.isBot || steamId.startsWith('BOT_'),
       name: meta.name || null,
+      team: meta.team != null ? meta.team : null,
     };
     return true;
   }
@@ -155,7 +170,17 @@ class MonopolyGame {
     this.players.splice(idx, 1);
     delete this.playerStates[steamId];
 
-    if (this.status === 'PLAYING' && this.players.length < 2) {
+    if (this.status === 'PLAYING' && this.teamMode === '2v2') {
+      // A team wins once the opposing team has no solvent players left.
+      const teamsLeft = new Set(this.players.map(p => this.playerStates[p] && this.playerStates[p].team));
+      if (teamsLeft.size <= 1) {
+        this.status = 'FINISHED';
+        this.winner = this.players[0] || null;
+        this.winnerTeam = this.winner != null ? this.playerStates[this.winner].team : null;
+        if (this.winner) this.log('win', { pid: this.winner });
+        return;
+      }
+    } else if (this.status === 'PLAYING' && this.players.length < 2) {
       this.status = 'FINISHED';
       this.winner = this.players[0] || null;
       if (this.winner) this.log('win', { pid: this.winner });
@@ -180,6 +205,17 @@ class MonopolyGame {
 
   start() {
     if (this.players.length < 2) return false;
+    // In 2v2, interleave the seating so teams alternate (A, B, A, B).
+    if (this.teamMode === '2v2') {
+      const t0 = this.players.filter(p => this.playerStates[p].team === 0);
+      const t1 = this.players.filter(p => this.playerStates[p].team === 1);
+      const inter = [];
+      for (let i = 0; i < Math.max(t0.length, t1.length); i++) {
+        if (t0[i]) inter.push(t0[i]);
+        if (t1[i]) inter.push(t1[i]);
+      }
+      if (inter.length === this.players.length) this.players = inter;
+    }
     this.status = 'PLAYING';
     this.currentTurnIndex = Math.floor(Math.random() * this.players.length);
     this.turnPhase = 'ROLL';
@@ -360,7 +396,7 @@ class MonopolyGame {
       case 'util': {
         if (space.owner == null) {
           this.turnPhase = 'ACTION';
-        } else if (space.owner !== steamId && !space.mortgaged) {
+        } else if (space.owner !== steamId && !space.mortgaged && !this.sameTeam(steamId, space.owner)) {
           const total = opts.diceTotal != null ? opts.diceTotal
             : (this.lastRoll ? this.lastRoll[0] + this.lastRoll[1] : 0);
           let rent = this.getRent(space, opts.utilForceTotal != null ? opts.utilForceTotal : total);
@@ -731,6 +767,8 @@ class MonopolyGame {
         auction: this.auction || null,
       },
       winner: this.winner,
+      winnerTeam: this.winnerTeam,
+      teamMode: this.teamMode,
       lastRoll: this.lastRoll,
       rollId: this.rollId,
       isDouble: this.currentRollDouble,

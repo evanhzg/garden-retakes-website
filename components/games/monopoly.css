@@ -136,6 +136,17 @@
   font-size: 0.7rem; padding: 1px 6px; border-radius: 6px;
   background: rgba(250,204,21,0.18); color: #fde68a; white-space: nowrap;
 }
+/* team badges (2v2) */
+.mono-team-chip {
+  font-size: 0.66rem; font-weight: 800; padding: 1px 7px; border-radius: 999px; white-space: nowrap;
+  border: 1px solid transparent;
+}
+.mono-team-chip.t0 { background: rgba(56,189,248,0.18); color: #7dd3fc; border-color: rgba(56,189,248,0.45); }
+.mono-team-chip.t1 { background: rgba(244,114,182,0.18); color: #f9a8d4; border-color: rgba(244,114,182,0.45); }
+.mono-team-chip.mine { box-shadow: 0 0 0 1px currentColor; }
+.mono-pcard.ally { border-color: color-mix(in srgb, var(--pc) 30%, rgba(56,189,248,0.4)); }
+.mono-win-pawns { display: flex; gap: 8px; justify-content: center; }
+.mono-win-team-names { font-weight: 700; opacity: 0.9; }
 .mono-pcard-cash {
   font-size: 1.5rem; font-weight: 900; color: var(--pc);
   line-height: 1.15; text-shadow: 0 1px 8px color-mix(in srgb, var(--pc) 40%, transparent);

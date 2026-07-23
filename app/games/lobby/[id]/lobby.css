@@ -393,6 +393,36 @@
   border-style: dashed;
 }
 
+/* team mode (2v2) */
+.lobby-team-picker { margin-top: 0.6rem; }
+.team-mode-toggle {
+  display: inline-flex; border-radius: 0.7rem; overflow: hidden;
+  border: 1px solid var(--border); background: color-mix(in srgb, var(--bg-soft) 70%, transparent);
+}
+.team-mode-toggle button {
+  padding: 0.5rem 0.9rem; font-size: 0.82rem; font-weight: 700;
+  border: none; background: transparent; color: var(--muted); cursor: pointer;
+}
+.team-mode-toggle button + button { border-left: 1px solid var(--border); }
+.team-mode-toggle button:disabled { cursor: default; }
+.team-mode-toggle button.on { background: color-mix(in srgb, var(--accent) 30%, transparent); color: #fff; }
+.player-card.team-t0 { border-left: 3px solid #38bdf8; }
+.player-card.team-t1 { border-left: 3px solid #f472b6; }
+.team-switch { display: inline-flex; gap: 3px; }
+.team-btn {
+  width: 26px; height: 26px; border-radius: 6px; font-weight: 800; font-size: 0.8rem;
+  border: 1px solid var(--border); background: color-mix(in srgb, var(--bg-soft) 70%, transparent);
+  color: var(--muted); cursor: pointer;
+}
+.team-btn.t0.on { background: #38bdf8; color: #05121e; border-color: #38bdf8; }
+.team-btn.t1.on { background: #f472b6; color: #2a0714; border-color: #f472b6; }
+.team-badge {
+  width: 24px; height: 24px; display: inline-flex; align-items: center; justify-content: center;
+  border-radius: 999px; font-weight: 800; font-size: 0.78rem;
+}
+.team-badge.t0 { background: rgba(56,189,248,0.2); color: #7dd3fc; }
+.team-badge.t1 { background: rgba(244,114,182,0.2); color: #f9a8d4; }
+
 .player-card.empty-slot {
   background: transparent;
   border: 1.5px dashed var(--border);

@@ -458,6 +458,22 @@ io.on("connection", (socket) => {
     broadcastLobbyState(lobby.id);
   });
 
+  // Host toggles Monopoly team mode (ffa / 2v2) and assigns players to teams.
+  socket.on("lobby_set_team_mode", (data) => {
+    if (!socket.lobbyId || !socket.steamId) return;
+    const lobby = universalLobbies.get(socket.lobbyId);
+    if (!lobby || lobby.host !== socket.steamId || lobby.status === 'PLAYING') return;
+    lobby.setTeamMode(data && data.mode);
+    broadcastLobbyState(lobby.id);
+  });
+
+  socket.on("lobby_set_team", (data) => {
+    if (!socket.lobbyId || !socket.steamId) return;
+    const lobby = universalLobbies.get(socket.lobbyId);
+    if (!lobby || lobby.host !== socket.steamId || lobby.status === 'PLAYING') return;
+    if (lobby.setPlayerTeam(data && data.steamId, data && data.team)) broadcastLobbyState(lobby.id);
+  });
+
   socket.on("lobby_start_game", (data) => {
     if (socket.lobbyId && socket.steamId) {
       const lobbyId = socket.lobbyId;
@@ -490,7 +506,15 @@ io.on("connection", (socket) => {
           const boardDef = lobby.customBoardDef
             ? lobby.customBoardDef
             : getBoard(lobby.selectedBoardId || 'classic');
-          gameInstance = new MonopolyGame(lobbyId, lang, boardDef);
+          if (lobby.teamMode === '2v2') {
+            const t0 = lobby.players.filter(p => p.team === 0).length;
+            const t1 = lobby.players.filter(p => p.team === 1).length;
+            if (lobby.players.length !== 4 || t0 !== 2 || t1 !== 2) {
+              socket.emit("lobby_toast", { message: "2v2 needs exactly 4 players, 2 per team" });
+              return;
+            }
+          }
+          gameInstance = new MonopolyGame(lobbyId, lang, boardDef, { teamMode: lobby.teamMode });
           monopolyGames.set(lobbyId, gameInstance);
           break;
         }
@@ -520,7 +544,7 @@ io.on("connection", (socket) => {
         // Add all lobby players to the game instance (bot names are passed
         // through so games that localize display names can use them).
         lobby.players.forEach(p => {
-          gameInstance.addPlayer(p.steamId, { isBot: p.isBot, name: p.botName });
+          gameInstance.addPlayer(p.steamId, { isBot: p.isBot, name: p.botName, team: p.team });
         });
 
         lobby.status = 'PLAYING';
