@@ -5,6 +5,7 @@ import { useFrame } from "@react-three/fiber";
 import * as THREE from "three";
 import { slotOffset, pathBetween, type Layout } from "./layout";
 import { SURFACE_Y } from "./theme";
+import { sound } from "@/components/games/sound/SoundManager";
 
 // Classic pawn silhouette (radius, height) revolved into a solid.
 const PROFILE = [
@@ -34,6 +35,8 @@ function Pawn3DImpl({ position, color, active, slotIndex, layout, total }: Props
   const hopH = useRef(0.22);
   const lastPos = useRef(position);
   const mounted = useRef(false);
+  const isTeleport = useRef(false);
+  const lastSeg = useRef(-1); // which path segment last played a footstep
 
   useEffect(() => {
     if (!mounted.current) {
@@ -52,6 +55,8 @@ function Pawn3DImpl({ position, color, active, slotIndex, layout, total }: Props
     u.current = 0;
     dur.current = teleport ? 0.55 : Math.max(0.14, steps / 7);
     hopH.current = teleport ? 1.1 : 0.24;
+    isTeleport.current = teleport;
+    lastSeg.current = -1; // re-arm footsteps for the new move
     lastPos.current = position;
   }, [position]);
 
@@ -66,6 +71,12 @@ function Pawn3DImpl({ position, color, active, slotIndex, layout, total }: Props
     const idxF = u.current * last;
     const i = Math.min(Math.floor(idxF), Math.max(0, last - 1));
     const f = last === 0 ? 0 : idxF - i;
+
+    // A soft footstep each time the pawn steps onto the next tile (walks only).
+    if (u.current < 1 && last > 0 && !isTeleport.current && i !== lastSeg.current) {
+      lastSeg.current = i;
+      sound.play("hop");
+    }
     const a = layout.center(p[i]);
     const b = layout.center(p[Math.min(i + 1, last)]);
     const off = slotOffset(layout.dirs(position), slotIndex);

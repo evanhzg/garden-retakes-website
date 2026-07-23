@@ -6,7 +6,8 @@
 // created lazily on the first play() and resumed if suspended.
 
 export type SoundName =
-  | "click" | "dice" | "land" | "buy" | "build" | "rent" | "tax"
+  | "click" | "dice" | "diceLand" | "hop" | "land" | "buy" | "build" | "rent" | "tax"
+  | "mortgage" | "unmortgage" | "sell" | "special" | "worldCup" | "jackpot" | "auction"
   | "passGo" | "jail" | "card" | "win" | "bankrupt";
 
 type Persisted = { volume: number; muted: boolean };
@@ -125,9 +126,20 @@ class SoundManager {
         this.tone(520, 0.06, "triangle", 0.16, t, 380);
         break;
       case "dice":
-        // a short rattle: several filtered noise ticks
+        // a short rattle: several filtered noise ticks (the shake before it lands)
         for (let i = 0; i < 5; i++) this.noise(0.05, 2600 + Math.random() * 1200, 0.16, t + i * 0.055, 2);
-        this.tone(180, 0.12, "sine", 0.12, t + 0.3);
+        break;
+      case "diceLand":
+        // the dice settling on the board — a small wooden thunk + tick
+        this.tone(150, 0.14, "sine", 0.22, t, 80);
+        this.noise(0.06, 700, 0.14, t, 1.4);
+        this.noise(0.03, 3200, 0.08, t + 0.05, 3);
+        break;
+      case "hop":
+        // a soft footstep as a pawn steps to the next tile (kept quiet — several
+        // fire in a row during a move).
+        this.tone(300, 0.05, "triangle", 0.09, t, 180);
+        this.noise(0.028, 900, 0.05, t, 2);
         break;
       case "land":
         this.tone(150, 0.16, "sine", 0.24, t, 90);
@@ -146,6 +158,45 @@ class SoundManager {
         this.tone(660, 0.09, "triangle", 0.18, t);
         this.tone(440, 0.14, "triangle", 0.16, t + 0.08, 300);
         break;
+      case "mortgage":
+        // money out, but reversible — a low descending "chunk".
+        this.tone(300, 0.13, "sawtooth", 0.14, t, 150);
+        this.noise(0.05, 500, 0.08, t);
+        break;
+      case "unmortgage":
+        // reclaiming a property — a bright rising pair.
+        this.tone(392, 0.1, "triangle", 0.16, t);
+        this.tone(587.33, 0.14, "triangle", 0.16, t + 0.08);
+        break;
+      case "sell":
+        this.tone(523.25, 0.08, "triangle", 0.16, t);
+        this.tone(349.23, 0.13, "triangle", 0.14, t + 0.07, 220);
+        break;
+      case "special": {
+        // a light magical sparkle for POI events.
+        [880, 1174.66, 1567.98].forEach((f, i) => this.tone(f, 0.18, "sine", 0.13, t + i * 0.05));
+        break;
+      }
+      case "worldCup": {
+        // a short triumphant trophy flourish.
+        [659.25, 830.61, 987.77, 1318.51].forEach((f, i) => this.tone(f, 0.2, "triangle", 0.2, t + i * 0.08));
+        this.noise(0.05, 5000, 0.06, t, 3);
+        break;
+      }
+      case "jackpot": {
+        // a cascade of coins.
+        for (let i = 0; i < 8; i++) this.tone(1200 - i * 70 + Math.random() * 60, 0.06, "triangle", 0.12, t + i * 0.04);
+        this.tone(1046.5, 0.2, "sine", 0.12, t + 0.34);
+        break;
+      }
+      case "auction": {
+        // two gavel knocks.
+        for (const off of [0, 0.16]) {
+          this.noise(0.05, 420, 0.22, t + off, 1.2);
+          this.tone(160, 0.08, "sine", 0.16, t + off, 90);
+        }
+        break;
+      }
       case "passGo": {
         const notes = [523.25, 659.25, 783.99, 1046.5];
         notes.forEach((f, i) => this.tone(f, 0.16, "triangle", 0.2, t + i * 0.09));

@@ -157,6 +157,9 @@ export default function MonopolyGame() {
       buy: "buy", build: "build", pay_rent: "rent", pay_tax: "tax",
       pass_go: "passGo", jail_enter: "jail", card: "card",
       bankrupt: "bankrupt", win: "win",
+      mortgage: "mortgage", unmortgage: "unmortgage", sell_house: "sell",
+      special: "special", world_cup_move: "worldCup", jackpot_win: "jackpot",
+      auction_start: "auction", auction_won: "buy",
     };
     const sfx = map[top.key];
     if (sfx) sound.play(sfx);
@@ -350,7 +353,7 @@ export default function MonopolyGame() {
             onHoverEnd={() => setHoveredSpace(null)}
             rollKey={rollTriggerKey}
             lastRoll={gameState.lastRoll}
-            onDiceSettled={() => setIsDiceRolling(false)}
+            onDiceSettled={() => { setIsDiceRolling(false); sound.play("diceLand"); }}
           />
           <div className="mono-board3d-hint">🖱 {viewMode === "2d"
             ? (lang === "fr" ? "Glissez pour déplacer · molette pour zoomer" : "Drag to pan · scroll to zoom")
