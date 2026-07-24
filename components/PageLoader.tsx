@@ -1,46 +1,129 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useState, useRef, useCallback } from "react";
 
+/**
+ * PageLoader – full-screen intro that morphs the centred "REEEETAKES" text
+ * directly into the header's .brand-word position for a seamless handoff.
+ *
+ * Phases:
+ *   entrance  → letters type-in while centred (0 – 1.8 s)
+ *   hold      → brief pause at full size        (1.8 – 2.4 s)
+ *   travel    → text flies to header position    (2.4 – 3.4 s)
+ *   settle    → overlay fades out, header takes over (3.4 – 4.0 s)
+ */
 export default function PageLoader() {
-  const [show, setShow] = useState(true);
-  const [fadeOut, setFadeOut] = useState(false);
+  const [phase, setPhase] = useState<
+    "entrance" | "hold" | "travel" | "settle" | "done"
+  >("entrance");
+  const wordRef = useRef<HTMLDivElement>(null);
+  const overlayRef = useRef<HTMLDivElement>(null);
 
-  useEffect(() => {
-    // Loader always runs on reload now
+  /* ------------------------------------------------------------------ */
+  /* Measure the header's .brand-word at travel-start and apply a       */
+  /* transform so the loader text lands exactly on top of it.           */
+  /* ------------------------------------------------------------------ */
+  const flyToHeader = useCallback(() => {
+    const loaderWord = wordRef.current;
+    if (!loaderWord) return;
 
-    // Start fade out after 3 seconds
-    const fadeTimer = setTimeout(() => {
-      setFadeOut(true);
-    }, 3000);
+    // Where is the header's brand-word?
+    const headerBrand = document.querySelector(
+      ".site-header .brand-word"
+    ) as HTMLElement | null;
 
-    // Completely unmount after fade out completes
-    const removeTimer = setTimeout(() => {
-      setShow(false);
-    }, 3800);
+    if (headerBrand) {
+      const target = headerBrand.getBoundingClientRect();
+      const source = loaderWord.getBoundingClientRect();
 
-    return () => {
-      clearTimeout(fadeTimer);
-      clearTimeout(removeTimer);
-    };
+      // Scale ratio based on the height of both elements
+      const scale = target.height / source.height;
+
+      // Translate so the top-left of the scaled loader word matches the
+      // top-left of the header brand-word.
+      const tx = target.left - source.left - (source.width * (1 - scale)) / 2;
+      const ty = target.top - source.top - (source.height * (1 - scale)) / 2;
+
+      loaderWord.style.transition =
+        "transform 1s cubic-bezier(0.22, 1, 0.36, 1), opacity 1s cubic-bezier(0.22, 1, 0.36, 1)";
+      loaderWord.style.transform = `translate(${tx}px, ${ty}px) scale(${scale})`;
+    } else {
+      // Fallback: fly to typical top-left position
+      loaderWord.style.transition =
+        "transform 1s cubic-bezier(0.22, 1, 0.36, 1), opacity 1s cubic-bezier(0.22, 1, 0.36, 1)";
+      loaderWord.style.transform = "translate(-40vw, -40vh) scale(0.25)";
+    }
   }, []);
 
-  if (!show) return null;
+  /* ------------------------------------------------------------------ */
+  /* Phase timeline                                                      */
+  /* ------------------------------------------------------------------ */
+  useEffect(() => {
+    const timers: ReturnType<typeof setTimeout>[] = [];
+
+    // entrance → hold
+    timers.push(setTimeout(() => setPhase("hold"), 1800));
+
+    // hold → travel (kick off the FLIP)
+    timers.push(
+      setTimeout(() => {
+        setPhase("travel");
+        flyToHeader();
+      }, 2400)
+    );
+
+    // travel → settle
+    timers.push(setTimeout(() => setPhase("settle"), 3400));
+
+    // settle → done (unmount)
+    timers.push(setTimeout(() => setPhase("done"), 4000));
+
+    return () => timers.forEach(clearTimeout);
+  }, [flyToHeader]);
+
+  if (phase === "done") return null;
+
 
   return (
-    <div className={`page-loader-overlay ${fadeOut ? "fade-out" : ""}`}>
-      <div className="page-loader-word">
-        <span>R</span>
-        <span>E</span>
-        <span className="loader-e-extra" style={{ animationDelay: "0.15s" }}>E</span>
-        <span className="loader-e-extra" style={{ animationDelay: "0.3s" }}>E</span>
-        <span className="loader-e-extra" style={{ animationDelay: "0.45s" }}>E</span>
-        <span className="loader-e-extra" style={{ animationDelay: "0.6s" }}>E</span>
-        <span>T</span>
-        <span>A</span>
-        <span>K</span>
-        <span>E</span>
-        <span>S</span>
+    <div
+      ref={overlayRef}
+      className={`page-loader-overlay ${phase}`}
+    >
+      {/* Subtle radial glow behind the text during entrance/hold */}
+      <div className="loader-glow" />
+
+      <div ref={wordRef} className="page-loader-word">
+        <span style={{ animationDelay: "0s" }}>R</span>
+        <span style={{ animationDelay: "0.04s" }}>E</span>
+        <span
+          className="loader-e-extra"
+          style={{ animationDelay: "0.12s" }}
+        >
+          E
+        </span>
+        <span
+          className="loader-e-extra"
+          style={{ animationDelay: "0.24s" }}
+        >
+          E
+        </span>
+        <span
+          className="loader-e-extra"
+          style={{ animationDelay: "0.36s" }}
+        >
+          E
+        </span>
+        <span
+          className="loader-e-extra"
+          style={{ animationDelay: "0.48s" }}
+        >
+          E
+        </span>
+        <span style={{ animationDelay: "0.08s" }}>T</span>
+        <span style={{ animationDelay: "0.12s" }}>A</span>
+        <span style={{ animationDelay: "0.16s" }}>K</span>
+        <span style={{ animationDelay: "0.20s" }}>E</span>
+        <span style={{ animationDelay: "0.24s" }}>S</span>
       </div>
     </div>
   );

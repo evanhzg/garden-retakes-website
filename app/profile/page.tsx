@@ -5,6 +5,7 @@ import { dayKey, fetchRows, groupBy, ratingClass, sideName, summarize } from "@/
 import { resolveName } from "@/lib/names";
 import ProfileShowcase from "@/components/ProfileShowcase";
 import ProfileEditor from "@/components/ProfileEditor";
+import DiscordConnect from "@/components/DiscordConnect";
 import AvatarImage from "@/components/AvatarImage";
 
 export const dynamic = "force-dynamic";
@@ -377,6 +378,12 @@ export default async function ProfilePage({
             <div className="label">Kills / round</div>
           </div>
         </div>
+      </section>
+
+      {/* ---------- Connections ---------- */}
+      <section className="panel">
+        <h2>Connections</h2>
+        <DiscordConnect />
       </section>
 
       {/* ---------- Profile settings ---------- */}

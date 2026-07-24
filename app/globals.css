@@ -40,6 +40,12 @@ html {
   scroll-behavior: smooth;
 }
 
+/* App-shell scrolling: the page itself never scrolls — the main content column
+   is the single scroll container, below a fixed-height header. */
+html, body {
+  height: 100%;
+}
+
 body {
   margin: 0;
   background:
@@ -49,7 +55,7 @@ body {
   color: var(--text);
   font-family: ui-sans-serif, system-ui, "Segoe UI", Roboto, sans-serif;
   line-height: 1.55;
-  min-height: 100vh;
+  overflow: hidden;
 }
 
 a {
@@ -4112,23 +4118,29 @@ body {
    ============================================================ */
 .layout-wrapper {
   display: flex;
-  min-height: 100vh;
+  /* Fills the viewport below the header; the header's live height is published
+     by NavBar as --games-top-inset. */
+  height: calc(100dvh - var(--games-top-inset, 72px));
+  min-height: 0;
+  overflow: hidden;
 }
 
 .main-content {
   flex: 1;
   min-width: 0;
+  min-height: 0;
   display: flex;
   flex-direction: column;
+  /* The single page scroll container. */
+  overflow-y: auto;
+  overflow-x: hidden;
+  scrollbar-gutter: stable;
 }
 
 .left-sidebar {
   width: 100px;
-  position: sticky;
-  top: 62px;
-  /* Offset for the sticky header */
-  height: calc(100vh - 62px);
-  /* Removed overflow to prevent clipping the scale(3) avatars */
+  flex: 0 0 auto;
+  height: 100%;
   padding: 16px 8px;
   display: flex;
   flex-direction: column;
@@ -5376,48 +5388,108 @@ body.inv-fullscreen .site-footer {
 }
 
 /* ---------- Page Loader ---------- */
+
+/* ---- overlay ---- */
 .page-loader-overlay {
   position: fixed;
   inset: 0;
   z-index: 99999;
+  display: flex;
+  align-items: center;
+  justify-content: center;
   background-color: #000;
   color: #fff;
-  font-size: 5vw;
   font-weight: 900;
   letter-spacing: 0.1em;
   text-transform: uppercase;
-  transition: background-color 0.8s ease;
   pointer-events: all;
+  /* Background transitions over the settle phase */
+  transition: background-color 0.6s cubic-bezier(0.22, 1, 0.36, 1),
+              visibility 0s linear 0.6s;
 }
-.page-loader-overlay.fade-out {
+
+/* During travel the bg starts fading */
+.page-loader-overlay.travel {
+  background-color: rgba(0, 0, 0, 0.6);
+}
+
+/* Settle + done: fully transparent, non-interactive */
+.page-loader-overlay.settle {
   background-color: transparent;
   pointer-events: none;
+  visibility: hidden;
 }
-.page-loader-word {
+
+/* ---- radial glow behind text ---- */
+.loader-glow {
   position: absolute;
-  top: 50%;
-  left: 50%;
-  transform: translate(-50%, -50%);
+  width: 60vw;
+  height: 60vw;
+  max-width: 600px;
+  max-height: 600px;
+  border-radius: 50%;
+  background: radial-gradient(
+    circle,
+    rgba(168, 85, 247, 0.18) 0%,
+    rgba(99, 102, 241, 0.08) 40%,
+    transparent 70%
+  );
+  pointer-events: none;
+  opacity: 0;
+  transform: scale(0.6);
+  animation: glowIn 1.4s 0.3s cubic-bezier(0.22, 1, 0.36, 1) forwards;
+  transition: opacity 0.8s cubic-bezier(0.22, 1, 0.36, 1);
+}
+
+.page-loader-overlay.travel .loader-glow,
+.page-loader-overlay.settle .loader-glow {
+  opacity: 0;
+}
+
+@keyframes glowIn {
+  to {
+    opacity: 1;
+    transform: scale(1);
+  }
+}
+
+/* ---- word container ---- */
+.page-loader-word {
+  position: relative;
   display: flex;
-  overflow: hidden;
-  transition: all 0.8s cubic-bezier(0.22, 1, 0.36, 1);
+  font-size: 5vw;
+  /* transform-origin at centre so the FLIP scale looks natural */
+  transform-origin: center center;
+  will-change: transform, opacity;
 }
-.page-loader-overlay.fade-out .page-loader-word {
-  top: 14px;
-  left: 28px;
-  font-size: 1.25rem;
-  color: var(--text);
-  transform: translate(0, 0);
-  letter-spacing: 1px;
+
+/* Individual letter entrance: gentle rise + fade */
+.page-loader-word > span {
+  display: inline-block;
+  opacity: 0;
+  transform: translateY(14px);
+  animation: letterIn 0.5s cubic-bezier(0.22, 1, 0.36, 1) forwards;
 }
-.loader-e-extra {
+
+@keyframes letterIn {
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+/* Extra E letters inside the loader: slide in width from 0 (plays after letterIn delay) */
+.page-loader-overlay .loader-e-extra {
   display: inline-block;
   overflow: hidden;
   width: 0;
   opacity: 0;
   transform: scaleX(0);
-  animation: slideInE 0.8s cubic-bezier(0.22, 1, 0.36, 1) forwards;
+  animation:
+    letterIn 0.5s cubic-bezier(0.22, 1, 0.36, 1) forwards,
+    slideInE 0.7s cubic-bezier(0.22, 1, 0.36, 1) forwards;
 }
+
 @keyframes slideInE {
   0% {
     width: 0;
@@ -5431,6 +5503,48 @@ body.inv-fullscreen .site-footer {
   }
 }
 
+/* During travel: word fades slightly to blend with the header brand */
+.page-loader-overlay.settle .page-loader-word {
+  opacity: 0;
+  transition: opacity 0.4s ease;
+}
+
+
+
+/* ---------- Route Transition Loader ---------- */
+.route-loader {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  height: 3px;
+  z-index: 99998;
+  pointer-events: none;
+  opacity: 1;
+  transition: opacity 0.3s ease;
+}
+
+.route-loader--done {
+  opacity: 0;
+}
+
+.route-loader__bar {
+  width: 100%;
+  height: 100%;
+  background: linear-gradient(
+    90deg,
+    #a855f7 0%,
+    #6366f1 40%,
+    #a855f7 70%,
+    #c084fc 100%
+  );
+  transform-origin: left center;
+  transition: transform 0.3s cubic-bezier(0.22, 1, 0.36, 1);
+  box-shadow:
+    0 0 8px rgba(168, 85, 247, 0.6),
+    0 0 24px rgba(99, 102, 241, 0.3);
+  border-radius: 0 2px 2px 0;
+}
 
 
 /* ---------- Wheel Navbar ---------- */
@@ -5460,10 +5574,16 @@ body.inv-fullscreen .site-footer {
   width: 34px;
   height: 34px;
   border-radius: 11px;
-  color: #fff;
-  background: var(--gradient, linear-gradient(135deg, #a855f7, #6366f1));
-  box-shadow: 0 6px 16px -6px rgba(168, 85, 247, 0.7);
+  overflow: hidden;
+  background: transparent;
+  box-shadow: 0 4px 12px -4px rgba(0, 0, 0, 0.35);
   transition: transform 0.3s cubic-bezier(0.22, 1, 0.36, 1);
+}
+.sober-logo .brand-mark img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  display: block;
 }
 .sober-logo:hover .brand-mark { transform: rotate(-8deg) scale(1.07); }
 .sober-logo .brand-word { display: inline-flex; }
@@ -5898,3 +6018,43 @@ body.header-hidden .friends-toggle-btn {
 .scr-val:first-child { text-align: right; }
 .scr-val.win { color: var(--text); }
 .scr-label { font-size: 0.75rem; color: var(--muted); align-self: center; min-width: 52px; text-align: center; }
+
+/* ---------- Discord connect (profile) ---------- */
+.discord-connect { display: flex; flex-direction: column; gap: 14px; }
+.discord-connect-head { display: flex; align-items: flex-start; gap: 12px; }
+.discord-glyph {
+  width: 44px; height: 44px; flex: 0 0 auto;
+  display: grid; place-items: center;
+  border-radius: 12px; color: #fff;
+  background: #5865F2;
+  box-shadow: 0 6px 16px -6px rgba(88, 101, 242, 0.7);
+}
+.discord-connect-head h3 { margin: 0 0 2px; font-size: 1rem; }
+.discord-connect-head p { margin: 0; font-size: 0.85rem; color: var(--muted); }
+.discord-notice {
+  font-size: 0.82rem; font-weight: 600;
+  padding: 8px 12px; border-radius: 10px;
+  background: var(--accent-soft); color: var(--accent);
+  border: 1px solid color-mix(in srgb, var(--accent) 30%, transparent);
+}
+.discord-linked { display: flex; align-items: center; justify-content: space-between; gap: 12px; flex-wrap: wrap; }
+.discord-user { display: flex; align-items: center; gap: 10px; }
+.discord-user img { width: 34px; height: 34px; border-radius: 50%; object-fit: cover; }
+.discord-user-fallback {
+  width: 34px; height: 34px; border-radius: 50%;
+  display: grid; place-items: center; font-weight: 800;
+  background: #5865F2; color: #fff;
+}
+.discord-user-name { font-weight: 700; }
+.discord-btn {
+  display: inline-flex; align-items: center; justify-content: center;
+  padding: 10px 18px; border-radius: 10px;
+  background: #5865F2; color: #fff;
+  font-weight: 800; font-size: 0.88rem; border: none; cursor: pointer;
+  text-decoration: none; transition: filter 0.2s ease, transform 0.15s ease;
+}
+.discord-btn:hover { filter: brightness(1.08); transform: translateY(-1px); }
+.discord-btn.ghost { background: transparent; color: var(--muted); border: 1px solid var(--border); }
+.discord-btn.ghost:hover { color: #ef4444; border-color: #ef4444; filter: none; }
+.discord-btn.disabled { background: color-mix(in srgb, var(--muted) 40%, transparent); cursor: not-allowed; }
+.discord-btn.disabled:hover { transform: none; filter: none; }

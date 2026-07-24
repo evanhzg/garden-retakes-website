@@ -177,6 +177,19 @@ model GardenWebProfile {
   @@map("GardenWebProfiles")
 }
 
+// Discord account links (see lib/discord.ts + /api/auth/discord/*). Kept in its
+// own table so the feature is inert — not fatal to other queries — until the
+// table is created (sql/discord-link.sql).
+model GardenDiscordLink {
+  SteamId       BigInt   @id
+  DiscordId     String   @db.VarChar(32)
+  DiscordName   String   @db.VarChar(64)
+  DiscordAvatar String?  @db.VarChar(255)
+  LinkedAtUtc   DateTime @default(now()) @db.DateTime(6)
+
+  @@map("GardenDiscordLinks")
+}
+
 // Garden-retakes merged plugin (Duels mode): one row per completed 1v1.
 model DuelRecord {
   Id             BigInt   @id @default(autoincrement())

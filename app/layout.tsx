@@ -5,6 +5,7 @@ import { prisma } from "@/lib/db";
 import NavBar from "@/components/NavBar";
 import LeftSidebar from "@/components/LeftSidebar";
 import PageLoader from "@/components/PageLoader";
+import RouteLoader from "@/components/RouteLoader";
 import "./globals.css";
 
 export const metadata: Metadata = {
@@ -14,6 +15,10 @@ export const metadata: Metadata = {
     template: "%s · Garden Retakes",
   },
   description: "Rankings, stats, seasons, inventory and games for the Garden Retakes server",
+  icons: {
+    icon: "/retakes_logo.ico",
+    apple: "/retakes_logo.png",
+  },
   openGraph: {
     siteName: "Garden Retakes",
     type: "website",
@@ -73,14 +78,12 @@ export default async function RootLayout({ children }: { children: React.ReactNo
             <span className="orb orb-3" />
           </div>
           
+          <RouteLoader />
           <NavBar avatarPlayers={avatarPlayers} host={host} protocol={protocol} />
           <div className="layout-wrapper">
             <LeftSidebar players={avatarPlayers} host={host} protocol={protocol} />
             <div className="main-content">
               <main className="container">{children}</main>
-              <footer className="site-footer">
-                Powered by GardenRankings · stats update live from the game server
-              </footer>
             </div>
           </div>
         </ThemeProvider>

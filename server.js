@@ -83,7 +83,8 @@ const UniversalLobby = require('./scripts/universalLobby');
 const universalLobbies = new Map(); // lobbyId -> UniversalLobby
 const lobbyCleanupTimers = new Map(); // lobbyId -> timeout handle for grace period deletion
 const playerDisconnectTimers = new Map(); // `${lobbyId}:${steamId}` -> timeout for player-level grace
-const recentLobbies = new Map(); // steamId -> { lobbyId, at }
+// steamId -> { lobbyId, at }: the last lobby a player was in, for one-click rejoin
+const recentLobbies = new Map();
 
 // Active game instances (lobbyId -> GameInstance)
 
@@ -347,7 +348,8 @@ io.on("connection", (socket) => {
     
     socket.join(`lobby_${lobbyId}`);
     socket.lobbyId = lobbyId;
-    
+    recentLobbies.set(socket.steamId, { lobbyId, at: Date.now() });
+
     broadcastLobbyState(lobbyId);
   });
 
@@ -356,6 +358,42 @@ io.on("connection", (socket) => {
       .filter(l => !l.isPrivate)
       .map(l => l.getPublicState())
     );
+  });
+
+  // Tell the hub whether the caller has a lobby to rejoin — one they're still a
+  // member of, or one they recently left that's still alive and joinable.
+  socket.on("get_my_lobby", () => {
+    if (!socket.steamId) { socket.emit("my_lobby", null); return; }
+
+    const asCard = (lobby, member) => ({
+      lobbyId: lobby.id,
+      name: lobby.name,
+      currentGame: lobby.currentGame,
+      status: lobby.status,
+      playerCount: lobby.players.length,
+      maxPlayers: lobby.maxPlayers,
+      isPrivate: lobby.isPrivate,
+      member,
+    });
+
+    // Still seated at a table (e.g. left the tab open elsewhere)?
+    for (const lobby of universalLobbies.values()) {
+      if (lobby.players.some(p => p.steamId === socket.steamId)) {
+        socket.emit("my_lobby", asCard(lobby, true));
+        return;
+      }
+    }
+
+    // Recently left, but the lobby lives on (others still there) and has room.
+    const rec = recentLobbies.get(socket.steamId);
+    if (rec && Date.now() - rec.at < 30 * 60 * 1000) {
+      const lobby = universalLobbies.get(rec.lobbyId);
+      if (lobby && lobby.status !== 'PLAYING' && lobby.players.length < lobby.maxPlayers) {
+        socket.emit("my_lobby", asCard(lobby, false));
+        return;
+      }
+    }
+    socket.emit("my_lobby", null);
   });
 
   socket.on("lobby_join", (data) => {
@@ -403,6 +441,9 @@ io.on("connection", (socket) => {
       clearTimeout(lobbyCleanupTimers.get(lobbyId));
       lobbyCleanupTimers.delete(lobbyId);
     }
+
+    // A lobby the bot spun up has no host until the first human opens the link.
+    if (lobby.host === "PENDING" && !existing) lobby.host = socket.steamId;
 
     socket.join(`lobby_${lobbyId}`);
     socket.lobbyId = lobbyId;
@@ -1709,6 +1750,68 @@ io.on("connection", (socket) => {
     if (!socket.steamId) return;
     await pkmnBattleManager.handleBattleAction(socket, socket.steamId, data, prisma);
   });
+});
+
+// ---------------------------------------------------------------------------
+// Discord bot bridge: a tiny HTTP surface on the same server the sockets use,
+// so the bot (scripts/discordBot.js) can spin up a lobby and hand back a link.
+// Guarded by a shared secret; only /discord/* is handled here, everything else
+// falls through to Socket.IO.
+// ---------------------------------------------------------------------------
+const DISCORD_BOT_SECRET = process.env.DISCORD_BOT_SECRET || "";
+const GAMES_PUBLIC_URL = (process.env.GAMES_PUBLIC_URL || "https://games.retakes.fr").replace(/\/$/, "");
+const BASE_GAMES = ["monopoly", "uno", "skribbl", "meme", "codenames", "cah"];
+
+const syncPublicLobbies = () => {
+  io.emit("public_lobbies_sync", Array.from(universalLobbies.values())
+    .filter(l => !l.isPrivate)
+    .map(l => l.getPublicState()));
+};
+
+httpServer.on("request", (req, res) => {
+  if (!req.url || !req.url.startsWith("/discord/")) return; // Socket.IO handles the rest
+  const json = (code, obj) => {
+    res.writeHead(code, { "Content-Type": "application/json" });
+    res.end(JSON.stringify(obj));
+  };
+
+  if (req.method === "GET" && req.url === "/discord/health") return json(200, { ok: true });
+
+  if (req.method === "POST" && req.url === "/discord/create-lobby") {
+    if (!DISCORD_BOT_SECRET || req.headers["x-bot-secret"] !== DISCORD_BOT_SECRET) {
+      return json(401, { error: "unauthorized" });
+    }
+    let body = "";
+    req.on("data", (c) => { body += c; if (body.length > 4000) req.destroy(); });
+    req.on("end", () => {
+      let data = {};
+      try { data = JSON.parse(body || "{}"); } catch { return json(400, { error: "bad_json" }); }
+
+      const lobbyId = Math.random().toString(36).substr(2, 9);
+      const name = (typeof data.name === "string" && data.name.trim().slice(0, 40)) || "Discord lobby";
+      // host "PENDING" — claimed by the first human who opens the link (see lobby_join)
+      const lobby = new UniversalLobby(lobbyId, "PENDING", name, false, null);
+      if (BASE_GAMES.includes(data.game)) {
+        lobby.currentGame = `${data.game}_${data.lang === "fr" ? "fr" : "en"}`;
+      }
+      lobby.discordCreated = true;
+      universalLobbies.set(lobbyId, lobby);
+
+      // Keep it alive up to 10 min waiting for its first player, then cull.
+      const t = setTimeout(() => {
+        lobbyCleanupTimers.delete(lobbyId);
+        const l = universalLobbies.get(lobbyId);
+        if (l && l.players.length === 0) { universalLobbies.delete(lobbyId); syncPublicLobbies(); }
+      }, 10 * 60 * 1000);
+      lobbyCleanupTimers.set(lobbyId, t);
+
+      syncPublicLobbies();
+      json(200, { id: lobbyId, url: `${GAMES_PUBLIC_URL}/lobby/${lobbyId}`, game: lobby.currentGame });
+    });
+    return;
+  }
+
+  json(404, { error: "not_found" });
 });
 
 // WS_PORT wins; the host-injected PORT only applies in production (in dev the

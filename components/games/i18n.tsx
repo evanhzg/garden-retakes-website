@@ -290,7 +290,7 @@ export const MEME = {
   shuffling:        { en: "Shuffling captions…", fr: "Mélange des légendes…" },
 
   // launch options (lobby)
-  optionsTitle:     { en: "Make It Meme setup", fr: "Réglages Make It Meme" },
+  optionsTitle:     { en: "HASAMEME setup", fr: "Réglages HASAMEME" },
   hostOnly:         { en: "Only the host changes the setup", fr: "Seul l'hôte modifie les réglages" },
   answerMode:       { en: "Answer mode", fr: "Mode de réponse" },
   modeCaption:      { en: "Caption templates", fr: "Légender des modèles" },

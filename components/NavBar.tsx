@@ -243,10 +243,7 @@ export default function NavBar({
       <header ref={headerRef} className={`site-header minimal ${inGame ? "in-game-bar" : ""} ${collapsed ? "collapsed" : ""}`}>
         <Link href={getHref("/")} className="logo sober-logo" aria-label="Garden Retakes home">
           <span className="brand-mark" aria-hidden="true">
-            <svg viewBox="0 0 24 24" width="18" height="18" fill="none">
-              <path d="M4 15c4-8 12-8 16 0" stroke="currentColor" strokeWidth="2.4" strokeLinecap="round" />
-              <circle cx="12" cy="8.5" r="2.3" fill="currentColor" />
-            </svg>
+            <img src="/retakes_logo.png" alt="" width={34} height={34} />
           </span>
           <span className="brand-word">
             <span>R</span>

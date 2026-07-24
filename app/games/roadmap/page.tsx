@@ -40,7 +40,7 @@ export default function GamesRoadmap() {
       ]
     },
     { 
-      name: "Make it Meme", 
+      name: "HASAMEME", 
       status: "Planned", 
       description: "Compete to create the funniest meme using provided templates.",
       features: [

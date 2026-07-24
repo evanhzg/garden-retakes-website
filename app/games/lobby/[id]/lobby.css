@@ -1360,3 +1360,7 @@
 @media (max-width: 480px) {
   .roster-grid { grid-template-columns: repeat(auto-fill, minmax(96px, 1fr)); }
 }
+
+/* custom game icons */
+.game-pick-icon { display: inline-flex; }
+.game-pick-icon svg, .lobby-hero-badge svg { display: block; }

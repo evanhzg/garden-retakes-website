@@ -15,6 +15,7 @@ import MemeGameWrapper from "@/components/games/MemeGame";
 import SkribblGameWrapper from "@/components/games/SkribblGame";
 import UnoRulesPanel from "@/components/games/UnoRulesPanel";
 import MemeOptionsPanel from "@/components/games/MemeOptionsPanel";
+import GameIcon from "@/components/games/GameIcon";
 import { listBoards } from "@/components/games/editor/boardStore";
 
 import "./lobby.css";
@@ -24,7 +25,7 @@ const GAMES = [
   { id: "monopoly", name: "MONOPOLY", icon: "💰", min: 2, max: 4, ready: true, tagline: "Property warfare" },
   { id: "uno", name: "OUNO", icon: "🃏", min: 2, max: 4, ready: true, tagline: "Cards & chaos" },
   { id: "skribbl", name: "SKRIBBL", icon: "✏️", min: 2, max: 8, ready: true, tagline: "Draw & guess" },
-  { id: "meme", name: "MAKE IT MEME", icon: "😂", min: 3, max: 8, ready: true, tagline: "Caption battle" },
+  { id: "meme", name: "HASAMEME", icon: "😂", min: 3, max: 8, ready: true, tagline: "Caption battle" },
   { id: "codenames", name: "CODENAMES", icon: "🕵️", min: 4, max: 8, ready: false, tagline: "Spy words" },
   { id: "cah", name: "CARDS AGAINST", icon: "⬛", min: 3, max: 8, ready: false, tagline: "Party of terrible people" },
 ];
@@ -82,7 +83,7 @@ function LobbyClient({ lobbyId, mySteamId }: { lobbyId: string; mySteamId: strin
     // Lock body scroll while in the lobby
     document.body.style.overflow = "hidden";
     return () => {
-      document.body.style.overflow = "auto";
+      document.body.style.overflow = "";
     };
   }, []);
 
@@ -321,7 +322,7 @@ function LobbyClient({ lobbyId, mySteamId }: { lobbyId: string; mySteamId: strin
             animate={{ scale: 1, rotate: 0, opacity: 1 }}
             transition={{ type: "spring", stiffness: 260, damping: 18 }}
           >
-            {currentGameConfig ? currentGameConfig.icon : "🎮"}
+            {currentGameConfig ? <GameIcon id={currentGameConfig.id} size={38} /> : "🎮"}
           </motion.div>
           <div className="lobby-hero-text">
             <div className="lobby-hero-game">
@@ -382,7 +383,7 @@ function LobbyClient({ lobbyId, mySteamId }: { lobbyId: string; mySteamId: strin
                         : game.name
                     }
                   >
-                    <span className="game-pick-icon">{game.icon}</span>
+                    <span className="game-pick-icon"><GameIcon id={game.id} size={26} /></span>
                     <span className="game-pick-name">{game.name}</span>
                     <span className="game-pick-players">{game.min}–{game.max}P</span>
                     {!game.ready && <span className="game-pick-soon-badge">SOON</span>}

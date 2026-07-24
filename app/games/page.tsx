@@ -4,6 +4,7 @@ import React, { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
 import { SocketProvider, useSocket } from "@/components/games/SocketProvider";
 import { useGameIdentity, usePlayerNames, displayNameFor } from "@/components/games/hooks";
+import GameIcon from "@/components/games/GameIcon";
 import "./games.css";
 
 // `ready: false` games stay on the shelf — greyed out and not selectable until
@@ -12,7 +13,7 @@ const GAMES = [
   { id: "monopoly", name: "MONOPOLY", icon: "💰", description: "Business Tour-style fast property trading with 3D dice physics, auctions, and ruthless bot AI.", players: "2–4", ready: true },
   { id: "uno", name: "OUNO", icon: "🃏", description: "Card battles with house rules: stacking, jump-ins, 7-0 swaps, optional cards — and a timed OUNO call that punishes you for forgetting.", players: "2–4", ready: true },
   { id: "skribbl", name: "SKRIBBL", icon: "✏️", description: "One draws, everyone guesses. Real-time canvas, fuzzy matching, and timed rounds in English or French.", players: "2–8", ready: true },
-  { id: "meme", name: "MAKE IT MEME", icon: "😂", description: "Caption templates or answer with the perfect GIF — pick packs, import your own memes, then vote for the funniest.", players: "3–8", ready: true },
+  { id: "meme", name: "HASAMEME", icon: "😂", description: "Caption templates or answer with the perfect GIF — pick packs, import your own memes, then vote for the funniest.", players: "3–8", ready: true },
   { id: "codenames", name: "CODENAMES", icon: "🕵️", description: "Two teams, one spymaster each. Give one-word clues, guess your agents — but avoid the assassin.", players: "4–8", ready: false },
   { id: "cah", name: "CARDS AGAINST", icon: "⬛", description: "A party game for terrible people. Fill in the blanks, the Card Czar picks the winner.", players: "3–8", ready: false },
 ];
@@ -48,6 +49,7 @@ function GamesHub() {
   const router = useRouter();
   const { socket, isAuthed, steamId } = useSocket();
   const [publicLobbies, setPublicLobbies] = useState<any[]>([]);
+  const [myLobby, setMyLobby] = useState<any>(null);
   const [showCreateModal, setShowCreateModal] = useState(false);
   const [creating, setCreating] = useState(false);
   const [joinCode, setJoinCode] = useState("");
@@ -63,17 +65,24 @@ function GamesHub() {
 
   useEffect(() => {
     if (!socket) return;
-    socket.on("public_lobbies_sync", (lobbies) => setPublicLobbies(lobbies));
+    socket.on("public_lobbies_sync", (lobbies) => {
+      setPublicLobbies(lobbies);
+      // Lobbies changed — re-check whether ours is still alive to rejoin.
+      socket.emit("get_my_lobby");
+    });
+    socket.on("my_lobby", (lobby) => setMyLobby(lobby));
     return () => {
       socket.off("public_lobbies_sync");
+      socket.off("my_lobby");
     };
   }, [socket]);
 
-  // Ask for the current list as soon as we're authenticated — without this the
-  // sidebar stays empty until some lobby happens to change.
+  // Ask for the current list + any lobby we can rejoin as soon as we're authed —
+  // without this the sidebar stays empty until some lobby happens to change.
   useEffect(() => {
     if (socket && isAuthed) {
       socket.emit("get_public_lobbies");
+      socket.emit("get_my_lobby");
     }
   }, [socket, isAuthed]);
 
@@ -105,95 +114,132 @@ function GamesHub() {
     if (code) router.push(`/games/lobby/${code}`);
   };
 
-  return (
-    <div className="games-hub-layout">
-      <div className="games-main">
-        <header className="hub-header hub-header-row">
-          <div>
-            <h1>GAMES HUB</h1>
-            <p>Create a universal lobby to play with friends.</p>
-          </div>
-          <button className="btn-primary" onClick={() => { setSelectedGame("none"); setShowCreateModal(true); }}>
-            + Create Lobby
-          </button>
-        </header>
+  const readyCount = GAMES.filter(g => g.ready).length;
 
-        <div className="games-grid">
-          {GAMES.map((game) => (
-            <div
-              key={game.id}
-              className={`game-card ${game.ready ? "" : "coming-soon"}`}
-              data-game={game.id}
-              onClick={() => game.ready && preselectGame(game.id)}
-              role="button"
-              aria-disabled={!game.ready}
-              tabIndex={game.ready ? 0 : -1}
-              onKeyDown={(e) => { if (e.key === "Enter" && game.ready) preselectGame(game.id); }}
-            >
-              <div className="game-card-bg" />
-              <div className="game-card-content">
-                <div className="game-card-top">
-                  <span className="game-card-icon">{game.icon}</span>
-                  <h2 className="game-card-title">{game.name}</h2>
+  return (
+    <div className="hub">
+      <div className="hub-aurora" aria-hidden />
+      <div className="hub-inner">
+        <section className="hub-hero">
+          <div className="hub-hero-text">
+            <span className="hub-kicker">Garden · Party Games</span>
+            <h1>GAMES HUB</h1>
+            <p>Spin up a universal lobby and play with friends or bots.</p>
+          </div>
+          <div className="hub-hero-side">
+            <div className="hub-stats">
+              <div className="hub-stat"><b>{readyCount}</b><span>games live</span></div>
+              <div className="hub-stat"><b>{publicLobbies.length}</b><span>open lobbies</span></div>
+            </div>
+            <button className="hub-create" onClick={() => { setSelectedGame("none"); setShowCreateModal(true); }}>
+              <span className="hub-create-plus">+</span> Create Lobby
+            </button>
+          </div>
+        </section>
+
+        {myLobby && (
+          <button className="rejoin-banner" onClick={() => router.push(`/games/lobby/${myLobby.lobbyId}`)}>
+            <span className="rejoin-pulse" />
+            <span className="rejoin-text">
+              <b>{myLobby.member ? "You're in a lobby" : "Rejoin your lobby"}</b>
+              <span>{myLobby.name} · {myLobby.playerCount}/{myLobby.maxPlayers ?? 8} players{myLobby.status === "PLAYING" ? " · in game" : ""}</span>
+            </span>
+            <span className="rejoin-cta">{myLobby.member ? "Return →" : "Rejoin →"}</span>
+          </button>
+        )}
+
+        <div className="hub-body">
+          <div className="hub-games">
+            <div className="hub-section-head">
+              <h2>Choose a game</h2>
+              <span>{readyCount} ready · more on the way</span>
+            </div>
+            <div className="games-grid">
+              {GAMES.map((game) => (
+                <div
+                  key={game.id}
+                  className={`game-card ${game.ready ? "" : "coming-soon"}`}
+                  data-game={game.id}
+                  onClick={() => game.ready && preselectGame(game.id)}
+                  role="button"
+                  aria-disabled={!game.ready}
+                  tabIndex={game.ready ? 0 : -1}
+                  onKeyDown={(e) => { if (e.key === "Enter" && game.ready) preselectGame(game.id); }}
+                >
+                  <div className="game-card-bg" />
+                  <div className="game-card-content">
+                    <div className="game-card-top">
+                      <span className="game-card-icon"><GameIcon id={game.id} size={34} title={game.name} /></span>
+                      <h2 className="game-card-title">{game.name}</h2>
+                    </div>
+                    <p className="game-card-desc">{game.description}</p>
+                    <div className="game-card-meta">
+                      <span className="badge badge-players">👥 {game.players}</span>
+                      {game.ready
+                        ? <span className="badge badge-play">Play →</span>
+                        : <span className="badge badge-coming">Coming soon</span>}
+                    </div>
+                  </div>
                 </div>
-                <p className="game-card-desc">{game.description}</p>
-                <div className="game-card-meta">
-                  <span className="badge badge-players">👥 {game.players}</span>
-                  {game.ready
-                    ? <span className="badge badge-play">Play →</span>
-                    : <span className="badge badge-coming">Coming soon</span>}
+              ))}
+              <div className="game-card game-card-more" aria-hidden>
+                <div className="game-card-more-inner">
+                  <span className="game-card-more-plus">✦</span>
+                  <span className="game-card-more-text">More games<br />coming soon</span>
                 </div>
               </div>
             </div>
-          ))}
+          </div>
+
+          <aside className="hub-side">
+            <div className="hub-panel">
+              <div className="hub-panel-head">
+                <h2>Public lobbies</h2>
+                <span className="hub-live"><span className="hub-live-dot" /> live</span>
+              </div>
+              <div className="lobbies-list">
+                {publicLobbies.length === 0 ? (
+                  <p className="no-lobbies">No public lobbies right now. Be the first to create one!</p>
+                ) : (
+                  publicLobbies.map(lobby => (
+                    <div key={lobby.id} className="public-lobby-card">
+                      <div className="lobby-info">
+                        <h4>{lobby.name}</h4>
+                        <span className="lobby-game">{prettyGame(lobby.currentGame)}</span>
+                        <span className="lobby-host">by {displayNameFor(lobby.host, names)}</span>
+                      </div>
+                      <div className="lobby-stats">
+                        <span className={lobby.status === "PLAYING" ? "lobby-playing" : ""}>
+                          {lobby.status === "PLAYING" ? "▶ In game" : `👥 ${lobby.playerCount}/${lobby.maxPlayers ?? 8}`}
+                        </span>
+                        <button
+                          onClick={() => router.push(`/games/lobby/${lobby.id}`)}
+                          className="btn-join"
+                          disabled={lobby.status === "PLAYING" || lobby.playerCount >= (lobby.maxPlayers ?? 8)}
+                        >
+                          Join
+                        </button>
+                      </div>
+                    </div>
+                  ))
+                )}
+              </div>
+              <form className="join-code-box" onSubmit={handleJoinCode}>
+                <label>Have an invite code or link?</label>
+                <div className="join-code-row">
+                  <input
+                    type="text"
+                    value={joinCode}
+                    onChange={e => setJoinCode(e.target.value)}
+                    placeholder="Paste code or link"
+                  />
+                  <button type="submit" className="btn-join" disabled={!joinCode.trim()}>Go</button>
+                </div>
+              </form>
+            </div>
+          </aside>
         </div>
       </div>
-
-      <aside className="games-sidebar">
-        <div className="public-lobbies">
-          <h2>Public Lobbies</h2>
-          <div className="lobbies-list">
-            {publicLobbies.length === 0 ? (
-              <p className="no-lobbies">No public lobbies right now. Be the first to create one!</p>
-            ) : (
-              publicLobbies.map(lobby => (
-                <div key={lobby.id} className="public-lobby-card">
-                  <div className="lobby-info">
-                    <h4>{lobby.name}</h4>
-                    <span className="lobby-game">{prettyGame(lobby.currentGame)}</span>
-                    <span className="lobby-host">by {displayNameFor(lobby.host, names)}</span>
-                  </div>
-                  <div className="lobby-stats">
-                    <span className={lobby.status === "PLAYING" ? "lobby-playing" : ""}>
-                      {lobby.status === "PLAYING" ? "▶ In game" : `👥 ${lobby.playerCount}/${lobby.maxPlayers ?? 8}`}
-                    </span>
-                    <button
-                      onClick={() => router.push(`/games/lobby/${lobby.id}`)}
-                      className="btn-join"
-                      disabled={lobby.status === "PLAYING" || lobby.playerCount >= (lobby.maxPlayers ?? 8)}
-                    >
-                      Join
-                    </button>
-                  </div>
-                </div>
-              ))
-            )}
-          </div>
-        </div>
-
-        <form className="join-code-box" onSubmit={handleJoinCode}>
-          <label>Have an invite code or link?</label>
-          <div className="join-code-row">
-            <input
-              type="text"
-              value={joinCode}
-              onChange={e => setJoinCode(e.target.value)}
-              placeholder="Paste code or link"
-            />
-            <button type="submit" className="btn-join" disabled={!joinCode.trim()}>Go</button>
-          </div>
-        </form>
-      </aside>
 
       {showCreateModal && (
         <div className="modal-overlay" onClick={(e) => { if (e.target === e.currentTarget) setShowCreateModal(false); }}>

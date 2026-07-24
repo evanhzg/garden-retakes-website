@@ -49,6 +49,7 @@ export default function MemeGame() {
 
   const [gameState, setGameState] = useState<any>(null);
   const [captions, setCaptions] = useState<string[]>([""]);
+  const [focusedSlot, setFocusedSlot] = useState(-1);
   const [gifQuery, setGifQuery] = useState("");
   const [gifUrl, setGifUrl] = useState("");
   const [pickedGif, setPickedGif] = useState<string | null>(null);
@@ -59,7 +60,7 @@ export default function MemeGame() {
 
   useEffect(() => {
     document.body.style.overflow = "hidden";
-    return () => { document.body.style.overflow = "auto"; };
+    return () => { document.body.style.overflow = ""; };
   }, []);
   useGameChrome();
 
@@ -157,7 +158,7 @@ export default function MemeGame() {
       {/* --------------------------------------------------------- top bar */}
       <header className="meme-topbar">
         <div className="meme-brand-block">
-          <span className="meme-brand">MAKE IT MEME</span>
+          <span className="meme-brand">HASAMEME</span>
           <span className="meme-round">{t("round", { n: gameState.round, m: gameState.maxRounds })}</span>
         </div>
         <div className="meme-phase-pill">{phaseLabel}</div>
@@ -226,18 +227,30 @@ export default function MemeGame() {
                 ) : (
                   <>
                     <div className="meme-canvas-wrap">
-                      {template && <MemeCard template={template} captions={captions} />}
+                      {template && (
+                        <MemeCard
+                          template={template}
+                          captions={captions}
+                          showGuides
+                          activeIndex={focusedSlot}
+                          guides={captions.map((_, i) => (slots > 1 ? t("captionSlot", { n: i + 1 }) : t("writeCaption")))}
+                        />
+                      )}
                     </div>
                     <div className="meme-caption-fields">
                       {captions.map((c, i) => (
-                        <input
-                          key={i}
-                          className="meme-input"
-                          value={c}
-                          maxLength={120}
-                          onChange={(e) => { const n = [...captions]; n[i] = e.target.value; setCaptions(n); }}
-                          placeholder={slots > 1 ? t("captionSlot", { n: i + 1 }) : t("writeCaption")}
-                        />
+                        <div key={i} className="meme-field-row">
+                          {slots > 1 && <span className="meme-field-num">{i + 1}</span>}
+                          <input
+                            className={`meme-input ${focusedSlot === i ? "focused" : ""}`}
+                            value={c}
+                            maxLength={120}
+                            onFocus={() => setFocusedSlot(i)}
+                            onBlur={() => setFocusedSlot((cur) => (cur === i ? -1 : cur))}
+                            onChange={(e) => { const n = [...captions]; n[i] = e.target.value; setCaptions(n); }}
+                            placeholder={slots > 1 ? t("captionSlot", { n: i + 1 }) : t("writeCaption")}
+                          />
+                        </div>
                       ))}
                       <button className="meme-primary" onClick={submitCaption} disabled={captions.every((c) => !c.trim())}>
                         {t("submit")} ✓
@@ -386,18 +399,39 @@ export default function MemeGame() {
 // ---------------------------------------------------------------------------
 // A meme template with captions burned into their slot positions.
 // ---------------------------------------------------------------------------
-function MemeCard({ template, captions }: { template: Template; captions: string[] }) {
+function MemeCard({ template, captions, showGuides = false, activeIndex = -1, guides }: {
+  template: Template;
+  captions: string[];
+  showGuides?: boolean;
+  activeIndex?: number;
+  guides?: string[];
+}) {
   return (
     <div className="meme-card">
       <img className="meme-card-img" src={template.url} alt={template.name} draggable={false} />
       {template.slots.map((slot, i) => {
         const text = captions[i] ?? "";
-        if (!text.trim()) return null;
+        const has = !!text.trim();
+        // With no text, show a placement guide box so players know where their
+        // caption will land (and highlight the one they're editing).
+        if (!has && !showGuides) return null;
+        const box = { left: `${slot.x}%`, top: `${slot.y}%`, width: `${slot.w}%` };
+        if (!has) {
+          return (
+            <span
+              key={i}
+              className={`meme-caption-guide ${activeIndex === i ? "active" : ""}`}
+              style={box}
+            >
+              {guides?.[i] ?? `#${i + 1}`}
+            </span>
+          );
+        }
         return (
           <span
             key={i}
-            className={`meme-caption ${slot.dark ? "dark" : ""}`}
-            style={{ left: `${slot.x}%`, top: `${slot.y}%`, width: `${slot.w}%` }}
+            className={`meme-caption ${slot.dark ? "dark" : ""} ${activeIndex === i ? "active" : ""}`}
+            style={box}
           >
             {text}
           </span>

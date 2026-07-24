@@ -45,7 +45,7 @@ export default function SkribblGame() {
 
   useEffect(() => {
     document.body.style.overflow = "hidden";
-    return () => { document.body.style.overflow = "auto"; };
+    return () => { document.body.style.overflow = ""; };
   }, []);
 
   // Reserve the site header's height so it sits above the board, not over it.

@@ -14,7 +14,7 @@ export default function CodenamesGame() {
 
   useEffect(() => {
     document.body.style.overflow = "hidden";
-    return () => { document.body.style.overflow = "auto"; };
+    return () => { document.body.style.overflow = ""; };
   }, []);
 
   useEffect(() => {

@@ -277,6 +277,53 @@
   -webkit-text-stroke: 0;
   text-shadow: 0 1px 2px rgba(255, 255, 255, 0.4);
 }
+.meme-caption.active { filter: drop-shadow(0 0 6px rgba(168, 85, 247, 0.9)); }
+
+/* placement guide: a dashed box showing where a caption will land */
+.meme-caption-guide {
+  position: absolute;
+  transform: translate(-50%, -50%);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  min-height: 8cqw;
+  padding: 4px 6px;
+  box-sizing: border-box;
+  border: 1.5px dashed rgba(255, 255, 255, 0.7);
+  border-radius: 6px;
+  background: rgba(0, 0, 0, 0.28);
+  color: rgba(255, 255, 255, 0.82);
+  font-family: inherit;
+  font-weight: 700;
+  font-size: clamp(0.5rem, 2cqw, 0.9rem);
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  text-align: center;
+  pointer-events: none;
+  z-index: 2;
+}
+.meme-caption-guide.active {
+  border-color: #a855f7;
+  border-style: solid;
+  background: rgba(168, 85, 247, 0.28);
+  color: #fff;
+  box-shadow: 0 0 0 2px rgba(168, 85, 247, 0.4);
+}
+
+/* caption input rows with a slot number */
+.meme-field-row { display: flex; align-items: center; gap: 8px; }
+.meme-field-num {
+  flex: 0 0 auto;
+  width: 24px; height: 24px;
+  display: grid; place-items: center;
+  border-radius: 50%;
+  background: rgba(168, 85, 247, 0.2);
+  border: 1px solid rgba(168, 85, 247, 0.4);
+  color: #d8b4fe;
+  font-size: 0.75rem; font-weight: 900;
+}
+.meme-field-row .meme-input { flex: 1; }
+.meme-input.focused { border-color: #a855f7; box-shadow: 0 0 0 2px rgba(168, 85, 247, 0.3); }
 
 /* --------------------------------------------------------------- final */
 .meme-final { display: flex; flex-direction: column; align-items: center; gap: 16px; margin: auto; text-align: center; padding: 20px; }
