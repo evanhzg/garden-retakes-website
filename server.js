@@ -83,6 +83,7 @@ const UniversalLobby = require('./scripts/universalLobby');
 const universalLobbies = new Map(); // lobbyId -> UniversalLobby
 const lobbyCleanupTimers = new Map(); // lobbyId -> timeout handle for grace period deletion
 const playerDisconnectTimers = new Map(); // `${lobbyId}:${steamId}` -> timeout for player-level grace
+const recentLobbies = new Map(); // steamId -> { lobbyId, at }
 
 // Active game instances (lobbyId -> GameInstance)
 
