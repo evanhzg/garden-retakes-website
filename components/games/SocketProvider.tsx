@@ -1,0 +1,69 @@
+"use client";
+
+import React, { createContext, useContext, useEffect, useState } from 'react';
+import { io, Socket } from 'socket.io-client';
+
+interface SocketContextType {
+  socket: Socket | null;
+  isConnected: boolean;
+  /** true once the server has acked our steamId — safe to emit lobby events */
+  isAuthed: boolean;
+  steamId?: string;
+}
+
+const SocketContext = createContext<SocketContextType>({ socket: null, isConnected: false, isAuthed: false, steamId: undefined });
+
+export const useSocket = () => useContext(SocketContext);
+
+import FriendsSidebar from "../social/FriendsSidebar";
+import NotificationToast from "../social/NotificationToast";
+import SocketStatusBanner from "../social/SocketStatusBanner";
+
+export const SocketProvider = ({ children, steamId }: { children: React.ReactNode, steamId?: string }) => {
+  const [socket, setSocket] = useState<Socket | null>(null);
+  const [isConnected, setIsConnected] = useState(false);
+  const [isAuthed, setIsAuthed] = useState(false);
+
+  useEffect(() => {
+    // NEXT_PUBLIC_SOCKET_URL wins; else localhost in dev, the Render host in prod
+    const socketUrl = process.env.NEXT_PUBLIC_SOCKET_URL
+      || (process.env.NODE_ENV === "development"
+        ? "http://localhost:3001"
+        : "https://node-sockets-reeeeetakes.onrender.com");
+    const socketInstance = io(socketUrl);
+
+    socketInstance.on('connect', () => {
+      console.log('Connected to Game Hub Socket:', socketInstance.id);
+      setIsConnected(true);
+
+      if (steamId) {
+        socketInstance.emit('authenticate', { steamId });
+      }
+    });
+
+    socketInstance.on('authenticated', () => {
+      setIsAuthed(true);
+    });
+
+    socketInstance.on('disconnect', () => {
+      console.log('Disconnected from Game Hub Socket');
+      setIsConnected(false);
+      setIsAuthed(false);
+    });
+
+    setSocket(socketInstance);
+
+    return () => {
+      socketInstance.disconnect();
+    };
+  }, [steamId]);
+
+  return (
+    <SocketContext.Provider value={{ socket, isConnected, isAuthed, steamId }}>
+      {children}
+      <SocketStatusBanner />
+      {steamId && <FriendsSidebar />}
+      {steamId && <NotificationToast />}
+    </SocketContext.Provider>
+  );
+};

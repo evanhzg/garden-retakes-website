@@ -1,0 +1,467 @@
+// Maps directly onto the tables created by GardenRankings (EF Core).
+// Point DATABASE_URL at the same MySQL the plugin uses
+// (DatabaseProvider = MySql in the plugin config).
+//
+// IMPORTANT: EF creates DateTime(6) and UnsignedBigInt columns.
+// We must annotate them here so `prisma db push` doesn't try to cast them.
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "mysql"
+  url      = env("DATABASE_URL")
+}
+
+// ──────────────── EF-managed tables (plugin writes these) ────────────────
+
+model Season {
+  Id           Int       @id @default(autoincrement())
+  Name         String
+  StartedAtUtc DateTime  @db.DateTime(6)
+  EndedAtUtc   DateTime? @db.DateTime(6)
+  IsActive     Boolean
+
+  @@map("Seasons")
+}
+
+model PlayerProfile {
+  SteamId        BigInt   @id
+  LastKnownName  String
+  FirstSeenAtUtc DateTime @db.DateTime(6)
+  LastSeenAtUtc  DateTime @db.DateTime(6)
+  TimeSpentSeconds Int    @default(0)
+
+  @@map("PlayerProfiles")
+}
+
+model PlayerSeasonStats {
+  Id                   Int       @id @default(autoincrement())
+  SeasonId             Int
+  SteamId              BigInt
+  Elo                  Int
+  PeakElo              Int
+  RankedRoundsPlayed   Int
+  RankedRoundsWon      Int
+  UnrankedRoundsPlayed Int
+  LastRankedRoundAtUtc DateTime? @db.DateTime(6)
+  UpdatedAtUtc         DateTime  @db.DateTime(6)
+
+  @@unique([SeasonId, SteamId])
+  @@map("PlayerSeasonStats")
+}
+
+model PlayerRoundRecord {
+  Id                 BigInt   @id @default(autoincrement())
+  RoundRecordId      BigInt
+  SeasonId           Int
+  Map                String
+  PlayedAtUtc        DateTime @db.DateTime(6)
+  IsRanked           Boolean
+  SteamId            BigInt
+  PlayerName         String
+  TeamNum            Int
+  WonRound           Boolean
+  Kills              Int
+  Headshots          Int
+  Assists            Int
+  FlashAssists       Int
+  Damage             Int
+  UtilityDamage      Int
+  EnemiesFlashed     Int
+  EnemyBlindDuration Float
+  Died               Boolean
+  DiedAtSeconds      Float?
+  WasTeamKilled      Boolean
+  KilledTeammate     Boolean
+  DiedEarly          Boolean
+  OpeningKill        Boolean
+  OpeningDeath       Boolean
+  TradeKills         Int
+  TradedDeath        Boolean
+  Kast               Boolean
+  MultiKillCount     Int
+  ClutchVersus       Int
+  ClutchWon          Boolean
+  BombPlanted        Boolean
+  BombDefused        Boolean
+  WasAfk             Boolean
+  Rating             Float
+  EloDelta           Int
+  EloAfter           Int
+
+  @@index([SteamId, PlayedAtUtc])
+  @@index([SeasonId, SteamId])
+  @@map("PlayerRoundRecords")
+}
+
+// EF-managed: one row per played round. Referenced by PlayerRoundRecord.
+model RoundRecord {
+  Id                   BigInt   @id @default(autoincrement())
+  SeasonId             Int
+  Map                  String
+  PlayedAtUtc          DateTime @db.DateTime(6)
+  RoundTypeOrdinal     Int      @default(-1)
+  IsRanked             Boolean
+  TPlayerCount         Int
+  CtPlayerCount        Int
+  WinnerTeamNum        Int
+  BombSite             String?  @db.VarChar(8)
+  BombPlanted          Boolean
+  BombDefused          Boolean
+  BombExploded         Boolean
+  RoundDurationSeconds Float
+
+  @@map("RoundRecords")
+}
+
+model CrTeamStats {
+  Id            Int      @id @default(autoincrement())
+  SeasonId      Int
+  TeamKey       String
+  PlayerNames   String   @db.VarChar(256)
+  TeamSize      Int
+  Elo           Int
+  PeakElo       Int
+  MatchesPlayed Int
+  MatchesWon    Int
+  MatchesDrawn  Int
+  RoundsWon     Int
+  RoundsLost    Int
+  UpdatedAtUtc  DateTime @db.DateTime(6)
+
+  @@unique([SeasonId, TeamKey])
+  @@map("CrTeamStats")
+}
+
+// Website-owned: a player's saved inventory simulator loadouts (JSON blob),
+// keyed by SteamID64. Served to the CS2 inventory-simulator plugin.
+model WebInventory {
+  SteamId   BigInt   @id
+  Data      String   @db.LongText
+  UpdatedAt DateTime @updatedAt
+
+  @@map("WebInventories")
+}
+
+// Garden (W2): bans, display-name overrides, web profiles.
+model GardenBan {
+  SteamId      BigInt    @id
+  Name         String
+  Reason       String
+  BannedBy     BigInt
+  BannedAtUtc  DateTime
+  ExpiresAtUtc DateTime?
+
+  @@map("GardenBans")
+}
+
+model GardenNameOverride {
+  SteamId BigInt @id @db.UnsignedBigInt
+  Name    String
+
+  @@map("GardenNameOverrides")
+}
+
+model GardenWebProfile {
+  SteamId   BigInt   @id
+  AvatarUrl String?
+  Bio       String?
+  Country   String?
+  IsPro     Boolean  @default(false)
+  ProSlug   String?  @unique
+  PopConfig String?  @db.VarChar(512)
+  UpdatedAt DateTime @updatedAt
+
+  @@map("GardenWebProfiles")
+}
+
+// Garden-retakes merged plugin (Duels mode): one row per completed 1v1.
+model DuelRecord {
+  Id             BigInt   @id @default(autoincrement())
+  SeasonId       Int
+  Map            String
+  PlayedAtUtc    DateTime @db.DateTime(6)
+  ArenaName      String
+  WinnerSteamId  BigInt
+  WinnerName     String
+  LoserSteamId   BigInt
+  LoserName      String
+  IsChallenge    Boolean
+  ChallengeScore String
+
+  @@index([SeasonId])
+  @@map("DuelRecords")
+}
+
+// Garden-retakes merged plugin (R3): admin storage + audit log.
+model GardenAdmin {
+  SteamId    BigInt   @id @db.UnsignedBigInt
+  Name       String
+  Level      Int
+  AddedBy    BigInt   @db.UnsignedBigInt
+  AddedAtUtc DateTime @db.DateTime(6)
+
+  @@map("GardenAdmins")
+}
+
+model GardenAdminLogEntry {
+  Id            BigInt   @id @default(autoincrement())
+  AtUtc         DateTime @db.DateTime(6)
+  ActorSteamId  BigInt   @db.UnsignedBigInt
+  ActorName     String
+  Action        String
+  TargetSteamId BigInt   @db.UnsignedBigInt
+  TargetName    String
+  Detail        String   @db.VarChar(256)
+
+  @@map("GardenAdminLog")
+}
+
+model CrMatch {
+  Id           BigInt    @id @default(autoincrement())
+  SeasonId     Int
+  Map          String
+  StartedAtUtc DateTime  @db.DateTime(6)
+  EndedAtUtc   DateTime? @db.DateTime(6)
+  TeamAKey     String
+  TeamBKey     String
+  TeamAName    String    @db.VarChar(256)
+  TeamBName    String    @db.VarChar(256)
+  TeamSize     Int
+  ScoreA       Int
+  ScoreB       Int
+  Result       String
+  EloDeltaA    Int
+  EloDeltaB    Int
+
+  @@index([SeasonId])
+  @@map("CrMatches")
+}
+
+// Website-owned: a shareable snapshot of one loadout (self-contained: the
+// loadout structure + the items it references). Borrowed via a short lowercase
+// key on the website or in-game with /borrow <key>. Featured = curated presets.
+model SharedLoadout {
+  ShareKey     String   @id @db.VarChar(16)
+  OwnerSteamId BigInt   @db.UnsignedBigInt
+  OwnerName    String?
+  Name         String
+  Data         String   @db.LongText
+  Featured     Boolean  @default(false)
+  CreatedAt    DateTime @default(now()) @db.DateTime(6)
+
+  @@index([Featured])
+  @@map("SharedLoadouts")
+}
+
+model WebLiveMatch {
+  ServerId     Int      @id
+  Data         String   @db.LongText
+  UpdatedAtUtc DateTime @db.DateTime(6)
+
+  @@map("WebLiveMatches")
+}
+
+model GardenHeatmap {
+  Id              BigInt   @id @default(autoincrement())
+  VictimSteamId   BigInt
+  AttackerSteamId BigInt
+  MapName         String   @db.VarChar(128)
+  VictimX         Float    @db.Float
+  VictimY         Float    @db.Float
+  VictimZ         Float    @db.Float
+  AttackerX       Float    @db.Float
+  AttackerY       Float    @db.Float
+  AttackerZ       Float    @db.Float
+  Weapon          String   @db.VarChar(64)
+  IsHeadshot      Boolean
+  IsRanked        Boolean
+  Site            String?  @db.VarChar(16)
+  CreatedAtUtc    DateTime @db.DateTime(6)
+
+  @@index([MapName])
+  @@index([VictimSteamId])
+  @@index([AttackerSteamId])
+  @@map("GardenHeatmaps")
+}
+
+// ──────────────── Legacy / EF-internal tables (preserve, don't drop) ────────────────
+
+// EF Core migration history — must keep or EF can't track what it's applied.
+model EFMigrationsHistory {
+  MigrationId    String @id @db.VarChar(150)
+  ProductVersion String @db.VarChar(32)
+
+  @@map("__EFMigrationsHistory")
+}
+
+// Allocator plugin: weapon preferences per user (JSON blob in a text column).
+model UserSettings {
+  UserId            BigInt @id
+  WeaponPreferences String @db.Text
+
+  @@map("UserSettings")
+}
+// ---------------- Web Games / Social Features ----------------
+
+model WebFriendship {
+  Id           Int      @id @default(autoincrement())
+  RequesterId  BigInt   @db.UnsignedBigInt
+  AddresseeId  BigInt   @db.UnsignedBigInt
+  Status       String   @default("PENDING") // PENDING, ACCEPTED, BLOCKED
+  CreatedAtUtc DateTime @default(now()) @db.DateTime(6)
+
+  @@unique([RequesterId, AddresseeId])
+  @@index([AddresseeId])
+  @@map("WebFriendships")
+}
+
+model WebGameLobby {
+  Id           String   @id @default(uuid())
+  GameType     String
+  HostSteamId  BigInt   @db.UnsignedBigInt
+  Status       String   @default("WAITING") // WAITING, PLAYING, FINISHED
+  MaxPlayers   Int      @default(4)
+  CreatedAtUtc DateTime @default(now()) @db.DateTime(6)
+  
+  Players      WebLobbyPlayer[]
+
+  @@map("WebGameLobbies")
+}
+
+model WebLobbyPlayer {
+  Id           Int      @id @default(autoincrement())
+  LobbyId      String
+  SteamId      BigInt   @db.UnsignedBigInt
+  JoinedAtUtc  DateTime @default(now()) @db.DateTime(6)
+
+  Lobby        WebGameLobby @relation(fields: [LobbyId], references: [Id], onDelete: Cascade)
+
+  @@unique([LobbyId, SteamId])
+  @@map("WebLobbyPlayers")
+}
+
+model WebMessage {
+  Id               Int      @id @default(autoincrement())
+  SenderSteamId    BigInt   @db.UnsignedBigInt
+  RecipientSteamId BigInt?  @db.UnsignedBigInt // null if lobby message
+  LobbyId          String?  // null if direct message
+  Content          String   @db.Text
+  CreatedAtUtc     DateTime @default(now()) @db.DateTime(6)
+
+  @@index([RecipientSteamId])
+  @@index([LobbyId])
+  @@map("WebMessages")
+}
+
+model WebNotification {
+  Id           Int      @id @default(autoincrement())
+  SteamId      BigInt   @db.UnsignedBigInt
+  Type         String   // FRIEND_REQUEST, GAME_INVITE, SYSTEM
+  Content      String   @db.VarChar(256)
+  IsRead       Boolean  @default(false)
+  ActionUrl    String?  @db.VarChar(256)
+  CreatedAtUtc DateTime @default(now()) @db.DateTime(6)
+
+  @@index([SteamId])
+  @@map("WebNotifications")
+}
+model NemesisRecord {
+  KillerSteamId BigInt @db.UnsignedBigInt
+  VictimSteamId BigInt @db.UnsignedBigInt
+  Kills         Int
+
+  @@id([KillerSteamId, VictimSteamId])
+  @@map("NemesisRecords")
+}
+
+// ---------------- Garden PKMN ----------------
+
+model PkmnTrainer {
+  SteamId       BigInt    @id
+  Money         Int       @default(0)
+  CurrentMap    String    @default("pallet_town")
+  PosX          Int       @default(400)
+  PosY          Int       @default(300)
+  Facing        String    @default("down")
+  Inventory     String    @db.LongText // JSON
+  Badges        String    @db.LongText // JSON
+
+  Party         PkmnMon[] @relation("TrainerParty")
+  Boxes         PkmnBox[]
+  ApiTokens     PkmnApiToken[]
+
+  @@map("PkmnTrainers")
+}
+
+// Standalone game client (Unity) auth: one row per linked device/session, so
+// a trainer can list ("signed in on N devices") and individually revoke
+// access. The raw bearer token is never stored — only its SHA-256 hash.
+model PkmnApiToken {
+  Id            String    @id @default(cuid())
+  SteamId       BigInt
+  TokenHash     String    @unique
+  DeviceName    String?
+  CreatedAtUtc  DateTime  @default(now())
+  LastUsedAtUtc DateTime  @default(now())
+  ExpiresAtUtc  DateTime
+  RevokedAtUtc  DateTime?
+
+  Trainer       PkmnTrainer @relation(fields: [SteamId], references: [SteamId], onDelete: Cascade)
+
+  @@index([SteamId])
+  @@map("PkmnApiTokens")
+}
+
+// Device-authorization pairing (RFC 8628-style, same shape Steam/consoles
+// use): the game client requests a short human code, the player confirms
+// it's them at pkmn.retakes.fr/link (already Steam-logged-in on the site),
+// and the client polls until the code carries an issued bearer token.
+model PkmnLinkCode {
+  Code          String    @id
+  PollToken     String    @unique
+  DeviceName    String?
+  SteamId       BigInt?
+  CreatedAtUtc  DateTime  @default(now())
+  ExpiresAtUtc  DateTime
+  ConsumedAtUtc DateTime?
+
+  @@map("PkmnLinkCodes")
+}
+
+model PkmnMon {
+  Id            String    @id @default(cuid())
+  OwnerId       BigInt    
+  Species       String
+  Nickname      String?
+  Level         Int
+  Exp           Int
+  Hp            Int
+  Status        String?
+  
+  Ability       String
+  Nature        String
+  
+  Moves         String    @db.LongText // JSON
+  Ivs           String    @db.LongText // JSON
+  Evs           String    @db.LongText // JSON
+  
+  Trainer       PkmnTrainer @relation("TrainerParty", fields: [OwnerId], references: [SteamId], onDelete: Cascade)
+  Box           PkmnBox?    @relation(fields: [BoxId], references: [Id], onDelete: SetNull)
+  BoxId         String?
+
+  @@map("PkmnMons")
+}
+
+model PkmnBox {
+  Id            String    @id @default(cuid())
+  OwnerId       BigInt    
+  Name          String    @default("Box 1")
+  
+  Pokemon       PkmnMon[]
+  Trainer       PkmnTrainer @relation(fields: [OwnerId], references: [SteamId], onDelete: Cascade)
+
+  @@map("PkmnBoxes")
+}

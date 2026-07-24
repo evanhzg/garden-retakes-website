@@ -1,0 +1,8 @@
+is_global = true
+build_property.RootNamespace = PkmnClient
+build_property.ProjectDir = C:\Users\evan\Documents\CS2 Mod Dev\Garden-website\PkmnClient\
+build_property.EnableComHosting = 
+build_property.EnableGeneratedComInterfaceComImportInterop = 
+build_property.CsWinRTUseWindowsUIXamlProjections = false
+build_property.EffectiveAnalysisLevelStyle = 
+build_property.EnableCodeStyleSeverity = 

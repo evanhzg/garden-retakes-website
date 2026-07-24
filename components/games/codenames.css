@@ -1,0 +1,244 @@
+/* ---------- Codenames ---------- */
+.codenames-container {
+  position: fixed;
+  inset: 0;
+  padding-top: 60px;
+  display: flex;
+  flex-direction: column;
+  background: var(--bg);
+  overflow: hidden;
+}
+
+.cn-lobby-entry {
+  flex: 1;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.cn-game-layout {
+  flex: 1;
+  display: grid;
+  grid-template-columns: 200px 1fr 200px;
+  grid-template-rows: auto 1fr auto;
+  gap: 16px;
+  padding: 16px 24px;
+  overflow: hidden;
+}
+
+/* Teams panel */
+.cn-team-panel {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  padding: 16px;
+  border-radius: 12px;
+  background: var(--panel);
+  border: 1px solid var(--border);
+  grid-row: 1 / -1;
+}
+
+.cn-team-panel.red { border-left: 3px solid #ef4444; }
+.cn-team-panel.blue { border-left: 3px solid #3b82f6; }
+
+.cn-team-title {
+  font-size: 0.75rem;
+  font-weight: 800;
+  text-transform: uppercase;
+  letter-spacing: 1px;
+  margin-bottom: 8px;
+}
+
+.cn-team-title.red { color: #ef4444; }
+.cn-team-title.blue { color: #3b82f6; }
+
+.cn-team-player {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 6px 10px;
+  border-radius: 8px;
+  background: var(--bg-soft);
+  font-size: 0.8rem;
+  color: var(--text);
+}
+
+.cn-team-player .role-badge {
+  font-size: 0.65rem;
+  padding: 2px 6px;
+  border-radius: 4px;
+  font-weight: 700;
+  text-transform: uppercase;
+}
+
+.cn-team-player .role-badge.spymaster {
+  background: rgba(168, 85, 247, 0.2);
+  color: var(--accent);
+}
+
+.cn-remaining {
+  font-size: 2rem;
+  font-weight: 900;
+  text-align: center;
+  margin-top: auto;
+  padding: 12px;
+}
+
+.cn-remaining.red { color: #ef4444; }
+.cn-remaining.blue { color: #3b82f6; }
+
+/* Board */
+.cn-board-area {
+  grid-column: 2;
+  grid-row: 1 / -1;
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.cn-status-bar {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 16px;
+  padding: 12px;
+  background: var(--panel);
+  border: 1px solid var(--border);
+  border-radius: 10px;
+}
+
+.cn-turn-indicator {
+  font-weight: 700;
+  font-size: 0.95rem;
+}
+
+.cn-turn-indicator.red { color: #ef4444; }
+.cn-turn-indicator.blue { color: #3b82f6; }
+
+.cn-clue-display {
+  font-size: 1.1rem;
+  font-weight: 600;
+  color: var(--text);
+}
+
+.cn-grid {
+  display: grid;
+  grid-template-columns: repeat(5, 1fr);
+  gap: 8px;
+  flex: 1;
+}
+
+.cn-card {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 16px 8px;
+  border-radius: 10px;
+  font-weight: 700;
+  font-size: 0.85rem;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  text-align: center;
+  word-break: break-word;
+  background: var(--panel);
+  border: 1px solid var(--border);
+  color: var(--text);
+  min-height: 70px;
+}
+
+.cn-card:hover:not(.revealed) {
+  transform: translateY(-2px);
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.2);
+  border-color: var(--accent);
+}
+
+.cn-card.revealed {
+  cursor: default;
+  opacity: 0.85;
+  color: #fff;
+}
+
+.cn-card.revealed.type-red { background: #ef4444; border-color: #ef4444; }
+.cn-card.revealed.type-blue { background: #3b82f6; border-color: #3b82f6; }
+.cn-card.revealed.type-neutral { background: #78716c; border-color: #78716c; }
+.cn-card.revealed.type-assassin { background: #111; border-color: #333; color: #ef4444; }
+
+/* Spymaster view - unrevealed cards get a colored border hint */
+.cn-card.spy-hint-red { border-color: rgba(239, 68, 68, 0.5); background: rgba(239, 68, 68, 0.08); }
+.cn-card.spy-hint-blue { border-color: rgba(59, 130, 246, 0.5); background: rgba(59, 130, 246, 0.08); }
+.cn-card.spy-hint-neutral { border-color: rgba(120, 113, 108, 0.5); }
+.cn-card.spy-hint-assassin { border-color: rgba(239, 68, 68, 0.8); background: rgba(0, 0, 0, 0.3); }
+
+/* Clue input */
+.cn-clue-input {
+  display: flex;
+  gap: 8px;
+  align-items: center;
+  justify-content: center;
+  padding: 12px;
+  background: var(--panel);
+  border: 1px solid var(--border);
+  border-radius: 10px;
+}
+
+.cn-clue-input input {
+  padding: 8px 14px;
+  background: var(--bg-soft);
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  color: var(--text);
+  font-size: 0.9rem;
+  outline: none;
+  width: 200px;
+}
+
+.cn-clue-input input:focus { border-color: var(--accent); }
+
+.cn-clue-input input[type="number"] {
+  width: 60px;
+  text-align: center;
+}
+
+/* Logs */
+.cn-logs {
+  max-height: 120px;
+  overflow-y: auto;
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  padding: 8px 12px;
+  background: var(--panel);
+  border: 1px solid var(--border);
+  border-radius: 10px;
+  font-size: 0.8rem;
+  color: var(--muted);
+}
+
+.cn-log-entry {
+  padding: 4px 0;
+  border-bottom: 1px solid rgba(255,255,255,0.03);
+}
+
+/* Winner overlay */
+.cn-winner-overlay {
+  position: absolute;
+  inset: 0;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  background: rgba(0, 0, 0, 0.8);
+  backdrop-filter: blur(8px);
+  z-index: 10;
+  gap: 16px;
+}
+
+.cn-winner-text {
+  font-size: 3rem;
+  font-weight: 900;
+}
+
+.cn-winner-text.red { color: #ef4444; }
+.cn-winner-text.blue { color: #3b82f6; }

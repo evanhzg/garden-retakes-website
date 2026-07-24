@@ -1,0 +1,48 @@
+/* ============================================================
+   SANDBOX — try houses / owners / views without a full game
+   ============================================================ */
+.sbx-tools {
+  flex: 0 0 auto;
+  display: flex; align-items: center; gap: 14px; flex-wrap: wrap;
+  padding: 10px 16px;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.08);
+  background: rgba(0, 0, 0, 0.25);
+}
+.sbx-group { display: inline-flex; border-radius: 10px; overflow: hidden; border: 1px solid rgba(255,255,255,0.14); }
+.sbx-group button {
+  padding: 8px 14px; font-size: 0.82rem; font-weight: 700;
+  border: none; background: rgba(255,255,255,0.06); color: #cbd5e1; cursor: pointer;
+  transition: background 0.15s, color 0.15s;
+}
+.sbx-group button + button { border-left: 1px solid rgba(255,255,255,0.12); }
+.sbx-group button:hover { color: #fff; }
+.sbx-group button.on { background: linear-gradient(135deg, #22c55e, #15803d); color: #fff; }
+
+.sbx-owners { display: inline-flex; gap: 6px; }
+.sbx-swatch {
+  width: 26px; height: 26px; border-radius: 8px; cursor: pointer;
+  border: 2px solid rgba(255,255,255,0.2);
+}
+.sbx-swatch.on { border-color: #fff; box-shadow: 0 0 0 2px rgba(255,255,255,0.35); }
+
+.sbx-btn {
+  padding: 8px 14px; font-size: 0.82rem; font-weight: 700; cursor: pointer;
+  border-radius: 10px; border: 1px solid rgba(255,255,255,0.14);
+  background: rgba(255,255,255,0.06); color: #e2e8f0;
+  transition: background 0.15s;
+}
+.sbx-btn:hover { background: rgba(255,255,255,0.14); }
+.sbx-hint { font-size: 0.8rem; color: #94a3b8; margin-left: auto; }
+
+.sbx-board {
+  position: relative; flex: 1 1 auto; min-height: 0;
+  margin: 12px; border-radius: 16px; overflow: hidden;
+  background:
+    radial-gradient(80% 60% at 50% 0%, rgba(255,255,255,0.05), transparent 70%),
+    linear-gradient(160deg, rgba(6,18,12,0.5), rgba(3,8,6,0.7));
+  border: 1px solid rgba(255,255,255,0.06);
+  box-shadow: inset 0 0 80px rgba(0,0,0,0.5);
+  cursor: grab;
+}
+.sbx-board:active { cursor: grabbing; }
+.sbx-board canvas { display: block; touch-action: none; }

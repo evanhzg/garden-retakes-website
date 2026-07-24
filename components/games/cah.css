@@ -1,0 +1,180 @@
+/* ---------- Cards Against Humanity ---------- */
+.cah-container {
+  position: fixed;
+  inset: 0;
+  padding-top: 60px;
+  display: flex;
+  flex-direction: column;
+  background: #0a0a0a;
+  color: #fff;
+  overflow: hidden;
+}
+
+.cah-lobby-entry {
+  flex: 1;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.cah-game-layout {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  padding: 16px 32px;
+  gap: 16px;
+  overflow: hidden;
+}
+
+/* Top bar: scores */
+.cah-scores-bar {
+  display: flex;
+  gap: 12px;
+  justify-content: center;
+  flex-wrap: wrap;
+}
+
+.cah-score-chip {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 8px 16px;
+  background: #1a1a1a;
+  border: 1px solid #333;
+  border-radius: 8px;
+  font-size: 0.85rem;
+}
+
+.cah-score-chip.czar {
+  border-color: #f59e0b;
+  background: rgba(245, 158, 11, 0.1);
+}
+
+.cah-score-chip .score-num {
+  font-weight: 800;
+  color: #f59e0b;
+}
+
+/* Black card center */
+.cah-center {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 24px;
+}
+
+.cah-black-card {
+  width: 360px;
+  min-height: 200px;
+  background: #111;
+  border: 2px solid #333;
+  border-radius: 16px;
+  padding: 32px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  text-align: center;
+  font-size: 1.3rem;
+  font-weight: 700;
+  line-height: 1.5;
+  box-shadow: 0 8px 32px rgba(0, 0, 0, 0.5);
+}
+
+.cah-phase-label {
+  font-size: 0.85rem;
+  color: #888;
+  text-transform: uppercase;
+  letter-spacing: 1px;
+}
+
+/* Submissions grid (for judging) */
+.cah-submissions {
+  display: flex;
+  gap: 16px;
+  flex-wrap: wrap;
+  justify-content: center;
+  max-width: 900px;
+}
+
+.cah-submission-card {
+  width: 180px;
+  min-height: 140px;
+  background: #fff;
+  color: #111;
+  border-radius: 12px;
+  padding: 20px;
+  font-size: 0.9rem;
+  font-weight: 600;
+  line-height: 1.4;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  border: 2px solid transparent;
+  display: flex;
+  align-items: center;
+  text-align: center;
+  justify-content: center;
+}
+
+.cah-submission-card:hover {
+  transform: translateY(-4px);
+  box-shadow: 0 8px 24px rgba(255, 255, 255, 0.15);
+  border-color: #f59e0b;
+}
+
+.cah-submission-card.winner {
+  border-color: #f59e0b;
+  box-shadow: 0 0 24px rgba(245, 158, 11, 0.4);
+}
+
+/* Hand */
+.cah-hand {
+  display: flex;
+  gap: 10px;
+  overflow-x: auto;
+  padding: 16px 0;
+  justify-content: center;
+  flex-wrap: wrap;
+}
+
+.cah-white-card {
+  width: 140px;
+  min-height: 120px;
+  background: #fff;
+  color: #111;
+  border-radius: 10px;
+  padding: 16px;
+  font-size: 0.8rem;
+  font-weight: 600;
+  line-height: 1.3;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  border: 2px solid transparent;
+  display: flex;
+  align-items: center;
+  text-align: center;
+  justify-content: center;
+  flex-shrink: 0;
+}
+
+.cah-white-card:hover {
+  transform: translateY(-6px);
+  border-color: #f59e0b;
+}
+
+.cah-white-card.selected {
+  border-color: #f59e0b;
+  box-shadow: 0 0 16px rgba(245, 158, 11, 0.3);
+  transform: translateY(-8px);
+}
+
+/* Logs */
+.cah-logs {
+  display: flex;
+  gap: 8px;
+  justify-content: center;
+  flex-wrap: wrap;
+  font-size: 0.8rem;
+  color: #666;
+}

@@ -1,0 +1,26 @@
+{
+  "permissions": {
+    "allow": [
+      "WebFetch(domain:github.com)",
+      "WebSearch",
+      "WebFetch(domain:raw.githubusercontent.com)",
+      "Bash(npm view *)",
+      "Bash(npm install *)",
+      "Bash(node -e \"let d='';process.stdin.on\\('data',c=>d+=c\\).on\\('end',\\(\\)=>{const p=JSON.parse\\(d\\);console.log\\('main:',p.main\\);console.log\\('module:',p.module\\);console.log\\('types:',p.types\\);console.log\\('exports:',JSON.stringify\\(p.exports,null,1\\)\\)}\\)\")",
+      "Bash(node \"C:/Users/evan/AppData/Local/Temp/claude/C--Users-evan-Documents-CS2-Mod-Dev-Garden-website/d48ed7e4-a933-49c0-afa6-5f2764352ca3/scratchpad/probe.mjs\")",
+      "Bash(cp \"C:/Users/evan/AppData/Local/Temp/claude/C--Users-evan-Documents-CS2-Mod-Dev-Garden-website/d48ed7e4-a933-49c0-afa6-5f2764352ca3/scratchpad/probe.mjs\" ./__probe.mjs)",
+      "Bash(node ./__probe.mjs)",
+      "Bash(git config *)",
+      "Bash(node -c scripts/monopolyLogic.js)",
+      "Bash(node -c server.js)",
+      "Bash(npx tsc *)",
+      "Bash(node \"C:/Users/evan/AppData/Local/Temp/claude/C--Users-evan-Documents-CS2-Mod-Dev-Garden-website/f12fdfdc-f6ae-40cc-9762-b3f22ec4cfbf/scratchpad/mono_test.js\")",
+      "Bash(node \"C:/Users/evan/AppData/Local/Temp/claude/C--Users-evan-Documents-CS2-Mod-Dev-Garden-website/f12fdfdc-f6ae-40cc-9762-b3f22ec4cfbf/scratchpad/mono_bankrupt.js\")",
+      "Bash(node \"C:/Users/evan/AppData/Local/Temp/claude/C--Users-evan-Documents-CS2-Mod-Dev-Garden-website/f12fdfdc-f6ae-40cc-9762-b3f22ec4cfbf/scratchpad/mono_serverbot.js\")",
+      "Bash(python3 *)",
+      "Bash(node --check server.js)",
+      "Bash(timeout 8 bash -c 'curl -sI https://nodejs.org 2>&1 | head -2')",
+      "Bash(echo \"exit=$?\")"
+    ]
+  }
+}
