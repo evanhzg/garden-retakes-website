@@ -151,9 +151,12 @@ function runSteamcmd(job, workshopId, { steamcmd, login, timeoutMs = 900000 }) {
       const failure = /ERROR! Download item .*? failed \((.+?)\)/i.exec(output);
       if (failure) {
         const reason = failure[1];
+        // Name the binary we actually resolved: the path differs per host
+        // (~/steamcmd/steamcmd.sh locally, /usr/games/steamcmd on the server),
+        // and telling someone to run a path that doesn't exist wastes their time.
         const friendly = /access denied/i.test(reason)
           ? "Steam denied the download. The cached session is missing or expired — "
-            + "run `~/steamcmd/steamcmd.sh +login " + login + "` once in a terminal and approve it on your phone."
+            + `run \`${bin} +login ${login}\` once on this machine and approve it on your phone.`
           : `steamcmd could not download the item: ${reason}`;
         return finish({ ok: false, error: friendly, output });
       }
