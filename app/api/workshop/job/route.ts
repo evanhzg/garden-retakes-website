@@ -6,7 +6,8 @@ export const runtime = "nodejs";
 
 let jobs: any = null;
 try {
-  jobs = require(path.join(process.cwd(), "scripts/ws-ingest/jobs.js"));
+  const req = eval("require");
+  jobs = req(path.join(process.cwd(), "scripts/ws-ingest/jobs.js"));
 } catch (e) {
   console.error("Could not load jobs.js", e);
 }
