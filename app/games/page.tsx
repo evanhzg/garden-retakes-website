@@ -47,9 +47,9 @@ const CATEGORIES: HubCategory[] = [
     blurb: "A new puzzle every day, the same one for everyone — solo or as a race",
     games: [
       { id: "headshot", name: "HEADSHOT", franchise: "CS2", description: "Guess the Counter-Strike pro from nationality, team, role, age and Majors. One a day for everyone — or race your friends to five.", players: "1–8", ready: true, solo: "/games/headshot", daily: true },
-      { id: "buymenu", name: "BUY MENU", franchise: "CS2", description: "Weapons, utility, economy and map knowledge — pick the right buy for the round. Four difficulty tiers from Silver to Global.", players: "1–8", ready: false, solo: "/games/buymenu", quiz: true },
-      { id: "pentakill", name: "PENTAKILL", franchise: "LoL", description: "Guess the champion from role, region, resource, range, release year and more. Fresh champion every day.", players: "1–8", ready: false, solo: "/games/pentakill", daily: true },
-      { id: "buildpath", name: "BUILD PATH", franchise: "LoL", description: "Items, runes and matchups — pick the best build for the champion and the situation. Four difficulty tiers from Iron to Challenger.", players: "1–8", ready: false, solo: "/games/buildpath", quiz: true },
+      { id: "buymenu", name: "BUY MENU", franchise: "CS2", description: "Weapons, utility, economy and map callouts — how well do you actually know the buy menu? Four tiers from Silver to Global.", players: "1–8", ready: true, solo: "/games/buymenu", quiz: true },
+      { id: "pentakill", name: "PENTAKILL", franchise: "LoL", description: "Guess the champion from class, position, region, resource, range, damage type and release year. Fresh champion every day — or race your friends.", players: "1–8", ready: true, solo: "/games/pentakill", daily: true },
+      { id: "buildpath", name: "BUILD PATH", franchise: "LoL", description: "Build paths, combine costs, stats and which item scales which champion. Four tiers from Iron to Challenger.", players: "1–8", ready: true, solo: "/games/buildpath", quiz: true },
       { id: "dropship", name: "DROPSHIP", franchise: "Apex", description: "Guess the Legend from class, homeworld, passive and release season.", players: "1–8", ready: false, daily: true },
       { id: "loadout", name: "LOADOUT", franchise: "Apex", description: "Guns, attachments and rotations — build the right loadout for the ring.", players: "1–8", ready: false, quiz: true },
     ],

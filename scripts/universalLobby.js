@@ -3,6 +3,8 @@ const MemeGame = require('./memeLogic');
 const CahGame = require('./cahLogic');
 const CodenamesGame = require('./codenamesLogic');
 const HeadshotGame = require('./headshotLogic');
+const PentakillGame = require('./pentakillLogic');
+const QuizRace = require('./quizRace');
 
 const BOT_NAMES = [
   "Sprout", "Fern", "Clover", "Thorn", "Moss", "Petal", "Bramble", "Willow",
@@ -36,6 +38,10 @@ class UniversalLobby {
     };
     // HEADSHOT race setup (score to reach, per-pro clock)
     this.headshotOptions = { ...HeadshotGame.DEFAULT_OPTIONS };
+    // PENTAKILL race setup, same shape
+    this.pentakillOptions = { ...PentakillGame.DEFAULT_OPTIONS };
+    // BUILD PATH / BUY MENU share one race setup (difficulty, target, clock)
+    this.quizOptions = { ...QuizRace.DEFAULT_OPTIONS };
     this.maxPlayers = 8;
     this.teamMode = 'ffa';   // 'ffa' | '2v2' (Monopoly allies mode)
     this.players = []; // Array of { steamId, ready, isBot, connected, team, botName? }
@@ -198,6 +204,8 @@ class UniversalLobby {
       cahOptions: this.cahOptions,
       codenamesOptions: this.codenamesOptions,
       headshotOptions: this.headshotOptions,
+      pentakillOptions: this.pentakillOptions,
+      quizOptions: this.quizOptions,
       players: this.players,
       playerCount: this.players.length,
       createdAt: this.createdAt

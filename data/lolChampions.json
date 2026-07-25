@@ -1,5 +1,5 @@
 {
- "generatedAt": "2026-07-25T12:26:14.787Z",
+ "generatedAt": "2026-07-25T16:41:58.725Z",
  "patch": "16.14.1",
  "sources": [
   "https://developer.riotgames.com/docs/lol#data-dragon (Riot Data Dragon)",
@@ -2954,7 +2954,7 @@
     "Top"
    ],
    "regions": [
-    "Runeterra"
+    "Noxus"
    ],
    "resource": "Courage",
    "rangeType": "Melee",
@@ -4162,7 +4162,7 @@
     "Jungle"
    ],
    "regions": [
-    "Runeterra"
+    "Freljord"
    ],
    "resource": "Mana",
    "rangeType": "Melee",

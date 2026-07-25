@@ -11,6 +11,9 @@ const pkmnBattleManager = require("./scripts/pkmnBattleManager");
 const { ITEMS, maxHpForMon, parseInv, buildBagList } = require("./scripts/pkmnItems");
 const SkribblGame = require("./scripts/skribblLogic");
 const HeadshotGame = require("./scripts/headshotLogic");
+const PentakillGame = require("./scripts/pentakillLogic");
+const BuildPathGame = require("./scripts/buildpathLogic");
+const BuyMenuGame = require("./scripts/buymenuLogic");
 const { PrismaClient } = require("@prisma/client");
 
 const prisma = new PrismaClient();
@@ -132,6 +135,22 @@ const clearHeadshotTimer = (lobbyId) => {
   const t = headshotTimers.get(lobbyId);
   if (t) clearInterval(t);
   headshotTimers.delete(lobbyId);
+};
+const pentakillGames = new Map();
+// lobbyId -> the same ticker for PENTAKILL's race
+const pentakillTimers = new Map();
+const clearPentakillTimer = (lobbyId) => {
+  const t = pentakillTimers.get(lobbyId);
+  if (t) clearInterval(t);
+  pentakillTimers.delete(lobbyId);
+};
+// The two quizzes share one shape, so one map + one ticker helper covers both.
+const quizGames = new Map();       // lobbyId -> QuizRace
+const quizTimers = new Map();
+const clearQuizTimer = (lobbyId) => {
+  const t = quizTimers.get(lobbyId);
+  if (t) clearInterval(t);
+  quizTimers.delete(lobbyId);
 };
 // lobbyId -> the 1s ticker driving Skribbl's round + between-turn countdowns
 const skribblTimers = new Map();
@@ -325,6 +344,10 @@ io.on("connection", (socket) => {
         skribblGames.delete(lobbyId);
         clearHeadshotTimer(lobbyId);
         headshotGames.delete(lobbyId);
+        clearPentakillTimer(lobbyId);
+        pentakillGames.delete(lobbyId);
+        clearQuizTimer(lobbyId);
+        quizGames.delete(lobbyId);
         broadcastPublicLobbies();
       }
     }, 10000);
@@ -493,6 +516,8 @@ io.on("connection", (socket) => {
       if (baseGame === 'meme') broadcastMemeState(lobbyId);
       if (baseGame === 'skribbl') broadcastSkribblState(lobbyId);
       if (baseGame === 'headshot') broadcastHeadshotState(lobbyId);
+      if (baseGame === 'pentakill') broadcastPentakillState(lobbyId);
+      if (baseGame === 'buildpath' || baseGame === 'buymenu') broadcastQuizState(lobbyId);
     }
   });
 
@@ -662,6 +687,24 @@ io.on("connection", (socket) => {
     broadcastLobbyState(lobby.id);
   });
 
+  // Host configures PENTAKILL's race (score to reach, per-champion clock).
+  socket.on("lobby_set_pentakill_options", (data) => {
+    if (!socket.lobbyId || !socket.steamId) return;
+    const lobby = universalLobbies.get(socket.lobbyId);
+    if (!lobby || lobby.host !== socket.steamId || lobby.status === 'PLAYING') return;
+    lobby.pentakillOptions = PentakillGame.sanitizeOptions({ ...lobby.pentakillOptions, ...(data && data.options) });
+    broadcastLobbyState(lobby.id);
+  });
+
+  // Host configures a quiz race (difficulty, score to reach, per-question clock).
+  socket.on("lobby_set_quiz_options", (data) => {
+    if (!socket.lobbyId || !socket.steamId) return;
+    const lobby = universalLobbies.get(socket.lobbyId);
+    if (!lobby || lobby.host !== socket.steamId || lobby.status === 'PLAYING') return;
+    lobby.quizOptions = BuildPathGame.sanitizeOptions({ ...lobby.quizOptions, ...(data && data.options) });
+    broadcastLobbyState(lobby.id);
+  });
+
   // Host picks how many times each player draws in Skribbl.
   socket.on("lobby_set_skribbl_rounds", (data) => {
     if (!socket.lobbyId || !socket.steamId) return;
@@ -775,6 +818,25 @@ io.on("connection", (socket) => {
           clearHeadshotTimer(lobbyId);
           headshotGames.set(lobbyId, gameInstance);
           break;
+        case 'pentakill':
+          gameInstance = new PentakillGame(lobbyId, {
+            lang,
+            options: { ...(lobby.pentakillOptions || {}), ...(data?.options || {}) },
+          });
+          clearPentakillTimer(lobbyId);
+          pentakillGames.set(lobbyId, gameInstance);
+          break;
+        case 'buildpath':
+        case 'buymenu': {
+          const Quiz = baseGame === 'buildpath' ? BuildPathGame : BuyMenuGame;
+          gameInstance = new Quiz(lobbyId, {
+            lang,
+            options: { ...(lobby.quizOptions || {}), ...(data?.options || {}) },
+          });
+          clearQuizTimer(lobbyId);
+          quizGames.set(lobbyId, gameInstance);
+          break;
+        }
         case 'skribbl':
           gameInstance = new SkribblGame(lobbyId, lang);
           gameInstance.setRounds(lobby.skribblRounds ?? 3);
@@ -811,6 +873,8 @@ io.on("connection", (socket) => {
           if (baseGame === 'meme') broadcastMemeState(lobbyId);
           if (baseGame === 'skribbl') broadcastSkribblState(lobbyId);
           if (baseGame === 'headshot') broadcastHeadshotState(lobbyId);
+          if (baseGame === 'pentakill') broadcastPentakillState(lobbyId);
+          if (baseGame === 'buildpath' || baseGame === 'buymenu') broadcastQuizState(lobbyId);
         }
       }
     }
@@ -838,6 +902,10 @@ io.on("connection", (socket) => {
         skribblGames.delete(lobbyId);
         clearHeadshotTimer(lobbyId);
         headshotGames.delete(lobbyId);
+        clearPentakillTimer(lobbyId);
+        pentakillGames.delete(lobbyId);
+        clearQuizTimer(lobbyId);
+        quizGames.delete(lobbyId);
         lobby.gameInstance = null;
 
         broadcastLobbyState(lobbyId);
@@ -1714,6 +1782,75 @@ io.on("connection", (socket) => {
   });
 
   // ==========================================
+  // PENTAKILL (race mode)
+  // ==========================================
+  const broadcastPentakillState = (lobbyId) => {
+    const game = pentakillGames.get(lobbyId);
+    if (!game) return;
+
+    for (const p of game.players) {
+      if (p.startsWith('BOT_')) continue;
+      const sid = connectedUsers.get(p);
+      if (sid) io.to(sid).emit("pentakill_state", game.getStateForPlayer(p));
+    }
+
+    if (game.status !== 'PLAYING') { clearPentakillTimer(lobbyId); return; }
+    if (!pentakillTimers.has(lobbyId)) startPentakillTimer(lobbyId);
+  };
+
+  const startPentakillTimer = (lobbyId) => {
+    clearPentakillTimer(lobbyId);
+    const tid = setInterval(() => {
+      const g = pentakillGames.get(lobbyId);
+      if (!g || g.status !== 'PLAYING') { clearPentakillTimer(lobbyId); return; }
+      if (g.tick()) broadcastPentakillState(lobbyId);
+    }, 1000);
+    pentakillTimers.set(lobbyId, tid);
+  };
+
+  // ==========================================
+  // QUIZ RACE (BUILD PATH / BUY MENU)
+  // ==========================================
+  const broadcastQuizState = (lobbyId) => {
+    const game = quizGames.get(lobbyId);
+    if (!game) return;
+
+    for (const p of game.players) {
+      if (p.startsWith('BOT_')) continue;
+      const sid = connectedUsers.get(p);
+      if (sid) io.to(sid).emit("quiz_state", game.getStateForPlayer(p));
+    }
+
+    if (game.status !== 'PLAYING') { clearQuizTimer(lobbyId); return; }
+    if (!quizTimers.has(lobbyId)) startQuizTimer(lobbyId);
+  };
+
+  const startQuizTimer = (lobbyId) => {
+    clearQuizTimer(lobbyId);
+    const tid = setInterval(() => {
+      const g = quizGames.get(lobbyId);
+      if (!g || g.status !== 'PLAYING') { clearQuizTimer(lobbyId); return; }
+      if (g.tick()) broadcastQuizState(lobbyId);
+    }, 1000);
+    quizTimers.set(lobbyId, tid);
+  };
+
+  socket.on("quiz_answer", (d) => {
+    if (!socket.lobbyId || !socket.steamId) return;
+    const g = quizGames.get(socket.lobbyId);
+    if (!g) return;
+    if (g.answer(socket.steamId, d && d.questionId, d && d.choice)) broadcastQuizState(socket.lobbyId);
+  });
+
+  socket.on("pentakill_guess", (d) => {
+    if (!socket.lobbyId || !socket.steamId) return;
+    const g = pentakillGames.get(socket.lobbyId);
+    if (!g) return;
+    if (g.guess(socket.steamId, d && d.player)) broadcastPentakillState(socket.lobbyId);
+    else socket.emit("pentakill_reject", { player: d && d.player });
+  });
+
+  // ==========================================
   // GARDEN PKMN SOCKET EVENTS
   // ==========================================
   
@@ -1915,7 +2052,7 @@ io.on("connection", (socket) => {
 // ---------------------------------------------------------------------------
 const DISCORD_BOT_SECRET = process.env.DISCORD_BOT_SECRET || "";
 const GAMES_PUBLIC_URL = (process.env.GAMES_PUBLIC_URL || "https://games.retakes.fr").replace(/\/$/, "");
-const BASE_GAMES = ["monopoly", "uno", "skribbl", "meme", "codenames", "cah", "headshot"];
+const BASE_GAMES = ["monopoly", "uno", "skribbl", "meme", "codenames", "cah", "headshot", "pentakill", "buildpath", "buymenu"];
 
 const syncPublicLobbies = () => {
   io.emit("public_lobbies_sync", Array.from(universalLobbies.values())

@@ -1,27 +1,31 @@
 "use client";
 
-// HEADSHOT — the solo half: today's pro (shared by everyone) plus an endless
-// practice mode. No socket, no account: progress lives in localStorage and the
-// answer is a pure function of the UTC date, so two people opening the page in
-// different countries are chasing the same player.
+// PENTAKILL — the solo half: today's champion (shared by everyone) plus an
+// endless practice mode. No socket, no account: progress lives in localStorage
+// and the answer is a pure function of the UTC date, so two people opening the
+// page in different countries are chasing the same champion.
 
 import React, { useCallback, useEffect, useMemo, useState } from "react";
 import Link from "next/link";
 import { motion, AnimatePresence } from "framer-motion";
-import { compare, pickDaily, todayKey, msUntilNextDay, seededShuffle, searchPlayers, type HeadshotPlayer } from "@/scripts/headshotRules";
-import { useHeadshotPool } from "@/components/games/headshot/useHeadshotPool";
-import { HEADSHOT_COLUMNS, playerHead, playerOption, flagOf, countryName, rolesLabel } from "@/components/games/headshot/columns";
+import {
+  compare, pickDaily, todayKey, msUntilNextDay, seededShuffle, searchChampions,
+  type LolChampion,
+} from "@/scripts/pentakillRules";
+import { usePentakillPool } from "@/components/games/pentakill/usePentakillPool";
+import { PENTAKILL_COLUMNS, championHead, championOption } from "@/components/games/pentakill/columns";
 import { SearchBox, GuessGrid, Legend, shareSquares, type GuessRow } from "@/components/games/guess/GuessBoard";
-import { useGameLang, translator, LangToggle, HEADSHOT } from "@/components/games/i18n";
+import { useGameLang, translator, LangToggle, lolTerm, PENTAKILL } from "@/components/games/i18n";
 import { sound } from "@/components/games/sound/SoundManager";
 import SoundControls from "@/components/games/sound/SoundControls";
 import "@/components/games/shared.css";
 import "@/components/games/headshot/headshot.css";
+import "@/components/games/pentakill/pentakill.css";
 
 type Mode = "daily" | "endless";
 
-const LS_KEY = "headshot_v1";
-// Puzzle #1 is the day HEADSHOT shipped; only used for the share text.
+const LS_KEY = "pentakill_v1";
+// Puzzle #1 is the day PENTAKILL shipped; only used for the share text.
 const EPOCH = Date.UTC(2026, 0, 1);
 
 type Saved = {
@@ -64,10 +68,10 @@ const save = (s: Saved) => {
   try { window.localStorage.setItem(LS_KEY, JSON.stringify(s)); } catch {}
 };
 
-export default function HeadshotPage() {
-  const { pool, error, retry } = useHeadshotPool();
+export default function PentakillPage() {
+  const { pool, error, retry } = usePentakillPool();
   const [lang, setLang] = useGameLang(null);
-  const t = translator(HEADSHOT, lang);
+  const t = translator(PENTAKILL, lang);
 
   const [mode, setMode] = useState<Mode>("daily");
   const [date, setDate] = useState<string>(() => todayKey());
@@ -78,7 +82,6 @@ export default function HeadshotPage() {
   const [copied, setCopied] = useState(false);
   const [gaveUp, setGaveUp] = useState(false);
 
-  // Restore today's board once the date is known on the client.
   useEffect(() => {
     const d = todayKey();
     setDate(d);
@@ -87,7 +90,7 @@ export default function HeadshotPage() {
     setGuessIds(s.guesses);
   }, []);
 
-  // Tick the "next pro in …" clock, and roll over at midnight UTC.
+  // Tick the "next champion in …" clock, and roll over at midnight UTC.
   useEffect(() => {
     const tick = () => {
       const ms = msUntilNextDay();
@@ -103,31 +106,30 @@ export default function HeadshotPage() {
     return () => clearInterval(id);
   }, [date]);
 
-  const target: HeadshotPlayer | null = useMemo(() => {
+  const target: LolChampion | null = useMemo(() => {
     if (!pool) return null;
-    if (mode === "daily") return pickDaily(pool.daily, date, "daily");
-    // Endless just walks a shuffled deck seeded per session + round.
-    const deck = seededShuffle(pool.endless, `endless:${date}`);
+    if (mode === "daily") return pickDaily(pool.champions, date, "pentakill:daily");
+    const deck = seededShuffle(pool.champions, `pentakill:endless:${date}`);
     return deck.length ? deck[endlessSeed % deck.length] : null;
   }, [pool, mode, date, endlessSeed]);
 
-  const rows: GuessRow<HeadshotPlayer>[] = useMemo(() => {
+  const rows: GuessRow<LolChampion>[] = useMemo(() => {
     if (!pool || !target) return [];
     return guessIds
       .map((id) => pool.byId.get(id))
       .filter(Boolean)
-      .map((p) => ({ item: p as HeadshotPlayer, result: compare(p as HeadshotPlayer, target, `${date}T12:00:00Z`) }));
-  }, [guessIds, pool, target, date]);
+      .map((c) => ({ item: c as LolChampion, result: compare(c as LolChampion, target) }));
+  }, [guessIds, pool, target]);
 
   const won = rows.some((r) => r.result.correct);
   const finished = won || gaveUp;
 
-  const submit = useCallback((p: HeadshotPlayer) => {
+  const submit = useCallback((c: LolChampion) => {
     if (!target || finished) return;
-    const next = [...guessIds, p.id];
+    const next = [...guessIds, c.id];
     setGuessIds(next);
 
-    const correct = p.id === target.id;
+    const correct = c.id === target.id;
     sound.play(correct ? "win" : "click");
 
     if (mode !== "daily") return;
@@ -135,10 +137,7 @@ export default function HeadshotPage() {
       const base = prev ?? emptySave(date);
       const updated: Saved = correct
         ? {
-          ...base,
-          date,
-          guesses: next,
-          won: true,
+          ...base, date, guesses: next, won: true,
           streak: base.streak + 1,
           best: Math.max(base.best, base.streak + 1),
           played: base.played + 1,
@@ -177,8 +176,8 @@ export default function HeadshotPage() {
   const shareText = useMemo(() => {
     if (!rows.length) return "";
     const head = `${t("puzzleNo", { n: puzzleNumber })} — ${won ? rows.length : "X"}/∞`;
-    const body = rows.slice(0, 12).map((r) => shareSquares(r.result, HEADSHOT_COLUMNS)).join("\n");
-    return `${head}\n${body}\nhttps://games.retakes.fr/headshot`;
+    const body = rows.slice(0, 12).map((r) => shareSquares(r.result, PENTAKILL_COLUMNS)).join("\n");
+    return `${head}\n${body}\nhttps://games.retakes.fr/pentakill`;
   }, [rows, won, puzzleNumber, t]);
 
   const doShare = async () => {
@@ -189,21 +188,20 @@ export default function HeadshotPage() {
     } catch { /* clipboard blocked — nothing useful to do */ }
   };
 
-  const guessedIds = guessIds;
-
   return (
-    <div className="hs-page">
+    <div className="hs-page pk-page">
       <div className="hs-aurora" aria-hidden />
 
       <header className="hs-topbar">
         <div className="hs-brand-block">
           <Link href="/games" className="hs-back" aria-label="Back to games">←</Link>
           <div>
-            <h1 className="hs-brand">{t("brand")}</h1>
+            <h1 className="hs-brand pk-brand">{t("brand")}</h1>
             <p className="hs-tagline">{t("tagline")}</p>
           </div>
         </div>
         <div className="hs-top-right">
+          {pool && <span className="pk-patch">{t("patchLabel", { v: pool.patch })}</span>}
           <LangToggle lang={lang} onChange={setLang} />
           <SoundControls />
         </div>
@@ -250,19 +248,20 @@ export default function HeadshotPage() {
             <div className="hs-play">
               {!finished ? (
                 <SearchBox
-                  pool={pool.players}
-                  exclude={guessedIds}
+                  pool={pool.champions}
+                  exclude={guessIds}
                   onPick={submit}
                   autoFocus
-                  icon="🎯"
+                  icon="⚔"
                   placeholder={t("searchPlaceholder")}
                   emptyLabel={t("noMatches")}
-                  search={searchPlayers}
-                  renderOption={playerOption}
+                  search={searchChampions}
+                  renderOption={championOption(pool.portrait, lang)}
                 />
               ) : (
                 <ResultCard
                   target={target}
+                  portrait={pool.portrait}
                   won={won}
                   guesses={rows.length}
                   lang={lang}
@@ -284,18 +283,18 @@ export default function HeadshotPage() {
                   <button className="hs-ghost" onClick={giveUp}>{t("giveUp")}</button>
                 )}
                 {!finished && mode === "endless" && (
-                  <button className="hs-ghost" onClick={nextEndless}>{t("newPro")} ↻</button>
+                  <button className="hs-ghost" onClick={nextEndless}>{t("newChampion")} ↻</button>
                 )}
               </div>
             </div>
 
             <GuessGrid
               rows={[...rows].reverse()}
-              columns={HEADSHOT_COLUMNS}
+              columns={PENTAKILL_COLUMNS}
               lang={lang}
               t={t}
-              headLabel={t("colPlayer")}
-              renderHead={playerHead}
+              headLabel={t("colChampion")}
+              renderHead={championHead(pool.portrait)}
             />
             {rows.length === 0 && <Legend t={t} />}
           </>
@@ -319,8 +318,9 @@ function Stat({ label, value }: { label: string; value: React.ReactNode }) {
   );
 }
 
-function ResultCard({ target, won, guesses, lang, t, countdown, mode, copied, onShare, onNext, onEndless }: {
-  target: HeadshotPlayer;
+function ResultCard({ target, portrait, won, guesses, lang, t, countdown, mode, copied, onShare, onNext, onEndless }: {
+  target: LolChampion;
+  portrait: (c: LolChampion) => string;
   won: boolean;
   guesses: number;
   lang: any;
@@ -342,17 +342,17 @@ function ResultCard({ target, won, guesses, lang, t, countdown, mode, copied, on
       >
         <span className="hs-result-kicker">{won ? t("solved") : t("theAnswerWas")}</span>
         <div className="hs-result-player">
-          <span className="hs-result-flag">{flagOf(target.cc)}</span>
+          <img className="pk-portrait lg" src={portrait(target)} alt="" />
           <div className="hs-result-names">
-            <b>{target.name}</b>
-            <span>{target.realName}</span>
+            <b>{lang === "fr" ? target.nameFr : target.name}</b>
+            <span>{lang === "fr" ? target.titleFr : target.title}</span>
           </div>
         </div>
         <div className="hs-result-facts">
-          <span>{countryName(target, lang)}</span>
-          <span>{target.team}</span>
-          <span>{rolesLabel(target.roles, t)}</span>
-          <span>{t("colMajors")}: {target.majors}</span>
+          <span>{target.classes.map((c) => lolTerm(c, lang)).join(" · ")}</span>
+          <span>{target.positions.map((p) => lolTerm(p, lang)).join(" · ")}</span>
+          <span>{target.regions.map((r) => lolTerm(r, lang)).join(" · ")}</span>
+          <span>{target.releaseYear}</span>
         </div>
         {won && <span className="hs-result-count">{t("solvedIn", { n: guesses === 1 ? t("oneGuess") : t("guessCount", { n: guesses }) })}</span>}
 
@@ -363,7 +363,7 @@ function ResultCard({ target, won, guesses, lang, t, countdown, mode, copied, on
               <button className="hs-ghost" onClick={onEndless}>{t("playEndless")} ▸</button>
             </>
           ) : (
-            <button className="hs-primary" onClick={onNext}>{t("newPro")} ↻</button>
+            <button className="hs-primary" onClick={onNext}>{t("newChampion")} ↻</button>
           )}
         </div>
         {mode === "daily" && <span className="hs-result-next">{t("nextIn", { t: countdown })}</span>}

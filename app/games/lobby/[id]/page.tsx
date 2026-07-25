@@ -14,15 +14,19 @@ import CodenamesGameWrapper from "@/components/games/CodenamesGame";
 import MemeGameWrapper from "@/components/games/MemeGame";
 import SkribblGameWrapper from "@/components/games/SkribblGame";
 import HeadshotGameWrapper from "@/components/games/HeadshotGame";
+import PentakillGameWrapper from "@/components/games/PentakillGame";
+import BuildPathGameWrapper from "@/components/games/BuildPathGame";
+import BuyMenuGameWrapper from "@/components/games/BuyMenuGame";
 import UnoRulesPanel, { summarizeUno } from "@/components/games/UnoRulesPanel";
 import MemeOptionsPanel, { summarizeMeme } from "@/components/games/MemeOptionsPanel";
 import CahOptionsPanel, { summarizeCah } from "@/components/games/CahOptionsPanel";
 import CodenamesOptionsPanel, { summarizeCodenames } from "@/components/games/CodenamesOptionsPanel";
 import FreeDrawOptionsPanel, { summarizeFreeDraw } from "@/components/games/FreeDrawOptionsPanel";
 import MonopolyOptionsPanel, { summarizeMonopoly } from "@/components/games/MonopolyOptionsPanel";
-import HeadshotOptionsPanel, { summarizeHeadshot } from "@/components/games/HeadshotOptionsPanel";
+import RaceOptionsPanel, { summarizeRace } from "@/components/games/guess/RaceOptionsPanel";
+import QuizOptionsPanel, { summarizeQuiz } from "@/components/games/quiz/QuizOptionsPanel";
 import { SetupModal, SummaryChips, type Chip } from "@/components/games/setup/SetupUI";
-import { useGameLang } from "@/components/games/i18n";
+import { useGameLang, HEADSHOT, PENTAKILL, BUILDPATH, BUYMENU } from "@/components/games/i18n";
 import GameIcon from "@/components/games/GameIcon";
 import { listBoards } from "@/components/games/editor/boardStore";
 
@@ -37,6 +41,9 @@ const GAMES = [
   { id: "codenames", name: "CODENAMES", icon: "🕵️", min: 4, max: 8, ready: true, tagline: "Spy words" },
   { id: "cah", name: "PILE OF...", icon: "⬛", min: 3, max: 8, ready: true, tagline: "Fill in the blank" },
   { id: "headshot", name: "HEADSHOT", icon: "🎯", min: 2, max: 8, ready: true, tagline: "Guess the pro" },
+  { id: "pentakill", name: "PENTAKILL", icon: "⚔", min: 2, max: 8, ready: true, tagline: "Guess the champion" },
+  { id: "buildpath", name: "BUILD PATH", icon: "🛡", min: 2, max: 8, ready: true, tagline: "LoL item quiz" },
+  { id: "buymenu", name: "BUY MENU", icon: "💰", min: 2, max: 8, ready: true, tagline: "CS2 economy quiz" },
 ];
 
 // Per-game banner gradients for the lobby hero.
@@ -49,6 +56,9 @@ const GAME_THEME: Record<string, string> = {
   codenames: "linear-gradient(135deg, #1e3a5f, #0f172a 52%, #dc2626)",
   cah: "linear-gradient(135deg, #111, #000 55%, #333)",
   headshot: "linear-gradient(135deg, #0f172a, #164e63 52%, #f59e0b)",
+  pentakill: "linear-gradient(135deg, #0b1a2b, #113a5c 52%, #c8aa6e)",
+  buildpath: "linear-gradient(135deg, #0b1a2b, #0e7490 52%, #c8aa6e)",
+  buymenu: "linear-gradient(135deg, #1c1917, #292524 52%, #ca8a04)",
 };
 
 type ChatMsg = { from: string; content: string; type: string; subject?: string | null; ts?: number };
@@ -199,6 +209,8 @@ function LobbyClient({ lobbyId, mySteamId }: { lobbyId: string; mySteamId: strin
   const handleSetCahOptions = (payload: { options?: any }) => socket?.emit("lobby_set_cah_options", payload);
   const handleSetCodenamesOptions = (payload: { options?: any }) => socket?.emit("lobby_set_codenames_options", payload);
   const handleSetHeadshotOptions = (payload: { options?: any }) => socket?.emit("lobby_set_headshot_options", payload);
+  const handleSetPentakillOptions = (payload: { options?: any }) => socket?.emit("lobby_set_pentakill_options", payload);
+  const handleSetQuizOptions = (payload: { options?: any }) => socket?.emit("lobby_set_quiz_options", payload);
   const handleSetCnTeam = (steamId: string, team: "red" | "blue" | null) => socket?.emit("lobby_set_codenames_team", { steamId, team });
   const handleSetCnSpymaster = (steamId: string) => socket?.emit("lobby_set_codenames_spymaster", { steamId });
   const handleShuffleCnTeams = () => socket?.emit("lobby_shuffle_codenames_teams");
@@ -331,6 +343,9 @@ function LobbyClient({ lobbyId, mySteamId }: { lobbyId: string; mySteamId: strin
     if (baseGame === "meme") return <>{rpcData}<MemeGameWrapper /></>;
     if (baseGame === "skribbl") return <>{rpcData}<SkribblGameWrapper /></>;
     if (baseGame === "headshot") return <>{rpcData}<HeadshotGameWrapper /></>;
+    if (baseGame === "pentakill") return <>{rpcData}<PentakillGameWrapper /></>;
+    if (baseGame === "buildpath") return <>{rpcData}<BuildPathGameWrapper /></>;
+    if (baseGame === "buymenu") return <>{rpcData}<BuyMenuGameWrapper /></>;
     return <div className="lobby-container flex-center">{rpcData}Game started, but component not found.</div>;
   }
 
@@ -384,9 +399,20 @@ function LobbyClient({ lobbyId, mySteamId }: { lobbyId: string; mySteamId: strin
       setupPanel = <CodenamesOptionsPanel options={lobbyState.codenamesOptions || {}} isHost={isHost} lang={uiLang} onChange={handleSetCodenamesOptions} />;
       break;
     case "headshot":
-      summaryChips = summarizeHeadshot(lobbyState.headshotOptions || {}, uiLang);
-      setupPanel = <HeadshotOptionsPanel options={lobbyState.headshotOptions || {}} isHost={isHost} lang={uiLang} onChange={handleSetHeadshotOptions} />;
+      summaryChips = summarizeRace(lobbyState.headshotOptions || {}, uiLang, HEADSHOT);
+      setupPanel = <RaceOptionsPanel options={lobbyState.headshotOptions || {}} isHost={isHost} lang={uiLang} dict={HEADSHOT} icon="🎯" onChange={handleSetHeadshotOptions} />;
       break;
+    case "pentakill":
+      summaryChips = summarizeRace(lobbyState.pentakillOptions || {}, uiLang, PENTAKILL);
+      setupPanel = <RaceOptionsPanel options={lobbyState.pentakillOptions || {}} isHost={isHost} lang={uiLang} dict={PENTAKILL} icon="⚔" onChange={handleSetPentakillOptions} />;
+      break;
+    case "buildpath":
+    case "buymenu": {
+      const quizDict = baseGame === "buildpath" ? BUILDPATH : BUYMENU;
+      summaryChips = summarizeQuiz(lobbyState.quizOptions || {}, uiLang, quizDict);
+      setupPanel = <QuizOptionsPanel options={lobbyState.quizOptions || {}} isHost={isHost} lang={uiLang} dict={quizDict} onChange={handleSetQuizOptions} />;
+      break;
+    }
     case "skribbl":
       summaryChips = summarizeFreeDraw(lobbyState.skribblRounds ?? 3, lang, uiLang);
       setupPanel = (

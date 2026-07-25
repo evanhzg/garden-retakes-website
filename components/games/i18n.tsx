@@ -371,6 +371,327 @@ export const HEADSHOT = {
 } as const;
 
 // ---------------------------------------------------------------------------
+// PENTAKILL — guess the League champion
+// ---------------------------------------------------------------------------
+export const PENTAKILL = {
+  brand:          { en: "PENTAKILL", fr: "PENTAKILL" },
+  tagline:        { en: "Guess today's League champion", fr: "Devinez le champion League du jour" },
+
+  modeDaily:      { en: "Daily", fr: "Quotidien" },
+  modeDailyD:     { en: "One champion a day, the same one for everyone.", fr: "Un champion par jour, le même pour tout le monde." },
+  modeEndless:    { en: "Endless", fr: "Sans fin" },
+  modeEndlessD:   { en: "Keep going as long as you like.", fr: "Enchaînez autant que vous voulez." },
+  modeRace:       { en: "Race", fr: "Course" },
+  playWithFriends:{ en: "Play with friends", fr: "Jouer entre amis" },
+
+  searchPlaceholder: { en: "Type a champion…", fr: "Tapez un champion…" },
+  noMatches:      { en: "No champion by that name", fr: "Aucun champion de ce nom" },
+  guessCount:     { en: "{n} guesses", fr: "{n} essais" },
+  oneGuess:       { en: "1 guess", fr: "1 essai" },
+  loading:        { en: "Loading champions…", fr: "Chargement des champions…" },
+  loadFailed:     { en: "Couldn't load the champion list", fr: "Impossible de charger la liste des champions" },
+  retry:          { en: "Retry", fr: "Réessayer" },
+
+  // columns
+  colChampion:    { en: "Champion", fr: "Champion" },
+  colClass:       { en: "Class", fr: "Classe" },
+  colPosition:    { en: "Position", fr: "Poste" },
+  colRegion:      { en: "Region", fr: "Région" },
+  colResource:    { en: "Resource", fr: "Ressource" },
+  colRange:       { en: "Range", fr: "Portée" },
+  colDamage:      { en: "Damage", fr: "Dégâts" },
+  colYear:        { en: "Released", fr: "Sortie" },
+
+  legendTitle:    { en: "How to read a row", fr: "Comment lire une ligne" },
+  legendHit:      { en: "Exact match", fr: "Correspondance exacte" },
+  legendNear:     { en: "Partial — some values shared, or within 2 years", fr: "Partiel — valeurs en commun, ou à 2 ans près" },
+  legendMiss:     { en: "No match", fr: "Aucune correspondance" },
+  legendArrow:    { en: "▲ / ▼ points towards the answer", fr: "▲ / ▼ indique la direction de la réponse" },
+
+  // result
+  solved:         { en: "Got it!", fr: "Trouvé !" },
+  solvedIn:       { en: "Solved in {n}", fr: "Trouvé en {n}" },
+  theAnswerWas:   { en: "The answer was", fr: "La réponse était" },
+  nextIn:         { en: "Next champion in {t}", fr: "Prochain champion dans {t}" },
+  streak:         { en: "Streak", fr: "Série" },
+  bestStreak:     { en: "Best", fr: "Record" },
+  played:         { en: "Played", fr: "Parties" },
+  avgGuesses:     { en: "Avg", fr: "Moy." },
+  share:          { en: "Share", fr: "Partager" },
+  copied:         { en: "Copied!", fr: "Copié !" },
+  puzzleNo:       { en: "PENTAKILL #{n}", fr: "PENTAKILL n°{n}" },
+  playEndless:    { en: "Play endless mode", fr: "Passer en mode sans fin" },
+  newChampion:    { en: "New champion", fr: "Nouveau champion" },
+  giveUp:         { en: "Give up", fr: "Abandonner" },
+
+  // race
+  raceTitle:      { en: "Race to {n}", fr: "Course à {n}" },
+  raceScore:      { en: "{n}/{m}", fr: "{n}/{m}" },
+  raceRivals:     { en: "Rivals", fr: "Adversaires" },
+  raceYou:        { en: "You", fr: "Vous" },
+  raceGuessing:   { en: "{n} guesses in", fr: "{n} essais" },
+  raceRevealIn:   { en: "{n} left before it's revealed", fr: "{n} avant révélation" },
+  raceWon:        { en: "You won the race! 🎉", fr: "Vous gagnez la course ! 🎉" },
+  raceLost:       { en: "{name} got there first", fr: "{name} est arrivé le premier" },
+  raceStandings:  { en: "Standings", fr: "Classement" },
+  raceRun:        { en: "The run", fr: "Le parcours" },
+  returnLobby:    { en: "Return to lobby", fr: "Retour au salon" },
+  leaveGame:      { en: "Leave game", fr: "Quitter la partie" },
+
+  evSolved:       { en: "{name} identified {who}", fr: "{name} a trouvé {who}" },
+  evRevealed:     { en: "{name} gave up on {who}", fr: "{name} a séché sur {who}" },
+  evTimeout:      { en: "Time's up — it was {who}", fr: "Temps écoulé — c'était {who}" },
+  evWin:          { en: "{name} wins the race!", fr: "{name} gagne la course !" },
+  evStart:        { en: "Race to {n} — go!", fr: "Course à {n} — partez !" },
+
+  // lobby setup
+  optionsTitle:   { en: "PENTAKILL setup", fr: "Réglages PENTAKILL" },
+  hostOnly:       { en: "Only the host changes the setup", fr: "Seul l'hôte modifie les réglages" },
+  targetScore:    { en: "Race to", fr: "Course à" },
+  targetScoreD:   { en: "How many champions you have to identify to win.", fr: "Nombre de champions à identifier pour gagner." },
+  roundTimer:     { en: "Clock per champion", fr: "Chrono par champion" },
+  revealAfter:    { en: "Guesses allowed", fr: "Essais autorisés" },
+  revealAfterD:   { en: "Miss this many and the answer is shown so you can move on.", fr: "Après ce nombre d'erreurs, la réponse est révélée et vous passez au suivant." },
+  seconds:        { en: "{n}s", fr: "{n} s" },
+  noTimer:        { en: "Off", fr: "Sans" },
+  correctUnit:    { en: "{n} correct", fr: "{n} bonnes" },
+
+  dataFrom:       { en: "Champion data from Riot Data Dragon & the League wiki", fr: "Données via Riot Data Dragon et le wiki League" },
+  patchLabel:     { en: "Patch {v}", fr: "Patch {v}" },
+} as const;
+
+/** Enum values that appear on the PENTAKILL board, localized. */
+export const LOL_TERMS: Record<string, { en: string; fr: string }> = {
+  // classes
+  Mage: { en: "Mage", fr: "Mage" },
+  Assassin: { en: "Assassin", fr: "Assassin" },
+  Fighter: { en: "Fighter", fr: "Combattant" },
+  Tank: { en: "Tank", fr: "Tank" },
+  Marksman: { en: "Marksman", fr: "Tireur" },
+  Support: { en: "Support", fr: "Support" },
+  Specialist: { en: "Specialist", fr: "Spécialiste" },
+  Controller: { en: "Controller", fr: "Contrôleur" },
+  Juggernaut: { en: "Juggernaut", fr: "Mastodonte" },
+  Diver: { en: "Diver", fr: "Plongeur" },
+  Skirmisher: { en: "Skirmisher", fr: "Escarmoucheur" },
+  Warden: { en: "Warden", fr: "Gardien" },
+  Vanguard: { en: "Vanguard", fr: "Avant-garde" },
+  Burst: { en: "Burst", fr: "Burst" },
+  Battlemage: { en: "Battlemage", fr: "Mage de combat" },
+  Artillery: { en: "Artillery", fr: "Artilleur" },
+  Enchanter: { en: "Enchanter", fr: "Enchanteur" },
+  Catcher: { en: "Catcher", fr: "Attrapeur" },
+
+  // positions
+  Top: { en: "Top", fr: "Top" },
+  Jungle: { en: "Jungle", fr: "Jungle" },
+  Middle: { en: "Mid", fr: "Milieu" },
+  Bottom: { en: "Bot", fr: "Bot" },
+
+  // regions
+  Ionia: { en: "Ionia", fr: "Ionia" },
+  Noxus: { en: "Noxus", fr: "Noxus" },
+  Demacia: { en: "Demacia", fr: "Demacia" },
+  Freljord: { en: "Freljord", fr: "Freljord" },
+  Piltover: { en: "Piltover", fr: "Piltover" },
+  Zaun: { en: "Zaun", fr: "Zaun" },
+  Shurima: { en: "Shurima", fr: "Shurima" },
+  Targon: { en: "Targon", fr: "Targon" },
+  Ixtal: { en: "Ixtal", fr: "Ixtal" },
+  Bilgewater: { en: "Bilgewater", fr: "Bilgewater" },
+  "Bandle City": { en: "Bandle City", fr: "Bandle City" },
+  "Shadow Isles": { en: "Shadow Isles", fr: "Îles Obscures" },
+  Void: { en: "Void", fr: "Néant" },
+  Runeterra: { en: "Runeterra", fr: "Runeterra" },
+
+  // resources
+  Mana: { en: "Mana", fr: "Mana" },
+  Energy: { en: "Energy", fr: "Énergie" },
+  None: { en: "None", fr: "Aucune" },
+  Health: { en: "Health", fr: "Vie" },
+  Rage: { en: "Rage", fr: "Rage" },
+  Fury: { en: "Fury", fr: "Furie" },
+  Ferocity: { en: "Ferocity", fr: "Férocité" },
+  Heat: { en: "Heat", fr: "Chaleur" },
+  Grit: { en: "Grit", fr: "Cran" },
+  Courage: { en: "Courage", fr: "Courage" },
+  Shield: { en: "Shield", fr: "Bouclier" },
+  Flow: { en: "Flow", fr: "Flux" },
+  Frenzy: { en: "Frenzy", fr: "Frénésie" },
+  "Blood Well": { en: "Blood Well", fr: "Puits de sang" },
+  "Crimson Rush": { en: "Crimson Rush", fr: "Ruée pourpre" },
+
+  // range + damage
+  Melee: { en: "Melee", fr: "Corps à corps" },
+  Ranged: { en: "Ranged", fr: "À distance" },
+  Physical: { en: "Physical", fr: "Physique" },
+  Magic: { en: "Magic", fr: "Magique" },
+  Mixed: { en: "Mixed", fr: "Mixte" },
+};
+
+/** Localize one LoL enum value, falling back to the raw English string. */
+export function lolTerm(value: string, lang: Lang): string {
+  const entry = LOL_TERMS[value];
+  return entry ? entry[lang] ?? entry.en : value;
+}
+
+// ---------------------------------------------------------------------------
+// Shared quiz chrome (BUILD PATH + BUY MENU)
+// ---------------------------------------------------------------------------
+export const QUIZ = {
+  modeDaily:      { en: "Daily", fr: "Quotidien" },
+  modeDailyD:     { en: "One paper a day per tier, the same for everyone.", fr: "Une série par jour et par palier, la même pour tous." },
+  modePractice:   { en: "Practice", fr: "Entraînement" },
+  modePracticeD:  { en: "Fresh questions whenever you want.", fr: "De nouvelles questions quand vous voulez." },
+  modeRace:       { en: "Race", fr: "Course" },
+  playWithFriends:{ en: "Play with friends", fr: "Jouer entre amis" },
+
+  difficulty:     { en: "Difficulty", fr: "Difficulté" },
+  question:       { en: "Question {n}/{m}", fr: "Question {n}/{m}" },
+  score:          { en: "Score", fr: "Score" },
+  correct:        { en: "Correct!", fr: "Correct !" },
+  wrong:          { en: "Not quite", fr: "Raté" },
+  theAnswer:      { en: "Answer: {a}", fr: "Réponse : {a}" },
+  next:           { en: "Next", fr: "Suivant" },
+  finish:         { en: "See results", fr: "Voir le résultat" },
+  loading:        { en: "Building your quiz…", fr: "Préparation du quiz…" },
+  loadFailed:     { en: "Couldn't load the quiz", fr: "Impossible de charger le quiz" },
+  retry:          { en: "Retry", fr: "Réessayer" },
+
+  resultTitle:    { en: "{n}/{m} correct", fr: "{n}/{m} bonnes réponses" },
+  resultPerfect:  { en: "Flawless.", fr: "Sans faute." },
+  resultGreat:    { en: "Strong showing.", fr: "Belle performance." },
+  resultOk:       { en: "Room to climb.", fr: "Encore du chemin." },
+  resultPoor:     { en: "Back to the drawing board.", fr: "On retourne réviser." },
+  playAgain:      { en: "Play again", fr: "Rejouer" },
+  harder:         { en: "Try the next tier", fr: "Palier suivant" },
+  nextIn:         { en: "Next daily in {t}", fr: "Prochain quotidien dans {t}" },
+  alreadyPlayed:  { en: "You've already played today's {tier} paper", fr: "Vous avez déjà fait la série {tier} du jour" },
+  yourResult:     { en: "Your result: {n}/{m}", fr: "Votre résultat : {n}/{m}" },
+  share:          { en: "Share", fr: "Partager" },
+  copied:         { en: "Copied!", fr: "Copié !" },
+  streak:         { en: "Streak", fr: "Série" },
+  bestScore:      { en: "Best", fr: "Record" },
+  played:         { en: "Played", fr: "Parties" },
+  accuracy:       { en: "Accuracy", fr: "Précision" },
+
+  // race
+  raceTitle:      { en: "First to {n}", fr: "Premier à {n}" },
+  raceRivals:     { en: "Rivals", fr: "Adversaires" },
+  raceYou:        { en: "You", fr: "Vous" },
+  raceWon:        { en: "You won the race! 🎉", fr: "Vous gagnez la course ! 🎉" },
+  raceLost:       { en: "{name} got there first", fr: "{name} est arrivé le premier" },
+  raceStandings:  { en: "Standings", fr: "Classement" },
+  returnLobby:    { en: "Return to lobby", fr: "Retour au salon" },
+  leaveGame:      { en: "Leave game", fr: "Quitter la partie" },
+  waitingOthers:  { en: "Waiting for the others…", fr: "En attente des autres…" },
+} as const;
+
+// ---------------------------------------------------------------------------
+// BUILD PATH — LoL item / champion quiz
+// ---------------------------------------------------------------------------
+export const BUILDPATH = {
+  brand:      { en: "BUILD PATH", fr: "BUILD PATH" },
+  tagline:    { en: "Items, champions and the maths behind them", fr: "Objets, champions et les calculs qui vont avec" },
+  dataFrom:   { en: "Item & champion data from Riot Data Dragon and the League wiki", fr: "Objets et champions via Riot Data Dragon et le wiki League" },
+  patchLabel: { en: "Patch {v}", fr: "Patch {v}" },
+
+  tier1: { en: "Iron", fr: "Fer" },
+  tier2: { en: "Gold", fr: "Or" },
+  tier3: { en: "Diamond", fr: "Diamant" },
+  tier4: { en: "Challenger", fr: "Challenger" },
+  tier1D: { en: "Do you know what things are called and what they cost?", fr: "Connaissez-vous les noms et les prix ?" },
+  tier2D: { en: "Build paths and champion basics.", fr: "Chemins d'objets et bases des champions." },
+  tier3D: { en: "Applied knowledge — what fits which champion.", fr: "Savoir appliqué — quel objet pour quel champion." },
+  tier4D: { en: "Exact combine costs, stats and release years.", fr: "Coûts de combinaison, stats et années exactes." },
+
+  // question prompts
+  qItemCost:        { en: "How much does {item} cost in total?", fr: "Combien coûte {item} au total ?" },
+  eItemCost:        { en: "{item} costs {n} gold.", fr: "{item} coûte {n} po." },
+  qChampRegion:     { en: "Which region is {champ} from?", fr: "De quelle région vient {champ} ?" },
+  qChampClass:      { en: "What is {champ}'s primary class?", fr: "Quelle est la classe principale de {champ} ?" },
+  qChampPosition:   { en: "Which lane does {champ} play?", fr: "Sur quelle voie joue {champ} ?" },
+  qBuildsFrom:      { en: "Which component does {item} build from?", fr: "À partir de quel composant se construit {item} ?" },
+  eBuildsFrom:      { en: "{item} = {parts}.", fr: "{item} = {parts}." },
+  qBuildsInto:      { en: "Which item does {item} build into?", fr: "En quel objet {item} se transforme-t-il ?" },
+  qItemForChampion: { en: "{champ} deals {type} damage. Which of these scales it?", fr: "{champ} inflige des dégâts {type}. Lequel de ces objets les augmente ?" },
+  eItemForChampion: { en: "{champ}'s damage is {type}, so {item} is the one that scales it.", fr: "Les dégâts de {champ} sont {type} : c'est {item} qui les augmente." },
+  qWhoseAbility:    { en: "Which champion has the ability “{ability}”?", fr: "Quel champion possède la compétence « {ability} » ?" },
+  qHighestStat:     { en: "Which of these gives the most {stat}?", fr: "Lequel donne le plus de {stat} ?" },
+  eHighestStat:     { en: "{item}, with {n}.", fr: "{item}, avec {n}." },
+  qCombineCost:     { en: "What is {item}'s combine cost (the upgrade fee alone)?", fr: "Quel est le coût de combinaison de {item} (hors composants) ?" },
+  eCombineCost:     { en: "{n} gold on top of its parts, {total} gold all in.", fr: "{n} po en plus des composants, {total} po au total." },
+  qChampYear:       { en: "Which year was {champ} released?", fr: "En quelle année {champ} est-il sorti ?" },
+  qMostExpensive:   { en: "Which of these items is the most expensive?", fr: "Lequel de ces objets est le plus cher ?" },
+  eMostExpensive:   { en: "{item}, at {n} gold.", fr: "{item}, à {n} po." },
+
+  // stat labels
+  statAp:    { en: "Ability Power", fr: "Puissance" },
+  statAd:    { en: "Attack Damage", fr: "Dégâts d'attaque" },
+  statArmor: { en: "Armour", fr: "Armure" },
+  statMr:    { en: "Magic Resist", fr: "Résistance magique" },
+  statHp:    { en: "Health", fr: "Vie" },
+  statMs:    { en: "Move Speed", fr: "Vitesse" },
+  statAs:    { en: "Attack Speed", fr: "Vitesse d'attaque" },
+  statCrit:  { en: "Crit Chance", fr: "Chances de critique" },
+
+  optionsTitle: { en: "BUILD PATH setup", fr: "Réglages BUILD PATH" },
+  hostOnly:     { en: "Only the host changes the setup", fr: "Seul l'hôte modifie les réglages" },
+} as const;
+
+// ---------------------------------------------------------------------------
+// BUY MENU — CS2 economy / weapon quiz
+// ---------------------------------------------------------------------------
+export const BUYMENU = {
+  brand:      { en: "BUY MENU", fr: "BUY MENU" },
+  tagline:    { en: "Prices, rewards and the economy behind every round", fr: "Prix, primes et l'économie de chaque round" },
+  dataFrom:   { en: "Curated CS2 constants — prices, kill rewards and the loss ladder", fr: "Constantes CS2 curées — prix, primes et échelle de défaite" },
+  patchLabel: { en: "{v}", fr: "{v}" },
+
+  tier1: { en: "Silver", fr: "Silver" },
+  tier2: { en: "Gold Nova", fr: "Gold Nova" },
+  tier3: { en: "Eagle", fr: "Eagle" },
+  tier4: { en: "Global", fr: "Global" },
+  tier1D: { en: "The prices you punch in every round.", fr: "Les prix que vous tapez chaque round." },
+  tier2D: { en: "Kill rewards and who can buy what.", fr: "Primes de kill et qui achète quoi." },
+  tier3D: { en: "Round economy and map callouts.", fr: "Économie de round et callouts." },
+  tier4D: { en: "The loss ladder, magazines and exact numbers.", fr: "Échelle de défaite, chargeurs et chiffres exacts." },
+
+  qWeaponPrice:    { en: "How much does the {weapon} cost?", fr: "Combien coûte le {weapon} ?" },
+  eWeaponPrice:    { en: "The {weapon} costs ${n}.", fr: "Le {weapon} coûte {n} $." },
+  qUtilityPrice:   { en: "How much does {item} cost?", fr: "Combien coûte {item} ?" },
+  qWeaponCategory: { en: "Which category is the {weapon} in?", fr: "Dans quelle catégorie se trouve le {weapon} ?" },
+  qKillReward:     { en: "How much does a kill with the {weapon} pay?", fr: "Combien rapporte un kill au {weapon} ?" },
+  eKillReward:     { en: "${n} per kill.", fr: "{n} $ par kill." },
+  qWhichTeam:      { en: "Which side can buy the {weapon}?", fr: "Quel camp peut acheter le {weapon} ?" },
+  eWhichTeam:      { en: "The {weapon} is {team} only.", fr: "Le {weapon} est réservé aux {team}." },
+  qCheapestOf:     { en: "Which of these is the cheapest?", fr: "Lequel est le moins cher ?" },
+  eCheapestOf:     { en: "The {weapon}, at ${n}.", fr: "Le {weapon}, à {n} $." },
+  qPriciestOf:     { en: "Which of these is the most expensive?", fr: "Lequel est le plus cher ?" },
+  ePriciestOf:     { en: "The {weapon}, at ${n}.", fr: "Le {weapon}, à {n} $." },
+  qCallout:        { en: "Which map has the callout “{callout}”?", fr: "Quelle carte a le callout « {callout} » ?" },
+  qFullBuy:        { en: "{weapon}, armour + helmet, a smoke and a flash — what's the total?", fr: "{weapon}, armure + casque, une fumi et une flash — quel total ?" },
+  eFullBuy:        { en: "${a} + ${b} + ${c} = ${n}.", fr: "{a} $ + {b} $ + {c} $ = {n} $." },
+  qLossLadder:     { en: "What is the loss bonus on your {n}th consecutive loss?", fr: "Quelle est la prime après {n} défaites consécutives ?" },
+  eLossLadder:     { en: "The ladder runs {ladder}.", fr: "L'échelle est {ladder}." },
+  qMagSize:        { en: "How many rounds are in a {weapon} magazine?", fr: "Combien de balles dans un chargeur de {weapon} ?" },
+  qWeaponDamage:   { en: "What is the {weapon}'s base damage?", fr: "Quels sont les dégâts de base du {weapon} ?" },
+
+  qEco_winElimination:    { en: "How much does winning a round by elimination pay?", fr: "Combien rapporte une victoire par élimination ?" },
+  qEco_winBombDetonated:  { en: "How much does the T side get when the bomb detonates?", fr: "Combien gagnent les T quand la bombe explose ?" },
+  qEco_winBombDefused:    { en: "How much does the CT side get for defusing?", fr: "Combien gagnent les CT pour un désamorçage ?" },
+  qEco_plantBonusTeam:    { en: "How much does the T team get for planting, even in a lost round?", fr: "Combien gagnent les T pour une pose, même en perdant ?" },
+  qEco_defuseBonusPlayer: { en: "How much does the player who defuses get personally?", fr: "Combien touche personnellement le joueur qui désamorce ?" },
+
+  teamCt:   { en: "Counter-Terrorists", fr: "Anti-terroristes" },
+  teamT:    { en: "Terrorists", fr: "Terroristes" },
+  teamBoth: { en: "Both sides", fr: "Les deux camps" },
+
+  optionsTitle: { en: "BUY MENU setup", fr: "Réglages BUY MENU" },
+  hostOnly:     { en: "Only the host changes the setup", fr: "Seul l'hôte modifie les réglages" },
+} as const;
+
+// ---------------------------------------------------------------------------
 // MONOPO7Y — lobby setup strings only; the board itself is served localized.
 // ---------------------------------------------------------------------------
 export const MONOPOLY = {

@@ -10,3 +10,6 @@ next-env.d.ts
 scratch/
 public/pkmn/*.rar
 .env.development.local
+
+# Scratch build dir used to verify a build beside a running dev server
+.next-verify/

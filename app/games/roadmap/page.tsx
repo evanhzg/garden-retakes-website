@@ -18,6 +18,39 @@ export default function GamesRoadmap() {
       ]
     },
     {
+      name: "PENTAKILL",
+      status: "Playable",
+      description: "Guess the League champion — one a day for everyone, or a race against friends.",
+      features: [
+        "173 champions, re-seeded from Riot Data Dragon each patch",
+        "Class / position / region / resource / range / damage / year grid",
+        "Regions and release dates pulled from the League wiki data modules",
+        "Daily puzzle, endless practice and a multiplayer race",
+      ]
+    },
+    {
+      name: "BUILD PATH",
+      status: "Playable",
+      description: "LoL item and champion quiz across four difficulty tiers.",
+      features: [
+        "Questions generated from live build paths, costs and stats",
+        "Iron → Challenger tiers, from recognition to exact combine costs",
+        "Every answer is a fact of the patch, not a tier list",
+        "Daily paper per tier, practice mode and a race to N correct",
+      ]
+    },
+    {
+      name: "BUY MENU",
+      status: "Playable",
+      description: "CS2 economy, weapon and callout quiz across four ranks.",
+      features: [
+        "Prices, kill rewards, the loss ladder and map callouts",
+        "Silver → Global tiers, ending on exact magazine and damage values",
+        "Full-buy maths questions that mirror the real buy menu",
+        "Daily paper per tier, practice mode and a race to N correct",
+      ]
+    },
+    {
       name: "HEADSHOT",
       status: "Playable",
       description: "Guess the Counter-Strike pro — one a day for everyone, or a race against friends.",

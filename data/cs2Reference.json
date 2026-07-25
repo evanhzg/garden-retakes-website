@@ -1,0 +1,80 @@
+{
+  "note": "Curated CS2 reference data for the BUY MENU quiz. Unlike the LoL and HEADSHOT datasets this one is not scraped: Valve publishes no machine-readable table of prices, kill rewards or economy rules, so these are hand-maintained. Everything here is a stable game constant rather than a balance opinion. Re-check after a major economy patch.",
+  "updatedFor": "CS2, 2026 economy",
+  "economy": {
+    "startMoney": 800,
+    "maxMoney": 16000,
+    "winElimination": 3250,
+    "winTimeExpiredCt": 3250,
+    "winBombDetonated": 3500,
+    "winBombDefused": 3500,
+    "plantBonusTeam": 800,
+    "defuseBonusPlayer": 300,
+    "lossBonusLadder": [1400, 1900, 2400, 2900, 3400],
+    "knifeKillReward": 1500,
+    "zeusKillReward": 0
+  },
+  "gear": [
+    { "id": "kevlar", "name": "Kevlar Vest", "price": 650, "team": "both" },
+    { "id": "kevlarhelmet", "name": "Kevlar + Helmet", "price": 1000, "team": "both" },
+    { "id": "defuser", "name": "Defuse Kit", "price": 400, "team": "ct" },
+    { "id": "zeus", "name": "Zeus x27", "price": 200, "team": "both" }
+  ],
+  "utility": [
+    { "id": "he", "name": "HE Grenade", "price": 300, "team": "both" },
+    { "id": "flashbang", "name": "Flashbang", "price": 200, "team": "both" },
+    { "id": "smoke", "name": "Smoke Grenade", "price": 300, "team": "both" },
+    { "id": "decoy", "name": "Decoy Grenade", "price": 50, "team": "both" },
+    { "id": "molotov", "name": "Molotov", "price": 400, "team": "t" },
+    { "id": "incendiary", "name": "Incendiary Grenade", "price": 600, "team": "ct" }
+  ],
+  "weapons": [
+    { "id": "glock", "name": "Glock-18", "price": 200, "kill": 300, "team": "t", "category": "Pistols", "mag": 20 },
+    { "id": "usps", "name": "USP-S", "price": 200, "kill": 300, "team": "ct", "category": "Pistols", "mag": 12 },
+    { "id": "p2000", "name": "P2000", "price": 200, "kill": 300, "team": "ct", "category": "Pistols", "mag": 13 },
+    { "id": "dualies", "name": "Dual Berettas", "price": 300, "kill": 300, "team": "both", "category": "Pistols", "mag": 30 },
+    { "id": "p250", "name": "P250", "price": 300, "kill": 300, "team": "both", "category": "Pistols", "mag": 13 },
+    { "id": "fiveseven", "name": "Five-SeveN", "price": 500, "kill": 300, "team": "ct", "category": "Pistols", "mag": 20 },
+    { "id": "tec9", "name": "Tec-9", "price": 500, "kill": 300, "team": "t", "category": "Pistols", "mag": 18 },
+    { "id": "cz75", "name": "CZ75-Auto", "price": 500, "kill": 100, "team": "both", "category": "Pistols", "mag": 12 },
+    { "id": "r8", "name": "R8 Revolver", "price": 600, "kill": 300, "team": "both", "category": "Pistols", "mag": 8 },
+    { "id": "deagle", "name": "Desert Eagle", "price": 700, "kill": 300, "team": "both", "category": "Pistols", "mag": 7, "damage": 63 },
+
+    { "id": "mac10", "name": "MAC-10", "price": 1050, "kill": 600, "team": "t", "category": "SMGs", "mag": 30 },
+    { "id": "ump45", "name": "UMP-45", "price": 1200, "kill": 600, "team": "both", "category": "SMGs", "mag": 25 },
+    { "id": "mp9", "name": "MP9", "price": 1250, "kill": 600, "team": "ct", "category": "SMGs", "mag": 30 },
+    { "id": "bizon", "name": "PP-Bizon", "price": 1400, "kill": 600, "team": "both", "category": "SMGs", "mag": 64 },
+    { "id": "mp7", "name": "MP7", "price": 1500, "kill": 600, "team": "both", "category": "SMGs", "mag": 30 },
+    { "id": "mp5sd", "name": "MP5-SD", "price": 1500, "kill": 600, "team": "both", "category": "SMGs", "mag": 30 },
+    { "id": "p90", "name": "P90", "price": 2350, "kill": 300, "team": "both", "category": "SMGs", "mag": 50 },
+
+    { "id": "galil", "name": "Galil AR", "price": 1800, "kill": 300, "team": "t", "category": "Rifles", "mag": 35 },
+    { "id": "famas", "name": "FAMAS", "price": 2050, "kill": 300, "team": "ct", "category": "Rifles", "mag": 25 },
+    { "id": "ak47", "name": "AK-47", "price": 2700, "kill": 300, "team": "t", "category": "Rifles", "mag": 30, "damage": 36 },
+    { "id": "m4a4", "name": "M4A4", "price": 2900, "kill": 300, "team": "ct", "category": "Rifles", "mag": 30, "damage": 33 },
+    { "id": "m4a1s", "name": "M4A1-S", "price": 2900, "kill": 300, "team": "ct", "category": "Rifles", "mag": 20, "damage": 38 },
+    { "id": "sg553", "name": "SG 553", "price": 3000, "kill": 300, "team": "t", "category": "Rifles", "mag": 30 },
+    { "id": "aug", "name": "AUG", "price": 3300, "kill": 300, "team": "ct", "category": "Rifles", "mag": 30 },
+
+    { "id": "ssg08", "name": "SSG 08", "price": 1700, "kill": 300, "team": "both", "category": "Snipers", "mag": 10 },
+    { "id": "awp", "name": "AWP", "price": 4750, "kill": 100, "team": "both", "category": "Snipers", "mag": 10, "damage": 115 },
+    { "id": "scar20", "name": "SCAR-20", "price": 5000, "kill": 300, "team": "ct", "category": "Snipers", "mag": 20 },
+    { "id": "g3sg1", "name": "G3SG1", "price": 5000, "kill": 300, "team": "t", "category": "Snipers", "mag": 20 },
+
+    { "id": "nova", "name": "Nova", "price": 1050, "kill": 900, "team": "both", "category": "Heavy", "mag": 8 },
+    { "id": "sawedoff", "name": "Sawed-Off", "price": 1100, "kill": 900, "team": "t", "category": "Heavy", "mag": 7 },
+    { "id": "mag7", "name": "MAG-7", "price": 1300, "kill": 900, "team": "ct", "category": "Heavy", "mag": 5 },
+    { "id": "xm1014", "name": "XM1014", "price": 2000, "kill": 900, "team": "both", "category": "Heavy", "mag": 7 },
+    { "id": "negev", "name": "Negev", "price": 1700, "kill": 300, "team": "both", "category": "Heavy", "mag": 150 },
+    { "id": "m249", "name": "M249", "price": 5200, "kill": 300, "team": "both", "category": "Heavy", "mag": 100 }
+  ],
+  "maps": [
+    { "id": "dust2", "name": "Dust II", "callouts": ["Long A", "Catwalk", "Goose", "Mid Doors", "B Tunnels", "Xbox", "Pit", "Car"] },
+    { "id": "mirage", "name": "Mirage", "callouts": ["Palace", "Ticket Booth", "Jungle", "Connector", "Apartments", "Short", "Van", "Underpass"] },
+    { "id": "inferno", "name": "Inferno", "callouts": ["Banana", "Apartments", "Pit", "Arch", "Coffins", "Balcony", "Second Mid", "Graveyard"] },
+    { "id": "nuke", "name": "Nuke", "callouts": ["Heaven", "Ramp", "Outside", "Secret", "Squeaky", "Vents", "Silo", "Hell"] },
+    { "id": "overpass", "name": "Overpass", "callouts": ["Monster", "Bathrooms", "Connector", "Toilets", "Party", "Heaven", "Sandbags", "Barrels"] },
+    { "id": "ancient", "name": "Ancient", "callouts": ["Donut", "Cave", "Temple", "Main", "Ramp", "Elbow", "Water", "Red Room"] },
+    { "id": "train", "name": "Train", "callouts": ["Ivy", "Popdog", "Z-Connector", "Ladder Room", "Olof", "Alley", "Electrical", "Sandwich"] }
+  ]
+}

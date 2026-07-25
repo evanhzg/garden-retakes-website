@@ -1,16 +1,17 @@
 "use client";
 
-// Host-facing HEADSHOT setup for the lobby: how long the race is, whether each
-// pro is on a clock, and how many misses before the answer is handed over.
+// Host-facing setup for the daily guessers' race mode: how long the race is,
+// whether each answer is on a clock, and how many misses before the answer is
+// handed over. HEADSHOT and PENTAKILL share it — only the dictionary differs.
 
 import React from "react";
-import { translator, HEADSHOT, type Lang } from "@/components/games/i18n";
+import { translator, type Lang } from "@/components/games/i18n";
 import { SetupTabs, SetupSection, Stepper, type Chip } from "@/components/games/setup/SetupUI";
 
-export type HeadshotOptions = { targetScore: number; roundTimer: number; revealAfter: number };
+export type RaceOptions = { targetScore: number; roundTimer: number; revealAfter: number };
 
-export function summarizeHeadshot(options: Partial<HeadshotOptions> = {}, lang: Lang): Chip[] {
-  const t = translator(HEADSHOT, lang);
+export function summarizeRace(options: Partial<RaceOptions> = {}, lang: Lang, dict: any): Chip[] {
+  const t = translator(dict, lang);
   const timer = options.roundTimer ?? 0;
   return [
     { label: `🎯 ${t("correctUnit", { n: options.targetScore ?? 5 })}`, tone: "info" },
@@ -19,14 +20,16 @@ export function summarizeHeadshot(options: Partial<HeadshotOptions> = {}, lang: 
   ];
 }
 
-export default function HeadshotOptionsPanel({ options, isHost, lang, onChange }: {
-  options: HeadshotOptions;
+export default function RaceOptionsPanel({ options, isHost, lang, dict, icon, onChange }: {
+  options: RaceOptions;
   isHost: boolean;
   lang: Lang;
-  onChange: (payload: { options: Partial<HeadshotOptions> }) => void;
+  dict: any;
+  icon?: string;
+  onChange: (payload: { options: Partial<RaceOptions> }) => void;
 }) {
-  const t = translator(HEADSHOT, lang);
-  const set = (patch: Partial<HeadshotOptions>) => { if (isHost) onChange({ options: patch }); };
+  const t = translator(dict, lang);
+  const set = (patch: Partial<RaceOptions>) => { if (isHost) onChange({ options: patch }); };
 
   return (
     <SetupTabs
@@ -34,13 +37,12 @@ export default function HeadshotOptionsPanel({ options, isHost, lang, onChange }
         {
           id: "race",
           label: t("optionsTitle"),
-          icon: "🎯",
+          icon: icon ?? "🎯",
           node: (
-            <SetupSection hint={t("modeRaceD", { n: options.targetScore ?? 5 })}>
+            <SetupSection hint={t("targetScoreD")}>
               <div className="setup-steppers">
                 <Stepper
                   label={t("targetScore")}
-                  hint={t("targetScoreD")}
                   value={options.targetScore ?? 5}
                   options={[3, 5, 10]}
                   disabled={!isHost}

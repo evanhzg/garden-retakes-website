@@ -1,11 +1,11 @@
 {
- "generatedAt": "2026-07-25T12:26:14.787Z",
+ "generatedAt": "2026-07-25T16:41:58.725Z",
  "patch": "16.14.1",
  "sources": [
   "https://developer.riotgames.com/docs/lol#data-dragon (Riot Data Dragon)",
   "https://wiki.leagueoflegends.com (CC-BY-SA)"
  ],
- "count": 248,
+ "count": 209,
  "items": [
   {
    "id": "2003",
@@ -746,37 +746,6 @@
    "image": "3070.png"
   },
   {
-   "id": "323070",
-   "name": "Tear of the Goddess",
-   "nameFr": "Larme de la déesse",
-   "plaintext": "",
-   "plaintextFr": "",
-   "description": "240 Mana Manaflow (8s, max 4 charges) Landing Abilities grants 6.5 max Mana (doubled vs. champions), up to 360 . Helping Hand Attacks deal an additional 5 physical damage to minions.",
-   "gold": {
-    "base": 400,
-    "total": 400,
-    "sell": 280
-   },
-   "tags": [
-    "Mana",
-    "ManaRegen"
-   ],
-   "from": [],
-   "into": [
-    "3003",
-    "3004",
-    "323003",
-    "323004",
-    "322526",
-    "323119"
-   ],
-   "depth": 1,
-   "stats": {
-    "FlatMPPoolMod": 240
-   },
-   "image": "323070.png"
-  },
-  {
    "id": "3865",
    "name": "World Atlas",
    "nameFr": "Atlas",
@@ -962,27 +931,6 @@
    "image": "1102.png"
   },
   {
-   "id": "1106",
-   "name": "Gustwalker Hatchling",
-   "nameFr": "Bébé Saute-nuages",
-   "plaintext": "",
-   "plaintextFr": "",
-   "description": "Jungle Companions Summon a Gustwalker that assists you against monsters. The companion grows as you hunt monsters, empowering your Smite . When fully grown, it completes your Jungle Quest and grants Move Speed upon entering brush, increased when killing large monsters.",
-   "gold": {
-    "base": 450,
-    "total": 450,
-    "sell": 180
-   },
-   "tags": [
-    "Jungle"
-   ],
-   "from": [],
-   "into": [],
-   "depth": 1,
-   "stats": {},
-   "image": "1106.png"
-  },
-  {
    "id": "1103",
    "name": "Mosstomper Seedling",
    "nameFr": "Bébé Ixamandre",
@@ -1004,27 +952,6 @@
    "image": "1103.png"
   },
   {
-   "id": "1105",
-   "name": "Mosstomper Seedling",
-   "nameFr": "Bébé Ixamandre",
-   "plaintext": "",
-   "plaintextFr": "",
-   "description": "Jungle Companions Summon a Mosstomper that assists you against monsters. The companion grows as you hunt monsters, empowering your Smite . When fully grown, it completes your Jungle Quest and grants a Shield while out of combat and after killing large monsters.",
-   "gold": {
-    "base": 450,
-    "total": 450,
-    "sell": 180
-   },
-   "tags": [
-    "Jungle"
-   ],
-   "from": [],
-   "into": [],
-   "depth": 1,
-   "stats": {},
-   "image": "1105.png"
-  },
-  {
    "id": "1101",
    "name": "Scorchclaw Pup",
    "nameFr": "Bébé Chardent",
@@ -1044,27 +971,6 @@
    "depth": 1,
    "stats": {},
    "image": "1101.png"
-  },
-  {
-   "id": "1107",
-   "name": "Scorchclaw Pup",
-   "nameFr": "Bébé Chardent",
-   "plaintext": "",
-   "plaintextFr": "",
-   "description": "Jungle Companions Summon a Scorchclaw that assists you against monsters. The companion grows as you hunt monsters, empowering your Smite . When fully grown, it completes your Jungle Quest and periodically imbues your next Attack or Ability to burn enemies and Slow them. Killing large monsters readies this immediately.",
-   "gold": {
-    "base": 450,
-    "total": 450,
-    "sell": 180
-   },
-   "tags": [
-    "Jungle"
-   ],
-   "from": [],
-   "into": [],
-   "depth": 1,
-   "stats": {},
-   "image": "1107.png"
   },
   {
    "id": "2138",
@@ -2044,25 +1950,6 @@
     "PercentLifeStealMod": 0.07
    },
    "image": "1053.png"
-  },
-  {
-   "id": "663064",
-   "name": "Veigar's Talisman of Ascension",
-   "nameFr": "Talisman de l'ascension de Veigar",
-   "plaintext": "",
-   "plaintextFr": "",
-   "description": "Gain 100% Extra Experience Offers no stats, and cannot be sold... ...But will be worth it if you reach Level 30.",
-   "gold": {
-    "base": 900,
-    "total": 900,
-    "sell": 0
-   },
-   "tags": [],
-   "from": [],
-   "into": [],
-   "depth": 1,
-   "stats": {},
-   "image": "663064.png"
   },
   {
    "id": "3177",
@@ -3634,38 +3521,6 @@
    "image": "2526.png"
   },
   {
-   "id": "322526",
-   "name": "Whispering Circlet",
-   "nameFr": "Diadème des murmures",
-   "plaintext": "",
-   "plaintextFr": "",
-   "description": "200 Health 8% Heal and Shield Power 75% Base Mana Regen 300 Mana Harmony Gain % Heal and Shield Power. Manaflow (8s, max 5 charges) Landing Abilities grants 4 max Mana (doubled vs. champions). Transforms into Diadem of Songs at 360 max Mana .",
-   "gold": {
-    "base": 850,
-    "total": 2250,
-    "sell": 1575
-   },
-   "tags": [
-    "Health",
-    "Mana",
-    "ManaRegen"
-   ],
-   "from": [
-    "3114",
-    "1028",
-    "323070"
-   ],
-   "into": [
-    "322530"
-   ],
-   "depth": 3,
-   "stats": {
-    "FlatMPPoolMod": 300,
-    "FlatHPPoolMod": 200
-   },
-   "image": "322526.png"
-  },
-  {
    "id": "2524",
    "name": "Bandlepipes",
    "nameFr": "Flûtes de Bandle",
@@ -3794,38 +3649,6 @@
    "image": "3107.png"
   },
   {
-   "id": "323050",
-   "name": "Zeke's Convergence",
-   "nameFr": "Convergence de Zeke",
-   "plaintext": "",
-   "plaintextFr": "",
-   "description": "350 Health 30 Armor 30 Magic Resist 10 Ability Haste Frostfire Tempest Casting your Ultimate summons a storm around you for 5 seconds. The storm deals 30 magic damage per second to enemy champions and Slows them by 30%.",
-   "gold": {
-    "base": 800,
-    "total": 2300,
-    "sell": 1610
-   },
-   "tags": [
-    "Health",
-    "SpellBlock",
-    "Armor",
-    "AbilityHaste"
-   ],
-   "from": [
-    "1029",
-    "3067",
-    "1033"
-   ],
-   "into": [],
-   "depth": 3,
-   "stats": {
-    "FlatSpellBlockMod": 30,
-    "FlatHPPoolMod": 350,
-    "FlatArmorMod": 30
-   },
-   "image": "323050.png"
-  },
-  {
    "id": "4005",
    "name": "Imperial Mandate",
    "nameFr": "Mandat impérial",
@@ -3854,35 +3677,6 @@
     "FlatMagicDamageMod": 60
    },
    "image": "4005.png"
-  },
-  {
-   "id": "324005",
-   "name": "Imperial Mandate",
-   "nameFr": "Mandat impérial",
-   "plaintext": "",
-   "plaintextFr": "",
-   "description": "65 Ability Power 15 Ability Haste 150% Base Mana Regen Control Gain 20 Ability Haste for your abilities with Immobilizing effects. Command On Immobilizing an enemy champion, mark them as 7% Vulnerable for 4 seconds.",
-   "gold": {
-    "base": 650,
-    "total": 2400,
-    "sell": 1680
-   },
-   "tags": [
-    "SpellDamage",
-    "ManaRegen",
-    "CooldownReduction",
-    "AbilityHaste"
-   ],
-   "from": [
-    "1026",
-    "4642"
-   ],
-   "into": [],
-   "depth": 3,
-   "stats": {
-    "FlatMagicDamageMod": 65
-   },
-   "image": "324005.png"
   },
   {
    "id": "3119",
@@ -3915,36 +3709,6 @@
    "image": "3119.png"
   },
   {
-   "id": "323119",
-   "name": "Winter's Approach",
-   "nameFr": "Approche de l'hiver",
-   "plaintext": "",
-   "plaintextFr": "",
-   "description": "550 Health 500 Mana 15 Ability Haste Awe Gain Health . Manaflow (8s, max 4 charges) Landing Attacks and Abilities grant 6.5 max Mana (doubled vs. champions). Transforms into Fimbulwinter at 360 max Mana .",
-   "gold": {
-    "base": 300,
-    "total": 2400,
-    "sell": 1680
-   },
-   "tags": [
-    "Health",
-    "Mana",
-    "AbilityHaste"
-   ],
-   "from": [
-    "323070",
-    "1011",
-    "3067"
-   ],
-   "into": [],
-   "depth": 3,
-   "stats": {
-    "FlatMPPoolMod": 500,
-    "FlatHPPoolMod": 550
-   },
-   "image": "323119.png"
-  },
-  {
    "id": "3075",
    "name": "Thornmail",
    "nameFr": "Cotte épineuse",
@@ -3974,112 +3738,6 @@
    "image": "3075.png"
   },
   {
-   "id": "663039",
-   "name": "Atma's Reckoning",
-   "nameFr": "Jugement d'Atma",
-   "plaintext": "",
-   "plaintextFr": "",
-   "description": "500 Health 20% Critical Strike Chance Big Hands Gain 0-30% Critical Strike Chance, scaling with your bonus Health .",
-   "gold": {
-    "base": 2500,
-    "total": 2500,
-    "sell": 1250
-   },
-   "tags": [
-    "Health",
-    "CriticalStrike",
-    "Lane"
-   ],
-   "from": [],
-   "into": [],
-   "depth": 1,
-   "stats": {
-    "FlatHPPoolMod": 500,
-    "FlatCritChanceMod": 0.2
-   },
-   "image": "663039.png"
-  },
-  {
-   "id": "663059",
-   "name": "Cloak of Starry Night",
-   "nameFr": "Manteau de nuit étoilée",
-   "plaintext": "",
-   "plaintextFr": "",
-   "description": "250 Health 60 Magic Resist Limitless as the Stars Increase your Magic Resist by 10%. Reduce all damage you take from non-Basic Attack sources by a percentage, scaling with your Magic Resist up to a cap of 25%.",
-   "gold": {
-    "base": 2500,
-    "total": 2500,
-    "sell": 1000
-   },
-   "tags": [
-    "Health",
-    "SpellBlock"
-   ],
-   "from": [],
-   "into": [],
-   "depth": 1,
-   "stats": {
-    "FlatSpellBlockMod": 60,
-    "FlatHPPoolMod": 250
-   },
-   "image": "663059.png"
-  },
-  {
-   "id": "664644",
-   "name": "Crown of the Shattered Queen",
-   "nameFr": "Couronne de la Reine brisée",
-   "plaintext": "",
-   "plaintextFr": "",
-   "description": "65 Ability Power 250 Health 600 Mana 15 Ability Haste Safeguard You are Safeguarded , reducing incoming champion damage by 40%. Safeguard persists for 3 seconds after taking champion damage. (0s). Item Cooldown is restarted when damage is taken from champions.",
-   "gold": {
-    "base": 2500,
-    "total": 2500,
-    "sell": 1000
-   },
-   "tags": [
-    "Health",
-    "SpellDamage",
-    "Mana",
-    "AbilityHaste"
-   ],
-   "from": [],
-   "into": [],
-   "depth": 1,
-   "stats": {
-    "FlatMPPoolMod": 600,
-    "FlatHPPoolMod": 250,
-    "FlatMagicDamageMod": 65
-   },
-   "image": "664644.png"
-  },
-  {
-   "id": "667109",
-   "name": "Cruelty",
-   "nameFr": "Cruauté",
-   "plaintext": "",
-   "plaintextFr": "",
-   "description": "60 Ability Power 25 Armor 25 Magic Resist Watch Them Fall On Immobilize or Grounding an enemy champion, summon a comet above them. The comet lands after 1 second, dealing additional magic damage in the area. This effect has a 6s cooldown per target per spell cast.",
-   "gold": {
-    "base": 2500,
-    "total": 2500,
-    "sell": 1000
-   },
-   "tags": [
-    "Armor",
-    "SpellDamage",
-    "MagicResist"
-   ],
-   "from": [],
-   "into": [],
-   "depth": 1,
-   "stats": {
-    "FlatSpellBlockMod": 25,
-    "FlatMagicDamageMod": 60,
-    "FlatArmorMod": 25
-   },
-   "image": "667109.png"
-  },
-  {
    "id": "6621",
    "name": "Dawncore",
    "nameFr": "Cœur de l'aube",
@@ -4106,59 +3764,6 @@
     "FlatMagicDamageMod": 45
    },
    "image": "6621.png"
-  },
-  {
-   "id": "663056",
-   "name": "Demon King's Crown",
-   "nameFr": "Couronne du Roi-démon",
-   "plaintext": "",
-   "plaintextFr": "",
-   "description": "Supremacy Increases your Health, Armor, Magic Resist, Attack Damage, Ability Power, Attack Speed, and Ability Haste by 20%, increased by 0% perTakedown and -3% per Death after acquiring this item.",
-   "gold": {
-    "base": 2500,
-    "total": 2500,
-    "sell": 1000
-   },
-   "tags": [
-    "Health",
-    "Armor",
-    "Damage",
-    "AttackSpeed",
-    "SpellDamage",
-    "MagicResist",
-    "AbilityHaste"
-   ],
-   "from": [],
-   "into": [],
-   "depth": 1,
-   "stats": {},
-   "image": "663056.png"
-  },
-  {
-   "id": "667112",
-   "name": "Flesheater",
-   "nameFr": "Nécrophage",
-   "plaintext": "",
-   "plaintextFr": "",
-   "description": "55 Adaptive Force 500 Health Hack the Meat Dealing damage shreds 3 Armor and Magic Resist for 5 seconds, stacking up to 10 times. Applying stacks has a 1 second cooldown per Ability. Cannibalize On Champion Takedown, steal 10% of their stats and size for the rest of the round.",
-   "gold": {
-    "base": 2500,
-    "total": 2500,
-    "sell": 1000
-   },
-   "tags": [
-    "Damage",
-    "SpellDamage",
-    "MagicPenetration",
-    "ArmorPenetration"
-   ],
-   "from": [],
-   "into": [],
-   "depth": 1,
-   "stats": {
-    "FlatHPPoolMod": 500
-   },
-   "image": "667112.png"
   },
   {
    "id": "3110",
@@ -4192,90 +3797,6 @@
    "image": "3110.png"
   },
   {
-   "id": "667101",
-   "name": "Gambler's Blade",
-   "nameFr": "Lame du parieur",
-   "plaintext": "",
-   "plaintextFr": "",
-   "description": "55 Adaptive Force 10 Ability Haste 15 Lethality 15 Magic Penetration 15% Move Speed Playing for Time Champion takedowns while using Gambler's Blade delays Doom-boss Veigar's arrival by an additional 10 seconds. Deaths while carrying the Blade accelerate it by 10 seconds. (Will not lose time past the 14:30 minute mark) Double Down Champion takedowns grant a stack, each granting 10 bonus gold on kil",
-   "gold": {
-    "base": 2500,
-    "total": 2500,
-    "sell": 0
-   },
-   "tags": [
-    "Damage",
-    "NonbootsMovement",
-    "MagicPenetration",
-    "ArmorPenetration",
-    "AbilityHaste"
-   ],
-   "from": [],
-   "into": [],
-   "depth": 1,
-   "stats": {
-    "PercentMovementSpeedMod": 0.15
-   },
-   "image": "667101.png"
-  },
-  {
-   "id": "663193",
-   "name": "Gargoyle Stoneplate",
-   "nameFr": "Lithoplastron de gargouille",
-   "plaintext": "",
-   "plaintextFr": "",
-   "description": "55 Armor 55 Magic Resist 10 Ability Haste 8% Move Speed Active - Unbreakable: Gain a Shield that decays and grow in size.",
-   "gold": {
-    "base": 2500,
-    "total": 2500,
-    "sell": 1000
-   },
-   "tags": [
-    "SpellBlock",
-    "Armor",
-    "Active",
-    "CooldownReduction",
-    "AbilityHaste"
-   ],
-   "from": [],
-   "into": [],
-   "depth": 1,
-   "stats": {
-    "FlatSpellBlockMod": 55,
-    "FlatArmorMod": 55,
-    "PercentMovementSpeedMod": 0.08
-   },
-   "image": "663193.png"
-  },
-  {
-   "id": "663146",
-   "name": "Hextech Gunblade",
-   "nameFr": "Pistolame Hextech",
-   "plaintext": "",
-   "plaintextFr": "",
-   "description": "90 Ability Power 45 Attack Damage 15% Omnivamp ACTIVE (0s) Lightning Bolt Shocks the target enemy champion, dealing magic damage and Slowing them by 40% for 2 seconds.",
-   "gold": {
-    "base": 2500,
-    "total": 2500,
-    "sell": 1250
-   },
-   "tags": [
-    "Damage",
-    "LifeSteal",
-    "SpellDamage",
-    "Active",
-    "SpellVamp"
-   ],
-   "from": [],
-   "into": [],
-   "depth": 1,
-   "stats": {
-    "FlatMagicDamageMod": 90,
-    "FlatPhysicalDamageMod": 45
-   },
-   "image": "663146.png"
-  },
-  {
    "id": "6695",
    "name": "Serpent's Fang",
    "nameFr": "Crochet de serpent",
@@ -4301,209 +3822,6 @@
     "FlatPhysicalDamageMod": 55
    },
    "image": "6695.png"
-  },
-  {
-   "id": "663058",
-   "name": "Shield of Molten Stone",
-   "nameFr": "Bouclier de roche en fusion",
-   "plaintext": "",
-   "plaintextFr": "",
-   "description": "250 Health 80 Armor Immovable as the Earth Increase your armor by 20%, and gain Block Chance based on your Armor.",
-   "gold": {
-    "base": 2500,
-    "total": 2500,
-    "sell": 1000
-   },
-   "tags": [
-    "Health",
-    "Armor"
-   ],
-   "from": [],
-   "into": [],
-   "depth": 1,
-   "stats": {
-    "FlatHPPoolMod": 250,
-    "FlatArmorMod": 80
-   },
-   "image": "663058.png"
-  },
-  {
-   "id": "664011",
-   "name": "Sword of Blossoming Dawn",
-   "nameFr": "Épée de l'aube",
-   "plaintext": "",
-   "plaintextFr": "",
-   "description": "35 Ability Power 150 Health 10% Heal and Shield Power 10 Ability Haste Effervescence Gain + 1% Attack Speed for every 1% Heal and Shield Power you have. Peppermint On-Hit , heal the lowest health ally champion near you for , prioritizing lower health allies.",
-   "gold": {
-    "base": 2500,
-    "total": 2500,
-    "sell": 1250
-   },
-   "tags": [
-    "Health",
-    "SpellDamage",
-    "CooldownReduction",
-    "OnHit",
-    "AbilityHaste"
-   ],
-   "from": [],
-   "into": [],
-   "depth": 1,
-   "stats": {
-    "FlatHPPoolMod": 150,
-    "FlatMagicDamageMod": 35
-   },
-   "image": "664011.png"
-  },
-  {
-   "id": "663060",
-   "name": "Sword of the Divine",
-   "nameFr": "Épée du divin",
-   "plaintext": "",
-   "plaintextFr": "",
-   "description": "90 Adaptive Force 50% Critical Strike Chance Excoriate Each Critical strike deals random bonus Critical Strike Damage , scaling up to 50% of your Critical Strike Chance.",
-   "gold": {
-    "base": 2500,
-    "total": 2500,
-    "sell": 1000
-   },
-   "tags": [
-    "Damage",
-    "CriticalStrike",
-    "SpellDamage"
-   ],
-   "from": [],
-   "into": [],
-   "depth": 1,
-   "stats": {
-    "FlatCritChanceMod": 0.5
-   },
-   "image": "663060.png"
-  },
-  {
-   "id": "663172",
-   "name": "Zephyr",
-   "nameFr": "Zéphyr",
-   "plaintext": "",
-   "plaintextFr": "",
-   "description": "40% Attack Speed 8% Move Speed 25 Ability Haste 20% Tenacity Like the Wind Gain 5% Move Speed On-Hit for 6 seconds, stacking up to 25% Move Speed.",
-   "gold": {
-    "base": 2500,
-    "total": 2500,
-    "sell": 1250
-   },
-   "tags": [
-    "AttackSpeed",
-    "CooldownReduction",
-    "OnHit",
-    "NonbootsMovement",
-    "Tenacity"
-   ],
-   "from": [],
-   "into": [],
-   "depth": 1,
-   "stats": {
-    "PercentAttackSpeedMod": 0.4,
-    "PercentMovementSpeedMod": 0.08
-   },
-   "image": "663172.png"
-  },
-  {
-   "id": "323504",
-   "name": "Ardent Censer",
-   "nameFr": "Encensoir ardent",
-   "plaintext": "",
-   "plaintextFr": "",
-   "description": "55 Ability Power 10% Heal and Shield Power 150% Base Mana Regen 6% Move Speed Sanctify Healing or Shielding an ally enhances you both for 6 seconds, granting 25% Attack Speed and 20 magic damage On-Hit .",
-   "gold": {
-    "base": 700,
-    "total": 2600,
-    "sell": 1820
-   },
-   "tags": [
-    "AttackSpeed",
-    "SpellDamage",
-    "ManaRegen",
-    "NonbootsMovement"
-   ],
-   "from": [
-    "3113",
-    "1052",
-    "3114"
-   ],
-   "into": [],
-   "depth": 3,
-   "stats": {
-    "FlatMagicDamageMod": 55,
-    "PercentMovementSpeedMod": 0.06
-   },
-   "image": "323504.png"
-  },
-  {
-   "id": "326620",
-   "name": "Echoes of Helia",
-   "nameFr": "Échos d'Helia",
-   "plaintext": "",
-   "plaintextFr": "",
-   "description": "35 Ability Power 250 Health 20 Ability Haste 150% Base Mana Regen Soul Siphon Gain 30% of pre-mitigation damage dealt to champions as Soul Charges. Healing or Shielding an ally consumes all Soul Charges to restore Health .",
-   "gold": {
-    "base": 900,
-    "total": 2600,
-    "sell": 1820
-   },
-   "tags": [
-    "Health",
-    "SpellDamage",
-    "ManaRegen",
-    "CooldownReduction",
-    "AbilityHaste"
-   ],
-   "from": [
-    "3067",
-    "4642"
-   ],
-   "into": [],
-   "depth": 3,
-   "stats": {
-    "FlatHPPoolMod": 250,
-    "FlatMagicDamageMod": 35
-   },
-   "image": "326620.png"
-  },
-  {
-   "id": "323190",
-   "name": "Locket of the Iron Solari",
-   "nameFr": "Médaillon de l'Iron Solari",
-   "plaintext": "",
-   "plaintextFr": "",
-   "description": "250 Health 30 Armor 30 Magic Resist 10 Ability Haste Devotion Grant nearby allies a 290 - 360 Shield that decays over 2.5 seconds.",
-   "gold": {
-    "base": 1100,
-    "total": 2600,
-    "sell": 1820
-   },
-   "tags": [
-    "Health",
-    "SpellBlock",
-    "Armor",
-    "Aura",
-    "Active",
-    "MagicResist",
-    "AbilityHaste"
-   ],
-   "from": [
-    "3067",
-    "1029",
-    "1033"
-   ],
-   "into": [],
-   "depth": 3,
-   "stats": {
-    "FlatSpellBlockMod": 30,
-    "FlatHPPoolMod": 250,
-    "FlatArmorMod": 30
-   },
-   "image": "323190.png"
   },
   {
    "id": "2525",
@@ -4567,38 +3885,6 @@
    "image": "6657.png"
   },
   {
-   "id": "326657",
-   "name": "Rod of Ages",
-   "nameFr": "Bâton séculaire",
-   "plaintext": "",
-   "plaintextFr": "",
-   "description": "45 Ability Power 350 Health 500 Mana Timeless This item gains 10 Health , 30 Mana and 3 Ability Power every 60 seconds up to 10 times. Upon reaching max stacks, gain a level. Eternity Taking damage from champions restores 10% of the damage as Mana . Casting an ability heals for 25% of Mana spent.",
-   "gold": {
-    "base": 450,
-    "total": 2600,
-    "sell": 1820
-   },
-   "tags": [
-    "Health",
-    "HealthRegen",
-    "SpellDamage",
-    "Mana",
-    "ManaRegen"
-   ],
-   "from": [
-    "1026",
-    "3803"
-   ],
-   "into": [],
-   "depth": 3,
-   "stats": {
-    "FlatMPPoolMod": 500,
-    "FlatHPPoolMod": 350,
-    "FlatMagicDamageMod": 45
-   },
-   "image": "326657.png"
-  },
-  {
    "id": "3116",
    "name": "Rylai's Crystal Scepter",
    "nameFr": "Sceptre de Rylai",
@@ -4627,68 +3913,6 @@
     "FlatMagicDamageMod": 65
    },
    "image": "3116.png"
-  },
-  {
-   "id": "322065",
-   "name": "Shurelya's Battlesong",
-   "nameFr": "Chant de guerre de Shurelya",
-   "plaintext": "",
-   "plaintextFr": "",
-   "description": "65 Ability Power 15 Ability Haste 6% Move Speed 150% Base Mana Regen Inspiring Speech Grant nearby allies 30% Move Speed for 4 seconds.",
-   "gold": {
-    "base": 800,
-    "total": 2600,
-    "sell": 1820
-   },
-   "tags": [
-    "SpellDamage",
-    "ManaRegen",
-    "Active",
-    "CooldownReduction",
-    "NonbootsMovement",
-    "AbilityHaste"
-   ],
-   "from": [
-    "3113",
-    "4642"
-   ],
-   "into": [],
-   "depth": 3,
-   "stats": {
-    "FlatMagicDamageMod": 65,
-    "PercentMovementSpeedMod": 0.06
-   },
-   "image": "322065.png"
-  },
-  {
-   "id": "326616",
-   "name": "Staff of Flowing Water",
-   "nameFr": "Bâton des flots",
-   "plaintext": "",
-   "plaintextFr": "",
-   "description": "45 Ability Power 10% Heal and Shield Power 150% Base Mana Regen 10 Ability Haste Rapids Healing or Shielding an ally grants you both 40 Ability Power and 15 Ability Haste for 6 seconds.",
-   "gold": {
-    "base": 750,
-    "total": 2600,
-    "sell": 1820
-   },
-   "tags": [
-    "SpellDamage",
-    "ManaRegen",
-    "CooldownReduction",
-    "AbilityHaste"
-   ],
-   "from": [
-    "3108",
-    "1052",
-    "3114"
-   ],
-   "into": [],
-   "depth": 3,
-   "stats": {
-    "FlatMagicDamageMod": 45
-   },
-   "image": "326616.png"
   },
   {
    "id": "8020",
@@ -4907,66 +4131,6 @@
     "PercentMovementSpeedMod": 0.04
    },
    "image": "3085.png"
-  },
-  {
-   "id": "323075",
-   "name": "Thornmail",
-   "nameFr": "Cotte épineuse",
-   "plaintext": "",
-   "plaintextFr": "",
-   "description": "200 Health 85 Armor Thorns When struck by an Attack, deal magic damage to the attacker and apply 40% Wounds for 3 seconds if they are a champion.",
-   "gold": {
-    "base": 650,
-    "total": 2650,
-    "sell": 1855
-   },
-   "tags": [
-    "Health",
-    "Armor"
-   ],
-   "from": [
-    "3076",
-    "1031",
-    "1028"
-   ],
-   "into": [],
-   "depth": 3,
-   "stats": {
-    "FlatHPPoolMod": 200,
-    "FlatArmorMod": 85
-   },
-   "image": "323075.png"
-  },
-  {
-   "id": "323110",
-   "name": "Frozen Heart",
-   "nameFr": "Cœur gelé",
-   "plaintext": "",
-   "plaintextFr": "",
-   "description": "75 Armor 500 Mana 25 Ability Haste Winter's Caress Reduce the Attack Speed of nearby champions by 20% .",
-   "gold": {
-    "base": 800,
-    "total": 2700,
-    "sell": 1890
-   },
-   "tags": [
-    "Armor",
-    "Mana",
-    "Aura",
-    "CooldownReduction",
-    "AbilityHaste"
-   ],
-   "from": [
-    "3082",
-    "3024"
-   ],
-   "into": [],
-   "depth": 3,
-   "stats": {
-    "FlatMPPoolMod": 500,
-    "FlatArmorMod": 75
-   },
-   "image": "323110.png"
   },
   {
    "id": "4628",
@@ -5357,69 +4521,6 @@
    "image": "6697.png"
   },
   {
-   "id": "323222",
-   "name": "Mikael's Blessing",
-   "nameFr": "Bénédiction de Mikael",
-   "plaintext": "",
-   "plaintextFr": "",
-   "description": "400 Health 100% Base Mana Regen 15% Heal and Shield Power 15 Ability Haste Purify Remove all crowd control debuffs (excluding Airborne and Suppression ) from an ally champion and restore 100 - 250 Health .",
-   "gold": {
-    "base": 1000,
-    "total": 2800,
-    "sell": 1960
-   },
-   "tags": [
-    "Health",
-    "ManaRegen",
-    "Active",
-    "CooldownReduction",
-    "Tenacity",
-    "AbilityHaste"
-   ],
-   "from": [
-    "3067",
-    "1028",
-    "3114"
-   ],
-   "into": [],
-   "depth": 3,
-   "stats": {
-    "FlatHPPoolMod": 400
-   },
-   "image": "323222.png"
-  },
-  {
-   "id": "323107",
-   "name": "Redemption",
-   "nameFr": "Rédemption",
-   "plaintext": "",
-   "plaintextFr": "",
-   "description": "30 Ability Power 15 Ability Haste 100% Base Mana Regen 10% Heal and Shield Power Intervention Restore 150 - 350 Health to allied units and deal 10% max Health true damage to enemy champions after 2.5 seconds.",
-   "gold": {
-    "base": 1000,
-    "total": 2800,
-    "sell": 1960
-   },
-   "tags": [
-    "SpellDamage",
-    "ManaRegen",
-    "CooldownReduction",
-    "AbilityHaste"
-   ],
-   "from": [
-    "3067",
-    "1028",
-    "3114"
-   ],
-   "into": [],
-   "depth": 3,
-   "stats": {
-    "FlatHPPoolMod": 400,
-    "FlatMagicDamageMod": 30
-   },
-   "image": "323107.png"
-  },
-  {
    "id": "4646",
    "name": "Stormsurge",
    "nameFr": "Onde orageuse",
@@ -5573,37 +4674,6 @@
    "image": "3142.png"
   },
   {
-   "id": "328020",
-   "name": "Abyssal Mask",
-   "nameFr": "Masque abyssal",
-   "plaintext": "",
-   "plaintextFr": "",
-   "description": "350 Health 50 Magic Resist 15 Ability Haste Unmake Nearby enemy champions take 12% more magic damage .",
-   "gold": {
-    "base": 1200,
-    "total": 2850,
-    "sell": 1995
-   },
-   "tags": [
-    "Health",
-    "SpellBlock",
-    "CooldownReduction",
-    "MagicResist",
-    "AbilityHaste"
-   ],
-   "from": [
-    "3067",
-    "1057"
-   ],
-   "into": [],
-   "depth": 3,
-   "stats": {
-    "FlatSpellBlockMod": 50,
-    "FlatHPPoolMod": 350
-   },
-   "image": "328020.png"
-  },
-  {
    "id": "3165",
    "name": "Morellonomicon",
    "nameFr": "Morellonomicon",
@@ -5695,36 +4765,6 @@
    "image": "3003.png"
   },
   {
-   "id": "323003",
-   "name": "Archangel's Staff",
-   "nameFr": "Bâton de l'archange",
-   "plaintext": "",
-   "plaintextFr": "",
-   "description": "70 Ability Power 600 Mana 25 Ability Haste Awe Gain Ability Power equal to 1% bonus Mana. Manaflow (8s, max 5 charges) Landing Abilities grants 9.5 max Mana (doubled vs. champions). Transforms into Seraph's Embrace at 360 max Mana .",
-   "gold": {
-    "base": 450,
-    "total": 2900,
-    "sell": 2030
-   },
-   "tags": [
-    "SpellDamage",
-    "Mana",
-    "AbilityHaste"
-   ],
-   "from": [
-    "323070",
-    "3802",
-    "3108"
-   ],
-   "into": [],
-   "depth": 3,
-   "stats": {
-    "FlatMPPoolMod": 600,
-    "FlatMagicDamageMod": 70
-   },
-   "image": "323003.png"
-  },
-  {
    "id": "8010",
    "name": "Bloodletter's Curse",
    "nameFr": "Malédiction du sanguinaire",
@@ -5753,34 +4793,6 @@
     "FlatMagicDamageMod": 65
    },
    "image": "8010.png"
-  },
-  {
-   "id": "326621",
-   "name": "Dawncore",
-   "nameFr": "Cœur de l'aube",
-   "plaintext": "",
-   "plaintextFr": "",
-   "description": "50 Ability Power 20% Heal and Shield Power 150% Base Mana Regen First Light Gain 2% Heal and Shield Power and 10 Ability Power per 100% Base Mana Regen.",
-   "gold": {
-    "base": 850,
-    "total": 2900,
-    "sell": 2030
-   },
-   "tags": [
-    "SpellDamage",
-    "ManaRegen"
-   ],
-   "from": [
-    "1026",
-    "3114",
-    "3114"
-   ],
-   "into": [],
-   "depth": 3,
-   "stats": {
-    "FlatMagicDamageMod": 50
-   },
-   "image": "326621.png"
   },
   {
    "id": "3742",
@@ -5906,40 +4918,6 @@
    "image": "2504.png"
   },
   {
-   "id": "323109",
-   "name": "Knight's Vow",
-   "nameFr": "Vœu du chevalier",
-   "plaintext": "",
-   "plaintextFr": "",
-   "description": "300 Health 50 Armor 10 Ability Haste 150% Base Health Regen Sacrifice While near your Worthy ally, take 14% of the damage they receive and heal for 12% of the damage they deal to champions. Pledge (0s) Designate an ally as Worthy .",
-   "gold": {
-    "base": 1000,
-    "total": 2900,
-    "sell": 2030
-   },
-   "tags": [
-    "Health",
-    "HealthRegen",
-    "Armor",
-    "Aura",
-    "Active",
-    "CooldownReduction",
-    "AbilityHaste"
-   ],
-   "from": [
-    "3067",
-    "1031",
-    "1006"
-   ],
-   "into": [],
-   "depth": 3,
-   "stats": {
-    "FlatHPPoolMod": 300,
-    "FlatArmorMod": 50
-   },
-   "image": "323109.png"
-  },
-  {
    "id": "3100",
    "name": "Lich Bane",
    "nameFr": "Fléau de liche",
@@ -6001,70 +4979,6 @@
     "FlatPhysicalDamageMod": 35
    },
    "image": "3004.png"
-  },
-  {
-   "id": "323004",
-   "name": "Manamune",
-   "nameFr": "Manamune",
-   "plaintext": "",
-   "plaintextFr": "",
-   "description": "35 Attack Damage 500 Mana 15 Ability Haste Awe Gain bonus Attack Damage . Manaflow (8s, max 4 charges) Landing Attacks and Abilities grants 6.5 max Mana (doubled vs. champions). Transforms into Muramana at 360 max Mana .",
-   "gold": {
-    "base": 1100,
-    "total": 2900,
-    "sell": 2030
-   },
-   "tags": [
-    "Damage",
-    "Mana",
-    "CooldownReduction",
-    "OnHit",
-    "AbilityHaste"
-   ],
-   "from": [
-    "323070",
-    "3133",
-    "1036"
-   ],
-   "into": [],
-   "depth": 3,
-   "stats": {
-    "FlatMPPoolMod": 500,
-    "FlatPhysicalDamageMod": 35
-   },
-   "image": "323004.png"
-  },
-  {
-   "id": "326617",
-   "name": "Moonstone Renewer",
-   "nameFr": "Régénérateur de pierre de lune",
-   "plaintext": "",
-   "plaintextFr": "",
-   "description": "35 Ability Power 400 Health 20 Ability Haste 150% Base Mana Regen Starlit Grace Healing or shielding an ally chains the effect to another ally (excluding yourself), healing 30% or shielding 35% of the original amount.",
-   "gold": {
-    "base": 800,
-    "total": 2900,
-    "sell": 2030
-   },
-   "tags": [
-    "Health",
-    "SpellDamage",
-    "ManaRegen",
-    "CooldownReduction",
-    "AbilityHaste"
-   ],
-   "from": [
-    "3067",
-    "1028",
-    "4642"
-   ],
-   "into": [],
-   "depth": 3,
-   "stats": {
-    "FlatHPPoolMod": 400,
-    "FlatMagicDamageMod": 35
-   },
-   "image": "326617.png"
   },
   {
    "id": "3115",
@@ -6678,36 +5592,6 @@
     "FlatPhysicalDamageMod": 50
    },
    "image": "6676.png"
-  },
-  {
-   "id": "667666",
-   "name": "The Collector",
-   "nameFr": "Percepteur",
-   "plaintext": "",
-   "plaintextFr": "",
-   "description": "50 Attack Damage 10 Lethality 25% Critical Strike Chance Death Your damage executes champions that are below 5% Health. Taxes Champion kills grant 25 bonus gold .",
-   "gold": {
-    "base": 525,
-    "total": 3000,
-    "sell": 2100
-   },
-   "tags": [
-    "Damage",
-    "CriticalStrike",
-    "ArmorPenetration"
-   ],
-   "from": [
-    "1037",
-    "3134",
-    "1018"
-   ],
-   "into": [],
-   "depth": 3,
-   "stats": {
-    "FlatCritChanceMod": 0.25,
-    "FlatPhysicalDamageMod": 50
-   },
-   "image": "667666.png"
   },
   {
    "id": "3135",

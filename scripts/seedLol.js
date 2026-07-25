@@ -76,9 +76,16 @@ function buildRegionMap(universe) {
     }
   }
 
-  return (championName) => {
-    const hit = byFaction[championName] || byBio[championName];
-    return hit && hit.length ? [...new Set(hit)] : ["Runeterra"];
+  // The two modules don't always agree on a champion's name: ChampionData keys
+  // Kled as "Kled & Skaarl" while the faction lists just say "Kled", so try
+  // every name we know for them before giving up.
+  return (...names) => {
+    for (const name of names) {
+      if (!name) continue;
+      const hit = byFaction[name] || byBio[name];
+      if (hit && hit.length) return [...new Set(hit)];
+    }
+    return ["Runeterra"];
   };
 }
 
@@ -132,7 +139,7 @@ async function main() {
       titleFr: champFr.data[apiName] ? champFr.data[apiName].title : dd.title,
       classes,
       positions,
-      regions: regionsOf(w.wikiName),
+      regions: regionsOf(w.wikiName, dd.name, apiName),
       resource: w.resource || "None",
       rangeType: w.rangetype || (Number(w.stats && w.stats.range) > 300 ? "Ranged" : "Melee"),
       damageType: w.adaptivetype || "Physical",
@@ -162,11 +169,18 @@ async function main() {
   // Summoner's Rift only, actually buyable, and not a hidden/ornn upgrade —
   // otherwise the quiz would ask about items no player has ever seen.
   const items = [];
+  const seenItemNames = new Set();
   for (const [id, it] of Object.entries(itemEn.data)) {
     if (!it.maps || it.maps["11"] !== true) continue;
     if (!it.gold || !it.gold.purchasable || it.gold.total <= 0) continue;
     if (it.inStore === false) continue;
     if (it.requiredAlly || it.requiredChampion) continue;
+    // Arena / Swarm reprints keep the Rift name under a 6-digit id and a
+    // different price. Two "Ardent Censer" rows would make a quiz question
+    // unanswerable, so only the canonical 4-digit item survives.
+    if (Number(id) >= 100000) continue;
+    if (seenItemNames.has(it.name)) continue;
+    seenItemNames.add(it.name);
 
     items.push({
       id,
