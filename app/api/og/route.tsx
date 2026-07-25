@@ -236,13 +236,21 @@ export async function GET(req: Request) {
         <img src={`${origin}/retakes_logo.png`} width={128} height={128} style={{ borderRadius: 24, marginBottom: 24 }} />
         <div style={{
           display: "flex",
-          fontSize: 110,
-          fontWeight: 900,
+          flexDirection: "row",
+          alignItems: "center",
           fontFamily: 'ui-sans-serif, system-ui, "Segoe UI", Roboto, sans-serif',
-          color: "white",
-          letterSpacing: "1px"
+          fontWeight: 900,
+          fontSize: 110, /* Scaled from 1.25rem for the 1200x630 OG canvas */
+          letterSpacing: "1px",
+          color: "white"
         }}>
-          REEEEETAKES
+          <span>R</span>
+          <span>E</span>
+          <span style={{ opacity: 0.4 }}>E</span>
+          <span style={{ opacity: 0.4 }}>E</span>
+          <span style={{ opacity: 0.4 }}>E</span>
+          <span style={{ opacity: 0.4 }}>E</span>
+          <span>TAKES</span>
         </div>
         <div
           style={{
