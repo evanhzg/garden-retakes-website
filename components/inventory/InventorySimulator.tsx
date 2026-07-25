@@ -102,6 +102,7 @@ export default function InventorySimulator() {
   const [wsInput, setWsInput] = useState("");
   const [wsBusy, setWsBusy] = useState(false);
   const [wsMsg, setWsMsg] = useState<{ kind: "ok" | "err"; text: string } | null>(null);
+  const [wsJobs, setWsJobs] = useState<any[]>([]);
 
   // Skin chooser filters
   const [skinSearch, setSkinSearch] = useState("");
@@ -210,30 +211,47 @@ export default function InventorySimulator() {
 
   /** Add a skin from a pasted Workshop link or id (admin only). */
   const addWorkshopSkin = useCallback(async () => {
-    const input = wsInput.trim();
-    if (!input || wsBusy) return;
+    const url = wsInput.trim();
+    if (!url || wsBusy) return;
     setWsBusy(true);
     setWsMsg(null);
     try {
-      const res = await fetch("/api/workshop", {
+      const res = await fetch("/api/workshop/job", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ input }),
+        body: JSON.stringify({ url }),
       });
       const data = await res.json();
       if (!res.ok) throw new Error(data?.error || `Request failed (${res.status})`);
       setWsInput("");
-      setWsMsg({
-        kind: "ok",
-        text: `${data.created ? "Added" : "Refreshed"} ${data.skin.name}${data.skin.weapon ? ` — ${data.skin.weapon}` : ""}. Deploy to push it to the server.`,
-      });
-      loadWorkshopSkins();
+      setWsMsg({ kind: "ok", text: "Download queued..." });
     } catch (err) {
       setWsMsg({ kind: "err", text: (err as Error).message });
     } finally {
       setWsBusy(false);
     }
-  }, [wsInput, wsBusy, loadWorkshopSkins]);
+  }, [wsInput, wsBusy]);
+
+  // Poll for active jobs
+  useEffect(() => {
+    if ((session.adminLevel ?? 0) < 2) return;
+    const poll = async () => {
+      try {
+        const res = await fetch("/api/workshop/job");
+        if (res.ok) {
+          const data = await res.json();
+          setWsJobs(data.active || []);
+          if (data.active?.length === 0 && wsJobs.length > 0) {
+            loadWorkshopSkins();
+            setWsMsg({ kind: "ok", text: "Download complete. Deploy to push it to the server." });
+          }
+        }
+      } catch (err) {}
+    };
+    const h = window.setInterval(poll, 2000);
+    poll();
+    return () => window.clearInterval(h);
+  }, [session.adminLevel, loadWorkshopSkins, wsJobs.length]);
 
   /**
    * Workshop skins can't be "equipped" the way a paint kit can.
@@ -915,7 +933,22 @@ export default function InventorySimulator() {
                 </div>
               )}
 
-              {wsMsg && (
+              {wsJobs.map(job => (
+                <div key={job.id} style={{ padding: 12, marginTop: 12, background: "rgba(0,0,0,0.5)", borderRadius: 8 }}>
+                  <div style={{ display: "flex", justifyContent: "space-between", marginBottom: 6 }}>
+                    <span style={{ fontWeight: 600 }}>{job.name || "Fetching info..."}</span>
+                    <span className="eyebrow">{job.step} ({job.stepIndex + 1}/{job.steps.length})</span>
+                  </div>
+                  <div style={{ fontSize: "0.85em", color: "rgba(255,255,255,0.7)" }}>{job.note}</div>
+                  {job.status === "guard_pending" && (
+                    <div style={{ marginTop: 8, padding: 8, background: "rgba(255, 50, 50, 0.2)", color: "#ff8888", borderRadius: 4, fontWeight: "bold" }}>
+                      Pending steam verification from evan
+                    </div>
+                  )}
+                </div>
+              ))}
+
+              {wsMsg && wsJobs.length === 0 && (
                 <p className={`inv3-ws-msg ${wsMsg.kind}`}>{wsMsg.text}</p>
               )}
 
