@@ -235,11 +235,19 @@ export default function InventorySimulator() {
   // Poll for active jobs
   useEffect(() => {
     if ((session.adminLevel ?? 0) < 2) return;
+    let handle: number | undefined;
     const poll = async () => {
       try {
         const res = await fetch("/api/workshop/job");
         if (res.ok) {
           const data = await res.json();
+          // This deployment can't run ingest (serverless has no writable disk
+          // and no steamcmd). Stop rather than asking again every 2 seconds
+          // for the lifetime of the page.
+          if (data.available === false) {
+            if (handle) window.clearInterval(handle);
+            return;
+          }
           setWsJobs(data.active || []);
           if (data.active?.length === 0 && wsJobs.length > 0) {
             loadWorkshopSkins();
@@ -248,9 +256,9 @@ export default function InventorySimulator() {
         }
       } catch (err) {}
     };
-    const h = window.setInterval(poll, 2000);
+    handle = window.setInterval(poll, 2000);
     poll();
-    return () => window.clearInterval(h);
+    return () => { if (handle) window.clearInterval(handle); };
   }, [session.adminLevel, loadWorkshopSkins, wsJobs.length]);
 
   /**
