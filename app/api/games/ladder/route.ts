@@ -14,7 +14,7 @@ export async function GET(request: Request) {
       take: 100,
     });
     
-    const steamIds = [...new Set(stats.map(s => s.SteamId))];
+    const steamIds = stats.map(s => s.SteamId).filter((val, idx, arr) => arr.indexOf(val) === idx);
     const profiles = await prisma.playerProfile.findMany({
       where: { SteamId: { in: steamIds } },
       select: { SteamId: true, LastKnownName: true }
