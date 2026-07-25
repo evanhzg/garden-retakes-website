@@ -39,15 +39,17 @@ export async function GET(request: Request) {
   const claimedId = incoming.get("openid.claimed_id") ?? "";
   const match = claimedId.match(CLAIMED_ID_RE);
 
+  const returnTo = incoming.get("returnTo") || "/";
+
   if (!verifyText.includes("is_valid:true") || !match) {
-    return NextResponse.redirect(`${origin}/inventory?auth=failed`);
+    return NextResponse.redirect(`${origin}${returnTo === "/" ? "/inventory" : returnTo}?auth=failed`);
   }
 
   const steamId = match[1];
   const profile = await fetchProfile(steamId);
   const token = createSessionToken({ steamId, ...profile });
 
-  const response = NextResponse.redirect(`${origin}/inventory`);
+  const response = NextResponse.redirect(`${origin}${returnTo}`);
   response.cookies.set(SESSION_COOKIE, token, sessionCookieOptions);
   return response;
 }

@@ -85,6 +85,47 @@ export default function GamesHubWrapper() {
   );
 }
 
+function MiniLadder() {
+  const [topPlayers, setTopPlayers] = useState<any[]>([]);
+  useEffect(() => {
+    fetch('/api/games/ladder?gameId=all')
+      .then(res => res.json())
+      .then(data => {
+        if (Array.isArray(data)) setTopPlayers(data.slice(0, 5));
+      })
+      .catch(() => {});
+  }, []);
+
+  return (
+    <div className="hub-panel mt-4" style={{ marginTop: '1rem' }}>
+      <div className="hub-panel-head">
+        <h2>Top Players</h2>
+        <Link href="/games/ladder" className="hub-live" style={{ color: 'var(--text-dim)' }}>View all →</Link>
+      </div>
+      <div className="lobbies-list">
+        {topPlayers.length === 0 ? (
+          <p className="no-lobbies">No ranked players yet.</p>
+        ) : (
+          topPlayers.map((p, i) => (
+            <div key={`${p.steamId}-${p.gameId}`} className="public-lobby-card" style={{ padding: '0.75rem', gap: '0.5rem' }}>
+              <div className="lobby-info" style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', width: '100%' }}>
+                <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
+                  <span style={{ color: 'var(--text-dim)', fontWeight: 'bold' }}>#{i + 1}</span>
+                  <Link href={`/profile/${p.steamId}`} style={{ color: '#fff', textDecoration: 'none', fontWeight: 500 }}>{p.name}</Link>
+                </div>
+                <div style={{ textAlign: 'right' }}>
+                  <div style={{ color: '#ffb800', fontWeight: 'bold' }}>{p.elo} <span style={{ fontSize: '0.7rem', color: 'var(--text-dim)', fontWeight: 'normal' }}>ELO</span></div>
+                  <div style={{ fontSize: '0.7rem', color: 'var(--text-dim)' }}>{p.gameId.toUpperCase()}</div>
+                </div>
+              </div>
+            </div>
+          ))
+        )}
+      </div>
+    </div>
+  );
+}
+
 function GamesHub() {
   const router = useRouter();
   const { socket, isAuthed, steamId } = useSocket();
@@ -162,9 +203,14 @@ function GamesHub() {
               <div className="hub-stat"><b>{readyCount}</b><span>games live</span></div>
               <div className="hub-stat"><b>{publicLobbies.length}</b><span>open lobbies</span></div>
             </div>
-            <button className="hub-create" onClick={() => createLobby("none")} disabled={creating}>
-              <span className="hub-create-plus">+</span> {creating ? "Creating…" : "Create Lobby"}
-            </button>
+            <div style={{ display: 'flex', gap: '0.5rem' }}>
+              <button className="hub-create" onClick={() => createLobby("none")} disabled={creating}>
+                <span className="hub-create-plus">+</span> {creating ? "Creating…" : "Create Lobby"}
+              </button>
+              <Link href="/games/ladder" className="hub-create" style={{ background: 'rgba(255, 255, 255, 0.1)', color: '#fff' }}>
+                🏆 Ladder
+              </Link>
+            </div>
           </div>
         </section>
 
@@ -317,6 +363,8 @@ function GamesHub() {
                 </div>
               </form>
             </div>
+            
+            <MiniLadder />
           </aside>
         </div>
       </div>

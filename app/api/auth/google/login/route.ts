@@ -1,18 +1,16 @@
 import { NextResponse } from "next/server";
 import { getSession } from "@/lib/auth";
-import { authorizeUrl, discordConfigured, signState } from "@/lib/discord";
+import { authorizeUrl, googleConfigured, signState } from "@/lib/google";
 
 export const dynamic = "force-dynamic";
 
-// Kick off the Discord OAuth link or login.
 export async function GET(request: Request) {
   const origin = process.env.SITE_URL ?? new URL(request.url).origin;
   const session = getSession();
   
-  if (!discordConfigured()) return NextResponse.redirect(`${origin}/profile?discord=unconfigured`);
+  if (!googleConfigured()) return NextResponse.redirect(`${origin}/profile?google=unconfigured`);
 
   const returnTo = new URL(request.url).searchParams.get("returnTo") || "/";
-  // state will carry either the steamId (if linking) or "login|" + returnTo (if standalone login).
   const statePayload = session ? session.steamId : `login|${returnTo}`;
   const state = signState(statePayload);
   return NextResponse.redirect(authorizeUrl(origin, state));

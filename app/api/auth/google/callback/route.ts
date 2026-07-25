@@ -1,26 +1,23 @@
 import { NextResponse } from "next/server";
 import { prisma } from "@/lib/db";
-import { exchangeCode, fetchDiscordUser, verifyState } from "@/lib/discord";
+import { exchangeCode, fetchGoogleUser, verifyState } from "@/lib/google";
 import { createSessionToken, SESSION_COOKIE, sessionCookieOptions } from "@/lib/auth";
 
 export const dynamic = "force-dynamic";
 
-// Discord redirects back here with ?code&state. We verify the signed state,
-// exchange the code, fetch the Discord identity, and persist it on the linked
-// Steam account's web profile.
 export async function GET(request: Request) {
   const origin = process.env.SITE_URL ?? new URL(request.url).origin;
   const params = new URL(request.url).searchParams;
 
   const verified = verifyState(params.get("state") || undefined);
   const code = params.get("code");
-  if (!verified || !code) return NextResponse.redirect(`${origin}/profile?discord=failed`);
+  if (!verified || !code) return NextResponse.redirect(`${origin}/profile?google=failed`);
 
   const token = await exchangeCode(origin, code);
-  if (!token?.access_token) return NextResponse.redirect(`${origin}/profile?discord=failed`);
+  if (!token?.access_token) return NextResponse.redirect(`${origin}/profile?google=failed`);
 
-  const user = await fetchDiscordUser(token.access_token);
-  if (!user) return NextResponse.redirect(`${origin}/profile?discord=failed`);
+  const user = await fetchGoogleUser(token.access_token);
+  if (!user) return NextResponse.redirect(`${origin}/profile?google=failed`);
 
   const payload = verified.steamId;
 
@@ -28,8 +25,8 @@ export async function GET(request: Request) {
     const returnTo = payload.split("|")[1] || "/";
     
     // Standalone login
-    const link = await prisma.gardenDiscordLink.findFirst({
-      where: { DiscordId: user.id },
+    const link = await prisma.gardenGoogleLink.findFirst({
+      where: { GoogleId: user.id },
       orderBy: { LinkedAtUtc: 'desc' }
     });
 
@@ -38,8 +35,6 @@ export async function GET(request: Request) {
     if (link) {
       steamIdToUse = link.SteamId;
     } else {
-      // Create a virtual SteamId for web-only users.
-      // 99 followed by 15 random digits
       steamIdToUse = BigInt("99" + Math.floor(Math.random() * 1000000000000000).toString().padStart(15, '0'));
       
       await prisma.playerProfile.create({
@@ -51,8 +46,8 @@ export async function GET(request: Request) {
         }
       });
       
-      await prisma.gardenDiscordLink.create({
-        data: { SteamId: steamIdToUse, DiscordId: user.id, DiscordName: user.name, DiscordAvatar: user.avatar, LinkedAtUtc: new Date() }
+      await prisma.gardenGoogleLink.create({
+        data: { SteamId: steamIdToUse, GoogleId: user.id, GoogleEmail: user.email, GoogleName: user.name, GoogleAvatar: user.avatar, LinkedAtUtc: new Date() }
       });
     }
     
@@ -64,14 +59,14 @@ export async function GET(request: Request) {
 
   try {
     const steamId = BigInt(payload);
-    await prisma.gardenDiscordLink.upsert({
+    await prisma.gardenGoogleLink.upsert({
       where: { SteamId: steamId },
-      update: { DiscordId: user.id, DiscordName: user.name, DiscordAvatar: user.avatar, LinkedAtUtc: new Date() },
-      create: { SteamId: steamId, DiscordId: user.id, DiscordName: user.name, DiscordAvatar: user.avatar, LinkedAtUtc: new Date() },
+      update: { GoogleId: user.id, GoogleEmail: user.email, GoogleName: user.name, GoogleAvatar: user.avatar, LinkedAtUtc: new Date() },
+      create: { SteamId: steamId, GoogleId: user.id, GoogleEmail: user.email, GoogleName: user.name, GoogleAvatar: user.avatar, LinkedAtUtc: new Date() },
     });
   } catch {
-    return NextResponse.redirect(`${origin}/profile?discord=error`);
+    return NextResponse.redirect(`${origin}/profile?google=error`);
   }
 
-  return NextResponse.redirect(`${origin}/profile?discord=linked`);
+  return NextResponse.redirect(`${origin}/profile?google=linked`);
 }

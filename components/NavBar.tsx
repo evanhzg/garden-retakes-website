@@ -307,7 +307,7 @@ export default function NavBar({
               <span>{session.name ?? "Signed in"}</span>
             </Link>
           ) : (
-            <a className="account-signin" href="/api/auth/steam/login">
+            <a className="account-signin" href={`/api/auth/steam/login?returnTo=${encodeURIComponent(pathname)}`}>
               Sign in
             </a>
           )}

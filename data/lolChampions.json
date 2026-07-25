@@ -1,0 +1,7524 @@
+{
+ "generatedAt": "2026-07-25T12:26:14.787Z",
+ "patch": "16.14.1",
+ "sources": [
+  "https://developer.riotgames.com/docs/lol#data-dragon (Riot Data Dragon)",
+  "https://wiki.leagueoflegends.com (CC-BY-SA)"
+ ],
+ "count": 173,
+ "champions": [
+  {
+   "id": "Aatrox",
+   "key": 266,
+   "name": "Aatrox",
+   "nameFr": "Aatrox",
+   "title": "the Darkin Blade",
+   "titleFr": "Épée des Darkin",
+   "classes": [
+    "Fighter",
+    "Tank"
+   ],
+   "positions": [
+    "Top"
+   ],
+   "regions": [
+    "Shurima",
+    "Targon",
+    "Void"
+   ],
+   "resource": "Blood Well",
+   "rangeType": "Melee",
+   "damageType": "Physical",
+   "difficulty": 3,
+   "releaseDate": "2013-06-13",
+   "releaseYear": 2013,
+   "attackRange": 175,
+   "moveSpeed": 345,
+   "ratings": {
+    "damage": 3,
+    "toughness": 3,
+    "control": 2,
+    "mobility": 2,
+    "utility": 2
+   },
+   "be": 2400,
+   "rp": 880,
+   "skills": [
+    "Deathbringer Stance",
+    "The Darkin Blade",
+    "Infernal Chains",
+    "Umbral Dash",
+    "World Ender"
+   ],
+   "image": "Aatrox.png"
+  },
+  {
+   "id": "Ahri",
+   "key": 103,
+   "name": "Ahri",
+   "nameFr": "Ahri",
+   "title": "the Nine-Tailed Fox",
+   "titleFr": "Renarde à neuf queues",
+   "classes": [
+    "Mage",
+    "Assassin"
+   ],
+   "positions": [
+    "Middle"
+   ],
+   "regions": [
+    "Ionia"
+   ],
+   "resource": "Mana",
+   "rangeType": "Ranged",
+   "damageType": "Magic",
+   "difficulty": 2,
+   "releaseDate": "2011-12-14",
+   "releaseYear": 2011,
+   "attackRange": 550,
+   "moveSpeed": 330,
+   "ratings": {
+    "damage": 3,
+    "toughness": 1,
+    "control": 2,
+    "mobility": 3,
+    "utility": 1
+   },
+   "be": 1575,
+   "rp": 790,
+   "skills": [
+    "Essence Theft",
+    "Orb of Deception",
+    "Fox-Fire",
+    "Charm",
+    "Spirit Rush"
+   ],
+   "image": "Ahri.png"
+  },
+  {
+   "id": "Akali",
+   "key": 84,
+   "name": "Akali",
+   "nameFr": "Akali",
+   "title": "the Rogue Assassin",
+   "titleFr": "Assassine rebelle",
+   "classes": [
+    "Assassin"
+   ],
+   "positions": [
+    "Top",
+    "Middle"
+   ],
+   "regions": [
+    "Ionia"
+   ],
+   "resource": "Energy",
+   "rangeType": "Melee",
+   "damageType": "Physical",
+   "difficulty": 3,
+   "releaseDate": "2010-05-11",
+   "releaseYear": 2010,
+   "attackRange": 125,
+   "moveSpeed": 345,
+   "ratings": {
+    "damage": 3,
+    "toughness": 1,
+    "control": 1,
+    "mobility": 3,
+    "utility": 1
+   },
+   "be": 1575,
+   "rp": 790,
+   "skills": [
+    "Assassin's Mark",
+    "Five Point Strike",
+    "Twilight Shroud",
+    "Shuriken Flip",
+    "Perfect Execution"
+   ],
+   "image": "Akali.png"
+  },
+  {
+   "id": "Akshan",
+   "key": 166,
+   "name": "Akshan",
+   "nameFr": "Akshan",
+   "title": "the Rogue Sentinel",
+   "titleFr": "Sentinelle rebelle",
+   "classes": [
+    "Marksman",
+    "Assassin"
+   ],
+   "positions": [
+    "Middle"
+   ],
+   "regions": [
+    "Shurima"
+   ],
+   "resource": "Mana",
+   "rangeType": "Ranged",
+   "damageType": "Physical",
+   "difficulty": 3,
+   "releaseDate": "2021-07-22",
+   "releaseYear": 2021,
+   "attackRange": 500,
+   "moveSpeed": 330,
+   "ratings": {
+    "damage": 3,
+    "toughness": 1,
+    "control": 1,
+    "mobility": 3,
+    "utility": 2
+   },
+   "be": 2400,
+   "rp": 880,
+   "skills": [
+    "Dirty Fighting",
+    "Avengerang",
+    "Going Rogue",
+    "Heroic Swing",
+    "Comeuppance"
+   ],
+   "image": "Akshan.png"
+  },
+  {
+   "id": "Alistar",
+   "key": 12,
+   "name": "Alistar",
+   "nameFr": "Alistar",
+   "title": "the Minotaur",
+   "titleFr": "Minotaure",
+   "classes": [
+    "Tank",
+    "Support"
+   ],
+   "positions": [
+    "Support"
+   ],
+   "regions": [
+    "Noxus"
+   ],
+   "resource": "Mana",
+   "rangeType": "Melee",
+   "damageType": "Magic",
+   "difficulty": 1,
+   "releaseDate": "2009-02-21",
+   "releaseYear": 2009,
+   "attackRange": 125,
+   "moveSpeed": 330,
+   "ratings": {
+    "damage": 1,
+    "toughness": 3,
+    "control": 3,
+    "mobility": 1,
+    "utility": 2
+   },
+   "be": 675,
+   "rp": 585,
+   "skills": [
+    "Triumphant Roar",
+    "Pulverize",
+    "Headbutt",
+    "Trample",
+    "Unbreakable Will"
+   ],
+   "image": "Alistar.png"
+  },
+  {
+   "id": "Ambessa",
+   "key": 799,
+   "name": "Ambessa",
+   "nameFr": "Ambessa",
+   "title": "Matriarch of War",
+   "titleFr": "Matriarche de guerre",
+   "classes": [
+    "Fighter",
+    "Assassin"
+   ],
+   "positions": [
+    "Top",
+    "Jungle"
+   ],
+   "regions": [
+    "Noxus"
+   ],
+   "resource": "Energy",
+   "rangeType": "Melee",
+   "damageType": "Physical",
+   "difficulty": 3,
+   "releaseDate": "2024-11-06",
+   "releaseYear": 2024,
+   "attackRange": 125,
+   "moveSpeed": 335,
+   "ratings": {
+    "damage": 3,
+    "toughness": 2,
+    "control": 1,
+    "mobility": 3,
+    "utility": 1
+   },
+   "be": 3150,
+   "rp": 975,
+   "skills": [
+    "Drakehound's Step",
+    "Cunning Sweep",
+    "Sundering Slam",
+    "Repudiation",
+    "Lacerate",
+    "Public Execution"
+   ],
+   "image": "Ambessa.png"
+  },
+  {
+   "id": "Amumu",
+   "key": 32,
+   "name": "Amumu",
+   "nameFr": "Amumu",
+   "title": "the Sad Mummy",
+   "titleFr": "Momie mélancolique",
+   "classes": [
+    "Tank",
+    "Support"
+   ],
+   "positions": [
+    "Jungle"
+   ],
+   "regions": [
+    "Shurima"
+   ],
+   "resource": "Mana",
+   "rangeType": "Melee",
+   "damageType": "Magic",
+   "difficulty": 1,
+   "releaseDate": "2009-06-26",
+   "releaseYear": 2009,
+   "attackRange": 125,
+   "moveSpeed": 335,
+   "ratings": {
+    "damage": 2,
+    "toughness": 3,
+    "control": 3,
+    "mobility": 1,
+    "utility": 1
+   },
+   "be": 225,
+   "rp": 260,
+   "skills": [
+    "Cursed Touch",
+    "Bandage Toss",
+    "Despair",
+    "Tantrum",
+    "Curse of the Sad Mummy"
+   ],
+   "image": "Amumu.png"
+  },
+  {
+   "id": "Anivia",
+   "key": 34,
+   "name": "Anivia",
+   "nameFr": "Anivia",
+   "title": "the Cryophoenix",
+   "titleFr": "Cryophénix",
+   "classes": [
+    "Mage",
+    "Support"
+   ],
+   "positions": [
+    "Middle"
+   ],
+   "regions": [
+    "Freljord"
+   ],
+   "resource": "Mana",
+   "rangeType": "Ranged",
+   "damageType": "Magic",
+   "difficulty": 2,
+   "releaseDate": "2009-07-10",
+   "releaseYear": 2009,
+   "attackRange": 600,
+   "moveSpeed": 325,
+   "ratings": {
+    "damage": 3,
+    "toughness": 1,
+    "control": 3,
+    "mobility": 1,
+    "utility": 2
+   },
+   "be": 1575,
+   "rp": 790,
+   "skills": [
+    "Rebirth",
+    "Flash Frost",
+    "Crystallize",
+    "Frostbite",
+    "Glacial Storm"
+   ],
+   "image": "Anivia.png"
+  },
+  {
+   "id": "Annie",
+   "key": 1,
+   "name": "Annie",
+   "nameFr": "Annie",
+   "title": "the Dark Child",
+   "titleFr": "Enfant des ténèbres",
+   "classes": [
+    "Mage",
+    "Support"
+   ],
+   "positions": [
+    "Middle"
+   ],
+   "regions": [
+    "Noxus"
+   ],
+   "resource": "Mana",
+   "rangeType": "Ranged",
+   "damageType": "Magic",
+   "difficulty": 1,
+   "releaseDate": "2009-02-21",
+   "releaseYear": 2009,
+   "attackRange": 625,
+   "moveSpeed": 335,
+   "ratings": {
+    "damage": 3,
+    "toughness": 1,
+    "control": 3,
+    "mobility": 1,
+    "utility": 2
+   },
+   "be": 225,
+   "rp": 260,
+   "skills": [
+    "Pyromania",
+    "Disintegrate",
+    "Incinerate",
+    "Molten Shield",
+    "Summon: Tibbers"
+   ],
+   "image": "Annie.png"
+  },
+  {
+   "id": "Aphelios",
+   "key": 523,
+   "name": "Aphelios",
+   "nameFr": "Aphelios",
+   "title": "the Weapon of the Faithful",
+   "titleFr": "Arme des Lunaris",
+   "classes": [
+    "Marksman"
+   ],
+   "positions": [
+    "Bottom"
+   ],
+   "regions": [
+    "Targon"
+   ],
+   "resource": "Mana",
+   "rangeType": "Ranged",
+   "damageType": "Physical",
+   "difficulty": 3,
+   "releaseDate": "2019-12-11",
+   "releaseYear": 2019,
+   "attackRange": 550,
+   "moveSpeed": 325,
+   "ratings": {
+    "damage": 3,
+    "toughness": 1,
+    "control": 2,
+    "mobility": 1,
+    "utility": 1
+   },
+   "be": 2400,
+   "rp": 880,
+   "skills": [
+    "The Hitman and the Seer",
+    "Weapons of the Faithful",
+    "Calibrum",
+    "Moonshot",
+    "Severum",
+    "Onslaught",
+    "Gravitum",
+    "Binding Eclipse",
+    "Infernum",
+    "Duskwave",
+    "Crescendum",
+    "Sentry",
+    "Phase",
+    "Weapon Queue System",
+    "Moonlight Vigil"
+   ],
+   "image": "Aphelios.png"
+  },
+  {
+   "id": "Ashe",
+   "key": 22,
+   "name": "Ashe",
+   "nameFr": "Ashe",
+   "title": "the Frost Archer",
+   "titleFr": "Archère de givre",
+   "classes": [
+    "Marksman",
+    "Support"
+   ],
+   "positions": [
+    "Bottom",
+    "Support"
+   ],
+   "regions": [
+    "Freljord"
+   ],
+   "resource": "Mana",
+   "rangeType": "Ranged",
+   "damageType": "Physical",
+   "difficulty": 1,
+   "releaseDate": "2009-02-21",
+   "releaseYear": 2009,
+   "attackRange": 600,
+   "moveSpeed": 325,
+   "ratings": {
+    "damage": 2,
+    "toughness": 1,
+    "control": 3,
+    "mobility": 1,
+    "utility": 2
+   },
+   "be": 225,
+   "rp": 260,
+   "skills": [
+    "Frost Shot",
+    "Ranger's Focus",
+    "Volley",
+    "Hawkshot",
+    "Enchanted Crystal Arrow"
+   ],
+   "image": "Ashe.png"
+  },
+  {
+   "id": "AurelionSol",
+   "key": 136,
+   "name": "Aurelion Sol",
+   "nameFr": "Aurelion Sol",
+   "title": "The Star Forger",
+   "titleFr": "Forgeur d'étoiles",
+   "classes": [
+    "Mage"
+   ],
+   "positions": [
+    "Middle"
+   ],
+   "regions": [
+    "Targon"
+   ],
+   "resource": "Mana",
+   "rangeType": "Ranged",
+   "damageType": "Magic",
+   "difficulty": 2,
+   "releaseDate": "2016-03-24",
+   "releaseYear": 2016,
+   "attackRange": 550,
+   "moveSpeed": 340,
+   "ratings": {
+    "damage": 3,
+    "toughness": 1,
+    "control": 2,
+    "mobility": 2,
+    "utility": 1
+   },
+   "be": 2400,
+   "rp": 880,
+   "skills": [
+    "Cosmic Creator",
+    "Breath of Light",
+    "Astral Flight",
+    "Singularity",
+    "Falling Star",
+    "The Skies Descend"
+   ],
+   "image": "AurelionSol.png"
+  },
+  {
+   "id": "Aurora",
+   "key": 893,
+   "name": "Aurora",
+   "nameFr": "Aurora",
+   "title": "the Witch Between Worlds",
+   "titleFr": "Sorcière d'entre les mondes",
+   "classes": [
+    "Mage",
+    "Assassin"
+   ],
+   "positions": [
+    "Middle",
+    "Top"
+   ],
+   "regions": [
+    "Freljord"
+   ],
+   "resource": "Mana",
+   "rangeType": "Ranged",
+   "damageType": "Magic",
+   "difficulty": 2,
+   "releaseDate": "2024-07-17",
+   "releaseYear": 2024,
+   "attackRange": 550,
+   "moveSpeed": 335,
+   "ratings": {
+    "damage": 3,
+    "toughness": 1,
+    "control": 2,
+    "mobility": 3,
+    "utility": 1
+   },
+   "be": 2400,
+   "rp": 880,
+   "skills": [
+    "Spirit Abjuration",
+    "Twofold Hex",
+    "Across the Veil",
+    "The Weirding",
+    "Between Worlds"
+   ],
+   "image": "Aurora.png"
+  },
+  {
+   "id": "Azir",
+   "key": 268,
+   "name": "Azir",
+   "nameFr": "Azir",
+   "title": "the Emperor of the Sands",
+   "titleFr": "Empereur des sables",
+   "classes": [
+    "Mage",
+    "Marksman"
+   ],
+   "positions": [
+    "Middle"
+   ],
+   "regions": [
+    "Shurima"
+   ],
+   "resource": "Mana",
+   "rangeType": "Ranged",
+   "damageType": "Magic",
+   "difficulty": 3,
+   "releaseDate": "2014-09-16",
+   "releaseYear": 2014,
+   "attackRange": 525,
+   "moveSpeed": 330,
+   "ratings": {
+    "damage": 3,
+    "toughness": 1,
+    "control": 2,
+    "mobility": 2,
+    "utility": 1
+   },
+   "be": 2400,
+   "rp": 880,
+   "skills": [
+    "Shurima's Legacy",
+    "Conquering Sands",
+    "Arise!",
+    "Shifting Sands",
+    "Emperor's Divide"
+   ],
+   "image": "Azir.png"
+  },
+  {
+   "id": "Bard",
+   "key": 432,
+   "name": "Bard",
+   "nameFr": "Bard",
+   "title": "the Wandering Caretaker",
+   "titleFr": "Gardien errant",
+   "classes": [
+    "Support",
+    "Mage"
+   ],
+   "positions": [
+    "Support"
+   ],
+   "regions": [
+    "Runeterra"
+   ],
+   "resource": "Mana",
+   "rangeType": "Ranged",
+   "damageType": "Magic",
+   "difficulty": 3,
+   "releaseDate": "2015-03-12",
+   "releaseYear": 2015,
+   "attackRange": 500,
+   "moveSpeed": 335,
+   "ratings": {
+    "damage": 1,
+    "toughness": 1,
+    "control": 3,
+    "mobility": 2,
+    "utility": 3
+   },
+   "be": 2400,
+   "rp": 880,
+   "skills": [
+    "Traveler's Call",
+    "Cosmic Binding",
+    "Caretaker's Shrine",
+    "Magical Journey",
+    "Tempered Fate"
+   ],
+   "image": "Bard.png"
+  },
+  {
+   "id": "Belveth",
+   "key": 200,
+   "name": "Bel'Veth",
+   "nameFr": "Bel'Veth",
+   "title": "the Empress of the Void",
+   "titleFr": "Impératrice du Néant",
+   "classes": [
+    "Fighter"
+   ],
+   "positions": [
+    "Jungle"
+   ],
+   "regions": [
+    "Void"
+   ],
+   "resource": "None",
+   "rangeType": "Melee",
+   "damageType": "Physical",
+   "difficulty": 3,
+   "releaseDate": "2022-06-09",
+   "releaseYear": 2022,
+   "attackRange": 150,
+   "moveSpeed": 340,
+   "ratings": {
+    "damage": 3,
+    "toughness": 1,
+    "control": 2,
+    "mobility": 3,
+    "utility": 1
+   },
+   "be": 1575,
+   "rp": 790,
+   "skills": [
+    "Death in Lavender",
+    "Void Surge",
+    "Above and Below",
+    "Royal Maelstrom",
+    "Endless Banquet"
+   ],
+   "image": "Belveth.png"
+  },
+  {
+   "id": "Blitzcrank",
+   "key": 53,
+   "name": "Blitzcrank",
+   "nameFr": "Blitzcrank",
+   "title": "the Great Steam Golem",
+   "titleFr": "Golem de vapeur",
+   "classes": [
+    "Tank",
+    "Support"
+   ],
+   "positions": [
+    "Support"
+   ],
+   "regions": [
+    "Zaun"
+   ],
+   "resource": "Mana",
+   "rangeType": "Melee",
+   "damageType": "Physical",
+   "difficulty": 1,
+   "releaseDate": "2009-09-02",
+   "releaseYear": 2009,
+   "attackRange": 125,
+   "moveSpeed": 325,
+   "ratings": {
+    "damage": 1,
+    "toughness": 2,
+    "control": 3,
+    "mobility": 1,
+    "utility": 1
+   },
+   "be": 675,
+   "rp": 585,
+   "skills": [
+    "Mana Barrier",
+    "Rocket Grab",
+    "Overdrive",
+    "Power Fist",
+    "Static Field"
+   ],
+   "image": "Blitzcrank.png"
+  },
+  {
+   "id": "Brand",
+   "key": 63,
+   "name": "Brand",
+   "nameFr": "Brand",
+   "title": "the Burning Vengeance",
+   "titleFr": "Vengeur flamboyant",
+   "classes": [
+    "Mage",
+    "Support"
+   ],
+   "positions": [
+    "Jungle",
+    "Support"
+   ],
+   "regions": [
+    "Freljord"
+   ],
+   "resource": "Mana",
+   "rangeType": "Ranged",
+   "damageType": "Magic",
+   "difficulty": 2,
+   "releaseDate": "2011-04-12",
+   "releaseYear": 2011,
+   "attackRange": 550,
+   "moveSpeed": 340,
+   "ratings": {
+    "damage": 3,
+    "toughness": 1,
+    "control": 2,
+    "mobility": 1,
+    "utility": 1
+   },
+   "be": 225,
+   "rp": 260,
+   "skills": [
+    "Blaze",
+    "Sear",
+    "Pillar of Flame",
+    "Conflagration",
+    "Pyroclasm"
+   ],
+   "image": "Brand.png"
+  },
+  {
+   "id": "Braum",
+   "key": 201,
+   "name": "Braum",
+   "nameFr": "Braum",
+   "title": "the Heart of the Freljord",
+   "titleFr": "Cœur de Freljord",
+   "classes": [
+    "Tank",
+    "Support"
+   ],
+   "positions": [
+    "Support"
+   ],
+   "regions": [
+    "Freljord"
+   ],
+   "resource": "Mana",
+   "rangeType": "Melee",
+   "damageType": "Magic",
+   "difficulty": 2,
+   "releaseDate": "2014-05-12",
+   "releaseYear": 2014,
+   "attackRange": 125,
+   "moveSpeed": 335,
+   "ratings": {
+    "damage": 1,
+    "toughness": 2,
+    "control": 3,
+    "mobility": 1,
+    "utility": 2
+   },
+   "be": 1575,
+   "rp": 790,
+   "skills": [
+    "Concussive Blows",
+    "Winter's Bite",
+    "Stand Behind Me",
+    "Unbreakable",
+    "Glacial Fissure"
+   ],
+   "image": "Braum.png"
+  },
+  {
+   "id": "Briar",
+   "key": 233,
+   "name": "Briar",
+   "nameFr": "Briar",
+   "title": "the Restrained Hunger",
+   "titleFr": "Faim insatiable",
+   "classes": [
+    "Fighter",
+    "Assassin"
+   ],
+   "positions": [
+    "Jungle"
+   ],
+   "regions": [
+    "Noxus"
+   ],
+   "resource": "Frenzy",
+   "rangeType": "Melee",
+   "damageType": "Physical",
+   "difficulty": 2,
+   "releaseDate": "2023-09-14",
+   "releaseYear": 2023,
+   "attackRange": 125,
+   "moveSpeed": 340,
+   "ratings": {
+    "damage": 2,
+    "toughness": 2,
+    "control": 3,
+    "mobility": 3,
+    "utility": 1
+   },
+   "be": 2400,
+   "rp": 880,
+   "skills": [
+    "Crimson Curse",
+    "Head Rush",
+    "Blood Frenzy",
+    "Snack Attack",
+    "Chilling Scream",
+    "Certain Death"
+   ],
+   "image": "Briar.png"
+  },
+  {
+   "id": "Caitlyn",
+   "key": 51,
+   "name": "Caitlyn",
+   "nameFr": "Caitlyn",
+   "title": "the Sheriff of Piltover",
+   "titleFr": "Shérif de Piltover",
+   "classes": [
+    "Marksman"
+   ],
+   "positions": [
+    "Bottom"
+   ],
+   "regions": [
+    "Piltover"
+   ],
+   "resource": "Mana",
+   "rangeType": "Ranged",
+   "damageType": "Physical",
+   "difficulty": 1,
+   "releaseDate": "2011-01-04",
+   "releaseYear": 2011,
+   "attackRange": 650,
+   "moveSpeed": 325,
+   "ratings": {
+    "damage": 3,
+    "toughness": 1,
+    "control": 2,
+    "mobility": 2,
+    "utility": 1
+   },
+   "be": 225,
+   "rp": 260,
+   "skills": [
+    "Headshot",
+    "Piltover Peacemaker",
+    "Yordle Snap Trap",
+    "90 Caliber Net",
+    "Ace in the Hole"
+   ],
+   "image": "Caitlyn.png"
+  },
+  {
+   "id": "Camille",
+   "key": 164,
+   "name": "Camille",
+   "nameFr": "Camille",
+   "title": "the Steel Shadow",
+   "titleFr": "Ombre d'acier",
+   "classes": [
+    "Fighter",
+    "Assassin"
+   ],
+   "positions": [
+    "Top"
+   ],
+   "regions": [
+    "Piltover"
+   ],
+   "resource": "Mana",
+   "rangeType": "Melee",
+   "damageType": "Physical",
+   "difficulty": 2,
+   "releaseDate": "2016-12-07",
+   "releaseYear": 2016,
+   "attackRange": 125,
+   "moveSpeed": 340,
+   "ratings": {
+    "damage": 3,
+    "toughness": 2,
+    "control": 2,
+    "mobility": 3,
+    "utility": 1
+   },
+   "be": 2400,
+   "rp": 880,
+   "skills": [
+    "Adaptive Defenses",
+    "Precision Protocol",
+    "Tactical Sweep",
+    "Hookshot",
+    "Wall Dive",
+    "The Hextech Ultimatum"
+   ],
+   "image": "Camille.png"
+  },
+  {
+   "id": "Cassiopeia",
+   "key": 69,
+   "name": "Cassiopeia",
+   "nameFr": "Cassiopeia",
+   "title": "the Serpent's Embrace",
+   "titleFr": "Étreinte du serpent",
+   "classes": [
+    "Mage"
+   ],
+   "positions": [
+    "Middle"
+   ],
+   "regions": [
+    "Noxus"
+   ],
+   "resource": "Mana",
+   "rangeType": "Ranged",
+   "damageType": "Magic",
+   "difficulty": 2,
+   "releaseDate": "2010-12-14",
+   "releaseYear": 2010,
+   "attackRange": 550,
+   "moveSpeed": 335,
+   "ratings": {
+    "damage": 3,
+    "toughness": 1,
+    "control": 3,
+    "mobility": 1,
+    "utility": 1
+   },
+   "be": 2400,
+   "rp": 880,
+   "skills": [
+    "Serpentine Grace",
+    "Noxious Blast",
+    "Miasma",
+    "Twin Fang",
+    "Petrifying Gaze"
+   ],
+   "image": "Cassiopeia.png"
+  },
+  {
+   "id": "Chogath",
+   "key": 31,
+   "name": "Cho'Gath",
+   "nameFr": "Cho'Gath",
+   "title": "the Terror of the Void",
+   "titleFr": "Terreur noire",
+   "classes": [
+    "Tank",
+    "Mage"
+   ],
+   "positions": [
+    "Top"
+   ],
+   "regions": [
+    "Void"
+   ],
+   "resource": "Mana",
+   "rangeType": "Melee",
+   "damageType": "Magic",
+   "difficulty": 1,
+   "releaseDate": "2009-06-26",
+   "releaseYear": 2009,
+   "attackRange": 125,
+   "moveSpeed": 345,
+   "ratings": {
+    "damage": 2,
+    "toughness": 3,
+    "control": 2,
+    "mobility": 1,
+    "utility": 1
+   },
+   "be": 675,
+   "rp": 585,
+   "skills": [
+    "Carnivore",
+    "Rupture",
+    "Feral Scream",
+    "Vorpal Spikes",
+    "Feast"
+   ],
+   "image": "Chogath.png"
+  },
+  {
+   "id": "Corki",
+   "key": 42,
+   "name": "Corki",
+   "nameFr": "Corki",
+   "title": "the Daring Bombardier",
+   "titleFr": "Artilleur téméraire",
+   "classes": [
+    "Marksman",
+    "Mage"
+   ],
+   "positions": [
+    "Bottom"
+   ],
+   "regions": [
+    "Bandle City"
+   ],
+   "resource": "Mana",
+   "rangeType": "Ranged",
+   "damageType": "Physical",
+   "difficulty": 2,
+   "releaseDate": "2009-09-19",
+   "releaseYear": 2009,
+   "attackRange": 550,
+   "moveSpeed": 325,
+   "ratings": {
+    "damage": 3,
+    "toughness": 1,
+    "control": 1,
+    "mobility": 2,
+    "utility": 1
+   },
+   "be": 1575,
+   "rp": 790,
+   "skills": [
+    "Hextech Munitions",
+    "Phosphorus Bomb",
+    "Valkyrie",
+    "Gatling Gun",
+    "Missile Barrage"
+   ],
+   "image": "Corki.png"
+  },
+  {
+   "id": "Darius",
+   "key": 122,
+   "name": "Darius",
+   "nameFr": "Darius",
+   "title": "the Hand of Noxus",
+   "titleFr": "Main de Noxus",
+   "classes": [
+    "Fighter",
+    "Tank"
+   ],
+   "positions": [
+    "Top"
+   ],
+   "regions": [
+    "Noxus"
+   ],
+   "resource": "Mana",
+   "rangeType": "Melee",
+   "damageType": "Physical",
+   "difficulty": 2,
+   "releaseDate": "2012-05-23",
+   "releaseYear": 2012,
+   "attackRange": 175,
+   "moveSpeed": 340,
+   "ratings": {
+    "damage": 3,
+    "toughness": 2,
+    "control": 2,
+    "mobility": 1,
+    "utility": 1
+   },
+   "be": 225,
+   "rp": 260,
+   "skills": [
+    "Hemorrhage",
+    "Decimate",
+    "Crippling Strike",
+    "Apprehend",
+    "Noxian Guillotine"
+   ],
+   "image": "Darius.png"
+  },
+  {
+   "id": "Diana",
+   "key": 131,
+   "name": "Diana",
+   "nameFr": "Diana",
+   "title": "Scorn of the Moon",
+   "titleFr": "Mépris de la lune",
+   "classes": [
+    "Fighter",
+    "Assassin"
+   ],
+   "positions": [
+    "Jungle",
+    "Middle"
+   ],
+   "regions": [
+    "Targon"
+   ],
+   "resource": "Mana",
+   "rangeType": "Melee",
+   "damageType": "Magic",
+   "difficulty": 1,
+   "releaseDate": "2012-08-07",
+   "releaseYear": 2012,
+   "attackRange": 150,
+   "moveSpeed": 345,
+   "ratings": {
+    "damage": 3,
+    "toughness": 2,
+    "control": 2,
+    "mobility": 2,
+    "utility": 1
+   },
+   "be": 225,
+   "rp": 260,
+   "skills": [
+    "Moonsilver Blade",
+    "Crescent Strike",
+    "Pale Cascade",
+    "Lunar Rush",
+    "Moonfall"
+   ],
+   "image": "Diana.png"
+  },
+  {
+   "id": "DrMundo",
+   "key": 36,
+   "name": "Dr. Mundo",
+   "nameFr": "Dr. Mundo",
+   "title": "the Madman of Zaun",
+   "titleFr": "Dément de Zaun",
+   "classes": [
+    "Tank",
+    "Fighter"
+   ],
+   "positions": [
+    "Top",
+    "Jungle"
+   ],
+   "regions": [
+    "Zaun"
+   ],
+   "resource": "Health",
+   "rangeType": "Melee",
+   "damageType": "Physical",
+   "difficulty": 1,
+   "releaseDate": "2009-09-02",
+   "releaseYear": 2009,
+   "attackRange": 125,
+   "moveSpeed": 345,
+   "ratings": {
+    "damage": 2,
+    "toughness": 3,
+    "control": 1,
+    "mobility": 1,
+    "utility": 1
+   },
+   "be": 225,
+   "rp": 260,
+   "skills": [
+    "Goes Where He Pleases",
+    "Infected Bonesaw",
+    "Heart Zapper",
+    "Blunt Force Trauma",
+    "Maximum Dosage"
+   ],
+   "image": "DrMundo.png"
+  },
+  {
+   "id": "Draven",
+   "key": 119,
+   "name": "Draven",
+   "nameFr": "Draven",
+   "title": "the Glorious Executioner",
+   "titleFr": "Glorieux exécuteur",
+   "classes": [
+    "Marksman"
+   ],
+   "positions": [
+    "Bottom"
+   ],
+   "regions": [
+    "Noxus"
+   ],
+   "resource": "Mana",
+   "rangeType": "Ranged",
+   "damageType": "Physical",
+   "difficulty": 3,
+   "releaseDate": "2012-06-06",
+   "releaseYear": 2012,
+   "attackRange": 550,
+   "moveSpeed": 330,
+   "ratings": {
+    "damage": 3,
+    "toughness": 1,
+    "control": 1,
+    "mobility": 2,
+    "utility": 1
+   },
+   "be": 2400,
+   "rp": 880,
+   "skills": [
+    "League of Draven",
+    "Spinning Axe",
+    "Blood Rush",
+    "Stand Aside",
+    "Whirling Death"
+   ],
+   "image": "Draven.png"
+  },
+  {
+   "id": "Ekko",
+   "key": 245,
+   "name": "Ekko",
+   "nameFr": "Ekko",
+   "title": "the Boy Who Shattered Time",
+   "titleFr": "Fractureur du temps",
+   "classes": [
+    "Assassin",
+    "Mage"
+   ],
+   "positions": [
+    "Jungle",
+    "Middle"
+   ],
+   "regions": [
+    "Zaun"
+   ],
+   "resource": "Mana",
+   "rangeType": "Melee",
+   "damageType": "Magic",
+   "difficulty": 2,
+   "releaseDate": "2015-05-29",
+   "releaseYear": 2015,
+   "attackRange": 125,
+   "moveSpeed": 340,
+   "ratings": {
+    "damage": 3,
+    "toughness": 2,
+    "control": 2,
+    "mobility": 3,
+    "utility": 1
+   },
+   "be": 1575,
+   "rp": 790,
+   "skills": [
+    "Z-Drive Resonance",
+    "Timewinder",
+    "Parallel Convergence",
+    "Phase Dive",
+    "Chronobreak"
+   ],
+   "image": "Ekko.png"
+  },
+  {
+   "id": "Elise",
+   "key": 60,
+   "name": "Elise",
+   "nameFr": "Elise",
+   "title": "the Spider Queen",
+   "titleFr": "Reine araignée",
+   "classes": [
+    "Assassin",
+    "Mage"
+   ],
+   "positions": [
+    "Jungle"
+   ],
+   "regions": [
+    "Shadow Isles"
+   ],
+   "resource": "Mana",
+   "rangeType": "Ranged",
+   "damageType": "Magic",
+   "difficulty": 3,
+   "releaseDate": "2012-10-26",
+   "releaseYear": 2012,
+   "attackRange": 550,
+   "moveSpeed": 330,
+   "ratings": {
+    "damage": 2,
+    "toughness": 2,
+    "control": 2,
+    "mobility": 2,
+    "utility": 1
+   },
+   "be": 2400,
+   "rp": 880,
+   "skills": [
+    "Spider Queen",
+    "Neurotoxin",
+    "Venomous Bite",
+    "Volatile Spiderling",
+    "Skittering Frenzy",
+    "Cocoon",
+    "Rappel",
+    "Spider Form",
+    "Human Form"
+   ],
+   "image": "Elise.png"
+  },
+  {
+   "id": "Evelynn",
+   "key": 28,
+   "name": "Evelynn",
+   "nameFr": "Evelynn",
+   "title": "Agony's Embrace",
+   "titleFr": "Démon sadique",
+   "classes": [
+    "Assassin",
+    "Mage"
+   ],
+   "positions": [
+    "Jungle"
+   ],
+   "regions": [
+    "Runeterra"
+   ],
+   "resource": "Mana",
+   "rangeType": "Melee",
+   "damageType": "Magic",
+   "difficulty": 2,
+   "releaseDate": "2009-05-01",
+   "releaseYear": 2009,
+   "attackRange": 125,
+   "moveSpeed": 335,
+   "ratings": {
+    "damage": 2,
+    "toughness": 2,
+    "control": 1,
+    "mobility": 2,
+    "utility": 2
+   },
+   "be": 675,
+   "rp": 585,
+   "skills": [
+    "Demon Shade",
+    "Hate Spike",
+    "Allure",
+    "Whiplash",
+    "Empowered Whiplash",
+    "Last Caress"
+   ],
+   "image": "Evelynn.png"
+  },
+  {
+   "id": "Ezreal",
+   "key": 81,
+   "name": "Ezreal",
+   "nameFr": "Ezreal",
+   "title": "the Prodigal Explorer",
+   "titleFr": "Explorateur prodigue",
+   "classes": [
+    "Marksman",
+    "Mage"
+   ],
+   "positions": [
+    "Bottom"
+   ],
+   "regions": [
+    "Piltover"
+   ],
+   "resource": "Mana",
+   "rangeType": "Ranged",
+   "damageType": "Physical",
+   "difficulty": 3,
+   "releaseDate": "2010-03-16",
+   "releaseYear": 2010,
+   "attackRange": 550,
+   "moveSpeed": 325,
+   "ratings": {
+    "damage": 3,
+    "toughness": 1,
+    "control": 1,
+    "mobility": 3,
+    "utility": 1
+   },
+   "be": 675,
+   "rp": 585,
+   "skills": [
+    "Rising Spell Force",
+    "Mystic Shot",
+    "Essence Flux",
+    "Arcane Shift",
+    "Trueshot Barrage"
+   ],
+   "image": "Ezreal.png"
+  },
+  {
+   "id": "Fiddlesticks",
+   "key": 9,
+   "name": "Fiddlesticks",
+   "nameFr": "Fiddlesticks",
+   "title": "the Ancient Fear",
+   "titleFr": "Effroi nocturne",
+   "classes": [
+    "Mage",
+    "Support"
+   ],
+   "positions": [
+    "Jungle"
+   ],
+   "regions": [
+    "Runeterra"
+   ],
+   "resource": "Mana",
+   "rangeType": "Ranged",
+   "damageType": "Magic",
+   "difficulty": 2,
+   "releaseDate": "2009-02-21",
+   "releaseYear": 2009,
+   "attackRange": 480,
+   "moveSpeed": 335,
+   "ratings": {
+    "damage": 3,
+    "toughness": 1,
+    "control": 3,
+    "mobility": 1,
+    "utility": 1
+   },
+   "be": 675,
+   "rp": 585,
+   "skills": [
+    "A Harmless Scarecrow",
+    "Terrify",
+    "Bountiful Harvest",
+    "Reap",
+    "Crowstorm"
+   ],
+   "image": "Fiddlesticks.png"
+  },
+  {
+   "id": "Fiora",
+   "key": 114,
+   "name": "Fiora",
+   "nameFr": "Fiora",
+   "title": "the Grand Duelist",
+   "titleFr": "Sublime bretteuse",
+   "classes": [
+    "Fighter",
+    "Assassin"
+   ],
+   "positions": [
+    "Top"
+   ],
+   "regions": [
+    "Demacia"
+   ],
+   "resource": "Mana",
+   "rangeType": "Melee",
+   "damageType": "Physical",
+   "difficulty": 3,
+   "releaseDate": "2012-02-29",
+   "releaseYear": 2012,
+   "attackRange": 150,
+   "moveSpeed": 345,
+   "ratings": {
+    "damage": 3,
+    "toughness": 2,
+    "control": 2,
+    "mobility": 2,
+    "utility": 2
+   },
+   "be": 2400,
+   "rp": 880,
+   "skills": [
+    "Duelist's Dance",
+    "Lunge",
+    "Riposte",
+    "Bladework",
+    "Grand Challenge"
+   ],
+   "image": "Fiora.png"
+  },
+  {
+   "id": "Fizz",
+   "key": 105,
+   "name": "Fizz",
+   "nameFr": "Fizz",
+   "title": "the Tidal Trickster",
+   "titleFr": "Filou des mers",
+   "classes": [
+    "Assassin",
+    "Fighter"
+   ],
+   "positions": [
+    "Middle"
+   ],
+   "regions": [
+    "Bilgewater"
+   ],
+   "resource": "Mana",
+   "rangeType": "Melee",
+   "damageType": "Magic",
+   "difficulty": 2,
+   "releaseDate": "2011-11-15",
+   "releaseYear": 2011,
+   "attackRange": 175,
+   "moveSpeed": 335,
+   "ratings": {
+    "damage": 3,
+    "toughness": 1,
+    "control": 2,
+    "mobility": 3,
+    "utility": 1
+   },
+   "be": 675,
+   "rp": 585,
+   "skills": [
+    "Nimble Fighter",
+    "Urchin Strike",
+    "Seastone Trident",
+    "Playful",
+    "Trickster",
+    "Chum the Waters"
+   ],
+   "image": "Fizz.png"
+  },
+  {
+   "id": "Galio",
+   "key": 3,
+   "name": "Galio",
+   "nameFr": "Galio",
+   "title": "the Colossus",
+   "titleFr": "Colosse",
+   "classes": [
+    "Tank",
+    "Mage"
+   ],
+   "positions": [
+    "Middle"
+   ],
+   "regions": [
+    "Demacia"
+   ],
+   "resource": "Mana",
+   "rangeType": "Melee",
+   "damageType": "Magic",
+   "difficulty": 2,
+   "releaseDate": "2010-08-10",
+   "releaseYear": 2010,
+   "attackRange": 150,
+   "moveSpeed": 340,
+   "ratings": {
+    "damage": 2,
+    "toughness": 3,
+    "control": 3,
+    "mobility": 2,
+    "utility": 1
+   },
+   "be": 1575,
+   "rp": 790,
+   "skills": [
+    "Colossal Smash",
+    "Winds of War",
+    "Shield of Durand",
+    "Justice Punch",
+    "Hero's Entrance"
+   ],
+   "image": "Galio.png"
+  },
+  {
+   "id": "Gangplank",
+   "key": 41,
+   "name": "Gangplank",
+   "nameFr": "Gangplank",
+   "title": "the Saltwater Scourge",
+   "titleFr": "Fléau des mers",
+   "classes": [
+    "Fighter"
+   ],
+   "positions": [
+    "Top"
+   ],
+   "regions": [
+    "Bilgewater"
+   ],
+   "resource": "Mana",
+   "rangeType": "Melee",
+   "damageType": "Physical",
+   "difficulty": 3,
+   "releaseDate": "2009-08-19",
+   "releaseYear": 2009,
+   "attackRange": 125,
+   "moveSpeed": 345,
+   "ratings": {
+    "damage": 3,
+    "toughness": 1,
+    "control": 1,
+    "mobility": 1,
+    "utility": 2
+   },
+   "be": 1575,
+   "rp": 790,
+   "skills": [
+    "Trial by Fire",
+    "Parrrley",
+    "Remove Scurvy",
+    "Powder Keg",
+    "Cannon Barrage"
+   ],
+   "image": "Gangplank.png"
+  },
+  {
+   "id": "Garen",
+   "key": 86,
+   "name": "Garen",
+   "nameFr": "Garen",
+   "title": "The Might of Demacia",
+   "titleFr": "Force de Demacia",
+   "classes": [
+    "Fighter",
+    "Tank"
+   ],
+   "positions": [
+    "Top"
+   ],
+   "regions": [
+    "Demacia"
+   ],
+   "resource": "None",
+   "rangeType": "Melee",
+   "damageType": "Physical",
+   "difficulty": 1,
+   "releaseDate": "2010-04-27",
+   "releaseYear": 2010,
+   "attackRange": 175,
+   "moveSpeed": 340,
+   "ratings": {
+    "damage": 2,
+    "toughness": 3,
+    "control": 1,
+    "mobility": 1,
+    "utility": 1
+   },
+   "be": 225,
+   "rp": 260,
+   "skills": [
+    "Perseverance",
+    "Decisive Strike",
+    "Courage",
+    "Judgment",
+    "Demacian Justice"
+   ],
+   "image": "Garen.png"
+  },
+  {
+   "id": "Gnar",
+   "key": 150,
+   "name": "Gnar",
+   "nameFr": "Gnar",
+   "title": "the Missing Link",
+   "titleFr": "Chaînon manquant",
+   "classes": [
+    "Fighter",
+    "Tank"
+   ],
+   "positions": [
+    "Top"
+   ],
+   "regions": [
+    "Freljord"
+   ],
+   "resource": "Rage",
+   "rangeType": "Ranged",
+   "damageType": "Physical",
+   "difficulty": 3,
+   "releaseDate": "2014-08-14",
+   "releaseYear": 2014,
+   "attackRange": 175,
+   "moveSpeed": 335,
+   "ratings": {
+    "damage": 2,
+    "toughness": 3,
+    "control": 2,
+    "mobility": 2,
+    "utility": 1
+   },
+   "be": 2400,
+   "rp": 880,
+   "skills": [
+    "Rage Gene",
+    "Mini Gnar",
+    "Mega Gnar",
+    "Boomerang Throw",
+    "Boulder Toss",
+    "Hyper",
+    "Wallop",
+    "Hop",
+    "Crunch",
+    "GNAR!"
+   ],
+   "image": "Gnar.png"
+  },
+  {
+   "id": "Gragas",
+   "key": 79,
+   "name": "Gragas",
+   "nameFr": "Gragas",
+   "title": "the Rabble Rouser",
+   "titleFr": "Agitateur",
+   "classes": [
+    "Fighter",
+    "Mage"
+   ],
+   "positions": [
+    "Jungle"
+   ],
+   "regions": [
+    "Freljord"
+   ],
+   "resource": "Mana",
+   "rangeType": "Melee",
+   "damageType": "Magic",
+   "difficulty": 2,
+   "releaseDate": "2010-02-02",
+   "releaseYear": 2010,
+   "attackRange": 125,
+   "moveSpeed": 330,
+   "ratings": {
+    "damage": 2,
+    "toughness": 3,
+    "control": 3,
+    "mobility": 2,
+    "utility": 1
+   },
+   "be": 1575,
+   "rp": 790,
+   "skills": [
+    "Happy Hour",
+    "Barrel Roll",
+    "Drunken Rage",
+    "Body Slam",
+    "Explosive Cask"
+   ],
+   "image": "Gragas.png"
+  },
+  {
+   "id": "Graves",
+   "key": 104,
+   "name": "Graves",
+   "nameFr": "Graves",
+   "title": "the Outlaw",
+   "titleFr": "Hors-la-loi",
+   "classes": [
+    "Marksman"
+   ],
+   "positions": [
+    "Jungle"
+   ],
+   "regions": [
+    "Bilgewater"
+   ],
+   "resource": "Mana",
+   "rangeType": "Ranged",
+   "damageType": "Physical",
+   "difficulty": 2,
+   "releaseDate": "2011-10-19",
+   "releaseYear": 2011,
+   "attackRange": 425,
+   "moveSpeed": 340,
+   "ratings": {
+    "damage": 3,
+    "toughness": 2,
+    "control": 1,
+    "mobility": 2,
+    "utility": 2
+   },
+   "be": 2400,
+   "rp": 880,
+   "skills": [
+    "New Destiny",
+    "End of the Line",
+    "Smoke Screen",
+    "Quickdraw",
+    "Collateral Damage"
+   ],
+   "image": "Graves.png"
+  },
+  {
+   "id": "Gwen",
+   "key": 887,
+   "name": "Gwen",
+   "nameFr": "Gwen",
+   "title": "The Hallowed Seamstress",
+   "titleFr": "Couturière sacrée",
+   "classes": [
+    "Fighter",
+    "Assassin"
+   ],
+   "positions": [
+    "Top"
+   ],
+   "regions": [
+    "Shadow Isles"
+   ],
+   "resource": "Mana",
+   "rangeType": "Melee",
+   "damageType": "Magic",
+   "difficulty": 2,
+   "releaseDate": "2021-04-15",
+   "releaseYear": 2021,
+   "attackRange": 150,
+   "moveSpeed": 340,
+   "ratings": {
+    "damage": 3,
+    "toughness": 2,
+    "control": 1,
+    "mobility": 3,
+    "utility": 1
+   },
+   "be": 2400,
+   "rp": 880,
+   "skills": [
+    "A Thousand Cuts",
+    "Snip Snip!",
+    "Hallowed Mist",
+    "Skip 'n Slash",
+    "Needlework"
+   ],
+   "image": "Gwen.png"
+  },
+  {
+   "id": "Hecarim",
+   "key": 120,
+   "name": "Hecarim",
+   "nameFr": "Hecarim",
+   "title": "the Shadow of War",
+   "titleFr": "Ombre de la guerre",
+   "classes": [
+    "Fighter",
+    "Tank"
+   ],
+   "positions": [
+    "Jungle"
+   ],
+   "regions": [
+    "Shadow Isles"
+   ],
+   "resource": "Mana",
+   "rangeType": "Melee",
+   "damageType": "Physical",
+   "difficulty": 2,
+   "releaseDate": "2012-04-18",
+   "releaseYear": 2012,
+   "attackRange": 175,
+   "moveSpeed": 345,
+   "ratings": {
+    "damage": 2,
+    "toughness": 2,
+    "control": 2,
+    "mobility": 2,
+    "utility": 1
+   },
+   "be": 2400,
+   "rp": 880,
+   "skills": [
+    "Warpath",
+    "Rampage",
+    "Spirit of Dread",
+    "Devastating Charge",
+    "Onslaught of Shadows"
+   ],
+   "image": "Hecarim.png"
+  },
+  {
+   "id": "Heimerdinger",
+   "key": 74,
+   "name": "Heimerdinger",
+   "nameFr": "Heimerdinger",
+   "title": "the Revered Inventor",
+   "titleFr": "Inventeur réputé",
+   "classes": [
+    "Mage",
+    "Support"
+   ],
+   "positions": [
+    "Top"
+   ],
+   "regions": [
+    "Piltover"
+   ],
+   "resource": "Mana",
+   "rangeType": "Ranged",
+   "damageType": "Magic",
+   "difficulty": 3,
+   "releaseDate": "2009-10-10",
+   "releaseYear": 2009,
+   "attackRange": 550,
+   "moveSpeed": 340,
+   "ratings": {
+    "damage": 3,
+    "toughness": 1,
+    "control": 2,
+    "mobility": 1,
+    "utility": 2
+   },
+   "be": 1575,
+   "rp": 790,
+   "skills": [
+    "Hextech Affinity",
+    "H-28G Evolution Turret",
+    "H-28Q Apex Turret",
+    "Hextech Micro-Rockets",
+    "Hextech Rocket Swarm",
+    "CH-2 Electron Storm Grenade",
+    "CH-3X Lightning Grenade",
+    "UPGRADE!!!"
+   ],
+   "image": "Heimerdinger.png"
+  },
+  {
+   "id": "Hwei",
+   "key": 910,
+   "name": "Hwei",
+   "nameFr": "Hwei",
+   "title": "the Visionary",
+   "titleFr": "Visionnaire",
+   "classes": [
+    "Mage",
+    "Support"
+   ],
+   "positions": [
+    "Middle",
+    "Support"
+   ],
+   "regions": [
+    "Ionia"
+   ],
+   "resource": "Mana",
+   "rangeType": "Ranged",
+   "damageType": "Magic",
+   "difficulty": 3,
+   "releaseDate": "2023-12-05",
+   "releaseYear": 2023,
+   "attackRange": 550,
+   "moveSpeed": 330,
+   "ratings": {
+    "damage": 3,
+    "toughness": 1,
+    "control": 3,
+    "mobility": 1,
+    "utility": 2
+   },
+   "be": 2400,
+   "rp": 880,
+   "skills": [
+    "Signature of the Visionary",
+    "Subject: Disaster",
+    "Devastating Fire",
+    "Severing Bolt",
+    "Molten Fissure",
+    "Subject: Serenity",
+    "Fleeting Current",
+    "Pool of Reflection",
+    "Stirring Lights",
+    "Subject: Torment",
+    "Grim Visage",
+    "Gaze of the Abyss",
+    "Crushing Maw",
+    "Wash Brush",
+    "Spiraling Despair"
+   ],
+   "image": "Hwei.png"
+  },
+  {
+   "id": "Illaoi",
+   "key": 420,
+   "name": "Illaoi",
+   "nameFr": "Illaoi",
+   "title": "the Kraken Priestess",
+   "titleFr": "Prêtresse du kraken",
+   "classes": [
+    "Fighter",
+    "Tank"
+   ],
+   "positions": [
+    "Top"
+   ],
+   "regions": [
+    "Bilgewater"
+   ],
+   "resource": "Mana",
+   "rangeType": "Melee",
+   "damageType": "Physical",
+   "difficulty": 2,
+   "releaseDate": "2015-11-24",
+   "releaseYear": 2015,
+   "attackRange": 125,
+   "moveSpeed": 350,
+   "ratings": {
+    "damage": 3,
+    "toughness": 2,
+    "control": 1,
+    "mobility": 1,
+    "utility": 1
+   },
+   "be": 1575,
+   "rp": 790,
+   "skills": [
+    "Prophet of an Elder God",
+    "Tentacle Smash",
+    "Harsh Lesson",
+    "Test of Spirit",
+    "Leap of Faith"
+   ],
+   "image": "Illaoi.png"
+  },
+  {
+   "id": "Irelia",
+   "key": 39,
+   "name": "Irelia",
+   "nameFr": "Irelia",
+   "title": "the Blade Dancer",
+   "titleFr": "Danseuse des lames",
+   "classes": [
+    "Fighter",
+    "Assassin"
+   ],
+   "positions": [
+    "Top",
+    "Middle"
+   ],
+   "regions": [
+    "Ionia"
+   ],
+   "resource": "Mana",
+   "rangeType": "Melee",
+   "damageType": "Physical",
+   "difficulty": 3,
+   "releaseDate": "2010-11-16",
+   "releaseYear": 2010,
+   "attackRange": 200,
+   "moveSpeed": 335,
+   "ratings": {
+    "damage": 2,
+    "toughness": 2,
+    "control": 2,
+    "mobility": 3,
+    "utility": 2
+   },
+   "be": 1575,
+   "rp": 790,
+   "skills": [
+    "Ionian Fervor",
+    "Bladesurge",
+    "Defiant Dance",
+    "Flawless Duet",
+    "Vanguard's Edge"
+   ],
+   "image": "Irelia.png"
+  },
+  {
+   "id": "Ivern",
+   "key": 427,
+   "name": "Ivern",
+   "nameFr": "Ivern",
+   "title": "the Green Father",
+   "titleFr": "Aîné de la forêt",
+   "classes": [
+    "Support",
+    "Mage"
+   ],
+   "positions": [
+    "Jungle"
+   ],
+   "regions": [
+    "Ionia"
+   ],
+   "resource": "Mana",
+   "rangeType": "Ranged",
+   "damageType": "Magic",
+   "difficulty": 3,
+   "releaseDate": "2016-10-05",
+   "releaseYear": 2016,
+   "attackRange": 475,
+   "moveSpeed": 330,
+   "ratings": {
+    "damage": 1,
+    "toughness": 1,
+    "control": 3,
+    "mobility": 2,
+    "utility": 3
+   },
+   "be": 2400,
+   "rp": 880,
+   "skills": [
+    "Friend of the Forest",
+    "Rootcaller",
+    "Brushmaker",
+    "Triggerseed",
+    "Daisy!"
+   ],
+   "image": "Ivern.png"
+  },
+  {
+   "id": "Janna",
+   "key": 40,
+   "name": "Janna",
+   "nameFr": "Janna",
+   "title": "the Storm's Fury",
+   "titleFr": "Avatar de l'air",
+   "classes": [
+    "Support",
+    "Mage"
+   ],
+   "positions": [
+    "Support"
+   ],
+   "regions": [
+    "Zaun"
+   ],
+   "resource": "Mana",
+   "rangeType": "Ranged",
+   "damageType": "Magic",
+   "difficulty": 1,
+   "releaseDate": "2009-09-02",
+   "releaseYear": 2009,
+   "attackRange": 550,
+   "moveSpeed": 325,
+   "ratings": {
+    "damage": 1,
+    "toughness": 1,
+    "control": 3,
+    "mobility": 1,
+    "utility": 3
+   },
+   "be": 675,
+   "rp": 585,
+   "skills": [
+    "Tailwind",
+    "Howling Gale",
+    "Zephyr",
+    "Eye of the Storm",
+    "Monsoon"
+   ],
+   "image": "Janna.png"
+  },
+  {
+   "id": "JarvanIV",
+   "key": 59,
+   "name": "Jarvan IV",
+   "nameFr": "Jarvan IV",
+   "title": "the Exemplar of Demacia",
+   "titleFr": "Exemple demacien",
+   "classes": [
+    "Fighter",
+    "Tank"
+   ],
+   "positions": [
+    "Jungle"
+   ],
+   "regions": [
+    "Demacia"
+   ],
+   "resource": "Mana",
+   "rangeType": "Melee",
+   "damageType": "Physical",
+   "difficulty": 1,
+   "releaseDate": "2011-03-01",
+   "releaseYear": 2011,
+   "attackRange": 175,
+   "moveSpeed": 340,
+   "ratings": {
+    "damage": 2,
+    "toughness": 2,
+    "control": 2,
+    "mobility": 2,
+    "utility": 2
+   },
+   "be": 1575,
+   "rp": 790,
+   "skills": [
+    "Martial Cadence",
+    "Dragon Strike",
+    "Golden Aegis",
+    "Demacian Standard",
+    "Cataclysm"
+   ],
+   "image": "JarvanIV.png"
+  },
+  {
+   "id": "Jax",
+   "key": 24,
+   "name": "Jax",
+   "nameFr": "Jax",
+   "title": "Grandmaster at Arms",
+   "titleFr": "Maître d'armes",
+   "classes": [
+    "Fighter",
+    "Assassin"
+   ],
+   "positions": [
+    "Top",
+    "Jungle"
+   ],
+   "regions": [
+    "Runeterra"
+   ],
+   "resource": "Mana",
+   "rangeType": "Melee",
+   "damageType": "Physical",
+   "difficulty": 2,
+   "releaseDate": "2009-02-21",
+   "releaseYear": 2009,
+   "attackRange": 125,
+   "moveSpeed": 350,
+   "ratings": {
+    "damage": 3,
+    "toughness": 2,
+    "control": 2,
+    "mobility": 2,
+    "utility": 1
+   },
+   "be": 675,
+   "rp": 585,
+   "skills": [
+    "Relentless Assault",
+    "Leap Strike",
+    "Empower",
+    "Counter Strike",
+    "Grandmaster-at-Arms"
+   ],
+   "image": "Jax.png"
+  },
+  {
+   "id": "Jayce",
+   "key": 126,
+   "name": "Jayce",
+   "nameFr": "Jayce",
+   "title": "the Defender of Tomorrow",
+   "titleFr": "Protecteur du futur",
+   "classes": [
+    "Fighter",
+    "Marksman"
+   ],
+   "positions": [
+    "Top"
+   ],
+   "regions": [
+    "Piltover"
+   ],
+   "resource": "Mana",
+   "rangeType": "Ranged",
+   "damageType": "Physical",
+   "difficulty": 3,
+   "releaseDate": "2012-07-07",
+   "releaseYear": 2012,
+   "attackRange": 125,
+   "moveSpeed": 335,
+   "ratings": {
+    "damage": 3,
+    "toughness": 1,
+    "control": 1,
+    "mobility": 2,
+    "utility": 2
+   },
+   "be": 2400,
+   "rp": 880,
+   "skills": [
+    "Hextech Capacitor",
+    "Hextech Capacitor 2",
+    "To the Skies!",
+    "Shock Blast",
+    "Lightning Field",
+    "Hyper Charge",
+    "Thundering Blow",
+    "Acceleration Gate",
+    "Transform Mercury Cannon",
+    "Transform Mercury Hammer"
+   ],
+   "image": "Jayce.png"
+  },
+  {
+   "id": "Jhin",
+   "key": 202,
+   "name": "Jhin",
+   "nameFr": "Jhin",
+   "title": "the Virtuoso",
+   "titleFr": "Virtuose",
+   "classes": [
+    "Marksman",
+    "Mage"
+   ],
+   "positions": [
+    "Bottom"
+   ],
+   "regions": [
+    "Ionia"
+   ],
+   "resource": "Mana",
+   "rangeType": "Ranged",
+   "damageType": "Physical",
+   "difficulty": 2,
+   "releaseDate": "2016-02-01",
+   "releaseYear": 2016,
+   "attackRange": 550,
+   "moveSpeed": 330,
+   "ratings": {
+    "damage": 3,
+    "toughness": 1,
+    "control": 2,
+    "mobility": 1,
+    "utility": 1
+   },
+   "be": 1234,
+   "rp": 880,
+   "skills": [
+    "Basic Attack",
+    "Whisper",
+    "Dancing Grenade",
+    "Deadly Flourish",
+    "Captive Audience",
+    "Curtain Call"
+   ],
+   "image": "Jhin.png"
+  },
+  {
+   "id": "Jinx",
+   "key": 222,
+   "name": "Jinx",
+   "nameFr": "Jinx",
+   "title": "the Loose Cannon",
+   "titleFr": "Gâchette folle",
+   "classes": [
+    "Marksman"
+   ],
+   "positions": [
+    "Bottom"
+   ],
+   "regions": [
+    "Zaun"
+   ],
+   "resource": "Mana",
+   "rangeType": "Ranged",
+   "damageType": "Physical",
+   "difficulty": 2,
+   "releaseDate": "2013-10-10",
+   "releaseYear": 2013,
+   "attackRange": 525,
+   "moveSpeed": 325,
+   "ratings": {
+    "damage": 3,
+    "toughness": 1,
+    "control": 2,
+    "mobility": 1,
+    "utility": 1
+   },
+   "be": 1575,
+   "rp": 790,
+   "skills": [
+    "Get Excited!",
+    "Switcheroo!",
+    "Zap!",
+    "Flame Chompers!",
+    "Super Mega Death Rocket!"
+   ],
+   "image": "Jinx.png"
+  },
+  {
+   "id": "KSante",
+   "key": 897,
+   "name": "K'Sante",
+   "nameFr": "K'Santé",
+   "title": "the Pride of Nazumah",
+   "titleFr": "Fierté de Nazumah",
+   "classes": [
+    "Tank",
+    "Fighter"
+   ],
+   "positions": [
+    "Top"
+   ],
+   "regions": [
+    "Shurima"
+   ],
+   "resource": "Mana",
+   "rangeType": "Melee",
+   "damageType": "Physical",
+   "difficulty": 3,
+   "releaseDate": "2022-11-02",
+   "releaseYear": 2022,
+   "attackRange": 150,
+   "moveSpeed": 330,
+   "ratings": {
+    "damage": 2,
+    "toughness": 3,
+    "control": 3,
+    "mobility": 2,
+    "utility": 2
+   },
+   "be": 2400,
+   "rp": 880,
+   "skills": [
+    "Dauntless Instinct",
+    "Ntofo Strikes",
+    "Path Maker",
+    "Footwork",
+    "All Out"
+   ],
+   "image": "KSante.png"
+  },
+  {
+   "id": "Kaisa",
+   "key": 145,
+   "name": "Kai'Sa",
+   "nameFr": "Kai'Sa",
+   "title": "Daughter of the Void",
+   "titleFr": "Fille du Néant",
+   "classes": [
+    "Marksman",
+    "Mage"
+   ],
+   "positions": [
+    "Bottom"
+   ],
+   "regions": [
+    "Void"
+   ],
+   "resource": "Mana",
+   "rangeType": "Ranged",
+   "damageType": "Magic",
+   "difficulty": 2,
+   "releaseDate": "2018-03-07",
+   "releaseYear": 2018,
+   "attackRange": 525,
+   "moveSpeed": 335,
+   "ratings": {
+    "damage": 3,
+    "toughness": 1,
+    "control": 1,
+    "mobility": 3,
+    "utility": 1
+   },
+   "be": 675,
+   "rp": 585,
+   "skills": [
+    "Second Skin",
+    "Icathian Rain",
+    "Void Seeker",
+    "Supercharge",
+    "Killer Instinct"
+   ],
+   "image": "Kaisa.png"
+  },
+  {
+   "id": "Kalista",
+   "key": 429,
+   "name": "Kalista",
+   "nameFr": "Kalista",
+   "title": "the Spear of Vengeance",
+   "titleFr": "Lance de la vengeance",
+   "classes": [
+    "Marksman"
+   ],
+   "positions": [
+    "Bottom"
+   ],
+   "regions": [
+    "Shadow Isles"
+   ],
+   "resource": "Mana",
+   "rangeType": "Ranged",
+   "damageType": "Physical",
+   "difficulty": 3,
+   "releaseDate": "2014-11-20",
+   "releaseYear": 2014,
+   "attackRange": 525,
+   "moveSpeed": 330,
+   "ratings": {
+    "damage": 3,
+    "toughness": 1,
+    "control": 1,
+    "mobility": 3,
+    "utility": 2
+   },
+   "be": 2400,
+   "rp": 880,
+   "skills": [
+    "Martial Poise",
+    "Pierce",
+    "Sentinel",
+    "Rend",
+    "Fate's Call"
+   ],
+   "image": "Kalista.png"
+  },
+  {
+   "id": "Karma",
+   "key": 43,
+   "name": "Karma",
+   "nameFr": "Karma",
+   "title": "the Enlightened One",
+   "titleFr": "Sagesse incarnée",
+   "classes": [
+    "Mage",
+    "Support"
+   ],
+   "positions": [
+    "Middle",
+    "Support"
+   ],
+   "regions": [
+    "Ionia"
+   ],
+   "resource": "Mana",
+   "rangeType": "Ranged",
+   "damageType": "Magic",
+   "difficulty": 1,
+   "releaseDate": "2011-02-01",
+   "releaseYear": 2011,
+   "attackRange": 525,
+   "moveSpeed": 335,
+   "ratings": {
+    "damage": 2,
+    "toughness": 1,
+    "control": 2,
+    "mobility": 1,
+    "utility": 2
+   },
+   "be": 1575,
+   "rp": 790,
+   "skills": [
+    "Gathering Fire",
+    "Inner Flame",
+    "Soulflare",
+    "Focused Resolve",
+    "Renewal",
+    "Inspire",
+    "Defiance",
+    "Mantra"
+   ],
+   "image": "Karma.png"
+  },
+  {
+   "id": "Karthus",
+   "key": 30,
+   "name": "Karthus",
+   "nameFr": "Karthus",
+   "title": "the Deathsinger",
+   "titleFr": "Liche",
+   "classes": [
+    "Mage"
+   ],
+   "positions": [
+    "Jungle"
+   ],
+   "regions": [
+    "Shadow Isles"
+   ],
+   "resource": "Mana",
+   "rangeType": "Ranged",
+   "damageType": "Magic",
+   "difficulty": 2,
+   "releaseDate": "2009-06-12",
+   "releaseYear": 2009,
+   "attackRange": 450,
+   "moveSpeed": 335,
+   "ratings": {
+    "damage": 3,
+    "toughness": 1,
+    "control": 1,
+    "mobility": 1,
+    "utility": 2
+   },
+   "be": 1575,
+   "rp": 790,
+   "skills": [
+    "Death Defied",
+    "Lay Waste",
+    "Wall of Pain",
+    "Defile",
+    "Requiem"
+   ],
+   "image": "Karthus.png"
+  },
+  {
+   "id": "Kassadin",
+   "key": 38,
+   "name": "Kassadin",
+   "nameFr": "Kassadin",
+   "title": "the Void Walker",
+   "titleFr": "Chasseur du Néant",
+   "classes": [
+    "Assassin",
+    "Mage"
+   ],
+   "positions": [
+    "Middle"
+   ],
+   "regions": [
+    "Void"
+   ],
+   "resource": "Mana",
+   "rangeType": "Melee",
+   "damageType": "Magic",
+   "difficulty": 2,
+   "releaseDate": "2009-08-07",
+   "releaseYear": 2009,
+   "attackRange": 150,
+   "moveSpeed": 335,
+   "ratings": {
+    "damage": 3,
+    "toughness": 2,
+    "control": 1,
+    "mobility": 3,
+    "utility": 1
+   },
+   "be": 1575,
+   "rp": 790,
+   "skills": [
+    "Void Stone",
+    "Null Sphere",
+    "Nether Blade",
+    "Force Pulse",
+    "Riftwalk"
+   ],
+   "image": "Kassadin.png"
+  },
+  {
+   "id": "Katarina",
+   "key": 55,
+   "name": "Katarina",
+   "nameFr": "Katarina",
+   "title": "the Sinister Blade",
+   "titleFr": "Lame sinistre",
+   "classes": [
+    "Assassin",
+    "Mage"
+   ],
+   "positions": [
+    "Middle"
+   ],
+   "regions": [
+    "Noxus"
+   ],
+   "resource": "None",
+   "rangeType": "Melee",
+   "damageType": "Magic",
+   "difficulty": 3,
+   "releaseDate": "2009-09-19",
+   "releaseYear": 2009,
+   "attackRange": 125,
+   "moveSpeed": 335,
+   "ratings": {
+    "damage": 3,
+    "toughness": 1,
+    "control": 1,
+    "mobility": 3,
+    "utility": 1
+   },
+   "be": 1575,
+   "rp": 790,
+   "skills": [
+    "Voracity",
+    "Bouncing Blade",
+    "Preparation",
+    "Shunpo",
+    "Death Lotus"
+   ],
+   "image": "Katarina.png"
+  },
+  {
+   "id": "Kayle",
+   "key": 10,
+   "name": "Kayle",
+   "nameFr": "Kayle",
+   "title": "the Righteous",
+   "titleFr": "Vertueuse",
+   "classes": [
+    "Mage",
+    "Marksman"
+   ],
+   "positions": [
+    "Top"
+   ],
+   "regions": [
+    "Demacia"
+   ],
+   "resource": "Mana",
+   "rangeType": "Melee",
+   "damageType": "Physical",
+   "difficulty": 2,
+   "releaseDate": "2009-02-21",
+   "releaseYear": 2009,
+   "attackRange": 175,
+   "moveSpeed": 335,
+   "ratings": {
+    "damage": 3,
+    "toughness": 1,
+    "control": 1,
+    "mobility": 1,
+    "utility": 3
+   },
+   "be": 2400,
+   "rp": 260,
+   "skills": [
+    "Divine Ascent",
+    "Radiant Blast",
+    "Celestial Blessing",
+    "Starfire Spellblade",
+    "Divine Judgment"
+   ],
+   "image": "Kayle.png"
+  },
+  {
+   "id": "Kayn",
+   "key": 141,
+   "name": "Kayn",
+   "nameFr": "Kayn",
+   "title": "the Shadow Reaper",
+   "titleFr": "Faucheur de l'ombre",
+   "classes": [
+    "Fighter",
+    "Assassin"
+   ],
+   "positions": [
+    "Jungle"
+   ],
+   "regions": [
+    "Ionia"
+   ],
+   "resource": "Mana",
+   "rangeType": "Melee",
+   "damageType": "Physical",
+   "difficulty": 3,
+   "releaseDate": "2017-07-12",
+   "releaseYear": 2017,
+   "attackRange": 175,
+   "moveSpeed": 340,
+   "ratings": {
+    "damage": 3,
+    "toughness": 1,
+    "control": 1,
+    "mobility": 3,
+    "utility": 1
+   },
+   "be": 1575,
+   "rp": 790,
+   "skills": [
+    "The Darkin Scythe",
+    "Reaping Slash",
+    "Blade's Reach",
+    "Shadow Step",
+    "Umbral Trespass"
+   ],
+   "image": "Kayn.png"
+  },
+  {
+   "id": "Kennen",
+   "key": 85,
+   "name": "Kennen",
+   "nameFr": "Kennen",
+   "title": "the Heart of the Tempest",
+   "titleFr": "Cœur de la tempête",
+   "classes": [
+    "Mage",
+    "Marksman"
+   ],
+   "positions": [
+    "Top"
+   ],
+   "regions": [
+    "Ionia"
+   ],
+   "resource": "Energy",
+   "rangeType": "Ranged",
+   "damageType": "Magic",
+   "difficulty": 2,
+   "releaseDate": "2010-04-08",
+   "releaseYear": 2010,
+   "attackRange": 550,
+   "moveSpeed": 335,
+   "ratings": {
+    "damage": 3,
+    "toughness": 1,
+    "control": 3,
+    "mobility": 1,
+    "utility": 1
+   },
+   "be": 2400,
+   "rp": 880,
+   "skills": [
+    "Mark of the Storm",
+    "Thundering Shuriken",
+    "Electrical Surge",
+    "Lightning Rush",
+    "Slicing Maelstrom"
+   ],
+   "image": "Kennen.png"
+  },
+  {
+   "id": "Khazix",
+   "key": 121,
+   "name": "Kha'Zix",
+   "nameFr": "Kha'Zix",
+   "title": "the Voidreaver",
+   "titleFr": "Faucheur du Néant",
+   "classes": [
+    "Assassin"
+   ],
+   "positions": [
+    "Jungle"
+   ],
+   "regions": [
+    "Void"
+   ],
+   "resource": "Mana",
+   "rangeType": "Melee",
+   "damageType": "Physical",
+   "difficulty": 2,
+   "releaseDate": "2012-09-27",
+   "releaseYear": 2012,
+   "attackRange": 125,
+   "moveSpeed": 345,
+   "ratings": {
+    "damage": 3,
+    "toughness": 1,
+    "control": 1,
+    "mobility": 2,
+    "utility": 1
+   },
+   "be": 2400,
+   "rp": 880,
+   "skills": [
+    "Unseen Threat",
+    "Taste Their Fear",
+    "Evolved Reaper Claws",
+    "Void Spike",
+    "Evolved Spike Racks",
+    "Leap",
+    "Evolved Wings",
+    "Void Assault",
+    "Evolved Adaptive Cloaking"
+   ],
+   "image": "Khazix.png"
+  },
+  {
+   "id": "Kindred",
+   "key": 203,
+   "name": "Kindred",
+   "nameFr": "Kindred",
+   "title": "The Eternal Hunters",
+   "titleFr": "Chasseurs éternels",
+   "classes": [
+    "Marksman"
+   ],
+   "positions": [
+    "Jungle"
+   ],
+   "regions": [
+    "Runeterra"
+   ],
+   "resource": "Mana",
+   "rangeType": "Ranged",
+   "damageType": "Physical",
+   "difficulty": 3,
+   "releaseDate": "2015-10-14",
+   "releaseYear": 2015,
+   "attackRange": 500,
+   "moveSpeed": 325,
+   "ratings": {
+    "damage": 3,
+    "toughness": 1,
+    "control": 2,
+    "mobility": 3,
+    "utility": 2
+   },
+   "be": 2400,
+   "rp": 880,
+   "skills": [
+    "Mark of the Kindred",
+    "Dance of Arrows",
+    "Wolf's Frenzy",
+    "Mounting Dread",
+    "Lamb's Respite"
+   ],
+   "image": "Kindred.png"
+  },
+  {
+   "id": "Kled",
+   "key": 240,
+   "name": "Kled",
+   "nameFr": "Kled",
+   "title": "the Cantankerous Cavalier",
+   "titleFr": "Cavalier colérique",
+   "classes": [
+    "Fighter",
+    "Tank"
+   ],
+   "positions": [
+    "Top"
+   ],
+   "regions": [
+    "Runeterra"
+   ],
+   "resource": "Courage",
+   "rangeType": "Melee",
+   "damageType": "Physical",
+   "difficulty": 3,
+   "releaseDate": "2016-08-10",
+   "releaseYear": 2016,
+   "attackRange": 125,
+   "moveSpeed": 345,
+   "ratings": {
+    "damage": 3,
+    "toughness": 2,
+    "control": 1,
+    "mobility": 3,
+    "utility": 1
+   },
+   "be": 2400,
+   "rp": 880,
+   "skills": [],
+   "image": "Kled.png"
+  },
+  {
+   "id": "KogMaw",
+   "key": 96,
+   "name": "Kog'Maw",
+   "nameFr": "Kog'Maw",
+   "title": "the Mouth of the Abyss",
+   "titleFr": "Gueule des abysses",
+   "classes": [
+    "Marksman",
+    "Mage"
+   ],
+   "positions": [
+    "Bottom"
+   ],
+   "regions": [
+    "Void"
+   ],
+   "resource": "Mana",
+   "rangeType": "Ranged",
+   "damageType": "Physical",
+   "difficulty": 2,
+   "releaseDate": "2010-06-24",
+   "releaseYear": 2010,
+   "attackRange": 500,
+   "moveSpeed": 330,
+   "ratings": {
+    "damage": 3,
+    "toughness": 1,
+    "control": 1,
+    "mobility": 1,
+    "utility": 1
+   },
+   "be": 2400,
+   "rp": 880,
+   "skills": [
+    "Icathian Surprise",
+    "Caustic Spittle",
+    "Bio-Arcane Barrage",
+    "Void Ooze",
+    "Living Artillery"
+   ],
+   "image": "KogMaw.png"
+  },
+  {
+   "id": "Leblanc",
+   "key": 7,
+   "name": "LeBlanc",
+   "nameFr": "LeBlanc",
+   "title": "the Deceiver",
+   "titleFr": "Manipulatrice",
+   "classes": [
+    "Assassin",
+    "Mage"
+   ],
+   "positions": [
+    "Middle"
+   ],
+   "regions": [
+    "Noxus"
+   ],
+   "resource": "Mana",
+   "rangeType": "Ranged",
+   "damageType": "Magic",
+   "difficulty": 3,
+   "releaseDate": "2010-11-02",
+   "releaseYear": 2010,
+   "attackRange": 525,
+   "moveSpeed": 340,
+   "ratings": {
+    "damage": 3,
+    "toughness": 1,
+    "control": 2,
+    "mobility": 3,
+    "utility": 1
+   },
+   "be": 1575,
+   "rp": 790,
+   "skills": [
+    "Mirror Image",
+    "Sigil of Malice",
+    "Distortion",
+    "Ethereal Chains",
+    "Mimic"
+   ],
+   "image": "Leblanc.png"
+  },
+  {
+   "id": "LeeSin",
+   "key": 64,
+   "name": "Lee Sin",
+   "nameFr": "Lee Sin",
+   "title": "the Blind Monk",
+   "titleFr": "Moine aveugle",
+   "classes": [
+    "Fighter",
+    "Assassin"
+   ],
+   "positions": [
+    "Jungle"
+   ],
+   "regions": [
+    "Ionia"
+   ],
+   "resource": "Energy",
+   "rangeType": "Melee",
+   "damageType": "Physical",
+   "difficulty": 3,
+   "releaseDate": "2011-04-01",
+   "releaseYear": 2011,
+   "attackRange": 125,
+   "moveSpeed": 345,
+   "ratings": {
+    "damage": 3,
+    "toughness": 2,
+    "control": 2,
+    "mobility": 3,
+    "utility": 1
+   },
+   "be": 675,
+   "rp": 585,
+   "skills": [
+    "Flurry",
+    "Sonic Wave",
+    "Resonating Strike",
+    "Safeguard",
+    "Iron Will",
+    "Tempest",
+    "Cripple",
+    "Dragon's Rage"
+   ],
+   "image": "LeeSin.png"
+  },
+  {
+   "id": "Leona",
+   "key": 89,
+   "name": "Leona",
+   "nameFr": "Leona",
+   "title": "the Radiant Dawn",
+   "titleFr": "Aube radieuse",
+   "classes": [
+    "Tank",
+    "Support"
+   ],
+   "positions": [
+    "Support"
+   ],
+   "regions": [
+    "Targon"
+   ],
+   "resource": "Mana",
+   "rangeType": "Melee",
+   "damageType": "Physical",
+   "difficulty": 1,
+   "releaseDate": "2011-07-13",
+   "releaseYear": 2011,
+   "attackRange": 125,
+   "moveSpeed": 335,
+   "ratings": {
+    "damage": 1,
+    "toughness": 3,
+    "control": 3,
+    "mobility": 1,
+    "utility": 1
+   },
+   "be": 225,
+   "rp": 260,
+   "skills": [
+    "Sunlight",
+    "Shield of Daybreak",
+    "Eclipse",
+    "Zenith Blade",
+    "Solar Flare"
+   ],
+   "image": "Leona.png"
+  },
+  {
+   "id": "Lillia",
+   "key": 876,
+   "name": "Lillia",
+   "nameFr": "Lillia",
+   "title": "the Bashful Bloom",
+   "titleFr": "Fleur timide",
+   "classes": [
+    "Fighter",
+    "Mage"
+   ],
+   "positions": [
+    "Jungle"
+   ],
+   "regions": [
+    "Ionia"
+   ],
+   "resource": "Mana",
+   "rangeType": "Melee",
+   "damageType": "Magic",
+   "difficulty": 2,
+   "releaseDate": "2020-07-22",
+   "releaseYear": 2020,
+   "attackRange": 325,
+   "moveSpeed": 330,
+   "ratings": {
+    "damage": 3,
+    "toughness": 1,
+    "control": 2,
+    "mobility": 2,
+    "utility": 2
+   },
+   "be": 2400,
+   "rp": 880,
+   "skills": [
+    "Dream-Laden Bough",
+    "Blooming Blows",
+    "Watch Out! Eep!",
+    "Swirlseed",
+    "Lilting Lullaby"
+   ],
+   "image": "Lillia.png"
+  },
+  {
+   "id": "Lissandra",
+   "key": 127,
+   "name": "Lissandra",
+   "nameFr": "Lissandra",
+   "title": "the Ice Witch",
+   "titleFr": "Sorcière de glace",
+   "classes": [
+    "Mage"
+   ],
+   "positions": [
+    "Middle"
+   ],
+   "regions": [
+    "Freljord"
+   ],
+   "resource": "Mana",
+   "rangeType": "Ranged",
+   "damageType": "Magic",
+   "difficulty": 2,
+   "releaseDate": "2013-04-30",
+   "releaseYear": 2013,
+   "attackRange": 550,
+   "moveSpeed": 325,
+   "ratings": {
+    "damage": 3,
+    "toughness": 1,
+    "control": 3,
+    "mobility": 2,
+    "utility": 1
+   },
+   "be": 2400,
+   "rp": 880,
+   "skills": [
+    "Iceborn Subjugation",
+    "Ice Shard",
+    "Ring of Frost",
+    "Glacial Path",
+    "Frozen Tomb"
+   ],
+   "image": "Lissandra.png"
+  },
+  {
+   "id": "Locke",
+   "key": 805,
+   "name": "Locke",
+   "nameFr": "Locke",
+   "title": "the Ashen Exorcist",
+   "titleFr": "Exorciste cendré",
+   "classes": [
+    "Assassin",
+    "Mage"
+   ],
+   "positions": [
+    "Middle"
+   ],
+   "regions": [
+    "Demacia"
+   ],
+   "resource": "Mana",
+   "rangeType": "Melee",
+   "damageType": "Magic",
+   "difficulty": 2,
+   "releaseDate": "2026-06-24",
+   "releaseYear": 2026,
+   "attackRange": 125,
+   "moveSpeed": 340,
+   "ratings": {
+    "damage": 3,
+    "toughness": 2,
+    "control": 1,
+    "mobility": 3,
+    "utility": 1
+   },
+   "be": 2400,
+   "rp": 880,
+   "skills": [
+    "Silver Stake",
+    "Ritual Nails",
+    "Soul Ignition",
+    "Ashen Pursuit",
+    "Purgatory"
+   ],
+   "image": "Locke.png"
+  },
+  {
+   "id": "Lucian",
+   "key": 236,
+   "name": "Lucian",
+   "nameFr": "Lucian",
+   "title": "the Purifier",
+   "titleFr": "Purificateur",
+   "classes": [
+    "Marksman",
+    "Assassin"
+   ],
+   "positions": [
+    "Bottom"
+   ],
+   "regions": [
+    "Demacia"
+   ],
+   "resource": "Mana",
+   "rangeType": "Ranged",
+   "damageType": "Physical",
+   "difficulty": 2,
+   "releaseDate": "2013-08-22",
+   "releaseYear": 2013,
+   "attackRange": 500,
+   "moveSpeed": 335,
+   "ratings": {
+    "damage": 3,
+    "toughness": 1,
+    "control": 1,
+    "mobility": 3,
+    "utility": 1
+   },
+   "be": 675,
+   "rp": 585,
+   "skills": [
+    "Lightslinger",
+    "Piercing Light",
+    "Ardent Blaze",
+    "Relentless Pursuit",
+    "The Culling"
+   ],
+   "image": "Lucian.png"
+  },
+  {
+   "id": "Lulu",
+   "key": 117,
+   "name": "Lulu",
+   "nameFr": "Lulu",
+   "title": "the Fae Sorceress",
+   "titleFr": "Sorcière féérique",
+   "classes": [
+    "Support",
+    "Mage"
+   ],
+   "positions": [
+    "Support"
+   ],
+   "regions": [
+    "Bandle City"
+   ],
+   "resource": "Mana",
+   "rangeType": "Ranged",
+   "damageType": "Magic",
+   "difficulty": 2,
+   "releaseDate": "2012-03-20",
+   "releaseYear": 2012,
+   "attackRange": 550,
+   "moveSpeed": 330,
+   "ratings": {
+    "damage": 2,
+    "toughness": 1,
+    "control": 2,
+    "mobility": 1,
+    "utility": 3
+   },
+   "be": 2400,
+   "rp": 880,
+   "skills": [
+    "Pix, Faerie Companion",
+    "Glitterlance",
+    "Whimsy",
+    "Help, Pix!",
+    "Wild Growth"
+   ],
+   "image": "Lulu.png"
+  },
+  {
+   "id": "Lux",
+   "key": 99,
+   "name": "Lux",
+   "nameFr": "Lux",
+   "title": "the Lady of Luminosity",
+   "titleFr": "Dame de lumière",
+   "classes": [
+    "Mage",
+    "Support"
+   ],
+   "positions": [
+    "Middle",
+    "Support"
+   ],
+   "regions": [
+    "Demacia"
+   ],
+   "resource": "Mana",
+   "rangeType": "Ranged",
+   "damageType": "Magic",
+   "difficulty": 1,
+   "releaseDate": "2010-10-19",
+   "releaseYear": 2010,
+   "attackRange": 550,
+   "moveSpeed": 330,
+   "ratings": {
+    "damage": 3,
+    "toughness": 1,
+    "control": 2,
+    "mobility": 1,
+    "utility": 2
+   },
+   "be": 225,
+   "rp": 260,
+   "skills": [
+    "Illumination",
+    "Light Binding",
+    "Prismatic Barrier",
+    "Lucent Singularity",
+    "Final Spark"
+   ],
+   "image": "Lux.png"
+  },
+  {
+   "id": "Malphite",
+   "key": 54,
+   "name": "Malphite",
+   "nameFr": "Malphite",
+   "title": "Shard of the Monolith",
+   "titleFr": "Éclat du monolithe",
+   "classes": [
+    "Tank",
+    "Mage"
+   ],
+   "positions": [
+    "Top"
+   ],
+   "regions": [
+    "Ixtal"
+   ],
+   "resource": "Mana",
+   "rangeType": "Melee",
+   "damageType": "Magic",
+   "difficulty": 1,
+   "releaseDate": "2009-09-02",
+   "releaseYear": 2009,
+   "attackRange": 125,
+   "moveSpeed": 335,
+   "ratings": {
+    "damage": 1,
+    "toughness": 3,
+    "control": 3,
+    "mobility": 1,
+    "utility": 1
+   },
+   "be": 225,
+   "rp": 260,
+   "skills": [
+    "Granite Shield",
+    "Seismic Shard",
+    "Thunderclap",
+    "Ground Slam",
+    "Unstoppable Force"
+   ],
+   "image": "Malphite.png"
+  },
+  {
+   "id": "Malzahar",
+   "key": 90,
+   "name": "Malzahar",
+   "nameFr": "Malzahar",
+   "title": "the Prophet of the Void",
+   "titleFr": "Prophète du Néant",
+   "classes": [
+    "Mage",
+    "Assassin"
+   ],
+   "positions": [
+    "Middle"
+   ],
+   "regions": [
+    "Void"
+   ],
+   "resource": "Mana",
+   "rangeType": "Ranged",
+   "damageType": "Magic",
+   "difficulty": 1,
+   "releaseDate": "2010-06-01",
+   "releaseYear": 2010,
+   "attackRange": 500,
+   "moveSpeed": 335,
+   "ratings": {
+    "damage": 3,
+    "toughness": 1,
+    "control": 3,
+    "mobility": 1,
+    "utility": 2
+   },
+   "be": 2400,
+   "rp": 880,
+   "skills": [
+    "Void Shift",
+    "Call of the Void",
+    "Void Swarm",
+    "Malefic Visions",
+    "Nether Grasp"
+   ],
+   "image": "Malzahar.png"
+  },
+  {
+   "id": "Maokai",
+   "key": 57,
+   "name": "Maokai",
+   "nameFr": "Maokai",
+   "title": "the Twisted Treant",
+   "titleFr": "Tréant torturé",
+   "classes": [
+    "Tank",
+    "Support"
+   ],
+   "positions": [
+    "Support"
+   ],
+   "regions": [
+    "Shadow Isles"
+   ],
+   "resource": "Mana",
+   "rangeType": "Melee",
+   "damageType": "Magic",
+   "difficulty": 1,
+   "releaseDate": "2011-02-16",
+   "releaseYear": 2011,
+   "attackRange": 125,
+   "moveSpeed": 335,
+   "ratings": {
+    "damage": 1,
+    "toughness": 3,
+    "control": 3,
+    "mobility": 1,
+    "utility": 2
+   },
+   "be": 2400,
+   "rp": 880,
+   "skills": [
+    "Sap Magic",
+    "Bramble Smash",
+    "Twisted Advance",
+    "Sapling Toss",
+    "Nature's Grasp"
+   ],
+   "image": "Maokai.png"
+  },
+  {
+   "id": "MasterYi",
+   "key": 11,
+   "name": "Master Yi",
+   "nameFr": "Maître Yi",
+   "title": "the Wuju Bladesman",
+   "titleFr": "Fine lame Wuju",
+   "classes": [
+    "Fighter",
+    "Assassin"
+   ],
+   "positions": [
+    "Jungle"
+   ],
+   "regions": [
+    "Ionia"
+   ],
+   "resource": "Mana",
+   "rangeType": "Melee",
+   "damageType": "Physical",
+   "difficulty": 1,
+   "releaseDate": "2009-02-21",
+   "releaseYear": 2009,
+   "attackRange": 175,
+   "moveSpeed": 355,
+   "ratings": {
+    "damage": 3,
+    "toughness": 1,
+    "control": 1,
+    "mobility": 2,
+    "utility": 1
+   },
+   "be": 225,
+   "rp": 260,
+   "skills": [
+    "Double Strike",
+    "Alpha Strike",
+    "Meditate",
+    "Wuju Style",
+    "Highlander"
+   ],
+   "image": "MasterYi.png"
+  },
+  {
+   "id": "Mel",
+   "key": 800,
+   "name": "Mel",
+   "nameFr": "Mel",
+   "title": "the Soul's Reflection",
+   "titleFr": "Reflet de l'âme",
+   "classes": [
+    "Mage",
+    "Support"
+   ],
+   "positions": [
+    "Middle",
+    "Support"
+   ],
+   "regions": [
+    "Noxus"
+   ],
+   "resource": "Mana",
+   "rangeType": "Ranged",
+   "damageType": "Magic",
+   "difficulty": 2,
+   "releaseDate": "2025-01-23",
+   "releaseYear": 2025,
+   "attackRange": 550,
+   "moveSpeed": 330,
+   "ratings": {
+    "damage": 3,
+    "toughness": 1,
+    "control": 2,
+    "mobility": 1,
+    "utility": 1
+   },
+   "be": 3150,
+   "rp": 975,
+   "skills": [
+    "Searing Brilliance",
+    "Radiant Volley",
+    "Rebuttal",
+    "Solar Snare",
+    "Golden Eclipse"
+   ],
+   "image": "Mel.png"
+  },
+  {
+   "id": "Milio",
+   "key": 902,
+   "name": "Milio",
+   "nameFr": "Milio",
+   "title": "The Gentle Flame",
+   "titleFr": "Douce flamme",
+   "classes": [
+    "Support",
+    "Mage"
+   ],
+   "positions": [
+    "Support"
+   ],
+   "regions": [
+    "Ixtal"
+   ],
+   "resource": "Mana",
+   "rangeType": "Ranged",
+   "damageType": "Magic",
+   "difficulty": 1,
+   "releaseDate": "2023-03-23",
+   "releaseYear": 2023,
+   "attackRange": 525,
+   "moveSpeed": 330,
+   "ratings": {
+    "damage": 1,
+    "toughness": 1,
+    "control": 2,
+    "mobility": 1,
+    "utility": 3
+   },
+   "be": 2400,
+   "rp": 880,
+   "skills": [
+    "Fired Up!",
+    "Ultra Mega Fire Kick",
+    "Cozy Campfire",
+    "Warm Hugs",
+    "Breath of Life"
+   ],
+   "image": "Milio.png"
+  },
+  {
+   "id": "MissFortune",
+   "key": 21,
+   "name": "Miss Fortune",
+   "nameFr": "Miss Fortune",
+   "title": "the Bounty Hunter",
+   "titleFr": "Chasseuse de primes",
+   "classes": [
+    "Marksman",
+    "Mage"
+   ],
+   "positions": [
+    "Bottom"
+   ],
+   "regions": [
+    "Bilgewater"
+   ],
+   "resource": "Mana",
+   "rangeType": "Ranged",
+   "damageType": "Physical",
+   "difficulty": 1,
+   "releaseDate": "2010-09-08",
+   "releaseYear": 2010,
+   "attackRange": 550,
+   "moveSpeed": 325,
+   "ratings": {
+    "damage": 3,
+    "toughness": 1,
+    "control": 1,
+    "mobility": 1,
+    "utility": 1
+   },
+   "be": 225,
+   "rp": 260,
+   "skills": [
+    "Love Tap",
+    "Double Up",
+    "Strut",
+    "Make It Rain",
+    "Bullet Time"
+   ],
+   "image": "MissFortune.png"
+  },
+  {
+   "id": "Mordekaiser",
+   "key": 82,
+   "name": "Mordekaiser",
+   "nameFr": "Mordekaiser",
+   "title": "the Iron Revenant",
+   "titleFr": "Revenant de fer",
+   "classes": [
+    "Fighter",
+    "Mage"
+   ],
+   "positions": [
+    "Top"
+   ],
+   "regions": [
+    "Noxus"
+   ],
+   "resource": "Shield",
+   "rangeType": "Melee",
+   "damageType": "Magic",
+   "difficulty": 2,
+   "releaseDate": "2010-02-24",
+   "releaseYear": 2010,
+   "attackRange": 175,
+   "moveSpeed": 335,
+   "ratings": {
+    "damage": 3,
+    "toughness": 2,
+    "control": 1,
+    "mobility": 1,
+    "utility": 2
+   },
+   "be": 675,
+   "rp": 585,
+   "skills": [
+    "Darkness Rise",
+    "Obliterate",
+    "Indestructible",
+    "Death's Grasp",
+    "Realm of Death"
+   ],
+   "image": "Mordekaiser.png"
+  },
+  {
+   "id": "Morgana",
+   "key": 25,
+   "name": "Morgana",
+   "nameFr": "Morgana",
+   "title": "the Fallen",
+   "titleFr": "Déchue",
+   "classes": [
+    "Support",
+    "Mage"
+   ],
+   "positions": [
+    "Support",
+    "Middle"
+   ],
+   "regions": [
+    "Demacia"
+   ],
+   "resource": "Mana",
+   "rangeType": "Ranged",
+   "damageType": "Magic",
+   "difficulty": 1,
+   "releaseDate": "2009-02-21",
+   "releaseYear": 2009,
+   "attackRange": 450,
+   "moveSpeed": 335,
+   "ratings": {
+    "damage": 2,
+    "toughness": 1,
+    "control": 3,
+    "mobility": 1,
+    "utility": 2
+   },
+   "be": 675,
+   "rp": 585,
+   "skills": [
+    "Soul Siphon",
+    "Dark Binding",
+    "Tormented Shadow",
+    "Black Shield",
+    "Soul Shackles"
+   ],
+   "image": "Morgana.png"
+  },
+  {
+   "id": "Naafiri",
+   "key": 950,
+   "name": "Naafiri",
+   "nameFr": "Naafiri",
+   "title": "the Hound of a Hundred Bites",
+   "titleFr": "la meute de fer",
+   "classes": [
+    "Assassin",
+    "Fighter"
+   ],
+   "positions": [
+    "Middle"
+   ],
+   "regions": [
+    "Shurima"
+   ],
+   "resource": "Mana",
+   "rangeType": "Melee",
+   "damageType": "Physical",
+   "difficulty": 1,
+   "releaseDate": "2023-07-19",
+   "releaseYear": 2023,
+   "attackRange": 125,
+   "moveSpeed": 340,
+   "ratings": {
+    "damage": 3,
+    "toughness": 1,
+    "control": 1,
+    "mobility": 3,
+    "utility": 1
+   },
+   "be": 675,
+   "rp": 585,
+   "skills": [
+    "We Are More",
+    "Darkin Daggers",
+    "The Call of the Pack",
+    "Eviscerate",
+    "Hounds' Pursuit"
+   ],
+   "image": "Naafiri.png"
+  },
+  {
+   "id": "Nami",
+   "key": 267,
+   "name": "Nami",
+   "nameFr": "Nami",
+   "title": "the Tidecaller",
+   "titleFr": "Aquamancienne",
+   "classes": [
+    "Support",
+    "Mage"
+   ],
+   "positions": [
+    "Support"
+   ],
+   "regions": [
+    "Targon",
+    "Void"
+   ],
+   "resource": "Mana",
+   "rangeType": "Ranged",
+   "damageType": "Magic",
+   "difficulty": 2,
+   "releaseDate": "2012-12-07",
+   "releaseYear": 2012,
+   "attackRange": 550,
+   "moveSpeed": 335,
+   "ratings": {
+    "damage": 1,
+    "toughness": 1,
+    "control": 3,
+    "mobility": 1,
+    "utility": 2
+   },
+   "be": 1575,
+   "rp": 790,
+   "skills": [
+    "Surging Tides",
+    "Aqua Prison",
+    "Ebb and Flow",
+    "Tidecaller's Blessing",
+    "Tidal Wave"
+   ],
+   "image": "Nami.png"
+  },
+  {
+   "id": "Nasus",
+   "key": 75,
+   "name": "Nasus",
+   "nameFr": "Nasus",
+   "title": "the Curator of the Sands",
+   "titleFr": "Gardien des sables",
+   "classes": [
+    "Fighter",
+    "Tank"
+   ],
+   "positions": [
+    "Top"
+   ],
+   "regions": [
+    "Shurima"
+   ],
+   "resource": "Mana",
+   "rangeType": "Melee",
+   "damageType": "Physical",
+   "difficulty": 1,
+   "releaseDate": "2009-10-01",
+   "releaseYear": 2009,
+   "attackRange": 125,
+   "moveSpeed": 350,
+   "ratings": {
+    "damage": 2,
+    "toughness": 3,
+    "control": 2,
+    "mobility": 1,
+    "utility": 1
+   },
+   "be": 675,
+   "rp": 585,
+   "skills": [
+    "Soul Eater",
+    "Siphoning Strike",
+    "Wither",
+    "Spirit Fire",
+    "Fury of the Sands"
+   ],
+   "image": "Nasus.png"
+  },
+  {
+   "id": "Nautilus",
+   "key": 111,
+   "name": "Nautilus",
+   "nameFr": "Nautilus",
+   "title": "the Titan of the Depths",
+   "titleFr": "Titan des profondeurs",
+   "classes": [
+    "Tank",
+    "Support"
+   ],
+   "positions": [
+    "Support"
+   ],
+   "regions": [
+    "Bilgewater"
+   ],
+   "resource": "Mana",
+   "rangeType": "Melee",
+   "damageType": "Magic",
+   "difficulty": 2,
+   "releaseDate": "2012-02-14",
+   "releaseYear": 2012,
+   "attackRange": 175,
+   "moveSpeed": 325,
+   "ratings": {
+    "damage": 1,
+    "toughness": 3,
+    "control": 3,
+    "mobility": 1,
+    "utility": 1
+   },
+   "be": 2400,
+   "rp": 880,
+   "skills": [
+    "Staggering Blow",
+    "Dredge Line",
+    "Titan's Wrath",
+    "Riptide",
+    "Depth Charge"
+   ],
+   "image": "Nautilus.png"
+  },
+  {
+   "id": "Neeko",
+   "key": 518,
+   "name": "Neeko",
+   "nameFr": "Neeko",
+   "title": "the Curious Chameleon",
+   "titleFr": "Caméléon curieux",
+   "classes": [
+    "Mage",
+    "Support"
+   ],
+   "positions": [
+    "Middle",
+    "Support"
+   ],
+   "regions": [
+    "Ixtal"
+   ],
+   "resource": "Mana",
+   "rangeType": "Ranged",
+   "damageType": "Magic",
+   "difficulty": 1,
+   "releaseDate": "2018-12-05",
+   "releaseYear": 2018,
+   "attackRange": 550,
+   "moveSpeed": 340,
+   "ratings": {
+    "damage": 3,
+    "toughness": 1,
+    "control": 3,
+    "mobility": 1,
+    "utility": 1
+   },
+   "be": 2400,
+   "rp": 880,
+   "skills": [
+    "Inherent Glamour",
+    "Blooming Burst",
+    "Shapesplitter",
+    "Tangle-Barbs",
+    "Pop Blossom"
+   ],
+   "image": "Neeko.png"
+  },
+  {
+   "id": "Nidalee",
+   "key": 76,
+   "name": "Nidalee",
+   "nameFr": "Nidalee",
+   "title": "the Bestial Huntress",
+   "titleFr": "Chasseresse bestiale",
+   "classes": [
+    "Assassin",
+    "Mage"
+   ],
+   "positions": [
+    "Jungle"
+   ],
+   "regions": [
+    "Ixtal"
+   ],
+   "resource": "Mana",
+   "rangeType": "Ranged",
+   "damageType": "Magic",
+   "difficulty": 3,
+   "releaseDate": "2009-12-17",
+   "releaseYear": 2009,
+   "attackRange": 525,
+   "moveSpeed": 335,
+   "ratings": {
+    "damage": 3,
+    "toughness": 1,
+    "control": 1,
+    "mobility": 3,
+    "utility": 2
+   },
+   "be": 1575,
+   "rp": 790,
+   "skills": [
+    "Prowl",
+    "Javelin Toss",
+    "Takedown",
+    "Bushwhack",
+    "Pounce",
+    "Primal Surge",
+    "Swipe",
+    "Aspect of the Cougar"
+   ],
+   "image": "Nidalee.png"
+  },
+  {
+   "id": "Nilah",
+   "key": 895,
+   "name": "Nilah",
+   "nameFr": "Nilah",
+   "title": "the Joy Unbound",
+   "titleFr": "Joie incarnée",
+   "classes": [
+    "Fighter",
+    "Assassin"
+   ],
+   "positions": [
+    "Bottom"
+   ],
+   "regions": [
+    "Bilgewater"
+   ],
+   "resource": "Mana",
+   "rangeType": "Melee",
+   "damageType": "Physical",
+   "difficulty": 3,
+   "releaseDate": "2022-07-13",
+   "releaseYear": 2022,
+   "attackRange": 225,
+   "moveSpeed": 340,
+   "ratings": {
+    "damage": 3,
+    "toughness": 1,
+    "control": 1,
+    "mobility": 3,
+    "utility": 2
+   },
+   "be": 2400,
+   "rp": 880,
+   "skills": [
+    "Joy Unending",
+    "Formless Blade",
+    "Jubilant Veil",
+    "Slipstream",
+    "Apotheosis"
+   ],
+   "image": "Nilah.png"
+  },
+  {
+   "id": "Nocturne",
+   "key": 56,
+   "name": "Nocturne",
+   "nameFr": "Nocturne",
+   "title": "the Eternal Nightmare",
+   "titleFr": "Éternel cauchemar",
+   "classes": [
+    "Fighter",
+    "Assassin"
+   ],
+   "positions": [
+    "Jungle"
+   ],
+   "regions": [
+    "Runeterra"
+   ],
+   "resource": "Mana",
+   "rangeType": "Melee",
+   "damageType": "Physical",
+   "difficulty": 1,
+   "releaseDate": "2011-03-15",
+   "releaseYear": 2011,
+   "attackRange": 125,
+   "moveSpeed": 345,
+   "ratings": {
+    "damage": 3,
+    "toughness": 1,
+    "control": 2,
+    "mobility": 2,
+    "utility": 2
+   },
+   "be": 1575,
+   "rp": 790,
+   "skills": [
+    "Umbra Blades",
+    "Duskbringer",
+    "Shroud of Darkness",
+    "Unspeakable Horror",
+    "Paranoia"
+   ],
+   "image": "Nocturne.png"
+  },
+  {
+   "id": "Nunu",
+   "key": 20,
+   "name": "Nunu & Willump",
+   "nameFr": "Nunu et Willump",
+   "title": "the Boy and His Yeti",
+   "titleFr": "Le Garçon et son yéti",
+   "classes": [
+    "Tank",
+    "Mage"
+   ],
+   "positions": [
+    "Jungle"
+   ],
+   "regions": [
+    "Runeterra"
+   ],
+   "resource": "Mana",
+   "rangeType": "Melee",
+   "damageType": "Magic",
+   "difficulty": 1,
+   "releaseDate": "2009-02-21",
+   "releaseYear": 2009,
+   "attackRange": 125,
+   "moveSpeed": 345,
+   "ratings": {
+    "damage": 1,
+    "toughness": 3,
+    "control": 2,
+    "mobility": 1,
+    "utility": 2
+   },
+   "be": 225,
+   "rp": 260,
+   "skills": [
+    "Call of the Freljord",
+    "Consume",
+    "Biggest Snowball Ever!",
+    "Snowball Barrage",
+    "Absolute Zero"
+   ],
+   "image": "Nunu.png"
+  },
+  {
+   "id": "Olaf",
+   "key": 2,
+   "name": "Olaf",
+   "nameFr": "Olaf",
+   "title": "the Berserker",
+   "titleFr": "Berzerker",
+   "classes": [
+    "Fighter",
+    "Tank"
+   ],
+   "positions": [
+    "Top"
+   ],
+   "regions": [
+    "Freljord"
+   ],
+   "resource": "Mana",
+   "rangeType": "Melee",
+   "damageType": "Physical",
+   "difficulty": 2,
+   "releaseDate": "2010-06-09",
+   "releaseYear": 2010,
+   "attackRange": 125,
+   "moveSpeed": 350,
+   "ratings": {
+    "damage": 2,
+    "toughness": 2,
+    "control": 2,
+    "mobility": 1,
+    "utility": 1
+   },
+   "be": 1575,
+   "rp": 790,
+   "skills": [
+    "Berserker Rage",
+    "Undertow",
+    "Tough It Out",
+    "Reckless Swing",
+    "Ragnarok"
+   ],
+   "image": "Olaf.png"
+  },
+  {
+   "id": "Orianna",
+   "key": 61,
+   "name": "Orianna",
+   "nameFr": "Orianna",
+   "title": "the Lady of Clockwork",
+   "titleFr": "Demoiselle mécanique",
+   "classes": [
+    "Mage",
+    "Support"
+   ],
+   "positions": [
+    "Middle"
+   ],
+   "regions": [
+    "Piltover"
+   ],
+   "resource": "Mana",
+   "rangeType": "Ranged",
+   "damageType": "Magic",
+   "difficulty": 3,
+   "releaseDate": "2011-06-01",
+   "releaseYear": 2011,
+   "attackRange": 525,
+   "moveSpeed": 325,
+   "ratings": {
+    "damage": 2,
+    "toughness": 1,
+    "control": 2,
+    "mobility": 1,
+    "utility": 2
+   },
+   "be": 2400,
+   "rp": 880,
+   "skills": [
+    "Clockwork Windup",
+    "Command: Attack",
+    "Command: Dissonance",
+    "Command: Protect",
+    "Command: Shockwave"
+   ],
+   "image": "Orianna.png"
+  },
+  {
+   "id": "Ornn",
+   "key": 516,
+   "name": "Ornn",
+   "nameFr": "Ornn",
+   "title": "The Fire below the Mountain",
+   "titleFr": "Dieu de la forge volcanique",
+   "classes": [
+    "Tank",
+    "Fighter"
+   ],
+   "positions": [
+    "Top"
+   ],
+   "regions": [
+    "Freljord"
+   ],
+   "resource": "Mana",
+   "rangeType": "Melee",
+   "damageType": "Physical",
+   "difficulty": 2,
+   "releaseDate": "2017-08-23",
+   "releaseYear": 2017,
+   "attackRange": 175,
+   "moveSpeed": 335,
+   "ratings": {
+    "damage": 1,
+    "toughness": 3,
+    "control": 3,
+    "mobility": 1,
+    "utility": 2
+   },
+   "be": 2400,
+   "rp": 880,
+   "skills": [
+    "Living Forge",
+    "Volcanic Rupture",
+    "Bellows Breath",
+    "Searing Charge",
+    "Call of the Forge God"
+   ],
+   "image": "Ornn.png"
+  },
+  {
+   "id": "Pantheon",
+   "key": 80,
+   "name": "Pantheon",
+   "nameFr": "Pantheon",
+   "title": "the Unbreakable Spear",
+   "titleFr": "Lance éternelle",
+   "classes": [
+    "Fighter",
+    "Assassin"
+   ],
+   "positions": [
+    "Top",
+    "Support"
+   ],
+   "regions": [
+    "Targon"
+   ],
+   "resource": "Mana",
+   "rangeType": "Melee",
+   "damageType": "Physical",
+   "difficulty": 1,
+   "releaseDate": "2010-02-02",
+   "releaseYear": 2010,
+   "attackRange": 175,
+   "moveSpeed": 345,
+   "ratings": {
+    "damage": 3,
+    "toughness": 2,
+    "control": 2,
+    "mobility": 2,
+    "utility": 1
+   },
+   "be": 675,
+   "rp": 585,
+   "skills": [
+    "Mortal Will",
+    "Comet Spear",
+    "Shield Vault",
+    "Aegis Assault",
+    "Grand Starfall"
+   ],
+   "image": "Pantheon.png"
+  },
+  {
+   "id": "Poppy",
+   "key": 78,
+   "name": "Poppy",
+   "nameFr": "Poppy",
+   "title": "Keeper of the Hammer",
+   "titleFr": "Gardienne du marteau",
+   "classes": [
+    "Tank",
+    "Fighter"
+   ],
+   "positions": [
+    "Top",
+    "Jungle"
+   ],
+   "regions": [
+    "Demacia"
+   ],
+   "resource": "Mana",
+   "rangeType": "Melee",
+   "damageType": "Physical",
+   "difficulty": 2,
+   "releaseDate": "2010-01-13",
+   "releaseYear": 2010,
+   "attackRange": 125,
+   "moveSpeed": 345,
+   "ratings": {
+    "damage": 2,
+    "toughness": 3,
+    "control": 3,
+    "mobility": 2,
+    "utility": 1
+   },
+   "be": 225,
+   "rp": 260,
+   "skills": [
+    "Iron Ambassador",
+    "Hammer Shock",
+    "Steadfast Presence",
+    "Heroic Charge",
+    "Keeper's Verdict"
+   ],
+   "image": "Poppy.png"
+  },
+  {
+   "id": "Pyke",
+   "key": 555,
+   "name": "Pyke",
+   "nameFr": "Pyke",
+   "title": "the Bloodharbor Ripper",
+   "titleFr": "Éventreur des abysses",
+   "classes": [
+    "Support",
+    "Assassin"
+   ],
+   "positions": [
+    "Support"
+   ],
+   "regions": [
+    "Bilgewater"
+   ],
+   "resource": "Mana",
+   "rangeType": "Melee",
+   "damageType": "Physical",
+   "difficulty": 2,
+   "releaseDate": "2018-05-31",
+   "releaseYear": 2018,
+   "attackRange": 150,
+   "moveSpeed": 330,
+   "ratings": {
+    "damage": 2,
+    "toughness": 1,
+    "control": 3,
+    "mobility": 3,
+    "utility": 1
+   },
+   "be": 1575,
+   "rp": 790,
+   "skills": [
+    "Gift of the Drowned Ones",
+    "Bone Skewer",
+    "Ghostwater Dive",
+    "Phantom Undertow",
+    "Death from Below"
+   ],
+   "image": "Pyke.png"
+  },
+  {
+   "id": "Qiyana",
+   "key": 246,
+   "name": "Qiyana",
+   "nameFr": "Qiyana",
+   "title": "Empress of the Elements",
+   "titleFr": "Impératrice des éléments",
+   "classes": [
+    "Assassin",
+    "Fighter"
+   ],
+   "positions": [
+    "Middle"
+   ],
+   "regions": [
+    "Ixtal"
+   ],
+   "resource": "Mana",
+   "rangeType": "Melee",
+   "damageType": "Physical",
+   "difficulty": 3,
+   "releaseDate": "2019-06-28",
+   "releaseYear": 2019,
+   "attackRange": 150,
+   "moveSpeed": 335,
+   "ratings": {
+    "damage": 3,
+    "toughness": 1,
+    "control": 2,
+    "mobility": 2,
+    "utility": 1
+   },
+   "be": 2400,
+   "rp": 880,
+   "skills": [
+    "Royal Privilege",
+    "Edge of Ixtal",
+    "Elemental Wrath",
+    "Terrashape",
+    "Audacity",
+    "Supreme Display of Talent"
+   ],
+   "image": "Qiyana.png"
+  },
+  {
+   "id": "Quinn",
+   "key": 133,
+   "name": "Quinn",
+   "nameFr": "Quinn",
+   "title": "Demacia's Wings",
+   "titleFr": "Ailes de Demacia",
+   "classes": [
+    "Marksman",
+    "Assassin"
+   ],
+   "positions": [
+    "Top"
+   ],
+   "regions": [
+    "Demacia"
+   ],
+   "resource": "Mana",
+   "rangeType": "Ranged",
+   "damageType": "Physical",
+   "difficulty": 2,
+   "releaseDate": "2013-03-01",
+   "releaseYear": 2013,
+   "attackRange": 525,
+   "moveSpeed": 330,
+   "ratings": {
+    "damage": 3,
+    "toughness": 1,
+    "control": 2,
+    "mobility": 3,
+    "utility": 1
+   },
+   "be": 2400,
+   "rp": 880,
+   "skills": [
+    "Harrier",
+    "Blinding Assault",
+    "Heightened Senses",
+    "Vault",
+    "Behind Enemy Lines",
+    "Skystrike"
+   ],
+   "image": "Quinn.png"
+  },
+  {
+   "id": "Rakan",
+   "key": 497,
+   "name": "Rakan",
+   "nameFr": "Rakan",
+   "title": "The Charmer",
+   "titleFr": "Charmeur",
+   "classes": [
+    "Support"
+   ],
+   "positions": [
+    "Support"
+   ],
+   "regions": [
+    "Ionia"
+   ],
+   "resource": "Mana",
+   "rangeType": "Melee",
+   "damageType": "Magic",
+   "difficulty": 2,
+   "releaseDate": "2017-04-19",
+   "releaseYear": 2017,
+   "attackRange": 300,
+   "moveSpeed": 335,
+   "ratings": {
+    "damage": 1,
+    "toughness": 2,
+    "control": 3,
+    "mobility": 3,
+    "utility": 3
+   },
+   "be": 2400,
+   "rp": 880,
+   "skills": [
+    "Fey Feathers",
+    "Gleaming Quill",
+    "Grand Entrance",
+    "Battle Dance",
+    "The Quickness"
+   ],
+   "image": "Rakan.png"
+  },
+  {
+   "id": "Rammus",
+   "key": 33,
+   "name": "Rammus",
+   "nameFr": "Rammus",
+   "title": "the Armordillo",
+   "titleFr": "Tatou blindé",
+   "classes": [
+    "Tank",
+    "Fighter"
+   ],
+   "positions": [
+    "Jungle"
+   ],
+   "regions": [
+    "Shurima"
+   ],
+   "resource": "Mana",
+   "rangeType": "Melee",
+   "damageType": "Physical",
+   "difficulty": 1,
+   "releaseDate": "2009-07-10",
+   "releaseYear": 2009,
+   "attackRange": 125,
+   "moveSpeed": 335,
+   "ratings": {
+    "damage": 2,
+    "toughness": 3,
+    "control": 3,
+    "mobility": 2,
+    "utility": 1
+   },
+   "be": 675,
+   "rp": 585,
+   "skills": [
+    "Spiked Shell",
+    "Powerball",
+    "Defensive Ball Curl",
+    "Frenzying Taunt",
+    "Soaring Slam"
+   ],
+   "image": "Rammus.png"
+  },
+  {
+   "id": "RekSai",
+   "key": 421,
+   "name": "Rek'Sai",
+   "nameFr": "Rek'Sai",
+   "title": "the Void Burrower",
+   "titleFr": "Traqueuse du Néant",
+   "classes": [
+    "Fighter",
+    "Tank"
+   ],
+   "positions": [
+    "Jungle"
+   ],
+   "regions": [
+    "Void"
+   ],
+   "resource": "Fury",
+   "rangeType": "Melee",
+   "damageType": "Physical",
+   "difficulty": 3,
+   "releaseDate": "2014-12-11",
+   "releaseYear": 2014,
+   "attackRange": 175,
+   "moveSpeed": 340,
+   "ratings": {
+    "damage": 2,
+    "toughness": 2,
+    "control": 2,
+    "mobility": 2,
+    "utility": 2
+   },
+   "be": 2400,
+   "rp": 880,
+   "skills": [
+    "Fury of the Xer'Sai",
+    "Queen's Wrath",
+    "Prey Seeker",
+    "Burrow",
+    "Unburrow",
+    "Furious Bite",
+    "Tunnel",
+    "Void Rush"
+   ],
+   "image": "RekSai.png"
+  },
+  {
+   "id": "Rell",
+   "key": 526,
+   "name": "Rell",
+   "nameFr": "Rell",
+   "title": "the Iron Maiden",
+   "titleFr": "Cavalière de fer",
+   "classes": [
+    "Tank",
+    "Support"
+   ],
+   "positions": [
+    "Support"
+   ],
+   "regions": [
+    "Noxus"
+   ],
+   "resource": "Mana",
+   "rangeType": "Melee",
+   "damageType": "Magic",
+   "difficulty": 2,
+   "releaseDate": "2020-12-10",
+   "releaseYear": 2020,
+   "attackRange": 175,
+   "moveSpeed": 315,
+   "ratings": {
+    "damage": 1,
+    "toughness": 3,
+    "control": 3,
+    "mobility": 2,
+    "utility": 2
+   },
+   "be": 2400,
+   "rp": 880,
+   "skills": [
+    "Break the Mold",
+    "Shattering Strike",
+    "Ferromancy: Crash Down",
+    "Ferromancy: Mount Up",
+    "Full Tilt",
+    "Magnet Storm"
+   ],
+   "image": "Rell.png"
+  },
+  {
+   "id": "Renata",
+   "key": 888,
+   "name": "Renata Glasc",
+   "nameFr": "Renata Glasc",
+   "title": "the Chem-Baroness",
+   "titleFr": "Baronne de la chimie",
+   "classes": [
+    "Support",
+    "Mage"
+   ],
+   "positions": [
+    "Support"
+   ],
+   "regions": [
+    "Zaun"
+   ],
+   "resource": "Mana",
+   "rangeType": "Ranged",
+   "damageType": "Magic",
+   "difficulty": 2,
+   "releaseDate": "2022-02-17",
+   "releaseYear": 2022,
+   "attackRange": 550,
+   "moveSpeed": 330,
+   "ratings": {
+    "damage": 2,
+    "toughness": 1,
+    "control": 3,
+    "mobility": 1,
+    "utility": 2
+   },
+   "be": 2400,
+   "rp": 880,
+   "skills": [
+    "Leverage",
+    "Handshake",
+    "Bailout",
+    "Loyalty Program",
+    "Hostile Takeover"
+   ],
+   "image": "Renata.png"
+  },
+  {
+   "id": "Renekton",
+   "key": 58,
+   "name": "Renekton",
+   "nameFr": "Renekton",
+   "title": "the Butcher of the Sands",
+   "titleFr": "Dévoreur des sables",
+   "classes": [
+    "Fighter",
+    "Tank"
+   ],
+   "positions": [
+    "Top"
+   ],
+   "regions": [
+    "Shurima"
+   ],
+   "resource": "Fury",
+   "rangeType": "Melee",
+   "damageType": "Physical",
+   "difficulty": 1,
+   "releaseDate": "2011-01-18",
+   "releaseYear": 2011,
+   "attackRange": 125,
+   "moveSpeed": 345,
+   "ratings": {
+    "damage": 2,
+    "toughness": 2,
+    "control": 2,
+    "mobility": 2,
+    "utility": 1
+   },
+   "be": 2400,
+   "rp": 880,
+   "skills": [
+    "Reign of Anger",
+    "Cull the Meek",
+    "Ruthless Predator",
+    "Slice and Dice",
+    "Dominus"
+   ],
+   "image": "Renekton.png"
+  },
+  {
+   "id": "Rengar",
+   "key": 107,
+   "name": "Rengar",
+   "nameFr": "Rengar",
+   "title": "the Pridestalker",
+   "titleFr": "Fier traqueur",
+   "classes": [
+    "Assassin",
+    "Fighter"
+   ],
+   "positions": [
+    "Jungle"
+   ],
+   "regions": [
+    "Ixtal"
+   ],
+   "resource": "Ferocity",
+   "rangeType": "Melee",
+   "damageType": "Physical",
+   "difficulty": 3,
+   "releaseDate": "2012-08-21",
+   "releaseYear": 2012,
+   "attackRange": 125,
+   "moveSpeed": 345,
+   "ratings": {
+    "damage": 3,
+    "toughness": 1,
+    "control": 2,
+    "mobility": 2,
+    "utility": 1
+   },
+   "be": 2400,
+   "rp": 880,
+   "skills": [
+    "Unseen Predator",
+    "Savagery",
+    "Battle Roar",
+    "Bola Strike",
+    "Thrill of the Hunt"
+   ],
+   "image": "Rengar.png"
+  },
+  {
+   "id": "Riven",
+   "key": 92,
+   "name": "Riven",
+   "nameFr": "Riven",
+   "title": "the Exile",
+   "titleFr": "Exilée brisée",
+   "classes": [
+    "Fighter",
+    "Assassin"
+   ],
+   "positions": [
+    "Top"
+   ],
+   "regions": [
+    "Noxus"
+   ],
+   "resource": "None",
+   "rangeType": "Melee",
+   "damageType": "Physical",
+   "difficulty": 3,
+   "releaseDate": "2011-09-14",
+   "releaseYear": 2011,
+   "attackRange": 125,
+   "moveSpeed": 340,
+   "ratings": {
+    "damage": 3,
+    "toughness": 2,
+    "control": 2,
+    "mobility": 3,
+    "utility": 1
+   },
+   "be": 2400,
+   "rp": 880,
+   "skills": [
+    "Runic Blade",
+    "Broken Wings",
+    "Ki Burst",
+    "Valor",
+    "Blade of the Exile",
+    "Wind Slash"
+   ],
+   "image": "Riven.png"
+  },
+  {
+   "id": "Rumble",
+   "key": 68,
+   "name": "Rumble",
+   "nameFr": "Rumble",
+   "title": "the Mechanized Menace",
+   "titleFr": "Menace mécanisée",
+   "classes": [
+    "Fighter",
+    "Mage"
+   ],
+   "positions": [
+    "Top"
+   ],
+   "regions": [
+    "Bandle City"
+   ],
+   "resource": "Heat",
+   "rangeType": "Melee",
+   "damageType": "Magic",
+   "difficulty": 3,
+   "releaseDate": "2011-04-26",
+   "releaseYear": 2011,
+   "attackRange": 125,
+   "moveSpeed": 345,
+   "ratings": {
+    "damage": 3,
+    "toughness": 2,
+    "control": 2,
+    "mobility": 1,
+    "utility": 1
+   },
+   "be": 2400,
+   "rp": 880,
+   "skills": [
+    "Junkyard Titan",
+    "Flamespitter",
+    "Scrap Shield",
+    "Electro Harpoon",
+    "The Equalizer"
+   ],
+   "image": "Rumble.png"
+  },
+  {
+   "id": "Ryze",
+   "key": 13,
+   "name": "Ryze",
+   "nameFr": "Ryze",
+   "title": "the Rune Mage",
+   "titleFr": "Mage runique",
+   "classes": [
+    "Mage",
+    "Fighter"
+   ],
+   "positions": [
+    "Middle"
+   ],
+   "regions": [
+    "Runeterra"
+   ],
+   "resource": "Mana",
+   "rangeType": "Ranged",
+   "damageType": "Magic",
+   "difficulty": 3,
+   "releaseDate": "2009-02-21",
+   "releaseYear": 2009,
+   "attackRange": 550,
+   "moveSpeed": 340,
+   "ratings": {
+    "damage": 3,
+    "toughness": 1,
+    "control": 2,
+    "mobility": 2,
+    "utility": 2
+   },
+   "be": 2400,
+   "rp": 260,
+   "skills": [
+    "Arcane Mastery",
+    "Overload",
+    "Rune Prison",
+    "Spell Flux",
+    "Realm Warp"
+   ],
+   "image": "Ryze.png"
+  },
+  {
+   "id": "Samira",
+   "key": 360,
+   "name": "Samira",
+   "nameFr": "Samira",
+   "title": "the Desert Rose",
+   "titleFr": "Rose du désert",
+   "classes": [
+    "Marksman",
+    "Assassin"
+   ],
+   "positions": [
+    "Bottom"
+   ],
+   "regions": [
+    "Noxus"
+   ],
+   "resource": "Mana",
+   "rangeType": "Ranged",
+   "damageType": "Physical",
+   "difficulty": 3,
+   "releaseDate": "2020-09-21",
+   "releaseYear": 2020,
+   "attackRange": 500,
+   "moveSpeed": 335,
+   "ratings": {
+    "damage": 3,
+    "toughness": 2,
+    "control": 1,
+    "mobility": 3,
+    "utility": 1
+   },
+   "be": 1575,
+   "rp": 790,
+   "skills": [
+    "Daredevil Impulse",
+    "Flair",
+    "Blade Whirl",
+    "Wild Rush",
+    "Inferno Trigger",
+    "Taunt"
+   ],
+   "image": "Samira.png"
+  },
+  {
+   "id": "Sejuani",
+   "key": 113,
+   "name": "Sejuani",
+   "nameFr": "Sejuani",
+   "title": "Fury of the North",
+   "titleFr": "Fureur du nord",
+   "classes": [
+    "Tank",
+    "Fighter"
+   ],
+   "positions": [
+    "Jungle"
+   ],
+   "regions": [
+    "Freljord"
+   ],
+   "resource": "Mana",
+   "rangeType": "Melee",
+   "damageType": "Magic",
+   "difficulty": 2,
+   "releaseDate": "2012-01-17",
+   "releaseYear": 2012,
+   "attackRange": 150,
+   "moveSpeed": 340,
+   "ratings": {
+    "damage": 2,
+    "toughness": 2,
+    "control": 3,
+    "mobility": 2,
+    "utility": 1
+   },
+   "be": 225,
+   "rp": 260,
+   "skills": [
+    "Fury of the North",
+    "Arctic Assault",
+    "Winter's Wrath",
+    "Permafrost",
+    "Glacial Prison"
+   ],
+   "image": "Sejuani.png"
+  },
+  {
+   "id": "Senna",
+   "key": 235,
+   "name": "Senna",
+   "nameFr": "Senna",
+   "title": "the Redeemer",
+   "titleFr": "Rédemptrice",
+   "classes": [
+    "Support",
+    "Marksman"
+   ],
+   "positions": [
+    "Bottom",
+    "Support"
+   ],
+   "regions": [
+    "Demacia",
+    "Shadow Isles"
+   ],
+   "resource": "Mana",
+   "rangeType": "Ranged",
+   "damageType": "Physical",
+   "difficulty": 2,
+   "releaseDate": "2019-11-10",
+   "releaseYear": 2019,
+   "attackRange": 600,
+   "moveSpeed": 330,
+   "ratings": {
+    "damage": 2,
+    "toughness": 1,
+    "control": 2,
+    "mobility": 1,
+    "utility": 3
+   },
+   "be": 1575,
+   "rp": 790,
+   "skills": [
+    "Basic Attack",
+    "Absolution",
+    "Piercing Darkness",
+    "Last Embrace",
+    "Curse of the Black Mist",
+    "Dawning Shadow"
+   ],
+   "image": "Senna.png"
+  },
+  {
+   "id": "Seraphine",
+   "key": 147,
+   "name": "Seraphine",
+   "nameFr": "Séraphine",
+   "title": "the Starry-Eyed Songstress",
+   "titleFr": "Chanteuse rêveuse",
+   "classes": [
+    "Support",
+    "Mage"
+   ],
+   "positions": [
+    "Bottom",
+    "Support"
+   ],
+   "regions": [
+    "Piltover"
+   ],
+   "resource": "Mana",
+   "rangeType": "Ranged",
+   "damageType": "Magic",
+   "difficulty": 1,
+   "releaseDate": "2020-10-29",
+   "releaseYear": 2020,
+   "attackRange": 525,
+   "moveSpeed": 330,
+   "ratings": {
+    "damage": 3,
+    "toughness": 1,
+    "control": 3,
+    "mobility": 1,
+    "utility": 2
+   },
+   "be": 1575,
+   "rp": 790,
+   "skills": [
+    "Stage Presence",
+    "High Note",
+    "Surround Sound",
+    "Beat Drop",
+    "Encore"
+   ],
+   "image": "Seraphine.png"
+  },
+  {
+   "id": "Sett",
+   "key": 875,
+   "name": "Sett",
+   "nameFr": "Sett",
+   "title": "the Boss",
+   "titleFr": "Patron",
+   "classes": [
+    "Fighter",
+    "Tank"
+   ],
+   "positions": [
+    "Top"
+   ],
+   "regions": [
+    "Ionia"
+   ],
+   "resource": "Grit",
+   "rangeType": "Melee",
+   "damageType": "Physical",
+   "difficulty": 2,
+   "releaseDate": "2020-01-14",
+   "releaseYear": 2020,
+   "attackRange": 125,
+   "moveSpeed": 340,
+   "ratings": {
+    "damage": 2,
+    "toughness": 2,
+    "control": 2,
+    "mobility": 2,
+    "utility": 1
+   },
+   "be": 675,
+   "rp": 585,
+   "skills": [
+    "Pit Grit",
+    "Knuckle Down",
+    "Haymaker",
+    "Facebreaker",
+    "The Show Stopper"
+   ],
+   "image": "Sett.png"
+  },
+  {
+   "id": "Shaco",
+   "key": 35,
+   "name": "Shaco",
+   "nameFr": "Shaco",
+   "title": "the Demon Jester",
+   "titleFr": "Bouffon des ténèbres",
+   "classes": [
+    "Assassin"
+   ],
+   "positions": [
+    "Jungle"
+   ],
+   "regions": [
+    "Runeterra"
+   ],
+   "resource": "Mana",
+   "rangeType": "Melee",
+   "damageType": "Physical",
+   "difficulty": 3,
+   "releaseDate": "2009-10-10",
+   "releaseYear": 2009,
+   "attackRange": 125,
+   "moveSpeed": 345,
+   "ratings": {
+    "damage": 3,
+    "toughness": 1,
+    "control": 2,
+    "mobility": 2,
+    "utility": 2
+   },
+   "be": 1575,
+   "rp": 790,
+   "skills": [
+    "Backstab",
+    "Deceive",
+    "Jack in the Box",
+    "Two-Shiv Poison",
+    "Hallucinate"
+   ],
+   "image": "Shaco.png"
+  },
+  {
+   "id": "Shen",
+   "key": 98,
+   "name": "Shen",
+   "nameFr": "Shen",
+   "title": "the Eye of Twilight",
+   "titleFr": "Œil du crépuscule",
+   "classes": [
+    "Tank"
+   ],
+   "positions": [
+    "Top"
+   ],
+   "regions": [
+    "Ionia"
+   ],
+   "resource": "Energy",
+   "rangeType": "Melee",
+   "damageType": "Physical",
+   "difficulty": 1,
+   "releaseDate": "2010-03-24",
+   "releaseYear": 2010,
+   "attackRange": 125,
+   "moveSpeed": 340,
+   "ratings": {
+    "damage": 2,
+    "toughness": 3,
+    "control": 2,
+    "mobility": 2,
+    "utility": 3
+   },
+   "be": 1575,
+   "rp": 790,
+   "skills": [
+    "Ki Barrier",
+    "Twilight Assault",
+    "Spirit's Refuge",
+    "Shadow Dash",
+    "Stand United"
+   ],
+   "image": "Shen.png"
+  },
+  {
+   "id": "Shyvana",
+   "key": 102,
+   "name": "Shyvana",
+   "nameFr": "Shyvana",
+   "title": "the Half-Dragon",
+   "titleFr": "Demi-dragon",
+   "classes": [
+    "Fighter",
+    "Mage"
+   ],
+   "positions": [
+    "Jungle"
+   ],
+   "regions": [
+    "Demacia"
+   ],
+   "resource": "Fury",
+   "rangeType": "Melee",
+   "damageType": "Physical",
+   "difficulty": 1,
+   "releaseDate": "2011-11-01",
+   "releaseYear": 2011,
+   "attackRange": 150,
+   "moveSpeed": 350,
+   "ratings": {
+    "damage": 2,
+    "toughness": 2,
+    "control": 1,
+    "mobility": 2,
+    "utility": 1
+   },
+   "be": 1575,
+   "rp": 790,
+   "skills": [
+    "Scalemail",
+    "Emberstrike",
+    "Inferno Aegis",
+    "Molten Burst",
+    "Dragon's Descent"
+   ],
+   "image": "Shyvana.png"
+  },
+  {
+   "id": "Singed",
+   "key": 27,
+   "name": "Singed",
+   "nameFr": "Singed",
+   "title": "the Mad Chemist",
+   "titleFr": "Chimiste fou",
+   "classes": [
+    "Tank",
+    "Mage"
+   ],
+   "positions": [
+    "Top"
+   ],
+   "regions": [
+    "Zaun"
+   ],
+   "resource": "Mana",
+   "rangeType": "Melee",
+   "damageType": "Magic",
+   "difficulty": 3,
+   "releaseDate": "2009-04-18",
+   "releaseYear": 2009,
+   "attackRange": 125,
+   "moveSpeed": 345,
+   "ratings": {
+    "damage": 2,
+    "toughness": 3,
+    "control": 2,
+    "mobility": 2,
+    "utility": 1
+   },
+   "be": 2400,
+   "rp": 260,
+   "skills": [
+    "Noxious Slipstream",
+    "Poison Trail",
+    "Mega Adhesive",
+    "Fling",
+    "Insanity Potion"
+   ],
+   "image": "Singed.png"
+  },
+  {
+   "id": "Sion",
+   "key": 14,
+   "name": "Sion",
+   "nameFr": "Sion",
+   "title": "The Undead Juggernaut",
+   "titleFr": "Colosse mort-vivant",
+   "classes": [
+    "Tank",
+    "Fighter"
+   ],
+   "positions": [
+    "Top"
+   ],
+   "regions": [
+    "Noxus"
+   ],
+   "resource": "Mana",
+   "rangeType": "Melee",
+   "damageType": "Physical",
+   "difficulty": 1,
+   "releaseDate": "2009-02-21",
+   "releaseYear": 2009,
+   "attackRange": 175,
+   "moveSpeed": 345,
+   "ratings": {
+    "damage": 2,
+    "toughness": 3,
+    "control": 3,
+    "mobility": 1,
+    "utility": 1
+   },
+   "be": 675,
+   "rp": 585,
+   "skills": [
+    "Glory in Death",
+    "Death Surge",
+    "Decimating Smash",
+    "Soul Furnace",
+    "Roar of the Slayer",
+    "Unstoppable Onslaught"
+   ],
+   "image": "Sion.png"
+  },
+  {
+   "id": "Sivir",
+   "key": 15,
+   "name": "Sivir",
+   "nameFr": "Sivir",
+   "title": "the Battle Mistress",
+   "titleFr": "Mercenaire du désert",
+   "classes": [
+    "Marksman"
+   ],
+   "positions": [
+    "Bottom"
+   ],
+   "regions": [
+    "Shurima"
+   ],
+   "resource": "Mana",
+   "rangeType": "Ranged",
+   "damageType": "Physical",
+   "difficulty": 2,
+   "releaseDate": "2009-02-21",
+   "releaseYear": 2009,
+   "attackRange": 500,
+   "moveSpeed": 335,
+   "ratings": {
+    "damage": 3,
+    "toughness": 1,
+    "control": 1,
+    "mobility": 1,
+    "utility": 2
+   },
+   "be": 225,
+   "rp": 260,
+   "skills": [
+    "Fleet of Foot",
+    "Boomerang Blade",
+    "Ricochet",
+    "Spell Shield",
+    "On the Hunt"
+   ],
+   "image": "Sivir.png"
+  },
+  {
+   "id": "Skarner",
+   "key": 72,
+   "name": "Skarner",
+   "nameFr": "Skarner",
+   "title": "the Primordial Sovereign",
+   "titleFr": "Souverain originel",
+   "classes": [
+    "Tank",
+    "Fighter"
+   ],
+   "positions": [
+    "Jungle",
+    "Top"
+   ],
+   "regions": [
+    "Ixtal"
+   ],
+   "resource": "Mana",
+   "rangeType": "Melee",
+   "damageType": "Physical",
+   "difficulty": 3,
+   "releaseDate": "2011-08-09",
+   "releaseYear": 2011,
+   "attackRange": 150,
+   "moveSpeed": 335,
+   "ratings": {
+    "damage": 2,
+    "toughness": 3,
+    "control": 3,
+    "mobility": 2,
+    "utility": 1
+   },
+   "be": 2400,
+   "rp": 880,
+   "skills": [
+    "Threads of Vibration",
+    "Shattered Earth",
+    "Upheaval",
+    "Seismic Bastion",
+    "Ixtal's Impact",
+    "Impale"
+   ],
+   "image": "Skarner.png"
+  },
+  {
+   "id": "Smolder",
+   "key": 901,
+   "name": "Smolder",
+   "nameFr": "Smolder",
+   "title": "the Fiery Fledgling",
+   "titleFr": "Dragonnet flamboyant",
+   "classes": [
+    "Marksman",
+    "Mage"
+   ],
+   "positions": [
+    "Bottom"
+   ],
+   "regions": [
+    "Runeterra"
+   ],
+   "resource": "Mana",
+   "rangeType": "Ranged",
+   "damageType": "Physical",
+   "difficulty": 1,
+   "releaseDate": "2024-01-31",
+   "releaseYear": 2024,
+   "attackRange": 550,
+   "moveSpeed": 330,
+   "ratings": {
+    "damage": 3,
+    "toughness": 1,
+    "control": 1,
+    "mobility": 1,
+    "utility": 1
+   },
+   "be": 3150,
+   "rp": 975,
+   "skills": [
+    "Dragon Practice",
+    "Super Scorcher Breath",
+    "Achooo!",
+    "Flap, Flap, Flap",
+    "MMOOOMMMM!"
+   ],
+   "image": "Smolder.png"
+  },
+  {
+   "id": "Sona",
+   "key": 37,
+   "name": "Sona",
+   "nameFr": "Sona",
+   "title": "Maven of the Strings",
+   "titleFr": "Virtuose de la harpe",
+   "classes": [
+    "Support",
+    "Mage"
+   ],
+   "positions": [
+    "Support"
+   ],
+   "regions": [
+    "Demacia"
+   ],
+   "resource": "Mana",
+   "rangeType": "Ranged",
+   "damageType": "Magic",
+   "difficulty": 1,
+   "releaseDate": "2010-09-21",
+   "releaseYear": 2010,
+   "attackRange": 550,
+   "moveSpeed": 325,
+   "ratings": {
+    "damage": 2,
+    "toughness": 1,
+    "control": 2,
+    "mobility": 1,
+    "utility": 2
+   },
+   "be": 225,
+   "rp": 260,
+   "skills": [
+    "Power Chord",
+    "Hymn of Valor",
+    "Aria of Perseverance",
+    "Song of Celerity",
+    "Crescendo"
+   ],
+   "image": "Sona.png"
+  },
+  {
+   "id": "Soraka",
+   "key": 16,
+   "name": "Soraka",
+   "nameFr": "Soraka",
+   "title": "the Starchild",
+   "titleFr": "Enfant des étoiles",
+   "classes": [
+    "Support",
+    "Mage"
+   ],
+   "positions": [
+    "Support"
+   ],
+   "regions": [
+    "Targon"
+   ],
+   "resource": "Mana",
+   "rangeType": "Ranged",
+   "damageType": "Magic",
+   "difficulty": 1,
+   "releaseDate": "2009-02-21",
+   "releaseYear": 2009,
+   "attackRange": 550,
+   "moveSpeed": 325,
+   "ratings": {
+    "damage": 1,
+    "toughness": 1,
+    "control": 2,
+    "mobility": 1,
+    "utility": 3
+   },
+   "be": 225,
+   "rp": 260,
+   "skills": [
+    "Salvation",
+    "Starcall",
+    "Astral Infusion",
+    "Equinox",
+    "Wish"
+   ],
+   "image": "Soraka.png"
+  },
+  {
+   "id": "Swain",
+   "key": 50,
+   "name": "Swain",
+   "nameFr": "Swain",
+   "title": "the Noxian Grand General",
+   "titleFr": "Grand général noxien",
+   "classes": [
+    "Mage",
+    "Support"
+   ],
+   "positions": [
+    "Middle",
+    "Support"
+   ],
+   "regions": [
+    "Noxus"
+   ],
+   "resource": "Mana",
+   "rangeType": "Ranged",
+   "damageType": "Magic",
+   "difficulty": 2,
+   "releaseDate": "2010-10-05",
+   "releaseYear": 2010,
+   "attackRange": 525,
+   "moveSpeed": 330,
+   "ratings": {
+    "damage": 2,
+    "toughness": 2,
+    "control": 2,
+    "mobility": 1,
+    "utility": 1
+   },
+   "be": 1575,
+   "rp": 790,
+   "skills": [
+    "Ravenous Flock",
+    "Death's Hand",
+    "Vision of Empire",
+    "Nevermove",
+    "Demonic Ascension",
+    "Demonflare"
+   ],
+   "image": "Swain.png"
+  },
+  {
+   "id": "Sylas",
+   "key": 517,
+   "name": "Sylas",
+   "nameFr": "Sylas",
+   "title": "the Unshackled",
+   "titleFr": "Révolutionnaire déchaîné",
+   "classes": [
+    "Mage",
+    "Assassin"
+   ],
+   "positions": [
+    "Middle"
+   ],
+   "regions": [
+    "Demacia"
+   ],
+   "resource": "Mana",
+   "rangeType": "Melee",
+   "damageType": "Magic",
+   "difficulty": 3,
+   "releaseDate": "2019-01-25",
+   "releaseYear": 2019,
+   "attackRange": 175,
+   "moveSpeed": 340,
+   "ratings": {
+    "damage": 2,
+    "toughness": 2,
+    "control": 1,
+    "mobility": 3,
+    "utility": 1
+   },
+   "be": 1575,
+   "rp": 790,
+   "skills": [
+    "Petricite Burst",
+    "Chain Lash",
+    "Kingslayer",
+    "Abscond",
+    "Abduct",
+    "Hijack"
+   ],
+   "image": "Sylas.png"
+  },
+  {
+   "id": "Syndra",
+   "key": 134,
+   "name": "Syndra",
+   "nameFr": "Syndra",
+   "title": "the Dark Sovereign",
+   "titleFr": "Souveraine obscure",
+   "classes": [
+    "Mage"
+   ],
+   "positions": [
+    "Middle"
+   ],
+   "regions": [
+    "Ionia"
+   ],
+   "resource": "Mana",
+   "rangeType": "Ranged",
+   "damageType": "Magic",
+   "difficulty": 2,
+   "releaseDate": "2012-09-13",
+   "releaseYear": 2012,
+   "attackRange": 550,
+   "moveSpeed": 330,
+   "ratings": {
+    "damage": 3,
+    "toughness": 1,
+    "control": 2,
+    "mobility": 1,
+    "utility": 1
+   },
+   "be": 1575,
+   "rp": 790,
+   "skills": [
+    "Transcendent",
+    "Dark Sphere",
+    "Force of Will",
+    "Scatter the Weak",
+    "Unleashed Power"
+   ],
+   "image": "Syndra.png"
+  },
+  {
+   "id": "TahmKench",
+   "key": 223,
+   "name": "Tahm Kench",
+   "nameFr": "Tahm Kench",
+   "title": "The River King",
+   "titleFr": "Roi des rivières",
+   "classes": [
+    "Tank",
+    "Support"
+   ],
+   "positions": [
+    "Top"
+   ],
+   "regions": [
+    "Bilgewater"
+   ],
+   "resource": "Mana",
+   "rangeType": "Melee",
+   "damageType": "Magic",
+   "difficulty": 1,
+   "releaseDate": "2015-07-09",
+   "releaseYear": 2015,
+   "attackRange": 175,
+   "moveSpeed": 335,
+   "ratings": {
+    "damage": 2,
+    "toughness": 3,
+    "control": 2,
+    "mobility": 1,
+    "utility": 3
+   },
+   "be": 2400,
+   "rp": 880,
+   "skills": [
+    "An Acquired Taste",
+    "Tongue Lash",
+    "Abyssal Dive",
+    "Thick Skin",
+    "Devour",
+    "Regurgitate"
+   ],
+   "image": "TahmKench.png"
+  },
+  {
+   "id": "Taliyah",
+   "key": 163,
+   "name": "Taliyah",
+   "nameFr": "Taliyah",
+   "title": "the Stoneweaver",
+   "titleFr": "Tisseuse de pierres",
+   "classes": [
+    "Mage",
+    "Support"
+   ],
+   "positions": [
+    "Jungle",
+    "Middle"
+   ],
+   "regions": [
+    "Shurima"
+   ],
+   "resource": "Mana",
+   "rangeType": "Ranged",
+   "damageType": "Magic",
+   "difficulty": 3,
+   "releaseDate": "2016-05-18",
+   "releaseYear": 2016,
+   "attackRange": 525,
+   "moveSpeed": 330,
+   "ratings": {
+    "damage": 3,
+    "toughness": 1,
+    "control": 2,
+    "mobility": 1,
+    "utility": 3
+   },
+   "be": 2400,
+   "rp": 880,
+   "skills": [
+    "Rock Surfing",
+    "Threaded Volley",
+    "Seismic Shove",
+    "Unraveled Earth",
+    "Weaver's Wall"
+   ],
+   "image": "Taliyah.png"
+  },
+  {
+   "id": "Talon",
+   "key": 91,
+   "name": "Talon",
+   "nameFr": "Talon",
+   "title": "the Blade's Shadow",
+   "titleFr": "Lame des ténèbres",
+   "classes": [
+    "Assassin"
+   ],
+   "positions": [
+    "Middle"
+   ],
+   "regions": [
+    "Noxus"
+   ],
+   "resource": "Mana",
+   "rangeType": "Melee",
+   "damageType": "Physical",
+   "difficulty": 2,
+   "releaseDate": "2011-08-24",
+   "releaseYear": 2011,
+   "attackRange": 125,
+   "moveSpeed": 335,
+   "ratings": {
+    "damage": 3,
+    "toughness": 1,
+    "control": 1,
+    "mobility": 2,
+    "utility": 1
+   },
+   "be": 1575,
+   "rp": 790,
+   "skills": [
+    "Blade's End",
+    "Noxian Diplomacy",
+    "Rake",
+    "Assassin's Path",
+    "Shadow Assault"
+   ],
+   "image": "Talon.png"
+  },
+  {
+   "id": "Taric",
+   "key": 44,
+   "name": "Taric",
+   "nameFr": "Taric",
+   "title": "the Shield of Valoran",
+   "titleFr": "Bouclier de Valoran",
+   "classes": [
+    "Support",
+    "Tank"
+   ],
+   "positions": [
+    "Support"
+   ],
+   "regions": [
+    "Targon"
+   ],
+   "resource": "Mana",
+   "rangeType": "Melee",
+   "damageType": "Physical",
+   "difficulty": 2,
+   "releaseDate": "2009-08-19",
+   "releaseYear": 2009,
+   "attackRange": 150,
+   "moveSpeed": 340,
+   "ratings": {
+    "damage": 1,
+    "toughness": 2,
+    "control": 2,
+    "mobility": 1,
+    "utility": 3
+   },
+   "be": 675,
+   "rp": 585,
+   "skills": [
+    "Bravado",
+    "Starlight's Touch",
+    "Bastion",
+    "Dazzle",
+    "Cosmic Radiance"
+   ],
+   "image": "Taric.png"
+  },
+  {
+   "id": "Teemo",
+   "key": 17,
+   "name": "Teemo",
+   "nameFr": "Teemo",
+   "title": "the Swift Scout",
+   "titleFr": "Éclaireur de Bandle",
+   "classes": [
+    "Marksman",
+    "Mage"
+   ],
+   "positions": [
+    "Top"
+   ],
+   "regions": [
+    "Bandle City"
+   ],
+   "resource": "Mana",
+   "rangeType": "Ranged",
+   "damageType": "Magic",
+   "difficulty": 1,
+   "releaseDate": "2009-02-21",
+   "releaseYear": 2009,
+   "attackRange": 500,
+   "moveSpeed": 330,
+   "ratings": {
+    "damage": 3,
+    "toughness": 1,
+    "control": 2,
+    "mobility": 1,
+    "utility": 2
+   },
+   "be": 225,
+   "rp": 260,
+   "skills": [
+    "Guerrilla Warfare",
+    "Blinding Dart",
+    "Move Quick",
+    "Toxic Shot",
+    "Noxious Trap"
+   ],
+   "image": "Teemo.png"
+  },
+  {
+   "id": "Thresh",
+   "key": 412,
+   "name": "Thresh",
+   "nameFr": "Thresh",
+   "title": "the Chain Warden",
+   "titleFr": "Garde aux chaînes",
+   "classes": [
+    "Support",
+    "Tank"
+   ],
+   "positions": [
+    "Support"
+   ],
+   "regions": [
+    "Shadow Isles"
+   ],
+   "resource": "Mana",
+   "rangeType": "Ranged",
+   "damageType": "Physical",
+   "difficulty": 3,
+   "releaseDate": "2013-01-23",
+   "releaseYear": 2013,
+   "attackRange": 450,
+   "moveSpeed": 330,
+   "ratings": {
+    "damage": 1,
+    "toughness": 2,
+    "control": 3,
+    "mobility": 1,
+    "utility": 3
+   },
+   "be": 1575,
+   "rp": 790,
+   "skills": [
+    "Damnation",
+    "Death Sentence",
+    "Dark Passage",
+    "Flay",
+    "The Box"
+   ],
+   "image": "Thresh.png"
+  },
+  {
+   "id": "Tristana",
+   "key": 18,
+   "name": "Tristana",
+   "nameFr": "Tristana",
+   "title": "the Yordle Gunner",
+   "titleFr": "Canonnière yordle",
+   "classes": [
+    "Marksman",
+    "Assassin"
+   ],
+   "positions": [
+    "Bottom"
+   ],
+   "regions": [
+    "Bandle City"
+   ],
+   "resource": "Mana",
+   "rangeType": "Ranged",
+   "damageType": "Physical",
+   "difficulty": 1,
+   "releaseDate": "2009-02-21",
+   "releaseYear": 2009,
+   "attackRange": 550,
+   "moveSpeed": 325,
+   "ratings": {
+    "damage": 3,
+    "toughness": 1,
+    "control": 2,
+    "mobility": 2,
+    "utility": 1
+   },
+   "be": 675,
+   "rp": 585,
+   "skills": [
+    "Draw a Bead",
+    "Rapid Fire",
+    "Rocket Jump",
+    "Explosive Charge",
+    "Buster Shot"
+   ],
+   "image": "Tristana.png"
+  },
+  {
+   "id": "Trundle",
+   "key": 48,
+   "name": "Trundle",
+   "nameFr": "Trundle",
+   "title": "the Troll King",
+   "titleFr": "Roi des trolls",
+   "classes": [
+    "Fighter",
+    "Tank"
+   ],
+   "positions": [
+    "Top"
+   ],
+   "regions": [
+    "Freljord"
+   ],
+   "resource": "Mana",
+   "rangeType": "Melee",
+   "damageType": "Physical",
+   "difficulty": 1,
+   "releaseDate": "2010-12-01",
+   "releaseYear": 2010,
+   "attackRange": 175,
+   "moveSpeed": 350,
+   "ratings": {
+    "damage": 2,
+    "toughness": 3,
+    "control": 1,
+    "mobility": 1,
+    "utility": 2
+   },
+   "be": 1575,
+   "rp": 790,
+   "skills": [
+    "King's Tribute",
+    "Chomp",
+    "Frozen Domain",
+    "Pillar of Ice",
+    "Subjugate"
+   ],
+   "image": "Trundle.png"
+  },
+  {
+   "id": "Tryndamere",
+   "key": 23,
+   "name": "Tryndamere",
+   "nameFr": "Tryndamere",
+   "title": "the Barbarian King",
+   "titleFr": "Roi barbare",
+   "classes": [
+    "Fighter",
+    "Assassin"
+   ],
+   "positions": [
+    "Top"
+   ],
+   "regions": [
+    "Freljord"
+   ],
+   "resource": "Fury",
+   "rangeType": "Melee",
+   "damageType": "Physical",
+   "difficulty": 1,
+   "releaseDate": "2009-05-01",
+   "releaseYear": 2009,
+   "attackRange": 175,
+   "moveSpeed": 345,
+   "ratings": {
+    "damage": 3,
+    "toughness": 2,
+    "control": 1,
+    "mobility": 2,
+    "utility": 1
+   },
+   "be": 675,
+   "rp": 585,
+   "skills": [
+    "Battle Fury",
+    "Bloodlust",
+    "Mocking Shout",
+    "Spinning Slash",
+    "Undying Rage"
+   ],
+   "image": "Tryndamere.png"
+  },
+  {
+   "id": "TwistedFate",
+   "key": 4,
+   "name": "Twisted Fate",
+   "nameFr": "Twisted Fate",
+   "title": "the Card Master",
+   "titleFr": "Maître des cartes",
+   "classes": [
+    "Mage",
+    "Marksman"
+   ],
+   "positions": [
+    "Middle",
+    "Bottom"
+   ],
+   "regions": [
+    "Bilgewater"
+   ],
+   "resource": "Mana",
+   "rangeType": "Ranged",
+   "damageType": "Magic",
+   "difficulty": 2,
+   "releaseDate": "2009-02-21",
+   "releaseYear": 2009,
+   "attackRange": 525,
+   "moveSpeed": 330,
+   "ratings": {
+    "damage": 3,
+    "toughness": 1,
+    "control": 2,
+    "mobility": 2,
+    "utility": 2
+   },
+   "be": 2400,
+   "rp": 585,
+   "skills": [
+    "Loaded Dice",
+    "Wild Cards",
+    "Pick a Card",
+    "Stacked Deck",
+    "Destiny"
+   ],
+   "image": "TwistedFate.png"
+  },
+  {
+   "id": "Twitch",
+   "key": 29,
+   "name": "Twitch",
+   "nameFr": "Twitch",
+   "title": "the Plague Rat",
+   "titleFr": "Semeur de peste",
+   "classes": [
+    "Marksman",
+    "Assassin"
+   ],
+   "positions": [
+    "Bottom"
+   ],
+   "regions": [
+    "Zaun"
+   ],
+   "resource": "Mana",
+   "rangeType": "Ranged",
+   "damageType": "Physical",
+   "difficulty": 2,
+   "releaseDate": "2009-05-01",
+   "releaseYear": 2009,
+   "attackRange": 550,
+   "moveSpeed": 330,
+   "ratings": {
+    "damage": 3,
+    "toughness": 1,
+    "control": 1,
+    "mobility": 2,
+    "utility": 1
+   },
+   "be": 1575,
+   "rp": 790,
+   "skills": [
+    "Deadly Venom",
+    "Ambush",
+    "Venom Cask",
+    "Contaminate",
+    "Spray and Pray"
+   ],
+   "image": "Twitch.png"
+  },
+  {
+   "id": "Udyr",
+   "key": 77,
+   "name": "Udyr",
+   "nameFr": "Udyr",
+   "title": "the Spirit Walker",
+   "titleFr": "Gardien des esprits",
+   "classes": [
+    "Fighter",
+    "Tank"
+   ],
+   "positions": [
+    "Top",
+    "Jungle"
+   ],
+   "regions": [
+    "Freljord"
+   ],
+   "resource": "Mana",
+   "rangeType": "Melee",
+   "damageType": "Physical",
+   "difficulty": 2,
+   "releaseDate": "2009-12-02",
+   "releaseYear": 2009,
+   "attackRange": 125,
+   "moveSpeed": 350,
+   "ratings": {
+    "damage": 2,
+    "toughness": 3,
+    "control": 2,
+    "mobility": 2,
+    "utility": 1
+   },
+   "be": 675,
+   "rp": 585,
+   "skills": [
+    "Bridge Between",
+    "Wilding Claw",
+    "Iron Mantle",
+    "Blazing Stampede",
+    "Wingborne Storm"
+   ],
+   "image": "Udyr.png"
+  },
+  {
+   "id": "Urgot",
+   "key": 6,
+   "name": "Urgot",
+   "nameFr": "Urgot",
+   "title": "the Dreadnought",
+   "titleFr": "Broyeur",
+   "classes": [
+    "Fighter",
+    "Tank"
+   ],
+   "positions": [
+    "Top"
+   ],
+   "regions": [
+    "Zaun"
+   ],
+   "resource": "Mana",
+   "rangeType": "Ranged",
+   "damageType": "Physical",
+   "difficulty": 2,
+   "releaseDate": "2010-08-24",
+   "releaseYear": 2010,
+   "attackRange": 350,
+   "moveSpeed": 330,
+   "ratings": {
+    "damage": 2,
+    "toughness": 2,
+    "control": 2,
+    "mobility": 1,
+    "utility": 1
+   },
+   "be": 1575,
+   "rp": 790,
+   "skills": [
+    "Echoing Flames",
+    "Corrosive Charge",
+    "Purge",
+    "Disdain",
+    "Fear Beyond Death"
+   ],
+   "image": "Urgot.png"
+  },
+  {
+   "id": "Varus",
+   "key": 110,
+   "name": "Varus",
+   "nameFr": "Varus",
+   "title": "the Arrow of Retribution",
+   "titleFr": "Flèche de la vengeance",
+   "classes": [
+    "Marksman",
+    "Mage"
+   ],
+   "positions": [
+    "Bottom"
+   ],
+   "regions": [
+    "Ionia"
+   ],
+   "resource": "Mana",
+   "rangeType": "Ranged",
+   "damageType": "Physical",
+   "difficulty": 2,
+   "releaseDate": "2012-05-08",
+   "releaseYear": 2012,
+   "attackRange": 575,
+   "moveSpeed": 330,
+   "ratings": {
+    "damage": 3,
+    "toughness": 1,
+    "control": 2,
+    "mobility": 1,
+    "utility": 1
+   },
+   "be": 2400,
+   "rp": 880,
+   "skills": [
+    "Living Vengeance",
+    "Piercing Arrow",
+    "Blighted Quiver",
+    "Hail of Arrows",
+    "Chain of Corruption"
+   ],
+   "image": "Varus.png"
+  },
+  {
+   "id": "Vayne",
+   "key": 67,
+   "name": "Vayne",
+   "nameFr": "Vayne",
+   "title": "the Night Hunter",
+   "titleFr": "Chasseresse nocturne",
+   "classes": [
+    "Marksman",
+    "Assassin"
+   ],
+   "positions": [
+    "Bottom"
+   ],
+   "regions": [
+    "Demacia"
+   ],
+   "resource": "Mana",
+   "rangeType": "Ranged",
+   "damageType": "Physical",
+   "difficulty": 2,
+   "releaseDate": "2011-05-10",
+   "releaseYear": 2011,
+   "attackRange": 550,
+   "moveSpeed": 330,
+   "ratings": {
+    "damage": 3,
+    "toughness": 1,
+    "control": 2,
+    "mobility": 2,
+    "utility": 1
+   },
+   "be": 1575,
+   "rp": 790,
+   "skills": [
+    "Night Hunter",
+    "Tumble",
+    "Silver Bolts",
+    "Condemn",
+    "Final Hour"
+   ],
+   "image": "Vayne.png"
+  },
+  {
+   "id": "Veigar",
+   "key": 45,
+   "name": "Veigar",
+   "nameFr": "Veigar",
+   "title": "the Tiny Master of Evil",
+   "titleFr": "Seigneur des maléfices",
+   "classes": [
+    "Mage"
+   ],
+   "positions": [
+    "Middle"
+   ],
+   "regions": [
+    "Bandle City"
+   ],
+   "resource": "Mana",
+   "rangeType": "Ranged",
+   "damageType": "Magic",
+   "difficulty": 2,
+   "releaseDate": "2009-07-24",
+   "releaseYear": 2009,
+   "attackRange": 550,
+   "moveSpeed": 340,
+   "ratings": {
+    "damage": 3,
+    "toughness": 1,
+    "control": 3,
+    "mobility": 1,
+    "utility": 1
+   },
+   "be": 675,
+   "rp": 585,
+   "skills": [
+    "Phenomenal Evil Power",
+    "Baleful Strike",
+    "Dark Matter",
+    "Event Horizon",
+    "Primordial Burst"
+   ],
+   "image": "Veigar.png"
+  },
+  {
+   "id": "Velkoz",
+   "key": 161,
+   "name": "Vel'Koz",
+   "nameFr": "Vel'Koz",
+   "title": "the Eye of the Void",
+   "titleFr": "Œil du Néant",
+   "classes": [
+    "Mage",
+    "Support"
+   ],
+   "positions": [
+    "Support"
+   ],
+   "regions": [
+    "Void"
+   ],
+   "resource": "Mana",
+   "rangeType": "Ranged",
+   "damageType": "Magic",
+   "difficulty": 2,
+   "releaseDate": "2014-02-27",
+   "releaseYear": 2014,
+   "attackRange": 525,
+   "moveSpeed": 340,
+   "ratings": {
+    "damage": 3,
+    "toughness": 1,
+    "control": 2,
+    "mobility": 1,
+    "utility": 1
+   },
+   "be": 1618,
+   "rp": 880,
+   "skills": [
+    "Organic Deconstruction",
+    "Plasma Fission",
+    "Void Rift",
+    "Tectonic Disruption",
+    "Life Form Disintegration Ray"
+   ],
+   "image": "Velkoz.png"
+  },
+  {
+   "id": "Vex",
+   "key": 711,
+   "name": "Vex",
+   "nameFr": "Vex",
+   "title": "the Gloomist",
+   "titleFr": "Ombre du désespoir",
+   "classes": [
+    "Mage"
+   ],
+   "positions": [
+    "Middle"
+   ],
+   "regions": [
+    "Shadow Isles"
+   ],
+   "resource": "Mana",
+   "rangeType": "Ranged",
+   "damageType": "Magic",
+   "difficulty": 2,
+   "releaseDate": "2021-09-23",
+   "releaseYear": 2021,
+   "attackRange": 550,
+   "moveSpeed": 335,
+   "ratings": {
+    "damage": 3,
+    "toughness": 2,
+    "control": 2,
+    "mobility": 2,
+    "utility": 1
+   },
+   "be": 1575,
+   "rp": 790,
+   "skills": [
+    "Doom 'n Gloom",
+    "Mistral Bolt",
+    "Personal Space",
+    "Looming Darkness",
+    "Shadow Surge"
+   ],
+   "image": "Vex.png"
+  },
+  {
+   "id": "Vi",
+   "key": 254,
+   "name": "Vi",
+   "nameFr": "Vi",
+   "title": "the Piltover Enforcer",
+   "titleFr": "Pacifieuse de Piltover",
+   "classes": [
+    "Fighter",
+    "Assassin"
+   ],
+   "positions": [
+    "Jungle"
+   ],
+   "regions": [
+    "Piltover"
+   ],
+   "resource": "Mana",
+   "rangeType": "Melee",
+   "damageType": "Physical",
+   "difficulty": 1,
+   "releaseDate": "2012-12-19",
+   "releaseYear": 2012,
+   "attackRange": 125,
+   "moveSpeed": 340,
+   "ratings": {
+    "damage": 2,
+    "toughness": 2,
+    "control": 3,
+    "mobility": 2,
+    "utility": 1
+   },
+   "be": 675,
+   "rp": 585,
+   "skills": [
+    "Blast Shield",
+    "Vault Breaker",
+    "Denting Blows",
+    "Relentless Force",
+    "Cease and Desist"
+   ],
+   "image": "Vi.png"
+  },
+  {
+   "id": "Viego",
+   "key": 234,
+   "name": "Viego",
+   "nameFr": "Viego",
+   "title": "The Ruined King",
+   "titleFr": "Roi déchu",
+   "classes": [
+    "Fighter",
+    "Assassin"
+   ],
+   "positions": [
+    "Jungle"
+   ],
+   "regions": [
+    "Shadow Isles"
+   ],
+   "resource": "None",
+   "rangeType": "Melee",
+   "damageType": "Physical",
+   "difficulty": 3,
+   "releaseDate": "2021-01-21",
+   "releaseYear": 2021,
+   "attackRange": 200,
+   "moveSpeed": 345,
+   "ratings": {
+    "damage": 3,
+    "toughness": 1,
+    "control": 2,
+    "mobility": 2,
+    "utility": 1
+   },
+   "be": 2400,
+   "rp": 880,
+   "skills": [
+    "Sovereign's Domination",
+    "Blade of the Ruined King",
+    "Spectral Maw",
+    "Harrowed Path",
+    "Heartbreaker"
+   ],
+   "image": "Viego.png"
+  },
+  {
+   "id": "Viktor",
+   "key": 112,
+   "name": "Viktor",
+   "nameFr": "Viktor",
+   "title": "the Herald of the Arcane",
+   "titleFr": "Héraut de l'arcane",
+   "classes": [
+    "Mage"
+   ],
+   "positions": [
+    "Middle"
+   ],
+   "regions": [
+    "Zaun"
+   ],
+   "resource": "Mana",
+   "rangeType": "Ranged",
+   "damageType": "Magic",
+   "difficulty": 3,
+   "releaseDate": "2011-12-29",
+   "releaseYear": 2011,
+   "attackRange": 525,
+   "moveSpeed": 335,
+   "ratings": {
+    "damage": 3,
+    "toughness": 1,
+    "control": 2,
+    "mobility": 1,
+    "utility": 1
+   },
+   "be": 2400,
+   "rp": 880,
+   "skills": [
+    "Glorious Evolution",
+    "Siphon Power",
+    "Gravity Field",
+    "Hextech Ray",
+    "Arcane Storm"
+   ],
+   "image": "Viktor.png"
+  },
+  {
+   "id": "Vladimir",
+   "key": 8,
+   "name": "Vladimir",
+   "nameFr": "Vladimir",
+   "title": "the Crimson Reaper",
+   "titleFr": "Saigneur pourpre",
+   "classes": [
+    "Mage",
+    "Fighter"
+   ],
+   "positions": [
+    "Middle"
+   ],
+   "regions": [
+    "Noxus"
+   ],
+   "resource": "Crimson Rush",
+   "rangeType": "Ranged",
+   "damageType": "Magic",
+   "difficulty": 2,
+   "releaseDate": "2010-07-27",
+   "releaseYear": 2010,
+   "attackRange": 450,
+   "moveSpeed": 330,
+   "ratings": {
+    "damage": 3,
+    "toughness": 2,
+    "control": 1,
+    "mobility": 1,
+    "utility": 1
+   },
+   "be": 1575,
+   "rp": 790,
+   "skills": [
+    "Crimson Pact",
+    "Transfusion",
+    "Sanguine Pool",
+    "Tides of Blood",
+    "Hemoplague"
+   ],
+   "image": "Vladimir.png"
+  },
+  {
+   "id": "Volibear",
+   "key": 106,
+   "name": "Volibear",
+   "nameFr": "Volibear",
+   "title": "the Relentless Storm",
+   "titleFr": "Tempête impitoyable",
+   "classes": [
+    "Fighter",
+    "Tank"
+   ],
+   "positions": [
+    "Top"
+   ],
+   "regions": [
+    "Freljord"
+   ],
+   "resource": "Mana",
+   "rangeType": "Melee",
+   "damageType": "Physical",
+   "difficulty": 1,
+   "releaseDate": "2011-11-29",
+   "releaseYear": 2011,
+   "attackRange": 150,
+   "moveSpeed": 340,
+   "ratings": {
+    "damage": 2,
+    "toughness": 3,
+    "control": 2,
+    "mobility": 2,
+    "utility": 1
+   },
+   "be": 675,
+   "rp": 585,
+   "skills": [
+    "The Relentless Storm",
+    "Thundering Smash",
+    "Frenzied Maul",
+    "Sky Splitter",
+    "Stormbringer"
+   ],
+   "image": "Volibear.png"
+  },
+  {
+   "id": "Warwick",
+   "key": 19,
+   "name": "Warwick",
+   "nameFr": "Warwick",
+   "title": "the Uncaged Wrath of Zaun",
+   "titleFr": "Fureur déchaînée de Zaun",
+   "classes": [
+    "Fighter",
+    "Tank"
+   ],
+   "positions": [
+    "Jungle"
+   ],
+   "regions": [
+    "Zaun"
+   ],
+   "resource": "Mana",
+   "rangeType": "Melee",
+   "damageType": "Physical",
+   "difficulty": 1,
+   "releaseDate": "2009-02-21",
+   "releaseYear": 2009,
+   "attackRange": 125,
+   "moveSpeed": 335,
+   "ratings": {
+    "damage": 2,
+    "toughness": 2,
+    "control": 2,
+    "mobility": 1,
+    "utility": 1
+   },
+   "be": 225,
+   "rp": 260,
+   "skills": [
+    "Eternal Hunger",
+    "Jaws of the Beast",
+    "Blood Hunt",
+    "Primal Howl",
+    "Infinite Duress"
+   ],
+   "image": "Warwick.png"
+  },
+  {
+   "id": "MonkeyKing",
+   "key": 62,
+   "name": "Wukong",
+   "nameFr": "Wukong",
+   "title": "the Monkey King",
+   "titleFr": "Roi des singes",
+   "classes": [
+    "Fighter",
+    "Tank"
+   ],
+   "positions": [
+    "Jungle"
+   ],
+   "regions": [
+    "Ionia"
+   ],
+   "resource": "Mana",
+   "rangeType": "Melee",
+   "damageType": "Physical",
+   "difficulty": 1,
+   "releaseDate": "2011-07-26",
+   "releaseYear": 2011,
+   "attackRange": 175,
+   "moveSpeed": 340,
+   "ratings": {
+    "damage": 2,
+    "toughness": 2,
+    "control": 2,
+    "mobility": 2,
+    "utility": 1
+   },
+   "be": 1575,
+   "rp": 790,
+   "skills": [
+    "Stone Skin",
+    "Crushing Blow",
+    "Warrior Trickster",
+    "Nimbus Strike",
+    "Cyclone"
+   ],
+   "image": "MonkeyKing.png"
+  },
+  {
+   "id": "Xayah",
+   "key": 498,
+   "name": "Xayah",
+   "nameFr": "Xayah",
+   "title": "the Rebel",
+   "titleFr": "Rebelle",
+   "classes": [
+    "Marksman"
+   ],
+   "positions": [
+    "Bottom"
+   ],
+   "regions": [
+    "Ionia"
+   ],
+   "resource": "Mana",
+   "rangeType": "Ranged",
+   "damageType": "Physical",
+   "difficulty": 2,
+   "releaseDate": "2017-04-19",
+   "releaseYear": 2017,
+   "attackRange": 525,
+   "moveSpeed": 330,
+   "ratings": {
+    "damage": 3,
+    "toughness": 2,
+    "control": 3,
+    "mobility": 1,
+    "utility": 1
+   },
+   "be": 2400,
+   "rp": 880,
+   "skills": [
+    "Clean Cuts",
+    "Double Daggers",
+    "Deadly Plumage",
+    "Bladecaller",
+    "Featherstorm"
+   ],
+   "image": "Xayah.png"
+  },
+  {
+   "id": "Xerath",
+   "key": 101,
+   "name": "Xerath",
+   "nameFr": "Xerath",
+   "title": "the Magus Ascendant",
+   "titleFr": "Mage suprême",
+   "classes": [
+    "Mage",
+    "Support"
+   ],
+   "positions": [
+    "Middle",
+    "Support"
+   ],
+   "regions": [
+    "Shurima"
+   ],
+   "resource": "Mana",
+   "rangeType": "Ranged",
+   "damageType": "Magic",
+   "difficulty": 1,
+   "releaseDate": "2011-10-05",
+   "releaseYear": 2011,
+   "attackRange": 525,
+   "moveSpeed": 340,
+   "ratings": {
+    "damage": 3,
+    "toughness": 1,
+    "control": 2,
+    "mobility": 1,
+    "utility": 1
+   },
+   "be": 675,
+   "rp": 585,
+   "skills": [
+    "Mana Surge",
+    "Arcanopulse",
+    "Eye of Destruction",
+    "Shocking Orb",
+    "Rite of the Arcane"
+   ],
+   "image": "Xerath.png"
+  },
+  {
+   "id": "XinZhao",
+   "key": 5,
+   "name": "Xin Zhao",
+   "nameFr": "Xin Zhao",
+   "title": "the Seneschal of Demacia",
+   "titleFr": "Sénéchal de Demacia",
+   "classes": [
+    "Fighter",
+    "Tank"
+   ],
+   "positions": [
+    "Jungle"
+   ],
+   "regions": [
+    "Demacia"
+   ],
+   "resource": "Mana",
+   "rangeType": "Melee",
+   "damageType": "Physical",
+   "difficulty": 1,
+   "releaseDate": "2010-07-13",
+   "releaseYear": 2010,
+   "attackRange": 175,
+   "moveSpeed": 345,
+   "ratings": {
+    "damage": 2,
+    "toughness": 2,
+    "control": 2,
+    "mobility": 2,
+    "utility": 1
+   },
+   "be": 675,
+   "rp": 585,
+   "skills": [
+    "Determination",
+    "Three Talon Strike",
+    "Wind Becomes Lightning",
+    "Audacious Charge",
+    "Crescent Guard"
+   ],
+   "image": "XinZhao.png"
+  },
+  {
+   "id": "Yasuo",
+   "key": 157,
+   "name": "Yasuo",
+   "nameFr": "Yasuo",
+   "title": "the Unforgiven",
+   "titleFr": "Disgracié",
+   "classes": [
+    "Fighter",
+    "Assassin"
+   ],
+   "positions": [
+    "Top",
+    "Middle",
+    "Bottom"
+   ],
+   "regions": [
+    "Ionia"
+   ],
+   "resource": "Flow",
+   "rangeType": "Melee",
+   "damageType": "Physical",
+   "difficulty": 3,
+   "releaseDate": "2013-12-13",
+   "releaseYear": 2013,
+   "attackRange": 175,
+   "moveSpeed": 345,
+   "ratings": {
+    "damage": 3,
+    "toughness": 1,
+    "control": 2,
+    "mobility": 3,
+    "utility": 2
+   },
+   "be": 675,
+   "rp": 585,
+   "skills": [
+    "Way of the Wanderer",
+    "Steel Tempest",
+    "Wind Wall",
+    "Sweeping Blade",
+    "Last Breath"
+   ],
+   "image": "Yasuo.png"
+  },
+  {
+   "id": "Yone",
+   "key": 777,
+   "name": "Yone",
+   "nameFr": "Yone",
+   "title": "the Unforgotten",
+   "titleFr": "Inoublié",
+   "classes": [
+    "Fighter",
+    "Assassin"
+   ],
+   "positions": [
+    "Top",
+    "Middle"
+   ],
+   "regions": [
+    "Ionia"
+   ],
+   "resource": "Flow",
+   "rangeType": "Melee",
+   "damageType": "Physical",
+   "difficulty": 3,
+   "releaseDate": "2020-08-06",
+   "releaseYear": 2020,
+   "attackRange": 175,
+   "moveSpeed": 345,
+   "ratings": {
+    "damage": 3,
+    "toughness": 1,
+    "control": 2,
+    "mobility": 3,
+    "utility": 1
+   },
+   "be": 1575,
+   "rp": 790,
+   "skills": [
+    "Way of the Hunter",
+    "Mortal Steel",
+    "Spirit Cleave",
+    "Soul Unbound",
+    "Fate Sealed"
+   ],
+   "image": "Yone.png"
+  },
+  {
+   "id": "Yorick",
+   "key": 83,
+   "name": "Yorick",
+   "nameFr": "Yorick",
+   "title": "Shepherd of Souls",
+   "titleFr": "Berger des âmes",
+   "classes": [
+    "Fighter",
+    "Tank"
+   ],
+   "positions": [
+    "Top"
+   ],
+   "regions": [
+    "Shadow Isles"
+   ],
+   "resource": "Mana",
+   "rangeType": "Melee",
+   "damageType": "Physical",
+   "difficulty": 2,
+   "releaseDate": "2011-06-22",
+   "releaseYear": 2011,
+   "attackRange": 175,
+   "moveSpeed": 340,
+   "ratings": {
+    "damage": 2,
+    "toughness": 2,
+    "control": 2,
+    "mobility": 1,
+    "utility": 2
+   },
+   "be": 1575,
+   "rp": 790,
+   "skills": [
+    "Shepherd of Souls",
+    "Last Rites",
+    "Awakening",
+    "Dark Procession",
+    "Mourning Mist",
+    "Eulogy of the Isles"
+   ],
+   "image": "Yorick.png"
+  },
+  {
+   "id": "Yunara",
+   "key": 804,
+   "name": "Yunara",
+   "nameFr": "Yunara",
+   "title": "the Unbroken Faith",
+   "titleFr": "Foi inébranlable",
+   "classes": [
+    "Marksman"
+   ],
+   "positions": [
+    "Bottom"
+   ],
+   "regions": [
+    "Ionia"
+   ],
+   "resource": "Mana",
+   "rangeType": "Ranged",
+   "damageType": "Physical",
+   "difficulty": 2,
+   "releaseDate": "2025-07-16",
+   "releaseYear": 2025,
+   "attackRange": 575,
+   "moveSpeed": 325,
+   "ratings": {
+    "damage": 3,
+    "toughness": 1,
+    "control": 1,
+    "mobility": 2,
+    "utility": 0
+   },
+   "be": 3150,
+   "rp": 975,
+   "skills": [
+    "Vow of the First Lands",
+    "Cultivation of Spirit",
+    "Arc of Judgment",
+    "Arc of Ruin",
+    "Kanmei's Steps",
+    "Untouchable Shadow",
+    "Transcend One's Self"
+   ],
+   "image": "Yunara.png"
+  },
+  {
+   "id": "Yuumi",
+   "key": 350,
+   "name": "Yuumi",
+   "nameFr": "Yuumi",
+   "title": "the Magical Cat",
+   "titleFr": "Gardienne du Grimoire",
+   "classes": [
+    "Support",
+    "Mage"
+   ],
+   "positions": [
+    "Support"
+   ],
+   "regions": [
+    "Bandle City"
+   ],
+   "resource": "Mana",
+   "rangeType": "Ranged",
+   "damageType": "Magic",
+   "difficulty": 1,
+   "releaseDate": "2019-05-14",
+   "releaseYear": 2019,
+   "attackRange": 425,
+   "moveSpeed": 330,
+   "ratings": {
+    "damage": 1,
+    "toughness": 1,
+    "control": 1,
+    "mobility": 3,
+    "utility": 3
+   },
+   "be": 225,
+   "rp": 260,
+   "skills": [
+    "Feline Friendship",
+    "Prowling Projectile",
+    "You and Me!",
+    "Zoomies",
+    "Final Chapter"
+   ],
+   "image": "Yuumi.png"
+  },
+  {
+   "id": "Zaahen",
+   "key": 904,
+   "name": "Zaahen",
+   "nameFr": "Zaahen",
+   "title": "The Unsundered",
+   "titleFr": "Incorruptible",
+   "classes": [
+    "Fighter",
+    "Assassin"
+   ],
+   "positions": [
+    "Top",
+    "Jungle"
+   ],
+   "regions": [
+    "Runeterra"
+   ],
+   "resource": "Mana",
+   "rangeType": "Melee",
+   "damageType": "Physical",
+   "difficulty": 1,
+   "releaseDate": "2025-11-19",
+   "releaseYear": 2025,
+   "attackRange": 175,
+   "moveSpeed": 345,
+   "ratings": {
+    "damage": 2,
+    "toughness": 2,
+    "control": 2,
+    "mobility": 2,
+    "utility": 1
+   },
+   "be": 3150,
+   "rp": 975,
+   "skills": [
+    "Cultivation of War",
+    "The Darkin Glaive",
+    "Dreaded Return",
+    "Aureate Rush",
+    "Grim Deliverance"
+   ],
+   "image": "Zaahen.png"
+  },
+  {
+   "id": "Zac",
+   "key": 154,
+   "name": "Zac",
+   "nameFr": "Zac",
+   "title": "the Secret Weapon",
+   "titleFr": "Arme secrète",
+   "classes": [
+    "Tank",
+    "Fighter"
+   ],
+   "positions": [
+    "Jungle"
+   ],
+   "regions": [
+    "Zaun"
+   ],
+   "resource": "Health",
+   "rangeType": "Melee",
+   "damageType": "Magic",
+   "difficulty": 1,
+   "releaseDate": "2013-03-29",
+   "releaseYear": 2013,
+   "attackRange": 175,
+   "moveSpeed": 340,
+   "ratings": {
+    "damage": 2,
+    "toughness": 3,
+    "control": 3,
+    "mobility": 2,
+    "utility": 1
+   },
+   "be": 2400,
+   "rp": 880,
+   "skills": [
+    "Cell Division",
+    "Stretching Strikes",
+    "Unstable Matter",
+    "Elastic Slingshot",
+    "Let's Bounce!"
+   ],
+   "image": "Zac.png"
+  },
+  {
+   "id": "Zed",
+   "key": 238,
+   "name": "Zed",
+   "nameFr": "Zed",
+   "title": "the Master of Shadows",
+   "titleFr": "Maître des ombres",
+   "classes": [
+    "Assassin"
+   ],
+   "positions": [
+    "Jungle",
+    "Middle"
+   ],
+   "regions": [
+    "Ionia"
+   ],
+   "resource": "Energy",
+   "rangeType": "Melee",
+   "damageType": "Physical",
+   "difficulty": 3,
+   "releaseDate": "2012-11-13",
+   "releaseYear": 2012,
+   "attackRange": 125,
+   "moveSpeed": 345,
+   "ratings": {
+    "damage": 3,
+    "toughness": 1,
+    "control": 1,
+    "mobility": 3,
+    "utility": 1
+   },
+   "be": 675,
+   "rp": 585,
+   "skills": [
+    "Contempt for the Weak",
+    "Razor Shuriken",
+    "Living Shadow",
+    "Shadow Slash",
+    "Death Mark"
+   ],
+   "image": "Zed.png"
+  },
+  {
+   "id": "Zeri",
+   "key": 221,
+   "name": "Zeri",
+   "nameFr": "Zeri",
+   "title": "The Spark of Zaun",
+   "titleFr": "Étincelle de Zaun",
+   "classes": [
+    "Marksman"
+   ],
+   "positions": [
+    "Bottom"
+   ],
+   "regions": [
+    "Zaun"
+   ],
+   "resource": "Mana",
+   "rangeType": "Ranged",
+   "damageType": "Physical",
+   "difficulty": 3,
+   "releaseDate": "2022-01-20",
+   "releaseYear": 2022,
+   "attackRange": 550,
+   "moveSpeed": 330,
+   "ratings": {
+    "damage": 2,
+    "toughness": 1,
+    "control": 2,
+    "mobility": 3,
+    "utility": 0
+   },
+   "be": 2400,
+   "rp": 880,
+   "skills": [
+    "Living Battery",
+    "Burst Fire",
+    "Ultrashock Laser",
+    "Spark Surge",
+    "Lightning Crash"
+   ],
+   "image": "Zeri.png"
+  },
+  {
+   "id": "Ziggs",
+   "key": 115,
+   "name": "Ziggs",
+   "nameFr": "Ziggs",
+   "title": "the Hexplosives Expert",
+   "titleFr": "Expert des Hexplosifs",
+   "classes": [
+    "Mage"
+   ],
+   "positions": [
+    "Bottom"
+   ],
+   "regions": [
+    "Zaun"
+   ],
+   "resource": "Mana",
+   "rangeType": "Ranged",
+   "damageType": "Magic",
+   "difficulty": 1,
+   "releaseDate": "2012-02-01",
+   "releaseYear": 2012,
+   "attackRange": 550,
+   "moveSpeed": 325,
+   "ratings": {
+    "damage": 3,
+    "toughness": 1,
+    "control": 2,
+    "mobility": 2,
+    "utility": 1
+   },
+   "be": 2400,
+   "rp": 880,
+   "skills": [
+    "Short Fuse",
+    "Bouncing Bomb",
+    "Satchel Charge",
+    "Hexplosive Minefield",
+    "Mega Inferno Bomb"
+   ],
+   "image": "Ziggs.png"
+  },
+  {
+   "id": "Zilean",
+   "key": 26,
+   "name": "Zilean",
+   "nameFr": "Zilean",
+   "title": "the Chronokeeper",
+   "titleFr": "Gardien du Temps",
+   "classes": [
+    "Support",
+    "Mage"
+   ],
+   "positions": [
+    "Support"
+   ],
+   "regions": [
+    "Runeterra"
+   ],
+   "resource": "Mana",
+   "rangeType": "Ranged",
+   "damageType": "Magic",
+   "difficulty": 2,
+   "releaseDate": "2009-04-18",
+   "releaseYear": 2009,
+   "attackRange": 550,
+   "moveSpeed": 335,
+   "ratings": {
+    "damage": 2,
+    "toughness": 1,
+    "control": 2,
+    "mobility": 2,
+    "utility": 3
+   },
+   "be": 675,
+   "rp": 585,
+   "skills": [
+    "Time in a Bottle",
+    "Time Bomb",
+    "Rewind",
+    "Time Warp",
+    "Chronoshift"
+   ],
+   "image": "Zilean.png"
+  },
+  {
+   "id": "Zoe",
+   "key": 142,
+   "name": "Zoe",
+   "nameFr": "Zoé",
+   "title": "the Aspect of Twilight",
+   "titleFr": "Manifestation du Crépuscule",
+   "classes": [
+    "Mage",
+    "Support"
+   ],
+   "positions": [
+    "Middle"
+   ],
+   "regions": [
+    "Targon"
+   ],
+   "resource": "Mana",
+   "rangeType": "Ranged",
+   "damageType": "Magic",
+   "difficulty": 3,
+   "releaseDate": "2017-11-21",
+   "releaseYear": 2017,
+   "attackRange": 550,
+   "moveSpeed": 340,
+   "ratings": {
+    "damage": 3,
+    "toughness": 1,
+    "control": 2,
+    "mobility": 2,
+    "utility": 1
+   },
+   "be": 2400,
+   "rp": 880,
+   "skills": [
+    "More Sparkles!",
+    "Paddle Star!",
+    "Spell Thief",
+    "Sleepy Trouble Bubble",
+    "Portal Jump"
+   ],
+   "image": "Zoe.png"
+  },
+  {
+   "id": "Zyra",
+   "key": 143,
+   "name": "Zyra",
+   "nameFr": "Zyra",
+   "title": "Rise of the Thorns",
+   "titleFr": "Dame aux ronces",
+   "classes": [
+    "Mage",
+    "Support"
+   ],
+   "positions": [
+    "Support"
+   ],
+   "regions": [
+    "Ixtal"
+   ],
+   "resource": "Mana",
+   "rangeType": "Ranged",
+   "damageType": "Magic",
+   "difficulty": 1,
+   "releaseDate": "2012-07-24",
+   "releaseYear": 2012,
+   "attackRange": 575,
+   "moveSpeed": 340,
+   "ratings": {
+    "damage": 3,
+    "toughness": 1,
+    "control": 3,
+    "mobility": 1,
+    "utility": 1
+   },
+   "be": 1575,
+   "rp": 790,
+   "skills": [
+    "Garden of Thorns",
+    "Deadly Spines",
+    "Rampant Growth",
+    "Grasping Roots",
+    "Stranglethorns"
+   ],
+   "image": "Zyra.png"
+  }
+ ]
+}

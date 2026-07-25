@@ -1,0 +1,141 @@
+.ladder-page {
+  padding: var(--games-top-inset) 2rem 4rem;
+  max-width: 1000px;
+  margin: 0 auto;
+  color: var(--text-main);
+  animation: fade-in 0.3s ease-out;
+}
+
+.ladder-header {
+  margin-bottom: 2rem;
+  text-align: center;
+}
+
+.ladder-header h1 {
+  font-size: 2.5rem;
+  margin-bottom: 0.5rem;
+  background: linear-gradient(135deg, #fff, #999);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+}
+
+.ladder-header p {
+  color: var(--text-dim);
+}
+
+.back-link {
+  display: inline-block;
+  margin-bottom: 1rem;
+  color: var(--text-dim);
+  text-decoration: none;
+  font-size: 0.9rem;
+  transition: color 0.15s;
+}
+
+.back-link:hover {
+  color: #fff;
+}
+
+.ladder-filters {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.5rem;
+  justify-content: center;
+  margin-bottom: 2rem;
+}
+
+.ladder-filters button {
+  background: rgba(255, 255, 255, 0.05);
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  color: var(--text-dim);
+  padding: 0.5rem 1rem;
+  border-radius: 20px;
+  cursor: pointer;
+  font-weight: 500;
+  transition: all 0.2s;
+}
+
+.ladder-filters button:hover {
+  background: rgba(255, 255, 255, 0.1);
+  color: #fff;
+}
+
+.ladder-filters button.active {
+  background: #fff;
+  color: #000;
+  border-color: #fff;
+}
+
+.ladder-table-container {
+  min-height: 400px;
+  padding: 1rem;
+  border-radius: 12px;
+}
+
+.ladder-loading, .ladder-empty {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  height: 300px;
+  color: var(--text-dim);
+  font-style: italic;
+}
+
+.ladder-table {
+  width: 100%;
+  border-collapse: collapse;
+  text-align: left;
+}
+
+.ladder-table th {
+  padding: 1rem;
+  color: var(--text-dim);
+  font-weight: 600;
+  font-size: 0.85rem;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+}
+
+.ladder-table td {
+  padding: 1rem;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.05);
+}
+
+.ladder-table tbody tr {
+  transition: background 0.15s;
+}
+
+.ladder-table tbody tr:hover {
+  background: rgba(255, 255, 255, 0.03);
+}
+
+.rank-cell {
+  font-weight: 700;
+  color: var(--text-dim);
+}
+
+.name-cell a {
+  color: #fff;
+  text-decoration: none;
+  font-weight: 500;
+}
+
+.name-cell a:hover {
+  text-decoration: underline;
+}
+
+.game-cell {
+  font-size: 0.85rem;
+  color: var(--text-dim);
+}
+
+.elo-cell {
+  font-weight: 700;
+  color: #ffb800; /* gold-ish */
+}
+
+.wr-cell, .matches-cell {
+  color: var(--text-dim);
+  font-feature-settings: "tnum";
+}

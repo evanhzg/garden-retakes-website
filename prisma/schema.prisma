@@ -190,6 +190,17 @@ model GardenDiscordLink {
   @@map("GardenDiscordLinks")
 }
 
+model GardenGoogleLink {
+  SteamId       BigInt   @id
+  GoogleId      String   @db.VarChar(128)
+  GoogleEmail   String?  @db.VarChar(255)
+  GoogleName    String   @db.VarChar(64)
+  GoogleAvatar  String?  @db.VarChar(255)
+  LinkedAtUtc   DateTime @default(now()) @db.DateTime(6)
+
+  @@map("GardenGoogleLinks")
+}
+
 // Garden-retakes merged plugin (Duels mode): one row per completed 1v1.
 model DuelRecord {
   Id             BigInt   @id @default(autoincrement())
@@ -478,3 +489,32 @@ model PkmnBox {
 
   @@map("PkmnBoxes")
 }
+
+// ---------------- Web Games Stats ----------------
+
+model WebGameMatch {
+  Id           String   @id @default(uuid())
+  GameId       String   // e.g. "headshot", "ouno", "skribbl", "meme", "codenames"
+  PlayedAtUtc  DateTime @default(now()) @db.DateTime(6)
+  Players      String   @db.LongText // JSON array of SteamIds
+  WinnerId     BigInt?  @db.UnsignedBigInt
+  Scores       String   @db.LongText // JSON mapping SteamId -> score
+  DurationSec  Int      @default(0)
+  
+  @@index([GameId])
+  @@map("WebGameMatches")
+}
+
+model WebGameStats {
+  SteamId      BigInt   @db.UnsignedBigInt
+  GameId       String
+  MatchesPlayed Int     @default(0)
+  MatchesWon    Int     @default(0)
+  TotalScore    Int     @default(0)
+  Elo           Int     @default(1000)
+  UpdatedAtUtc  DateTime @default(now()) @db.DateTime(6)
+
+  @@id([SteamId, GameId])
+  @@map("WebGameStats")
+}
+
