@@ -1,0 +1,110 @@
+// Country lookup for HEADSHOT: ISO alpha-2 (for the flag emoji), continent
+// (a nationality guess that shares a continent scores a partial match, the way
+// Counter-Strikle does it) and the French name.
+//
+// Keys match Liquipedia's `country=` infobox spelling. Anything missing falls
+// back to region "Other" and its English name — add it here when it shows up.
+
+/** @type {Record<string, { cc: string; region: string; fr: string }>} */
+const COUNTRIES = {
+  // ---- Europe ----
+  Albania: { cc: "al", region: "Europe", fr: "Albanie" },
+  Armenia: { cc: "am", region: "Europe", fr: "Arménie" },
+  Austria: { cc: "at", region: "Europe", fr: "Autriche" },
+  Azerbaijan: { cc: "az", region: "Europe", fr: "Azerbaïdjan" },
+  Belarus: { cc: "by", region: "Europe", fr: "Biélorussie" },
+  Belgium: { cc: "be", region: "Europe", fr: "Belgique" },
+  "Bosnia and Herzegovina": { cc: "ba", region: "Europe", fr: "Bosnie-Herzégovine" },
+  Bulgaria: { cc: "bg", region: "Europe", fr: "Bulgarie" },
+  Croatia: { cc: "hr", region: "Europe", fr: "Croatie" },
+  Cyprus: { cc: "cy", region: "Europe", fr: "Chypre" },
+  Czechia: { cc: "cz", region: "Europe", fr: "Tchéquie" },
+  "Czech Republic": { cc: "cz", region: "Europe", fr: "Tchéquie" },
+  Denmark: { cc: "dk", region: "Europe", fr: "Danemark" },
+  Estonia: { cc: "ee", region: "Europe", fr: "Estonie" },
+  Finland: { cc: "fi", region: "Europe", fr: "Finlande" },
+  France: { cc: "fr", region: "Europe", fr: "France" },
+  Georgia: { cc: "ge", region: "Europe", fr: "Géorgie" },
+  Germany: { cc: "de", region: "Europe", fr: "Allemagne" },
+  Greece: { cc: "gr", region: "Europe", fr: "Grèce" },
+  Hungary: { cc: "hu", region: "Europe", fr: "Hongrie" },
+  Iceland: { cc: "is", region: "Europe", fr: "Islande" },
+  Ireland: { cc: "ie", region: "Europe", fr: "Irlande" },
+  Italy: { cc: "it", region: "Europe", fr: "Italie" },
+  Kosovo: { cc: "xk", region: "Europe", fr: "Kosovo" },
+  Latvia: { cc: "lv", region: "Europe", fr: "Lettonie" },
+  Lithuania: { cc: "lt", region: "Europe", fr: "Lituanie" },
+  Luxembourg: { cc: "lu", region: "Europe", fr: "Luxembourg" },
+  Malta: { cc: "mt", region: "Europe", fr: "Malte" },
+  Moldova: { cc: "md", region: "Europe", fr: "Moldavie" },
+  Montenegro: { cc: "me", region: "Europe", fr: "Monténégro" },
+  Netherlands: { cc: "nl", region: "Europe", fr: "Pays-Bas" },
+  "North Macedonia": { cc: "mk", region: "Europe", fr: "Macédoine du Nord" },
+  Norway: { cc: "no", region: "Europe", fr: "Norvège" },
+  Poland: { cc: "pl", region: "Europe", fr: "Pologne" },
+  Portugal: { cc: "pt", region: "Europe", fr: "Portugal" },
+  Romania: { cc: "ro", region: "Europe", fr: "Roumanie" },
+  Russia: { cc: "ru", region: "Europe", fr: "Russie" },
+  Serbia: { cc: "rs", region: "Europe", fr: "Serbie" },
+  Slovakia: { cc: "sk", region: "Europe", fr: "Slovaquie" },
+  Slovenia: { cc: "si", region: "Europe", fr: "Slovénie" },
+  Spain: { cc: "es", region: "Europe", fr: "Espagne" },
+  Sweden: { cc: "se", region: "Europe", fr: "Suède" },
+  Switzerland: { cc: "ch", region: "Europe", fr: "Suisse" },
+  Turkey: { cc: "tr", region: "Europe", fr: "Turquie" },
+  Ukraine: { cc: "ua", region: "Europe", fr: "Ukraine" },
+  "United Kingdom": { cc: "gb", region: "Europe", fr: "Royaume-Uni" },
+
+  // ---- Americas ----
+  Argentina: { cc: "ar", region: "Americas", fr: "Argentine" },
+  Bolivia: { cc: "bo", region: "Americas", fr: "Bolivie" },
+  Brazil: { cc: "br", region: "Americas", fr: "Brésil" },
+  Canada: { cc: "ca", region: "Americas", fr: "Canada" },
+  Chile: { cc: "cl", region: "Americas", fr: "Chili" },
+  Colombia: { cc: "co", region: "Americas", fr: "Colombie" },
+  "Costa Rica": { cc: "cr", region: "Americas", fr: "Costa Rica" },
+  Guatemala: { cc: "gt", region: "Americas", fr: "Guatemala" },
+  Mexico: { cc: "mx", region: "Americas", fr: "Mexique" },
+  Panama: { cc: "pa", region: "Americas", fr: "Panama" },
+  Peru: { cc: "pe", region: "Americas", fr: "Pérou" },
+  "United States": { cc: "us", region: "Americas", fr: "États-Unis" },
+  Uruguay: { cc: "uy", region: "Americas", fr: "Uruguay" },
+  Venezuela: { cc: "ve", region: "Americas", fr: "Venezuela" },
+
+  // ---- Asia ----
+  China: { cc: "cn", region: "Asia", fr: "Chine" },
+  "Hong Kong": { cc: "hk", region: "Asia", fr: "Hong Kong" },
+  India: { cc: "in", region: "Asia", fr: "Inde" },
+  Indonesia: { cc: "id", region: "Asia", fr: "Indonésie" },
+  Israel: { cc: "il", region: "Asia", fr: "Israël" },
+  Japan: { cc: "jp", region: "Asia", fr: "Japon" },
+  Jordan: { cc: "jo", region: "Asia", fr: "Jordanie" },
+  Kazakhstan: { cc: "kz", region: "Asia", fr: "Kazakhstan" },
+  Kyrgyzstan: { cc: "kg", region: "Asia", fr: "Kirghizistan" },
+  Malaysia: { cc: "my", region: "Asia", fr: "Malaisie" },
+  Mongolia: { cc: "mn", region: "Asia", fr: "Mongolie" },
+  Pakistan: { cc: "pk", region: "Asia", fr: "Pakistan" },
+  Philippines: { cc: "ph", region: "Asia", fr: "Philippines" },
+  "Saudi Arabia": { cc: "sa", region: "Asia", fr: "Arabie saoudite" },
+  Singapore: { cc: "sg", region: "Asia", fr: "Singapour" },
+  "South Korea": { cc: "kr", region: "Asia", fr: "Corée du Sud" },
+  Taiwan: { cc: "tw", region: "Asia", fr: "Taïwan" },
+  Thailand: { cc: "th", region: "Asia", fr: "Thaïlande" },
+  "United Arab Emirates": { cc: "ae", region: "Asia", fr: "Émirats arabes unis" },
+  Uzbekistan: { cc: "uz", region: "Asia", fr: "Ouzbékistan" },
+  Vietnam: { cc: "vn", region: "Asia", fr: "Viêt Nam" },
+
+  // ---- Oceania ----
+  Australia: { cc: "au", region: "Oceania", fr: "Australie" },
+  "New Zealand": { cc: "nz", region: "Oceania", fr: "Nouvelle-Zélande" },
+
+  // ---- Africa ----
+  Algeria: { cc: "dz", region: "Africa", fr: "Algérie" },
+  Egypt: { cc: "eg", region: "Africa", fr: "Égypte" },
+  Morocco: { cc: "ma", region: "Africa", fr: "Maroc" },
+  Nigeria: { cc: "ng", region: "Africa", fr: "Nigéria" },
+  "South Africa": { cc: "za", region: "Africa", fr: "Afrique du Sud" },
+  Tunisia: { cc: "tn", region: "Africa", fr: "Tunisie" },
+};
+
+module.exports = COUNTRIES;

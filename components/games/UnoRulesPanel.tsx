@@ -1,10 +1,11 @@
 "use client";
 
-// Host-facing OUNO setup, shown in the universal lobby. Everything here is
+// Host-facing OUNO setup, shown in the lobby's setup modal. Everything here is
 // pushed to the server so the whole table sees the ruleset it's readying up for.
 
 import React from "react";
 import { translator, OUNO, type Lang } from "@/components/games/i18n";
+import { SetupTabs, SetupSection, Stepper, ToggleCard, PresetRow, type Chip } from "@/components/games/setup/SetupUI";
 
 export type UnoRules = Record<string, any>;
 export type UnoExtras = Record<string, boolean>;
@@ -58,6 +59,19 @@ const PRESETS: Record<string, { rules: UnoRules; extras: UnoExtras }> = {
   },
 };
 
+/** Chips for the lobby strip: the hand size, the call window and what's on. */
+export function summarizeUno(rules: UnoRules = {}, extras: UnoExtras = {}, lang: Lang): Chip[] {
+  const t = translator(OUNO, lang);
+  const chips: Chip[] = [
+    { label: `🃏 ${t("ruleCardsUnit", { n: rules.startingCards ?? 7 })}`, tone: "info" },
+    { label: `⏱ ${t("ruleSeconds", { n: (rules.callWindowMs ?? 5000) / 1000 })}`, tone: "info" },
+  ];
+  for (const r of RULE_TOGGLES) if (rules[r.key]) chips.push({ label: t(r.name as any), tone: "on" });
+  const extraCount = EXTRA_CARDS.filter((c) => extras[c.key]).length;
+  if (extraCount) chips.push({ label: `✨ ${t("optionalCards")} ×${extraCount}`, tone: "on" });
+  return chips;
+}
+
 export default function UnoRulesPanel({ rules, extras, isHost, lang, onChange }: {
   rules: UnoRules;
   extras: UnoExtras;
@@ -69,144 +83,128 @@ export default function UnoRulesPanel({ rules, extras, isHost, lang, onChange }:
   const setRule = (key: string, value: any) => { if (isHost) onChange({ rules: { [key]: value } }); };
   const setExtra = (key: string, value: boolean) => { if (isHost) onChange({ extras: { [key]: value } }); };
 
-  const Stepper = ({ label, value, options, unit, onPick }: {
-    label: string; value: number; options: number[]; unit?: (n: number) => string; onPick: (n: number) => void;
-  }) => (
-    <div className="uno-stepper">
-      <span className="uno-stepper-label">{label}</span>
-      <div className="uno-stepper-opts">
-        {options.map((o) => (
-          <button
-            key={o}
-            type="button"
-            className={value === o ? "on" : ""}
-            disabled={!isHost}
-            onClick={() => onPick(o)}
-          >
-            {unit ? unit(o) : o}
-          </button>
-        ))}
-      </div>
-    </div>
-  );
-
   return (
-    <div className="uno-rules-panel">
-      <div className="picker-header">
-        <h3>{t("houseRules")}</h3>
-        {!isHost && <span className="picker-hint">{t("hostOnly")}</span>}
-      </div>
-
-      <div className="uno-presets">
-        <span className="uno-presets-label">{t("presetsTitle")}</span>
-        {(["classic", "chaos", "brutal"] as const).map((p) => (
-          <button
-            key={p}
-            type="button"
-            className="uno-preset-btn"
-            disabled={!isHost}
-            onClick={() => onChange(PRESETS[p])}
-          >
-            {t(p === "classic" ? "presetClassic" : p === "chaos" ? "presetChaos" : "presetBrutal")}
-          </button>
-        ))}
-      </div>
-
-      <div className="uno-rules-grid">
-        {RULE_TOGGLES.map((r) => {
-          const on = !!rules[r.key];
-          const locked = r.key === "stackAnyDraw" && !rules.stacking;
-          return (
-            <button
-              key={r.key}
-              type="button"
-              className={`uno-rule-card ${on ? "on" : ""} ${locked ? "locked" : ""}`}
-              disabled={!isHost || locked}
-              onClick={() => setRule(r.key, !on)}
-              title={t(r.desc as any)}
-            >
-              <span className="uno-rule-top">
-                <span className="uno-rule-name">{t(r.name as any)}</span>
-                <span className={`uno-switch ${on ? "on" : ""}`} aria-hidden />
-              </span>
-              <span className="uno-rule-desc">{t(r.desc as any)}</span>
-            </button>
-          );
-        })}
-      </div>
-
-      <div className="uno-steppers">
-        <Stepper
-          label={t("ruleStartingCards")}
-          value={rules.startingCards ?? 7}
-          options={[5, 7, 10]}
-          onPick={(n) => setRule("startingCards", n)}
-        />
-        <Stepper
-          label={t("ruleCallWindow")}
-          value={rules.callWindowMs ?? 5000}
-          options={[3000, 5000, 8000]}
-          unit={(n) => t("ruleSeconds", { n: n / 1000 })}
-          onPick={(n) => setRule("callWindowMs", n)}
-        />
-        <Stepper
-          label={t("ruleForgotPenalty")}
-          value={rules.forgotPenalty ?? 4}
-          options={[2, 4, 6]}
-          unit={(n) => `+${n}`}
-          onPick={(n) => setRule("forgotPenalty", n)}
-        />
-        <Stepper
-          label={t("ruleFalseCall")}
-          value={rules.falseCallPenalty ?? 2}
-          options={[0, 2, 4]}
-          unit={(n) => `+${n}`}
-          onPick={(n) => setRule("falseCallPenalty", n)}
-        />
-        <Stepper
-          label={t("ruleFalseCatch")}
-          value={rules.falseCatchPenalty ?? 2}
-          options={[0, 2, 4]}
-          unit={(n) => `+${n}`}
-          onPick={(n) => setRule("falseCatchPenalty", n)}
-        />
-      </div>
-
-      <button
-        type="button"
-        className={`uno-rule-card wide ${rules.autoPenalty ? "on" : ""}`}
-        disabled={!isHost}
-        onClick={() => setRule("autoPenalty", !rules.autoPenalty)}
-      >
-        <span className="uno-rule-top">
-          <span className="uno-rule-name">⏱ {t("ruleAutoPenalty")}</span>
-          <span className={`uno-switch ${rules.autoPenalty ? "on" : ""}`} aria-hidden />
-        </span>
-        <span className="uno-rule-desc">{t("ruleAutoPenaltyD")}</span>
-      </button>
-
-      <div className="picker-header sub">
-        <h3>{t("optionalCards")}</h3>
-      </div>
-      <div className="uno-extras-grid">
-        {EXTRA_CARDS.map((c) => {
-          const on = !!extras[c.key];
-          return (
-            <button
-              key={c.key}
-              type="button"
-              className={`uno-extra-card ${on ? "on" : ""}`}
-              disabled={!isHost}
-              onClick={() => setExtra(c.key, !on)}
-              title={t(c.desc as any)}
-            >
-              <span className="uno-extra-glyph">{c.glyph}</span>
-              <span className="uno-extra-name">{t(c.name as any)}</span>
-              <span className="uno-extra-desc">{t(c.desc as any)}</span>
-            </button>
-          );
-        })}
-      </div>
-    </div>
+    <SetupTabs
+      tabs={[
+        {
+          id: "rules",
+          label: t("houseRules"),
+          icon: "📜",
+          badge: String(RULE_TOGGLES.filter((r) => rules[r.key]).length),
+          node: (
+            <>
+              <PresetRow
+                label={t("presetsTitle")}
+                disabled={!isHost}
+                presets={[
+                  { id: "classic", label: t("presetClassic") },
+                  { id: "chaos", label: t("presetChaos") },
+                  { id: "brutal", label: t("presetBrutal") },
+                ]}
+                onPick={(id) => isHost && onChange(PRESETS[id])}
+              />
+              <div className="setup-toggles">
+                {RULE_TOGGLES.map((r) => (
+                  <ToggleCard
+                    key={r.key}
+                    name={t(r.name as any)}
+                    desc={t(r.desc as any)}
+                    on={!!rules[r.key]}
+                    disabled={!isHost}
+                    locked={r.key === "stackAnyDraw" && !rules.stacking}
+                    onToggle={() => setRule(r.key, !rules[r.key])}
+                  />
+                ))}
+              </div>
+            </>
+          ),
+        },
+        {
+          id: "cards",
+          label: t("optionalCards"),
+          icon: "✨",
+          badge: String(EXTRA_CARDS.filter((c) => extras[c.key]).length),
+          node: (
+            <div className="setup-toggles">
+              {EXTRA_CARDS.map((c) => (
+                <ToggleCard
+                  key={c.key}
+                  glyph={c.glyph}
+                  name={t(c.name as any)}
+                  desc={t(c.desc as any)}
+                  on={!!extras[c.key]}
+                  disabled={!isHost}
+                  onToggle={() => setExtra(c.key, !extras[c.key])}
+                />
+              ))}
+            </div>
+          ),
+        },
+        {
+          id: "call",
+          label: t("callOuno"),
+          icon: "⏱",
+          node: (
+            <>
+              <SetupSection>
+                <div className="setup-steppers">
+                  <Stepper
+                    label={t("ruleStartingCards")}
+                    value={rules.startingCards ?? 7}
+                    options={[5, 7, 10]}
+                    disabled={!isHost}
+                    onPick={(n) => setRule("startingCards", n)}
+                  />
+                  <Stepper
+                    label={t("ruleCallWindow")}
+                    hint={t("ruleCallWindowD")}
+                    value={rules.callWindowMs ?? 5000}
+                    options={[3000, 5000, 8000]}
+                    unit={(n) => t("ruleSeconds", { n: n / 1000 })}
+                    disabled={!isHost}
+                    onPick={(n) => setRule("callWindowMs", n)}
+                  />
+                  <Stepper
+                    label={t("ruleForgotPenalty")}
+                    value={rules.forgotPenalty ?? 4}
+                    options={[2, 4, 6]}
+                    unit={(n) => `+${n}`}
+                    disabled={!isHost}
+                    onPick={(n) => setRule("forgotPenalty", n)}
+                  />
+                  <Stepper
+                    label={t("ruleFalseCall")}
+                    value={rules.falseCallPenalty ?? 2}
+                    options={[0, 2, 4]}
+                    unit={(n) => `+${n}`}
+                    disabled={!isHost}
+                    onPick={(n) => setRule("falseCallPenalty", n)}
+                  />
+                  <Stepper
+                    label={t("ruleFalseCatch")}
+                    value={rules.falseCatchPenalty ?? 2}
+                    options={[0, 2, 4]}
+                    unit={(n) => `+${n}`}
+                    disabled={!isHost}
+                    onPick={(n) => setRule("falseCatchPenalty", n)}
+                  />
+                </div>
+              </SetupSection>
+              <div className="setup-toggles">
+                <ToggleCard
+                  wide
+                  glyph="⏱"
+                  name={t("ruleAutoPenalty")}
+                  desc={t("ruleAutoPenaltyD")}
+                  on={!!rules.autoPenalty}
+                  disabled={!isHost}
+                  onToggle={() => setRule("autoPenalty", !rules.autoPenalty)}
+                />
+              </div>
+            </>
+          ),
+        },
+      ]}
+    />
   );
 }

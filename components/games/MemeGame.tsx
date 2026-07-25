@@ -13,7 +13,17 @@ import "./meme.css";
 
 type Slot = { x: number; y: number; w: number; dark?: boolean };
 type Template = { id: string; name: string; url: string; slots: Slot[]; animated?: boolean };
-type Entry = { id?: number; playerId?: string; captions?: string[] | null; gif?: string | null; voteCount?: number; mine?: boolean };
+type Entry = { id?: number; playerId?: string; captions?: CaptionValue[] | null; gif?: string | null; voteCount?: number; mine?: boolean };
+
+// A caption is either bare text (older rounds, and the fallback path) or a
+// positioned/styled slot. Both shapes travel over the wire, so every reader
+// has to handle them — see the `typeof c === "object"` checks below.
+type CaptionSlot = {
+  text: string;
+  x?: number; y?: number; w?: number; scale?: number;
+  font?: string; border?: number; color?: string;
+};
+type CaptionValue = string | CaptionSlot;
 
 // Curated reaction GIFs for the picker (mirrors scripts/memeContent.js).
 const GIF_LIBRARY: { id: string; tags: string; url: string }[] = [
@@ -48,7 +58,7 @@ export default function MemeGame() {
   const mySteamId = steamId ?? "";
 
   const [gameState, setGameState] = useState<any>(null);
-  const [captions, setCaptions] = useState<string[]>([""]);
+  const [captions, setCaptions] = useState<CaptionValue[]>([""]);
   const [focusedSlot, setFocusedSlot] = useState(-1);
   const [gifQuery, setGifQuery] = useState("");
   const [gifUrl, setGifUrl] = useState("");

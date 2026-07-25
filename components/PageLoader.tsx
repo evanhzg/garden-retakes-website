@@ -59,6 +59,7 @@ export default function PageLoader() {
   /* Phase timeline                                                      */
   /* ------------------------------------------------------------------ */
   useEffect(() => {
+    document.body.classList.add("is-loading-page");
     const timers: ReturnType<typeof setTimeout>[] = [];
 
     // entrance → hold
@@ -76,9 +77,15 @@ export default function PageLoader() {
     timers.push(setTimeout(() => setPhase("settle"), 3400));
 
     // settle → done (unmount)
-    timers.push(setTimeout(() => setPhase("done"), 4000));
+    timers.push(setTimeout(() => {
+      setPhase("done");
+      document.body.classList.remove("is-loading-page");
+    }, 4000));
 
-    return () => timers.forEach(clearTimeout);
+    return () => {
+      timers.forEach(clearTimeout);
+      document.body.classList.remove("is-loading-page");
+    };
   }, [flyToHeader]);
 
   if (phase === "done") return null;

@@ -1,7 +1,7 @@
 import type { Metadata } from "next";
 
 const description =
-  "Play OUNO, MONOPO7Y and Skribbl with friends — universal lobbies, bots and chat.";
+  "Play OUNO, MONOPO7Y and FREE-DRAW with friends — universal lobbies, bots and chat.";
 
 export const metadata: Metadata = {
   title: "Games Hub",

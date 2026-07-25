@@ -41,11 +41,34 @@
 }
 
 .skr-round {
+  display: flex;
+  align-items: center;
+  gap: 8px;
   font-size: 0.68rem;
   font-weight: 900;
   letter-spacing: 0.12em;
   text-transform: uppercase;
   color: #8b93a7;
+}
+
+/* The game's wordmark, sitting ahead of the round counter. */
+.skr-brand {
+  font-size: 0.74rem;
+  letter-spacing: 0.16em;
+  background: linear-gradient(100deg, #38bdf8, #22c55e);
+  -webkit-background-clip: text;
+  background-clip: text;
+  color: transparent;
+}
+
+.skr-brand::after {
+  content: "";
+  display: inline-block;
+  width: 1px;
+  height: 0.72em;
+  margin-left: 8px;
+  vertical-align: -0.05em;
+  background: rgba(255, 255, 255, 0.16);
 }
 
 .skr-drawer {

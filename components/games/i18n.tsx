@@ -83,7 +83,11 @@ export function LangToggle({ lang, onChange, className = "" }: {
           title={l === "en" ? "English" : "Français"}
           aria-pressed={lang === l}
         >
-          {l === "en" ? "🇬🇧 EN" : "🇫🇷 FR"}
+          {l === "en" ? (
+            <><img src="https://flagcdn.com/w40/gb.png" alt="EN" style={{ display: "inline-block", width: "1.2em", height: "auto", borderRadius: "2px", verticalAlign: "middle", marginRight: "4px" }} /> EN</>
+          ) : (
+            <><img src="https://flagcdn.com/w40/fr.png" alt="FR" style={{ display: "inline-block", width: "1.2em", height: "auto", borderRadius: "2px", verticalAlign: "middle", marginRight: "4px" }} /> FR</>
+          )}
         </button>
       ))}
     </div>
@@ -249,6 +253,140 @@ export const SKRIBBL = {
   youLabel:         { en: "you", fr: "vous" },
   hintRevealed:     { en: "A letter was revealed", fr: "Une lettre est révélée" },
   wordLanguage:     { en: "Words: {lang}", fr: "Mots : {lang}" },
+
+  // launch options (lobby)
+  optionsTitle:     { en: "FREE-DRAW setup", fr: "Réglages FREE-DRAW" },
+  hostOnly:         { en: "Only the host changes the setup", fr: "Seul l'hôte modifie les réglages" },
+  rounds:           { en: "Rounds", fr: "Manches" },
+  roundsHint:       { en: "Everyone draws once per round", fr: "Chacun dessine une fois par manche" },
+  roundsUnit:       { en: "{n} rounds", fr: "{n} manches" },
+  wordsFrom:        { en: "Words: {lang}", fr: "Mots : {lang}" },
+  langEnglish:      { en: "English", fr: "anglais" },
+  langFrench:       { en: "French", fr: "français" },
+} as const;
+
+// ---------------------------------------------------------------------------
+// HEADSHOT — guess the CS pro
+// ---------------------------------------------------------------------------
+export const HEADSHOT = {
+  brand:          { en: "HEADSHOT", fr: "HEADSHOT" },
+  tagline:        { en: "Guess today's Counter-Strike pro", fr: "Devinez le pro Counter-Strike du jour" },
+
+  // modes
+  modeDaily:      { en: "Daily", fr: "Quotidien" },
+  modeDailyD:     { en: "One pro a day, the same one for everyone.", fr: "Un pro par jour, le même pour tout le monde." },
+  modeEndless:    { en: "Endless", fr: "Sans fin" },
+  modeEndlessD:   { en: "Keep going as long as you like.", fr: "Enchaînez autant que vous voulez." },
+  modeRace:       { en: "Race", fr: "Course" },
+  modeRaceD:      { en: "First to {n} correct wins.", fr: "Le premier à {n} bonnes réponses gagne." },
+  playWithFriends:{ en: "Play with friends", fr: "Jouer entre amis" },
+
+  // board
+  searchPlaceholder: { en: "Type a player…", fr: "Tapez un joueur…" },
+  noMatches:      { en: "No player by that name", fr: "Aucun joueur de ce nom" },
+  alreadyGuessed: { en: "Already guessed", fr: "Déjà proposé" },
+  guessCount:     { en: "{n} guesses", fr: "{n} essais" },
+  oneGuess:       { en: "1 guess", fr: "1 essai" },
+  loading:        { en: "Loading the roster…", fr: "Chargement de l'effectif…" },
+  loadFailed:     { en: "Couldn't load the player list", fr: "Impossible de charger la liste des joueurs" },
+  retry:          { en: "Retry", fr: "Réessayer" },
+
+  // columns
+  colPlayer:      { en: "Player", fr: "Joueur" },
+  colNationality: { en: "Nation", fr: "Nation" },
+  colTeam:        { en: "Team", fr: "Équipe" },
+  colRole:        { en: "Role", fr: "Rôle" },
+  colAge:         { en: "Age", fr: "Âge" },
+  colMajors:      { en: "Majors", fr: "Majors" },
+
+  // legend
+  legendTitle:    { en: "How to read a row", fr: "Comment lire une ligne" },
+  legendHit:      { en: "Exact match", fr: "Correspondance exacte" },
+  legendNear:     { en: "Close — same continent, a shared team or role, or within 2", fr: "Proche — même continent, équipe ou rôle en commun, ou à 2 près" },
+  legendMiss:     { en: "No match", fr: "Aucune correspondance" },
+  legendArrow:    { en: "▲ / ▼ points towards the answer", fr: "▲ / ▼ indique la direction de la réponse" },
+
+  // roles
+  roleAwp:        { en: "AWPer", fr: "AWPeur" },
+  roleIgl:        { en: "IGL", fr: "IGL" },
+  roleEntry:      { en: "Entry", fr: "Entrée" },
+  roleLurker:     { en: "Lurker", fr: "Lurkeur" },
+  roleSupport:    { en: "Support", fr: "Soutien" },
+  roleRifle:      { en: "Rifler", fr: "Rifleur" },
+  roleCoach:      { en: "Coach", fr: "Coach" },
+
+  // daily result
+  solved:         { en: "Got it!", fr: "Trouvé !" },
+  solvedIn:       { en: "Solved in {n}", fr: "Trouvé en {n}" },
+  theAnswerWas:   { en: "The answer was", fr: "La réponse était" },
+  nextIn:         { en: "Next pro in {t}", fr: "Prochain pro dans {t}" },
+  streak:         { en: "Streak", fr: "Série" },
+  bestStreak:     { en: "Best", fr: "Record" },
+  played:         { en: "Played", fr: "Parties" },
+  avgGuesses:     { en: "Avg", fr: "Moy." },
+  share:          { en: "Share", fr: "Partager" },
+  copied:         { en: "Copied!", fr: "Copié !" },
+  puzzleNo:       { en: "HEADSHOT #{n}", fr: "HEADSHOT n°{n}" },
+  playEndless:    { en: "Play endless mode", fr: "Passer en mode sans fin" },
+  newPro:         { en: "New pro", fr: "Nouveau pro" },
+  giveUp:         { en: "Give up", fr: "Abandonner" },
+
+  // race
+  raceTitle:      { en: "Race to {n}", fr: "Course à {n}" },
+  raceScore:      { en: "{n}/{m}", fr: "{n}/{m}" },
+  raceRivals:     { en: "Rivals", fr: "Adversaires" },
+  raceYou:        { en: "You", fr: "Vous" },
+  raceGuessing:   { en: "{n} guesses in", fr: "{n} essais" },
+  raceRevealIn:   { en: "{n} left before it's revealed", fr: "{n} avant révélation" },
+  raceRevealed:   { en: "Ran out of guesses — it was {name}", fr: "Plus d'essais — c'était {name}" },
+  raceSolved:     { en: "{name} down!", fr: "{name}, trouvé !" },
+  raceWon:        { en: "You won the race! 🎉", fr: "Vous gagnez la course ! 🎉" },
+  raceLost:       { en: "{name} got there first", fr: "{name} est arrivé le premier" },
+  raceStandings:  { en: "Standings", fr: "Classement" },
+  raceRun:        { en: "The run", fr: "Le parcours" },
+  returnLobby:    { en: "Return to lobby", fr: "Retour au salon" },
+  leaveGame:      { en: "Leave game", fr: "Quitter la partie" },
+  waitingStart:   { en: "Waiting for the race to start…", fr: "En attente du départ…" },
+
+  // event log
+  evSolved:       { en: "{name} identified {who}", fr: "{name} a trouvé {who}" },
+  evRevealed:     { en: "{name} gave up on {who}", fr: "{name} a séché sur {who}" },
+  evTimeout:      { en: "Time's up — it was {who}", fr: "Temps écoulé — c'était {who}" },
+  evWin:          { en: "{name} wins the race!", fr: "{name} gagne la course !" },
+  evStart:        { en: "Race to {n} — go!", fr: "Course à {n} — partez !" },
+
+  // lobby setup
+  optionsTitle:   { en: "HEADSHOT setup", fr: "Réglages HEADSHOT" },
+  hostOnly:       { en: "Only the host changes the setup", fr: "Seul l'hôte modifie les réglages" },
+  targetScore:    { en: "Race to", fr: "Course à" },
+  targetScoreD:   { en: "How many pros you have to identify to win.", fr: "Nombre de pros à identifier pour gagner." },
+  roundTimer:     { en: "Clock per pro", fr: "Chrono par pro" },
+  revealAfter:    { en: "Guesses allowed", fr: "Essais autorisés" },
+  revealAfterD:   { en: "Miss this many and the answer is shown so you can move on.", fr: "Après ce nombre d'erreurs, la réponse est révélée et vous passez au suivant." },
+  seconds:        { en: "{n}s", fr: "{n} s" },
+  noTimer:        { en: "Off", fr: "Sans" },
+  correctUnit:    { en: "{n} correct", fr: "{n} bonnes" },
+
+  dataFrom:       { en: "Player data from Liquipedia", fr: "Données joueurs via Liquipedia" },
+} as const;
+
+// ---------------------------------------------------------------------------
+// MONOPO7Y — lobby setup strings only; the board itself is served localized.
+// ---------------------------------------------------------------------------
+export const MONOPOLY = {
+  optionsTitle:  { en: "MONOPO7Y setup", fr: "Réglages MONOPO7Y" },
+  hostOnly:      { en: "Only the host changes the setup", fr: "Seul l'hôte modifie les réglages" },
+  board:         { en: "Board", fr: "Plateau" },
+  boardHint:     { en: "Pick a built-in board or one you made in the editor", fr: "Choisissez un plateau intégré ou créé dans l'éditeur" },
+  custom:        { en: "custom", fr: "perso" },
+  tiles:         { en: "{n} tiles", fr: "{n} cases" },
+  editBoards:    { en: "Create / edit boards", fr: "Créer / modifier des plateaux" },
+  testBuildings: { en: "Test buildings", fr: "Tester les bâtiments" },
+  mode:          { en: "Mode", fr: "Mode" },
+  modeFfa:       { en: "Free-for-all", fr: "Chacun pour soi" },
+  modeFfaD:      { en: "Everyone plays for themselves.", fr: "Chacun joue pour soi." },
+  mode2v2:       { en: "2v2 allies", fr: "Alliés 2c2" },
+  mode2v2D:      { en: "Exactly 4 players, 2 per team — teammates pay no rent to each other.", fr: "Exactement 4 joueurs, 2 par équipe — les alliés ne se paient pas de loyer." },
 } as const;
 
 // ---------------------------------------------------------------------------
@@ -317,6 +455,120 @@ export const MEME = {
   // event feed
   evSubmitted:      { en: "{name} locked in", fr: "{name} a validé" },
   evVoted:          { en: "{name} voted", fr: "{name} a voté" },
+} as const;
+
+// ---------------------------------------------------------------------------
+// CODENAMES
+// ---------------------------------------------------------------------------
+export const CODENAMES = {
+  brand:           { en: "CODENAMES", fr: "CODENAMES" },
+  red:             { en: "RED", fr: "ROUGE" },
+  blue:            { en: "BLUE", fr: "BLEU" },
+  redTeam:         { en: "Red team", fr: "Équipe rouge" },
+  blueTeam:        { en: "Blue team", fr: "Équipe bleue" },
+  spymaster:       { en: "Spymaster", fr: "Maître-espion" },
+  operative:       { en: "Operative", fr: "Agent" },
+  youLabel:        { en: "You", fr: "Vous" },
+  agentsLeft:      { en: "{n} left", fr: "{n} restants" },
+
+  // turn banner
+  yourTurnClue:    { en: "Your clue, spymaster", fr: "À vous, maître-espion" },
+  yourTurnGuess:   { en: "Your turn — start guessing", fr: "À vous — devinez" },
+  waitingClue:     { en: "{team} spymaster is thinking…", fr: "Le maître-espion {team} réfléchit…" },
+  waitingGuess:    { en: "{team} is guessing…", fr: "{team} devine…" },
+  spectating:      { en: "Watching {team} play", fr: "Vous observez {team}" },
+  phaseClue:       { en: "Clue phase", fr: "Phase d'indice" },
+  phaseGuess:      { en: "Guess phase", fr: "Phase de devinettes" },
+
+  // clue bar
+  cluePlaceholder: { en: "One word…", fr: "Un seul mot…" },
+  giveClue:        { en: "Give clue", fr: "Donner l'indice" },
+  clueCount:       { en: "Words", fr: "Mots" },
+  unlimited:       { en: "∞", fr: "∞" },
+  clueRejected:    { en: "That clue can't be a word on the board — one word only.", fr: "L'indice ne peut pas être un mot du plateau — un seul mot." },
+  clueIs:          { en: "Clue", fr: "Indice" },
+  guessesLeft:     { en: "{n} guesses left", fr: "{n} essais restants" },
+  oneGuessLeft:    { en: "1 guess left", fr: "1 essai restant" },
+  unlimitedGuesses:{ en: "Unlimited guesses", fr: "Essais illimités" },
+  endGuessing:     { en: "Stop guessing", fr: "Arrêter" },
+  mustGuessOnce:   { en: "Answer the clue at least once first", fr: "Répondez d'abord à l'indice au moins une fois" },
+  spymasterHold:   { en: "You gave the clue — sit tight", fr: "Vous avez donné l'indice — patientez" },
+  keyCard:         { en: "You can see the key card", fr: "Vous voyez la grille des agents" },
+
+  // card kinds
+  kindRed:         { en: "red agent", fr: "agent rouge" },
+  kindBlue:        { en: "blue agent", fr: "agent bleu" },
+  kindNeutral:     { en: "bystander", fr: "passant" },
+  kindAssassin:    { en: "the assassin", fr: "l'assassin" },
+  kindDouble:      { en: "the double agent", fr: "l'agent double" },
+
+  // log lines
+  logStart:        { en: "{team} goes first.", fr: "{team} commence." },
+  logClue:         { en: "{name}: “{word}” — {count}", fr: "{name} : « {word} » — {count}" },
+  logPick:         { en: "{name} picked {word} — {kind}", fr: "{name} a choisi {word} — {kind}" },
+  logDouble:       { en: "{name} flipped the double agent!", fr: "{name} retourne l'agent double !" },
+  logMiss:         { en: "Wrong card — the turn passes to {team}.", fr: "Mauvaise carte — au tour de {team}." },
+  logOutOfGuesses: { en: "Out of guesses — {team} is up.", fr: "Plus d'essais — à {team}." },
+  logStopped:      { en: "They stopped there — {team} is up.", fr: "Ils s'arrêtent là — à {team}." },
+  logTimeout:      { en: "Time's up — {team} is up.", fr: "Temps écoulé — à {team}." },
+  logClueTimeout:  { en: "{team}'s spymaster ran out of time.", fr: "Le maître-espion {team} n'a plus de temps." },
+  logNewSpymaster: { en: "{name} takes over as {team} spymaster.", fr: "{name} devient maître-espion {team}." },
+  logWin:          { en: "{team} wins!", fr: "{team} gagne !" },
+
+  // end screen
+  gameOver:        { en: "Game over", fr: "Partie terminée" },
+  winsAgents:      { en: "{team} found every agent!", fr: "{team} a trouvé tous ses agents !" },
+  winsAssassin:    { en: "{loser} hit the assassin — {team} wins!", fr: "{loser} a touché l'assassin — {team} gagne !" },
+  winsForfeit:     { en: "{team} wins by forfeit", fr: "{team} gagne par forfait" },
+  youWon:          { en: "Your team wins! 🎉", fr: "Votre équipe gagne ! 🎉" },
+  youLost:         { en: "Your team lost", fr: "Votre équipe a perdu" },
+  finalKey:        { en: "The key card", fr: "La grille des agents" },
+  returnLobby:     { en: "Return to lobby", fr: "Retour au salon" },
+  leaveGame:       { en: "Leave game", fr: "Quitter la partie" },
+  clueLog:         { en: "Clues", fr: "Indices" },
+  feed:            { en: "Feed", fr: "Journal" },
+
+  // ---- lobby setup ----
+  optionsTitle:    { en: "CODENAMES setup", fr: "Réglages CODENAMES" },
+  hostOnly:        { en: "Only the host changes the setup", fr: "Seul l'hôte modifie les réglages" },
+  teamsTitle:      { en: "Teams", fr: "Équipes" },
+  teamsHint:       { en: "Tap a colour to switch sides · 🕵️ makes you spymaster", fr: "Touchez une couleur pour changer de camp · 🕵️ vous nomme maître-espion" },
+  shuffleTeams:    { en: "Shuffle teams", fr: "Mélanger les équipes" },
+  unassigned:      { en: "Not seated", fr: "Sans équipe" },
+  needTwoPerTeam:  { en: "Each colour needs a spymaster and at least one operative", fr: "Chaque couleur a besoin d'un maître-espion et d'au moins un agent" },
+
+  boardSize:       { en: "Board", fr: "Plateau" },
+  boardSizeD:      { en: "5×5 is the classic grid; 6×6 is a longer, meaner game.", fr: "5×5 est la grille classique ; 6×6 donne une partie plus longue et plus rude." },
+  packs:           { en: "Word packs", fr: "Packs de mots" },
+  packClassic:     { en: "Classic", fr: "Classiques" },
+  packCs2:         { en: "CS2", fr: "CS2" },
+  packGaming:      { en: "Gaming", fr: "Gaming" },
+  packParty:       { en: "Party", fr: "Soirée" },
+  packsHint:       { en: "Mix as many as you like — words are drawn from all of them.", fr: "Mélangez-en autant que vous voulez — les mots viennent de tous." },
+  assassins:       { en: "Assassins", fr: "Assassins" },
+  assassinsD:      { en: "Two assassins turns every guess into a gamble.", fr: "Deux assassins transforment chaque essai en pari." },
+  firstTeam:       { en: "Starts", fr: "Commence" },
+  firstRandom:     { en: "Random", fr: "Aléatoire" },
+  clueTimer:       { en: "Spymaster clock", fr: "Chrono maître-espion" },
+  turnTimer:       { en: "Guessing clock", fr: "Chrono devinettes" },
+  seconds:         { en: "{n}s", fr: "{n} s" },
+  noTimer:         { en: "Off", fr: "Sans" },
+
+  ruleBonus:       { en: "Bonus guess", fr: "Essai bonus" },
+  ruleBonusD:      { en: "The classic +1: a team may risk one guess beyond the number.", fr: "Le +1 classique : une équipe peut tenter un essai de plus que le nombre." },
+  ruleUnlimited:   { en: "Unlimited guesses", fr: "Essais illimités" },
+  ruleUnlimitedD:  { en: "Keep guessing until you miss — the number is only a hint.", fr: "Devinez jusqu'à l'erreur — le nombre n'est qu'une indication." },
+  ruleZero:        { en: "Allow 0 / ∞", fr: "Autoriser 0 / ∞" },
+  ruleZeroD:       { en: "A clue of 0 means \"none of these\" and grants unlimited guesses.", fr: "Un indice à 0 signifie « aucun de ceux-là » et donne des essais illimités." },
+  ruleDouble:      { en: "Double agent", fr: "Agent double" },
+  ruleDoubleD:     { en: "One card counts for whichever team flips it first.", fr: "Une carte compte pour l'équipe qui la retourne en premier." },
+  ruleRevealKey:   { en: "Reveal the key", fr: "Révéler la grille" },
+  ruleRevealKeyD:  { en: "Show the whole board once the game is decided.", fr: "Montre tout le plateau une fois la partie jouée." },
+
+  presetsTitle:    { en: "Presets", fr: "Préréglages" },
+  presetClassic:   { en: "Classic", fr: "Classique" },
+  presetBlitz:     { en: "Blitz", fr: "Blitz" },
+  presetDeadly:    { en: "Deadly", fr: "Mortel" },
 } as const;
 
 // ---------------------------------------------------------------------------

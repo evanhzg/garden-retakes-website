@@ -43,7 +43,7 @@ const ACCENT = 0xa855f7;
 const GAME_CHOICES = [
   { name: "OUNO", value: "uno" },
   { name: "Monopoly", value: "monopoly" },
-  { name: "Skribbl", value: "skribbl" },
+  { name: "FREE-DRAW", value: "skribbl" },
   { name: "HASAMEME", value: "meme" },
 ];
 

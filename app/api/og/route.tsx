@@ -196,7 +196,7 @@ export async function GET(req: Request) {
             )}
           </div>
           <div style={{ display: "flex", fontSize: 26, color: "rgba(255,255,255,0.5)", marginTop: 28 }}>
-            OUNO · MONOPO7Y · Skribbl
+            OUNO · MONOPO7Y · FREE-DRAW
           </div>
         </div>
       ),

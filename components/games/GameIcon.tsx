@@ -102,6 +102,83 @@ export default function GameIcon({ id, size = 28, className, title }: Props) {
         </svg>
       );
 
+    // HEADSHOT — a crosshair over a target ring
+    case "headshot":
+      return (
+        <svg {...common}>
+          {title && <title>{title}</title>}
+          <path fillRule="evenodd" d={`${ci(256, 256, 168)} ${ci(256, 256, 122)}`} />
+          <circle cx="256" cy="256" r="44" />
+          {/* the four ticks */}
+          <path d={rr(238, 24, 36, 108, 18)} />
+          <path d={rr(238, 380, 36, 108, 18)} />
+          <path d={rr(24, 238, 108, 36, 18)} />
+          <path d={rr(380, 238, 108, 36, 18)} />
+        </svg>
+      );
+
+    // BUY MENU — a price tag
+    case "buymenu":
+      return (
+        <svg {...common}>
+          {title && <title>{title}</title>}
+          <path
+            fillRule="evenodd"
+            d="M256 46 L466 46 L466 256 L266 456 L56 246 Z M396 116 a34 34 0 1 0 0.1 0 z"
+          />
+        </svg>
+      );
+
+    // PENTAKILL — a five-pointed star (the pentakill banner)
+    case "pentakill":
+      return (
+        <svg {...common}>
+          {title && <title>{title}</title>}
+          <path d="M256 40 L317 186 L474 199 L355 303 L391 456 L256 374 L121 456 L157 303 L38 199 L195 186 Z" />
+        </svg>
+      );
+
+    // BUILD PATH — three stacked item slots joined by a path
+    case "buildpath":
+      return (
+        <svg {...common}>
+          {title && <title>{title}</title>}
+          <path fillRule="evenodd" d={`${rr(56, 56, 130, 130, 24)} ${rr(96, 96, 50, 50, 10)}`} />
+          <path fillRule="evenodd" d={`${rr(326, 56, 130, 130, 24)} ${rr(366, 96, 50, 50, 10)}`} />
+          <path fillRule="evenodd" d={`${rr(191, 326, 130, 130, 24)} ${rr(231, 366, 50, 50, 10)}`} />
+          {/* the two branches feeding the finished item */}
+          <path d="M121 200 L121 250 L391 250 L391 200 L361 200 L361 220 L151 220 L151 200 Z" />
+          <rect x="241" y="250" width="30" height="66" />
+        </svg>
+      );
+
+    // DROPSHIP — a descending drop pod with thrusters
+    case "dropship":
+      return (
+        <svg {...common}>
+          {title && <title>{title}</title>}
+          <path d="M256 32 L392 168 L392 300 L120 300 L120 168 Z" />
+          <path fillRule="evenodd" d={`${rr(120, 320, 272, 56, 20)} ${ci(256, 348, 18)}`} />
+          <path d="M170 396 L200 396 L186 480 Z" />
+          <path d="M241 396 L271 396 L256 490 Z" />
+          <path d="M312 396 L342 396 L326 480 Z" />
+        </svg>
+      );
+
+    // LOADOUT — a backpack / kit bag
+    case "loadout":
+      return (
+        <svg {...common}>
+          {title && <title>{title}</title>}
+          <path
+            fillRule="evenodd"
+            d={`${rr(86, 140, 340, 320, 52)} ${rr(146, 250, 220, 90, 18)}`}
+          />
+          {/* the carry handle */}
+          <path d="M196 140 a60 60 0 0 1 120 0 l-44 0 a16 16 0 0 0 -32 0 z" />
+        </svg>
+      );
+
     // CARDS AGAINST — a card with fill-in-the-blank lines
     case "cah":
       return (

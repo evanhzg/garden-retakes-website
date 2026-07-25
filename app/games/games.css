@@ -95,6 +95,93 @@
 .game-card[data-game="skribbl"] .game-card-bg {
   background: linear-gradient(135deg, #0ea5e9 0%, #1a1a2e 50%, #22c55e 100%);
 }
+.game-card[data-game="headshot"] .game-card-bg {
+  background: linear-gradient(135deg, #0f172a 0%, #164e63 50%, #f59e0b 100%);
+}
+.game-card[data-game="buymenu"] .game-card-bg {
+  background: linear-gradient(135deg, #1c1917 0%, #292524 50%, #ca8a04 100%);
+}
+.game-card[data-game="pentakill"] .game-card-bg {
+  background: linear-gradient(135deg, #0b1a2b 0%, #113a5c 50%, #c8aa6e 100%);
+}
+.game-card[data-game="buildpath"] .game-card-bg {
+  background: linear-gradient(135deg, #0b1a2b 0%, #0e7490 50%, #c8aa6e 100%);
+}
+.game-card[data-game="dropship"] .game-card-bg {
+  background: linear-gradient(135deg, #1a0f0f 0%, #7f1d1d 50%, #f97316 100%);
+}
+.game-card[data-game="loadout"] .game-card-bg {
+  background: linear-gradient(135deg, #1a0f0f 0%, #9a3412 50%, #fbbf24 100%);
+}
+
+/* ------------------------------------------------------------- categories */
+/* The hub is shelved: party games first, then the daily/quiz esports games.
+   The first shelf keeps the existing "Choose a game" heading, so only the
+   later ones draw their own rule + title. */
+.hub-category + .hub-category { margin-top: 26px; }
+
+.hub-category-head {
+  display: flex;
+  align-items: baseline;
+  gap: 0.6rem;
+  flex-wrap: wrap;
+  margin: 0 2px 14px;
+  padding-top: 18px;
+  border-top: 1px solid var(--border, rgba(255, 255, 255, 0.1));
+}
+
+.hub-category-head h3 {
+  margin: 0;
+  font-size: 0.98rem;
+  font-weight: 900;
+  letter-spacing: 0.04em;
+  color: var(--text, #e8edf5);
+}
+
+.hub-category-head span {
+  font-size: 0.76rem;
+  color: var(--muted, #94a3b8);
+}
+
+/* The game this puzzle is about, sitting next to the title. */
+.game-card-franchise {
+  margin-left: auto;
+  align-self: flex-start;
+  padding: 0.15rem 0.5rem;
+  border-radius: 999px;
+  font-size: 0.62rem;
+  font-weight: 900;
+  letter-spacing: 0.09em;
+  text-transform: uppercase;
+  border: 1px solid rgba(255, 255, 255, 0.18);
+  background: rgba(0, 0, 0, 0.3);
+  color: rgba(255, 255, 255, 0.82);
+  white-space: nowrap;
+}
+
+.game-card-franchise.fr-cs2  { border-color: rgba(245, 158, 11, 0.55); color: #fcd34d; }
+.game-card-franchise.fr-lol  { border-color: rgba(200, 170, 110, 0.6); color: #e3c88f; }
+.game-card-franchise.fr-apex { border-color: rgba(249, 115, 22, 0.55); color: #fdba74; }
+
+.badge-quiz {
+  background: rgba(168, 85, 247, 0.18);
+  border-color: rgba(168, 85, 247, 0.45);
+  color: #d8b4fe;
+}
+
+/* HEADSHOT is playable on its own, so its card links out instead of opening a
+   lobby — the badge says so. */
+.badge-solo {
+  background: rgba(56, 189, 248, 0.18);
+  border-color: rgba(56, 189, 248, 0.45);
+  color: #7dd3fc;
+}
+
+.badge-daily {
+  background: rgba(245, 158, 11, 0.18);
+  border-color: rgba(245, 158, 11, 0.45);
+  color: #fcd34d;
+}
 
 /* Content overlay */
 .game-card-content {

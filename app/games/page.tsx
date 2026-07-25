@@ -1,22 +1,62 @@
 "use client";
 
 import React, { useState, useEffect } from "react";
+import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { SocketProvider, useSocket } from "@/components/games/SocketProvider";
 import { useGameIdentity, usePlayerNames, displayNameFor } from "@/components/games/hooks";
 import GameIcon from "@/components/games/GameIcon";
 import "./games.css";
 
-// `ready: false` games stay on the shelf — greyed out and not selectable until
-// they get the same polish pass as the three below.
-const GAMES = [
-  { id: "monopoly", name: "MONOPO7Y", icon: "💰", description: "Business Tour-style fast property trading with 3D dice physics, auctions, and ruthless bot AI.", players: "2–4", ready: true },
-  { id: "uno", name: "OUNO", icon: "🃏", description: "Card battles with house rules: stacking, jump-ins, 7-0 swaps, optional cards — and a timed OUNO call that punishes you for forgetting.", players: "2–4", ready: true },
-  { id: "skribbl", name: "SKRIBBL", icon: "✏️", description: "One draws, everyone guesses. Real-time canvas, fuzzy matching, and timed rounds in English or French.", players: "2–8", ready: true },
-  { id: "meme", name: "HASAMEME", icon: "😂", description: "Caption templates or answer with the perfect GIF — pick packs, import your own memes, then vote for the funniest.", players: "3–8", ready: true },
-  { id: "codenames", name: "CODENAMES", icon: "🕵️", description: "Two teams, one spymaster each. Give one-word clues, guess your agents — but avoid the assassin.", players: "4–8", ready: false },
-  { id: "cah", name: "PILE OF...", icon: "⬛", description: "Fill in the blank with the most outrageous card. The Card Czar picks a winner each round — or write your own.", players: "3–8", ready: true },
+// The hub is grouped into categories so the party games and the daily
+// esports guessers don't compete for the same shelf.
+//
+// `ready: false` games are visible but greyed out. `solo` games have a page of
+// their own, so their card links there instead of spinning up a lobby.
+type HubGame = {
+  id: string;
+  name: string;
+  description: string;
+  players: string;
+  ready: boolean;
+  solo?: string;
+  daily?: boolean;
+  quiz?: boolean;
+  franchise?: string;
+};
+
+type HubCategory = { id: string; title: string; blurb: string; games: HubGame[] };
+
+const CATEGORIES: HubCategory[] = [
+  {
+    id: "party",
+    title: "Party games",
+    blurb: "Spin up a lobby and play with friends or bots",
+    games: [
+      { id: "monopoly", name: "MONOPO7Y", description: "Business Tour-style fast property trading with 3D dice physics, auctions, and ruthless bot AI.", players: "2–4", ready: true },
+      { id: "uno", name: "OUNO", description: "Card battles with house rules: stacking, jump-ins, 7-0 swaps, optional cards — and a timed OUNO call that punishes you for forgetting.", players: "2–4", ready: true },
+      { id: "skribbl", name: "FREE-DRAW", description: "One draws, everyone guesses. Real-time canvas, fuzzy matching, and timed rounds in English or French.", players: "2–8", ready: true },
+      { id: "meme", name: "HASAMEME", description: "Caption templates or answer with the perfect GIF — pick packs, import your own memes, then vote for the funniest.", players: "3–8", ready: true },
+      { id: "codenames", name: "CODENAMES", description: "Two teams, one spymaster each. One-word clues, 5×5 or 6×6 boards, swappable word packs, clocks and a double agent — but avoid the assassin.", players: "4–8", ready: true },
+      { id: "cah", name: "PILE OF...", description: "Fill in the blank with the most outrageous card. The Card Czar picks a winner each round — or write your own.", players: "3–8", ready: true },
+    ],
+  },
+  {
+    id: "esports",
+    title: "Esports daily & quiz",
+    blurb: "A new puzzle every day, the same one for everyone — solo or as a race",
+    games: [
+      { id: "headshot", name: "HEADSHOT", franchise: "CS2", description: "Guess the Counter-Strike pro from nationality, team, role, age and Majors. One a day for everyone — or race your friends to five.", players: "1–8", ready: true, solo: "/games/headshot", daily: true },
+      { id: "buymenu", name: "BUY MENU", franchise: "CS2", description: "Weapons, utility, economy and map knowledge — pick the right buy for the round. Four difficulty tiers from Silver to Global.", players: "1–8", ready: false, solo: "/games/buymenu", quiz: true },
+      { id: "pentakill", name: "PENTAKILL", franchise: "LoL", description: "Guess the champion from role, region, resource, range, release year and more. Fresh champion every day.", players: "1–8", ready: false, solo: "/games/pentakill", daily: true },
+      { id: "buildpath", name: "BUILD PATH", franchise: "LoL", description: "Items, runes and matchups — pick the best build for the champion and the situation. Four difficulty tiers from Iron to Challenger.", players: "1–8", ready: false, solo: "/games/buildpath", quiz: true },
+      { id: "dropship", name: "DROPSHIP", franchise: "Apex", description: "Guess the Legend from class, homeworld, passive and release season.", players: "1–8", ready: false, daily: true },
+      { id: "loadout", name: "LOADOUT", franchise: "Apex", description: "Guns, attachments and rotations — build the right loadout for the ring.", players: "1–8", ready: false, quiz: true },
+    ],
+  },
 ];
+
+const GAMES = CATEGORIES.flatMap((c) => c.games);
 
 const GAME_LABELS: Record<string, string> = Object.fromEntries(GAMES.map(g => [g.id, g.name]));
 
@@ -159,41 +199,76 @@ function GamesHub() {
                 </button>
               </div>
             </div>
-            <div className={view === "list" ? "games-list" : "games-grid"}>
-              {GAMES.map((game) => (
-                <div
-                  key={game.id}
-                  className={`game-card ${game.ready ? "" : "coming-soon"}`}
-                  data-game={game.id}
-                  onClick={() => game.ready && createLobby(game.id)}
-                  role="button"
-                  aria-disabled={!game.ready}
-                  tabIndex={game.ready ? 0 : -1}
-                  onKeyDown={(e) => { if (e.key === "Enter" && game.ready) createLobby(game.id); }}
-                >
-                  <div className="game-card-bg" />
-                  <div className="game-card-content">
-                    <div className="game-card-top">
-                      <span className="game-card-icon"><GameIcon id={game.id} size={34} title={game.name} /></span>
-                      <h2 className="game-card-title">{game.name}</h2>
-                    </div>
-                    <p className="game-card-desc">{game.description}</p>
-                    <div className="game-card-meta">
-                      <span className="badge badge-players">👥 {game.players}</span>
-                      {game.ready
-                        ? <span className="badge badge-play">Play →</span>
-                        : <span className="badge badge-coming">Coming soon</span>}
-                    </div>
+            {CATEGORIES.map((cat, ci) => (
+              <section key={cat.id} className="hub-category">
+                {ci > 0 && (
+                  <div className="hub-category-head">
+                    <h3>{cat.title}</h3>
+                    <span>{cat.blurb}</span>
                   </div>
+                )}
+                <div className={view === "list" ? "games-list" : "games-grid"}>
+                  {cat.games.map((game) => {
+                    const inner = (
+                      <>
+                        <div className="game-card-bg" />
+                        <div className="game-card-content">
+                          <div className="game-card-top">
+                            <span className="game-card-icon"><GameIcon id={game.id} size={34} title={game.name} /></span>
+                            <h2 className="game-card-title">{game.name}</h2>
+                            {game.franchise && <span className={`game-card-franchise fr-${game.franchise.toLowerCase()}`}>{game.franchise}</span>}
+                          </div>
+                          <p className="game-card-desc">{game.description}</p>
+                          <div className="game-card-meta">
+                            <span className="badge badge-players">👥 {game.players}</span>
+                            {game.daily && <span className="badge badge-daily">🗓 Daily</span>}
+                            {game.quiz && <span className="badge badge-quiz">🧠 Quiz</span>}
+                            {game.ready && game.solo && <span className="badge badge-solo">Solo or friends</span>}
+                            {game.ready
+                              ? <span className="badge badge-play">Play →</span>
+                              : <span className="badge badge-coming">Coming soon</span>}
+                          </div>
+                        </div>
+                      </>
+                    );
+
+                    // Games with their own page are plain links, so they work
+                    // without a socket connection (and open in a new tab on
+                    // middle-click like any other link).
+                    if (game.ready && game.solo) {
+                      return (
+                        <Link key={game.id} href={game.solo} className="game-card" data-game={game.id}>
+                          {inner}
+                        </Link>
+                      );
+                    }
+
+                    return (
+                      <div
+                        key={game.id}
+                        className={`game-card ${game.ready ? "" : "coming-soon"}`}
+                        data-game={game.id}
+                        onClick={() => game.ready && createLobby(game.id)}
+                        role="button"
+                        aria-disabled={!game.ready}
+                        tabIndex={game.ready ? 0 : -1}
+                        onKeyDown={(e) => { if (e.key === "Enter" && game.ready) createLobby(game.id); }}
+                      >
+                        {inner}
+                      </div>
+                    );
+                  })}
+                  {ci === 0 && (
+                    <div className="game-card game-card-more" aria-hidden>
+                      <div className="game-card-more-inner">
+                        <span className="game-card-more-plus">✦</span>
+                        <span className="game-card-more-text">More games<br />coming soon</span>
+                      </div>
+                    </div>
+                  )}
                 </div>
-              ))}
-              <div className="game-card game-card-more" aria-hidden>
-                <div className="game-card-more-inner">
-                  <span className="game-card-more-plus">✦</span>
-                  <span className="game-card-more-text">More games<br />coming soon</span>
-                </div>
-              </div>
-            </div>
+              </section>
+            ))}
           </div>
 
           <aside className="hub-side">

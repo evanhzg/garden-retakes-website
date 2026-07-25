@@ -10,6 +10,7 @@ const MemeGame = require("./scripts/memeLogic");
 const pkmnBattleManager = require("./scripts/pkmnBattleManager");
 const { ITEMS, maxHpForMon, parseInv, buildBagList } = require("./scripts/pkmnItems");
 const SkribblGame = require("./scripts/skribblLogic");
+const HeadshotGame = require("./scripts/headshotLogic");
 const { PrismaClient } = require("@prisma/client");
 
 const prisma = new PrismaClient();
@@ -101,6 +102,13 @@ const clearUnoWindowTimer = (lobbyId) => {
 // Active Monopoly Games: lobbyId -> MonopolyGame instance
 const monopolyGames = new Map();
 const codenamesGames = new Map();
+// lobbyId -> the 1s ticker driving Codenames' clue/turn clocks and bot pacing
+const codenamesTimers = new Map();
+const clearCodenamesTimer = (lobbyId) => {
+  const t = codenamesTimers.get(lobbyId);
+  if (t) clearInterval(t);
+  codenamesTimers.delete(lobbyId);
+};
 const cahGames = new Map();
 const cahTimers = new Map();
 const clearCahTimer = (lobbyId) => {
@@ -117,6 +125,14 @@ const clearMemeTimer = (lobbyId) => {
   memeTimers.delete(lobbyId);
 };
 const skribblGames = new Map();
+const headshotGames = new Map();
+// lobbyId -> the 1s ticker pacing HEADSHOT's bots and its per-pro clock
+const headshotTimers = new Map();
+const clearHeadshotTimer = (lobbyId) => {
+  const t = headshotTimers.get(lobbyId);
+  if (t) clearInterval(t);
+  headshotTimers.delete(lobbyId);
+};
 // lobbyId -> the 1s ticker driving Skribbl's round + between-turn countdowns
 const skribblTimers = new Map();
 const clearSkribblTimer = (lobbyId) => {
@@ -299,6 +315,7 @@ io.on("connection", (socket) => {
         clearUnoWindowTimer(lobbyId);
         unoGames.delete(lobbyId);
         monopolyGames.delete(lobbyId);
+        clearCodenamesTimer(lobbyId);
         codenamesGames.delete(lobbyId);
         clearCahTimer(lobbyId);
         cahGames.delete(lobbyId);
@@ -306,6 +323,8 @@ io.on("connection", (socket) => {
         memeGames.delete(lobbyId);
         clearSkribblTimer(lobbyId);
         skribblGames.delete(lobbyId);
+        clearHeadshotTimer(lobbyId);
+        headshotGames.delete(lobbyId);
         broadcastPublicLobbies();
       }
     }, 10000);
@@ -473,6 +492,7 @@ io.on("connection", (socket) => {
       if (baseGame === 'cah') broadcastCahState(lobbyId);
       if (baseGame === 'meme') broadcastMemeState(lobbyId);
       if (baseGame === 'skribbl') broadcastSkribblState(lobbyId);
+      if (baseGame === 'headshot') broadcastHeadshotState(lobbyId);
     }
   });
 
@@ -587,6 +607,61 @@ io.on("connection", (socket) => {
     broadcastLobbyState(lobby.id);
   });
 
+  // Host configures CODENAMES (board size, word packs, assassins, timers and
+  // the rule variants).
+  socket.on("lobby_set_codenames_options", (data) => {
+    if (!socket.lobbyId || !socket.steamId) return;
+    const lobby = universalLobbies.get(socket.lobbyId);
+    if (!lobby || lobby.host !== socket.steamId || lobby.status === 'PLAYING') return;
+    lobby.codenamesOptions = CodenamesGame.sanitizeOptions({
+      ...lobby.codenamesOptions,
+      ...(data && data.options),
+      packs: { ...(lobby.codenamesOptions && lobby.codenamesOptions.packs), ...(data?.options?.packs || {}) },
+    });
+    broadcastLobbyState(lobby.id);
+  });
+
+  // Picking a Codenames colour: anyone may move themselves, the host may move
+  // anyone (and seat the bots).
+  socket.on("lobby_set_codenames_team", (data) => {
+    if (!socket.lobbyId || !socket.steamId) return;
+    const lobby = universalLobbies.get(socket.lobbyId);
+    if (!lobby || lobby.status === 'PLAYING') return;
+    const target = (data && data.steamId) || socket.steamId;
+    if (target !== socket.steamId && lobby.host !== socket.steamId) return;
+    if (lobby.setCodenamesTeam(target, (data && data.team) || null)) broadcastLobbyState(lobby.id);
+  });
+
+  socket.on("lobby_set_codenames_spymaster", (data) => {
+    if (!socket.lobbyId || !socket.steamId) return;
+    const lobby = universalLobbies.get(socket.lobbyId);
+    if (!lobby || lobby.status === 'PLAYING') return;
+    const target = (data && data.steamId) || socket.steamId;
+    if (target !== socket.steamId && lobby.host !== socket.steamId) return;
+    if (lobby.setCodenamesSpymaster(target)) broadcastLobbyState(lobby.id);
+  });
+
+  socket.on("lobby_shuffle_codenames_teams", () => {
+    if (!socket.lobbyId || !socket.steamId) return;
+    const lobby = universalLobbies.get(socket.lobbyId);
+    if (!lobby || lobby.host !== socket.steamId || lobby.status === 'PLAYING') return;
+    lobby.players.forEach((p) => { p.cnTeam = null; p.cnSpymaster = false; });
+    // Deal the seats out at random rather than in join order.
+    const order = [...lobby.players].sort(() => Math.random() - 0.5);
+    order.forEach((p, i) => { p.cnTeam = i % 2 === 0 ? 'red' : 'blue'; });
+    lobby.autoAssignCodenames();
+    broadcastLobbyState(lobby.id);
+  });
+
+  // Host configures HEADSHOT's race (score to reach, per-pro clock).
+  socket.on("lobby_set_headshot_options", (data) => {
+    if (!socket.lobbyId || !socket.steamId) return;
+    const lobby = universalLobbies.get(socket.lobbyId);
+    if (!lobby || lobby.host !== socket.steamId || lobby.status === 'PLAYING') return;
+    lobby.headshotOptions = HeadshotGame.sanitizeOptions({ ...lobby.headshotOptions, ...(data && data.options) });
+    broadcastLobbyState(lobby.id);
+  });
+
   // Host picks how many times each player draws in Skribbl.
   socket.on("lobby_set_skribbl_rounds", (data) => {
     if (!socket.lobbyId || !socket.steamId) return;
@@ -665,7 +740,14 @@ io.on("connection", (socket) => {
           break;
         }
         case 'codenames':
-          gameInstance = new CodenamesGame(lobbyId);
+          // Anyone who never picked a colour gets seated now, and each side is
+          // guaranteed a spymaster before the key card is dealt.
+          lobby.autoAssignCodenames();
+          gameInstance = new CodenamesGame(lobbyId, {
+            lang,
+            options: { ...(lobby.codenamesOptions || {}), ...(data?.options || {}) },
+          });
+          clearCodenamesTimer(lobbyId);
           codenamesGames.set(lobbyId, gameInstance);
           break;
         case 'cah':
@@ -685,6 +767,14 @@ io.on("connection", (socket) => {
           clearMemeTimer(lobbyId);
           memeGames.set(lobbyId, gameInstance);
           break;
+        case 'headshot':
+          gameInstance = new HeadshotGame(lobbyId, {
+            lang,
+            options: { ...(lobby.headshotOptions || {}), ...(data?.options || {}) },
+          });
+          clearHeadshotTimer(lobbyId);
+          headshotGames.set(lobbyId, gameInstance);
+          break;
         case 'skribbl':
           gameInstance = new SkribblGame(lobbyId, lang);
           gameInstance.setRounds(lobby.skribblRounds ?? 3);
@@ -697,7 +787,13 @@ io.on("connection", (socket) => {
         // Add all lobby players to the game instance (bot names are passed
         // through so games that localize display names can use them).
         lobby.players.forEach(p => {
-          gameInstance.addPlayer(p.steamId, { isBot: p.isBot, name: p.botName, team: p.team });
+          gameInstance.addPlayer(p.steamId, {
+            isBot: p.isBot,
+            name: p.botName,
+            // Codenames seats players by colour, everything else by 0/1 index.
+            team: baseGame === 'codenames' ? p.cnTeam : p.team,
+            spymaster: baseGame === 'codenames' ? !!p.cnSpymaster : false,
+          });
         });
 
         lobby.status = 'PLAYING';
@@ -714,6 +810,7 @@ io.on("connection", (socket) => {
           if (baseGame === 'cah') broadcastCahState(lobbyId);
           if (baseGame === 'meme') broadcastMemeState(lobbyId);
           if (baseGame === 'skribbl') broadcastSkribblState(lobbyId);
+          if (baseGame === 'headshot') broadcastHeadshotState(lobbyId);
         }
       }
     }
@@ -731,6 +828,7 @@ io.on("connection", (socket) => {
         clearUnoWindowTimer(lobbyId);
         unoGames.delete(lobbyId);
         monopolyGames.delete(lobbyId);
+        clearCodenamesTimer(lobbyId);
         codenamesGames.delete(lobbyId);
         clearCahTimer(lobbyId);
         cahGames.delete(lobbyId);
@@ -738,6 +836,8 @@ io.on("connection", (socket) => {
         memeGames.delete(lobbyId);
         clearSkribblTimer(lobbyId);
         skribblGames.delete(lobbyId);
+        clearHeadshotTimer(lobbyId);
+        headshotGames.delete(lobbyId);
         lobby.gameInstance = null;
 
         broadcastLobbyState(lobbyId);
@@ -1212,47 +1312,62 @@ io.on("connection", (socket) => {
   // ==========================================
   // CODENAMES
   // ==========================================
+  // Each player gets their own view: only spymasters (and, once it's over,
+  // everyone) see the key card, so state can't be read out of the socket.
   const broadcastCodenamesState = (lobbyId) => {
     const game = codenamesGames.get(lobbyId);
     if (!game) return;
+
     for (const p of game.players) {
-      if (!p.startsWith('BOT_')) {
-        const sid = connectedUsers.get(p);
-        if (sid) io.to(sid).emit("codenames_state", game.getStateForPlayer(p));
-      }
+      if (p.startsWith('BOT_')) continue;
+      const sid = connectedUsers.get(p);
+      if (sid) io.to(sid).emit("codenames_state", game.getStateForPlayer(p));
     }
-    // Bot spymaster clue
-    if (game.status === 'PLAYING' && game.phase === 'CLUE') {
-      const sm = game.spymasters[game.currentTeam];
-      if (sm?.startsWith('BOT_')) {
-        setTimeout(() => {
-          const words = ['AGENT', 'TARGET', 'HINT', 'CLUE', 'LEAD'];
-          game.giveClue(sm, words[Math.floor(Math.random() * words.length)], 1);
-          broadcastCodenamesState(lobbyId);
-        }, 2000);
-      }
-    }
-    // Bot operative guess
-    if (game.status === 'PLAYING' && game.phase === 'GUESS') {
-      const team = game.currentTeam;
-      const operatives = game.teams[team].filter(p => p !== game.spymasters[team]);
-      const botOp = operatives.find(p => p.startsWith('BOT_'));
-      if (botOp) {
-        setTimeout(() => {
-          const unrevealed = game.board.map((c, i) => ({ ...c, idx: i })).filter((_, i) => !game.revealed[i]);
-          if (unrevealed.length > 0) {
-            const pick = unrevealed[Math.floor(Math.random() * unrevealed.length)];
-            game.guess(botOp, pick.idx);
-            broadcastCodenamesState(lobbyId);
-          }
-        }, 2500);
-      }
-    }
+
+    if (game.status !== 'PLAYING') { clearCodenamesTimer(lobbyId); return; }
+    if (!codenamesTimers.has(lobbyId)) startCodenamesTimer(lobbyId);
   };
-  socket.on("codenames_start", () => { if(socket.lobbyId){const g=codenamesGames.get(socket.lobbyId); if(g&&g.start())broadcastCodenamesState(socket.lobbyId);} });
-  socket.on("codenames_clue", (d) => { if(socket.lobbyId&&socket.steamId){const g=codenamesGames.get(socket.lobbyId); if(g&&g.giveClue(socket.steamId,d.word,d.count))broadcastCodenamesState(socket.lobbyId);} });
-  socket.on("codenames_guess", (d) => { if(socket.lobbyId&&socket.steamId){const g=codenamesGames.get(socket.lobbyId); if(g&&g.guess(socket.steamId,d.cardIndex))broadcastCodenamesState(socket.lobbyId);} });
-  socket.on("codenames_end_guessing", () => { if(socket.lobbyId&&socket.steamId){const g=codenamesGames.get(socket.lobbyId); if(g&&g.endGuessing(socket.steamId))broadcastCodenamesState(socket.lobbyId);} });
+
+  // One ticker per lobby runs the clue/turn clocks and paces the bots — the
+  // game exposes a cooldown so a bot table doesn't resolve in a single frame.
+  const startCodenamesTimer = (lobbyId) => {
+    clearCodenamesTimer(lobbyId);
+    const tid = setInterval(() => {
+      const g = codenamesGames.get(lobbyId);
+      if (!g || g.status !== 'PLAYING') { clearCodenamesTimer(lobbyId); return; }
+
+      let changed = g.tick();
+
+      const pending = g.pendingBot();
+      if (pending) {
+        changed = (pending.action === 'clue'
+          ? g.botGiveClue(pending.playerId)
+          : g.botGuess(pending.playerId)) || changed;
+      }
+
+      if (changed || g.timeLeft != null) broadcastCodenamesState(lobbyId);
+    }, 1000);
+    codenamesTimers.set(lobbyId, tid);
+  };
+
+  socket.on("codenames_clue", (d) => {
+    if (!socket.lobbyId || !socket.steamId) return;
+    const g = codenamesGames.get(socket.lobbyId);
+    if (g && g.giveClue(socket.steamId, d?.word, d?.count)) broadcastCodenamesState(socket.lobbyId);
+    else socket.emit("codenames_reject", { reason: "clue" });
+  });
+
+  socket.on("codenames_guess", (d) => {
+    if (!socket.lobbyId || !socket.steamId) return;
+    const g = codenamesGames.get(socket.lobbyId);
+    if (g && g.guess(socket.steamId, d?.cardIndex)) broadcastCodenamesState(socket.lobbyId);
+  });
+
+  socket.on("codenames_end_guessing", () => {
+    if (!socket.lobbyId || !socket.steamId) return;
+    const g = codenamesGames.get(socket.lobbyId);
+    if (g && g.endGuessing(socket.steamId)) broadcastCodenamesState(socket.lobbyId);
+  });
 
   // ==========================================
   // CARDS AGAINST HUMANITY
@@ -1562,6 +1677,43 @@ io.on("connection", (socket) => {
   });
 
   // ==========================================
+  // HEADSHOT (race mode)
+  // ==========================================
+  // Everyone races the same run of pros, but each seat only ever receives its
+  // own board — rivals are reduced to a score and a guess count.
+  const broadcastHeadshotState = (lobbyId) => {
+    const game = headshotGames.get(lobbyId);
+    if (!game) return;
+
+    for (const p of game.players) {
+      if (p.startsWith('BOT_')) continue;
+      const sid = connectedUsers.get(p);
+      if (sid) io.to(sid).emit("headshot_state", game.getStateForPlayer(p));
+    }
+
+    if (game.status !== 'PLAYING') { clearHeadshotTimer(lobbyId); return; }
+    if (!headshotTimers.has(lobbyId)) startHeadshotTimer(lobbyId);
+  };
+
+  const startHeadshotTimer = (lobbyId) => {
+    clearHeadshotTimer(lobbyId);
+    const tid = setInterval(() => {
+      const g = headshotGames.get(lobbyId);
+      if (!g || g.status !== 'PLAYING') { clearHeadshotTimer(lobbyId); return; }
+      if (g.tick()) broadcastHeadshotState(lobbyId);
+    }, 1000);
+    headshotTimers.set(lobbyId, tid);
+  };
+
+  socket.on("headshot_guess", (d) => {
+    if (!socket.lobbyId || !socket.steamId) return;
+    const g = headshotGames.get(socket.lobbyId);
+    if (!g) return;
+    if (g.guess(socket.steamId, d && d.player)) broadcastHeadshotState(socket.lobbyId);
+    else socket.emit("headshot_reject", { player: d && d.player });
+  });
+
+  // ==========================================
   // GARDEN PKMN SOCKET EVENTS
   // ==========================================
   
@@ -1763,7 +1915,7 @@ io.on("connection", (socket) => {
 // ---------------------------------------------------------------------------
 const DISCORD_BOT_SECRET = process.env.DISCORD_BOT_SECRET || "";
 const GAMES_PUBLIC_URL = (process.env.GAMES_PUBLIC_URL || "https://games.retakes.fr").replace(/\/$/, "");
-const BASE_GAMES = ["monopoly", "uno", "skribbl", "meme", "codenames", "cah"];
+const BASE_GAMES = ["monopoly", "uno", "skribbl", "meme", "codenames", "cah", "headshot"];
 
 const syncPublicLobbies = () => {
   io.emit("public_lobbies_sync", Array.from(universalLobbies.values())

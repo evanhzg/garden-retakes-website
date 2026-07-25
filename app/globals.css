@@ -157,6 +157,10 @@ a:hover {
   opacity: 1;
 }
 
+body.is-loading-page .site-header .logo .brand-word {
+  opacity: 0;
+}
+
 .site-header nav {
   display: flex;
   gap: 22px;

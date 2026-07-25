@@ -1,26 +1,60 @@
 {
   "permissions": {
     "allow": [
-      "WebFetch(domain:github.com)",
       "WebSearch",
+      "WebFetch(domain:github.com)",
       "WebFetch(domain:raw.githubusercontent.com)",
+      "WebFetch(domain:liquipedia.net)",
       "Bash(npm view *)",
       "Bash(npm install *)",
-      "Bash(node -e \"let d='';process.stdin.on\\('data',c=>d+=c\\).on\\('end',\\(\\)=>{const p=JSON.parse\\(d\\);console.log\\('main:',p.main\\);console.log\\('module:',p.module\\);console.log\\('types:',p.types\\);console.log\\('exports:',JSON.stringify\\(p.exports,null,1\\)\\)}\\)\")",
-      "Bash(node \"C:/Users/evan/AppData/Local/Temp/claude/C--Users-evan-Documents-CS2-Mod-Dev-Garden-website/d48ed7e4-a933-49c0-afa6-5f2764352ca3/scratchpad/probe.mjs\")",
-      "Bash(cp \"C:/Users/evan/AppData/Local/Temp/claude/C--Users-evan-Documents-CS2-Mod-Dev-Garden-website/d48ed7e4-a933-49c0-afa6-5f2764352ca3/scratchpad/probe.mjs\" ./__probe.mjs)",
-      "Bash(node ./__probe.mjs)",
-      "Bash(git config *)",
-      "Bash(node -c scripts/monopolyLogic.js)",
-      "Bash(node -c server.js)",
+      "Bash(npm run *)",
+      "Bash(npm ls *)",
+      "Bash(npm -v)",
+      "Bash(node -v)",
       "Bash(npx tsc *)",
-      "Bash(node \"C:/Users/evan/AppData/Local/Temp/claude/C--Users-evan-Documents-CS2-Mod-Dev-Garden-website/f12fdfdc-f6ae-40cc-9762-b3f22ec4cfbf/scratchpad/mono_test.js\")",
-      "Bash(node \"C:/Users/evan/AppData/Local/Temp/claude/C--Users-evan-Documents-CS2-Mod-Dev-Garden-website/f12fdfdc-f6ae-40cc-9762-b3f22ec4cfbf/scratchpad/mono_bankrupt.js\")",
-      "Bash(node \"C:/Users/evan/AppData/Local/Temp/claude/C--Users-evan-Documents-CS2-Mod-Dev-Garden-website/f12fdfdc-f6ae-40cc-9762-b3f22ec4cfbf/scratchpad/mono_serverbot.js\")",
-      "Bash(python3 *)",
-      "Bash(node --check server.js)",
-      "Bash(timeout 8 bash -c 'curl -sI https://nodejs.org 2>&1 | head -2')",
-      "Bash(echo \"exit=$?\")"
+      "Bash(npx next build)",
+      "Bash(npx next lint *)",
+      "Bash(npx next start *)",
+      "Bash(npx prisma *)",
+      "Bash(node server.js)",
+      "Bash(node --check *)",
+      "Bash(node -e *)",
+      "Bash(node scripts/*)",
+      "Bash(git status *)",
+      "Bash(git diff *)",
+      "Bash(git log *)",
+      "Bash(git show *)",
+      "Bash(git config *)",
+      "Bash(git check-ignore *)",
+      "Bash(python3 *)"
+    ]
+  },
+  "hooks": {
+    "PostToolUse": [
+      {
+        "matcher": "Write|Edit",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "f=$(node -e 'let d=\"\";process.stdin.on(\"data\",c=>d+=c).on(\"end\",()=>{try{const j=JSON.parse(d);process.stdout.write((j.tool_input&&j.tool_input.file_path)||(j.tool_response&&j.tool_response.filePath)||\"\")}catch(e){}})'); case \"$f\" in *.ts|*.tsx) ;; *) exit 0;; esac; cd \"${CLAUDE_PROJECT_DIR:-.}\" 2>/dev/null || true; exec 9>/tmp/garden-tsc.lock; flock -n 9 || exit 0; out=$(npx tsc --noEmit --tsBuildInfoFile /tmp/garden-tsc.tsbuildinfo 2>&1 | grep \"error TS\" | head -20); [ -z \"$out\" ] && exit 0; printf \"tsc --noEmit reported errors:\\n%s\\n\" \"$out\"; exit 2",
+            "asyncRewake": true,
+            "timeout": 180,
+            "statusMessage": "Type-checking…"
+          }
+        ]
+      }
+    ],
+    "PreToolUse": [
+      {
+        "matcher": "Bash",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "hit=$(node -e 'let d=\"\";process.stdin.on(\"data\",x=>d+=x).on(\"end\",()=>{try{const c=(JSON.parse(d).tool_input||{}).command||\"\";if(/(^|[;&|]\\s*)(npx\\s+next\\s+build|npm\\s+run\\s+build|yarn\\s+(run\\s+)?build|pnpm\\s+(run\\s+)?build)\\b/.test(c))process.stdout.write(\"1\")}catch(e){}})'); [ -n \"$hit\" ] || exit 0; pgrep -f \"[n]ext (dev|start)\" >/dev/null 2>&1 || exit 0; printf \"%s\" '{\"hookSpecificOutput\":{\"hookEventName\":\"PreToolUse\",\"permissionDecision\":\"deny\",\"permissionDecisionReason\":\"A Next dev/start server is running and shares .next with the build, which throws a bogus PageNotFoundError. Stop it first (e.g. pkill -f concurrently), then rebuild.\"}}'",
+            "timeout": 15
+          }
+        ]
+      }
     ]
   }
 }

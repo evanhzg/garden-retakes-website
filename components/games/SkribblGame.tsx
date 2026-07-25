@@ -232,7 +232,10 @@ export default function SkribblGame() {
       {/* ------------------------------------------------------------ topbar */}
       <header className="skr-topbar">
         <div className="skr-round-block">
-          <span className="skr-round">{t("round", { n: (gameState.round ?? 0) + 1, m: gameState.maxRounds })}</span>
+          <span className="skr-round">
+            <b className="skr-brand">FREE-DRAW</b>
+            {t("round", { n: (gameState.round ?? 0) + 1, m: gameState.maxRounds })}
+          </span>
           <span className="skr-drawer">
             {isDrawer ? t("youAreDrawing") : t("isDrawing", { name: drawerName })}
           </span>

@@ -1,11 +1,12 @@
 "use client";
 
-// Host-facing Make It Meme setup for the universal lobby: answer mode, timers,
-// template packs, and a custom-meme importer. Everything is pushed to the
-// server so the whole table sees the setup they're readying up for.
+// Host-facing HASAMEME setup for the lobby: answer mode, timers, template packs
+// and a custom-meme importer. Everything is pushed to the server so the whole
+// table sees the setup they're readying up for.
 
 import React, { useState } from "react";
 import { translator, MEME, type Lang } from "@/components/games/i18n";
+import { SetupTabs, SetupSection, Stepper, ChoiceRow, PackGrid, type Chip, type Tab } from "@/components/games/setup/SetupUI";
 
 export type MemeOptions = {
   rounds: number;
@@ -16,15 +17,30 @@ export type MemeOptions = {
 };
 export type CustomTemplate = { url: string; name?: string };
 
-const PACKS: { key: string; label: string }[] = [
-  { key: "classic", label: "packClassic" },
-  { key: "cs2", label: "packCs2" },
-  { key: "wholesome", label: "packWholesome" },
-  { key: "chaos", label: "packChaos" },
-  { key: "gif", label: "packGif" },
+const PACKS: { key: string; label: string; glyph: string }[] = [
+  { key: "classic", label: "packClassic", glyph: "🗿" },
+  { key: "cs2", label: "packCs2", glyph: "🔫" },
+  { key: "wholesome", label: "packWholesome", glyph: "🥰" },
+  { key: "chaos", label: "packChaos", glyph: "🌀" },
+  { key: "gif", label: "packGif", glyph: "🎞" },
 ];
 
 const isImageUrl = (u: string) => /^(https?:\/\/|data:image\/)/i.test(u.trim());
+
+export function summarizeMeme(options: Partial<MemeOptions> = {}, customs: CustomTemplate[] = [], lang: Lang): Chip[] {
+  const t = translator(MEME, lang);
+  const chips: Chip[] = [
+    { label: options.mode === "gif" ? `🎞 ${t("modeGif")}` : `✍ ${t("modeCaption")}`, tone: "on" },
+    { label: `🔁 ${options.rounds ?? 5} ${t("rounds")}`, tone: "info" },
+    { label: `⏱ ${t("seconds", { n: options.captionSeconds ?? 60 })} / ${t("seconds", { n: options.voteSeconds ?? 30 })}`, tone: "info" },
+  ];
+  if (options.mode !== "gif") {
+    const on = PACKS.filter((p) => options.packs?.[p.key]);
+    for (const p of on) chips.push({ label: t(p.label as any), tone: "on" });
+    if (customs.length) chips.push({ label: `📎 ${t("customCount", { n: customs.length })}`, tone: "on" });
+  }
+  return chips;
+}
 
 export default function MemeOptionsPanel({ options, customTemplates, isHost, lang, onChange }: {
   options: MemeOptions;
@@ -52,114 +68,94 @@ export default function MemeOptionsPanel({ options, customTemplates, isHost, lan
   };
   const removeCustom = (i: number) => onChange({ customTemplates: customTemplates.filter((_, idx) => idx !== i) });
 
-  const Stepper = ({ label, value, opts, unit, onPick }: {
-    label: string; value: number; opts: number[]; unit?: (n: number) => string; onPick: (n: number) => void;
-  }) => (
-    <div className="uno-stepper">
-      <span className="uno-stepper-label">{label}</span>
-      <div className="uno-stepper-opts">
-        {opts.map((o) => (
-          <button key={o} type="button" className={value === o ? "on" : ""} disabled={!isHost} onClick={() => onPick(o)}>
-            {unit ? unit(o) : o}
-          </button>
-        ))}
-      </div>
-    </div>
-  );
-
-  return (
-    <div className="uno-rules-panel">
-      <div className="picker-header">
-        <h3>{t("optionsTitle")}</h3>
-        {!isHost && <span className="picker-hint">{t("hostOnly")}</span>}
-      </div>
-
-      {/* answer mode */}
-      <div className="uno-rules-grid">
-        {(["caption", "gif"] as const).map((m) => (
-          <button
-            key={m}
-            type="button"
-            className={`uno-rule-card ${options.mode === m ? "on" : ""}`}
-            disabled={!isHost}
-            onClick={() => setOpt({ mode: m })}
-          >
-            <span className="uno-rule-top">
-              <span className="uno-rule-name">{m === "caption" ? t("modeCaption") : t("modeGif")}</span>
-              <span className={`uno-switch ${options.mode === m ? "on" : ""}`} aria-hidden />
-            </span>
-            <span className="uno-rule-desc">{m === "caption" ? t("modeCaptionD") : t("modeGifD")}</span>
-          </button>
-        ))}
-      </div>
-
-      {/* timers */}
-      <div className="uno-steppers">
-        <Stepper label={t("rounds")} value={options.rounds} opts={[3, 5, 7]} onPick={(n) => setOpt({ rounds: n })} />
-        <Stepper label={t("captionTime")} value={options.captionSeconds} opts={[45, 60, 90]} unit={(n) => t("seconds", { n })} onPick={(n) => setOpt({ captionSeconds: n })} />
-        <Stepper label={t("voteTime")} value={options.voteSeconds} opts={[20, 30, 45]} unit={(n) => t("seconds", { n })} onPick={(n) => setOpt({ voteSeconds: n })} />
-      </div>
-
-      {/* caption-mode: packs + custom imports */}
-      {options.mode === "caption" && (
+  const tabs: Tab[] = [
+    {
+      id: "game",
+      label: t("optionsTitle"),
+      icon: "😂",
+      node: (
         <>
-          <div className="picker-header sub"><h3>{t("templatePacks")}</h3></div>
-          <div className="uno-extras-grid">
-            {PACKS.map((p) => (
-              <button
-                key={p.key}
-                type="button"
-                className={`uno-extra-card ${packs[p.key] ? "on" : ""}`}
-                disabled={!isHost}
-                onClick={() => setPack(p.key, !packs[p.key])}
-              >
-                <span className="uno-extra-name">{t(p.label as any)}</span>
-              </button>
-            ))}
+          <ChoiceRow
+            label={t("answerMode")}
+            value={options.mode}
+            disabled={!isHost}
+            onPick={(m) => setOpt({ mode: m })}
+            options={[
+              { value: "caption", label: t("modeCaption"), desc: t("modeCaptionD"), glyph: "✍" },
+              { value: "gif", label: t("modeGif"), desc: t("modeGifD"), glyph: "🎞" },
+            ]}
+          />
+          <div className="setup-steppers">
+            <Stepper label={t("rounds")} value={options.rounds} options={[3, 5, 7]} disabled={!isHost} onPick={(n) => setOpt({ rounds: n })} />
+            <Stepper label={t("captionTime")} value={options.captionSeconds} options={[45, 60, 90]} unit={(n) => t("seconds", { n })} disabled={!isHost} onPick={(n) => setOpt({ captionSeconds: n })} />
+            <Stepper label={t("voteTime")} value={options.voteSeconds} options={[20, 30, 45]} unit={(n) => t("seconds", { n })} disabled={!isHost} onPick={(n) => setOpt({ voteSeconds: n })} />
           </div>
-
-          <div className="picker-header sub">
-            <h3>{t("customMemes")}</h3>
-            {customTemplates.length > 0 && <span className="picker-hint">{t("customCount", { n: customTemplates.length })}</span>}
-          </div>
-          <div className="meme-import-hint">{t("customHint")}</div>
-          {isHost && (
-            <div className="meme-import-row">
-              <input
-                className="meme-import-input url"
-                value={importUrl}
-                onChange={(e) => { setImportUrl(e.target.value); setErr(null); }}
-                placeholder="https://…  /  data:image/…"
-                onKeyDown={(e) => { if (e.key === "Enter") addCustom(); }}
-              />
-              <input
-                className="meme-import-input name"
-                value={importName}
-                onChange={(e) => setImportName(e.target.value)}
-                placeholder="Name"
-                maxLength={40}
-              />
-              <button type="button" className="uno-preset-btn" onClick={addCustom} disabled={!importUrl.trim()}>
-                {t("addMeme")}
-              </button>
-            </div>
-          )}
-          {err && <div className="meme-import-err">{err}</div>}
-          {customTemplates.length > 0 && (
-            <div className="meme-import-list">
-              {customTemplates.map((c, i) => (
-                <div key={i} className="meme-import-chip">
-                  <img src={c.url} alt="" />
-                  <span className="meme-import-name">{c.name || "Custom"}</span>
-                  {isHost && (
-                    <button type="button" className="meme-import-remove" onClick={() => removeCustom(i)} aria-label={t("remove")}>✕</button>
-                  )}
-                </div>
-              ))}
-            </div>
-          )}
         </>
-      )}
-    </div>
-  );
+      ),
+    },
+  ];
+
+  // Templates only matter when players are captioning something.
+  if (options.mode === "caption") {
+    tabs.push({
+      id: "templates",
+      label: t("templatePacks"),
+      icon: "🖼",
+      badge: String(PACKS.filter((p) => packs[p.key]).length + customTemplates.length),
+      node: (
+        <>
+          <PackGrid
+            label={t("templatePacks")}
+            packs={PACKS.map((p) => ({ key: p.key, label: t(p.label as any), glyph: p.glyph }))}
+            values={packs}
+            disabled={!isHost}
+            onToggle={setPack}
+          />
+
+          <SetupSection
+            title={t("customMemes")}
+            hint={customTemplates.length ? t("customCount", { n: customTemplates.length }) : t("customHint")}
+          >
+            {isHost && (
+              <div className="meme-import-row">
+                <input
+                  className="meme-import-input url"
+                  value={importUrl}
+                  onChange={(e) => { setImportUrl(e.target.value); setErr(null); }}
+                  placeholder="https://…  /  data:image/…"
+                  onKeyDown={(e) => { if (e.key === "Enter") addCustom(); }}
+                />
+                <input
+                  className="meme-import-input name"
+                  value={importName}
+                  onChange={(e) => setImportName(e.target.value)}
+                  placeholder="Name"
+                  maxLength={40}
+                />
+                <button type="button" className="setup-preset" onClick={addCustom} disabled={!importUrl.trim()}>
+                  {t("addMeme")}
+                </button>
+              </div>
+            )}
+            {err && <div className="meme-import-err">{err}</div>}
+            {customTemplates.length > 0 && (
+              <div className="meme-import-list">
+                {customTemplates.map((c, i) => (
+                  <div key={i} className="meme-import-chip">
+                    <img src={c.url} alt="" />
+                    <span className="meme-import-name">{c.name || "Custom"}</span>
+                    {isHost && (
+                      <button type="button" className="meme-import-remove" onClick={() => removeCustom(i)} aria-label={t("remove")}>✕</button>
+                    )}
+                  </div>
+                ))}
+              </div>
+            )}
+          </SetupSection>
+        </>
+      ),
+    });
+  }
+
+  return <SetupTabs tabs={tabs} />;
 }

@@ -13,9 +13,16 @@ import CahGameWrapper from "@/components/games/CahGame";
 import CodenamesGameWrapper from "@/components/games/CodenamesGame";
 import MemeGameWrapper from "@/components/games/MemeGame";
 import SkribblGameWrapper from "@/components/games/SkribblGame";
-import UnoRulesPanel from "@/components/games/UnoRulesPanel";
-import MemeOptionsPanel from "@/components/games/MemeOptionsPanel";
-import CahOptionsPanel from "@/components/games/CahOptionsPanel";
+import HeadshotGameWrapper from "@/components/games/HeadshotGame";
+import UnoRulesPanel, { summarizeUno } from "@/components/games/UnoRulesPanel";
+import MemeOptionsPanel, { summarizeMeme } from "@/components/games/MemeOptionsPanel";
+import CahOptionsPanel, { summarizeCah } from "@/components/games/CahOptionsPanel";
+import CodenamesOptionsPanel, { summarizeCodenames } from "@/components/games/CodenamesOptionsPanel";
+import FreeDrawOptionsPanel, { summarizeFreeDraw } from "@/components/games/FreeDrawOptionsPanel";
+import MonopolyOptionsPanel, { summarizeMonopoly } from "@/components/games/MonopolyOptionsPanel";
+import HeadshotOptionsPanel, { summarizeHeadshot } from "@/components/games/HeadshotOptionsPanel";
+import { SetupModal, SummaryChips, type Chip } from "@/components/games/setup/SetupUI";
+import { useGameLang } from "@/components/games/i18n";
 import GameIcon from "@/components/games/GameIcon";
 import { listBoards } from "@/components/games/editor/boardStore";
 
@@ -25,10 +32,11 @@ import "./lobby.css";
 const GAMES = [
   { id: "monopoly", name: "MONOPO7Y", icon: "💰", min: 2, max: 4, ready: true, tagline: "Property warfare" },
   { id: "uno", name: "OUNO", icon: "🃏", min: 2, max: 4, ready: true, tagline: "Cards & chaos" },
-  { id: "skribbl", name: "SKRIBBL", icon: "✏️", min: 2, max: 8, ready: true, tagline: "Draw & guess" },
+  { id: "skribbl", name: "FREE-DRAW", icon: "✏️", min: 2, max: 8, ready: true, tagline: "Draw & guess" },
   { id: "meme", name: "HASAMEME", icon: "😂", min: 3, max: 8, ready: true, tagline: "Caption battle" },
-  { id: "codenames", name: "CODENAMES", icon: "🕵️", min: 4, max: 8, ready: false, tagline: "Spy words" },
+  { id: "codenames", name: "CODENAMES", icon: "🕵️", min: 4, max: 8, ready: true, tagline: "Spy words" },
   { id: "cah", name: "PILE OF...", icon: "⬛", min: 3, max: 8, ready: true, tagline: "Fill in the blank" },
+  { id: "headshot", name: "HEADSHOT", icon: "🎯", min: 2, max: 8, ready: true, tagline: "Guess the pro" },
 ];
 
 // Per-game banner gradients for the lobby hero.
@@ -40,6 +48,7 @@ const GAME_THEME: Record<string, string> = {
   meme: "linear-gradient(135deg, #db2777, #1a1a2e 52%, #7c3aed)",
   codenames: "linear-gradient(135deg, #1e3a5f, #0f172a 52%, #dc2626)",
   cah: "linear-gradient(135deg, #111, #000 55%, #333)",
+  headshot: "linear-gradient(135deg, #0f172a, #164e63 52%, #f59e0b)",
 };
 
 type ChatMsg = { from: string; content: string; type: string; subject?: string | null; ts?: number };
@@ -79,6 +88,7 @@ function LobbyClient({ lobbyId, mySteamId }: { lobbyId: string; mySteamId: strin
   const [showPrivacy, setShowPrivacy] = useState(false);
   const [boards, setBoards] = useState<any[]>([]);
   const [savedBoards, setSavedBoards] = useState<any[]>([]);
+  const [setupOpen, setSetupOpen] = useState(false);
   const chatEndRef = useRef<HTMLDivElement | null>(null);
   const passwordRef = useRef("");
 
@@ -163,6 +173,10 @@ function LobbyClient({ lobbyId, mySteamId }: { lobbyId: string; mySteamId: strin
   }, [lobbyState, chatMessages]);
   const names = usePlayerNames(idsToResolve);
 
+  // The lobby's language drives the *content* the server deals; the setup UI
+  // itself follows each player's own choice, same as in-game.
+  const [uiLang] = useGameLang((lobbyState?.currentGame || "").split("_")[1]);
+
   const handleJoinWithPassword = (e: React.FormEvent) => {
     e.preventDefault();
     passwordRef.current = passwordInput;
@@ -183,6 +197,11 @@ function LobbyClient({ lobbyId, mySteamId }: { lobbyId: string; mySteamId: strin
   const handleSetSkribblRounds = (rounds: number) => socket?.emit("lobby_set_skribbl_rounds", { rounds });
   const handleSetMemeOptions = (payload: { options?: any; customTemplates?: any }) => socket?.emit("lobby_set_meme_options", payload);
   const handleSetCahOptions = (payload: { options?: any }) => socket?.emit("lobby_set_cah_options", payload);
+  const handleSetCodenamesOptions = (payload: { options?: any }) => socket?.emit("lobby_set_codenames_options", payload);
+  const handleSetHeadshotOptions = (payload: { options?: any }) => socket?.emit("lobby_set_headshot_options", payload);
+  const handleSetCnTeam = (steamId: string, team: "red" | "blue" | null) => socket?.emit("lobby_set_codenames_team", { steamId, team });
+  const handleSetCnSpymaster = (steamId: string) => socket?.emit("lobby_set_codenames_spymaster", { steamId });
+  const handleShuffleCnTeams = () => socket?.emit("lobby_shuffle_codenames_teams");
   const setPrivacy = (isPrivate: boolean, password = privInput) => socket?.emit("lobby_set_privacy", { isPrivate, password });
 
   const handleCopyInvite = () => {
@@ -275,7 +294,19 @@ function LobbyClient({ lobbyId, mySteamId }: { lobbyId: string; mySteamId: strin
   const readyCount = others.filter((p: any) => p.ready).length;
   const everyoneReady = others.every((p: any) => p.ready);
   const gameReady = !currentGameConfig || currentGameConfig.ready;
-  const canStart = isHost && everyoneReady && playerCountValid && gameReady && lobbyState.currentGame !== "none";
+
+  // Codenames seats players by colour on the roster instead of in the setup
+  // modal, since picking a side is something each player does for themselves.
+  const cnMode = baseGame === "codenames";
+  const cnRed = cnMode ? lobbyState.players.filter((p: any) => p.cnTeam === "red") : [];
+  const cnBlue = cnMode ? lobbyState.players.filter((p: any) => p.cnTeam === "blue") : [];
+  const cnUnseated = cnMode ? lobbyState.players.filter((p: any) => !p.cnTeam).length : 0;
+  // Anyone unseated is auto-placed at launch, so only a lopsided *manual* split
+  // is a problem — a colour of one is a spymaster with nobody to guess for.
+  const cnLopsided = cnMode && cnUnseated === 0 && (cnRed.length < 2 || cnBlue.length < 2);
+
+  const canStart = isHost && everyoneReady && playerCountValid && gameReady
+    && lobbyState.currentGame !== "none" && !cnLopsided;
 
   // Hidden data element for the Chrome Extension to read
   const rpcData = (
@@ -289,14 +320,17 @@ function LobbyClient({ lobbyId, mySteamId }: { lobbyId: string; mySteamId: strin
     />
   );
 
-  // If game is playing, render the specific game component!
+  // If game is playing, render the specific game component! Each one reads the
+  // lobby, the player and the language straight off the socket context, so
+  // there is nothing to hand down here.
   if (lobbyState.status === "PLAYING") {
-    if (baseGame === "uno") return <>{rpcData}<UnoGameWrapper lobbyId={lobbyId} mySteamId={mySteamId} lang={lang} /></>;
-    if (baseGame === "monopoly") return <>{rpcData}<MonopolyGameWrapper lobbyId={lobbyId} mySteamId={mySteamId} lang={lang} /></>;
-    if (baseGame === "cah") return <>{rpcData}<CahGameWrapper lobbyId={lobbyId} mySteamId={mySteamId} lang={lang} /></>;
-    if (baseGame === "codenames") return <>{rpcData}<CodenamesGameWrapper lobbyId={lobbyId} mySteamId={mySteamId} /></>;
-    if (baseGame === "meme") return <>{rpcData}<MemeGameWrapper lobbyId={lobbyId} mySteamId={mySteamId} lang={lang} /></>;
-    if (baseGame === "skribbl") return <>{rpcData}<SkribblGameWrapper lobbyId={lobbyId} mySteamId={mySteamId} lang={lang} /></>;
+    if (baseGame === "uno") return <>{rpcData}<UnoGameWrapper /></>;
+    if (baseGame === "monopoly") return <>{rpcData}<MonopolyGameWrapper /></>;
+    if (baseGame === "cah") return <>{rpcData}<CahGameWrapper /></>;
+    if (baseGame === "codenames") return <>{rpcData}<CodenamesGameWrapper /></>;
+    if (baseGame === "meme") return <>{rpcData}<MemeGameWrapper /></>;
+    if (baseGame === "skribbl") return <>{rpcData}<SkribblGameWrapper /></>;
+    if (baseGame === "headshot") return <>{rpcData}<HeadshotGameWrapper /></>;
     return <div className="lobby-container flex-center">{rpcData}Game started, but component not found.</div>;
   }
 
@@ -312,11 +346,72 @@ function LobbyClient({ lobbyId, mySteamId }: { lobbyId: string; mySteamId: strin
         ? (playerCount < currentGameConfig.min
           ? `NEED ${currentGameConfig.min - playerCount} MORE PLAYER${currentGameConfig.min - playerCount !== 1 ? "S" : ""}`
           : `${playerCount - currentGameConfig.max} PLAYER${playerCount - currentGameConfig.max !== 1 ? "S" : ""} TOO MANY`)
+        : cnLopsided ? "EACH COLOUR NEEDS 2+"
         : !everyoneReady ? "WAITING FOR READY…"
         : "START GAME";
 
-  const hasOptions = baseGame === "uno" || baseGame === "skribbl" || baseGame === "meme"
-    || baseGame === "cah" || (baseGame === "monopoly");
+  // ---- per-game setup ------------------------------------------------------
+  // Each game contributes a chip summary (shown inline, so the ruleset is
+  // readable without opening anything) and a tabbed panel for the modal.
+  let summaryChips: Chip[] = [];
+  let setupPanel: React.ReactNode = null;
+
+  switch (baseGame) {
+    case "uno":
+      summaryChips = summarizeUno(lobbyState.unoRules || {}, lobbyState.unoExtras || {}, uiLang);
+      setupPanel = (
+        <UnoRulesPanel rules={lobbyState.unoRules || {}} extras={lobbyState.unoExtras || {}} isHost={isHost} lang={uiLang} onChange={handleSetUnoRules} />
+      );
+      break;
+    case "meme":
+      summaryChips = summarizeMeme(lobbyState.memeOptions || {}, lobbyState.memeCustomTemplates || [], uiLang);
+      setupPanel = (
+        <MemeOptionsPanel
+          options={lobbyState.memeOptions || {}}
+          customTemplates={lobbyState.memeCustomTemplates || []}
+          isHost={isHost}
+          lang={uiLang}
+          onChange={handleSetMemeOptions}
+        />
+      );
+      break;
+    case "cah":
+      summaryChips = summarizeCah(lobbyState.cahOptions || {}, uiLang);
+      setupPanel = <CahOptionsPanel options={lobbyState.cahOptions || {}} isHost={isHost} lang={uiLang} onChange={handleSetCahOptions} />;
+      break;
+    case "codenames":
+      summaryChips = summarizeCodenames(lobbyState.codenamesOptions || {}, uiLang);
+      setupPanel = <CodenamesOptionsPanel options={lobbyState.codenamesOptions || {}} isHost={isHost} lang={uiLang} onChange={handleSetCodenamesOptions} />;
+      break;
+    case "headshot":
+      summaryChips = summarizeHeadshot(lobbyState.headshotOptions || {}, uiLang);
+      setupPanel = <HeadshotOptionsPanel options={lobbyState.headshotOptions || {}} isHost={isHost} lang={uiLang} onChange={handleSetHeadshotOptions} />;
+      break;
+    case "skribbl":
+      summaryChips = summarizeFreeDraw(lobbyState.skribblRounds ?? 3, lang, uiLang);
+      setupPanel = (
+        <FreeDrawOptionsPanel rounds={lobbyState.skribblRounds ?? 3} wordLang={lang} isHost={isHost} lang={uiLang} onChange={handleSetSkribblRounds} />
+      );
+      break;
+    case "monopoly":
+      summaryChips = summarizeMonopoly(boards, savedBoards, lobbyState.selectedBoardId, lobbyState.teamMode, uiLang);
+      setupPanel = (
+        <MonopolyOptionsPanel
+          boards={boards}
+          savedBoards={savedBoards}
+          selectedBoardId={lobbyState.selectedBoardId}
+          teamMode={lobbyState.teamMode}
+          isHost={isHost}
+          lang={uiLang}
+          onSelectBoard={handleSelectBoard}
+          onSelectCustomBoard={handleSelectCustomBoard}
+          onSetTeamMode={handleSetTeamMode}
+        />
+      );
+      break;
+  }
+
+  const hasOptions = !!setupPanel;
 
   return (
     <div className="lobby-shell">
@@ -398,8 +493,12 @@ function LobbyClient({ lobbyId, mySteamId }: { lobbyId: string; mySteamId: strin
               <h3>🎮 Choose your game</h3>
               {isHost ? (
                 <div className="lang-toggle small">
-                  <button className={lang === "en" ? "active" : ""} onClick={() => setLang("en")}>🇬🇧 EN</button>
-                  <button className={lang === "fr" ? "active" : ""} onClick={() => setLang("fr")}>🇫🇷 FR</button>
+                  <button className={lang === "en" ? "active" : ""} onClick={() => setLang("en")}>
+                    <img src="https://flagcdn.com/w40/gb.png" alt="EN" style={{ display: "inline-block", width: "1.2em", height: "auto", borderRadius: "2px", verticalAlign: "middle", marginRight: "4px" }} /> EN
+                  </button>
+                  <button className={lang === "fr" ? "active" : ""} onClick={() => setLang("fr")}>
+                    <img src="https://flagcdn.com/w40/fr.png" alt="FR" style={{ display: "inline-block", width: "1.2em", height: "auto", borderRadius: "2px", verticalAlign: "middle", marginRight: "4px" }} /> FR
+                  </button>
                 </div>
               ) : (
                 <span className="picker-hint">Only the host picks the game</span>
@@ -450,96 +549,73 @@ function LobbyClient({ lobbyId, mySteamId }: { lobbyId: string; mySteamId: strin
             )}
           </section>
 
-          {/* per-game setup */}
+          {/* per-game setup — chips summarise the ruleset inline, the modal holds
+              the controls so the lobby itself never grows a scrollbar */}
           {baseGame !== "none" && hasOptions && (
+            <section className="lobby-section glass-panel lobby-setup-strip">
+              <div className="setup-strip-head">
+                <h3>⚙ {currentGameConfig?.name} setup</h3>
+                <button className="setup-open-btn" onClick={() => setSetupOpen(true)}>
+                  {isHost ? "Configure" : "View setup"} ▸
+                </button>
+              </div>
+              <SummaryChips chips={summaryChips} empty="Nothing selected yet" />
+              {!isHost && <span className="picker-hint">Only the host changes the setup</span>}
+            </section>
+          )}
+
+          {/* codenames seating */}
+          {cnMode && (
             <section className="lobby-section glass-panel">
-              {baseGame === "uno" && (
-                <UnoRulesPanel rules={lobbyState.unoRules || {}} extras={lobbyState.unoExtras || {}} isHost={isHost} lang={lang} onChange={handleSetUnoRules} />
-              )}
-
-              {baseGame === "meme" && (
-                <MemeOptionsPanel
-                  options={lobbyState.memeOptions || {}}
-                  customTemplates={lobbyState.memeCustomTemplates || []}
-                  isHost={isHost}
-                  lang={lang}
-                  onChange={handleSetMemeOptions}
-                />
-              )}
-
-              {baseGame === "cah" && (
-                <CahOptionsPanel
-                  options={lobbyState.cahOptions || {}}
-                  isHost={isHost}
-                  lang={lang}
-                  onChange={handleSetCahOptions}
-                />
-              )}
-
-              {baseGame === "skribbl" && (
-                <div className="lobby-team-picker">
-                  <div className="picker-header">
-                    <h3>Rounds</h3>
-                    {!isHost && <span className="picker-hint">Only the host picks the length</span>}
-                  </div>
-                  <div className="team-mode-toggle">
-                    {[2, 3, 5].map((r) => (
-                      <button key={r} className={(lobbyState.skribblRounds ?? 3) === r ? "on" : ""} onClick={() => isHost && handleSetSkribblRounds(r)} disabled={!isHost}>
-                        {r} rounds
+              <div className="picker-header">
+                <h3>🕵️ Teams</h3>
+                {isHost
+                  ? <button className="setup-preset" onClick={handleShuffleCnTeams}>🎲 Shuffle teams</button>
+                  : <span className="picker-hint">Tap a colour to pick your side</span>}
+              </div>
+              <div className="cn-lobby-teams">
+                {(["red", "blue"] as const).map((team) => {
+                  const members = team === "red" ? cnRed : cnBlue;
+                  return (
+                    <div key={team} className={`cn-lobby-team ${team}`}>
+                      <div className="cn-lobby-team-head">
+                        <span>{team === "red" ? "🔴 RED" : "🔵 BLUE"}</span>
+                        <span className="cn-lobby-count">{members.length}</span>
+                      </div>
+                      <div className="cn-lobby-list">
+                        {members.length === 0 && <span className="cn-lobby-empty">No one yet</span>}
+                        {members.map((p: any) => (
+                          <button
+                            key={p.steamId}
+                            className={`cn-lobby-seat ${p.cnSpymaster ? "spy" : ""}`}
+                            disabled={!isHost && p.steamId !== mySteamId}
+                            onClick={() => handleSetCnSpymaster(p.steamId)}
+                            title={p.cnSpymaster ? "Spymaster" : "Make spymaster"}
+                          >
+                            <span className="cn-lobby-name">{displayNameFor(p.steamId, names, p)}</span>
+                            <span className="cn-lobby-role">{p.cnSpymaster ? "🕵️" : "🔍"}</span>
+                          </button>
+                        ))}
+                      </div>
+                      <button
+                        className="cn-lobby-join"
+                        onClick={() => handleSetCnTeam(mySteamId, team)}
+                        disabled={myPlayer?.cnTeam === team}
+                      >
+                        {myPlayer?.cnTeam === team ? "You're here" : "Join"}
                       </button>
-                    ))}
-                  </div>
-                  <span className="picker-hint">Each player draws once per round · words are in {lang === "fr" ? "French" : "English"}</span>
-                </div>
+                    </div>
+                  );
+                })}
+              </div>
+              {cnUnseated > 0 && (
+                <span className="picker-hint">{cnUnseated} player{cnUnseated !== 1 ? "s" : ""} unseated — they'll be placed automatically at launch</span>
               )}
-
-              {baseGame === "monopoly" && (
-                <>
-                  {boards.length > 0 && (
-                    <div className="lobby-board-picker">
-                      <div className="picker-header">
-                        <h3>Board</h3>
-                        <a className="picker-hint editor-link" href="/board-editor">✎ Create / edit boards</a>
-                        <a className="picker-hint editor-link" href="/sandbox">🧪 Test buildings</a>
-                      </div>
-                      {!isHost && <span className="picker-hint">Only the host picks the board</span>}
-                      <div className="board-picker-grid">
-                        {boards.map((b) => {
-                          const isSel = (lobbyState.selectedBoardId || "classic") === b.id;
-                          const swatches = Object.values(b.groupColors || {}).slice(0, 8) as string[];
-                          return (
-                            <button key={b.id} className={`board-pick-card ${isSel ? "selected" : ""}`} onClick={() => isHost && handleSelectBoard(b.id)} disabled={!isHost} style={{ ["--accent" as any]: b.accent }} title={b.name}>
-                              <span className="board-pick-swatches">{swatches.map((c, i) => <span key={i} style={{ background: c }} />)}</span>
-                              <span className="board-pick-name">{b.name}</span>
-                              <span className="board-pick-meta">{b.tileCount} tiles</span>
-                            </button>
-                          );
-                        })}
-                        {savedBoards.map((b) => {
-                          const isSel = lobbyState.selectedBoardId === b.id;
-                          const swatches = Object.values(b.theme?.groupColors || {}).slice(0, 8) as string[];
-                          return (
-                            <button key={b.id} className={`board-pick-card ${isSel ? "selected" : ""}`} onClick={() => isHost && handleSelectCustomBoard(b)} disabled={!isHost} style={{ ["--accent" as any]: b.theme?.accent || "#38bdf8" }} title={b.name}>
-                              <span className="board-pick-swatches">{swatches.map((c, i) => <span key={i} style={{ background: c as string }} />)}</span>
-                              <span className="board-pick-name">{b.name} <span className="board-pick-custom">custom</span></span>
-                              <span className="board-pick-meta">{b.tiles?.length ?? 0} tiles</span>
-                            </button>
-                          );
-                        })}
-                      </div>
-                    </div>
-                  )}
-                  <div className="lobby-team-picker">
-                    <div className="picker-header"><h3>Mode</h3></div>
-                    <div className="team-mode-toggle">
-                      <button className={(lobbyState.teamMode || "ffa") === "ffa" ? "on" : ""} onClick={() => isHost && handleSetTeamMode("ffa")} disabled={!isHost}>Free-for-all</button>
-                      <button className={lobbyState.teamMode === "2v2" ? "on" : ""} onClick={() => isHost && handleSetTeamMode("2v2")} disabled={!isHost}>2v2 Allies</button>
-                    </div>
-                    {lobbyState.teamMode === "2v2" && (
-                      <span className="picker-hint">2v2 needs exactly 4 players, 2 per team · teammates pay no rent to each other</span>
-                    )}
-                  </div>
-                </>
+              {cnLopsided && (
+                <div className="lobby-warning">
+                  <span className="warning-icon">⚠️</span>
+                  <span>Each colour needs at least 2 players — one to give clues and one to guess</span>
+                </div>
               )}
             </section>
           )}
@@ -641,6 +717,16 @@ function LobbyClient({ lobbyId, mySteamId }: { lobbyId: string; mySteamId: strin
           </div>
         </aside>
       </div>
+
+      <SetupModal
+        open={setupOpen && hasOptions}
+        title={`${currentGameConfig?.name ?? "Game"} setup`}
+        subtitle={isHost ? undefined : "Only the host can change these"}
+        icon={currentGameConfig ? <GameIcon id={currentGameConfig.id} size={22} /> : "🎮"}
+        onClose={() => setSetupOpen(false)}
+      >
+        {setupPanel}
+      </SetupModal>
     </div>
   );
 }

@@ -393,6 +393,82 @@
   border-style: dashed;
 }
 
+/* ---- Codenames seating -------------------------------------------------
+   Two colour columns rather than per-seat buttons: players pick a side by
+   joining a column, and tapping a name inside it hands over the spymaster
+   role. Everything else about Codenames lives in the setup modal. */
+.cn-lobby-teams {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 0.6rem;
+  margin-top: 0.5rem;
+}
+
+.cn-lobby-team {
+  display: flex;
+  flex-direction: column;
+  gap: 0.45rem;
+  padding: 0.6rem;
+  border-radius: 0.85rem;
+  border: 1px solid var(--border);
+  background: color-mix(in srgb, var(--bg-soft) 60%, transparent);
+}
+.cn-lobby-team.red  { border-color: rgba(239, 68, 68, 0.4);  background: rgba(239, 68, 68, 0.07); }
+.cn-lobby-team.blue { border-color: rgba(59, 130, 246, 0.4); background: rgba(59, 130, 246, 0.07); }
+
+.cn-lobby-team-head {
+  display: flex; align-items: center; justify-content: space-between;
+  font-size: 0.74rem; font-weight: 900; letter-spacing: 0.09em;
+}
+.cn-lobby-team.red .cn-lobby-team-head  { color: #fca5a5; }
+.cn-lobby-team.blue .cn-lobby-team-head { color: #93c5fd; }
+
+.cn-lobby-count {
+  min-width: 20px; padding: 0 0.35rem;
+  border-radius: 999px; text-align: center;
+  background: rgba(255, 255, 255, 0.1); color: var(--text);
+}
+
+.cn-lobby-list { display: flex; flex-direction: column; gap: 0.25rem; min-height: 2.2rem; }
+
+.cn-lobby-empty { font-size: 0.72rem; color: var(--muted); padding: 0.3rem 0.1rem; }
+
+.cn-lobby-seat {
+  display: flex; align-items: center; justify-content: space-between; gap: 0.4rem;
+  padding: 0.32rem 0.5rem;
+  border-radius: 0.55rem;
+  border: 1px solid transparent;
+  background: rgba(255, 255, 255, 0.05);
+  color: var(--text);
+  font-family: inherit; font-size: 0.78rem; font-weight: 700;
+  cursor: pointer;
+  transition: background 0.16s, border-color 0.16s;
+}
+.cn-lobby-seat:hover:not(:disabled) { background: rgba(255, 255, 255, 0.1); }
+.cn-lobby-seat:disabled { cursor: default; }
+.cn-lobby-seat.spy { border-color: rgba(251, 191, 36, 0.45); background: rgba(251, 191, 36, 0.12); }
+
+.cn-lobby-name { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.cn-lobby-role { flex: 0 0 auto; font-size: 0.8rem; }
+
+.cn-lobby-join {
+  margin-top: auto;
+  padding: 0.32rem 0.6rem;
+  border-radius: 0.55rem;
+  border: 1px solid var(--border);
+  background: rgba(255, 255, 255, 0.06);
+  color: var(--text);
+  font-family: inherit; font-size: 0.74rem; font-weight: 800;
+  cursor: pointer;
+  transition: background 0.16s;
+}
+.cn-lobby-join:hover:not(:disabled) { background: rgba(255, 255, 255, 0.13); }
+.cn-lobby-join:disabled { opacity: 0.5; cursor: default; }
+
+@media (max-width: 520px) {
+  .cn-lobby-teams { grid-template-columns: 1fr; }
+}
+
 /* team mode (2v2) */
 .lobby-team-picker { margin-top: 0.6rem; }
 .team-mode-toggle {

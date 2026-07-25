@@ -17,9 +17,20 @@ export default function GamesRoadmap() {
         "Optional cards: Swap Hands, Shuffle Hands, Skip Everyone, Discard All, +6"
       ]
     },
-    { 
-      name: "MONOPO7Y (Business Tour)", 
-      status: "Planned", 
+    {
+      name: "HEADSHOT",
+      status: "Playable",
+      description: "Guess the Counter-Strike pro — one a day for everyone, or a race against friends.",
+      features: [
+        "Daily puzzle derived from the UTC date, identical worldwide",
+        "600+ Major-attending pros, seeded from Liquipedia",
+        "Nationality / team / role / age / Majors comparison grid",
+        "Streaks, shareable result grid, and a multiplayer race mode",
+      ]
+    },
+    {
+      name: "MONOPO7Y (Business Tour)",
+      status: "Planned",
       description: "Fast-paced property trading game with modified rules for quick sessions.",
       features: [
         "1v1, 1v1v1, and 2v2 Team Modes",
@@ -29,8 +40,8 @@ export default function GamesRoadmap() {
       ]
     },
     { 
-      name: "Codenames", 
-      status: "Planned", 
+      name: "Codenames",
+      status: "Playable",
       description: "The classic spy word association game adapted for online competitive play.",
       features: [
         "Spectator Mode with live team chat",
@@ -62,8 +73,8 @@ export default function GamesRoadmap() {
       ]
     },
     { 
-      name: "Skribbl.io", 
-      status: "Planned", 
+      name: "FREE-DRAW",
+      status: "Playable",
       description: "Multiplayer drawing and guessing game.",
       features: [
         "Ultra-low latency WebSocket Canvas",
