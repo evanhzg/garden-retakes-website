@@ -3,9 +3,9 @@
     "version": "1.0.0",
     "private": true,
     "scripts": {
-        "dev": "concurrently \"node server.js\" \"next dev\"",
+        "dev": "node server.js",
         "build": "prisma generate && next build",
-        "start": "next start",
+        "start": "mkdir -p /data/home && NODE_ENV=production node server.js",
         "lint": "next lint",
         "prisma:generate": "prisma generate",
         "bot": "node scripts/discordBot.js",

@@ -1,4 +1,8 @@
 const { createServer } = require("http");
+const next = require("next");
+const dev = process.env.NODE_ENV !== "production";
+const nextApp = next({ dev });
+const nextHandler = nextApp.getRequestHandler();
 const crypto = require("crypto");
 const { Server } = require("socket.io");
 const UnoGame = require("./scripts/unoLogic");
@@ -2103,14 +2107,13 @@ httpServer.on("request", (req, res) => {
     return;
   }
 
-  json(404, { error: "not_found" });
+  // Fallback to Next.js handler
+  return nextHandler(req, res);
 });
 
-// WS_PORT wins; the host-injected PORT only applies in production (in dev the
-// harness sets PORT for next dev, which would collide with the socket server).
-const PORT = process.env.WS_PORT
-  || (process.env.NODE_ENV === "production" ? process.env.PORT : null)
-  || 3001;
-httpServer.listen(PORT, () => {
-  console.log(`WebSocket server running on port ${PORT}`);
+nextApp.prepare().then(() => {
+  const PORT = process.env.PORT || 3000;
+  httpServer.listen(PORT, () => {
+    console.log(`> Websockets & Next.js ready on http://localhost:${PORT}`);
+  });
 });
