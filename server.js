@@ -2065,7 +2065,12 @@ const syncPublicLobbies = () => {
 };
 
 httpServer.on("request", (req, res) => {
-  if (!req.url || !req.url.startsWith("/discord/")) return; // Socket.IO handles the rest
+  // Everything that isn't the Discord bridge is a website request: hand it to
+  // Next. This used to `return` bare, which was correct when Next ran as a
+  // separate process — once Next was folded into this server it meant every
+  // page request was accepted and then never answered, so the site just hung.
+  // (Socket.IO attaches its own upgrade/handler and is unaffected.)
+  if (!req.url || !req.url.startsWith("/discord/")) return nextHandler(req, res);
   const json = (code, obj) => {
     res.writeHead(code, { "Content-Type": "application/json" });
     res.end(JSON.stringify(obj));

@@ -13,3 +13,4 @@ public/pkmn/*.rar
 
 # Scratch build dir used to verify a build beside a running dev server
 .next-verify/
+.next-deploy/

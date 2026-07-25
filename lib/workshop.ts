@@ -14,9 +14,39 @@ import path from "node:path";
 // not on a read-only serverless filesystem — `addWorkshopSkin` surfaces that
 // clearly rather than failing obscurely.
 
-const DATA_DIR = path.join(process.cwd(), "data", "workshop");
-const PUBLIC_DIR = path.join(process.cwd(), "public");
-const ASSET_DIR = path.join(PUBLIC_DIR, "web_assets");
+// Overridable so a deployment can point them at a mounted disk. Relative
+// values resolve against the app directory, which is what a bare `data/` or
+// `public/web_assets` means on a normal host.
+const resolveDir = (value: string | undefined, fallback: string) =>
+  value ? (path.isAbsolute(value) ? value : path.join(process.cwd(), value)) : fallback;
+
+const DATA_DIR = resolveDir(process.env.WORKSHOP_DATA_DIR, path.join(process.cwd(), "data", "workshop"));
+const ASSET_DIR = resolveDir(process.env.WORKSHOP_ASSET_DIR, path.join(process.cwd(), "public", "web_assets"));
+
+/** Create the write targets up front so a missing directory is never an error. */
+function ensureDirs() {
+  for (const dir of [DATA_DIR, ASSET_DIR]) {
+    try { fs.mkdirSync(dir, { recursive: true }); } catch { /* reported properly at write time */ }
+  }
+}
+
+/**
+ * Turn a filesystem failure into something actionable.
+ *
+ * The previous version asserted "the filesystem is read-only" for anything
+ * matching EROFS/EACCES, which sent me chasing a read-only disk that didn't
+ * exist. Report what actually happened, and where.
+ */
+function writeFailure(err: unknown, what: string, dir: string): WorkshopIngestError {
+  const e = err as NodeJS.ErrnoException;
+  const code = e?.code ? `${e.code}: ` : "";
+  const hint =
+    e?.code === "EROFS" ? " The filesystem is read-only."
+    : e?.code === "EACCES" ? " The app user can't write there — check ownership."
+    : e?.code === "ENOSPC" ? " The disk is full."
+    : "";
+  return new WorkshopIngestError(`Couldn't write ${what} to ${dir} — ${code}${e?.message ?? String(err)}.${hint}`, 500);
+}
 
 export type WorkshopSkin = {
   workshopId: string;
@@ -99,20 +129,24 @@ export class WorkshopIngestError extends Error {
  * are filled in later by `node scripts/ws-ingest <id> --steam-login <user>`,
  * and the record is useful to the website without them.
  */
-export async function addWorkshopSkin(input: string): Promise<{ skin: WorkshopSkin; created: boolean }> {
+export async function addWorkshopSkin(
+  input: string
+): Promise<{ skin: WorkshopSkin; created: boolean; warning?: string | null }> {
   const workshopId = parseWorkshopId(input);
   if (!workshopId) {
     throw new WorkshopIngestError("That doesn't look like a Workshop link or id.");
   }
 
+  ensureDirs();
   const existing = getWorkshopSkin(workshopId);
 
   // The CLI modules are plain CommonJS and live outside the Next build graph.
-  /* eslint-disable @typescript-eslint/no-var-requires */
-  const { fetchDetails, assertCs2, downloadPreview } = require("@/scripts/ws-ingest/workshop");
-  const { resolveWeapon } = require("@/scripts/ws-ingest/weapons");
-  const { buildRecord, writeRecord, rebuildIndex } = require("@/scripts/ws-ingest/manifest");
-  /* eslint-enable @typescript-eslint/no-var-requires */
+  // We use eval('require') to completely bypass Webpack bundling, since Next.js
+  // has issues with dynamic await import() of ESM modules in CJS API routes.
+  const req = eval("require");
+  const { fetchDetails, assertCs2, downloadPreview } = req(path.join(process.cwd(), "scripts/ws-ingest/workshop.js"));
+  const { resolveWeapon } = req(path.join(process.cwd(), "scripts/ws-ingest/weapons.js"));
+  const { buildRecord, writeRecord, rebuildIndex } = req(path.join(process.cwd(), "scripts/ws-ingest/manifest.js"));
 
   let details;
   try {
@@ -123,18 +157,17 @@ export async function addWorkshopSkin(input: string): Promise<{ skin: WorkshopSk
   }
 
   let preview = null;
+  let previewWarning: string | null = null;
   try {
     preview = await downloadPreview(details.previewUrl, ASSET_DIR, workshopId, { format: "original" });
   } catch (err) {
-    const message = (err as Error).message || "";
-    if (/EROFS|read-only|EACCES/i.test(message)) {
-      throw new WorkshopIngestError(
-        "Can't write the preview image — the filesystem is read-only here. "
-        + "Run `node scripts/ws-ingest " + workshopId + "` locally instead.",
-        500
-      );
+    const e = err as NodeJS.ErrnoException;
+    // Only a genuine filesystem refusal is fatal; a bad or missing image is not
+    // worth losing the rest of the record over.
+    if (e?.code && ["EROFS", "EACCES", "ENOSPC", "EPERM"].includes(e.code)) {
+      throw writeFailure(err, "the preview image", ASSET_DIR);
     }
-    // No preview is survivable; the rest of the record is still worth having.
+    previewWarning = e?.message ?? String(err);
   }
 
   const weapon = await resolveWeapon(details);
@@ -153,18 +186,10 @@ export async function addWorkshopSkin(input: string): Promise<{ skin: WorkshopSk
     writeRecord(DATA_DIR, record);
     rebuildIndex(DATA_DIR);
   } catch (err) {
-    const message = (err as Error).message || "";
-    if (/EROFS|read-only|EACCES/i.test(message)) {
-      throw new WorkshopIngestError(
-        "Can't save the skin — the filesystem is read-only here. "
-        + "Run `node scripts/ws-ingest " + workshopId + "` locally instead.",
-        500
-      );
-    }
-    throw err;
+    throw writeFailure(err, "the skin record", DATA_DIR);
   }
 
-  return { skin: record, created: !existing };
+  return { skin: record, created: !existing, warning: previewWarning };
 }
 
 /** Workshop ids the game server should mount, for the deploy script. */

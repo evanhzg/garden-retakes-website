@@ -6,6 +6,7 @@ const nextConfig = {
   // dev server keeps going.
   distDir: process.env.NEXT_DIST_DIR || ".next",
   experimental: {
+    serverComponentsExternalPackages: ["@ianlucas/cs2-lib"],
     // Ensure the Aiven CA certificate (if used via ?sslcert=ca.pem) ships
     // inside the serverless function bundles on Vercel.
     outputFileTracingIncludes: {
