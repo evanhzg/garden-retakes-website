@@ -279,7 +279,7 @@ export default function MonopolyGame() {
       {/* ================= TOP BAR ================= */}
       <header className="mono-topbar">
         <div className="mono-brand">
-          <span className="mono-brand-dot" /> MONOPOLY
+          <span className="mono-brand-dot" /> MONOPO7Y
           <span className="mono-brand-lang">{lang.toUpperCase()}</span>
         </div>
         <div className="mono-topbar-right">

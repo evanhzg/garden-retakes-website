@@ -14,9 +14,13 @@
   overflow: hidden;
   color: #e9e7f5;
   transition: top 0.4s cubic-bezier(0.22, 1, 0.36, 1);
+  /* cozy dark-grey felt (OUNO-style), shared with PILE OF... */
   background:
-    radial-gradient(ellipse 80% 60% at 50% 0%, #241a3a 0%, #140f22 55%, #0a0712 100%),
-    #0a0712;
+    radial-gradient(ellipse 62% 55% at 50% 45%, transparent 38%, rgba(0, 0, 0, 0.55) 100%),
+    repeating-linear-gradient(45deg, rgba(255, 255, 255, 0.014) 0 2px, transparent 2px 4px),
+    repeating-linear-gradient(-45deg, rgba(0, 0, 0, 0.03) 0 2px, transparent 2px 4px),
+    radial-gradient(ellipse 72% 58% at 50% 40%, #34343d 0%, #23232b 45%, #0e0e13 100%),
+    #0a0a0e;
 }
 
 /* ---------------------------------------------------------------- top bar */

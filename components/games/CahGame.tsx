@@ -1,235 +1,332 @@
 "use client";
 
-import React, { useState, useEffect } from "react";
-import { SocketProvider, useSocket } from "@/components/games/SocketProvider";
+import React, { useState, useEffect, useMemo, useCallback } from "react";
+import { createPortal } from "react-dom";
+import { useSocket } from "@/components/games/SocketProvider";
+import { usePlayerNames, displayNameFor, useGameEvents, useGameChrome, type GameEvent } from "@/components/games/hooks";
+import { motion, AnimatePresence } from "framer-motion";
+import { useGameLang, translator, LangToggle, PILEOF } from "@/components/games/i18n";
+import SoundControls from "@/components/games/sound/SoundControls";
+import { sound } from "@/components/games/sound/SoundManager";
+import "./shared.css";
 import "./cah.css";
-const DUMMY_STEAM_ID = "765611980" + Math.floor(Math.random() * 100000);
+
+type Card = { id: number | string; text: string; custom?: boolean };
+type Sub = { playerId: string; cards: Card[] };
+
+// Render the prompt with its blanks filled by the answer cards (bolded), or —
+// for question-style prompts — the answers on their own.
+function FilledPrompt({ black, cards }: { black: string; cards: Card[] }) {
+  if (!black.includes("_____")) {
+    return (
+      <span>
+        {black} <b className="fill">{cards.map((c) => stripDot(c.text)).join(" / ")}</b>
+      </span>
+    );
+  }
+  const parts = black.split("_____");
+  return (
+    <span>
+      {parts.map((p, i) => (
+        <React.Fragment key={i}>
+          {p}
+          {i < parts.length - 1 && <b className="fill">{cards[i] ? stripDot(cards[i].text) : "________"}</b>}
+        </React.Fragment>
+      ))}
+    </span>
+  );
+}
+const stripDot = (t: string) => t.replace(/\.$/, "");
 
 export default function CahGame() {
-  const { socket } = useSocket();
+  const { socket, steamId } = useSocket();
+  const mySteamId = steamId ?? "";
+
   const [gameState, setGameState] = useState<any>(null);
-  const [lobbyIdInput, setLobbyIdInput] = useState("");
-  const [selectedCards, setSelectedCards] = useState<number[]>([]);
+  const [selected, setSelected] = useState<(number | string)[]>([]);
   const [customTexts, setCustomTexts] = useState<string[]>([]);
-  const [showCustom, setShowCustom] = useState(false);
+  const [customMode, setCustomMode] = useState(false);
+
+  const [lang, setLang] = useGameLang(gameState?.lang);
+  const t = translator(PILEOF, lang);
 
   useEffect(() => {
     document.body.style.overflow = "hidden";
     return () => { document.body.style.overflow = ""; };
   }, []);
+  useGameChrome();
 
   useEffect(() => {
-    if (socket) {
-      socket.on("cah_state", (state: any) => {
-        setGameState(state);
-      });
-    }
-    return () => { if (socket) socket.off("cah_state"); };
+    if (!socket) return;
+    const onState = (s: any) => setGameState(s);
+    socket.on("cah_state", onState);
+    return () => { socket.off("cah_state", onState); };
   }, [socket]);
 
-  // Clear local inputs only when a new round starts or phase changes to SUBMIT
+  const round = gameState?.round;
+  const phase = gameState?.phase;
+  const pick = gameState?.pick ?? 1;
   useEffect(() => {
-    if (gameState?.phase === 'SUBMIT') {
-      setSelectedCards([]);
-      setCustomTexts(new Array(gameState.currentBlack?.pick || 1).fill(""));
-      setShowCustom(false);
+    if (phase === "SUBMIT") {
+      setSelected([]);
+      setCustomTexts(new Array(pick).fill(""));
+      setCustomMode(false);
     }
-  }, [gameState?.round, gameState?.phase]);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [round, phase]);
 
-  const submitCards = () => { socket?.emit("cah_submit", { cardIds: selectedCards }); setSelectedCards([]); };
-  const submitCustom = () => { socket?.emit("cah_submit_custom", { customTexts }); setShowCustom(false); };
-  const pickWinner = (pid: string) => socket?.emit("cah_pick_winner", { winnerPlayerId: pid });
-  const nextRound = () => socket?.emit("cah_next_round");
-  const returnLobby = () => socket?.emit("lobby_return");
-  const toggleCard = (cardId: number) => {
-    const pick = gameState?.currentBlack?.pick || 1;
-    if (selectedCards.includes(cardId)) {
-      setSelectedCards(selectedCards.filter(id => id !== cardId));
-    } else if (selectedCards.length < pick) {
-      setSelectedCards([...selectedCards, cardId]);
+  const playerIds: string[] = gameState?.players ?? [];
+  const names = usePlayerNames(playerIds);
+  const nameOf = useCallback(
+    (id: string) => (id === mySteamId ? t("youLabel") : displayNameFor(id, names)),
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+    [names, mySteamId, lang]
+  );
+
+  useGameEvents(gameState?.events, (e: GameEvent) => {
+    switch (e.type) {
+      case "round_start": sound.play("cardDeal"); break;
+      case "submitted": if (e.pid !== mySteamId) sound.play("submit"); break;
+      case "judging": sound.play("whoosh"); break;
+      case "winner": sound.play("fanfare"); break;
+      case "game_over": sound.play("fanfare"); break;
     }
+  });
+
+  const ranked = useMemo(() => {
+    const scores = gameState?.scores ?? {};
+    return [...playerIds].sort((a, b) => (scores[b] ?? 0) - (scores[a] ?? 0));
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [gameState?.scores, playerIds.join(",")]);
+
+  if (!gameState || gameState.status === "WAITING") return null;
+
+  const isCzar = gameState.czar === mySteamId;
+  const isHost = gameState.host === mySteamId;
+  const finished = gameState.status === "FINISHED";
+  const black: Card | null = gameState.currentBlack;
+  const hand: Card[] = gameState.hand ?? [];
+  const subs: Sub[] = gameState.revealedSubmissions ?? [];
+
+  const toggleCard = (id: number | string) => {
+    if (selected.includes(id)) setSelected(selected.filter((x) => x !== id));
+    else if (selected.length < pick) { sound.play("cardPlay"); setSelected([...selected, id]); }
   };
+  const submitCards = () => { sound.play("submit"); socket?.emit("cah_submit", { cardIds: selected }); };
+  const submitCustom = () => { sound.play("submit"); socket?.emit("cah_submit_custom", { customTexts }); };
+  const pickWinner = (pid: string) => { sound.play("voteCast"); socket?.emit("cah_pick_winner", { winnerPlayerId: pid }); };
+  const nextRound = () => { sound.play("click"); socket?.emit("cah_next_round"); };
+  const returnLobby = () => socket?.emit("lobby_return");
+  const exitGame = () => { if (typeof window !== "undefined") window.location.href = "/games"; };
 
-  if (!gameState || gameState.status === 'WAITING') {
-    return null;
-  }
+  const phaseLabel = phase === "SUBMIT" ? t("phaseSubmit") : phase === "JUDGE" ? t("phaseJudge") : t("phaseReveal");
+  const submittedCount = gameState.submittedPlayers?.length ?? 0;
+  const total = Math.max(0, playerIds.length - 1);
+  const timerTotal = gameState.options?.timer || 60;
+  const timeRatio = gameState.timeLeft == null ? 0 : Math.max(0, Math.min(1, gameState.timeLeft / timerTotal));
 
-  // --- Game ---
-  const isCzar = gameState.czar === DUMMY_STEAM_ID;
-  const alreadySubmitted = gameState.submittedPlayers.includes(DUMMY_STEAM_ID);
-
-  return (
-    <div className="cah-container">
-      <div className="cah-game-layout">
-        {/* Scores */}
-        <div className="cah-scores-bar">
-          {gameState.players.map((p: string) => {
-            const name = p.startsWith('BOT_') ? `Bot ${p.slice(-4)}` : `P-${p.slice(-4)}`;
-            return (
-              <div key={p} className={`cah-score-chip ${gameState.czar === p ? 'czar' : ''}`}>
-                <span>{name} {gameState.czar === p ? '👑' : ''}</span>
-                <span className="score-num">{gameState.scores[p]}</span>
-              </div>
-            );
-          })}
+  return createPortal(
+    <div className="pileof-root">
+      {/* ---------------------------------------------------------- top bar */}
+      <header className="pile-topbar">
+        <div className="pile-brand-block">
+          <span className="pile-brand">PILE OF<span className="pile-brand-dots">...</span></span>
+          <span className="pile-round">{t("round", { n: gameState.round, m: gameState.maxRounds })}</span>
         </div>
+        <div className="pile-phase-pill">{phaseLabel}</div>
+        <div className="pile-top-right">
+          {gameState.timeLeft != null && phase !== "REVEAL" && (
+            <div className={`pile-timer ${gameState.timeLeft <= 10 ? "warning" : ""}`}>{Math.max(0, gameState.timeLeft)}</div>
+          )}
+          <LangToggle lang={lang} onChange={setLang} />
+          <SoundControls />
+          <button className="pile-icon-btn" onClick={exitGame} title={t("leaveGame")} aria-label={t("leaveGame")}>✕</button>
+        </div>
+      </header>
+      {gameState.timeLeft != null && phase !== "REVEAL" && (
+        <div className="pile-timebar"><span style={{ transform: `scaleX(${timeRatio})` }} /></div>
+      )}
 
-        {/* Center */}
-        <div className="cah-center">
-          <div className="cah-phase-label">
-            Round {gameState.round}/{gameState.maxRounds} — {gameState.phase === 'SUBMIT' ? 'Submit your cards' : gameState.phase === 'JUDGE' ? 'Card Czar is judging' : 'Winner revealed!'}
-            {gameState.timeLeft !== null && (
-              <span style={{ marginLeft: '10px', color: gameState.timeLeft <= 10 ? '#ef4444' : '#f59e0b', fontWeight: 'bold' }}>
-                ⏱️ {gameState.timeLeft}s
-              </span>
+      <div className="pile-stage">
+        {finished ? (
+          <FinalBoard ranked={ranked} scores={gameState.scores} history={gameState.history} nameOf={nameOf} mySteamId={mySteamId} t={t} isHost={isHost} onReturn={returnLobby} onLeave={exitGame} />
+        ) : (
+          <>
+            {/* black prompt */}
+            {black && (
+              <motion.div
+                key={black.id}
+                className="pile-black-card"
+                initial={{ opacity: 0, rotate: -3, y: 20 }}
+                animate={{ opacity: 1, rotate: -1.5, y: 0 }}
+                transition={{ type: "spring", stiffness: 220, damping: 20 }}
+              >
+                <span className="pile-black-text">{black.text.replace(/_____/g, "________")}</span>
+                {pick > 1 && <span className="pile-pick-badge">{t("pickText", { n: pick })}</span>}
+                <span className="pile-czar-tag">👑 {isCzar ? t("youLabel") : nameOf(gameState.czar)}</span>
+              </motion.div>
             )}
-          </div>
 
-          {gameState.currentBlack && (
-            <div className="cah-black-card">
-              {gameState.currentBlack.text}
-            </div>
-          )}
-
-          {/* Judging / Reveal */}
-          {(gameState.phase === 'JUDGE' || gameState.phase === 'REVEAL') && gameState.revealedSubmissions.length > 0 && (
-            <div className="cah-submissions">
-              {gameState.revealedSubmissions.map((sub: any, i: number) => (
-                <div
-                  key={i}
-                  className={`cah-submission-card ${gameState.roundWinner === sub.playerId ? 'winner' : ''}`}
-                  onClick={() => isCzar && gameState.phase === 'JUDGE' && pickWinner(sub.playerId)}
-                  style={{ cursor: isCzar && gameState.phase === 'JUDGE' ? 'pointer' : 'default' }}
-                >
-                  {sub.cards.map((c: any) => c.text).join(' / ')}
-                </div>
-              ))}
-            </div>
-          )}
-
-          {gameState.phase === 'REVEAL' && gameState.players[0] === DUMMY_STEAM_ID && (
-            <button className="btn-primary" onClick={gameState.status === 'FINISHED' ? returnLobby : nextRound} style={{ background: '#fff', color: '#000' }}>
-              {gameState.status === 'FINISHED' ? 'Return to Lobby' : 'Next Round'}
-            </button>
-          )}
-
-          {gameState.status === 'FINISHED' && (
-            <div className="cah-history-recap" style={{ background: '#1a1a1a', padding: '16px', borderRadius: '8px', border: '1px solid #333', marginTop: '16px' }}>
-              <h3 style={{ color: '#fff', marginBottom: '16px', textAlign: 'center' }}>Game Recap</h3>
-              <div style={{ maxHeight: '300px', overflowY: 'auto', display: 'flex', flexDirection: 'column', gap: '12px' }}>
-                {gameState.history?.map((h: any, i: number) => (
-                  <div key={i} style={{ background: '#000', padding: '12px', borderRadius: '6px', border: '1px solid #222' }}>
-                    <div style={{ color: '#888', fontSize: '0.8rem', marginBottom: '4px' }}>Round {h.round} • Winner: {h.winner}</div>
-                    <div style={{ color: '#fff', fontWeight: 'bold', marginBottom: '8px' }}>{h.blackCard}</div>
-                    <div style={{ display: 'flex', gap: '8px', flexWrap: 'wrap' }}>
-                      {h.whiteCards.map((w: string, j: number) => (
-                        <span key={j} style={{ background: '#fff', color: '#000', padding: '4px 8px', borderRadius: '4px', fontSize: '0.9rem', fontWeight: 'bold' }}>{w}</span>
-                      ))}
-                    </div>
+            {/* ---- SUBMIT ---- */}
+            {phase === "SUBMIT" && (
+              isCzar ? (
+                <div className="pile-wait">{t("youAreCzar")}<span className="pile-wait-count">{t("waitingCount", { n: submittedCount, m: total })}</span></div>
+              ) : gameState.hasSubmitted ? (
+                <div className="pile-wait"><motion.div className="pile-spinner" animate={{ rotate: 360 }} transition={{ repeat: Infinity, duration: 1.4, ease: "linear" }} />{t("submittedWait")}<span className="pile-wait-count">{t("waitingCount", { n: submittedCount, m: total })}</span></div>
+              ) : customMode ? (
+                <div className="pile-custom">
+                  <div className="pile-custom-fields">
+                    {customTexts.map((c, i) => (
+                      <input
+                        key={i}
+                        className="pile-input"
+                        value={c}
+                        maxLength={120}
+                        placeholder={t("customCard", { n: i + 1 })}
+                        onChange={(e) => { const n = [...customTexts]; n[i] = e.target.value; setCustomTexts(n); }}
+                      />
+                    ))}
                   </div>
-                ))}
-              </div>
-              {gameState.players[0] === DUMMY_STEAM_ID && (
-                <div style={{ textAlign: 'center', marginTop: '16px' }}>
-                  <button className="btn-primary" onClick={returnLobby} style={{ background: '#fff', color: '#000' }}>Return to Lobby</button>
+                  <div className="pile-custom-actions">
+                    <button className="pile-ghost" onClick={() => setCustomMode(false)}>← {t("backToHand")}</button>
+                    <button className="pile-primary" onClick={submitCustom} disabled={customTexts.some((x) => !x.trim())}>{t("submitCustom")} ✓</button>
+                  </div>
+                  <span className="pile-custom-hint">{t("customHint")}</span>
                 </div>
-              )}
-            </div>
-          )}
-
-          {gameState.status === 'FINISHED' && gameState.players[0] !== DUMMY_STEAM_ID && (
-            <div style={{ color: '#888', fontSize: '0.9rem', textAlign: 'center', marginTop: '16px' }}>Waiting for host to return to lobby...</div>
-          )}
-        </div>
-
-        {/* Hand (only during SUBMIT, and not czar) */}
-        {gameState.phase === 'SUBMIT' && !isCzar && !alreadySubmitted && (
-          <div>
-            {!showCustom ? (
-              <>
-                <div className="cah-hand">
-                  {gameState.hand.map((card: any) => (
-                    <div
-                      key={card.id}
-                      className={`cah-white-card ${selectedCards.includes(card.id) ? 'selected' : ''}`}
-                      onClick={() => toggleCard(card.id)}
-                    >
-                      {card.text}
-                    </div>
-                  ))}
-                </div>
-                <div style={{ display: 'flex', justifyContent: 'center', marginTop: '12px', gap: '12px' }}>
-                  <button
-                    className="btn-primary"
-                    onClick={submitCards}
-                    disabled={selectedCards.length !== (gameState.currentBlack?.pick || 1)}
-                    style={{ background: '#fff', color: '#000' }}
-                  >
-                    Submit ({selectedCards.length}/{gameState.currentBlack?.pick || 1})
-                  </button>
-                  <button
-                    className="btn-secondary"
-                    onClick={() => setShowCustom(true)}
-                    style={{ borderColor: '#444', color: '#ccc' }}
-                  >
-                    Write Custom Card
-                  </button>
-                </div>
-              </>
-            ) : (
-              <div style={{ background: '#111', padding: '16px', borderRadius: '8px', border: '1px solid #333' }}>
-                <h3 style={{ color: '#fff', marginBottom: '12px', textAlign: 'center' }}>Write your custom answer</h3>
-                <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
-                  {customTexts.map((txt, i) => (
-                    <input
-                      key={i}
-                      value={txt}
-                      onChange={e => { const c = [...customTexts]; c[i] = e.target.value; setCustomTexts(c); }}
-                      placeholder={`Custom card ${i + 1}...`}
-                      style={{ padding: '10px', background: '#222', color: '#fff', border: '1px solid #444', borderRadius: '4px' }}
-                    />
-                  ))}
-                </div>
-                <div style={{ display: 'flex', justifyContent: 'center', marginTop: '12px', gap: '12px' }}>
-                  <button
-                    className="btn-primary"
-                    onClick={submitCustom}
-                    disabled={customTexts.some(t => !t.trim())}
-                    style={{ background: '#fff', color: '#000' }}
-                  >
-                    Submit Custom
-                  </button>
-                  <button
-                    className="btn-secondary"
-                    onClick={() => setShowCustom(false)}
-                    style={{ borderColor: '#444', color: '#ccc' }}
-                  >
-                    Cancel
-                  </button>
-                </div>
-                <p style={{ textAlign: 'center', color: '#666', fontSize: '0.8rem', marginTop: '8px' }}>
-                  AI will check spelling & capitalize automatically!
-                </p>
-              </div>
+              ) : (
+                <>
+                  <div className="pile-hand">
+                    <AnimatePresence initial={false}>
+                      {hand.map((card, i) => {
+                        const idx = selected.indexOf(card.id);
+                        return (
+                          <motion.button
+                            key={card.id}
+                            layout
+                            className={`pile-white-card ${idx >= 0 ? "selected" : ""}`}
+                            onClick={() => toggleCard(card.id)}
+                            initial={{ opacity: 0, y: 24 }}
+                            animate={{ opacity: 1, y: 0 }}
+                            exit={{ opacity: 0, scale: 0.8 }}
+                            transition={{ delay: Math.min(0.3, i * 0.03) }}
+                            whileHover={{ y: -6 }}
+                          >
+                            {card.text}
+                            {idx >= 0 && pick > 1 && <span className="pile-pick-num">{idx + 1}</span>}
+                          </motion.button>
+                        );
+                      })}
+                    </AnimatePresence>
+                  </div>
+                  <div className="pile-submit-bar">
+                    <button className="pile-primary" onClick={submitCards} disabled={selected.length !== pick}>
+                      {t("submit")} ({selected.length}/{pick})
+                    </button>
+                    {gameState.allowCustom && (
+                      <button className="pile-ghost" onClick={() => setCustomMode(true)}>✎ {t("writeCustom")}</button>
+                    )}
+                  </div>
+                </>
+              )
             )}
-          </div>
-        )}
 
-        {gameState.phase === 'SUBMIT' && (isCzar || alreadySubmitted) && (
-          <div style={{ textAlign: 'center', color: '#666', padding: '16px' }}>
-            {isCzar ? 'You are the Card Czar. Waiting for submissions...' : 'Cards submitted! Waiting for others...'}
-            <br />
-            <span style={{ fontSize: '0.8rem' }}>{gameState.submittedPlayers.length}/{gameState.players.length - 1} submitted</span>
-          </div>
+            {/* ---- JUDGE / REVEAL ---- */}
+            {(phase === "JUDGE" || phase === "REVEAL") && (
+              <>
+                <div className="pile-judge-head">
+                  {phase === "JUDGE" ? (isCzar ? t("tapToPick") : t("czarPicks")) : (gameState.roundWinner && t("roundWinner", { name: nameOf(gameState.roundWinner) }))}
+                </div>
+                <div className="pile-answers">
+                  {subs.map((sub, i) => {
+                    const isWinner = gameState.roundWinner === sub.playerId;
+                    const canPick = isCzar && phase === "JUDGE";
+                    return (
+                      <motion.button
+                        key={i}
+                        className={`pile-answer ${isWinner ? "winner" : ""} ${canPick ? "pickable" : ""}`}
+                        disabled={!canPick}
+                        onClick={() => canPick && pickWinner(sub.playerId)}
+                        initial={{ opacity: 0, y: 20, rotate: (i % 2 ? 1 : -1) * 2 }}
+                        animate={{ opacity: 1, y: 0, rotate: 0 }}
+                        transition={{ delay: i * 0.08, type: "spring", stiffness: 240, damping: 22 }}
+                        whileHover={canPick ? { y: -5, scale: 1.02 } : undefined}
+                      >
+                        {black && <span className="pile-answer-text"><FilledPrompt black={black.text} cards={sub.cards} /></span>}
+                        {phase === "REVEAL" && <span className="pile-answer-author">{isWinner ? "🏆 " : ""}{nameOf(sub.playerId)}</span>}
+                      </motion.button>
+                    );
+                  })}
+                </div>
+                {phase === "REVEAL" && (
+                  <div className="pile-reveal-foot">
+                    {isHost ? <button className="pile-primary" onClick={nextRound}>{t("nextRound")} ▸</button>
+                      : <span className="pile-next-hint">{t("nextIn", { n: Math.max(0, gameState.revealIn ?? 0) })}</span>}
+                  </div>
+                )}
+              </>
+            )}
+          </>
         )}
-
-        {/* Logs */}
-        <div className="cah-logs">
-          {gameState.logs.map((l: any) => (
-            <span key={l.id}>{l.text}</span>
-          ))}
-        </div>
       </div>
-    </div>
+
+      {/* ------------------------------------------------------- scoreboard */}
+      <footer className="pile-scorebar">
+        {ranked.map((pid) => {
+          const isC = gameState.czar === pid;
+          const acted = phase === "SUBMIT" && gameState.submittedPlayers?.includes(pid);
+          return (
+            <motion.div key={pid} layout className={`pile-score-chip ${pid === mySteamId ? "me" : ""} ${isC ? "czar" : ""} ${acted ? "acted" : ""}`}>
+              {isC && <span className="pile-crown">👑</span>}
+              <span className="pile-score-name">{pid === mySteamId ? t("youLabel") : nameOf(pid)}</span>
+              <motion.span key={gameState.scores?.[pid]} className="pile-score-val" initial={{ scale: 1.5, color: "#fde047" }} animate={{ scale: 1, color: "#e5e5ea" }} transition={{ duration: 0.4 }}>
+                {gameState.scores?.[pid] ?? 0}
+              </motion.span>
+              {acted && <span className="pile-score-tick">✓</span>}
+            </motion.div>
+          );
+        })}
+      </footer>
+    </div>,
+    document.body
+  );
+}
+
+function FinalBoard({ ranked, scores, history, nameOf, mySteamId, t, isHost, onReturn, onLeave }: {
+  ranked: string[]; scores: Record<string, number>; history: any[];
+  nameOf: (id: string) => string; mySteamId: string; t: (k: any, p?: any) => string;
+  isHost: boolean; onReturn: () => void; onLeave: () => void;
+}) {
+  return (
+    <motion.div className="pile-final" initial={{ opacity: 0, scale: 0.9 }} animate={{ opacity: 1, scale: 1 }}>
+      <h1 className="pile-final-title">{t("gameOver")}</h1>
+      {ranked[0] && (
+        <motion.div className="pile-final-winner" initial={{ scale: 0.5, opacity: 0 }} animate={{ scale: 1, opacity: 1 }} transition={{ type: "spring", stiffness: 220, damping: 14, delay: 0.15 }}>
+          🏆 {t("winner", { name: ranked[0] === mySteamId ? t("youLabel") : nameOf(ranked[0]) })}
+        </motion.div>
+      )}
+      <div className="pile-final-list">
+        {ranked.map((pid, i) => (
+          <motion.div key={pid} className="pile-final-row" initial={{ opacity: 0, x: -16 }} animate={{ opacity: 1, x: 0 }} transition={{ delay: 0.2 + i * 0.07 }}>
+            <span>{i + 1}. {pid === mySteamId ? t("youLabel") : nameOf(pid)}</span>
+            <span className="pts">{scores[pid] ?? 0} {t("points")}</span>
+          </motion.div>
+        ))}
+      </div>
+      {history?.length > 0 && (
+        <div className="pile-recap">
+          <div className="pile-recap-title">{t("recap")}</div>
+          <div className="pile-recap-list">
+            {history.slice(-6).reverse().map((h: any, i: number) => (
+              <div key={i} className="pile-recap-item">
+                <FilledPrompt black={h.blackCard} cards={h.whiteCards.map((w: string) => ({ id: w, text: w }))} />
+                <span className="pile-recap-winner">— {nameOf(h.winner)}</span>
+              </div>
+            ))}
+          </div>
+        </div>
+      )}
+      {isHost ? <button className="pile-primary" onClick={onReturn}>{t("returnLobby")}</button>
+        : <button className="pile-primary" onClick={onLeave}>{t("leaveGame")}</button>}
+    </motion.div>
   );
 }

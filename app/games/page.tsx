@@ -10,12 +10,12 @@ import "./games.css";
 // `ready: false` games stay on the shelf — greyed out and not selectable until
 // they get the same polish pass as the three below.
 const GAMES = [
-  { id: "monopoly", name: "MONOPOLY", icon: "💰", description: "Business Tour-style fast property trading with 3D dice physics, auctions, and ruthless bot AI.", players: "2–4", ready: true },
+  { id: "monopoly", name: "MONOPO7Y", icon: "💰", description: "Business Tour-style fast property trading with 3D dice physics, auctions, and ruthless bot AI.", players: "2–4", ready: true },
   { id: "uno", name: "OUNO", icon: "🃏", description: "Card battles with house rules: stacking, jump-ins, 7-0 swaps, optional cards — and a timed OUNO call that punishes you for forgetting.", players: "2–4", ready: true },
   { id: "skribbl", name: "SKRIBBL", icon: "✏️", description: "One draws, everyone guesses. Real-time canvas, fuzzy matching, and timed rounds in English or French.", players: "2–8", ready: true },
   { id: "meme", name: "HASAMEME", icon: "😂", description: "Caption templates or answer with the perfect GIF — pick packs, import your own memes, then vote for the funniest.", players: "3–8", ready: true },
   { id: "codenames", name: "CODENAMES", icon: "🕵️", description: "Two teams, one spymaster each. Give one-word clues, guess your agents — but avoid the assassin.", players: "4–8", ready: false },
-  { id: "cah", name: "CARDS AGAINST", icon: "⬛", description: "A party game for terrible people. Fill in the blanks, the Card Czar picks the winner.", players: "3–8", ready: false },
+  { id: "cah", name: "PILE OF...", icon: "⬛", description: "Fill in the blank with the most outrageous card. The Card Czar picks a winner each round — or write your own.", players: "3–8", ready: true },
 ];
 
 const GAME_LABELS: Record<string, string> = Object.fromEntries(GAMES.map(g => [g.id, g.name]));
@@ -50,15 +50,14 @@ function GamesHub() {
   const { socket, isAuthed, steamId } = useSocket();
   const [publicLobbies, setPublicLobbies] = useState<any[]>([]);
   const [myLobby, setMyLobby] = useState<any>(null);
-  const [showCreateModal, setShowCreateModal] = useState(false);
   const [creating, setCreating] = useState(false);
   const [joinCode, setJoinCode] = useState("");
+  const [view, setView] = useState<"grid" | "list">("grid");
 
-  const [lobbyName, setLobbyName] = useState("");
-  const [isPrivate, setIsPrivate] = useState(false);
-  const [password, setPassword] = useState("");
-  const [selectedGame, setSelectedGame] = useState("none");
-  const [language, setLanguage] = useState<"en" | "fr">("en");
+  useEffect(() => {
+    try { const v = localStorage.getItem("games_hub_view"); if (v === "list" || v === "grid") setView(v); } catch {}
+  }, []);
+  const setViewPersist = (v: "grid" | "list") => { setView(v); try { localStorage.setItem("games_hub_view", v); } catch {} };
 
   const hostIds = publicLobbies.map(l => l.host);
   const names = usePlayerNames(hostIds);
@@ -86,26 +85,18 @@ function GamesHub() {
     }
   }, [socket, isAuthed]);
 
-  const handleCreateLobby = (e: React.FormEvent) => {
-    e.preventDefault();
+  // Clicking a game (or "Create Lobby") spins up a lobby immediately and drops
+  // you into it — privacy, language and the rest are set from the lobby page.
+  const createLobby = (gameId: string) => {
     if (!socket || !isAuthed || creating) return;
     setCreating(true);
-
     socket.emit("lobby_create", {
-      name: lobbyName || `Player ${(steamId || "").slice(-4)}'s Lobby`,
-      isPrivate,
-      password,
-      currentGame: selectedGame === "none" ? "none" : `${selectedGame}_${language}`,
+      name: `Player ${(steamId || "").slice(-4)}'s Lobby`,
+      isPrivate: false,
+      password: "",
+      currentGame: gameId === "none" ? "none" : `${gameId}_en`,
     });
-
-    socket.once("lobby_state", (state) => {
-      router.push(`/games/lobby/${state.id}`);
-    });
-  };
-
-  const preselectGame = (gameId: string) => {
-    setSelectedGame(gameId);
-    setShowCreateModal(true);
+    socket.once("lobby_state", (state) => { router.push(`/games/lobby/${state.id}`); });
   };
 
   const handleJoinCode = (e: React.FormEvent) => {
@@ -131,8 +122,8 @@ function GamesHub() {
               <div className="hub-stat"><b>{readyCount}</b><span>games live</span></div>
               <div className="hub-stat"><b>{publicLobbies.length}</b><span>open lobbies</span></div>
             </div>
-            <button className="hub-create" onClick={() => { setSelectedGame("none"); setShowCreateModal(true); }}>
-              <span className="hub-create-plus">+</span> Create Lobby
+            <button className="hub-create" onClick={() => createLobby("none")} disabled={creating}>
+              <span className="hub-create-plus">+</span> {creating ? "Creating…" : "Create Lobby"}
             </button>
           </div>
         </section>
@@ -152,19 +143,26 @@ function GamesHub() {
           <div className="hub-games">
             <div className="hub-section-head">
               <h2>Choose a game</h2>
-              <span>{readyCount} ready · more on the way</span>
+              <div className="hub-view-toggle" role="group" aria-label="View">
+                <button className={view === "grid" ? "on" : ""} onClick={() => setViewPersist("grid")} title="Grid" aria-label="Grid view">
+                  <svg viewBox="0 0 20 20" width="16" height="16" fill="currentColor"><rect x="2" y="2" width="7" height="7" rx="1.5"/><rect x="11" y="2" width="7" height="7" rx="1.5"/><rect x="2" y="11" width="7" height="7" rx="1.5"/><rect x="11" y="11" width="7" height="7" rx="1.5"/></svg>
+                </button>
+                <button className={view === "list" ? "on" : ""} onClick={() => setViewPersist("list")} title="List" aria-label="List view">
+                  <svg viewBox="0 0 20 20" width="16" height="16" fill="currentColor"><rect x="2" y="3" width="16" height="3" rx="1.5"/><rect x="2" y="8.5" width="16" height="3" rx="1.5"/><rect x="2" y="14" width="16" height="3" rx="1.5"/></svg>
+                </button>
+              </div>
             </div>
-            <div className="games-grid">
+            <div className={view === "list" ? "games-list" : "games-grid"}>
               {GAMES.map((game) => (
                 <div
                   key={game.id}
                   className={`game-card ${game.ready ? "" : "coming-soon"}`}
                   data-game={game.id}
-                  onClick={() => game.ready && preselectGame(game.id)}
+                  onClick={() => game.ready && createLobby(game.id)}
                   role="button"
                   aria-disabled={!game.ready}
                   tabIndex={game.ready ? 0 : -1}
-                  onKeyDown={(e) => { if (e.key === "Enter" && game.ready) preselectGame(game.id); }}
+                  onKeyDown={(e) => { if (e.key === "Enter" && game.ready) createLobby(game.id); }}
                 >
                   <div className="game-card-bg" />
                   <div className="game-card-content">
@@ -240,74 +238,6 @@ function GamesHub() {
           </aside>
         </div>
       </div>
-
-      {showCreateModal && (
-        <div className="modal-overlay" onClick={(e) => { if (e.target === e.currentTarget) setShowCreateModal(false); }}>
-          <div className="modal-content glass-panel">
-            <h2>Create Lobby</h2>
-            <form onSubmit={handleCreateLobby} className="create-lobby-form">
-              <div className="form-group">
-                <label>Lobby Name</label>
-                <input
-                  type="text"
-                  value={lobbyName}
-                  onChange={e => setLobbyName(e.target.value)}
-                  placeholder="My Awesome Lobby"
-                  maxLength={40}
-                />
-              </div>
-
-              <div className="form-group">
-                <label>Starting Game</label>
-                <select value={selectedGame} onChange={e => setSelectedGame(e.target.value)}>
-                  <option value="none">Just hanging out...</option>
-                  {GAMES.map(g => (
-                    <option key={g.id} value={g.id} disabled={!g.ready}>
-                      {g.name}{g.ready ? "" : " — coming soon"}
-                    </option>
-                  ))}
-                </select>
-              </div>
-
-              {selectedGame !== "none" && (
-                <div className="form-group">
-                  <label>Language</label>
-                  <div className="lang-toggle">
-                    <button type="button" className={language === "en" ? "active" : ""} onClick={() => setLanguage("en")}>🇬🇧 English</button>
-                    <button type="button" className={language === "fr" ? "active" : ""} onClick={() => setLanguage("fr")}>🇫🇷 Français</button>
-                  </div>
-                </div>
-              )}
-
-              <div className="form-group checkbox">
-                <label>
-                  <input type="checkbox" checked={isPrivate} onChange={e => setIsPrivate(e.target.checked)} />
-                  Private Lobby
-                </label>
-              </div>
-
-              {isPrivate && (
-                <div className="form-group">
-                  <label>Password</label>
-                  <input
-                    type="password"
-                    value={password}
-                    onChange={e => setPassword(e.target.value)}
-                    required={isPrivate}
-                  />
-                </div>
-              )}
-
-              <div className="modal-actions">
-                <button type="button" onClick={() => setShowCreateModal(false)} className="btn-secondary">Cancel</button>
-                <button type="submit" className="btn-primary" disabled={creating || !isAuthed}>
-                  {creating ? "Creating…" : "Create"}
-                </button>
-              </div>
-            </form>
-          </div>
-        </div>
-      )}
     </div>
   );
 }

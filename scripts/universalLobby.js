@@ -1,5 +1,6 @@
 const UnoGame = require('./unoLogic');
 const MemeGame = require('./memeLogic');
+const CahGame = require('./cahLogic');
 
 const BOT_NAMES = [
   "Sprout", "Fern", "Clover", "Thorn", "Moss", "Petal", "Bramble", "Willow",
@@ -24,6 +25,8 @@ class UniversalLobby {
     // Make It Meme launch options + imported custom templates
     this.memeOptions = { ...MemeGame.DEFAULT_OPTIONS, packs: { ...MemeGame.DEFAULT_OPTIONS.packs } };
     this.memeCustomTemplates = [];
+    // PILE OF... options (rounds, timer, custom cards)
+    this.cahOptions = { ...CahGame.DEFAULT_OPTIONS };
     this.maxPlayers = 8;
     this.teamMode = 'ffa';   // 'ffa' | '2v2' (Monopoly allies mode)
     this.players = []; // Array of { steamId, ready, isBot, connected, team, botName? }
@@ -136,6 +139,7 @@ class UniversalLobby {
       skribblRounds: this.skribblRounds,
       memeOptions: this.memeOptions,
       memeCustomTemplates: this.memeCustomTemplates,
+      cahOptions: this.cahOptions,
       players: this.players,
       playerCount: this.players.length,
       createdAt: this.createdAt

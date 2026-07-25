@@ -15,6 +15,7 @@ import MemeGameWrapper from "@/components/games/MemeGame";
 import SkribblGameWrapper from "@/components/games/SkribblGame";
 import UnoRulesPanel from "@/components/games/UnoRulesPanel";
 import MemeOptionsPanel from "@/components/games/MemeOptionsPanel";
+import CahOptionsPanel from "@/components/games/CahOptionsPanel";
 import GameIcon from "@/components/games/GameIcon";
 import { listBoards } from "@/components/games/editor/boardStore";
 
@@ -22,12 +23,12 @@ import "./lobby.css";
 
 // `ready: false` games are visible but not selectable — they still need work.
 const GAMES = [
-  { id: "monopoly", name: "MONOPOLY", icon: "💰", min: 2, max: 4, ready: true, tagline: "Property warfare" },
+  { id: "monopoly", name: "MONOPO7Y", icon: "💰", min: 2, max: 4, ready: true, tagline: "Property warfare" },
   { id: "uno", name: "OUNO", icon: "🃏", min: 2, max: 4, ready: true, tagline: "Cards & chaos" },
   { id: "skribbl", name: "SKRIBBL", icon: "✏️", min: 2, max: 8, ready: true, tagline: "Draw & guess" },
   { id: "meme", name: "HASAMEME", icon: "😂", min: 3, max: 8, ready: true, tagline: "Caption battle" },
   { id: "codenames", name: "CODENAMES", icon: "🕵️", min: 4, max: 8, ready: false, tagline: "Spy words" },
-  { id: "cah", name: "CARDS AGAINST", icon: "⬛", min: 3, max: 8, ready: false, tagline: "Party of terrible people" },
+  { id: "cah", name: "PILE OF...", icon: "⬛", min: 3, max: 8, ready: true, tagline: "Fill in the blank" },
 ];
 
 // Per-game banner gradients for the lobby hero.
@@ -74,6 +75,8 @@ function LobbyClient({ lobbyId, mySteamId }: { lobbyId: string; mySteamId: strin
   const [chatMessages, setChatMessages] = useState<ChatMsg[]>([]);
   const [chatInput, setChatInput] = useState("");
   const [copied, setCopied] = useState(false);
+  const [privInput, setPrivInput] = useState("");
+  const [showPrivacy, setShowPrivacy] = useState(false);
   const [boards, setBoards] = useState<any[]>([]);
   const [savedBoards, setSavedBoards] = useState<any[]>([]);
   const chatEndRef = useRef<HTMLDivElement | null>(null);
@@ -95,7 +98,11 @@ function LobbyClient({ lobbyId, mySteamId }: { lobbyId: string; mySteamId: strin
       setError(null);
     });
 
-    socket.on("lobby_error", (err) => setError(err.message));
+    socket.on("lobby_error", (err) => {
+      // A lobby that no longer exists (or never did) → back to the hub.
+      if (err.message === "Lobby not found") { router.push("/games"); return; }
+      setError(err.message);
+    });
 
     socket.on("lobby_toast", (data) => {
       setToast(data.message);
@@ -175,6 +182,8 @@ function LobbyClient({ lobbyId, mySteamId }: { lobbyId: string; mySteamId: strin
   const handleSetUnoRules = (payload: { rules?: any; extras?: any }) => socket?.emit("lobby_set_uno_rules", payload);
   const handleSetSkribblRounds = (rounds: number) => socket?.emit("lobby_set_skribbl_rounds", { rounds });
   const handleSetMemeOptions = (payload: { options?: any; customTemplates?: any }) => socket?.emit("lobby_set_meme_options", payload);
+  const handleSetCahOptions = (payload: { options?: any }) => socket?.emit("lobby_set_cah_options", payload);
+  const setPrivacy = (isPrivate: boolean, password = privInput) => socket?.emit("lobby_set_privacy", { isPrivate, password });
 
   const handleCopyInvite = () => {
     navigator.clipboard.writeText(window.location.href).then(() => {
@@ -297,7 +306,7 @@ function LobbyClient({ lobbyId, mySteamId }: { lobbyId: string; mySteamId: strin
         : "START GAME";
 
   const hasOptions = baseGame === "uno" || baseGame === "skribbl" || baseGame === "meme"
-    || (baseGame === "monopoly");
+    || baseGame === "cah" || (baseGame === "monopoly");
 
   return (
     <div className="lobby-shell">
@@ -338,6 +347,29 @@ function LobbyClient({ lobbyId, mySteamId }: { lobbyId: string; mySteamId: strin
           </div>
         </div>
         <div className="lobby-hero-actions">
+          {isHost && (
+            <div className="lobby-privacy">
+              <button
+                className={`lobby-priv-toggle ${lobbyState.isPrivate ? "on" : ""}`}
+                onClick={() => { if (lobbyState.isPrivate) { setPrivacy(false); setShowPrivacy(false); } else { setShowPrivacy(true); setPrivacy(true, privInput); } }}
+                title={lobbyState.isPrivate ? "Make public" : "Make private"}
+              >
+                {lobbyState.isPrivate ? "🔒 Private" : "🌍 Public"}
+              </button>
+              {lobbyState.isPrivate && (showPrivacy || !lobbyState.name) && (
+                <input
+                  className="lobby-priv-pass"
+                  type="text"
+                  value={privInput}
+                  onChange={(e) => setPrivInput(e.target.value)}
+                  onKeyDown={(e) => { if (e.key === "Enter") { setPrivacy(true, privInput); setShowPrivacy(false); } }}
+                  onBlur={() => setPrivacy(true, privInput)}
+                  placeholder="Password (optional)"
+                  maxLength={64}
+                />
+              )}
+            </div>
+          )}
           <button className="btn-invite" onClick={handleCopyInvite} title="Copy invite link">
             {copied ? "✓ Copied!" : "🔗 Invite"}
           </button>
@@ -421,6 +453,15 @@ function LobbyClient({ lobbyId, mySteamId }: { lobbyId: string; mySteamId: strin
                   isHost={isHost}
                   lang={lang}
                   onChange={handleSetMemeOptions}
+                />
+              )}
+
+              {baseGame === "cah" && (
+                <CahOptionsPanel
+                  options={lobbyState.cahOptions || {}}
+                  isHost={isHost}
+                  lang={lang}
+                  onChange={handleSetCahOptions}
                 />
               )}
 

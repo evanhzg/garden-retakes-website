@@ -318,3 +318,50 @@ export const MEME = {
   evSubmitted:      { en: "{name} locked in", fr: "{name} a validé" },
   evVoted:          { en: "{name} voted", fr: "{name} a voté" },
 } as const;
+
+// ---------------------------------------------------------------------------
+// PILE OF... (Cards Against–style)
+// ---------------------------------------------------------------------------
+export const PILEOF = {
+  round:          { en: "Round {n}/{m}", fr: "Manche {n}/{m}" },
+  phaseSubmit:    { en: "Fill in the blank", fr: "Complétez le vide" },
+  phaseJudge:     { en: "The Czar is judging", fr: "Le Tsar délibère" },
+  phaseReveal:    { en: "Winner!", fr: "Gagnant !" },
+  czar:           { en: "Card Czar", fr: "Tsar des cartes" },
+  youAreCzar:     { en: "You're the Card Czar — sit back and judge", fr: "Vous êtes le Tsar — observez et jugez" },
+  czarWaiting:    { en: "{name} is the Czar", fr: "{name} est le Tsar" },
+  pickText:       { en: "Pick {n}", fr: "Choisissez {n}" },
+  submit:         { en: "Submit", fr: "Valider" },
+  submittedWait:  { en: "Locked in — waiting for the others…", fr: "Validé — en attente des autres…" },
+  waitingCount:   { en: "{n}/{m} submitted", fr: "{n}/{m} validés" },
+  writeCustom:    { en: "Write your own", fr: "Écrire la vôtre" },
+  customCard:     { en: "Custom card {n}", fr: "Carte perso {n}" },
+  submitCustom:   { en: "Submit custom", fr: "Valider perso" },
+  cancel:         { en: "Cancel", fr: "Annuler" },
+  customHint:     { en: "Spelling & caps are tidied up automatically", fr: "L'orthographe et les majuscules sont corrigées" },
+  backToHand:     { en: "Back to hand", fr: "Retour à la main" },
+  tapToPick:      { en: "Tap the funniest answer", fr: "Touchez la réponse la plus drôle" },
+  czarPicks:      { en: "Only the Czar picks the winner", fr: "Seul le Tsar choisit le gagnant" },
+  roundWinner:    { en: "{name} wins the round!", fr: "{name} remporte la manche !" },
+  nextIn:         { en: "Next round in {n}s", fr: "Manche suivante dans {n} s" },
+  nextRound:      { en: "Next round", fr: "Manche suivante" },
+  gameOver:       { en: "Game over", fr: "Partie terminée" },
+  winner:         { en: "{name} wins!", fr: "{name} gagne !" },
+  finalScores:    { en: "Final scores", fr: "Scores finaux" },
+  recap:          { en: "Best of the night", fr: "Le meilleur de la soirée" },
+  returnLobby:    { en: "Return to lobby", fr: "Retour au salon" },
+  leaveGame:      { en: "Leave game", fr: "Quitter la partie" },
+  points:         { en: "pts", fr: "pts" },
+  youLabel:       { en: "You", fr: "Vous" },
+  blank:          { en: "________", fr: "________" },
+
+  // options
+  optionsTitle:   { en: "PILE OF... setup", fr: "Réglages PILE OF..." },
+  hostOnly:       { en: "Only the host changes the setup", fr: "Seul l'hôte modifie les réglages" },
+  rounds:         { en: "Rounds", fr: "Manches" },
+  timer:          { en: "Turn timer", fr: "Chrono par tour" },
+  infinite:       { en: "∞", fr: "∞" },
+  seconds:        { en: "{n}s", fr: "{n} s" },
+  allowCustom:    { en: "Custom cards", fr: "Cartes personnalisées" },
+  allowCustomD:   { en: "Let players write their own answer instead of playing a card.", fr: "Les joueurs peuvent écrire leur propre réponse au lieu de jouer une carte." },
+} as const;

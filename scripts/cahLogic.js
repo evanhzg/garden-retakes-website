@@ -1,4 +1,9 @@
-// Cards Against Humanity — Server-Authoritative Game Logic
+// PILE OF... (Cards Against–style) — server-authoritative game logic.
+//
+// A rotating Card Czar reads a black prompt; everyone else fills the blank(s)
+// from their white-card hand (or writes a custom card); the Czar picks a winner.
+// Phases SUBMIT → JUDGE → REVEAL advance when everyone has acted or a per-phase
+// timer runs out. Everything the client animates/plays is on the event stream.
 
 const BLACK_CARDS = {
   en: [
@@ -53,27 +58,25 @@ const BLACK_CARDS = {
     "Qu'est-ce que grand-mère trouverait dérangeant, mais étrangement charmant ?",
     "Je n'ai pas pu finir mes devoirs à cause de _____.",
     "Prochainement sur Fox News : _____ serait lié au terrorisme.",
-    "Quand le pharaon est resté insensible, Moïse a invoqué _____."
-  ]
+    "Quand le pharaon est resté insensible, Moïse a invoqué _____.",
+  ],
 };
 
 const WHITE_CARDS = {
   en: [
     "Being on fire.", "Racism.", "Old-people smell.", "A micropenis.",
     "Women in yogurt commercials.", "Classist undertones.", "Not giving a shit about the third world.",
-    "Coat hanger abortions.", "The three-fifths compromise.", "Roofies.",
     "A salty surprise.", "A windmill full of corpses.", "Lunchables.",
-    "Poverty.", "Face-sitting.", "A snapping turtle biting the tip of your penis.",
-    "A middle school talent show.", "A bleached asshole.", "Chunks of dead hitchhiker.",
+    "Poverty.", "Chunks of dead hitchhiker.",
     "PB&J.", "Passive-aggressive Post-it notes.", "Fancy Feast.", "Flying sex snakes.",
-    "MechaHitler.", "Being a motherfucking sorcerer.", "A disappointing birthday party.",
-    "Puppies!", "A robust Mongoloid.", "A brain tumor.", "Her Majesty, Queen Elizabeth II.",
-    "Emotional baggage.", "A stray pube.", "Daniel Radcliffe's delicious asshole.",
-    "Picking up girls at the abortion clinic.", "When you fart and a little bit comes out.",
-    "An icepick lobotomy.", "Gladiatorial combat.", "Road kill.", "The Easter Bunny.",
+    "Being a motherfucking sorcerer.", "A disappointing birthday party.",
+    "Puppies!", "A brain tumor.", "Her Majesty, Queen Elizabeth II.",
+    "Emotional baggage.", "A stray pube.",
+    "When you fart and a little bit comes out.",
+    "Gladiatorial combat.", "Road kill.", "The Easter Bunny.",
     "Full frontal nudity.", "Land mines.", "A defective condom.", "Actually funny female comedians.",
-    "A gentle caress of the inner thigh.", "Bingeing and purging.", "Vigorous jazz hands.",
-    "Two midgets shitting into a bucket.", "The token minority.", "Opposable thumbs.",
+    "A gentle caress of the inner thigh.", "Vigorous jazz hands.",
+    "The token minority.", "Opposable thumbs.",
     "A good sniff.", "Drinking alone.", "Hot cheese.", "World peace.",
     "Exactly $1.50.", "Your weird uncle.", "Anxiety.", "Horse meat.",
     "A bag of magic beans.", "Lactation.", "A really cool hat.", "My relationship status.",
@@ -84,58 +87,94 @@ const WHITE_CARDS = {
   fr: [
     "Être en feu.", "Le racisme.", "L'odeur des vieilles personnes.", "Un micropénis.",
     "Les femmes dans les pubs de yaourts.", "Des sous-entendus classistes.", "S'en foutre du tiers-monde.",
-    "Les avortements au cintre.", "Le compromis des trois cinquièmes.", "Du GHB.",
     "Une surprise salée.", "Un moulin à vent plein de cadavres.", "Des Lunchables.",
-    "La pauvreté.", "S'asseoir sur un visage.", "Une tortue hargneuse qui te mord le bout du pénis.",
-    "Le spectacle de talents du collège.", "Un trou du cul blanchi.", "Des morceaux de l'auto-stoppeur mort.",
+    "La pauvreté.", "Des morceaux de l'auto-stoppeur mort.",
     "Un sandwich beurre de cacahuète confiture.", "Des Post-it passifs-agressifs.", "De la pâtée de luxe.", "Des serpents sexuels volants.",
-    "MechaHitler.", "Être un putain de sorcier.", "Une fête d'anniversaire décevante.",
-    "Des chiots !", "Un mongoloïde robuste.", "Une tumeur au cerveau.", "Sa Majesté, la Reine Elizabeth II.",
-    "Un bagage émotionnel.", "Un poil pubien égaré.", "Le délicieux trou du cul de Daniel Radcliffe.",
-    "Draguer des filles à la clinique d'avortement.", "Quand tu pètes et qu'il y a un petit truc qui sort.",
-    "Une lobotomie au pic à glace.", "Un combat de gladiateurs.", "Un animal écrasé.", "Le lapin de Pâques.",
+    "Être un putain de sorcier.", "Une fête d'anniversaire décevante.",
+    "Des chiots !", "Une tumeur au cerveau.", "Sa Majesté, la Reine Elizabeth II.",
+    "Un bagage émotionnel.", "Un poil pubien égaré.",
+    "Quand tu pètes et qu'il y a un petit truc qui sort.",
+    "Un combat de gladiateurs.", "Un animal écrasé.", "Le lapin de Pâques.",
     "Une nudité frontale totale.", "Des mines terrestres.", "Un préservatif défectueux.", "Des humoristes femmes vraiment drôles.",
-    "Une douce caresse à l'intérieur de la cuisse.", "Des crises de boulimie.", "Faire vigoureusement les mains de jazz.",
-    "Deux nains qui chient dans un seau.", "La minorité de service.", "Des pouces opposables.",
+    "Une douce caresse à l'intérieur de la cuisse.", "Faire vigoureusement les mains de jazz.",
+    "La minorité de service.", "Des pouces opposables.",
     "Une bonne inspiration.", "Boire seul.", "Du fromage fondu.", "La paix dans le monde.",
     "Exactement 1,50 €.", "Ton oncle bizarre.", "L'anxiété.", "De la viande de cheval.",
     "Un sac de haricots magiques.", "La lactation.", "Un chapeau vraiment cool.", "Ma situation amoureuse.",
     "Mourir.", "Nicolas Cage.", "L'espoir.", "Des émotions.", "La Scientologie.",
     "Une quantité inconfortable de cheveux dans le siphon.", "Mes démons intérieurs.",
-    "Se faire arnaquer sur internet.", "Une présentation PowerPoint."
-  ]
+    "Se faire arnaquer sur internet.", "Une présentation PowerPoint.",
+  ],
 };
 
+const BOT_CUSTOM = {
+  en: ["A suspicious lack of pants.", "My browser history.", "The intern.", "Pure spite.", "A questionable life choice."],
+  fr: ["Un manque suspect de pantalon.", "Mon historique de navigation.", "Le stagiaire.", "De la pure méchanceté.", "Un choix de vie douteux."],
+};
+
+const DEFAULT_OPTIONS = { rounds: 8, timer: 60, allowCustom: true }; // timer seconds, 0 = infinite
+const REVEAL_SECONDS = 7;
+
+function sanitizeOptions(input) {
+  const o = { ...DEFAULT_OPTIONS };
+  if (!input || typeof input !== "object") return o;
+  if (input.rounds != null) o.rounds = Math.min(20, Math.max(3, Math.round(Number(input.rounds)) || 8));
+  if (input.timer != null) {
+    const allowed = [0, 30, 60, 90];
+    const t = Math.round(Number(input.timer));
+    o.timer = allowed.includes(t) ? t : 60;
+  }
+  if (input.allowCustom != null) o.allowCustom = !!input.allowCustom;
+  return o;
+}
+
 let nextCardId = 0;
+let seq = 0;
 
 class CahGame {
-  constructor(lobbyId) {
+  constructor(lobbyId, opts = {}) {
     this.lobbyId = lobbyId;
-    this.status = 'WAITING';
+    this.lang = opts.lang === "fr" ? "fr" : "en";
+    this.options = sanitizeOptions(opts.options);
+
+    this.status = "WAITING";
     this.players = [];
     this.hands = {};
     this.scores = {};
     this.czarIndex = 0;
     this.currentBlack = null;
-    this.submissions = {};  // playerId -> [cardId, ...]
-    this.revealedSubmissions = []; // { playerId, cards: [...] }
-    this.phase = 'SUBMIT'; // SUBMIT, JUDGE, REVEAL
+    this.submissions = {};        // playerId -> [cards]
+    this.revealedSubmissions = []; // shuffled { playerId, cards }
+    this.phase = "SUBMIT";         // SUBMIT | JUDGE | REVEAL
     this.roundWinner = null;
     this.deck = [];
     this.blackDeck = [];
     this.round = 0;
-    this.maxRounds = 10;
-    this.logs = [];
-    
-    // Configurable Settings
-    this.language = 'en'; // 'en' or 'fr'
-    this.turnTimer = 'Infinite'; // '30', '60', '90', 'Infinite'
     this.timeLeft = null;
-    this.history = []; // Track winning rounds
+    this.revealIn = 0;
+    this.history = [];
+    this.logs = [];
+    this.events = [];
+    this.eventSeq = 0;
+  }
+
+  get maxRounds() { return this.options.rounds; }
+  get language() { return this.lang; }         // back-compat
+  set language(v) { this.lang = v === "fr" ? "fr" : "en"; }
+
+  _emit(type, data) {
+    this.events.push({ seq: ++this.eventSeq, type, at: Date.now(), ...data });
+    if (this.events.length > 24) this.events.splice(0, this.events.length - 24);
+  }
+
+  setOptions(options) {
+    if (this.status === "PLAYING") return false;
+    this.options = sanitizeOptions({ ...this.options, ...options });
+    return true;
   }
 
   addPlayer(playerId) {
-    if (this.status !== 'WAITING' || this.players.length >= 8) return false;
+    if (this.status !== "WAITING" || this.players.length >= 8) return false;
     if (this.players.includes(playerId)) return false;
     this.players.push(playerId);
     this.scores[playerId] = 0;
@@ -143,229 +182,269 @@ class CahGame {
   }
 
   removePlayer(playerId) {
-    if (this.status !== 'WAITING') return false;
-    this.players = this.players.filter(p => p !== playerId);
+    const idx = this.players.indexOf(playerId);
+    if (idx === -1) return false;
+    const wasCzar = idx === this.czarIndex;
+    this.players.splice(idx, 1);
     delete this.scores[playerId];
+    delete this.submissions[playerId];
+    delete this.hands[playerId];
+    if (this.status === "PLAYING") {
+      if (this.players.length < 2) { this._endGame(); return true; }
+      if (idx < this.czarIndex) this.czarIndex--;
+      if (this.czarIndex >= this.players.length) this.czarIndex = 0;
+      if (wasCzar && this.phase !== "REVEAL") this._startJudging();
+      else this._maybeAdvance();
+    }
     return true;
   }
 
   start() {
     if (this.players.length < 3) return false;
-    this.status = 'PLAYING';
+    this.status = "PLAYING";
     this.round = 0;
     this.czarIndex = 0;
     this.scores = {};
-    this.players.forEach(p => this.scores[p] = 0);
+    this.players.forEach((p) => { this.scores[p] = 0; });
     this.history = [];
+    this.logs = [];
+    this.events = [];
 
-    // Build decks
-    const whiteCardsPool = WHITE_CARDS[this.language] || WHITE_CARDS.en;
-    const blackCardsPool = BLACK_CARDS[this.language] || BLACK_CARDS.en;
-    
-    this.deck = whiteCardsPool.map(text => ({ id: nextCardId++, text }));
-    this.deck.sort(() => Math.random() - 0.5);
-    this.blackDeck = blackCardsPool.map(text => ({ id: nextCardId++, text, pick: text.split('_____').length - 1 || 1 }));
-    this.blackDeck.sort(() => Math.random() - 0.5);
+    const whites = WHITE_CARDS[this.lang] || WHITE_CARDS.en;
+    const blacks = BLACK_CARDS[this.lang] || BLACK_CARDS.en;
+    this.deck = whites.map((text) => ({ id: nextCardId++, text })).sort(() => Math.random() - 0.5);
+    this.blackDeck = blacks.map((text) => ({ id: nextCardId++, text, pick: text.split("_____").length - 1 || 1 })).sort(() => Math.random() - 0.5);
 
-    // Deal 7 cards to each player
     this.hands = {};
-    this.players.forEach(p => {
-      this.hands[p] = this.deck.splice(0, 7);
-    });
+    this.players.forEach((p) => { this.hands[p] = this._draw(10); });
 
     this._startRound();
     return true;
   }
 
+  _draw(n) {
+    const out = [];
+    for (let i = 0; i < n; i++) {
+      if (this.deck.length === 0) {
+        // reshuffle a fresh white pool if we run dry
+        const whites = WHITE_CARDS[this.lang] || WHITE_CARDS.en;
+        this.deck = whites.map((text) => ({ id: nextCardId++, text })).sort(() => Math.random() - 0.5);
+      }
+      out.push(this.deck.pop());
+    }
+    return out;
+  }
+
   _startRound() {
     this.round++;
-    if (this.round > this.maxRounds || this.blackDeck.length === 0) {
-      this._endGame();
-      return;
-    }
+    if (this.round > this.maxRounds || this.blackDeck.length === 0) { this._endGame(); return; }
 
     this.currentBlack = this.blackDeck.pop();
     this.submissions = {};
     this.revealedSubmissions = [];
     this.roundWinner = null;
-    this.phase = 'SUBMIT';
-    
-    if (this.turnTimer !== 'Infinite') {
-      this.timeLeft = parseInt(this.turnTimer);
-    } else {
-      this.timeLeft = null;
-    }
+    this.phase = "SUBMIT";
+    this.revealIn = 0;
+    this.timeLeft = this.options.timer > 0 ? this.options.timer : null;
 
-    const czar = this.players[this.czarIndex];
-    const czarName = czar.startsWith('BOT_') ? `Bot ${czar.slice(-4)}` : czar.slice(-4);
-    this.logs.push({ id: Date.now(), text: `Round ${this.round}. Card Czar: ${czarName}` });
+    this.logs.push({ id: seq++, key: "round", round: this.round, pid: this.players[this.czarIndex] });
+    this._emit("round_start", { round: this.round, czar: this.players[this.czarIndex] });
   }
 
+  _pick() { return this.currentBlack ? (this.currentBlack.pick || 1) : 1; }
+
   submitCards(playerId, cardIds) {
-    if (this.status !== 'PLAYING' || this.phase !== 'SUBMIT') return false;
-    if (this.players[this.czarIndex] === playerId) return false; // Czar doesn't submit
-    if (this.submissions[playerId]) return false; // Already submitted
-
+    if (this.status !== "PLAYING" || this.phase !== "SUBMIT") return false;
+    if (this.players[this.czarIndex] === playerId || this.submissions[playerId]) return false;
     const hand = this.hands[playerId];
-    if (!hand) return false;
+    if (!hand || !Array.isArray(cardIds) || cardIds.length !== this._pick()) return false;
 
-    const pick = this.currentBlack.pick || 1;
-    if (cardIds.length !== pick) return false;
-
-    const cards = cardIds.map(id => hand.find(c => c.id === id)).filter(Boolean);
-    if (cards.length !== pick) return false;
+    const cards = cardIds.map((id) => hand.find((c) => c.id === id)).filter(Boolean);
+    if (cards.length !== this._pick()) return false;
 
     this.submissions[playerId] = cards;
-    // Remove from hand and replenish
-    this.hands[playerId] = hand.filter(c => !cardIds.includes(c.id));
-    const needed = pick;
-    const drawn = this.deck.splice(0, needed);
-    this.hands[playerId].push(...drawn);
+    this.hands[playerId] = hand.filter((c) => !cardIds.includes(c.id));
+    this.hands[playerId].push(...this._draw(this._pick()));
 
-    // Check if all non-czar players have submitted
-    const expectedSubmitters = this.players.filter((p, i) => i !== this.czarIndex);
-    if (expectedSubmitters.every(p => this.submissions[p])) {
-      this._startJudging();
-    }
+    this._emit("submitted", { pid: playerId, count: Object.keys(this.submissions).length, total: this.players.length - 1 });
+    this._maybeAdvance();
     return true;
   }
 
+  submitCustomCards(playerId, texts) {
+    if (!this.options.allowCustom) return false;
+    if (this.status !== "PLAYING" || this.phase !== "SUBMIT") return false;
+    if (this.players[this.czarIndex] === playerId || this.submissions[playerId]) return false;
+    if (!Array.isArray(texts) || texts.length !== this._pick()) return false;
+    const cards = texts.map((t) => ({ id: "custom_" + (nextCardId++), text: String(t).slice(0, 120), custom: true }));
+    if (cards.some((c) => !c.text.trim())) return false;
+    this.submissions[playerId] = cards;
+    this._emit("submitted", { pid: playerId, count: Object.keys(this.submissions).length, total: this.players.length - 1 });
+    this._maybeAdvance();
+    return true;
+  }
+
+  _maybeAdvance() {
+    const submitters = this.players.filter((_, i) => i !== this.czarIndex);
+    if (this.phase === "SUBMIT" && submitters.length > 0 && submitters.every((p) => this.submissions[p])) {
+      this._startJudging();
+    }
+  }
+
   _startJudging() {
-    this.phase = 'JUDGE';
-    // Shuffle submissions so czar can't tell who submitted what
+    this.phase = "JUDGE";
+    this.timeLeft = this.options.timer > 0 ? this.options.timer : null;
     const entries = Object.entries(this.submissions).map(([pid, cards]) => ({ playerId: pid, cards }));
     entries.sort(() => Math.random() - 0.5);
     this.revealedSubmissions = entries;
-    
-    if (this.turnTimer !== 'Infinite') {
-      this.timeLeft = parseInt(this.turnTimer);
-    } else {
-      this.timeLeft = null;
-    }
-    
-    this.logs.push({ id: Date.now(), text: `All submissions in. Card Czar is judging...` });
+    this.logs.push({ id: seq++, key: "judging", pid: this.players[this.czarIndex] });
+    this._emit("judging", {});
   }
 
   pickWinner(czarId, winnerPlayerId) {
-    if (this.status !== 'PLAYING' || this.phase !== 'JUDGE') return false;
+    if (this.status !== "PLAYING" || this.phase !== "JUDGE") return false;
     if (this.players[this.czarIndex] !== czarId) return false;
     if (!this.submissions[winnerPlayerId]) return false;
 
-    this.scores[winnerPlayerId]++;
+    this.scores[winnerPlayerId] = (this.scores[winnerPlayerId] || 0) + 1;
     this.roundWinner = winnerPlayerId;
-    this.phase = 'REVEAL';
+    this.phase = "REVEAL";
     this.timeLeft = null;
+    this.revealIn = REVEAL_SECONDS;
 
-    const winnerName = winnerPlayerId.startsWith('BOT_') ? `Bot ${winnerPlayerId.slice(-4)}` : winnerPlayerId.slice(-4);
-    
-    // Record history
-    const winningCards = this.submissions[winnerPlayerId].map(c => c.text);
     this.history.push({
       round: this.round,
       blackCard: this.currentBlack.text,
-      whiteCards: winningCards,
-      winner: winnerName
+      whiteCards: this.submissions[winnerPlayerId].map((c) => c.text),
+      winner: winnerPlayerId,
     });
-
-    this.logs.push({ id: Date.now(), text: `🏆 ${winnerName} wins the round!` });
+    this.logs.push({ id: seq++, key: "winner", pid: winnerPlayerId });
+    this._emit("winner", { pid: winnerPlayerId });
     return true;
   }
 
   nextRound(playerId) {
-    if (this.phase !== 'REVEAL') return false;
-    if (this.players[0] !== playerId) return false; // Host only
-
+    if (this.phase !== "REVEAL" || this.players[0] !== playerId) return false;
+    if (this.status === "FINISHED") return false;
     this.czarIndex = (this.czarIndex + 1) % this.players.length;
     this._startRound();
     return true;
   }
 
+  /** One wall-clock second; returns true when the phase advanced. */
+  tick() {
+    if (this.status !== "PLAYING") return false;
+    if (this.phase === "REVEAL") {
+      this.revealIn--;
+      if (this.revealIn <= 0) { this.czarIndex = (this.czarIndex + 1) % this.players.length; this._startRound(); return true; }
+      return false;
+    }
+    if (this.timeLeft == null) return false;
+    this.timeLeft--;
+    if (this.timeLeft <= 0) { this._forceAction(); return true; }
+    return false;
+  }
+
+  _forceAction() {
+    if (this.phase === "SUBMIT") {
+      this.players.forEach((p, i) => {
+        if (i === this.czarIndex || this.submissions[p]) return;
+        const hand = this.hands[p] || [];
+        const ids = hand.slice(0, this._pick()).map((c) => c.id);
+        if (ids.length === this._pick()) this.submitCards(p, ids);
+      });
+      // Nobody submitted at all → just move on to judging (empty)
+      if (this.phase === "SUBMIT") this._startJudging();
+    } else if (this.phase === "JUDGE") {
+      if (this.revealedSubmissions.length > 0) {
+        const pick = this.revealedSubmissions[Math.floor(Math.random() * this.revealedSubmissions.length)];
+        this.pickWinner(this.players[this.czarIndex], pick.playerId);
+      } else {
+        // no submissions — skip round
+        this.czarIndex = (this.czarIndex + 1) % this.players.length;
+        this._startRound();
+      }
+    }
+  }
+
+  botAct(playerId) {
+    if (this.status !== "PLAYING") return;
+    const isCzar = this.players[this.czarIndex] === playerId;
+    if (this.phase === "SUBMIT" && !isCzar && !this.submissions[playerId]) {
+      // small chance to write a custom card
+      if (this.options.allowCustom && Math.random() < 0.15) {
+        const pool = BOT_CUSTOM[this.lang] || BOT_CUSTOM.en;
+        const texts = Array.from({ length: this._pick() }, () => pool[Math.floor(Math.random() * pool.length)]);
+        this.submitCustomCards(playerId, texts);
+      } else {
+        const hand = this.hands[playerId] || [];
+        const shuffled = [...hand].sort(() => Math.random() - 0.5);
+        const ids = shuffled.slice(0, this._pick()).map((c) => c.id);
+        if (ids.length === this._pick()) this.submitCards(playerId, ids);
+      }
+    } else if (this.phase === "JUDGE" && isCzar && this.revealedSubmissions.length > 0) {
+      const pick = this.revealedSubmissions[Math.floor(Math.random() * this.revealedSubmissions.length)];
+      this.pickWinner(playerId, pick.playerId);
+    }
+  }
+
   _endGame() {
-    this.status = 'FINISHED';
+    this.status = "FINISHED";
+    this.phase = "REVEAL";
+    this.revealIn = 0;
     const sorted = Object.entries(this.scores).sort((a, b) => b[1] - a[1]);
-    const winnerName = sorted[0][0].startsWith('BOT_') ? `Bot ${sorted[0][0].slice(-4)}` : sorted[0][0].slice(-4);
-    this.logs.push({ id: Date.now(), text: `🎉 Game over! ${winnerName} wins with ${sorted[0][1]} points!` });
+    if (sorted.length) {
+      this.logs.push({ id: seq++, key: "gameOver", pid: sorted[0][0], score: sorted[0][1] });
+      this._emit("game_over", { pid: sorted[0][0] });
+    }
   }
 
   resetToLobby() {
-    this.status = 'WAITING';
+    this.status = "WAITING";
+    this.phase = "SUBMIT";
     this.hands = {};
     this.submissions = {};
     this.revealedSubmissions = [];
     this.currentBlack = null;
     this.logs = [];
+    this.events = [];
+    this.history = [];
     return true;
-  }
-
-  submitCustomCards(playerId, customCardTexts) {
-    if (this.status !== 'PLAYING' || this.phase !== 'SUBMIT') return false;
-    if (this.players[this.czarIndex] === playerId) return false;
-    if (this.submissions[playerId]) return false;
-
-    const pick = this.currentBlack.pick || 1;
-    if (customCardTexts.length !== pick) return false;
-
-    const cards = customCardTexts.map(text => ({ id: 'custom_' + Date.now() + Math.random(), text }));
-    this.submissions[playerId] = cards;
-
-    const expectedSubmitters = this.players.filter((p, i) => i !== this.czarIndex);
-    if (expectedSubmitters.every(p => this.submissions[p])) {
-      this._startJudging();
-    }
-    return true;
-  }
-
-  tick() {
-    if (this.status !== 'PLAYING' || this.timeLeft === null) return false;
-    this.timeLeft--;
-    if (this.timeLeft <= 0) {
-      this.forceAction();
-      return true;
-    }
-    return false;
-  }
-
-  forceAction() {
-    if (this.phase === 'SUBMIT') {
-      const expectedSubmitters = this.players.filter((p, i) => i !== this.czarIndex);
-      expectedSubmitters.forEach(p => {
-        if (!this.submissions[p]) {
-          const hand = this.hands[p] || [];
-          const pick = this.currentBlack.pick || 1;
-          const idsToSubmit = hand.slice(0, pick).map(c => c.id);
-          this.submitCards(p, idsToSubmit);
-        }
-      });
-    } else if (this.phase === 'JUDGE') {
-      if (this.revealedSubmissions.length > 0) {
-        const randomWinner = this.revealedSubmissions[Math.floor(Math.random() * this.revealedSubmissions.length)].playerId;
-        this.pickWinner(this.players[this.czarIndex], randomWinner);
-      }
-    }
   }
 
   getStateForPlayer(playerId) {
+    const showSubs = this.phase === "JUDGE" || this.phase === "REVEAL";
     return {
       lobbyId: this.lobbyId,
+      lang: this.lang,
+      language: this.lang,
       status: this.status,
-      language: this.language,
-      turnTimer: this.turnTimer,
-      timeLeft: this.timeLeft,
+      options: this.options,
       players: this.players,
+      host: this.players[0],
       scores: this.scores,
       czar: this.players[this.czarIndex],
       currentBlack: this.currentBlack,
+      pick: this._pick(),
       hand: this.hands[playerId] || [],
       phase: this.phase,
+      timeLeft: this.timeLeft,
+      revealIn: this.revealIn,
       submittedPlayers: Object.keys(this.submissions),
-      revealedSubmissions: this.phase === 'JUDGE' || this.phase === 'REVEAL' ? this.revealedSubmissions : [],
+      hasSubmitted: !!this.submissions[playerId],
+      revealedSubmissions: showSubs ? this.revealedSubmissions : [],
       roundWinner: this.roundWinner,
-      round: this.round,
+      round: Math.min(this.round, this.maxRounds),
       maxRounds: this.maxRounds,
+      allowCustom: this.options.allowCustom,
       history: this.history,
-      logs: this.logs.slice(-15),
+      logs: this.logs.slice(-12),
+      events: this.events.slice(-10),
     };
   }
+
+  static DEFAULT_OPTIONS = DEFAULT_OPTIONS;
+  static sanitizeOptions = sanitizeOptions;
 }
 
 module.exports = CahGame;

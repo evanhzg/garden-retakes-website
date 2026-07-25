@@ -103,6 +103,11 @@ const monopolyGames = new Map();
 const codenamesGames = new Map();
 const cahGames = new Map();
 const cahTimers = new Map();
+const clearCahTimer = (lobbyId) => {
+  const t = cahTimers.get(lobbyId);
+  if (t) clearInterval(t);
+  cahTimers.delete(lobbyId);
+};
 const memeGames = new Map();
 // lobbyId -> the 1s ticker driving Make It Meme's caption/vote/results phases
 const memeTimers = new Map();
@@ -295,6 +300,7 @@ io.on("connection", (socket) => {
         unoGames.delete(lobbyId);
         monopolyGames.delete(lobbyId);
         codenamesGames.delete(lobbyId);
+        clearCahTimer(lobbyId);
         cahGames.delete(lobbyId);
         clearMemeTimer(lobbyId);
         memeGames.delete(lobbyId);
@@ -556,6 +562,31 @@ io.on("connection", (socket) => {
     broadcastLobbyState(lobby.id);
   });
 
+  // Host flips the lobby between public and private (with an optional password).
+  // Lives on the lobby page now instead of a create-time popup.
+  socket.on("lobby_set_privacy", (data) => {
+    if (!socket.lobbyId || !socket.steamId) return;
+    const lobby = universalLobbies.get(socket.lobbyId);
+    if (!lobby || lobby.host !== socket.steamId) return;
+    lobby.isPrivate = !!(data && data.isPrivate);
+    if (lobby.isPrivate) {
+      if (data && typeof data.password === "string") lobby.password = data.password.slice(0, 64) || null;
+    } else {
+      lobby.password = null;
+    }
+    broadcastLobbyState(lobby.id);
+    broadcastPublicLobbies();
+  });
+
+  // Host configures PILE OF... (rounds, timer, custom cards).
+  socket.on("lobby_set_cah_options", (data) => {
+    if (!socket.lobbyId || !socket.steamId) return;
+    const lobby = universalLobbies.get(socket.lobbyId);
+    if (!lobby || lobby.host !== socket.steamId || lobby.status === 'PLAYING') return;
+    lobby.cahOptions = CahGame.sanitizeOptions({ ...lobby.cahOptions, ...(data && data.options) });
+    broadcastLobbyState(lobby.id);
+  });
+
   // Host picks how many times each player draws in Skribbl.
   socket.on("lobby_set_skribbl_rounds", (data) => {
     if (!socket.lobbyId || !socket.steamId) return;
@@ -638,11 +669,11 @@ io.on("connection", (socket) => {
           codenamesGames.set(lobbyId, gameInstance);
           break;
         case 'cah':
-          gameInstance = new CahGame(lobbyId);
-          gameInstance.language = lang;
-          if (data?.settings) {
-            gameInstance.turnTimer = data.settings.turnTimer || 0;
-          }
+          gameInstance = new CahGame(lobbyId, {
+            lang,
+            options: { ...(lobby.cahOptions || {}), ...(data?.options || {}) },
+          });
+          clearCahTimer(lobbyId);
           cahGames.set(lobbyId, gameInstance);
           break;
         case 'meme':
@@ -701,6 +732,7 @@ io.on("connection", (socket) => {
         unoGames.delete(lobbyId);
         monopolyGames.delete(lobbyId);
         codenamesGames.delete(lobbyId);
+        clearCahTimer(lobbyId);
         cahGames.delete(lobbyId);
         clearMemeTimer(lobbyId);
         memeGames.delete(lobbyId);
@@ -1255,112 +1287,83 @@ io.on("connection", (socket) => {
   const broadcastCahState = (lobbyId) => {
     const game = cahGames.get(lobbyId);
     if (!game) return;
+
     for (const p of game.players) {
-      if (!p.startsWith('BOT_')) {
-        const sid = connectedUsers.get(p);
-        if (sid) io.to(sid).emit("cah_state", game.getStateForPlayer(p));
-      }
+      if (p.startsWith('BOT_')) continue;
+      const sid = connectedUsers.get(p);
+      if (sid) io.to(sid).emit("cah_state", game.getStateForPlayer(p));
     }
-    // Bot submit
-    if (game.status === 'PLAYING' && game.phase === 'SUBMIT') {
-      const czar = game.players[game.czarIndex];
+
+    if (game.status !== 'PLAYING') { clearCahTimer(lobbyId); return; }
+    if (!cahTimers.has(lobbyId)) startCahTimer(lobbyId);
+
+    // Bots submit / judge on their own little timers.
+    if (game.phase === 'SUBMIT' || game.phase === 'JUDGE') {
+      game._botTimers = game._botTimers || {};
       for (const p of game.players) {
-        if (p.startsWith('BOT_') && p !== czar && !game.submissions[p]) {
-          setTimeout(() => {
-            const hand = game.hands[p];
-            if (hand && hand.length > 0) {
-              const pick = game.currentBlack?.pick || 1;
-              const ids = hand.slice(0, pick).map(c => c.id);
-              game.submitCards(p, ids);
-              broadcastCahState(lobbyId);
-            }
-          }, 1500 + Math.random() * 2000);
-        }
+        if (!p.startsWith('BOT_')) continue;
+        const isCzar = game.players[game.czarIndex] === p;
+        const acted = game.phase === 'SUBMIT' ? (isCzar || game.submissions[p]) : (!isCzar);
+        if (acted) continue;
+        const key = `${p}:${game.phase}:${game.round}`;
+        if (game._botTimers[key]) continue;
+        const delay = game.phase === 'SUBMIT' ? 1500 + Math.random() * 4000 : 2000 + Math.random() * 3000;
+        game._botTimers[key] = setTimeout(() => {
+          delete game._botTimers[key];
+          const g = cahGames.get(lobbyId);
+          if (!g || g !== game || g.status !== 'PLAYING') return;
+          g.botAct(p);
+          broadcastCahState(lobbyId);
+        }, delay);
       }
-    }
-    // Bot czar pick
-    if (game.status === 'PLAYING' && game.phase === 'JUDGE') {
-      const czar = game.players[game.czarIndex];
-      if (czar.startsWith('BOT_')) {
-        setTimeout(() => {
-          if (game.revealedSubmissions.length > 0) {
-            const pick = game.revealedSubmissions[Math.floor(Math.random() * game.revealedSubmissions.length)];
-            game.pickWinner(czar, pick.playerId);
-            broadcastCahState(lobbyId);
-            // Auto next round
-            setTimeout(() => { game.nextRound(game.players[0]); broadcastCahState(lobbyId); }, 3000);
-          }
-        }, 2000);
-      }
-    }
-  };
-  socket.on("cah_settings", (d) => { if(socket.lobbyId){const g=cahGames.get(socket.lobbyId); if(g&&g.players[0]===socket.steamId){g.language = d.language; g.turnTimer = d.turnTimer; broadcastCahState(socket.lobbyId);}} });
-  const startCahTimer = (lobbyId, g) => {
-    if (cahTimers.has(lobbyId)) clearInterval(cahTimers.get(lobbyId));
-    if (g.turnTimer !== 'Infinite') {
-      const tid = setInterval(() => {
-        const advanced = g.tick();
-        broadcastCahState(lobbyId);
-        if (advanced) {
-          // If auto-advanced, check if game is over or next phase needs timer
-          if (g.status === 'FINISHED' || g.phase === 'REVEAL') clearInterval(tid);
-        }
-      }, 1000);
-      cahTimers.set(lobbyId, tid);
     }
   };
 
-  socket.on("cah_start", () => { 
-    if(socket.lobbyId){
-      const g=cahGames.get(socket.lobbyId); 
-      if(g&&g.players[0]===socket.steamId&&g.start()){
-        broadcastCahState(socket.lobbyId);
-        startCahTimer(socket.lobbyId, g);
-      }
-    } 
+  const startCahTimer = (lobbyId) => {
+    clearCahTimer(lobbyId);
+    const tid = setInterval(() => {
+      const g = cahGames.get(lobbyId);
+      if (!g || g.status !== 'PLAYING') { clearCahTimer(lobbyId); return; }
+      g.tick();
+      broadcastCahState(lobbyId);
+    }, 1000);
+    cahTimers.set(lobbyId, tid);
+  };
+
+  socket.on("cah_start", () => {
+    if (!socket.lobbyId || !socket.steamId) return;
+    const g = cahGames.get(socket.lobbyId);
+    if (g && g.players[0] === socket.steamId && g.start()) {
+      startCahTimer(socket.lobbyId);
+      broadcastCahState(socket.lobbyId);
+    }
   });
-  
-  socket.on("cah_submit", (d) => { 
-    if(socket.lobbyId&&socket.steamId){
-      const g=cahGames.get(socket.lobbyId); 
-      if(g&&g.submitCards(socket.steamId,d.cardIds)){
-        broadcastCahState(socket.lobbyId);
-        if(g.phase === 'JUDGE') startCahTimer(socket.lobbyId, g);
-      }
-    } 
+
+  socket.on("cah_submit", (d) => {
+    if (!socket.lobbyId || !socket.steamId) return;
+    const g = cahGames.get(socket.lobbyId);
+    if (g && g.submitCards(socket.steamId, d && d.cardIds)) broadcastCahState(socket.lobbyId);
   });
 
   socket.on("cah_submit_custom", async (d) => {
-    if(socket.lobbyId&&socket.steamId){
-      const g=cahGames.get(socket.lobbyId);
-      if(g && g.status === 'PLAYING' && g.phase === 'SUBMIT') {
-        const formattedCards = await Promise.all(d.customTexts.map(t => formatCustomCard(t, g.language)));
-        if (g.submitCustomCards(socket.steamId, formattedCards)) {
-          broadcastCahState(socket.lobbyId);
-          if(g.phase === 'JUDGE') startCahTimer(socket.lobbyId, g);
-        }
-      }
-    }
+    if (!socket.lobbyId || !socket.steamId) return;
+    const g = cahGames.get(socket.lobbyId);
+    if (!g || g.status !== 'PLAYING' || g.phase !== 'SUBMIT') return;
+    const texts = Array.isArray(d && d.customTexts) ? d.customTexts : [];
+    const formatted = await Promise.all(texts.map((t) => formatCustomCard(t, g.lang)));
+    if (g.submitCustomCards(socket.steamId, formatted)) broadcastCahState(socket.lobbyId);
   });
 
-  socket.on("cah_pick_winner", (d) => { 
-    if(socket.lobbyId&&socket.steamId){
-      const g=cahGames.get(socket.lobbyId); 
-      if(g&&g.pickWinner(socket.steamId,d.winnerPlayerId)){
-        if (cahTimers.has(socket.lobbyId)) clearInterval(cahTimers.get(socket.lobbyId));
-        broadcastCahState(socket.lobbyId);
-      }
-    } 
+  socket.on("cah_pick_winner", (d) => {
+    if (!socket.lobbyId || !socket.steamId) return;
+    const g = cahGames.get(socket.lobbyId);
+    if (g && g.pickWinner(socket.steamId, d && d.winnerPlayerId)) broadcastCahState(socket.lobbyId);
   });
-  
-  socket.on("cah_next_round", () => { 
-    if(socket.lobbyId&&socket.steamId){
-      const g=cahGames.get(socket.lobbyId); 
-      if(g&&g.nextRound(socket.steamId)){
-        broadcastCahState(socket.lobbyId);
-        startCahTimer(socket.lobbyId, g);
-      }
-    } 
+
+  socket.on("cah_next_round", () => {
+    if (!socket.lobbyId || !socket.steamId) return;
+    const g = cahGames.get(socket.lobbyId);
+    if (g && g.nextRound(socket.steamId)) broadcastCahState(socket.lobbyId);
   });
   
   // ==========================================

@@ -18,7 +18,7 @@ export default function GamesRoadmap() {
       ]
     },
     { 
-      name: "Monopoly (Business Tour)", 
+      name: "MONOPO7Y (Business Tour)", 
       status: "Planned", 
       description: "Fast-paced property trading game with modified rules for quick sessions.",
       features: [
@@ -51,7 +51,7 @@ export default function GamesRoadmap() {
       ]
     },
     { 
-      name: "Cards Against Humanity", 
+      name: "PILE OF...", 
       status: "Planned", 
       description: "A party game for terrible people.",
       features: [
