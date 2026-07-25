@@ -45,7 +45,7 @@ function statChip(label: string, value: string, big = false) {
   );
 }
 
-function frame(children: React.ReactNode) {
+function frame(children: React.ReactNode, origin: string) {
   return (
     <div
       style={{
@@ -53,11 +53,11 @@ function frame(children: React.ReactNode) {
         height: "100%",
         display: "flex",
         flexDirection: "column",
-        backgroundColor: "#120a1c",
+        backgroundColor: "#0b0710",
         backgroundImage:
-          `radial-gradient(circle at 90% 0%, rgba(236,72,153,0.28), transparent 45%),` +
-          `radial-gradient(circle at 0% 30%, rgba(168,85,247,0.32), transparent 45%),` +
-          `radial-gradient(circle at 50% 100%, rgba(217,70,239,0.20), transparent 40%)`,
+          `radial-gradient(circle at 90% 0%, rgba(236,72,153,0.18), transparent 45%),` +
+          `radial-gradient(circle at 0% 30%, rgba(168,85,247,0.22), transparent 45%),` +
+          `radial-gradient(circle at 50% 100%, rgba(217,70,239,0.15), transparent 40%)`,
         padding: 56,
         position: "relative",
       }}
@@ -88,9 +88,9 @@ function frame(children: React.ReactNode) {
         }}
       >
         <div style={{ display: "flex", alignItems: "center", gap: 14 }}>
-          <div style={{ display: "flex", fontSize: 30 }}>🌱</div>
-          <div style={{ display: "flex", fontSize: 26, fontWeight: 800, color: "#fff", letterSpacing: 1 }}>
-            GARDEN RETAKES
+          <img src={`${origin}/retakes_logo.png`} width={48} height={48} style={{ borderRadius: 8 }} />
+          <div style={{ display: "flex", fontSize: 28, fontWeight: 900, color: "#fff", letterSpacing: 2 }}>
+            REEEETAKES
           </div>
         </div>
         <div style={{ display: "flex", fontSize: 24, fontWeight: 600, color: "rgba(255,255,255,0.45)" }}>
@@ -102,6 +102,7 @@ function frame(children: React.ReactNode) {
 }
 
 export async function GET(req: Request) {
+  const origin = process.env.NEXT_PUBLIC_SITE_URL || new URL(req.url).origin;
   const p = new URL(req.url).searchParams;
   const type = p.get("type") ?? "site";
 
@@ -163,7 +164,8 @@ export async function GET(req: Request) {
             {adr && statChip("ADR", adr)}
             {wr && statChip("Win %", wr)}
           </div>
-        </div>
+        </div>,
+        origin
       ),
       { width: 1200, height: 630 }
     );
@@ -198,21 +200,26 @@ export async function GET(req: Request) {
           <div style={{ display: "flex", fontSize: 26, color: "rgba(255,255,255,0.5)", marginTop: 28 }}>
             OUNO · MONOPO7Y · FREE-DRAW
           </div>
-        </div>
+        </div>,
+        origin
       ),
       { width: 1200, height: 630 }
     );
   }
 
   if (type === "page") {
-    const title = p.get("title") ?? "Garden Retakes";
+    const title = p.get("title") ?? "REEEETAKES";
     const desc = p.get("desc") ?? "";
-    const icon = p.get("icon") ?? "🌱";
+    const icon = p.get("icon");
 
     return new ImageResponse(
       frame(
         <div style={{ display: "flex", flexDirection: "column", flex: 1, justifyContent: "center" }}>
-          <div style={{ display: "flex", fontSize: 84 }}>{icon}</div>
+          {icon ? (
+            <div style={{ display: "flex", fontSize: 84 }}>{icon}</div>
+          ) : (
+            <img src={`${origin}/retakes_logo.png`} width={84} height={84} style={{ borderRadius: 16 }} />
+          )}
           <div style={{ display: "flex", fontSize: 82, fontWeight: 900, color: "#fff", marginTop: 16, lineHeight: 1.05 }}>
             {title.slice(0, 30)}
           </div>
@@ -221,7 +228,8 @@ export async function GET(req: Request) {
               {desc.slice(0, 140)}
             </div>
           )}
-        </div>
+        </div>,
+        origin
       ),
       { width: 1200, height: 630 }
     );
@@ -231,8 +239,9 @@ export async function GET(req: Request) {
   return new ImageResponse(
     frame(
       <div style={{ display: "flex", flexDirection: "column", flex: 1, justifyContent: "center", alignItems: "center" }}>
-        <div style={{ display: "flex", fontSize: 100, fontWeight: 900, color: "#fff", letterSpacing: 2 }}>
-          GARDEN RETAKES
+        <img src={`${origin}/retakes_logo.png`} width={128} height={128} style={{ borderRadius: 24, marginBottom: 24 }} />
+        <div style={{ display: "flex", fontSize: 90, fontWeight: 900, color: "#fff", letterSpacing: 3 }}>
+          REEEETAKES
         </div>
         <div
           style={{
@@ -265,7 +274,8 @@ export async function GET(req: Request) {
             </div>
           ))}
         </div>
-      </div>
+      </div>,
+      origin
     ),
     { width: 1200, height: 630 }
   );

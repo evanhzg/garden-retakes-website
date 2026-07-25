@@ -7,7 +7,7 @@ export const metadata: Metadata = {
   title: "Games Hub",
   description,
   openGraph: {
-    title: "Games Hub — Garden Retakes",
+    title: "Games Hub — REEEETAKES",
     description,
     images: [
       {

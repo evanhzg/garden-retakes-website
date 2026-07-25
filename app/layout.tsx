@@ -11,19 +11,19 @@ import "./globals.css";
 export const metadata: Metadata = {
   metadataBase: new URL(process.env.NEXT_PUBLIC_SITE_URL || "https://retakes.fr"),
   title: {
-    default: "Garden Retakes",
-    template: "%s · Garden Retakes",
+    default: "REEEETAKES",
+    template: "%s · REEEETAKES",
   },
-  description: "Rankings, stats, seasons, inventory and games for the Garden Retakes server",
+  description: "Rankings, stats, seasons, inventory and games for the REEEETAKES community",
   icons: {
     icon: "/retakes_logo.ico",
     apple: "/retakes_logo.png",
   },
   openGraph: {
-    siteName: "Garden Retakes",
+    siteName: "REEEETAKES",
     type: "website",
     locale: "en_US",
-    images: [{ url: "/api/og", width: 1200, height: 630, alt: "Garden Retakes" }],
+    images: [{ url: "/api/og", width: 1200, height: 630, alt: "REEEETAKES" }],
   },
   twitter: {
     card: "summary_large_image",

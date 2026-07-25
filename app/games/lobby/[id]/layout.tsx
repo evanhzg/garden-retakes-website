@@ -2,13 +2,13 @@ import type { Metadata } from "next";
 
 // Invite links shared on Discord get a proper card. Lobby details live in the
 // socket server's memory, so the card is generic by design.
-const description = "You've been invited to a game lobby on Garden Retakes. Click to join!";
+const description = "You've been invited to a game lobby on REEEETAKES. Click to join!";
 
 export const metadata: Metadata = {
   title: "Join my lobby!",
   description,
   openGraph: {
-    title: "Join my lobby! — Garden Games",
+    title: "Join my lobby! — REEEETAKES",
     description,
     images: [{ url: "/api/og?type=lobby&name=Join%20my%20lobby!", width: 1200, height: 630 }],
   },
