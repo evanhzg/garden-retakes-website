@@ -209,8 +209,21 @@ class MemeGame {
     } else {
       const captions = payload && Array.isArray(payload.captions) ? payload.captions : null;
       if (!captions) return false;
-      const cleaned = captions.slice(0, this._slotCount()).map((c) => String(c == null ? "" : c).slice(0, 120));
-      if (cleaned.every((c) => !c.trim())) return false;
+      const cleaned = captions.slice(0, this._slotCount()).map((c) => {
+        if (typeof c === 'object' && c !== null) {
+           return {
+             text: String(c.text == null ? "" : c.text).slice(0, 120),
+             x: Number(c.x) || 50,
+             y: Number(c.y) || 50,
+             scale: Number.isFinite(c.scale) ? Math.max(0.2, Math.min(Number(c.scale), 5)) : 1,
+             font: String(c.font || "Impact").slice(0, 30),
+             border: Number.isFinite(c.border) ? Math.max(0, Math.min(Number(c.border), 10)) : 2,
+             color: String(c.color || "white").slice(0, 20)
+           };
+        }
+        return { text: String(c == null ? "" : c).slice(0, 120) };
+      });
+      if (cleaned.every((c) => !c.text.trim())) return false;
       this.submissions[playerId] = { captions: cleaned };
     }
 

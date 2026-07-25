@@ -75,15 +75,21 @@ export default function MemeGame() {
   const round = gameState?.round;
   const phase = gameState?.phase;
   const slots = gameState?.slots ?? 1;
+  const template: Template | null = gameState?.currentTemplate;
+  
   useEffect(() => {
     if (phase === "CAPTION") {
-      setCaptions(new Array(slots).fill(""));
+      if (template?.slots) {
+         setCaptions(template.slots.map((s: any) => ({ text: "", x: s.x, y: s.y, scale: 1, w: s.w })));
+      } else {
+         setCaptions(new Array(slots).fill({ text: "", x: 50, y: 50, scale: 1, w: 92 }));
+      }
       setPickedGif(null);
       setGifUrl("");
       setGifQuery("");
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [round, phase]);
+  }, [round, phase, template?.id]);
 
   const playerIds: string[] = gameState?.players ?? [];
   const names = usePlayerNames(playerIds);
@@ -113,7 +119,6 @@ export default function MemeGame() {
   if (!gameState || gameState.status === "WAITING") return null;
 
   const isGif = gameState.mode === "gif";
-  const template: Template | null = gameState.currentTemplate;
   const prompt: string | null = gameState.currentPrompt;
   const isHost = gameState.host === mySteamId;
   const finished = gameState.status === "FINISHED";
@@ -126,7 +131,10 @@ export default function MemeGame() {
       sound.play("submit");
       socket?.emit("meme_caption", { gif: g });
     } else {
-      if (captions.every((c) => !c.trim())) return;
+      if (captions.every((c) => {
+         const t = typeof c === "object" && c !== null ? c.text : c;
+         return !(t || "").trim();
+      })) return;
       sound.play("submit");
       socket?.emit("meme_caption", { captions });
     }
@@ -234,25 +242,93 @@ export default function MemeGame() {
                           showGuides
                           activeIndex={focusedSlot}
                           guides={captions.map((_, i) => (slots > 1 ? t("captionSlot", { n: i + 1 }) : t("writeCaption")))}
+                          onUpdateCaption={(i, up) => {
+                             const n = [...captions];
+                             n[i] = up;
+                             setCaptions(n);
+                          }}
                         />
                       )}
                     </div>
                     <div className="meme-caption-fields">
-                      {captions.map((c, i) => (
-                        <div key={i} className="meme-field-row">
-                          {slots > 1 && <span className="meme-field-num">{i + 1}</span>}
-                          <input
-                            className={`meme-input ${focusedSlot === i ? "focused" : ""}`}
-                            value={c}
-                            maxLength={120}
-                            onFocus={() => setFocusedSlot(i)}
-                            onBlur={() => setFocusedSlot((cur) => (cur === i ? -1 : cur))}
-                            onChange={(e) => { const n = [...captions]; n[i] = e.target.value; setCaptions(n); }}
-                            placeholder={slots > 1 ? t("captionSlot", { n: i + 1 }) : t("writeCaption")}
-                          />
+                      {captions.map((c, i) => {
+                        const textVal = typeof c === "object" && c !== null ? (c.text ?? "") : c;
+                        const fontVal = typeof c === "object" && c !== null ? (c.font || "Impact") : "Impact";
+                        const borderVal = typeof c === "object" && c !== null ? (c.border ?? 2) : 2;
+                        const colorVal = typeof c === "object" && c !== null ? (c.color || "white") : "white";
+                        
+                        return (
+                        <div key={i} style={{ display: "flex", flexDirection: "column", gap: "4px" }}>
+                          <div className="meme-field-row">
+                            {slots > 1 && <span className="meme-field-num">{i + 1}</span>}
+                            <input
+                              className={`meme-input ${focusedSlot === i ? "focused" : ""}`}
+                              value={textVal}
+                              maxLength={120}
+                              onFocus={() => setFocusedSlot(i)}
+                              onBlur={() => setFocusedSlot((cur) => (cur === i ? -1 : cur))}
+                              onChange={(e) => { 
+                                 const n = [...captions];
+                                 if (typeof n[i] === "object" && n[i] !== null) {
+                                     n[i] = { ...n[i], text: e.target.value };
+                                 } else {
+                                     n[i] = e.target.value;
+                                 }
+                                 setCaptions(n); 
+                              }}
+                              placeholder={slots > 1 ? t("captionSlot", { n: i + 1 }) : t("writeCaption")}
+                            />
+                          </div>
+                          <div className="meme-controls-row" style={{ paddingLeft: slots > 1 ? "32px" : "0" }}>
+                            <select 
+                               className="meme-select" 
+                               value={fontVal} 
+                               onChange={(e) => {
+                                 const n = [...captions];
+                                 n[i] = { ...(typeof n[i] === "object" ? n[i] : { text: n[i] }), font: e.target.value };
+                                 setCaptions(n);
+                               }}
+                            >
+                               <option value="Impact">Impact</option>
+                               <option value="Arial">Arial</option>
+                               <option value="Courier New">Courier</option>
+                               <option value="Comic Sans MS">Comic Sans</option>
+                               <option value="Times New Roman">Serif</option>
+                            </select>
+                            <select 
+                               className="meme-select" 
+                               value={borderVal} 
+                               onChange={(e) => {
+                                 const n = [...captions];
+                                 n[i] = { ...(typeof n[i] === "object" ? n[i] : { text: n[i] }), border: Number(e.target.value) };
+                                 setCaptions(n);
+                               }}
+                            >
+                               <option value={0}>No Border</option>
+                               <option value={1}>Thin Border</option>
+                               <option value={2}>Normal Border</option>
+                               <option value={4}>Thick Border</option>
+                               <option value={8}>Huge Border</option>
+                            </select>
+                            <select 
+                               className="meme-select" 
+                               value={colorVal} 
+                               onChange={(e) => {
+                                 const n = [...captions];
+                                 n[i] = { ...(typeof n[i] === "object" ? n[i] : { text: n[i] }), color: e.target.value };
+                                 setCaptions(n);
+                               }}
+                            >
+                               <option value="white">White</option>
+                               <option value="yellow">Yellow</option>
+                            </select>
+                          </div>
                         </div>
-                      ))}
-                      <button className="meme-primary" onClick={submitCaption} disabled={captions.every((c) => !c.trim())}>
+                      )})}
+                      <button className="meme-primary" onClick={submitCaption} disabled={captions.every((c) => {
+                         const t = typeof c === "object" && c !== null ? c.text : c;
+                         return !(t || "").trim();
+                      })}>
                         {t("submit")} ✓
                       </button>
                     </div>
@@ -396,45 +472,123 @@ export default function MemeGame() {
   }
 }
 
-// ---------------------------------------------------------------------------
-// A meme template with captions burned into their slot positions.
-// ---------------------------------------------------------------------------
-function MemeCard({ template, captions, showGuides = false, activeIndex = -1, guides }: {
+function MemeCard({ template, captions, showGuides = false, activeIndex = -1, guides, onUpdateCaption }: {
   template: Template;
-  captions: string[];
+  captions: any[];
   showGuides?: boolean;
   activeIndex?: number;
   guides?: string[];
+  onUpdateCaption?: (index: number, updates: any) => void;
 }) {
+  const containerRef = useRef<HTMLDivElement>(null);
+
+  const startDrag = (e: React.PointerEvent, i: number, cap: any, slot: any) => {
+    if (!onUpdateCaption || !containerRef.current) return;
+    e.preventDefault();
+    e.stopPropagation();
+
+    const startX = e.clientX;
+    const startY = e.clientY;
+    const startCapX = cap.x ?? slot.x;
+    const startCapY = cap.y ?? slot.y;
+
+    const onMove = (me: PointerEvent) => {
+      if (!containerRef.current) return;
+      const rect = containerRef.current.getBoundingClientRect();
+      const dxPct = ((me.clientX - startX) / rect.width) * 100;
+      const dyPct = ((me.clientY - startY) / rect.height) * 100;
+      let newX = Math.max(0, Math.min(100, startCapX + dxPct));
+      let newY = Math.max(0, Math.min(100, startCapY + dyPct));
+      onUpdateCaption(i, { ...cap, x: newX, y: newY });
+    };
+    const onUp = () => {
+      document.removeEventListener("pointermove", onMove);
+      document.removeEventListener("pointerup", onUp);
+    };
+    document.addEventListener("pointermove", onMove);
+    document.addEventListener("pointerup", onUp);
+  };
+
+  const startResize = (e: React.PointerEvent, i: number, cap: any) => {
+    if (!onUpdateCaption) return;
+    e.preventDefault();
+    e.stopPropagation();
+    
+    const startX = e.clientX;
+    const startScale = cap.scale ?? 1;
+
+    const onMove = (me: PointerEvent) => {
+      const dx = me.clientX - startX;
+      let newScale = startScale + dx * 0.015;
+      newScale = Math.max(0.4, Math.min(4, newScale));
+      onUpdateCaption(i, { ...cap, scale: newScale });
+    };
+    const onUp = () => {
+      document.removeEventListener("pointermove", onMove);
+      document.removeEventListener("pointerup", onUp);
+    };
+    document.addEventListener("pointermove", onMove);
+    document.addEventListener("pointerup", onUp);
+  };
+
   return (
-    <div className="meme-card">
+    <div className="meme-card" ref={containerRef}>
       <img className="meme-card-img" src={template.url} alt={template.name} draggable={false} />
       {template.slots.map((slot, i) => {
-        const text = captions[i] ?? "";
+        const cap = captions[i] || {};
+        const text = typeof cap === "string" ? cap : (cap.text ?? "");
         const has = !!text.trim();
-        // With no text, show a placement guide box so players know where their
-        // caption will land (and highlight the one they're editing).
+        const x = cap.x ?? slot.x;
+        const y = cap.y ?? slot.y;
+        const scale = cap.scale ?? 1;
+        const w = cap.w ?? slot.w;
+
         if (!has && !showGuides) return null;
-        const box = { left: `${slot.x}%`, top: `${slot.y}%`, width: `${slot.w}%` };
-        if (!has) {
-          return (
-            <span
-              key={i}
-              className={`meme-caption-guide ${activeIndex === i ? "active" : ""}`}
-              style={box}
-            >
-              {guides?.[i] ?? `#${i + 1}`}
-            </span>
-          );
+
+        const border = cap.border ?? 2;
+        const font = cap.font || "Impact";
+        const color = cap.color || "white";
+        
+        const box: any = { 
+          left: `${x}%`, 
+          top: `${y}%`, 
+          width: `${w}%`, 
+          transform: `translate(-50%, -50%) scale(${scale})`,
+          fontFamily: font,
+          color: color === "yellow" ? "#fde047" : "#fff",
+          pointerEvents: showGuides ? ("auto" as any) : "none"
+        };
+        
+        if (border !== 2 || font !== "Impact") {
+           box.textShadow = border > 0 ? "0 0 4px rgba(0,0,0,0.6)" : "none";
+           if (border > 0) {
+             box.WebkitTextStroke = `${border}px #000`;
+             // For very thick borders, we need paint-order so the stroke doesn't eat the text inside
+             box.paintOrder = "stroke fill";
+           } else {
+             box.WebkitTextStroke = "0";
+           }
         }
+
+        const activeClass = activeIndex === i ? "active" : "";
+
         return (
-          <span
+          <div
             key={i}
-            className={`meme-caption ${slot.dark ? "dark" : ""} ${activeIndex === i ? "active" : ""}`}
+            className={`meme-caption ${!has ? "guide" : ""} ${slot.dark ? "dark" : ""} ${activeClass}`}
             style={box}
+            onPointerDown={(e) => showGuides && startDrag(e, i, cap, slot)}
           >
-            {text}
-          </span>
+            {has ? text : (guides?.[i] ?? `#${i + 1}`)}
+            
+            {showGuides && (
+               <div 
+                 className="meme-resize-handle" 
+                 onPointerDown={(e) => startResize(e, i, cap)}
+                 title="Drag to resize"
+               />
+            )}
+          </div>
         );
       })}
     </div>

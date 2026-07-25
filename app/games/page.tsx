@@ -138,6 +138,13 @@ function GamesHub() {
             <span className="rejoin-cta">{myLobby.member ? "Return →" : "Rejoin →"}</span>
           </button>
         )}
+        
+        {!isAuthed && (
+          <div className="socket-loading-banner">
+            <div className="socket-spinner"></div>
+            <span>Connecting to Games Server...</span>
+          </div>
+        )}
 
         <div className="hub-body">
           <div className="hub-games">

@@ -119,9 +119,14 @@ export default function NavBar({
   const links = baseLinks.filter(l => !l.adminOnly || (session.adminLevel ?? 0) > 0);
 
   const getHref = (path: string) => {
-    const subdomain = host.split(".")[0];
+    let cleanHost = host;
+    if (cleanHost.startsWith("www.")) {
+      cleanHost = cleanHost.substring(4);
+    }
+    
+    const subdomain = cleanHost.split(".")[0];
     const isKnownSubdomain = ["games", "docs", "pkmn"].includes(subdomain);
-    const baseHost = isKnownSubdomain ? host.substring(subdomain.length + 1) : host;
+    const baseHost = isKnownSubdomain ? cleanHost.substring(subdomain.length + 1) : cleanHost;
 
     const targetSubMatch = ["/games", "/docs", "/pkmn"].find(s => path === s || path.startsWith(`${s}/`));
     
@@ -134,7 +139,13 @@ export default function NavBar({
       targetPath = path.substring(targetSubMatch.length) || "/";
     }
 
-    if (targetHost === host) {
+    if (targetHost === host || targetHost === cleanHost) {
+      // If we're already on the correct host, just return the path
+      // Note: we check both host (e.g. www.retakes.fr) and cleanHost (retakes.fr) to avoid unnecessary reloads
+      if (host.startsWith("www.") && !targetSubMatch) {
+         // Keep www if they were already on it and just navigating locally
+         return targetPath;
+      }
       return targetPath;
     } else {
       return `${protocol}://${targetHost}${targetPath}`;

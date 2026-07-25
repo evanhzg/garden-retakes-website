@@ -277,17 +277,27 @@ function LobbyClient({ lobbyId, mySteamId }: { lobbyId: string; mySteamId: strin
   const gameReady = !currentGameConfig || currentGameConfig.ready;
   const canStart = isHost && everyoneReady && playerCountValid && gameReady && lobbyState.currentGame !== "none";
 
+  // Hidden data element for the Chrome Extension to read
+  const rpcData = (
+    <div 
+      id="discord-rpc-data" 
+      data-players={`${playerCount}/${maxPlayers}`}
+      data-status={lobbyState.status}
+      data-game={baseGame}
+      data-lobby={lobbyState.name}
+      style={{ display: "none" }} 
+    />
+  );
+
   // If game is playing, render the specific game component!
   if (lobbyState.status === "PLAYING") {
-    switch (baseGame) {
-      case "uno": return <UnoGameWrapper />;
-      case "monopoly": return <MonopolyGameWrapper />;
-      case "cah": return <CahGameWrapper />;
-      case "codenames": return <CodenamesGameWrapper />;
-      case "meme": return <MemeGameWrapper />;
-      case "skribbl": return <SkribblGameWrapper />;
-      default: return <div>Unknown game type: {baseGame}</div>;
-    }
+    if (baseGame === "uno") return <>{rpcData}<UnoGameWrapper lobbyId={lobbyId} mySteamId={mySteamId} lang={lang} /></>;
+    if (baseGame === "monopoly") return <>{rpcData}<MonopolyGameWrapper lobbyId={lobbyId} mySteamId={mySteamId} lang={lang} /></>;
+    if (baseGame === "cah") return <>{rpcData}<CahGameWrapper lobbyId={lobbyId} mySteamId={mySteamId} lang={lang} /></>;
+    if (baseGame === "codenames") return <>{rpcData}<CodenamesGameWrapper lobbyId={lobbyId} mySteamId={mySteamId} /></>;
+    if (baseGame === "meme") return <>{rpcData}<MemeGameWrapper lobbyId={lobbyId} mySteamId={mySteamId} lang={lang} /></>;
+    if (baseGame === "skribbl") return <>{rpcData}<SkribblGameWrapper lobbyId={lobbyId} mySteamId={mySteamId} lang={lang} /></>;
+    return <div className="lobby-container flex-center">{rpcData}Game started, but component not found.</div>;
   }
 
   const setGame = (id: string) => handleChangeGame(`${id}_${lang}`);
@@ -310,6 +320,7 @@ function LobbyClient({ lobbyId, mySteamId }: { lobbyId: string; mySteamId: strin
 
   return (
     <div className="lobby-shell">
+      {rpcData}
       <div className="lobby-bg" style={{ background: GAME_THEME[baseGame] || GAME_THEME.none }} aria-hidden />
 
       <AnimatePresence>

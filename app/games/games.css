@@ -1240,3 +1240,35 @@
   .games-list .game-card-content { grid-template-columns: auto 1fr; }
   .games-list .game-card-desc { display: none; }
 }
+
+/* ---------- Socket Loading Banner ---------- */
+.socket-loading-banner {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 12px;
+  max-width: 1400px;
+  margin: 0 auto 32px;
+  padding: 16px 24px;
+  background: rgba(30, 30, 42, 0.6);
+  border: 1px solid rgba(255, 255, 255, 0.05);
+  border-radius: 12px;
+  backdrop-filter: blur(10px);
+  color: var(--muted);
+  font-size: 0.95rem;
+  font-weight: 500;
+  animation: fade-in 0.3s ease-out;
+}
+
+.socket-spinner {
+  width: 16px;
+  height: 16px;
+  border: 2px solid rgba(255, 255, 255, 0.1);
+  border-top-color: var(--accent);
+  border-radius: 50%;
+  animation: spin 1s linear infinite;
+}
+
+@keyframes spin {
+  to { transform: rotate(360deg); }
+}
