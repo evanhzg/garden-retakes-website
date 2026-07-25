@@ -25,12 +25,21 @@ export const SocketProvider = ({ children, steamId }: { children: React.ReactNod
   const [isAuthed, setIsAuthed] = useState(false);
 
   useEffect(() => {
-    // NEXT_PUBLIC_SOCKET_URL wins; else localhost in dev, the Render host in prod
-    const socketUrl = process.env.NEXT_PUBLIC_SOCKET_URL
-      || (process.env.NODE_ENV === "development"
-        ? "http://localhost:3001"
-        : "https://node-sockets-reeeeetakes.onrender.com");
-    const socketInstance = io(socketUrl);
+    // NEXT_PUBLIC_SOCKET_URL wins; else localhost in dev, the Render host in prod.
+    //
+    // The special value "same-origin" is for self-hosted deployments where
+    // server.js runs Next and Socket.IO in one process: io() with no argument
+    // targets the page's own origin, so a single build serves every hostname
+    // the box answers on (the raw EC2 name, dev.retakes.fr, games.dev.…)
+    // instead of baking one domain in at build time.
+    const configured = process.env.NEXT_PUBLIC_SOCKET_URL;
+    const socketUrl = configured === "same-origin"
+      ? null
+      : configured
+        || (process.env.NODE_ENV === "development"
+          ? "http://localhost:3001"
+          : "https://node-sockets-reeeeetakes.onrender.com");
+    const socketInstance = socketUrl ? io(socketUrl) : io();
 
     socketInstance.on('connect', () => {
       console.log('Connected to Game Hub Socket:', socketInstance.id);
