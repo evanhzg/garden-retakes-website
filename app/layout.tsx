@@ -23,11 +23,11 @@ export const metadata: Metadata = {
     siteName: "REEEETAKES",
     type: "website",
     locale: "en_US",
-    images: [{ url: "/api/og", width: 1200, height: 630, alt: "REEEETAKES" }],
+    images: [{ url: "/reeeeetakes-embed.png", width: 1200, height: 630, alt: "REEEETAKES" }],
   },
   twitter: {
     card: "summary_large_image",
-    images: ["/api/og"],
+    images: ["/reeeeetakes-embed.png"],
   },
 };
 

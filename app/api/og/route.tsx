@@ -229,65 +229,6 @@ export async function GET(req: Request) {
     );
   }
 
-  // Default site banner
-  return new ImageResponse(
-    frame(
-      <div style={{ display: "flex", flexDirection: "column", flex: 1, justifyContent: "center", alignItems: "center" }}>
-        <img src={`${origin}/retakes_logo.png`} width={128} height={128} style={{ borderRadius: 24, marginBottom: 24 }} />
-        <div style={{
-          display: "flex",
-          flexDirection: "row",
-          alignItems: "center",
-          fontFamily: 'ui-sans-serif, system-ui, "Segoe UI", Roboto, sans-serif',
-          fontWeight: 900,
-          fontSize: 110, /* Scaled from 1.25rem for the 1200x630 OG canvas */
-          letterSpacing: "1px",
-          color: "white"
-        }}>
-          <span>R</span>
-          <span>E</span>
-          <span style={{ opacity: 0.4 }}>E</span>
-          <span style={{ opacity: 0.4 }}>E</span>
-          <span style={{ opacity: 0.4 }}>E</span>
-          <span style={{ opacity: 0.4 }}>E</span>
-          <span>TAKES</span>
-        </div>
-        <div
-          style={{
-            display: "flex",
-            fontSize: 26,
-            fontWeight: 700,
-            color: "rgba(255,255,255,0.85)",
-            marginTop: 24,
-            letterSpacing: 1,
-            textTransform: "uppercase"
-          }}
-        >
-          PLAY.RETAKES.FR INVENTORY & RANKINGS - GAMES HUB AND MUCH MORE...
-        </div>
-        <div style={{ display: "flex", gap: 18, marginTop: 46 }}>
-          {[
-            <svg width="42" height="42" viewBox="0 0 24 24" fill="none" stroke="#fff" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><path d="M6 9H4.5a2.5 2.5 0 0 1 0-5H6"/><path d="M18 9h1.5a2.5 2.5 0 0 0 0-5H18"/><path d="M4 22h16"/><path d="M10 14.66V17c0 .55-.47.98-.97 1.21C7.85 18.75 7 20.24 7 22"/><path d="M14 14.66V17c0 .55.47.98.97 1.21C16.15 18.75 17 20.24 17 22"/><path d="M18 2H6v7a6 6 0 0 0 12 0V2Z"/></svg>,
-            <svg width="42" height="42" viewBox="0 0 24 24" fill="none" stroke="#fff" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><path d="M3 3v18h18"/><path d="m19 9-5 5-4-4-3 3"/></svg>,
-            <svg width="42" height="42" viewBox="0 0 24 24" fill="none" stroke="#fff" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><circle cx="12" cy="12" r="10"/><circle cx="12" cy="12" r="6"/><circle cx="12" cy="12" r="2"/></svg>,
-            <svg width="42" height="42" viewBox="0 0 24 24" fill="none" stroke="#fff" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><path d="M6 12h4m-2-2v4"/><circle cx="15" cy="11" r="1"/><circle cx="18" cy="13" r="1"/><path d="M22 14c0 2.21-1.79 4-4 4H6c-2.21 0-4-1.79-4-4V9c0-2.21 1.79-4 4-4h12c2.21 0 4 1.79 4 4v5Z"/></svg>,
-            <svg width="42" height="42" viewBox="0 0 24 24" fill="none" stroke="#fff" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><rect width="20" height="14" x="2" y="3" rx="2"/><path d="M8 21h8"/><path d="M12 17v4"/></svg>
-          ].map((e, i) => (
-            <div
-              key={i}
-              style={{
-                display: "flex",
-                alignItems: "center",
-                justifyContent: "center",
-              }}
-            >
-              {e}
-            </div>
-          ))}
-        </div>
-      </div>,
-      origin
-    ),
-    { width: 1200, height: 630 }
-  );
+  // Default site banner is now statically provided in public/
+  return Response.redirect(new URL("/reeeeetakes-embed.png", origin));
 }
