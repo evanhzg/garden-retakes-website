@@ -8,7 +8,9 @@
         "start": "next start",
         "lint": "next lint",
         "prisma:generate": "prisma generate",
-        "bot": "node scripts/discordBot.js"
+        "bot": "node scripts/discordBot.js",
+        "ws:ingest": "node scripts/ws-ingest",
+        "ws:test": "node scripts/ws-ingest/vpk.test.js"
     },
     "dependencies": {
         "@ianlucas/cs2-lib": "^8.0.3",
@@ -38,6 +40,8 @@
         "@types/react-dom": "^18.3.7",
         "@types/three": "^0.185.1",
         "concurrently": "^10.0.3",
+        "jpeg-js": "^0.4.4",
+        "pngjs": "^7.0.0",
         "prisma": "^6.19.3",
         "typescript": "^5.5.3"
     }

@@ -1,0 +1,91 @@
+{
+  "generatedAt": "2026-07-25T18:16:14.789Z",
+  "count": 2,
+  "skins": [
+    {
+      "workshopId": "3767194799",
+      "name": "Whisperwood - Glock-18",
+      "description": "You are embarking on an adventure into the heart of Whisperwood. Be ready to find companions who will guide you, listen to the whispers among the trees and every shadow will tell you a story. Only those who can truly remain silent will be able to hear the voice of the forest.",
+      "def": 4,
+      "weapon": "Glock-18",
+      "weaponModel": "glock",
+      "weaponResolvedVia": "tag \"Glock-18\"",
+      "tags": [
+        "Cs2",
+        "Weapon Finish",
+        "Custom Paint Job",
+        "Glock-18",
+        "Fairy Tales"
+      ],
+      "primaryMaterial": null,
+      "materials": [],
+      "vpk": null,
+      "preview": {
+        "file": "/home/evan/projects/Garden-website/public/web_assets/3767194799.jpg",
+        "webPath": "/web_assets/3767194799.jpg",
+        "format": "jpg",
+        "sourceFormat": "jpg",
+        "bytes": 22140,
+        "sourceUrl": "https://images.steamusercontent.com/ugc/13967855092079409171/A42A4FCF6A1903B94A1BADD1277ECB7ECF8B39F8/"
+      },
+      "steam": {
+        "creator": "76561198161580319",
+        "fileSize": 50335311,
+        "timeCreated": 1784395349,
+        "timeUpdated": 1784657987,
+        "subscriptions": 0,
+        "favorited": 6,
+        "views": 453
+      },
+      "ingestedAt": "2026-07-25T18:11:14.807Z",
+      "deployedAt": "2026-07-25T19:01:26.929Z"
+    },
+    {
+      "workshopId": "3771230656",
+      "name": "Glock-18 | Magic Touch",
+      "description": "\"You Here for the Magic Touch?\"",
+      "def": 4,
+      "weapon": "Glock-18",
+      "weaponModel": "glock",
+      "weaponResolvedVia": "tag \"Glock-18\"",
+      "tags": [
+        "Cs2",
+        "Weapon Finish",
+        "Custom Paint Job Extended",
+        "Glock-18",
+        "Fairy Tales"
+      ],
+      "primaryMaterial": "materials/models/weapons/customization/paints/custom/glock_magic_touch.vmat_c",
+      "materials": [
+        "materials/models/weapons/base_weapons/weapon_glock.vmat_c",
+        "materials/models/weapons/customization/paints/custom/glock_magic_touch.vmat_c",
+        "materials/models/weapons/customization/paints/custom/glock_magic_touch_pearlescent.vmat_c"
+      ],
+      "vpk": {
+        "file": "/tmp/claude-1000/magic_touch.vpk",
+        "bytes": 541,
+        "version": 2,
+        "entryCount": 8
+      },
+      "preview": {
+        "file": "/home/evan/projects/Garden-website/public/web_assets/3771230656.png",
+        "webPath": "/web_assets/3771230656.png",
+        "format": "png",
+        "sourceFormat": "jpg",
+        "bytes": 145485,
+        "sourceUrl": "https://images.steamusercontent.com/ugc/11904128195713646329/D8CAC9DC12CACAAD72633E8A2ECCCFB2D7748264/"
+      },
+      "steam": {
+        "creator": "76561198312160526",
+        "fileSize": 33564343,
+        "timeCreated": 1784961519,
+        "timeUpdated": 1784965543,
+        "subscriptions": 0,
+        "favorited": 1,
+        "views": 81
+      },
+      "ingestedAt": "2026-07-25T18:16:14.783Z",
+      "deployedAt": "2026-07-25T19:01:26.929Z"
+    }
+  ]
+}

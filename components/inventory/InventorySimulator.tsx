@@ -33,6 +33,18 @@ type WeaponEntry = {
   team: Team;
 };
 type Skin = { id: number; def: number; paint: number; name: string; image: string; rarity: string; collection?: string };
+// A Workshop skin behaves like a Skin in the picker but has no paint index —
+// it's mounted on the server as an addon rather than applied as a paint kit.
+type WorkshopSkin = {
+  workshopId: string;
+  name: string;
+  def: number | null;
+  weapon: string | null;
+  materials: string[];
+  primaryMaterial: string | null;
+  preview: { webPath: string | null } | null;
+  deployedAt?: string | null;
+};
 type StickerOption = { id: number; def: number; name: string; image: string; rarity: string };
 type Catalog = Record<string, WeaponEntry[]>;
 type Session = { authenticated: boolean; steamId?: string; name?: string | null; avatar?: string | null; adminLevel?: number };
@@ -84,6 +96,12 @@ export default function InventorySimulator() {
   const [weapon, setWeapon] = useState<WeaponEntry | null>(null); // set = skin chooser open
   const [skins, setSkins] = useState<Skin[]>([]);
   const [skinsLoading, setSkinsLoading] = useState(false);
+
+  // Workshop skins, ingested from a Steam Workshop link or id.
+  const [workshopSkins, setWorkshopSkins] = useState<WorkshopSkin[]>([]);
+  const [wsInput, setWsInput] = useState("");
+  const [wsBusy, setWsBusy] = useState(false);
+  const [wsMsg, setWsMsg] = useState<{ kind: "ok" | "err"; text: string } | null>(null);
 
   // Skin chooser filters
   const [skinSearch, setSkinSearch] = useState("");
@@ -179,6 +197,69 @@ export default function InventorySimulator() {
   );
   const itemById = useCallback((id?: string) => (id ? store.items.find((i) => i.id === id) : undefined), [store.items]);
   const favorites = useMemo(() => new Set(store.favorites ?? []), [store.favorites]);
+
+  // ---------- Workshop skins ----------
+  const loadWorkshopSkins = useCallback(() => {
+    fetch("/api/workshop")
+      .then((r) => r.json())
+      .then((d) => setWorkshopSkins(Array.isArray(d?.skins) ? d.skins : []))
+      .catch(() => setWorkshopSkins([]));
+  }, []);
+
+  useEffect(() => { loadWorkshopSkins(); }, [loadWorkshopSkins]);
+
+  /** Add a skin from a pasted Workshop link or id (admin only). */
+  const addWorkshopSkin = useCallback(async () => {
+    const input = wsInput.trim();
+    if (!input || wsBusy) return;
+    setWsBusy(true);
+    setWsMsg(null);
+    try {
+      const res = await fetch("/api/workshop", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ input }),
+      });
+      const data = await res.json();
+      if (!res.ok) throw new Error(data?.error || `Request failed (${res.status})`);
+      setWsInput("");
+      setWsMsg({
+        kind: "ok",
+        text: `${data.created ? "Added" : "Refreshed"} ${data.skin.name}${data.skin.weapon ? ` — ${data.skin.weapon}` : ""}. Deploy to push it to the server.`,
+      });
+      loadWorkshopSkins();
+    } catch (err) {
+      setWsMsg({ kind: "err", text: (err as Error).message });
+    } finally {
+      setWsBusy(false);
+    }
+  }, [wsInput, wsBusy, loadWorkshopSkins]);
+
+  /**
+   * Workshop skins can't be "equipped" the way a paint kit can.
+   *
+   * A paint kit is applied by index (InventoryItem.paint); a Workshop finish
+   * lives inside a mounted addon and replaces the weapon's material for every
+   * client that downloaded it. The index only exists in the addon's own item
+   * schema, which the VPK path listing doesn't expose — so clicking one hands
+   * you the material path for the plugin config instead of pretending.
+   */
+  const equipWorkshopSkin = useCallback(async (ws: WorkshopSkin) => {
+    const material = ws.primaryMaterial;
+    if (!material) {
+      setWsMsg({
+        kind: "err",
+        text: `${ws.name}: material path not extracted yet — run \`node scripts/ws-ingest ${ws.workshopId} --steam-login <user>\``,
+      });
+      return;
+    }
+    try {
+      await navigator.clipboard.writeText(material);
+      setWsMsg({ kind: "ok", text: `Copied ${material}` });
+    } catch {
+      setWsMsg({ kind: "ok", text: material });
+    }
+  }, []);
 
   // ---------- Skins fetch ----------
   useEffect(() => {
@@ -510,6 +591,12 @@ export default function InventorySimulator() {
 
   const isAdmin = (session.adminLevel ?? 0) >= 2;
 
+  // Workshop skins that target the weapon currently open in the chooser.
+  const workshopForWeapon = useMemo(
+    () => (weapon ? workshopSkins.filter((ws) => ws.def === weapon.def) : []),
+    [workshopSkins, weapon]
+  );
+
   // ---------- Derived: skin chooser list ----------
   const collections = useMemo(() => {
     const set = new Set<string>();
@@ -802,6 +889,63 @@ export default function InventorySimulator() {
                 <p className="muted" style={{ fontSize: "0.78rem" }}>Stickers apply when you pick a skin below.</p>
               </div>
             )}
+
+            {/* ---- Workshop skins for this weapon ---- */}
+            <div className="inv3-ws">
+              <div className="inv3-ws-head">
+                <strong>Workshop</strong>
+                <span className="muted">
+                  Custom skins mounted on the server. Everyone needs the addon downloaded to see them.
+                </span>
+              </div>
+
+              {isAdmin && (
+                <div className="inv3-ws-add">
+                  <input
+                    className="input"
+                    placeholder="Paste a Workshop link or id…"
+                    value={wsInput}
+                    onChange={(e) => setWsInput(e.target.value)}
+                    onKeyDown={(e) => { if (e.key === "Enter") addWorkshopSkin(); }}
+                    disabled={wsBusy}
+                  />
+                  <button className="btn small" onClick={addWorkshopSkin} disabled={wsBusy || !wsInput.trim()}>
+                    {wsBusy ? "Adding…" : "Add"}
+                  </button>
+                </div>
+              )}
+
+              {wsMsg && (
+                <p className={`inv3-ws-msg ${wsMsg.kind}`}>{wsMsg.text}</p>
+              )}
+
+              {workshopForWeapon.length === 0 ? (
+                <p className="empty-hint">
+                  {isAdmin
+                    ? "No Workshop skins for this weapon yet — paste a link above."
+                    : "No Workshop skins for this weapon yet."}
+                </p>
+              ) : (
+                <div className="inv3-skins">
+                  {workshopForWeapon.map((ws) => (
+                    <div key={ws.workshopId} className="inv3-skin inv3-ws-skin">
+                      <button
+                        className="inv3-skin-pick"
+                        onClick={() => equipWorkshopSkin(ws)}
+                        title={ws.primaryMaterial ?? "Material path not extracted yet"}
+                      >
+                        {/* eslint-disable-next-line @next/next/no-img-element */}
+                        <img src={ws.preview?.webPath ?? "/default_pp.png"} alt={ws.name} loading="lazy" />
+                        <span className="inv3-skin-name">{ws.name}</span>
+                      </button>
+                      <span className={`inv3-ws-badge ${ws.deployedAt ? "live" : "pending"}`}>
+                        {ws.deployedAt ? "on server" : "not deployed"}
+                      </span>
+                    </div>
+                  ))}
+                </div>
+              )}
+            </div>
 
             {skinsLoading ? (
               <p className="empty-hint">Loading skins…</p>
