@@ -202,7 +202,7 @@ export async function GET(req: Request) {
   }
 
   if (type === "page") {
-    const title = p.get("title") ?? "REEEETAKES";
+    const title = p.get("title") ?? "REEEEETAKES";
     const desc = p.get("desc") ?? "";
     const icon = p.get("icon");
 
@@ -234,8 +234,15 @@ export async function GET(req: Request) {
     frame(
       <div style={{ display: "flex", flexDirection: "column", flex: 1, justifyContent: "center", alignItems: "center" }}>
         <img src={`${origin}/retakes_logo.png`} width={128} height={128} style={{ borderRadius: 24, marginBottom: 24 }} />
-        <div style={{ display: "flex", fontSize: 130, fontWeight: 900, color: "#fff", letterSpacing: -2 }}>
-          REEEETAKES
+        <div style={{
+          display: "flex",
+          fontSize: 110,
+          fontWeight: 900,
+          fontFamily: 'ui-sans-serif, system-ui, "Segoe UI", Roboto, sans-serif',
+          color: "white",
+          letterSpacing: "1px"
+        }}>
+          REEEEETAKES
         </div>
         <div
           style={{
@@ -262,14 +269,8 @@ export async function GET(req: Request) {
               key={i}
               style={{
                 display: "flex",
-                width: 84,
-                height: 84,
-                borderRadius: 22,
                 alignItems: "center",
                 justifyContent: "center",
-                fontSize: 42,
-                background: "rgba(255,255,255,0.07)",
-                border: "1px solid rgba(255,255,255,0.14)",
               }}
             >
               {e}
