@@ -34,15 +34,25 @@ export default function SkinRequestPage() {
     };
 
     const handleSubmitJob = async (imageUrl) => {
-        // In a real app, this would be another API route that inserts into the database
-        // For demonstration, we'll pretend we got a job ID back
-        // const res = await fetch('/api/jobs', { method: 'POST', body: JSON.stringify({ workshopUrl, imageUrl }) });
-        // const data = await res.json();
-        // setJobId(data.id);
-        
-        console.log("Submitting job for image:", imageUrl);
-        // Mocking a job ID for now so the IntegrationStatus component can poll
-        setJobId(Math.floor(Math.random() * 1000) + 1);
+        setLoading(true);
+        setError(null);
+        try {
+            console.log("Submitting job for image:", imageUrl);
+            const res = await fetch('/api/jobs', { 
+                method: 'POST', 
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ workshopUrl, imageUrl }) 
+            });
+            const data = await res.json();
+            
+            if (!res.ok) throw new Error(data.error || 'Failed to submit job');
+            
+            setJobId(data.id);
+        } catch (err) {
+            setError(err.message);
+        } finally {
+            setLoading(false);
+        }
     };
 
     return (
