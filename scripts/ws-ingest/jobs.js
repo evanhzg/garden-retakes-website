@@ -26,7 +26,7 @@ const { resolveWeapon } = require("./weapons");
 const { readVpkFile, findByExtension } = require("./vpk");
 const { locateVpk, resolveSteamCmd } = require("./steamcmd");
 const { buildRecord, writeRecord, rebuildIndex } = require("./manifest");
-const { syncAddonsToServer } = require("./serverSync");
+const { syncAddonsToServer, fetchMaterialsFromGameServer } = require("./serverSync");
 
 const REPO_ROOT = path.resolve(__dirname, "..", "..");
 const DATA_DIR = path.join(REPO_ROOT, "data", "workshop");
@@ -151,12 +151,16 @@ function runSteamcmd(job, workshopId, { steamcmd, login, timeoutMs = 900000 }) {
       const failure = /ERROR! Download item .*? failed \((.+?)\)/i.exec(output);
       if (failure) {
         const reason = failure[1];
-        // Name the binary we actually resolved: the path differs per host
-        // (~/steamcmd/steamcmd.sh locally, /usr/games/steamcmd on the server),
-        // and telling someone to run a path that doesn't exist wastes their time.
+        // "Access Denied" here is not an auth problem: it comes back for every
+        // CS2 item even on a logged-in account that owns the game, because
+        // Valve doesn't serve 730 UGC through workshop_download_item. Saying
+        // "your session expired" sent people off re-authenticating a session
+        // that was already working. Materials come from the game server
+        // instead, once MultiAddonManager has downloaded the addon.
         const friendly = /access denied/i.test(reason)
-          ? "Steam denied the download. The cached session is missing or expired — "
-            + `run \`${bin} +login ${login}\` once on this machine and approve it on your phone.`
+          ? "Steam won't serve CS2 workshop items to steamcmd (Access Denied is expected here). "
+            + "Material paths are read from the game server instead, once it downloads the addon "
+            + "on the next map change."
           : `steamcmd could not download the item: ${reason}`;
         return finish({ ok: false, error: friendly, output });
       }
@@ -272,6 +276,29 @@ async function runJob(job) {
       }
     } else {
       job.warnings = [...(job.warnings || []), "no game-server FTP configured — skin added to the site only"];
+    }
+
+    // steamcmd can't supply materials for CS2 items (Access Denied on every
+    // one), but MultiAddonManager downloads the addon on the game server, so
+    // read the paths back from there instead. It won't be there until MAM has
+    // fetched it on a map change, which is why this is a best-effort backfill
+    // rather than a step that can fail the job.
+    if (!materials.length && config.deploy) {
+      try {
+        const found = await fetchMaterialsFromGameServer(job.workshopId);
+        if (found && found.materials.length) {
+          record.materials = found.materials;
+          record.vpk = found.vpk;
+          materials = found.materials;
+          writeRecord(DATA_DIR, record);
+          rebuildIndex(DATA_DIR);
+        } else {
+          job.warnings = [...(job.warnings || []),
+            "materials pending — the game server downloads the addon on the next map change"];
+        }
+      } catch (err) {
+        job.warnings = [...(job.warnings || []), `could not read materials from the game server: ${err.message}`];
+      }
     }
 
     job.status = "done";

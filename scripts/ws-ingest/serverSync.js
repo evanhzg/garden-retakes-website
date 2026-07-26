@@ -209,4 +209,65 @@ async function syncAddonsToServer() {
   }
 }
 
-module.exports = { syncAddonsToServer, setConVar, readWorkshopIds };
+/**
+ * Read a skin's material paths back off the game server.
+ *
+ * steamcmd can't get these: `workshop_download_item 730 <id>` answers Access
+ * Denied for every CS2 item, on a logged-in account that owns the game, so
+ * that route is a dead end regardless of credentials.
+ *
+ * MultiAddonManager already downloads each addon on the game server, into
+ * /maps/workshop/content/730/<id>/. We only need <id>_dir.vpk from there — the
+ * directory VPK holds the paths, the numbered archives hold the bulk data, so
+ * this pulls a few KB rather than the whole several-hundred-MB addon.
+ *
+ * Returns null when the addon isn't downloaded yet: MAM fetches on map change,
+ * so a skin added moments ago legitimately isn't there and that is not an error.
+ */
+async function fetchMaterialsFromGameServer(workshopId, appId = 730) {
+  const cfg = config();
+  if (!cfg.host) throw new Error("No game server configured (GAMESERVER_FTP_HOST).");
+
+  const { Client } = require("basic-ftp");
+  const { readVpkBuffer, findByExtension } = require("./vpk");
+  const client = new Client(30000);
+  const dir = `/maps/workshop/content/${appId}/${workshopId}`;
+
+  try {
+    await client.access({
+      host: cfg.host,
+      port: cfg.port,
+      user: cfg.user,
+      password: cfg.password,
+      secure: cfg.secure,
+    });
+
+    let listing;
+    try {
+      listing = await client.list(dir);
+    } catch {
+      return null; // Not downloaded yet.
+    }
+
+    const names = listing.filter((f) => !f.isDirectory).map((f) => f.name);
+    // Prefer the explicit _dir.vpk; a single-archive addon just has one .vpk.
+    const vpkName = names.find((n) => /_dir\.vpk$/i.test(n))
+      || (names.filter((n) => /\.vpk$/i.test(n)).length === 1
+        ? names.find((n) => /\.vpk$/i.test(n))
+        : null);
+    if (!vpkName) return null;
+
+    const buf = await downloadToBuffer(client, `${dir}/${vpkName}`);
+    if (!buf) return null;
+
+    const { version, entries } = readVpkBuffer(buf);
+    return {
+      materials: findByExtension(entries, [".vmat_c"]).map((e) => e.path).sort(),
+      vpk: { file: `${dir}/${vpkName}`, bytes: buf.length, version, entryCount: entries.length },
+    };
+  } finally {
+    client.close();
+  }
+}
+
+module.exports = { syncAddonsToServer, fetchMaterialsFromGameServer, setConVar, readWorkshopIds };
