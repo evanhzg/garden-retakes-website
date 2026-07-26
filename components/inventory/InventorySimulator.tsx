@@ -251,7 +251,16 @@ export default function InventorySimulator() {
           setWsJobs(data.active || []);
           if (data.active?.length === 0 && wsJobs.length > 0) {
             loadWorkshopSkins();
-            setWsMsg({ kind: "ok", text: "Download complete. Deploy to push it to the server." });
+            // The job pushes the addon to the game server itself now, so report
+            // what it did rather than asking for a manual deploy.
+            const last = (data.recent || []).find(
+              (j: { id: string }) => wsJobs.some((w) => w.id === j.id)
+            ) as { status?: string; note?: string; warnings?: string[] } | undefined;
+            const failed = last?.status === "failed";
+            setWsMsg({
+              kind: failed ? "err" : "ok",
+              text: last?.note || last?.warnings?.[0] || "Done.",
+            });
           }
         }
       } catch (err) {}

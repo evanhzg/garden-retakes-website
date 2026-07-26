@@ -277,9 +277,14 @@ async function runJob(job) {
     job.status = "done";
     job.step = "done";
     job.stepIndex = STEPS.length;
-    job.note = materials.length
-      ? `Added ${record.name} with ${materials.length} material path(s)`
-      : `Added ${record.name} (materials still missing)`;
+    const mats = materials.length
+      ? `${materials.length} material path(s)`
+      : "materials still missing";
+    // Say whether it reached the game server: that's the part people are
+    // waiting on, and it used to be a manual step they had to remember.
+    job.note = job.deploy
+      ? `Added ${record.name} (${mats}) — ${job.deploy.note}`
+      : `Added ${record.name} (${mats})`;
     job.skin = record;
     saveJob(job);
   } catch (err) {
