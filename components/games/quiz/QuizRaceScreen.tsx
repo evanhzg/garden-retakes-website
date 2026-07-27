@@ -160,7 +160,7 @@ export default function QuizRaceScreen({ theme }: { theme: QuizTheme }) {
                     disabled={!!pending}
                     autoFocus
                     autoComplete="off"
-                    placeholder={t("inputPlaceholder") || "Type your answer..."}
+                    placeholder={t("inputPlaceholder" as any) || "Type your answer..."}
                   />
                   <button type="submit" disabled={!!pending} className="quiz-primary" style={{ marginTop: "12px", width: "100%" }}>
                     {t("submit")}

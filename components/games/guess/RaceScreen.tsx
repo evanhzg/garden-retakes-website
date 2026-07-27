@@ -64,7 +64,7 @@ export function RaceScreen<T extends { id: string }>({
       else next.add(key);
       if (next.size === 0) next.add(key); // prevent all off
       if (typeof window !== "undefined") {
-        window.localStorage.setItem(`garden_cols_${headLabel}`, JSON.stringify([...next]));
+        window.localStorage.setItem(`garden_cols_${headLabel}`, JSON.stringify(Array.from(next)));
       }
       return next;
     });
