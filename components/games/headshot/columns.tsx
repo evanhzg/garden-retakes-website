@@ -53,6 +53,7 @@ export const HEADSHOT_COLUMNS: GuessColumn<HeadshotPlayer>[] = [
   },
   { key: "age", label: "colAge", compact: true, cell: (p) => <span className="hs-cell-big">{ageOf(p) ?? "?"}</span> },
   { key: "majors", label: "colMajors", compact: true, cell: (p) => <span className="hs-cell-big">{p.majors}</span> },
+  { key: "status", label: "colStatus", cell: (p, lang) => <span className="hs-cell-text">{translator(HEADSHOT, lang)(p.status === "active" ? "statusActive" : p.status === "inactive" ? "statusInactive" : "statusRetired")}</span> },
 ];
 
 /** Player name + flag, for the first column of a guess row. */

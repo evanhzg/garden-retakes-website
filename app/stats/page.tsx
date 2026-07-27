@@ -4,6 +4,7 @@ import { summarize, dayKey, formatDate } from "@/lib/stats";
 import { resolveNames, nameFrom, NameMap } from "@/lib/names";
 import AvatarImage from "@/components/AvatarImage";
 import { Columns, HBars, SideSplitBars, Histogram } from "@/components/stats/charts";
+import PlayerBubble from "@/components/social/PlayerBubble";
 
 export const dynamic = "force-dynamic";
 export const revalidate = 60;
@@ -28,10 +29,12 @@ function Leaderboard({
             <tr key={p.steamId}>
               <td className="rank-cell">{i + 1}</td>
               <td>
-                <Link href={`/players/${p.steamId}`} className="ladder-player">
-                  <span className="ladder-avatar"><AvatarImage steamId={p.steamId} /></span>
-                  <span>{nameFrom(names, p.steamId)}</span>
-                </Link>
+                <PlayerBubble steamId={p.steamId} name={nameFrom(names, p.steamId)}>
+                  <div className="ladder-player">
+                    <span className="ladder-avatar"><AvatarImage steamId={p.steamId} /></span>
+                    <span>{nameFrom(names, p.steamId)}</span>
+                  </div>
+                </PlayerBubble>
               </td>
               <td style={{ fontWeight: 800 }}>{format(p.value)}</td>
             </tr>

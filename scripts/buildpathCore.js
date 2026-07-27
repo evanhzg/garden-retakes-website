@@ -8,6 +8,8 @@ const CHAMPS = require("../data/lolChampions.json");
 const ITEMS = require("../data/lolItems.json");
 const { GENERATORS } = require("./buildpathQuestions");
 const engine = require("./quizEngine");
+const fs = require('fs');
+const path = require('path');
 
 let _cache = null;
 
@@ -28,7 +30,10 @@ function buildData(lang = "en") {
   const byId = new Map(items.map((it) => [it.id, it]));
   const champions = CHAMPS.champions.filter((c) => c.releaseYear && c.regions.length && c.classes.length);
 
-  _cache = { lang, items, byId, champions, patch: ITEMS.patch, generatedAt: ITEMS.generatedAt };
+  let meta = null;
+  try { meta = JSON.parse(fs.readFileSync(path.join(__dirname, '../data/lolMeta.json'), 'utf8')); } catch(e) {}
+
+  _cache = { lang, items, byId, champions, patch: ITEMS.patch, generatedAt: ITEMS.generatedAt, meta };
   return _cache;
 }
 

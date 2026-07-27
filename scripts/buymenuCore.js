@@ -7,14 +7,19 @@
 const REF = require("../data/cs2Reference.json");
 const { GENERATORS } = require("./buymenuQuestions");
 const engine = require("./quizEngine");
+const fs = require('fs');
+const path = require('path');
 
 function buildData() {
+  let meta = null;
+  try { meta = JSON.parse(fs.readFileSync(path.join(__dirname, '../data/cs2Meta.json'), 'utf8')); } catch(e) {}
   return {
     weapons: REF.weapons,
     utility: REF.utility,
     gear: REF.gear,
     economy: REF.economy,
     maps: REF.maps,
+    meta,
   };
 }
 

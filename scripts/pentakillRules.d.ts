@@ -38,6 +38,9 @@ export type Comparison = {
   rangeType: Cell;
   damageType: Cell;
   releaseYear: NumericCell;
+  difficulty: NumericCell;
+  attackRange: NumericCell;
+  be: NumericCell;
 };
 
 export function seededShuffle<T>(arr: T[], seedStr: string | number): T[];

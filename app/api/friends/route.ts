@@ -7,6 +7,7 @@ export async function GET(request: Request) {
   try {
     const steamIdHeader = request.headers.get("Authorization")?.replace("Bearer ", "");
     if (!steamIdHeader) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+    if (steamIdHeader.startsWith("GUEST_")) return NextResponse.json([]);
 
     const steamId = BigInt(steamIdHeader);
 
@@ -56,6 +57,7 @@ export async function POST(request: Request) {
   try {
     const steamIdHeader = request.headers.get("Authorization")?.replace("Bearer ", "");
     if (!steamIdHeader) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+    if (steamIdHeader.startsWith("GUEST_")) return NextResponse.json({ error: "Guests cannot add friends" }, { status: 403 });
 
     const steamId = BigInt(steamIdHeader);
     const { targetSteamId } = await request.json();

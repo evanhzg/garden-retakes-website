@@ -298,6 +298,11 @@ export const HEADSHOT = {
   colRole:        { en: "Role", fr: "Rôle" },
   colAge:         { en: "Age", fr: "Âge" },
   colMajors:      { en: "Majors", fr: "Majors" },
+  colStatus:      { en: "Status", fr: "Statut" },
+
+  statusActive:   { en: "Active", fr: "Actif" },
+  statusInactive: { en: "Inactive", fr: "Inactif" },
+  statusRetired:  { en: "Retired", fr: "Retraité" },
 
   // legend
   legendTitle:    { en: "How to read a row", fr: "Comment lire une ligne" },
@@ -401,6 +406,9 @@ export const PENTAKILL = {
   colRange:       { en: "Range", fr: "Portée" },
   colDamage:      { en: "Damage", fr: "Dégâts" },
   colYear:        { en: "Released", fr: "Sortie" },
+  colDifficulty:  { en: "Difficulty", fr: "Difficulté" },
+  colAttackRange: { en: "Auto Range", fr: "Portée (AA)" },
+  colBlueEssence: { en: "Price (BE)", fr: "Prix (EB)" },
 
   legendTitle:    { en: "How to read a row", fr: "Comment lire une ligne" },
   legendHit:      { en: "Exact match", fr: "Correspondance exacte" },
@@ -607,9 +615,11 @@ export const BUILDPATH = {
 
   // question prompts
   qItemCost:        { en: "How much does {item} cost in total?", fr: "Combien coûte {item} au total ?" },
+  qItemCostInput:   { en: "Type the total cost of {item}:", fr: "Entrez le coût total de {item} :" },
   eItemCost:        { en: "{item} costs {n} gold.", fr: "{item} coûte {n} po." },
   qChampRegion:     { en: "Which region is {champ} from?", fr: "De quelle région vient {champ} ?" },
   qChampClass:      { en: "What is {champ}'s primary class?", fr: "Quelle est la classe principale de {champ} ?" },
+  qTopPicked:       { en: "Which of these champions was picked the most recently in pro play?", fr: "Lequel de ces champions a été le plus joué récemment en compétition ?" },
   qChampPosition:   { en: "Which lane does {champ} play?", fr: "Sur quelle voie joue {champ} ?" },
   qBuildsFrom:      { en: "Which component does {item} build from?", fr: "À partir de quel composant se construit {item} ?" },
   eBuildsFrom:      { en: "{item} = {parts}.", fr: "{item} = {parts}." },
@@ -622,6 +632,7 @@ export const BUILDPATH = {
   qCombineCost:     { en: "What is {item}'s combine cost (the upgrade fee alone)?", fr: "Quel est le coût de combinaison de {item} (hors composants) ?" },
   eCombineCost:     { en: "{n} gold on top of its parts, {total} gold all in.", fr: "{n} po en plus des composants, {total} po au total." },
   qChampYear:       { en: "Which year was {champ} released?", fr: "En quelle année {champ} est-il sorti ?" },
+  qChampYearInput:  { en: "Type the release year of {champ}:", fr: "Entrez l'année de sortie de {champ} :" },
   qMostExpensive:   { en: "Which of these items is the most expensive?", fr: "Lequel de ces objets est le plus cher ?" },
   eMostExpensive:   { en: "{item}, at {n} gold.", fr: "{item}, à {n} po." },
 
@@ -657,8 +668,11 @@ export const BUYMENU = {
   tier3D: { en: "Round economy and map callouts.", fr: "Économie de round et callouts." },
   tier4D: { en: "The loss ladder, magazines and exact numbers.", fr: "Échelle de défaite, chargeurs et chiffres exacts." },
 
-  qWeaponPrice:    { en: "How much does the {weapon} cost?", fr: "Combien coûte le {weapon} ?" },
-  eWeaponPrice:    { en: "The {weapon} costs ${n}.", fr: "Le {weapon} coûte {n} $." },
+  qWeaponPrice:      { en: "How much is the {weapon}?", fr: "Combien coûte l'{weapon} ?" },
+  qWeaponPriceInput: { en: "Type the price of the {weapon}:", fr: "Entrez le prix de l'{weapon} :" },
+  qWeaponNameInput:  { en: "Which weapon costs {price}?", fr: "Quelle arme coûte {price} ?" },
+  eWeaponPrice:      { en: "The {weapon} costs ${n}.", fr: "L'{weapon} coûte {n}$." },
+  qTopTeam:          { en: "Which team is currently ranked #1 in the world?", fr: "Quelle équipe est actuellement classée numéro 1 mondiale ?" },
   qUtilityPrice:   { en: "How much does {item} cost?", fr: "Combien coûte {item} ?" },
   qWeaponCategory: { en: "Which category is the {weapon} in?", fr: "Dans quelle catégorie se trouve le {weapon} ?" },
   qKillReward:     { en: "How much does a kill with the {weapon} pay?", fr: "Combien rapporte un kill au {weapon} ?" },

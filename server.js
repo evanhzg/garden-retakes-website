@@ -8,6 +8,8 @@ const { Server } = require("socket.io");
 const UnoGame = require("./scripts/unoLogic");
 const MonopolyGame = require("./scripts/monopolyLogic");
 const { BOARDS, getBoard, boardSummaries, validateBoard } = require("./scripts/boardDefs");
+
+const { scrapeAll } = require('./scripts/scrapeMeta');
 const CodenamesGame = require("./scripts/codenamesLogic");
 const CahGame = require("./scripts/cahLogic");
 const MemeGame = require("./scripts/memeLogic");
@@ -137,7 +139,7 @@ const headshotGames = new Map();
 const headshotTimers = new Map();
 const clearHeadshotTimer = (lobbyId) => {
   const t = headshotTimers.get(lobbyId);
-  if (t) clearInterval(t);
+  if (t) clearTimeout(t);
   headshotTimers.delete(lobbyId);
 };
 const pentakillGames = new Map();
@@ -145,7 +147,7 @@ const pentakillGames = new Map();
 const pentakillTimers = new Map();
 const clearPentakillTimer = (lobbyId) => {
   const t = pentakillTimers.get(lobbyId);
-  if (t) clearInterval(t);
+  if (t) clearTimeout(t);
   pentakillTimers.delete(lobbyId);
 };
 // The two quizzes share one shape, so one map + one ticker helper covers both.
@@ -153,14 +155,14 @@ const quizGames = new Map();       // lobbyId -> QuizRace
 const quizTimers = new Map();
 const clearQuizTimer = (lobbyId) => {
   const t = quizTimers.get(lobbyId);
-  if (t) clearInterval(t);
+  if (t) clearTimeout(t);
   quizTimers.delete(lobbyId);
 };
 // lobbyId -> the 1s ticker driving Skribbl's round + between-turn countdowns
 const skribblTimers = new Map();
 const clearSkribblTimer = (lobbyId) => {
   const t = skribblTimers.get(lobbyId);
-  if (t) clearInterval(t);
+  if (t) clearTimeout(t);
   skribblTimers.delete(lobbyId);
 };
 
@@ -2118,6 +2120,11 @@ httpServer.on("request", (req, res) => {
 
 nextApp.prepare().then(() => {
   const PORT = process.env.PORT || 3000;
+
+  // Start the background meta scraper (once every hour)
+  scrapeAll().catch(console.error);
+  setInterval(() => scrapeAll().catch(console.error), 3600000);
+
   httpServer.listen(PORT, () => {
     console.log(`> Websockets & Next.js ready on http://localhost:${PORT}`);
   });

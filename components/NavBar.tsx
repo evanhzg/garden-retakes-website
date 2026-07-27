@@ -115,7 +115,17 @@ export default function NavBar({
   }, [collapsed]);
 
   const isGamesSection = pathname.startsWith("/games");
-  const baseLinks = isGamesSection ? GAMES_LINKS : CS2_LINKS;
+  const baseLinks = isGamesSection ? [...GAMES_LINKS] : [...CS2_LINKS];
+  
+  if (isGamesSection) {
+    baseLinks.push({ href: "/games/profile", label: "Profile" });
+    if (session.authenticated) {
+      baseLinks.push({ href: "/api/auth/logout", label: "Log out" });
+    } else {
+      baseLinks.push({ href: `/games/login?returnTo=${encodeURIComponent(pathname)}`, label: "Sign in" });
+    }
+  }
+  
   const links = baseLinks.filter(l => !l.adminOnly || (session.adminLevel ?? 0) > 0);
 
   const getHref = (path: string) => {

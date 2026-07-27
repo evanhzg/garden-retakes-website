@@ -74,6 +74,23 @@ const GENERATORS = [
     },
   },
   {
+    id: "itemCostInput",
+    tiers: [1, 2, 3],
+    make(rng, { items, lang }) {
+      const pool = items.filter((it) => it.gold.total >= 800);
+      const target = rng.pick(pool);
+      if (!target) return null;
+      return question({
+        type: "input",
+        prompt: { key: "qItemCostInput", params: { item: nameOf(target, lang) } },
+        image: target.image,
+        answer: String(target.gold.total),
+        accept: [`${target.gold.total}g`, `${target.gold.total} g`],
+        explain: { key: "eItemCost", params: { item: nameOf(target, lang), n: target.gold.total } },
+      });
+    },
+  },
+  {
     id: "champRegion",
     tiers: [1, 2],
     make(rng, { champions, lang }) {
@@ -104,6 +121,29 @@ const GENERATORS = [
         champion: c.id,
         choices: [cls, ...others].map((k) => ({ id: k, label: k, term: true })),
         answer: cls,
+      });
+    },
+  },
+  {
+    id: "topPickedChampion",
+    tiers: [1, 2, 3],
+    make(rng, { meta, champions, lang }) {
+      if (!meta || !meta.topPicks || meta.topPicks.length < 5) return null;
+      // We have champion names in meta.topPicks, need to map to id.
+      const findChamp = (name) => champions.find(c => c.name.toLowerCase() === name.toLowerCase() || c.id.toLowerCase() === name.toLowerCase());
+      const target = findChamp(meta.topPicks[0]);
+      if (!target) return null;
+      
+      const othersRaw = rng.sample(meta.topPicks.slice(1), 3);
+      if (!othersRaw) return null;
+      const others = othersRaw.map(findChamp).filter(Boolean);
+      if (others.length < 3) return null;
+
+      return question({
+        type: "mc",
+        prompt: { key: "qTopPicked" },
+        choices: [target, ...others].map(c => ({ id: c.id, label: lang === "fr" ? c.nameFr : c.name, champion: c.id })),
+        answer: target.id,
       });
     },
   },
@@ -289,6 +329,20 @@ const GENERATORS = [
         prompt: { key: "qChampYear", params: { champ: lang === "fr" ? c.nameFr : c.name } },
         champion: c.id,
         choices: [c.releaseYear, ...others].map((y) => ({ id: String(y), label: String(y) })),
+        answer: String(c.releaseYear),
+      });
+    },
+  },
+  {
+    id: "champReleaseYearInput",
+    tiers: [3, 4],
+    make(rng, { champions, lang }) {
+      const c = rng.pick(champions);
+      if (!c.releaseYear) return null;
+      return question({
+        type: "input",
+        prompt: { key: "qChampYearInput", params: { champ: lang === "fr" ? c.nameFr : c.name } },
+        champion: c.id,
         answer: String(c.releaseYear),
       });
     },

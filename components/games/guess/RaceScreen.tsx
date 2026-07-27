@@ -15,7 +15,7 @@ import { usePlayerNames, displayNameFor, useGameEvents, useGameChrome, type Game
 import { useGameLang, translator, LangToggle, type Lang } from "@/components/games/i18n";
 import SoundControls from "@/components/games/sound/SoundControls";
 import { sound } from "@/components/games/sound/SoundManager";
-import { SearchBox, GuessGrid, Legend, type GuessColumn, type GuessRow } from "@/components/games/guess/GuessBoard";
+import { SearchBox, GuessGrid, Legend, ColumnToggles, type GuessColumn, type GuessRow } from "@/components/games/guess/GuessBoard";
 import "@/components/games/shared.css";
 import "@/components/games/headshot/headshot.css";
 
@@ -48,6 +48,29 @@ export function RaceScreen<T extends { id: string }>({
   const [gameState, setGameState] = useState<any>(null);
   const [lang, setLang] = useGameLang(gameState?.lang);
   const t = translator(dict, lang);
+
+  const [activeCols, setActiveCols] = useState<Set<string>>(() => {
+    if (typeof window !== "undefined") {
+      const saved = window.localStorage.getItem(`garden_cols_${headLabel}`);
+      if (saved) return new Set(JSON.parse(saved));
+    }
+    return new Set(columns.map(c => c.key));
+  });
+
+  const toggleCol = useCallback((key: string) => {
+    setActiveCols(prev => {
+      const next = new Set(prev);
+      if (next.has(key)) next.delete(key);
+      else next.add(key);
+      if (next.size === 0) next.add(key); // prevent all off
+      if (typeof window !== "undefined") {
+        window.localStorage.setItem(`garden_cols_${headLabel}`, JSON.stringify([...next]));
+      }
+      return next;
+    });
+  }, [headLabel]);
+
+  const activeColumns = useMemo(() => columns.filter(c => activeCols.has(c.key)), [columns, activeCols]);
 
   useEffect(() => {
     document.body.style.overflow = "hidden";
@@ -164,7 +187,12 @@ export function RaceScreen<T extends { id: string }>({
           )}
 
           {rows.length > 0
-            ? <GuessGrid rows={rows} columns={columns} lang={lang} t={t} headLabel={t(headLabel)} renderHead={renderHead} />
+            ? (
+              <>
+                <ColumnToggles columns={columns} active={activeCols} onToggle={toggleCol} t={t} />
+                <GuessGrid rows={rows} columns={activeColumns} lang={lang} t={t} headLabel={t(headLabel)} renderHead={renderHead} />
+              </>
+            )
             : <Legend t={t} />}
         </div>
 

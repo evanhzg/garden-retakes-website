@@ -9,7 +9,7 @@ const {
 } = require("./headshotRules");
 
 // The order here is the order of the columns on the board.
-const ATTRIBUTES = ["classes", "positions", "regions", "resource", "rangeType", "damageType", "releaseYear"];
+const ATTRIBUTES = ["classes", "positions", "regions", "resource", "rangeType", "damageType", "releaseYear", "difficulty", "attackRange", "be"];
 
 /** How far off a release year can be and still count as "close". */
 const YEAR_SLACK = 2;
@@ -41,6 +41,15 @@ function compareYear(guess, target) {
   };
 }
 
+function compareNumber(guess, target, slack) {
+  if (guess == null || target == null) return { state: "miss", dir: null };
+  if (guess === target) return { state: "hit", dir: null };
+  return {
+    state: Math.abs(guess - target) <= slack ? "near" : "miss",
+    dir: target > guess ? "up" : "down",
+  };
+}
+
 /**
  * Score one champion guess. Every attribute resolves to hit / near / miss,
  * which is exactly what the board colours in.
@@ -55,6 +64,9 @@ function compare(guess, target) {
     rangeType: compareExact(guess.rangeType, target.rangeType),
     damageType: compareExact(guess.damageType, target.damageType),
     releaseYear: { ...compareYear(guess.releaseYear, target.releaseYear), value: guess.releaseYear },
+    difficulty: { ...compareNumber(guess.difficulty, target.difficulty, 0), value: guess.difficulty },
+    attackRange: { ...compareNumber(guess.attackRange, target.attackRange, 25), value: guess.attackRange },
+    be: { ...compareNumber(guess.be, target.be, 0), value: guess.be },
   };
 }
 

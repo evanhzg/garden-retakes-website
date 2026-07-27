@@ -14,7 +14,7 @@ import {
 } from "@/scripts/pentakillRules";
 import { usePentakillPool } from "@/components/games/pentakill/usePentakillPool";
 import { PENTAKILL_COLUMNS, championHead, championOption } from "@/components/games/pentakill/columns";
-import { SearchBox, GuessGrid, Legend, shareSquares, type GuessRow } from "@/components/games/guess/GuessBoard";
+import { SearchBox, GuessGrid, Legend, shareSquares, ColumnToggles, type GuessRow } from "@/components/games/guess/GuessBoard";
 import { useGameLang, translator, LangToggle, lolTerm, PENTAKILL } from "@/components/games/i18n";
 import { sound } from "@/components/games/sound/SoundManager";
 import SoundControls from "@/components/games/sound/SoundControls";
@@ -81,6 +81,29 @@ export default function PentakillPage() {
   const [countdown, setCountdown] = useState("");
   const [copied, setCopied] = useState(false);
   const [gaveUp, setGaveUp] = useState(false);
+
+  const [activeCols, setActiveCols] = useState<Set<string>>(() => {
+    if (typeof window !== "undefined") {
+      const saved = window.localStorage.getItem("garden_cols_colChampion");
+      if (saved) return new Set(JSON.parse(saved));
+    }
+    return new Set(PENTAKILL_COLUMNS.map(c => c.key));
+  });
+
+  const toggleCol = useCallback((key: string) => {
+    setActiveCols(prev => {
+      const next = new Set(prev);
+      if (next.has(key)) next.delete(key);
+      else next.add(key);
+      if (next.size === 0) next.add(key);
+      if (typeof window !== "undefined") {
+        window.localStorage.setItem("garden_cols_colChampion", JSON.stringify([...next]));
+      }
+      return next;
+    });
+  }, []);
+
+  const activeColumns = useMemo(() => PENTAKILL_COLUMNS.filter(c => activeCols.has(c.key)), [activeCols]);
 
   useEffect(() => {
     const d = todayKey();
@@ -176,9 +199,9 @@ export default function PentakillPage() {
   const shareText = useMemo(() => {
     if (!rows.length) return "";
     const head = `${t("puzzleNo", { n: puzzleNumber })} — ${won ? rows.length : "X"}/∞`;
-    const body = rows.slice(0, 12).map((r) => shareSquares(r.result, PENTAKILL_COLUMNS)).join("\n");
+    const body = rows.slice(0, 12).map((r) => shareSquares(r.result, activeColumns)).join("\n");
     return `${head}\n${body}\nhttps://games.retakes.fr/pentakill`;
-  }, [rows, won, puzzleNumber, t]);
+  }, [rows, won, puzzleNumber, t, activeColumns]);
 
   const doShare = async () => {
     try {
@@ -288,9 +311,10 @@ export default function PentakillPage() {
               </div>
             </div>
 
+            <ColumnToggles columns={PENTAKILL_COLUMNS} active={activeCols} onToggle={toggleCol} t={t} />
             <GuessGrid
               rows={[...rows].reverse()}
-              columns={PENTAKILL_COLUMNS}
+              columns={activeColumns}
               lang={lang}
               t={t}
               headLabel={t("colChampion")}

@@ -376,32 +376,56 @@ function QuestionCard({ question, index, total, picked, onPick, onNext, t, g, la
         <h2 className="quiz-prompt">{promptText}</h2>
       </div>
 
-      <div className={`quiz-choices ${question.choices && question.choices.length === 3 ? "three" : ""}`}>
-        {(question.choices || []).map((c, i) => {
-          const state = picked == null ? ""
-            : c.id === question.answer ? "right"
-            : c.id === picked ? "wrong"
-            : "dim";
-          return (
-            <motion.button
-              key={c.id}
-              className={`quiz-choice ${state}`}
-              disabled={picked != null}
-              onClick={() => onPick(c.id)}
-              initial={{ opacity: 0, y: 10 }}
-              animate={{ opacity: 1, y: 0 }}
-              transition={{ delay: i * 0.05 }}
-              whileHover={picked == null ? { y: -2 } : undefined}
-              whileTap={picked == null ? { scale: 0.98 } : undefined}
-            >
-              {theme.renderImage?.({ image: c.image, champion: c.champion }, "sm")}
-              <span className="quiz-choice-label">{labelFor(c)}</span>
-              {state === "right" && <span className="quiz-choice-mark">✓</span>}
-              {state === "wrong" && <span className="quiz-choice-mark">✕</span>}
-            </motion.button>
-          );
-        })}
-      </div>
+      {question.type === "input" ? (
+        <form
+          className="quiz-input-form"
+          onSubmit={(e) => {
+            e.preventDefault();
+            const val = new FormData(e.currentTarget).get("ans") as string;
+            if (val && picked == null) onPick(val.trim());
+          }}
+        >
+          <input
+            name="ans"
+            type="text"
+            className="quiz-text-input"
+            disabled={picked != null}
+            autoFocus
+            autoComplete="off"
+            placeholder={t("inputPlaceholder") || "Type your answer..."}
+          />
+          <button type="submit" disabled={picked != null} className="quiz-primary" style={{ marginTop: "12px", width: "100%" }}>
+            {t("submit")}
+          </button>
+        </form>
+      ) : (
+        <div className={`quiz-choices ${question.choices && question.choices.length === 3 ? "three" : ""}`}>
+          {(question.choices || []).map((c, i) => {
+            const state = picked == null ? ""
+              : c.id === question.answer ? "right"
+              : c.id === picked ? "wrong"
+              : "dim";
+            return (
+              <motion.button
+                key={c.id}
+                className={`quiz-choice ${state}`}
+                disabled={picked != null}
+                onClick={() => onPick(c.id)}
+                initial={{ opacity: 0, y: 10 }}
+                animate={{ opacity: 1, y: 0 }}
+                transition={{ delay: i * 0.05 }}
+                whileHover={picked == null ? { y: -2 } : undefined}
+                whileTap={picked == null ? { scale: 0.98 } : undefined}
+              >
+                {theme.renderImage?.({ image: c.image, champion: c.champion }, "sm")}
+                <span className="quiz-choice-label">{labelFor(c)}</span>
+                {state === "right" && <span className="quiz-choice-mark">✓</span>}
+                {state === "wrong" && <span className="quiz-choice-mark">✕</span>}
+              </motion.button>
+            );
+          })}
+        </div>
+      )}
 
       <AnimatePresence>
         {picked != null && (

@@ -228,6 +228,34 @@ export function Legend({ t }: { t: (k: any, p?: any) => string }) {
   );
 }
 
+export function ColumnToggles<T>({ columns, active, onToggle, t }: {
+  columns: GuessColumn<T>[];
+  active: Set<string>;
+  onToggle: (key: string) => void;
+  t: (k: any, p?: any) => string;
+}) {
+  return (
+    <div className="hs-column-toggles" style={{ display: "flex", flexWrap: "wrap", gap: "6px", marginBottom: "16px", justifyContent: "center" }}>
+      {columns.map(c => (
+        <button
+          key={c.key}
+          onClick={() => onToggle(c.key)}
+          className={`hs-toggle-btn ${active.has(c.key) ? "on" : "off"}`}
+          style={{
+            padding: "4px 8px", borderRadius: "4px", fontSize: "0.85rem", cursor: "pointer",
+            background: active.has(c.key) ? "var(--accent)" : "transparent",
+            border: `1px solid var(--accent)`,
+            color: active.has(c.key) ? "#fff" : "var(--accent)",
+            opacity: active.has(c.key) ? 1 : 0.6
+          }}
+        >
+          {t(c.label)}
+        </button>
+      ))}
+    </div>
+  );
+}
+
 /** The emoji row for one guess, used to build the shareable result grid. */
 export function shareSquares(result: Comparison, columns: { key: string }[]): string {
   return columns

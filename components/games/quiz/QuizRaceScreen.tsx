@@ -144,23 +144,47 @@ export default function QuizRaceScreen({ theme }: { theme: QuizTheme }) {
                 {theme.renderImage?.({ image: q.image, champion: q.champion }, "lg")}
                 <h2 className="quiz-prompt">{g(q.prompt.key, params)}</h2>
               </div>
-              <div className={`quiz-choices ${q.choices?.length === 3 ? "three" : ""}`}>
-                {(q.choices || []).map((c: QuizChoice, i: number) => (
-                  <motion.button
-                    key={c.id}
-                    className={`quiz-choice ${pending === c.id ? "pending" : ""}`}
+              {q.type === "input" ? (
+                <form
+                  className="quiz-input-form"
+                  onSubmit={(e) => {
+                    e.preventDefault();
+                    const val = new FormData(e.currentTarget).get("ans") as string;
+                    if (val && !pending) submit(val.trim());
+                  }}
+                >
+                  <input
+                    name="ans"
+                    type="text"
+                    className="quiz-text-input"
                     disabled={!!pending}
-                    onClick={() => submit(c.id)}
-                    initial={{ opacity: 0, y: 10 }}
-                    animate={{ opacity: 1, y: 0 }}
-                    transition={{ delay: i * 0.04 }}
-                    whileHover={!pending ? { y: -2 } : undefined}
-                  >
-                    {theme.renderImage?.({ image: c.image, champion: c.champion }, "sm")}
-                    <span className="quiz-choice-label">{labelFor(c)}</span>
-                  </motion.button>
-                ))}
-              </div>
+                    autoFocus
+                    autoComplete="off"
+                    placeholder={t("inputPlaceholder") || "Type your answer..."}
+                  />
+                  <button type="submit" disabled={!!pending} className="quiz-primary" style={{ marginTop: "12px", width: "100%" }}>
+                    {t("submit")}
+                  </button>
+                </form>
+              ) : (
+                <div className={`quiz-choices ${q.choices?.length === 3 ? "three" : ""}`}>
+                  {(q.choices || []).map((c: QuizChoice, i: number) => (
+                    <motion.button
+                      key={c.id}
+                      className={`quiz-choice ${pending === c.id ? "pending" : ""}`}
+                      disabled={!!pending}
+                      onClick={() => submit(c.id)}
+                      initial={{ opacity: 0, y: 10 }}
+                      animate={{ opacity: 1, y: 0 }}
+                      transition={{ delay: i * 0.04 }}
+                      whileHover={!pending ? { y: -2 } : undefined}
+                    >
+                      {theme.renderImage?.({ image: c.image, champion: c.champion }, "sm")}
+                      <span className="quiz-choice-label">{labelFor(c)}</span>
+                    </motion.button>
+                  ))}
+                </div>
+              )}
             </motion.div>
           ) : null}
 

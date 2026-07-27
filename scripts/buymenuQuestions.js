@@ -64,6 +64,52 @@ const GENERATORS = [
       });
     },
   },
+  {
+    id: "weaponPriceInput",
+    tiers: [1, 2, 3],
+    make(rng, { weapons }) {
+      const w = rng.pick(weapons);
+      return question({
+        type: "input",
+        prompt: { key: "qWeaponPriceInput", params: { weapon: w.name } },
+        answer: String(w.price),
+        accept: [`$${w.price}`, `${w.price}$`],
+        explain: { key: "eWeaponPrice", params: { weapon: w.name, n: w.price } },
+      });
+    },
+  },
+  {
+    id: "weaponNameInput",
+    tiers: [2, 3, 4],
+    make(rng, { weapons }) {
+      const w = rng.pick(weapons);
+      // Ensure only one weapon has this exact price to avoid ambiguity, or accept all.
+      const matches = weapons.filter(x => x.price === w.price);
+      return question({
+        type: "input",
+        prompt: { key: "qWeaponNameInput", params: { price: `$${w.price}` } },
+        answer: w.name,
+        accept: matches.map(m => m.name),
+        explain: { key: "eWeaponPrice", params: { weapon: w.name, n: w.price } },
+      });
+    },
+  },
+  {
+    id: "topTeam",
+    tiers: [1, 2, 3],
+    make(rng, { meta }) {
+      if (!meta || !meta.topTeams || meta.topTeams.length < 5) return null;
+      const target = meta.topTeams[0];
+      const others = rng.sample(meta.topTeams.slice(1), 3);
+      if (!others) return null;
+      return question({
+        type: "mc",
+        prompt: { key: "qTopTeam" },
+        choices: [target, ...others].map(t => ({ id: t, label: t })),
+        answer: target,
+      });
+    }
+  },
 
   // ---------------------------------------------------------------- tier 2
   {

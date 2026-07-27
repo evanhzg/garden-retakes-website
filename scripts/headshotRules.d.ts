@@ -31,9 +31,10 @@ export type Comparison = {
   role: Cell;
   age: NumericCell;
   majors: NumericCell;
+  status: Cell;
 };
 
-export type Attribute = "nationality" | "team" | "role" | "age" | "majors";
+export type Attribute = "nationality" | "team" | "role" | "age" | "majors" | "status";
 
 export function seededShuffle<T>(arr: T[], seedStr: string | number): T[];
 export function todayKey(now?: number): string;

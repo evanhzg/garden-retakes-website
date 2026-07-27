@@ -3,6 +3,7 @@
 import React, { useState, useEffect } from "react";
 import { useSocket } from "@/components/games/SocketProvider";
 import { useRouter } from "next/navigation";
+import PlayerBubble from "./PlayerBubble";
 import "./social.css";
 
 export default function FriendsSidebar() {
@@ -166,7 +167,9 @@ export default function FriendsSidebar() {
                   <div key={f.id} className="friend-item">
                     <div className="friend-info">
                       <div className={`status-dot ${isOnline ? "online" : "offline"}`} />
-                      <span className="friend-name">{f.name}</span>
+                      <PlayerBubble steamId={f.friendId} name={f.name}>
+                        <span className="friend-name">{f.name}</span>
+                      </PlayerBubble>
                     </div>
                     {isOnline && window.location.pathname.includes("/games/lobby/") && (
                       <button className="btn-invite" onClick={() => inviteFriend(f.friendId)}>Invite</button>

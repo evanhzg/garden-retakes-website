@@ -94,7 +94,7 @@ function pickSequence(pool, seed, length) {
 // ---------------------------------------------------------------------------
 // Comparing a guess
 // ---------------------------------------------------------------------------
-const ATTRIBUTES = ["nationality", "team", "role", "age", "majors"];
+const ATTRIBUTES = ["nationality", "team", "role", "age", "majors", "status"];
 
 /** How close two numbers have to be to earn a "nearly" instead of a miss. */
 const NEAR = { age: 2, majors: 2 };
@@ -146,6 +146,7 @@ function compare(guess, target, onDate) {
     },
     age: { ...compareNumber(guessAge, targetAge, NEAR.age), value: guessAge },
     majors: { ...compareNumber(guess.majors, target.majors, NEAR.majors), value: guess.majors },
+    status: { state: guess.status === target.status ? "hit" : "miss", dir: null },
   };
 }
 

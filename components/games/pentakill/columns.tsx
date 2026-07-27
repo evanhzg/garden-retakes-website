@@ -18,6 +18,9 @@ export const PENTAKILL_COLUMNS: GuessColumn<LolChampion>[] = [
   { key: "rangeType", label: "colRange", cell: (c, lang) => <span className="hs-cell-text">{lolTerm(c.rangeType, lang)}</span> },
   { key: "damageType", label: "colDamage", cell: (c, lang) => <span className="hs-cell-text">{lolTerm(c.damageType, lang)}</span> },
   { key: "releaseYear", label: "colYear", compact: true, cell: (c) => <span className="hs-cell-big">{c.releaseYear ?? "?"}</span> },
+  { key: "difficulty", label: "colDifficulty", compact: true, cell: (c) => <span className="hs-cell-big">{c.difficulty ?? "?"}</span> },
+  { key: "attackRange", label: "colAttackRange", compact: true, cell: (c) => <span className="hs-cell-big">{c.attackRange ?? "?"}</span> },
+  { key: "be", label: "colBlueEssence", compact: true, cell: (c) => <span className="hs-cell-big">{c.be ?? "?"}</span> },
 ];
 
 /** Champion name + portrait, for the first column of a guess row. */

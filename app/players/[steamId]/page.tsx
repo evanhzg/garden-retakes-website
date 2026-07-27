@@ -87,13 +87,14 @@ export default async function PlayerPage({
   const query = (extra: string) =>
     `?season=${seasonId}${rankedOnly ? "&ranked=1" : ""}${extra}`;
 
-  const [profile, override, webProfile, seasonStats, seasons, rows] = await Promise.all([
+  const [profile, override, webProfile, seasonStats, seasons, rows, gameStats] = await Promise.all([
     prisma.playerProfile.findUnique({ where: { SteamId: steamId } }),
     prisma.gardenNameOverride.findUnique({ where: { SteamId: steamId } }),
     prisma.gardenWebProfile.findUnique({ where: { SteamId: steamId } }),
     prisma.playerSeasonStats.findFirst({ where: { SeasonId: seasonId, SteamId: steamId } }),
     prisma.season.findMany({ orderBy: { Id: "asc" } }),
     fetchRows(seasonId, steamId, rankedOnly),
+    prisma.webGameStats.findMany({ where: { SteamId: steamId } })
   ]);
 
   const name = override?.Name ?? profile?.LastKnownName ?? params.steamId;
@@ -262,6 +263,34 @@ export default async function PlayerPage({
           </div>
         )}
       </section>
+
+      {/* ---------- Web Game Stats ---------- */}
+      {gameStats && gameStats.length > 0 && (
+        <section className="panel">
+          <h2>Minigames & Dailies</h2>
+          <div className="split-cards">
+            {gameStats.map((gs) => (
+              <div key={gs.GameId} className="side-card">
+                <h3 style={{ textTransform: "capitalize" }}>{gs.GameId}</h3>
+                <div className="stat-grid">
+                  <div className="stat-card">
+                    <div className="value">{gs.Elo}</div>
+                    <div className="label">ELO</div>
+                  </div>
+                  <div className="stat-card">
+                    <div className="value">{gs.MatchesWon} <span style={{fontSize: 12, color: 'rgba(255,255,255,0.4)'}}>/ {gs.MatchesPlayed}</span></div>
+                    <div className="label">Wins</div>
+                  </div>
+                  <div className="stat-card">
+                    <div className="value">{gs.TotalScore}</div>
+                    <div className="label">Total Score</div>
+                  </div>
+                </div>
+              </div>
+            ))}
+          </div>
+        </section>
+      )}
 
       {/* ---------- Per side ---------- */}
       <section className="panel">
