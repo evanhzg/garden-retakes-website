@@ -93,7 +93,7 @@ export default function HeadshotPage() {
       else next.add(key);
       if (next.size === 0) next.add(key);
       if (typeof window !== "undefined") {
-        window.localStorage.setItem("garden_cols_colPlayer", JSON.stringify([...next]));
+        window.localStorage.setItem("garden_cols_colPlayer", JSON.stringify(Array.from(next)));
       }
       return next;
     });

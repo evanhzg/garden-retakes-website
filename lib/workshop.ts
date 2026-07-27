@@ -82,8 +82,8 @@ export type WorkshopSkin = {
  * accept identical input; there is only one implementation to keep correct.
  */
 export function parseWorkshopId(input: string): string | null {
-  /* eslint-disable-next-line @typescript-eslint/no-var-requires */
-  const { parseWorkshopId: parse } = require("@/scripts/ws-ingest/workshop");
+  const req = eval("require");
+  const { parseWorkshopId: parse } = req(path.join(process.cwd(), "scripts/ws-ingest/workshop.js"));
   return parse(input);
 }
 

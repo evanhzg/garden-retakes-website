@@ -97,7 +97,7 @@ export default function PentakillPage() {
       else next.add(key);
       if (next.size === 0) next.add(key);
       if (typeof window !== "undefined") {
-        window.localStorage.setItem("garden_cols_colChampion", JSON.stringify([...next]));
+        window.localStorage.setItem("garden_cols_colChampion", JSON.stringify(Array.from(next)));
       }
       return next;
     });
