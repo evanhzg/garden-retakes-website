@@ -26,14 +26,14 @@ export default function SkinRequestPage() {
             if (!res.ok) throw new Error(data.error || 'Failed to fetch workshop data');
             
             setPreviewImages(data.imageUrls);
-        } catch (err) {
-            setError(err.message);
+        } catch (err: any) {
+            setError(err?.message || "An unexpected error occurred");
         } finally {
             setLoading(false);
         }
     };
 
-    const handleSubmitJob = async (imageUrl) => {
+    const handleSubmitJob = async (imageUrl: string) => {
         setLoading(true);
         setError(null);
         try {
@@ -48,8 +48,8 @@ export default function SkinRequestPage() {
             if (!res.ok) throw new Error(data.error || 'Failed to submit job');
             
             setJobId(data.id);
-        } catch (err) {
-            setError(err.message);
+        } catch (err: any) {
+            setError(err?.message || "An unexpected error occurred");
         } finally {
             setLoading(false);
         }
