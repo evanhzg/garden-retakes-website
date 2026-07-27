@@ -8,9 +8,9 @@ export default function SkinRequestPage() {
     const [previewImages, setPreviewImages] = useState([]);
     const [jobId, setJobId] = useState(null);
     const [loading, setLoading] = useState(false);
-    const [error, setError] = useState(null);
+    const [error, setError] = useState<string | null>(null);
 
-    const handleScrape = async (e) => {
+    const handleScrape = async (e: React.FormEvent) => {
         e.preventDefault();
         setLoading(true);
         setError(null);
