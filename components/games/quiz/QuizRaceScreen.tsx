@@ -163,7 +163,7 @@ export default function QuizRaceScreen({ theme }: { theme: QuizTheme }) {
                     placeholder={t("inputPlaceholder" as any) || "Type your answer..."}
                   />
                   <button type="submit" disabled={!!pending} className="quiz-primary" style={{ marginTop: "12px", width: "100%" }}>
-                    {t("submit")}
+                    {t("submit" as any)}
                   </button>
                 </form>
               ) : (
