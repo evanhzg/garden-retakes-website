@@ -116,6 +116,62 @@ export default function SkinRequestPage() {
                     </div>
                 )}
             </div>
+            
+            <div className="max-w-4xl mx-auto space-y-8 mt-12">
+                <div>
+                    <h2 className="text-2xl font-bold mb-2 text-white">Direct File Upload</h2>
+                    <p className="text-slate-400">If you have a compiled raw .vpk or .zip custom skin and don't want to use the Steam Workshop, you can upload it directly here. It will be pushed to the game server via FTP.</p>
+                </div>
+
+                <form onSubmit={async (e) => {
+                    e.preventDefault();
+                    setLoading(true);
+                    setError(null);
+                    const fileInput = e.currentTarget.elements.namedItem('skinFile') as HTMLInputElement;
+                    const file = fileInput?.files?.[0];
+                    if (!file) {
+                        setError('Please select a file to upload.');
+                        setLoading(false);
+                        return;
+                    }
+                    const formData = new FormData();
+                    formData.append('file', file);
+                    try {
+                        const res = await fetch('/api/upload-skin', {
+                            method: 'POST',
+                            body: formData
+                        });
+                        const data = await res.json();
+                        if (!res.ok) throw new Error(data.error || 'Failed to upload skin');
+                        alert(data.message || 'Successfully uploaded skin!');
+                        fileInput.value = '';
+                    } catch (err: any) {
+                        setError(err?.message || "An unexpected error occurred during upload");
+                    } finally {
+                        setLoading(false);
+                    }
+                }} className="space-y-4 bg-slate-800 p-6 rounded-lg border border-slate-700">
+                    <div>
+                        <label className="block text-sm font-medium mb-2 text-slate-300">Raw Skin File (.vpk or .zip)</label>
+                        <div className="flex space-x-4">
+                            <input
+                                type="file"
+                                name="skinFile"
+                                accept=".vpk,.zip"
+                                className="flex-1 bg-slate-900 border border-slate-600 rounded-md px-4 py-2 text-white focus:outline-none focus:ring-2 focus:ring-blue-500"
+                                required
+                            />
+                            <button
+                                type="submit"
+                                disabled={loading}
+                                className="bg-purple-600 hover:bg-purple-700 disabled:opacity-50 text-white font-medium py-2 px-6 rounded-md transition-colors"
+                            >
+                                {loading ? 'Uploading...' : 'Upload File'}
+                            </button>
+                        </div>
+                    </div>
+                </form>
+            </div>
         </div>
     );
 }
