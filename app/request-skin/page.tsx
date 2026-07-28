@@ -119,8 +119,8 @@ export default function SkinRequestPage() {
             
             <div className="max-w-4xl mx-auto space-y-8 mt-12">
                 <div>
-                    <h2 className="text-2xl font-bold mb-2 text-white">Direct File Upload</h2>
-                    <p className="text-slate-400">If you have a compiled raw .vpk or .zip custom skin and don't want to use the Steam Workshop, you can upload it directly here. It will be pushed to the game server via FTP.</p>
+                    <h2 className="text-2xl font-bold mb-2 text-white">Direct File Upload & FastDL</h2>
+                    <p className="text-slate-400">Because Valve banned custom weapon skins from the Workshop, this tool bypasses it by providing FastDL. Upload your compiled raw `.vpk` or `.zip` here. It will be pushed to the game server via FTP and hosted on this website for FastDL. <strong>Make sure your game server's server.cfg has:</strong> <code>sv_downloadurl &quot;https://your-domain.com/fastdl/&quot;</code> and that you have a FastDL plugin installed on the game server to force clients to download it.</p>
                 </div>
 
                 <form onSubmit={async (e) => {
