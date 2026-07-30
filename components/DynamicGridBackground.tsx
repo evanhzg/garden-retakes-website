@@ -4,8 +4,9 @@ import { useEffect, useRef } from "react";
 import { usePathname } from "next/navigation";
 
 export default function DynamicGridBackground() {
+  // The hub is a vitrine for the games — it wants the same live ground as the
+  // rest of the site, so the grid renders there too. It used to bail on /games.
   const pathname = usePathname();
-  const isGames = pathname?.startsWith("/games");
   const canvasRef = useRef<HTMLCanvasElement>(null);
 
   useEffect(() => {
@@ -15,11 +16,26 @@ export default function DynamicGridBackground() {
     if (!ctx) return;
 
     let animationFrameId: number;
-    
+
     // Config
     const GRID_SIZE = 20;
     const LENS_RADIUS = 300;
     const MAGNIFICATION = 0.8; // Strength of the bulge/zoom
+
+    // Read the live theme so the grid follows the palette instead of hardcoding
+    // it — this is what kept the old purple around after the restyle.
+    const css = getComputedStyle(document.documentElement);
+    const rgb = (v: string, fallback: string) => {
+      const hex = (css.getPropertyValue(v) || fallback).trim() || fallback;
+      const m = /^#?([a-f\d]{2})([a-f\d]{2})([a-f\d]{2})$/i.exec(hex);
+      return m
+        ? [parseInt(m[1], 16), parseInt(m[2], 16), parseInt(m[3], 16)]
+        : [255, 77, 28];
+    };
+    const [r, g, b] = rgb("--accent", "#d93d0b");
+    const [ir, ig, ib] = rgb("--muted", "#6f6758");
+
+    const reduced = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
 
     let mouseX = -1000;
     let mouseY = -1000;
@@ -94,19 +110,30 @@ export default function DynamicGridBackground() {
         }
       }
       
-      ctx.strokeStyle = "rgba(168, 85, 247, 0.25)";
+      // Ink-neutral rules; the accent is spent only inside the lens, so the
+      // colour reads as a response to the cursor rather than a background wash.
+      ctx.strokeStyle = `rgba(${ir}, ${ig}, ${ib}, 0.16)`;
       ctx.lineWidth = 1;
       ctx.stroke();
 
       // 3. Add a subtle ambient glow over the lens
       const gradient = ctx.createRadialGradient(mouseX, mouseY, 0, mouseX, mouseY, LENS_RADIUS * 0.8);
-      gradient.addColorStop(0, "rgba(168, 85, 247, 0.15)");
-      gradient.addColorStop(1, "rgba(168, 85, 247, 0)");
+      gradient.addColorStop(0, `rgba(${r}, ${g}, ${b}, 0.13)`);
+      gradient.addColorStop(1, `rgba(${r}, ${g}, ${b}, 0)`);
       ctx.fillStyle = gradient;
       ctx.fillRect(0, 0, canvas.width, canvas.height);
 
       animationFrameId = requestAnimationFrame(draw);
     };
+
+    // Reduced motion still gets the grid, just static and un-lensed.
+    if (reduced) {
+      targetMouseX = -10000;
+      targetMouseY = -10000;
+      mouseX = -10000;
+      mouseY = -10000;
+      window.removeEventListener("mousemove", handleMouseMove);
+    }
 
     draw();
 
@@ -115,9 +142,7 @@ export default function DynamicGridBackground() {
       window.removeEventListener("resize", resize);
       cancelAnimationFrame(animationFrameId);
     };
-  }, []);
-
-  if (isGames) return null;
+  }, [pathname]);
 
   return (
     <canvas 

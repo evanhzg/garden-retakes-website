@@ -74,7 +74,7 @@ export default function GamesLadderPage() {
                   <tr key={`${s.steamId}-${s.gameId}`}>
                     <td className="rank-cell">#{i + 1}</td>
                     <td className="name-cell">
-                      <Link href={`/profile/${s.steamId}`}>{s.name}</Link>
+                      <Link href={`/players/${s.steamId}`}>{s.name}</Link>
                     </td>
                     {filter === "all" && <td className="game-cell">{s.gameId.toUpperCase()}</td>}
                     <td className="elo-cell">{s.elo}</td>

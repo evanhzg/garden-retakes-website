@@ -64,6 +64,45 @@
   box-shadow: 0 24px 48px rgba(0, 0, 0, 0.35);
 }
 
+.game-card:focus-visible {
+  outline: 2px solid var(--accent);
+  outline-offset: 3px;
+}
+
+/* Vitrine framing: a hairline that lights up on approach, so the card reads as
+   an exhibit under glass rather than a button. */
+.game-card::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  z-index: 2;
+  pointer-events: none;
+  border-radius: inherit;
+  box-shadow: inset 0 0 0 1px rgba(255, 255, 255, 0.06);
+  transition: box-shadow 0.35s cubic-bezier(0.22, 1, 0.36, 1);
+}
+.game-card:hover::after {
+  box-shadow: inset 0 0 0 1px color-mix(in srgb, var(--signal) 55%, transparent);
+}
+
+/* Cards arrive in sequence so the shelf assembles itself instead of snapping in. */
+.games-grid > *,
+.games-list > * {
+  animation: card-in 0.5s cubic-bezier(0.22, 1, 0.36, 1) both;
+}
+.games-grid > :nth-child(1),  .games-list > :nth-child(1)  { animation-delay: 0.02s; }
+.games-grid > :nth-child(2),  .games-list > :nth-child(2)  { animation-delay: 0.06s; }
+.games-grid > :nth-child(3),  .games-list > :nth-child(3)  { animation-delay: 0.10s; }
+.games-grid > :nth-child(4),  .games-list > :nth-child(4)  { animation-delay: 0.14s; }
+.games-grid > :nth-child(5),  .games-list > :nth-child(5)  { animation-delay: 0.18s; }
+.games-grid > :nth-child(6),  .games-list > :nth-child(6)  { animation-delay: 0.22s; }
+.games-grid > :nth-child(n+7), .games-list > :nth-child(n+7) { animation-delay: 0.26s; }
+
+@keyframes card-in {
+  from { opacity: 0; transform: translateY(14px); }
+  to   { opacity: 1; transform: none; }
+}
+
 /* Gradient background layer */
 .game-card-bg {
   position: absolute;
@@ -74,6 +113,15 @@
 
 .game-card:hover .game-card-bg {
   transform: scale(1.06);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .games-grid > *,
+  .games-list > * { animation: none; }
+  .game-card,
+  .game-card-bg { transition: none; }
+  .game-card:hover { transform: none; }
+  .game-card:hover .game-card-bg { transform: none; }
 }
 
 /* Per-game gradients */
@@ -205,9 +253,10 @@
 }
 
 .game-card-title {
+  font-family: var(--font-display);
   font-size: 1.75rem;
-  font-weight: 800;
-  letter-spacing: -0.5px;
+  font-weight: 700;
+  letter-spacing: -0.02em;
   margin: 0;
 }
 
@@ -1162,61 +1211,91 @@
   padding: 28px 32px 48px;
   isolation: isolate;
 }
+/* The aurora was three coloured blooms fighting the grid canvas behind it. The
+   grid is the background now; this just warms one corner. */
 .hub-aurora {
   position: fixed;
   inset: 0;
   z-index: -1;
   pointer-events: none;
-  background:
-    radial-gradient(60% 50% at 12% 0%, rgba(168, 85, 247, 0.16), transparent 60%),
-    radial-gradient(55% 45% at 92% 8%, rgba(236, 72, 153, 0.14), transparent 55%),
-    radial-gradient(50% 60% at 60% 100%, rgba(56, 189, 248, 0.10), transparent 60%);
+  background: radial-gradient(65% 45% at 10% 0%, color-mix(in srgb, var(--accent) 9%, transparent), transparent 62%);
 }
 .hub-inner { max-width: 1180px; margin: 0 auto; display: flex; flex-direction: column; gap: 22px; }
 
-/* hero */
+/* hero — a masthead, not a panel: the page starts with type, and the rule under
+   it does the framing a filled box used to do. */
 .hub-hero {
   display: flex;
   align-items: flex-end;
   justify-content: space-between;
-  gap: 20px;
+  gap: 28px 40px;
   flex-wrap: wrap;
-  padding: 26px 28px;
-  border-radius: 22px;
-  border: 1px solid color-mix(in srgb, var(--border) 80%, transparent);
-  background:
-    linear-gradient(120deg, color-mix(in srgb, var(--accent) 22%, transparent), transparent 60%),
-    color-mix(in srgb, var(--panel) 62%, transparent);
-  backdrop-filter: blur(16px) saturate(1.2);
-  -webkit-backdrop-filter: blur(16px) saturate(1.2);
-  box-shadow: var(--shadow);
+  padding: 40px 4px 26px;
+  border-bottom: 1px solid var(--border);
 }
 .hub-kicker {
-  font-size: 0.74rem; font-weight: 900; letter-spacing: 0.18em; text-transform: uppercase;
+  display: block;
+  font-size: 1.25rem;
+  line-height: 1;
   color: var(--accent);
+  transform: rotate(-1.5deg);
+  transform-origin: left center;
 }
+.hub-hero-text { max-width: 34rem; }
 .hub-hero-text h1 {
-  margin: 6px 0 6px;
-  font-size: clamp(2rem, 4.5vw, 3.2rem);
-  font-weight: 900; letter-spacing: -1.5px; line-height: 1;
+  margin: 10px 0 10px;
+  font-size: clamp(2.4rem, 6vw, 4rem);
+  font-weight: 700;
+  letter-spacing: -0.03em;
+  line-height: 0.95;
   color: var(--text);
 }
-.hub-hero-text p { margin: 0; color: var(--muted); font-size: 1rem; }
-.hub-hero-side { display: flex; align-items: center; gap: 18px; flex-wrap: wrap; }
-.hub-stats { display: flex; gap: 14px; }
-.hub-stat { display: flex; flex-direction: column; align-items: center; line-height: 1.05; }
-.hub-stat b { font-size: 1.7rem; font-weight: 900; color: var(--text); }
-.hub-stat span { font-size: 0.68rem; font-weight: 700; letter-spacing: 0.06em; text-transform: uppercase; color: var(--muted); }
+/* The one italic word is the whole flourish — it earns its keep by being rare. */
+.hub-hero-text h1 em {
+  font-style: italic;
+  font-variation-settings: "SOFT" 40, "WONK" 1;
+  color: var(--accent);
+}
+.hub-hero-text p { margin: 0; color: var(--muted); font-size: 1.02rem; }
+
+.hub-hero-actions { display: flex; flex-wrap: wrap; gap: 10px; margin-top: 22px; }
+
+.hub-stats { display: flex; gap: 32px; margin: 0; }
+.hub-stat { display: flex; flex-direction: column-reverse; line-height: 1; }
+.hub-stat dd {
+  margin: 0;
+  font-family: var(--font-display);
+  font-size: 2.6rem;
+  font-weight: 700;
+  font-variant-numeric: tabular-nums;
+  color: var(--text);
+}
+.hub-stat dt {
+  font-size: 0.68rem; font-weight: 600; letter-spacing: 0.1em;
+  text-transform: uppercase; color: var(--muted);
+}
+
 .hub-create {
   display: inline-flex; align-items: center; gap: 8px;
-  padding: 13px 24px; border: none; border-radius: 14px;
-  background: var(--gradient); color: #fff;
-  font-family: inherit; font-weight: 800; font-size: 1rem; cursor: pointer;
-  box-shadow: 0 14px 34px -12px color-mix(in srgb, var(--accent) 80%, transparent);
-  transition: transform 0.18s ease, box-shadow 0.18s ease;
+  padding: 12px 22px; border: none; border-radius: 12px;
+  background: var(--accent); color: #fff;
+  font-family: inherit; font-weight: 600; font-size: 0.95rem; cursor: pointer;
+  transition: transform 0.18s ease, filter 0.18s ease;
 }
-.hub-create:hover { transform: translateY(-2px); }
-.hub-create-plus { font-size: 1.3rem; line-height: 1; margin-top: -2px; }
+.hub-create:hover:not(:disabled) { transform: translateY(-2px); filter: brightness(1.08); }
+.hub-create:disabled { opacity: 0.6; cursor: default; }
+.hub-create-plus { font-size: 1.25rem; line-height: 1; margin-top: -2px; }
+
+.hub-ghost {
+  display: inline-flex; align-items: center;
+  padding: 12px 20px; border: 1px solid var(--border); border-radius: 12px;
+  color: var(--text); font-weight: 600; font-size: 0.95rem; text-decoration: none;
+  transition: border-color 0.18s ease, transform 0.18s ease;
+}
+.hub-ghost:hover { border-color: var(--accent); transform: translateY(-2px); }
+
+.hub-ladder-name { color: var(--text); text-decoration: none; font-weight: 500; }
+.hub-ladder-name:hover { color: var(--accent); }
 
 /* body: games + side */
 .hub-body { display: grid; grid-template-columns: minmax(0, 1fr) 340px; gap: 22px; align-items: start; }

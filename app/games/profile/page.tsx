@@ -1,107 +1,146 @@
 import React from "react";
 import Link from "next/link";
-import { headers } from "next/headers";
-import AvatarImage from "@/components/AvatarImage";
-// Use the existing getSession utility if available, or fetch from auth API
-// We'll assume the session can be retrieved similarly to the main profile
+import { getSession } from "@/lib/auth";
 import { prisma } from "@/lib/db";
-
-// Function to fetch session (replicated logic if getSession isn't exported globally)
-async function getSession() {
-  try {
-    const res = await fetch("http://localhost:3000/api/auth/session", {
-      headers: { cookie: headers().get("cookie") || "" },
-      cache: "no-store",
-    });
-    if (!res.ok) return null;
-    const json = await res.json();
-    return json.authenticated ? json : null;
-  } catch (e) {
-    return null;
-  }
-}
+import AvatarImage from "@/components/AvatarImage";
+import "./profile.css";
 
 export const dynamic = "force-dynamic";
 
+// Labels for the ids stored in WebGameStats.GameId. Kept next to the page that
+// renders them; the hub owns its own copy for the cards.
+const GAME_LABELS: Record<string, string> = {
+  monopoly: "MONOPO7Y",
+  uno: "OUNO",
+  skribbl: "FREE-DRAW",
+  meme: "HASAMEME",
+  codenames: "CODENAMES",
+  cah: "PILE OF...",
+  headshot: "HEADSHOT",
+  buymenu: "BUY MENU",
+  pentakill: "PENTAKILL",
+  buildpath: "BUILD PATH",
+};
+
+const label = (id: string) => GAME_LABELS[id] ?? id.toUpperCase();
+
+function SignedOut() {
+  return (
+    <div className="gprofile-empty">
+      <span className="gprofile-kicker hand">your record, in one place</span>
+      <h1>Games profile</h1>
+      <p>
+        Sign in to keep your ELO, win rate and daily streaks across every game in
+        the hub.
+      </p>
+      <div className="gprofile-empty-actions">
+        <Link href="/games/login?returnTo=/games/profile" className="gprofile-cta">
+          Sign in →
+        </Link>
+        <Link href="/games" className="gprofile-ghost">
+          Back to the hub
+        </Link>
+      </div>
+    </div>
+  );
+}
+
 export default async function GamesProfilePage() {
-  const session = await getSession();
+  const session = getSession();
+  if (!session) return <SignedOut />;
 
-  if (!session) {
-    return (
-      <section className="panel" style={{ textAlign: "center", padding: "4rem 2rem" }}>
-        <h2>Your Games Profile</h2>
-        <div style={{ marginTop: "1rem" }}>
-          <p style={{ marginBottom: "1.5rem", color: "var(--text-dim)" }}>
-            Sign in to view your Games stats, rankings, and best memes.
-          </p>
-          <Link href="/games/login?returnTo=/games/profile" className="btn">
-            Sign In
-          </Link>
-        </div>
-      </section>
-    );
-  }
+  const steamId = BigInt(session.steamId);
 
-  // Placeholder fetching for future enhanced stats
-  const displayName = session.name || session.steamId || "Player";
+  const [rows, profile] = await Promise.all([
+    prisma.webGameStats.findMany({ where: { SteamId: steamId }, orderBy: { Elo: "desc" } }),
+    prisma.playerProfile.findUnique({
+      where: { SteamId: steamId },
+      select: { LastKnownName: true },
+    }),
+  ]);
+
+  const displayName = profile?.LastKnownName ?? session.name ?? session.steamId;
+
+  const played = rows.reduce((n, r) => n + r.MatchesPlayed, 0);
+  const won = rows.reduce((n, r) => n + r.MatchesWon, 0);
+  const winRate = played ? Math.round((won / played) * 100) : 0;
+  const bestElo = rows.length ? Math.max(...rows.map((r) => r.Elo)) : 0;
+
+  // Rank per game, resolved in one query per game the player actually appears in
+  // rather than pulling the whole ladder.
+  const ranks = await Promise.all(
+    rows.map(async (r) => ({
+      gameId: r.GameId,
+      rank: (await prisma.webGameStats.count({
+        where: { GameId: r.GameId, Elo: { gt: r.Elo } },
+      })) + 1,
+    })),
+  );
+  const rankFor = Object.fromEntries(ranks.map((r) => [r.gameId, r.rank]));
 
   return (
-    <div className="games-profile-container">
-      {/* Hero Section */}
-      <section className="panel" style={{ position: "relative", overflow: "hidden" }}>
-        <div 
-          className="hero-background" 
-          style={{
-            position: "absolute", top: 0, left: 0, right: 0, height: "120px",
-            background: "linear-gradient(to right, #a855f7, #ec4899)",
-            opacity: 0.15, zIndex: 0
-          }} 
-        />
-        <div style={{ position: "relative", zIndex: 1, display: "flex", alignItems: "center", gap: "1.5rem", paddingTop: "2rem" }}>
-          <div style={{ width: 100, height: 100, borderRadius: "50%", overflow: "hidden", border: "4px solid var(--panel-bg)" }}>
-            <AvatarImage steamId={session.steamId!} src={session.avatar} />
+    <div className="gprofile">
+      <header className="gprofile-head">
+        <div className="gprofile-id">
+          <div className="gprofile-avatar">
+            <AvatarImage steamId={session.steamId} src={session.avatar} />
           </div>
           <div>
-            <h1 style={{ fontSize: "2.5rem", margin: 0, textShadow: "0 2px 10px rgba(0,0,0,0.5)" }}>
-              {displayName}
-            </h1>
-            <p style={{ color: "var(--text-dim)", margin: 0 }}>Games Hub Player</p>
+            <span className="gprofile-kicker hand">games profile</span>
+            <h1>{displayName}</h1>
+            <Link href="/games" className="gprofile-back">
+              ← Games hub
+            </Link>
           </div>
         </div>
+
+        <dl className="gprofile-stats">
+          <div><dt>Games played</dt><dd>{played}</dd></div>
+          <div><dt>Win rate</dt><dd>{played ? `${winRate}%` : "—"}</dd></div>
+          <div><dt>Best ELO</dt><dd>{bestElo || "—"}</dd></div>
+          <div><dt>Titles tracked</dt><dd>{rows.length}</dd></div>
+        </dl>
+      </header>
+
+      <section className="gprofile-section">
+        <div className="gprofile-section-head">
+          <h2>Per-game standing</h2>
+          <Link href="/games/ladder">Full ladder →</Link>
+        </div>
+
+        {rows.length === 0 ? (
+          <div className="gprofile-none">
+            <p>No ranked games yet.</p>
+            <Link href="/games" className="gprofile-cta">Pick a game →</Link>
+          </div>
+        ) : (
+          <ul className="gprofile-games">
+            {rows.map((r) => {
+              const rate = r.MatchesPlayed
+                ? Math.round((r.MatchesWon / r.MatchesPlayed) * 100)
+                : 0;
+              return (
+                <li key={r.GameId} className="gprofile-game">
+                  <div className="gprofile-game-top">
+                    <span className="gprofile-game-name">{label(r.GameId)}</span>
+                    <span className="gprofile-game-rank">#{rankFor[r.GameId]}</span>
+                  </div>
+                  <div className="gprofile-game-elo">
+                    {r.Elo}
+                    <small>ELO</small>
+                  </div>
+                  <div className="gprofile-bar" role="img" aria-label={`${rate}% win rate`}>
+                    <span style={{ width: `${rate}%` }} />
+                  </div>
+                  <div className="gprofile-game-meta">
+                    {r.MatchesWon}W / {r.MatchesPlayed - r.MatchesWon}L · {rate}%
+                  </div>
+                </li>
+              );
+            })}
+          </ul>
+        )}
       </section>
-
-      {/* Grid for placeholders */}
-      <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(300px, 1fr))", gap: "1rem", marginTop: "1rem" }}>
-        
-        <section className="panel">
-          <h2>Stats Overview</h2>
-          <div className="empty-hint" style={{ marginTop: "1rem" }}>
-            <p className="muted">[Placeholder for global games stats (win rate, hours played, total games)]</p>
-          </div>
-        </section>
-
-        <section className="panel">
-          <h2>Game Rankings</h2>
-          <div className="empty-hint" style={{ marginTop: "1rem" }}>
-            <p className="muted">[Placeholder for rankings in MONOPO7Y, OUNO, Codenames, etc.]</p>
-          </div>
-        </section>
-
-        <section className="panel">
-          <h2>Best Meme</h2>
-          <div className="empty-hint" style={{ marginTop: "1rem" }}>
-            <p className="muted">[Placeholder for highest rated meme in HASAMEME]</p>
-          </div>
-        </section>
-
-        <section className="panel">
-          <h2>Best Teammates</h2>
-          <div className="empty-hint" style={{ marginTop: "1rem" }}>
-            <p className="muted">[Placeholder for frequent collaborators and win rates together]</p>
-          </div>
-        </section>
-
-      </div>
     </div>
   );
 }

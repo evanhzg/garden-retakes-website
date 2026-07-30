@@ -1,35 +1,47 @@
+/* Warm ink & signal.
+   Sober bone/near-black grounds carry the page; one hot signal orange is spent
+   sparingly on live state and primary actions, so it still reads as an event
+   when it appears. --accent-2 is a cool counterweight for secondary data only —
+   it is deliberately not a gradient partner. */
 :root {
   color-scheme: light;
-  --bg: #faf8fc;
-  --bg-soft: #f4eef8;
-  --panel: #ffffff;
-  --border: #eee4f2;
-  --text: #2b2233;
-  --muted: #8a7a96;
-  --accent: #a855f7;
-  --accent-2: #ec4899;
-  --accent-3: #d946ef;
-  --accent-soft: #f6e9fb;
-  --gradient: linear-gradient(120deg, #a855f7, #d946ef, #ec4899);
-  --shadow: 0 10px 30px -12px rgba(168, 85, 247, 0.25);
-  --shadow-hover: 0 18px 40px -12px rgba(217, 70, 239, 0.35);
+  --bg: #f4f1ea;
+  --bg-soft: #eae5da;
+  --panel: #fbfaf6;
+  --border: #ddd6c8;
+  --text: #1a1815;
+  --muted: #6f6758;
+  --accent: #d93d0b;
+  --accent-2: #2f6f6a;
+  --accent-3: #a8642a;
+  --accent-soft: #f6e4d8;
+  --signal: #ff4d1c;
+  --gradient: linear-gradient(100deg, #d93d0b, #a8642a);
+  --shadow: 0 10px 30px -14px rgba(26, 24, 21, 0.28);
+  --shadow-hover: 0 20px 44px -16px rgba(26, 24, 21, 0.4);
   --radius: 14px;
+
+  --font-display: var(--font-display-face), "Iowan Old Style", "Palatino Linotype", Palatino, Georgia, serif;
+  --font-hand: var(--font-hand-face), "Segoe Script", "Bradley Hand", cursive;
+  --font-body: var(--font-body-face), ui-sans-serif, system-ui, "Segoe UI", Roboto, sans-serif;
 }
 
 .dark {
   color-scheme: dark;
-  --bg: #0b0710;
-  --bg-soft: #140d1c;
-  --panel: #1d132b;
-  --border: #322445;
-  --text: #fdfcff;
-  --muted: #bdaecf;
-  --accent: #c084fc;
-  --accent-2: #f472b6;
-  --accent-3: #e879f9;
-  --accent-soft: #3b0764;
-  --shadow: 0 10px 30px -12px rgba(192, 132, 252, 0.15);
-  --shadow-hover: 0 18px 40px -12px rgba(232, 121, 249, 0.25);
+  --bg: #0f0e0c;
+  --bg-soft: #17150f;
+  --panel: #1c1a15;
+  --border: #302c23;
+  --text: #f2ede2;
+  --muted: #9a9080;
+  --accent: #ff5a26;
+  --accent-2: #6fbfb4;
+  --accent-3: #c8b8a0;
+  --accent-soft: #2a1a10;
+  --signal: #ff4d1c;
+  --gradient: linear-gradient(100deg, #ff5a26, #c8b8a0);
+  --shadow: 0 10px 30px -14px rgba(0, 0, 0, 0.6);
+  --shadow-hover: 0 20px 44px -16px rgba(0, 0, 0, 0.75);
 }
 
 * {
@@ -48,14 +60,28 @@ html, body {
 
 body {
   margin: 0;
+  /* Sober ground: a single warm lift from one corner, no competing colour wash.
+     The interactive grid canvas supplies the movement instead. */
   background:
-    radial-gradient(1200px 500px at 85% -10%, rgba(236, 72, 153, 0.08), transparent 60%),
-    radial-gradient(900px 400px at -10% 10%, rgba(168, 85, 247, 0.09), transparent 55%),
+    radial-gradient(1100px 520px at 88% -12%, rgba(217, 61, 11, 0.06), transparent 62%),
     var(--bg);
   color: var(--text);
-  font-family: ui-sans-serif, system-ui, "Segoe UI", Roboto, sans-serif;
+  font-family: var(--font-body);
   line-height: 1.55;
   overflow: hidden;
+}
+
+/* Bold classic for display, handwriting for the asides that annotate it. */
+h1, h2, h3, .display {
+  font-family: var(--font-display);
+  font-weight: 700;
+  letter-spacing: -0.02em;
+}
+
+.hand {
+  font-family: var(--font-hand);
+  font-weight: 400;
+  letter-spacing: 0;
 }
 
 a {

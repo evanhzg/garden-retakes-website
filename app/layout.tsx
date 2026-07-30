@@ -1,4 +1,5 @@
 import type { Metadata, Viewport } from "next";
+import { Fraunces, Caveat, Inter } from "next/font/google";
 import fs from "fs";
 import path from "path";
 import { prisma } from "@/lib/db";
@@ -7,6 +8,27 @@ import LeftSidebar from "@/components/LeftSidebar";
 import PageLoader from "@/components/PageLoader";
 import RouteLoader from "@/components/RouteLoader";
 import "./globals.css";
+
+// Bold classic + handwritten, per the type direction: Fraunces carries the
+// display weight, Caveat annotates it, Inter does the reading work.
+const display = Fraunces({
+  subsets: ["latin"],
+  axes: ["SOFT", "WONK"],
+  variable: "--font-display-face",
+  display: "swap",
+});
+
+const hand = Caveat({
+  subsets: ["latin"],
+  variable: "--font-hand-face",
+  display: "swap",
+});
+
+const body = Inter({
+  subsets: ["latin"],
+  variable: "--font-body-face",
+  display: "swap",
+});
 
 export const metadata: Metadata = {
   metadataBase: new URL(process.env.NEXT_PUBLIC_SITE_URL || "https://retakes.fr"),
@@ -69,7 +91,11 @@ export default async function RootLayout({ children }: { children: React.ReactNo
   }));
 
   return (
-    <html lang="en" suppressHydrationWarning>
+    <html
+      lang="en"
+      suppressHydrationWarning
+      className={`${display.variable} ${hand.variable} ${body.variable}`}
+    >
       <body>
         <PageLoader />
         <ThemeProvider attribute="class" defaultTheme="system" enableSystem>

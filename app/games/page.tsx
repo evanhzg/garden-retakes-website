@@ -111,7 +111,9 @@ function MiniLadder() {
               <div className="lobby-info" style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', width: '100%' }}>
                 <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
                   <span style={{ color: 'var(--text-dim)', fontWeight: 'bold' }}>#{i + 1}</span>
-                  <Link href={`/profile/${p.steamId}`} style={{ color: '#fff', textDecoration: 'none', fontWeight: 500 }}>{p.name}</Link>
+                  {/* /profile is the signed-in player's own page and has no
+                      [steamId] segment — another player's page is /players. */}
+                  <Link href={`/players/${p.steamId}`} className="hub-ladder-name">{p.name}</Link>
                 </div>
                 <div style={{ textAlign: 'right' }}>
                   <div style={{ color: '#ffb800', fontWeight: 'bold' }}>{p.elo} <span style={{ fontSize: '0.7rem', color: 'var(--text-dim)', fontWeight: 'normal' }}>ELO</span></div>
@@ -194,24 +196,28 @@ function GamesHub() {
       <div className="hub-inner">
         <section className="hub-hero">
           <div className="hub-hero-text">
-            <span className="hub-kicker">Garden · Party Games</span>
-            <h1>GAMES HUB</h1>
-            <p>Spin up a universal lobby and play with friends or bots.</p>
-          </div>
-          <div className="hub-hero-side">
-            <div className="hub-stats">
-              <div className="hub-stat"><b>{readyCount}</b><span>games live</span></div>
-              <div className="hub-stat"><b>{publicLobbies.length}</b><span>open lobbies</span></div>
-            </div>
-            <div style={{ display: 'flex', gap: '0.5rem' }}>
+            <span className="hub-kicker hand">Garden · party games</span>
+            <h1>
+              Games <em>hub</em>
+            </h1>
+            <p>
+              One universal lobby for every game on the shelf. Bring friends, or
+              fill the seats with bots.
+            </p>
+            <div className="hub-hero-actions">
               <button className="hub-create" onClick={() => createLobby("none")} disabled={creating}>
-                <span className="hub-create-plus">+</span> {creating ? "Creating…" : "Create Lobby"}
+                <span className="hub-create-plus">+</span> {creating ? "Creating…" : "Create a lobby"}
               </button>
-              <Link href="/games/ladder" className="hub-create" style={{ background: 'rgba(255, 255, 255, 0.1)', color: '#fff' }}>
-                🏆 Ladder
-              </Link>
+              {/* The hub had no route to the player's own record — the ladder
+                  was the only way in, and it only listed the top 100. */}
+              <Link href="/games/profile" className="hub-ghost">Your profile</Link>
+              <Link href="/games/ladder" className="hub-ghost">Ladder</Link>
             </div>
           </div>
+          <dl className="hub-stats">
+            <div className="hub-stat"><dd>{readyCount}</dd><dt>games live</dt></div>
+            <div className="hub-stat"><dd>{publicLobbies.length}</dd><dt>open lobbies</dt></div>
+          </dl>
         </section>
 
         {myLobby && (
