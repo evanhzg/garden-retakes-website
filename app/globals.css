@@ -1,47 +1,138 @@
-/* Warm ink & signal.
-   Sober bone/near-black grounds carry the page; one hot signal orange is spent
-   sparingly on live state and primary actions, so it still reads as an event
-   when it appears. --accent-2 is a cool counterweight for secondary data only —
-   it is deliberately not a gradient partner. */
+/* ═══════════════════════════════════════════════════════════════════════════
+   Modernist — design-system tokens.
+
+   Sharp corners (radius 0), 2px rules, one hot accent, and a mono reserved for
+   figures. The neutral and accent ramps are a shared lightness scale, so the
+   same step of any role matches the others in visual value — which is what lets
+   the dark theme below be a re-mapping of the same ramp rather than a re-pick.
+
+   --bg/--panel/--text/--muted/--border are kept as aliases of the new names so
+   the ~6k lines of existing page CSS keep working while pages are converted.
+   ═══════════════════════════════════════════════════════════════════════ */
 :root {
   color-scheme: light;
-  --bg: #f4f1ea;
-  --bg-soft: #eae5da;
-  --panel: #fbfaf6;
-  --border: #ddd6c8;
-  --text: #1a1815;
-  --muted: #6f6758;
-  --accent: #d93d0b;
-  --accent-2: #2f6f6a;
-  --accent-3: #a8642a;
-  --accent-soft: #f6e4d8;
-  --signal: #ff4d1c;
-  --gradient: linear-gradient(100deg, #d93d0b, #a8642a);
-  --shadow: 0 10px 30px -14px rgba(26, 24, 21, 0.28);
-  --shadow-hover: 0 20px 44px -16px rgba(26, 24, 21, 0.4);
-  --radius: 14px;
 
-  --font-display: var(--font-display-face), "Iowan Old Style", "Palatino Linotype", Palatino, Georgia, serif;
-  --font-hand: var(--font-hand-face), "Segoe Script", "Bradley Hand", cursive;
-  --font-body: var(--font-body-face), ui-sans-serif, system-ui, "Segoe UI", Roboto, sans-serif;
+  --color-bg: #f3f2f2;
+  --color-surface: #eae9e9;
+  --color-text: #201e1d;
+  --color-accent: #ec3013;
+  --color-accent-2: #e15b47;
+  --color-divider: color-mix(in srgb, #201e1d 40%, transparent);
+
+  --color-neutral-100: #f8f4f4;
+  --color-neutral-200: #eae7e7;
+  --color-neutral-300: #d7d3d3;
+  --color-neutral-400: #bab6b6;
+  --color-neutral-500: #9b9797;
+  --color-neutral-600: #7d7979;
+  --color-neutral-700: #605d5d;
+  --color-neutral-800: #444141;
+  --color-neutral-900: #2d2b2b;
+
+  --color-accent-100: #fff2ef;
+  --color-accent-200: #ffe0d9;
+  --color-accent-300: #ffc4b8;
+  --color-accent-400: #ff9783;
+  --color-accent-500: #ff563c;
+  --color-accent-600: #dd2b0f;
+  --color-accent-700: #ae1800;
+  --color-accent-800: #7c1405;
+  --color-accent-900: #4d170e;
+
+  --color-accent-2-100: #fff2ef;
+  --color-accent-2-200: #ffe0da;
+  --color-accent-2-300: #ffc4b9;
+  --color-accent-2-400: #ff9784;
+  --color-accent-2-500: #ef6853;
+  --color-accent-2-600: #c94b39;
+  --color-accent-2-700: #9e3526;
+  --color-accent-2-800: #71261b;
+  --color-accent-2-900: #471d16;
+
+  --font-heading: var(--font-sans-face), "Archivo", system-ui, sans-serif;
+  --font-heading-weight: 800;
+  --font-body: var(--font-sans-face), "Archivo", system-ui, sans-serif;
+  --font-mono: var(--font-mono-face), "JetBrains Mono", ui-monospace, monospace;
+
+  --space-1: 4px;
+  --space-2: 8px;
+  --space-3: 12px;
+  --space-4: 16px;
+  --space-6: 24px;
+  --space-8: 32px;
+
+  --radius-sm: 0px;
+  --radius-md: 0px;
+  --radius-lg: 0px;
+
+  --shadow-sm: 0 1px 2px color-mix(in srgb, #2d2b2b 14%, transparent);
+  --shadow-md: 0 3px 10px color-mix(in srgb, #2d2b2b 16%, transparent);
+  --shadow-lg: 0 12px 32px color-mix(in srgb, #2d2b2b 22%, transparent);
+
+  /* Legacy aliases — existing page CSS still reads these. */
+  --bg: var(--color-bg);
+  --bg-soft: var(--color-neutral-200);
+  --panel: var(--color-surface);
+  --border: var(--color-divider);
+  --text: var(--color-text);
+  --muted: var(--color-neutral-600);
+  --accent: var(--color-accent);
+  --accent-2: var(--color-accent-2);
+  --accent-3: var(--color-accent-600);
+  --accent-soft: var(--color-accent-100);
+  --signal: var(--color-accent);
+  --gradient: linear-gradient(100deg, var(--color-accent), var(--color-accent-2));
+  --shadow: var(--shadow-md);
+  --shadow-hover: var(--shadow-lg);
+  --radius: var(--radius-md);
 }
 
+/* Dark is the same ramp read from the other end: grounds walk down the neutral
+   scale, text walks up it, and the accent holds — #ec3013 clears AA on both the
+   light and dark grounds, so it needs no separate value. */
 .dark {
   color-scheme: dark;
-  --bg: #0f0e0c;
-  --bg-soft: #17150f;
-  --panel: #1c1a15;
-  --border: #302c23;
-  --text: #f2ede2;
-  --muted: #9a9080;
-  --accent: #ff5a26;
-  --accent-2: #6fbfb4;
-  --accent-3: #c8b8a0;
-  --accent-soft: #2a1a10;
-  --signal: #ff4d1c;
-  --gradient: linear-gradient(100deg, #ff5a26, #c8b8a0);
-  --shadow: 0 10px 30px -14px rgba(0, 0, 0, 0.6);
-  --shadow-hover: 0 20px 44px -16px rgba(0, 0, 0, 0.75);
+
+  --color-bg: #1a1918;
+  --color-surface: #232120;
+  --color-text: #f3f2f2;
+  --color-accent: #ff4a28;
+  --color-accent-2: #ef6853;
+  --color-divider: color-mix(in srgb, #f3f2f2 28%, transparent);
+
+  --color-neutral-100: #2d2b2b;
+  --color-neutral-200: #383535;
+  --color-neutral-300: #444141;
+  --color-neutral-400: #605d5d;
+  --color-neutral-500: #7d7979;
+  --color-neutral-600: #9b9797;
+  --color-neutral-700: #bab6b6;
+  --color-neutral-800: #d7d3d3;
+  --color-neutral-900: #f8f4f4;
+
+  --color-accent-100: #3a1408;
+  --color-accent-200: #55190a;
+  --color-accent-300: #7c1405;
+  --color-accent-400: #ae1800;
+  --color-accent-500: #dd2b0f;
+  --color-accent-600: #ff563c;
+  --color-accent-700: #ff9783;
+  --color-accent-800: #ffc4b8;
+  --color-accent-900: #ffe0d9;
+
+  --color-accent-2-100: #2f1611;
+  --color-accent-2-200: #471d16;
+  --color-accent-2-300: #71261b;
+  --color-accent-2-400: #9e3526;
+  --color-accent-2-500: #c94b39;
+  --color-accent-2-600: #ef6853;
+  --color-accent-2-700: #ff9784;
+  --color-accent-2-800: #ffc4b9;
+  --color-accent-2-900: #ffe0da;
+
+  --shadow-sm: 0 1px 2px rgba(0, 0, 0, 0.5);
+  --shadow-md: 0 3px 10px rgba(0, 0, 0, 0.55);
+  --shadow-lg: 0 12px 32px rgba(0, 0, 0, 0.65);
 }
 
 * {
@@ -60,29 +151,50 @@ html, body {
 
 body {
   margin: 0;
-  /* Sober ground: a single warm lift from one corner, no competing colour wash.
-     The interactive grid canvas supplies the movement instead. */
-  background:
-    radial-gradient(1100px 520px at 88% -12%, rgba(217, 61, 11, 0.06), transparent 62%),
-    var(--bg);
-  color: var(--text);
+  background: var(--color-bg);
+  color: var(--color-text);
   font-family: var(--font-body);
+  font-size: 15px;
+  font-weight: 400;
   line-height: 1.55;
   overflow: hidden;
 }
 
-/* Bold classic for display, handwriting for the asides that annotate it. */
-h1, h2, h3, .display {
-  font-family: var(--font-display);
-  font-weight: 700;
-  letter-spacing: -0.02em;
+/* ── type scale ─────────────────────────────────────────────────────────── */
+h1, h2, h3, h4, h5, h6, .display {
+  font-family: var(--font-heading);
+  font-weight: var(--font-heading-weight);
+  line-height: 1.12;
+  letter-spacing: -0.015em;
+  margin: 0 0 var(--space-2);
+}
+h1 { font-size: 42px; }
+h2 { font-size: 32px; }
+h3 { font-size: 25px; }
+h4 { font-size: 20px; }
+h5 { font-size: 16px; }
+h6 { font-size: 13px; letter-spacing: 0.08em; text-transform: uppercase; }
+
+/* Every figure on the site — ELO, K/D, ADR, ranks, counters — sets in the mono
+   so columns of numbers align and digits stay the same width as they tick. */
+.mono, .num {
+  font-family: var(--font-mono);
+  font-variant-numeric: tabular-nums;
 }
 
-.hand {
-  font-family: var(--font-hand);
-  font-weight: 400;
-  letter-spacing: 0;
+.text-muted { color: color-mix(in srgb, var(--color-text) 55%, transparent); }
+
+.kicker {
+  display: block;
+  font-size: 13px;
+  font-weight: 600;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  color: var(--color-accent-700);
 }
+
+::selection { background: color-mix(in srgb, var(--color-accent) 30%, transparent); }
+:focus-visible { outline: 2px solid var(--color-accent); outline-offset: 2px; }
 
 a {
   color: inherit;
@@ -6158,4 +6270,123 @@ body.header-hidden .friends-toggle-btn {
   flex: none;
   max-height: 260px;
   grid-template-columns: repeat(auto-fill, minmax(112px, 1fr));
+}
+
+/* ═══════════════════════════════════════════════════════════════════════════
+   Modernist components.
+
+   Lifted from the design system so pages compose from the same primitives
+   instead of each inventing its own card and button. Plain CSS on plain HTML.
+   ═══════════════════════════════════════════════════════════════════════ */
+
+/* — rules — */
+.hr { height: 2px; border: 0; margin: var(--space-4) 0; background: var(--color-divider); }
+
+/* — buttons — */
+.btn {
+  display: inline-flex; align-items: center; justify-content: center; gap: 6px;
+  cursor: pointer; text-decoration: none;
+  font-family: var(--font-heading); font-weight: var(--font-heading-weight);
+  font-size: 14px; line-height: 1.2; color: var(--color-text);
+  background: transparent; border: 1px solid transparent;
+  padding: var(--space-2) calc(var(--space-3) * 1.2);
+  border-radius: var(--radius-md);
+  transition: background 0.18s ease, color 0.18s ease, border-color 0.18s ease;
+}
+.btn svg { display: block; }
+.btn:disabled { opacity: 0.45; cursor: not-allowed; }
+.btn-primary { background: var(--color-accent); color: var(--color-bg); }
+.btn-primary:hover:not(:disabled) { background: var(--color-accent-600); color: var(--color-bg); }
+.btn-primary:active:not(:disabled) { background: var(--color-accent-700); }
+.btn-secondary { border-color: var(--color-divider); }
+.btn-secondary:hover:not(:disabled) { background: color-mix(in srgb, var(--color-text) 7%, transparent); }
+.btn-secondary:active:not(:disabled) { background: color-mix(in srgb, var(--color-text) 14%, transparent); }
+.btn-ghost { color: var(--color-accent); padding-inline: var(--space-1); }
+.btn-ghost:hover { background: color-mix(in srgb, var(--color-accent) 10%, transparent); }
+.btn-icon { width: 36px; height: 36px; padding: 0; }
+.btn-block { width: 100%; }
+
+/* — forms — */
+.field > label {
+  display: block; font-size: 12px; margin-bottom: 5px;
+  color: color-mix(in srgb, var(--color-text) 70%, transparent);
+}
+.input {
+  width: 100%; min-height: 36px; padding: 6px 10px; font: inherit;
+  font-size: 14px; color: var(--color-text); caret-color: var(--color-accent);
+  background: var(--color-surface);
+  border: 1px solid var(--color-divider); border-radius: var(--radius-md);
+}
+.input:hover { border-color: color-mix(in srgb, var(--color-text) 45%, transparent); }
+.input:focus-visible { border-color: var(--color-accent); outline-offset: 0; }
+textarea.input { min-height: 90px; resize: vertical; }
+
+.seg { display: inline-flex; overflow: hidden; border: 1px solid var(--color-divider); border-radius: var(--radius-md); }
+.seg-opt { display: inline-flex; align-items: center; gap: 6px; padding: 7px 12px; font-size: 13px; cursor: pointer; }
+.seg-opt + .seg-opt { border-left: 1px solid var(--color-divider); }
+.seg-opt input { position: absolute; opacity: 0; width: 0; height: 0; pointer-events: none; }
+.seg-opt:has(input:checked) { background: var(--color-accent); color: var(--color-bg); }
+.seg-opt:not(:has(input:checked)):hover { background: color-mix(in srgb, var(--color-text) 7%, transparent); }
+
+/* — cards — */
+.card {
+  display: flex; flex-direction: column; gap: var(--space-2);
+  padding: var(--space-3); border-radius: var(--radius-md); background: var(--color-surface);
+}
+.card-kicker { font-size: 10px; letter-spacing: 0.1em; text-transform: uppercase; color: var(--color-accent); }
+.card-title { font-family: var(--font-heading); font-weight: var(--font-heading-weight); font-size: 17px; line-height: 1.2; }
+.card-body { margin: 0; font-size: 13px; opacity: 0.8; flex: 1; }
+.card-meta { display: flex; align-items: center; gap: 6px; font-size: 11px; color: color-mix(in srgb, var(--color-text) 50%, transparent); }
+.elev-sm { box-shadow: var(--shadow-sm); }
+.elev-md { box-shadow: var(--shadow-md); }
+.elev-lg { box-shadow: var(--shadow-lg); }
+
+/* — tags — */
+.tag {
+  display: inline-flex; align-items: center; font-size: 11px;
+  letter-spacing: 0.02em; padding: 3px 10px;
+  border-radius: calc(var(--radius-md) * 0.75);
+}
+.tag-accent { background: var(--color-accent-100); color: var(--color-accent-800); }
+.tag-accent-2 { background: var(--color-accent-2-100); color: var(--color-accent-2-800); }
+.tag-neutral { background: var(--color-neutral-100); color: var(--color-neutral-800); }
+.tag-outline { border: 1px solid var(--color-accent); color: var(--color-accent); }
+
+/* — tables — */
+.table { width: 100%; border-collapse: collapse; font-size: 14px; }
+.table th {
+  text-align: left; font-size: 11px; letter-spacing: 0.08em; text-transform: uppercase;
+  color: color-mix(in srgb, var(--color-text) 60%, transparent);
+  padding: var(--space-2); border-bottom: 2px solid var(--color-divider);
+}
+.table td { padding: var(--space-2); border-bottom: 1px solid var(--color-divider); }
+.table tbody tr:hover { background: color-mix(in srgb, var(--color-text) 4%, transparent); }
+
+/* — grayscale portrait treatment — */
+.grayscale { filter: grayscale(1) contrast(1.08); }
+
+/* ── motion ──────────────────────────────────────────────────────────────
+   Scroll reveals and the ladder's hover readout. All opt-out under
+   prefers-reduced-motion. */
+@keyframes marquee-scroll { from { transform: translateX(0); } to { transform: translateX(-50%); } }
+
+.gr-reveal {
+  opacity: 0; transform: translateY(28px);
+  transition: opacity 0.9s cubic-bezier(.16,1,.3,1), transform 0.9s cubic-bezier(.16,1,.3,1);
+}
+.gr-reveal.gr-in { opacity: 1; transform: translateY(0); }
+
+.gr-line {
+  display: block; opacity: 0; transform: translateY(0.5em);
+  transition: opacity 0.7s cubic-bezier(.16,1,.3,1), transform 0.7s cubic-bezier(.16,1,.3,1);
+}
+.gr-line.gr-in { opacity: 1; transform: translateY(0); }
+
+.gr-row { transition: transform 0.35s cubic-bezier(.16,1,.3,1), background 0.35s ease; }
+.gr-preview { transition: max-width 0.45s cubic-bezier(.16,1,.3,1), opacity 0.35s ease; overflow: hidden; }
+
+@media (prefers-reduced-motion: reduce) {
+  .gr-marquee-track { animation: none !important; }
+  .gr-reveal, .gr-line { opacity: 1; transform: none; transition: none; }
+  .gr-row, .gr-preview { transition: none; }
 }

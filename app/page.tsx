@@ -4,12 +4,15 @@ import { getActiveSeason, prisma } from "@/lib/db";
 import { getSession } from "@/lib/auth";
 import AvatarImage from "@/components/AvatarImage";
 import { resolveNames, nameFrom } from "@/lib/names";
+import { resolveAvatars } from "@/lib/avatars";
 import { getLastSessionStandout } from "@/lib/hero";
+import Reveal from "@/components/home/Reveal";
+import LadderRows, { type LadderRow } from "@/components/home/LadderRows";
 
 export const dynamic = "force-dynamic";
 export const revalidate = 30;
 
-const medal = (rank: number) => (rank === 1 ? "🥇" : rank === 2 ? "🥈" : rank === 3 ? "🥉" : null);
+const PAD = "clamp(20px, 5vw, 64px)";
 
 export default async function HomePage() {
   const serverAddress = process.env.NEXT_PUBLIC_SERVER_ADDRESS ?? "127.0.0.1:27015";
@@ -19,10 +22,10 @@ export default async function HomePage() {
   if (!season) {
     return (
       <>
-        <Hero serverAddress={serverAddress} standout={null} />
-        <section className="panel">
+        <Hero serverAddress={serverAddress} activePlayers={null} season={null} />
+        <section style={{ padding: `0 ${PAD} 80px` }}>
           <h2>Ladder</h2>
-          <p className="muted">No season yet. Start one in-game to open the ladder.</p>
+          <p className="text-muted">No season yet. Start one in-game to open the ladder.</p>
         </section>
       </>
     );
@@ -37,105 +40,144 @@ export default async function HomePage() {
     getLastSessionStandout(season.Id),
   ]);
 
-  const names = await resolveNames([
-    ...ladder.map((e) => e.SteamId),
-    ...(standout ? [standout.steamId] : []),
+  const ids = ladder.map((e) => e.SteamId);
+
+  // K/D, ADR and win rate for the hover readout. Prisma has no conditional
+  // aggregate, so deaths and wins are their own grouped counts rather than a
+  // sum over a computed column.
+  const [totals, deaths, wins, names, avatars] = await Promise.all([
+    prisma.playerRoundRecord.groupBy({
+      by: ["SteamId"],
+      where: { SeasonId: season.Id, IsRanked: true, SteamId: { in: ids } },
+      _sum: { Kills: true, Damage: true },
+      _count: { _all: true },
+    }),
+    prisma.playerRoundRecord.groupBy({
+      by: ["SteamId"],
+      where: { SeasonId: season.Id, IsRanked: true, SteamId: { in: ids }, Died: true },
+      _count: { _all: true },
+    }),
+    prisma.playerRoundRecord.groupBy({
+      by: ["SteamId"],
+      where: { SeasonId: season.Id, IsRanked: true, SteamId: { in: ids }, WonRound: true },
+      _count: { _all: true },
+    }),
+    resolveNames([...ids, ...(standout ? [standout.steamId] : [])]),
+    resolveAvatars([...ids, ...(standout ? [standout.steamId] : [])]),
   ]);
 
-  const webProfiles = await prisma.gardenWebProfile.findMany({
-    where: { SteamId: { in: ladder.map((e) => e.SteamId) } },
-    select: { SteamId: true, AvatarUrl: true },
-  });
-  const avatarOf = new Map(webProfiles.map((p) => [p.SteamId.toString(), p.AvatarUrl]));
+  const totalOf = new Map(totals.map((t) => [t.SteamId.toString(), t]));
+  const deathOf = new Map(deaths.map((d) => [d.SteamId.toString(), d._count._all]));
+  const winOf = new Map(wins.map((w) => [w.SteamId.toString(), w._count._all]));
 
-  // Session link: where does the logged-in player sit, and are they in the top 20?
   const mySteamId = session?.steamId ?? null;
-  const inTop = mySteamId ? ladder.some((e) => e.SteamId.toString() === mySteamId) : false;
-  let myPlacement: { rank: number; elo: number; peak: number } | null = null;
-  if (mySteamId && !inTop) {
-    const mine = await prisma.playerSeasonStats.findFirst({
-      where: { SeasonId: season.Id, SteamId: BigInt(mySteamId), RankedRoundsPlayed: { gt: 0 } },
-    });
-    if (mine) {
-      const ahead = await prisma.playerSeasonStats.count({
-        where: { SeasonId: season.Id, RankedRoundsPlayed: { gt: 0 }, Elo: { gt: mine.Elo } },
-      });
-      myPlacement = { rank: ahead + 1, elo: mine.Elo, peak: mine.PeakElo };
-    }
-  }
+
+  const rows: LadderRow[] = ladder.map((e) => {
+    const key = e.SteamId.toString();
+    const t = totalOf.get(key);
+    const rounds = t?._count._all ?? 0;
+    const d = deathOf.get(key) ?? 0;
+    const k = t?._sum.Kills ?? 0;
+    return {
+      steamId: key,
+      name: nameFrom(names, e.SteamId),
+      elo: e.Elo,
+      avatar: avatars[key],
+      // Deaths of 0 would divide by zero; a player with kills and no deaths
+      // scores their kill count, which is what a K/D of "k/1" means anyway.
+      kd: rounds ? k / Math.max(d, 1) : null,
+      adr: rounds ? (t?._sum.Damage ?? 0) / rounds : null,
+      winPct: rounds ? ((winOf.get(key) ?? 0) / rounds) * 100 : null,
+      isYou: key === mySteamId,
+    };
+  });
+
+  const activePlayers = await prisma.playerProfile
+    .count({ where: { LastSeenAtUtc: { gt: new Date(Date.now() - 15 * 60 * 1000) } } })
+    .catch(() => 0);
+
+  const marquee = rows.slice(0, 10).map((r) => `${r.name} · ${r.elo}`);
 
   return (
     <>
-      <Hero serverAddress={serverAddress} standout={standout} standoutName={standout ? nameFrom(names, standout.steamId) : ""} />
+      <Hero serverAddress={serverAddress} activePlayers={activePlayers} season={season.Name ?? `Season ${season.Id}`} />
 
-      <section className="panel">
-        <div className="admin-head">
-          <h2>Ladder — {season.Name}</h2>
-          {session && (
-            <Link className="chip" href={`/players/${session.steamId}`}>
-              Your profile →
-            </Link>
-          )}
+      <Marquee items={marquee.length ? marquee : ["Garden Retakes", "Ranked sessions", "Season live"]} />
+
+      {standout && (
+        <Standout
+          name={nameFrom(names, standout.steamId)}
+          steamId={standout.steamId}
+          avatar={avatars[standout.steamId]}
+          elo={standout.elo}
+          rating={standout.rating}
+          kd={standout.kd}
+          adr={standout.adr}
+          winPct={standout.winPct}
+          rounds={standout.rounds}
+        />
+      )}
+
+      <section id="ladder" style={{ padding: `0 ${PAD} clamp(64px, 9vw, 120px)` }}>
+        <div
+          style={{
+            display: "flex",
+            alignItems: "baseline",
+            justifyContent: "space-between",
+            borderBottom: "2px solid var(--color-divider)",
+            paddingBottom: 20,
+            marginBottom: 8,
+            flexWrap: "wrap",
+            gap: 12,
+          }}
+        >
+          <h2 style={{ fontSize: "clamp(28px, 3.2vw, 42px)", letterSpacing: "-0.02em", margin: 0 }}>
+            Ladder — {season.Name ?? `Season ${season.Id}`}
+          </h2>
+          <span
+            style={{
+              fontSize: 13,
+              letterSpacing: "0.06em",
+              textTransform: "uppercase",
+              color: "color-mix(in srgb, var(--color-text) 65%, transparent)",
+            }}
+          >
+            Hover a row for the readout
+          </span>
         </div>
 
-        {ladder.length === 0 ? (
-          <p className="muted">Nobody is ranked yet. Join the server and type /rr!</p>
-        ) : (
-          <table className="ladder-table">
-            <thead>
-              <tr>
-                <th>#</th>
-                <th>Player</th>
-                <th>CS Rating</th>
-                <th>Peak</th>
-                <th>Rounds</th>
-                <th>Win %</th>
-              </tr>
-            </thead>
-            <tbody>
-              {ladder.map((entry, index) => {
-                const key = entry.SteamId.toString();
-                const rank = index + 1;
-                const isYou = key === mySteamId;
-                return (
-                  <tr key={entry.Id} className={isYou ? "you" : ""}>
-                    <td className="rank-cell">{medal(rank) ?? rank}</td>
-                    <td>
-                      <Link href={`/players/${key}`} className="ladder-player">
-                        <span className="ladder-avatar">
-                          <AvatarImage steamId={key} />
-                        </span>
-                        <span>{nameFrom(names, key)}</span>
-                        {isYou && <span className="mini-badge">you</span>}
-                      </Link>
-                    </td>
-                    <td className="elo">{entry.Elo}</td>
-                    <td>{entry.PeakElo}</td>
-                    <td>{entry.RankedRoundsPlayed}</td>
-                    <td>
-                      {entry.RankedRoundsPlayed > 0
-                        ? `${Math.round((100 * entry.RankedRoundsWon) / entry.RankedRoundsPlayed)}%`
-                        : "-"}
-                    </td>
-                  </tr>
-                );
-              })}
-            </tbody>
-          </table>
-        )}
+        <LadderRows rows={rows} />
 
-        {myPlacement && (
-          <div className="your-placement">
-            <span className="mini-badge">you</span>
-            <span>
-              You’re <strong>#{myPlacement.rank}</strong> with {myPlacement.elo} CS Rating (peak{" "}
-              {myPlacement.peak}).
-            </span>
-            <Link className="btn small secondary" href={`/players/${mySteamId}`}>
-              View your page
-            </Link>
-          </div>
-        )}
+        <div style={{ marginTop: 28 }}>
+          <Link href="/stats" className="btn btn-secondary">
+            Full stats →
+          </Link>
+        </div>
+      </section>
+
+      <section
+        style={{
+          background: "var(--color-accent)",
+          color: "var(--color-bg)",
+          padding: `clamp(56px, 8vw, 96px) ${PAD}`,
+        }}
+      >
+        <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", gap: 24, flexWrap: "wrap" }}>
+          <h3
+            style={{
+              fontSize: "clamp(30px, 4vw, 50px)",
+              letterSpacing: "-0.02em",
+              margin: 0,
+              marginLeft: "-0.05em",
+              color: "var(--color-bg)",
+            }}
+          >
+            Climb the ladder.
+            <br />
+            {season.Name ?? `Season ${season.Id}`} is live.
+          </h3>
+          <ConnectButton serverAddress={serverAddress} />
+        </div>
       </section>
     </>
   );
@@ -143,60 +185,254 @@ export default async function HomePage() {
 
 function Hero({
   serverAddress,
-  standout,
-  standoutName,
+  activePlayers,
+  season,
 }: {
   serverAddress: string;
-  standout: Awaited<ReturnType<typeof getLastSessionStandout>>;
-  standoutName?: string;
+  activePlayers: number | null;
+  season: string | null;
 }) {
   return (
-    <section className="hero">
-      <div className="hero-inner">
-        <span className="eyebrow">Garden Retakes · CS2</span>
-        <h1>
-          Retakes with a <span className="grad">real economy</span>.
-        </h1>
-        <p className="muted">
-          Ranked sessions, Competitive 2v2/3v3, clutch rounds — and a skin loadout that follows you
-          in-game. Jump on the server and climb the ladder.
-        </p>
-        <ConnectButton serverAddress={serverAddress} />
-      </div>
+    <section style={{ position: "relative", padding: `clamp(48px, 9vw, 108px) ${PAD} 0`, overflow: "hidden" }}>
+      <div
+        style={{
+          display: "grid",
+          gridTemplateColumns: "minmax(0, 1.15fr) minmax(0, 0.85fr)",
+          gap: "clamp(24px, 4vw, 56px)",
+          alignItems: "start",
+        }}
+      >
+        <div style={{ gridColumn: 1, position: "relative", zIndex: 2 }}>
+          <span className="kicker" style={{ marginBottom: 18 }}>
+            Garden Retakes · CS2
+          </span>
+          <h1
+            style={{
+              fontSize: "clamp(46px, 6.8vw, 96px)",
+              lineHeight: 0.98,
+              letterSpacing: "-0.025em",
+              margin: "0 0 28px",
+              marginLeft: "-0.04em",
+            }}
+          >
+            <Reveal as="span" variant="line" delay={0.05}>
+              Retakes with a
+            </Reveal>
+            <Reveal as="span" variant="line" delay={0.2} style={{ color: "var(--color-accent)" }}>
+              real economy.
+            </Reveal>
+          </h1>
+          <p
+            style={{
+              fontSize: 17,
+              lineHeight: 1.6,
+              maxWidth: "46ch",
+              color: "color-mix(in srgb, var(--color-text) 78%, transparent)",
+              margin: "0 0 32px",
+            }}
+          >
+            Ranked sessions, Competitive 2v2/3v3, clutch rounds — and a skin loadout that follows you
+            in-game. Jump on the server and climb the ladder.
+          </p>
+          <div style={{ display: "flex", gap: 14, alignItems: "center", flexWrap: "wrap" }}>
+            <ConnectButton serverAddress={serverAddress} />
+            <Link
+              href="#ladder"
+              style={{
+                fontSize: 13,
+                letterSpacing: "0.06em",
+                textTransform: "uppercase",
+                textDecoration: "underline",
+                textUnderlineOffset: 4,
+              }}
+            >
+              See the ladder ↓
+            </Link>
+          </div>
+        </div>
 
-      {standout && (
-        <Link href={`/players/${standout.steamId}`} className="standout-card">
-          <div className="standout-eyebrow">★ Standout — {standout.day}</div>
-          <div className="standout-top">
-            <span className="standout-avatar">
-              <AvatarImage steamId={standout.steamId} />
-            </span>
-            <div>
-              <div className="standout-name">{standoutName || standout.name}</div>
-              <div className="standout-elo">{standout.elo ?? "—"} CS Rating</div>
+        <div style={{ gridColumn: 2, position: "relative", minHeight: "clamp(200px, 30vw, 380px)", zIndex: 1 }}>
+          <div
+            style={{
+              position: "absolute",
+              left: 0,
+              bottom: "6%",
+              background: "var(--color-bg)",
+              border: "2px solid var(--color-divider)",
+              padding: "18px 22px",
+              maxWidth: 240,
+              zIndex: 2,
+            }}
+          >
+            <div
+              style={{
+                fontSize: 11,
+                letterSpacing: "0.08em",
+                textTransform: "uppercase",
+                color: "var(--color-accent-700)",
+                marginBottom: 6,
+              }}
+            >
+              {season ? `${season} · Live` : "Server"}
             </div>
-            <div className="standout-rating">{standout.rating.toFixed(2)}</div>
+            <div className="num" style={{ fontWeight: 700, fontSize: 30, lineHeight: 1, color: "var(--color-accent)" }}>
+              {activePlayers ?? "—"}
+            </div>
+            <div
+              style={{
+                fontSize: 12,
+                color: "color-mix(in srgb, var(--color-text) 70%, transparent)",
+                marginTop: 4,
+              }}
+            >
+              players seen in the last 15 minutes
+            </div>
           </div>
-          <div className="standout-stats">
-            <span>
-              <strong>{standout.kd.toFixed(2)}</strong> K/D
-            </span>
-            <span>
-              <strong>{standout.adr.toFixed(0)}</strong> ADR
-            </span>
-            <span>
-              <strong>{standout.winPct.toFixed(0)}%</strong> wins
-            </span>
-            <span>
-              <strong>{standout.clutches}</strong> clutches
-            </span>
-            <span>
-              <strong>{standout.rounds}</strong> rounds
-            </span>
-          </div>
-        </Link>
-      )}
-      <div className="hero-glow" aria-hidden="true" />
+        </div>
+      </div>
     </section>
+  );
+}
+
+function Marquee({ items }: { items: string[] }) {
+  // Doubled so the -50% keyframe lands exactly on a seam and the loop is
+  // invisible.
+  const doubled = [...items, ...items];
+  return (
+    <div
+      style={{
+        borderTop: "2px solid var(--color-divider)",
+        borderBottom: "2px solid var(--color-divider)",
+        marginTop: "clamp(40px, 6vw, 72px)",
+        overflow: "hidden",
+        padding: "14px 0",
+      }}
+    >
+      <div
+        className="gr-marquee-track"
+        style={{ display: "flex", width: "max-content", animation: "marquee-scroll 28s linear infinite", gap: 56 }}
+      >
+        {doubled.map((item, i) => (
+          <span
+            key={i}
+            className="num"
+            style={{ fontSize: 14, whiteSpace: "nowrap", display: "flex", alignItems: "center", gap: 10 }}
+          >
+            <span style={{ color: "var(--color-accent)" }}>★</span>
+            {item}
+          </span>
+        ))}
+      </div>
+    </div>
+  );
+}
+
+function Standout(p: {
+  name: string;
+  steamId: string;
+  avatar: string;
+  elo: number | null;
+  rating: number;
+  kd: number;
+  adr: number;
+  winPct: number;
+  rounds: number;
+}) {
+  const stats = [
+    { label: "K/D", value: p.kd.toFixed(2) },
+    { label: "ADR", value: Math.round(p.adr) },
+    { label: "Win %", value: Math.round(p.winPct) },
+    { label: "Rounds", value: p.rounds },
+  ];
+
+  return (
+    <Reveal as="section" style={{ padding: `clamp(64px, 9vw, 120px) ${PAD}`, position: "relative" }}>
+      <div
+        style={{
+          display: "grid",
+          gridTemplateColumns: "minmax(0, 5fr) minmax(0, 7fr)",
+          gap: "clamp(16px, 3vw, 40px)",
+          alignItems: "center",
+        }}
+      >
+        <div style={{ position: "relative" }}>
+          <AvatarImage
+            steamId={p.steamId}
+            src={p.avatar}
+            alt={p.name}
+            className="grayscale"
+          />
+          <div
+            style={{
+              position: "absolute",
+              top: 16,
+              left: 16,
+              background: "var(--color-accent)",
+              color: "var(--color-bg)",
+              fontSize: 11,
+              letterSpacing: "0.08em",
+              textTransform: "uppercase",
+              padding: "6px 10px",
+              fontWeight: 600,
+            }}
+          >
+            ★ Standout — Today
+          </div>
+        </div>
+
+        <div style={{ position: "relative" }}>
+          <h2 style={{ fontSize: "clamp(32px, 4vw, 52px)", letterSpacing: "-0.02em", margin: "0 0 4px" }}>
+            <Link href={`/players/${p.steamId}`} style={{ color: "inherit", textDecoration: "none" }}>
+              {p.name}
+            </Link>
+          </h2>
+          <div
+            style={{
+              fontSize: 14,
+              color: "color-mix(in srgb, var(--color-text) 70%, transparent)",
+              marginBottom: 28,
+            }}
+          >
+            {p.elo != null ? `${p.elo} CS Rating · ` : ""}rated {p.rating.toFixed(2)}
+          </div>
+          <div
+            style={{
+              display: "grid",
+              gridTemplateColumns: "repeat(4, auto)",
+              gap: "32px 40px",
+              borderTop: "2px solid var(--color-divider)",
+              paddingTop: 24,
+            }}
+          >
+            {stats.map((s) => (
+              <div key={s.label}>
+                <div
+                  className="num"
+                  style={{
+                    fontWeight: 700,
+                    fontSize: "clamp(28px, 3vw, 40px)",
+                    color: "var(--color-accent)",
+                    lineHeight: 1,
+                    marginBottom: 6,
+                  }}
+                >
+                  {s.value}
+                </div>
+                <div
+                  style={{
+                    fontSize: 12,
+                    letterSpacing: "0.08em",
+                    textTransform: "uppercase",
+                    color: "color-mix(in srgb, var(--color-text) 65%, transparent)",
+                  }}
+                >
+                  {s.label}
+                </div>
+              </div>
+            ))}
+          </div>
+        </div>
+      </div>
+    </Reveal>
   );
 }

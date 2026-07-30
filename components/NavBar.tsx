@@ -14,13 +14,21 @@ type NavLink = {
   adminOnly?: boolean;
 };
 
+// Several routes existed with no way to reach them from the nav — /players,
+// /pros, /compare, /docs, /request-skin and /settings were all reachable only by
+// typing the URL or following a link from inside another page.
 const CS2_LINKS: NavLink[] = [
   { href: "/", label: "Ladder" },
+  { href: "/players", label: "Players" },
   { href: "/stats", label: "Stats" },
+  { href: "/compare", label: "Compare" },
   { href: "/teams", label: "CR Teams" },
+  { href: "/pros", label: "Pros" },
   { href: "/duels", label: "Duels" },
   { href: "/live", label: "LIVE", isLive: true },
   { href: "/inventory", label: "Inventory" },
+  { href: "/request-skin", label: "Request skin" },
+  { href: "/docs", label: "Docs" },
   { href: "/commands", label: "Commands" },
   { href: "/roadmap", label: "Roadmap" },
   { href: "/games", label: "Games", isSection: true },

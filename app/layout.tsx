@@ -1,32 +1,28 @@
 import type { Metadata, Viewport } from "next";
-import { Fraunces, Caveat, Inter } from "next/font/google";
+import { Archivo, JetBrains_Mono } from "next/font/google";
 import fs from "fs";
 import path from "path";
 import { prisma } from "@/lib/db";
+import { resolveAvatars } from "@/lib/avatars";
 import NavBar from "@/components/NavBar";
 import LeftSidebar from "@/components/LeftSidebar";
 import PageLoader from "@/components/PageLoader";
 import RouteLoader from "@/components/RouteLoader";
 import "./globals.css";
 
-// Bold classic + handwritten, per the type direction: Fraunces carries the
-// display weight, Caveat annotates it, Inter does the reading work.
-const display = Fraunces({
+// Modernist: one grotesque carries headings and body, and a mono handles every
+// numeric — ELO, K/D, ADR, counters — so figures line up in tabular columns.
+const sans = Archivo({
   subsets: ["latin"],
-  axes: ["SOFT", "WONK"],
-  variable: "--font-display-face",
+  weight: ["400", "600", "800"],
+  variable: "--font-sans-face",
   display: "swap",
 });
 
-const hand = Caveat({
+const mono = JetBrains_Mono({
   subsets: ["latin"],
-  variable: "--font-hand-face",
-  display: "swap",
-});
-
-const body = Inter({
-  subsets: ["latin"],
-  variable: "--font-body-face",
+  weight: ["400", "500", "700"],
+  variable: "--font-mono-face",
   display: "swap",
 });
 
@@ -84,17 +80,21 @@ export default async function RootLayout({ children }: { children: React.ReactNo
     select: { SteamId: true, LastKnownName: true },
   });
 
+  // The files in public/ still decide *which* players appear here, but the image
+  // itself now comes from Steam rather than the local PNG.
+  const navAvatars = await resolveAvatars(profiles.map((p) => p.SteamId));
+
   const avatarPlayers = profiles.map((p) => ({
     steamId: p.SteamId.toString(),
     name: p.LastKnownName,
-    avatarSrc: `/${p.SteamId.toString()}_pp.png`,
+    avatarSrc: navAvatars[p.SteamId.toString()],
   }));
 
   return (
     <html
       lang="en"
       suppressHydrationWarning
-      className={`${display.variable} ${hand.variable} ${body.variable}`}
+      className={`${sans.variable} ${mono.variable}`}
     >
       <body>
         <PageLoader />

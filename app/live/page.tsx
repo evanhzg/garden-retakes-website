@@ -4,6 +4,7 @@ import { useEffect, useState } from "react";
 import Head from "next/head";
 import Link from "next/link";
 import Image from "next/image";
+import AvatarImage from "@/components/AvatarImage";
 
 interface LivePlayer {
   SteamId: string;
@@ -287,12 +288,12 @@ function PlayerTable({
                 <td className="py-3 px-2">
                   <div className="flex items-center gap-3">
                     <Link href={`/players/${p.SteamId}`} className="shrink-0">
-                      <img 
-                        src={`/${p.SteamId}_pp.png`} 
-                        alt={p.Name} 
-                        style={{ width: '40px', height: '40px', borderRadius: '4px', objectFit: 'cover' }}
+                      {/* Steam avatar, resolved and cached by AvatarImage —
+                          this used to point at a local /<steamId>_pp.png. */}
+                      <AvatarImage
+                        steamId={String(p.SteamId)}
+                        alt={p.Name}
                         className="shadow-md border border-zinc-800 bg-zinc-900"
-                        onError={(e) => { e.currentTarget.src = "/default_pp.png"; }}
                       />
                     </Link>
                     <div className="flex flex-col">
