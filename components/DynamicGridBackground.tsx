@@ -31,12 +31,12 @@ export default function DynamicGridBackground() {
   if (isGames) return null;
 
   return (
-    <div className="pointer-events-none fixed inset-0 z-[-2] overflow-hidden bg-[var(--bg)]">
+    <div className="pointer-events-none fixed inset-0 z-[0] overflow-hidden" style={{ mixBlendMode: 'plus-lighter' }}>
       {/* Grid Pattern */}
       <div 
         className="absolute inset-0" 
         style={{
-          backgroundImage: 'linear-gradient(to right, rgba(168, 85, 247, 0.1) 1px, transparent 1px), linear-gradient(to bottom, rgba(168, 85, 247, 0.1) 1px, transparent 1px)',
+          backgroundImage: 'linear-gradient(to right, rgba(168, 85, 247, 0.25) 2px, transparent 2px), linear-gradient(to bottom, rgba(168, 85, 247, 0.25) 2px, transparent 2px)',
           backgroundSize: '100px 100px'
         }} 
       />

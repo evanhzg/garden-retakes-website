@@ -14,7 +14,9 @@ export default function DocsOverview({ apiSections }: { apiSections: any[] }) {
   const gameModes = [
     { id: "retakes", name: "Ranked Retakes", logo: "/images/modes/retakes.jpg", desc: "The competitive retakes mode with elo and leaderboards." },
     { id: "executes", name: "Executes", logo: "/images/modes/executes.jpg", desc: "Coordinated site takes with tactical smoke and flash deployments." },
-    { id: "practice", name: "Practice", logo: "/images/modes/practice.jpg", desc: "Nade lineups, prefire paths, and ultimate sandbox tools." }
+    { id: "practice", name: "Practice", logo: "/images/modes/practice.jpg", desc: "Nade lineups, prefire paths, and ultimate sandbox tools." },
+    { id: "duels", name: "Duels", logo: "/images/modes/duels.jpg", desc: "Intense 1v1 and 2v2 arenas to settle the score." },
+    { id: "commands", name: "Commands", logo: "/images/modes/practice.jpg", desc: "Comprehensive searchable directory of all plugin commands." }
   ];
 
   return (

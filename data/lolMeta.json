@@ -1,28 +1,27 @@
 {
   "topPicks": [
-    "K'Sante",
+    "Leona",
+    "Viktor",
+    "Syndra",
+    "Ezreal",
     "Vi",
-    "Azir",
-    "Varus",
-    "Rell",
-    "Aatrox",
-    "Sejuani",
+    "Ambessa",
+    "Jarvan IV",
     "Orianna",
-    "Kalista",
-    "Nautilus"
+    "Nautilus",
+    "Wukong"
   ],
   "topBans": [
-    "Rumble",
-    "Ashe",
-    "Senna",
-    "Lucian",
-    "Neeko",
-    "Renata Glasc",
-    "Maokai",
-    "Jax",
+    "Locke",
     "Poppy",
-    "Tristana"
+    "Nocturne",
+    "Camille",
+    "Orianna",
+    "Jayce",
+    "Akali",
+    "Syndra",
+    "Jarvan IV",
+    "Ziggs"
   ],
-  "updatedAt": 1785379964676,
-  "isFallback": true
+  "updatedAt": 1785383061184
 }
