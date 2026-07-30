@@ -20,7 +20,7 @@ export default function DocsOverview({ apiSections }: { apiSections: any[] }) {
   ];
 
   return (
-    <div style={{ width: '100%' }}>
+    <div style={{ width: '100%', maxWidth: '1400px', margin: '0 auto', padding: '0 24px 64px' }}>
       {/* Header */}
       <div style={{ textAlign: 'center', marginBottom: '48px' }}>
         <h1 style={{ fontSize: '3.5rem', fontWeight: 900, color: 'var(--text)', marginBottom: '16px', letterSpacing: '-1px' }}>REEEETAKES Docs</h1>

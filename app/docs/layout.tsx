@@ -10,7 +10,7 @@ export const metadata = {
 export default function DocsLayout({ children }: { children: React.ReactNode }) {
   return (
     <div style={{ minHeight: '100vh', display: 'flex', flexDirection: 'column' }}>
-      <main style={{ flex: 1, display: 'flex', flexDirection: 'column', width: '100%', maxWidth: '1400px', margin: '0 auto', padding: '100px 24px 64px' }}>
+      <main style={{ flex: 1, display: 'flex', flexDirection: 'column', width: '100%', padding: '100px 0 0 0' }}>
         {children}
       </main>
     </div>

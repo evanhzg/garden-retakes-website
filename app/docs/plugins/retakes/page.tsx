@@ -1,42 +1,73 @@
-import Link from "next/link";
+"use client";
 
-export const metadata = { title: "Retakes Mode" };
+import Link from "next/link";
+import { motion } from "framer-motion";
 
 export default function RetakesVitrine() {
   return (
-    <div style={{ background: '#050505', color: '#fff', minHeight: '100vh', fontFamily: '"Courier New", Courier, monospace', border: '20px solid #ffff00' }}>
-      <div style={{ padding: '20px', display: 'flex', justifyContent: 'space-between', borderBottom: '2px solid #ffff00' }}>
-        <Link href="/docs" style={{ color: '#ffff00', textDecoration: 'none', fontWeight: 'bold', textTransform: 'uppercase' }}>[ ESCAPE TO DOCS ]</Link>
-        <span style={{ color: '#ffff00', fontWeight: 'bold' }}>SYSTEM: ONLINE</span>
+    <div style={{ backgroundColor: '#09090b', color: '#fff', minHeight: '100vh', width: '100%', overflowX: 'hidden' }}>
+      
+      {/* Sticky Header */}
+      <motion.div 
+        initial={{ opacity: 0, y: -20 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.8 }}
+        style={{ position: 'sticky', top: '76px', zIndex: 50, background: 'rgba(9, 9, 11, 0.7)', backdropFilter: 'blur(20px)', padding: '16px 48px', display: 'flex', justifyContent: 'space-between', alignItems: 'center', borderBottom: '1px solid rgba(255,255,255,0.05)' }}
+      >
+        <div style={{ display: 'flex', alignItems: 'center', gap: '20px' }}>
+          <img src="/images/modes/retakes.jpg" alt="Retakes" style={{ width: '40px', height: '40px', borderRadius: '12px' }} />
+          <h2 style={{ fontSize: '1.2rem', fontWeight: 600, margin: 0, letterSpacing: '1px' }}>Ranked Retakes</h2>
+        </div>
+        <Link href="/docs" style={{ color: '#a855f7', textDecoration: 'none', fontWeight: 500, background: 'rgba(168, 85, 247, 0.1)', padding: '8px 16px', borderRadius: '999px', transition: 'background 0.2s' }}>
+          Overview
+        </Link>
+      </motion.div>
+
+      {/* Hero Section */}
+      <div style={{ position: 'relative', height: '90vh', display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', textAlign: 'center', padding: '0 20px' }}>
+        <motion.div 
+          initial={{ opacity: 0, scale: 0.9 }} animate={{ opacity: 1, scale: 1 }} transition={{ duration: 1, ease: "easeOut" }}
+          style={{ position: 'absolute', inset: 0, background: 'radial-gradient(circle at center, rgba(168, 85, 247, 0.15) 0%, transparent 60%)', zIndex: 0 }}
+        />
+        
+        <motion.h1 
+          initial={{ opacity: 0, y: 30 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 1, delay: 0.2 }}
+          style={{ fontSize: '6vw', fontWeight: 800, margin: '0 0 24px', zIndex: 1, letterSpacing: '-0.04em', background: 'linear-gradient(to bottom right, #fff, #a855f7)', WebkitBackgroundClip: 'text', WebkitTextFillColor: 'transparent' }}
+        >
+          The next era of Retakes.
+        </motion.h1>
+        
+        <motion.p 
+          initial={{ opacity: 0 }} animate={{ opacity: 1 }} transition={{ duration: 1, delay: 0.4 }}
+          style={{ fontSize: '1.5rem', color: '#a1a1aa', maxWidth: '800px', zIndex: 1, lineHeight: 1.6 }}
+        >
+          Fluid post-plant simulations powered by our bespoke TrueSkill™ matchmaking engine.
+        </motion.p>
       </div>
 
-      <div style={{ padding: '80px', display: 'flex', flexDirection: 'column', gap: '40px' }}>
-        <h1 style={{ fontSize: '8vw', fontWeight: 900, color: '#ffff00', margin: 0, lineHeight: 0.9, textTransform: 'uppercase' }}>
-          RANKED<br/>RETAKES
-        </h1>
-        
-        <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '40px', marginTop: '40px' }}>
-          <div style={{ background: '#111', border: '2px solid #ffff00', padding: '40px' }}>
-            <img src="/images/modes/retakes.jpg" alt="Retakes" style={{ width: '100%', filter: 'contrast(150%) saturate(0) sepia(100%) hue-rotate(20deg)' }} />
-          </div>
-          <div style={{ display: 'flex', flexDirection: 'column', gap: '20px' }}>
-            <div style={{ background: '#ffff00', color: '#000', padding: '20px', fontWeight: 'bold', fontSize: '1.2rem' }}>
-              // THE GOLD STANDARD OF POST-PLANT SIMULATION
-            </div>
-            <p style={{ fontSize: '1.2rem', lineHeight: 1.6, color: '#ccc' }}>
-              Built for grinders. Featuring a custom TrueSkill Elo system, dynamic weapon allocators based on round economy, and grueling leaderboards. Adapt to endless post-plant scenarios and prove your worth on the ladder.
-            </p>
-            <div style={{ border: '2px dashed #ffff00', padding: '20px' }}>
-              <h3 style={{ color: '#ffff00', margin: '0 0 10px' }}>QUICK COMMANDS</h3>
-              <ul style={{ listStyle: 'none', padding: 0, margin: 0, color: '#ccc', display: 'flex', flexDirection: 'column', gap: '10px' }}>
-                <li><strong style={{ color: '#fff' }}>!guns</strong> - CONFIGURE LOADOUT</li>
-                <li><strong style={{ color: '#fff' }}>!elo</strong> - CHECK RATING</li>
-                <li><strong style={{ color: '#fff' }}>!rank</strong> - LEADERBOARD POS</li>
-              </ul>
-            </div>
-          </div>
+      {/* Full-width Image Reveal */}
+      <motion.div 
+        initial={{ opacity: 0, y: 50 }} whileInView={{ opacity: 1, y: 0 }} viewport={{ once: true, margin: "-100px" }} transition={{ duration: 0.8 }}
+        style={{ width: '100%', height: '70vh', background: 'url(https://via.placeholder.com/1920x1080/1a1a1a/444?text=CS2+Gameplay+Screenshot) center/cover', borderTop: '1px solid rgba(255,255,255,0.1)', borderBottom: '1px solid rgba(255,255,255,0.1)' }}
+      />
+
+      {/* Feature Grids */}
+      <div style={{ padding: '120px 48px', maxWidth: '1600px', margin: '0 auto' }}>
+        <motion.div initial={{ opacity: 0, y: 30 }} whileInView={{ opacity: 1, y: 0 }} viewport={{ once: true }} transition={{ duration: 0.8 }}>
+          <h2 style={{ fontSize: '4rem', fontWeight: 700, marginBottom: '80px', letterSpacing: '-2px' }}>A new standard of play.</h2>
+        </motion.div>
+
+        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(400px, 1fr))', gap: '40px' }}>
+          <motion.div initial={{ opacity: 0, y: 30 }} whileInView={{ opacity: 1, y: 0 }} viewport={{ once: true }} transition={{ duration: 0.8, delay: 0.1 }} style={{ background: 'rgba(255,255,255,0.02)', padding: '60px', borderRadius: '32px', border: '1px solid rgba(255,255,255,0.05)' }}>
+            <h3 style={{ fontSize: '2.5rem', marginBottom: '24px', color: '#e879f9' }}>Smart Loadouts</h3>
+            <p style={{ fontSize: '1.2rem', color: '#a1a1aa', lineHeight: 1.6 }}>Weapons are dynamically allocated based on precise CS2 economy algorithms. Type !guns to open our sleek in-game web menu to set your preferences.</p>
+          </motion.div>
+
+          <motion.div initial={{ opacity: 0, y: 30 }} whileInView={{ opacity: 1, y: 0 }} viewport={{ once: true }} transition={{ duration: 0.8, delay: 0.2 }} style={{ background: 'rgba(255,255,255,0.02)', padding: '60px', borderRadius: '32px', border: '1px solid rgba(255,255,255,0.05)' }}>
+            <h3 style={{ fontSize: '2.5rem', marginBottom: '24px', color: '#e879f9' }}>Global Leaderboards</h3>
+            <p style={{ fontSize: '1.2rem', color: '#a1a1aa', lineHeight: 1.6 }}>Climb through seasonal ranks. Every kill, assist, and clutch is tracked via WebSockets and immediately reflected on your web profile.</p>
+          </motion.div>
         </div>
       </div>
+      
     </div>
   );
 }
