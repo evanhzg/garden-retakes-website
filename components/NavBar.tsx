@@ -210,7 +210,11 @@ export default function NavBar({
         RE
         <span className="wordmark-ee" aria-hidden>
           {[0, 1, 2, 3].map((i) => (
-            <span key={i} className="wordmark-e" style={{ transitionDelay: `${i * 45}ms` }}>
+            <span
+              key={i}
+              className="wordmark-e"
+              style={{ ["--e-delay" as string]: `${i * 55}ms` }}
+            >
               E
             </span>
           ))}

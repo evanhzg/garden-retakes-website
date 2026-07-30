@@ -65,7 +65,9 @@ export default function LadderRows({ rows }: { rows: LadderRow[] }) {
                 src={row.avatar}
                 alt={row.name}
                 className="avatar avatar-desat"
-                style={{ filter: open ? "grayscale(0) contrast(1)" : undefined }}
+                // Both ends declared explicitly: clearing the inline property
+                // and letting the class take over gave a jump, not a fade.
+                style={{ filter: open ? "grayscale(0) contrast(1)" : "grayscale(1) contrast(1.08)" }}
               />
 
               <div style={{ flex: "1 1 auto", minWidth: 0 }}>
@@ -90,9 +92,21 @@ export default function LadderRows({ rows }: { rows: LadderRow[] }) {
                 )}
               </div>
 
+              {/* The ELO slides left as the readout opens, so the stats look
+                  like they are pushing it aside rather than appearing beside a
+                  static column. */}
               <div
                 className="num"
-                style={{ fontWeight: 700, fontSize: 20, color: "var(--color-accent)", textAlign: "right", width: 70, flexShrink: 0 }}
+                style={{
+                  fontWeight: 700,
+                  fontSize: 20,
+                  color: "var(--color-accent)",
+                  textAlign: "right",
+                  width: 70,
+                  flexShrink: 0,
+                  transform: open ? "translateX(-10px)" : "none",
+                  transition: "transform 0.45s cubic-bezier(.22,1,.36,1)",
+                }}
               >
                 {row.elo}
               </div>
