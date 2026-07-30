@@ -4117,6 +4117,14 @@ body {
   }
 }
 
+body.is-docs-page .container {
+  max-width: none !important;
+  padding: 0 !important;
+}
+body.is-docs-page .left-sidebar {
+  display: none !important;
+}
+
 /* ============================================================
    Layout & Sidebar
    ============================================================ */
