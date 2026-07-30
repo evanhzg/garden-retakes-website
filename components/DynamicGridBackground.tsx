@@ -31,15 +31,21 @@ export default function DynamicGridBackground() {
   if (isGames) return null;
 
   return (
-    <div className="pointer-events-none fixed inset-0 z-[-2] overflow-hidden">
+    <div className="pointer-events-none fixed inset-0 z-[-2] overflow-hidden bg-[var(--bg)]">
       {/* Grid Pattern */}
-      <div className="absolute inset-0 bg-[linear-gradient(to_right,#80808012_1px,transparent_1px),linear-gradient(to_bottom,#80808012_1px,transparent_1px)] bg-[size:32px_32px]" />
+      <div 
+        className="absolute inset-0" 
+        style={{
+          backgroundImage: 'linear-gradient(to right, rgba(168, 85, 247, 0.1) 1px, transparent 1px), linear-gradient(to bottom, rgba(168, 85, 247, 0.1) 1px, transparent 1px)',
+          backgroundSize: '100px 100px'
+        }} 
+      />
       
       {/* Lens Effect */}
       <motion.div
         className="absolute inset-0"
         style={{
-          background: useMotionTemplate`radial-gradient(400px circle at ${mouseX}px ${mouseY}px, rgba(168, 85, 247, 0.12), transparent 80%)`,
+          background: useMotionTemplate`radial-gradient(500px circle at ${mouseX}px ${mouseY}px, rgba(168, 85, 247, 0.15), transparent 80%)`,
         }}
       />
     </div>

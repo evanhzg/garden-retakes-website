@@ -3,16 +3,16 @@ import path from "path";
 import { notFound } from "next/navigation";
 import ReactMarkdown from "react-markdown";
 import remarkGfm from "remark-gfm";
-import "../docs.css"; // Ensure docs CSS is loaded
+import "../../docs.css"; // Ensure docs CSS is loaded
 
-export async function generateMetadata({ params }: { params: { category: string, slug: string } }) {
-  return { title: `${params.slug.replace(/-/g, " ")} — ${params.category} Docs` };
+export async function generateMetadata({ params }: { params: { section: string, slug: string } }) {
+  return { title: `${params.slug.replace(/-/g, " ")} — ${params.section} Docs` };
 }
 
-export default function MarkdownDocPage({ params }: { params: { category: string, slug: string } }) {
-  const { category, slug } = params;
+export default function MarkdownDocPage({ params }: { params: { section: string, slug: string } }) {
+  const { section, slug } = params;
   
-  const contentDir = path.join(process.cwd(), "content/docs", category);
+  const contentDir = path.join(process.cwd(), "content/docs", section);
   const filePath = path.join(contentDir, `${slug}.md`);
 
   if (!fs.existsSync(filePath)) {
