@@ -6518,3 +6518,52 @@ html { scroll-behavior: smooth; }
   .avatar-desat { transition: none; }
   .main-content { scroll-behavior: auto; }
 }
+
+/* ── inventory: active loadout banner ───────────────────────────────────
+   The editing surface never said what it was editing; the active loadout was
+   only implied by a highlight in the left-hand list. */
+.inv3-editing {
+  display: flex;
+  align-items: baseline;
+  gap: 10px;
+  flex-wrap: wrap;
+  padding: 10px 14px;
+  margin-bottom: 12px;
+  background: var(--color-surface);
+  border: 1px solid var(--color-divider);
+  border-left: 3px solid var(--color-accent);
+}
+.inv3-editing-dot {
+  width: 8px; height: 8px; align-self: center; flex: none;
+}
+.inv3-editing-label {
+  font-size: 10px; letter-spacing: 0.12em; text-transform: uppercase;
+  color: color-mix(in srgb, var(--color-text) 55%, transparent);
+}
+.inv3-editing-name {
+  font-family: var(--font-heading); font-weight: 800; font-size: 15px;
+}
+.inv3-editing-count,
+.inv3-editing-side {
+  font-size: 11px;
+  color: color-mix(in srgb, var(--color-text) 55%, transparent);
+}
+.inv3-editing-side { margin-left: auto; }
+
+/* Placeholder art for VPK-uploaded skins, which have no rendered preview.
+   A greyed silhouette reads as "no image yet" rather than as a broken asset. */
+.skin-vpk-placeholder {
+  display: grid;
+  place-items: center;
+  width: 100%;
+  aspect-ratio: 4 / 3;
+  background:
+    repeating-linear-gradient(45deg,
+      color-mix(in srgb, var(--color-text) 5%, transparent) 0 6px,
+      transparent 6px 12px),
+    var(--color-neutral-200);
+  color: color-mix(in srgb, var(--color-text) 45%, transparent);
+  font-size: 10px;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+}

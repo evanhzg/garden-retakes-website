@@ -33,27 +33,12 @@ type WeaponEntry = {
   team: Team;
 };
 type Skin = { id: number; def: number; paint: number; name: string; image: string; rarity: string; collection?: string };
-// A Workshop skin behaves like a Skin in the picker but has no paint index —
-// it's mounted on the server as an addon rather than applied as a paint kit.
-type WorkshopSkin = {
-  workshopId: string;
-  name: string;
-  def: number | null;
-  weapon: string | null;
-  materials: string[];
-  primaryMaterial: string | null;
-  preview: { webPath: string | null } | null;
-  deployedAt?: string | null;
-};
 type StickerOption = { id: number; def: number; name: string; image: string; rarity: string };
 type Catalog = Record<string, WeaponEntry[]>;
 type Session = { authenticated: boolean; steamId?: string; name?: string | null; avatar?: string | null; adminLevel?: number };
-type FeaturedPreset = { key: string; name: string; ownerName: string | null; images: string[]; count: number };
 type SkinSort = "name" | "quality" | "newest" | "fav";
 type LoSort = "custom" | "name" | "color";
 
-// Keys of loadouts THIS user has featured (to show toggle state + prevent duplicates).
-type OwnFeaturedEntry = { key: string; loadoutId: string };
 
 const CATEGORY_ORDER = ["Rifles", "Snipers", "SMGs", "Pistols", "Heavy", "Knives", "Gloves"];
 
@@ -97,12 +82,6 @@ export default function InventorySimulator() {
   const [skins, setSkins] = useState<Skin[]>([]);
   const [skinsLoading, setSkinsLoading] = useState(false);
 
-  // Workshop skins, ingested from a Steam Workshop link or id.
-  const [workshopSkins, setWorkshopSkins] = useState<WorkshopSkin[]>([]);
-  const [wsInput, setWsInput] = useState("");
-  const [wsBusy, setWsBusy] = useState(false);
-  const [wsMsg, setWsMsg] = useState<{ kind: "ok" | "err"; text: string } | null>(null);
-  const [wsJobs, setWsJobs] = useState<any[]>([]);
 
   // Skin chooser filters
   const [skinSearch, setSkinSearch] = useState("");
@@ -129,10 +108,7 @@ export default function InventorySimulator() {
   // Preview + share
   const [showPreview, setShowPreview] = useState(true);
   const [importKey, setImportKey] = useState("");
-  const [featured, setFeatured] = useState<FeaturedPreset[]>([]);
   const [shareBusy, setShareBusy] = useState(false);
-  // Tracks which loadout ids are already featured (keyed by loadoutId -> shareKey)
-  const [ownFeatured, setOwnFeatured] = useState<OwnFeaturedEntry[]>([]);
 
   const stageRef = useRef<HTMLDivElement>(null);
   const dragSlot = useRef<number | null>(null);
@@ -176,7 +152,6 @@ export default function InventorySimulator() {
       }
       setHydrated(true);
     })();
-    fetch("/api/loadout/featured").then((r) => r.json()).then((d) => setFeatured(d.presets ?? [])).catch(() => {});
   }, []);
 
   // ---------- Persist ----------
@@ -199,102 +174,10 @@ export default function InventorySimulator() {
   const itemById = useCallback((id?: string) => (id ? store.items.find((i) => i.id === id) : undefined), [store.items]);
   const favorites = useMemo(() => new Set(store.favorites ?? []), [store.favorites]);
 
-  // ---------- Workshop skins ----------
-  const loadWorkshopSkins = useCallback(() => {
-    fetch("/api/workshop")
-      .then((r) => r.json())
-      .then((d) => setWorkshopSkins(Array.isArray(d?.skins) ? d.skins : []))
-      .catch(() => setWorkshopSkins([]));
-  }, []);
 
-  useEffect(() => { loadWorkshopSkins(); }, [loadWorkshopSkins]);
 
-  /** Add a skin from a pasted Workshop link or id (admin only). */
-  const addWorkshopSkin = useCallback(async () => {
-    const url = wsInput.trim();
-    if (!url || wsBusy) return;
-    setWsBusy(true);
-    setWsMsg(null);
-    try {
-      const res = await fetch("/api/workshop/job", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ url }),
-      });
-      const data = await res.json();
-      if (!res.ok) throw new Error(data?.error || `Request failed (${res.status})`);
-      setWsInput("");
-      setWsMsg({ kind: "ok", text: "Download queued..." });
-    } catch (err) {
-      setWsMsg({ kind: "err", text: (err as Error).message });
-    } finally {
-      setWsBusy(false);
-    }
-  }, [wsInput, wsBusy]);
 
-  // Poll for active jobs
-  useEffect(() => {
-    if ((session.adminLevel ?? 0) < 2) return;
-    let handle: number | undefined;
-    const poll = async () => {
-      try {
-        const res = await fetch("/api/workshop/job");
-        if (res.ok) {
-          const data = await res.json();
-          // This deployment can't run ingest (serverless has no writable disk
-          // and no steamcmd). Stop rather than asking again every 2 seconds
-          // for the lifetime of the page.
-          if (data.available === false) {
-            if (handle) window.clearInterval(handle);
-            return;
-          }
-          setWsJobs(data.active || []);
-          if (data.active?.length === 0 && wsJobs.length > 0) {
-            loadWorkshopSkins();
-            // The job pushes the addon to the game server itself now, so report
-            // what it did rather than asking for a manual deploy.
-            const last = (data.recent || []).find(
-              (j: { id: string }) => wsJobs.some((w) => w.id === j.id)
-            ) as { status?: string; note?: string; warnings?: string[] } | undefined;
-            const failed = last?.status === "failed";
-            setWsMsg({
-              kind: failed ? "err" : "ok",
-              text: last?.note || last?.warnings?.[0] || "Done.",
-            });
-          }
-        }
-      } catch (err) {}
-    };
-    handle = window.setInterval(poll, 2000);
-    poll();
-    return () => { if (handle) window.clearInterval(handle); };
-  }, [session.adminLevel, loadWorkshopSkins, wsJobs.length]);
 
-  /**
-   * Workshop skins can't be "equipped" the way a paint kit can.
-   *
-   * A paint kit is applied by index (InventoryItem.paint); a Workshop finish
-   * lives inside a mounted addon and replaces the weapon's material for every
-   * client that downloaded it. The index only exists in the addon's own item
-   * schema, which the VPK path listing doesn't expose — so clicking one hands
-   * you the material path for the plugin config instead of pretending.
-   */
-  const equipWorkshopSkin = useCallback(async (ws: WorkshopSkin) => {
-    const material = ws.primaryMaterial;
-    if (!material) {
-      setWsMsg({
-        kind: "err",
-        text: `${ws.name}: material path not extracted yet — run \`node scripts/ws-ingest ${ws.workshopId} --steam-login <user>\``,
-      });
-      return;
-    }
-    try {
-      await navigator.clipboard.writeText(material);
-      setWsMsg({ kind: "ok", text: `Copied ${material}` });
-    } catch {
-      setWsMsg({ kind: "ok", text: material });
-    }
-  }, []);
 
   // ---------- Skins fetch ----------
   useEffect(() => {
@@ -564,29 +447,14 @@ export default function InventorySimulator() {
   }, [store.loadouts, loSort]);
 
   // ---------- Share / borrow ----------
-  const shareLoadout = async (l: Loadout, asFeatured = false) => {
+  const shareLoadout = async (l: Loadout) => {
     setShareBusy(true);
     try {
-      // If already featured, toggle it off (un-feature).
-      if (asFeatured) {
-        const existing = ownFeatured.find((f) => f.loadoutId === l.id);
-        if (existing) {
-          const res = await fetch(`/api/loadout/featured/${existing.key}`, { method: "DELETE" });
-          if (res.ok) {
-            setOwnFeatured((cur) => cur.filter((f) => f.loadoutId !== l.id));
-            setFeatured((cur) => cur.filter((f) => f.key !== existing.key));
-            showToast("Removed from featured");
-          } else {
-            showToast("Could not unfeature");
-          }
-          return;
-        }
-      }
 
       const res = await fetch("/api/loadout/share", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ store, loadoutId: l.id, featured: asFeatured }),
+        body: JSON.stringify({ store, loadoutId: l.id }),
       });
       const j = await res.json();
       if (!res.ok || !j.key) {
@@ -594,13 +462,6 @@ export default function InventorySimulator() {
         return;
       }
       await navigator.clipboard?.writeText(j.key).catch(() => {});
-      if (asFeatured) {
-        setOwnFeatured((cur) => [...cur.filter((f) => f.loadoutId !== l.id), { key: j.key, loadoutId: l.id }]);
-        showToast(`Featured! Key ${j.key} copied`);
-        fetch("/api/loadout/featured").then((r) => r.json()).then((d) => setFeatured(d.presets ?? []));
-      } else {
-        showToast(`Key ${j.key} copied · /borrow ${j.key}`);
-      }
     } finally {
       setShareBusy(false);
     }
@@ -626,11 +487,6 @@ export default function InventorySimulator() {
 
   const isAdmin = (session.adminLevel ?? 0) >= 2;
 
-  // Workshop skins that target the weapon currently open in the chooser.
-  const workshopForWeapon = useMemo(
-    () => (weapon ? workshopSkins.filter((ws) => ws.def === weapon.def) : []),
-    [workshopSkins, weapon]
-  );
 
   // ---------- Derived: skin chooser list ----------
   const collections = useMemo(() => {
@@ -746,16 +602,6 @@ export default function InventorySimulator() {
               <button className="btn small secondary" onClick={() => renameLoadout(activeLoadout)}>✎</button>
               <button className="btn small secondary" onClick={() => duplicateLoadout(activeLoadout)}>⧉</button>
               <button className="btn small secondary" onClick={() => shareLoadout(activeLoadout)} disabled={shareBusy}>↗</button>
-              {isAdmin && (
-                <button
-                  className={`btn small secondary ${ownFeatured.some((f) => f.loadoutId === activeLoadout.id) ? "featured-active" : ""}`}
-                  title={ownFeatured.some((f) => f.loadoutId === activeLoadout.id) ? "Remove from featured" : "Feature"}
-                  onClick={() => shareLoadout(activeLoadout, true)}
-                  disabled={shareBusy}
-                >
-                  {ownFeatured.some((f) => f.loadoutId === activeLoadout.id) ? "★ Unstar" : "☆ Star"}
-                </button>
-              )}
               {store.loadouts.length > 1 && <button className="btn small danger" onClick={() => deleteLoadout(activeLoadout)}>✕</button>}
             </div>
           </div>
@@ -772,22 +618,26 @@ export default function InventorySimulator() {
             <input className="input" placeholder="borrow key…" value={importKey} maxLength={16} spellCheck={false} onChange={(e) => setImportKey(e.target.value)} />
             <button className="btn small" type="submit" disabled={shareBusy || !importKey.trim()}>Get</button>
           </form>
-          {featured.length > 0 && (
-            <div className="inv3-featured">
-              <span className="loadout-label">★ Featured</span>
-              {featured.slice(0, 4).map((f) => (
-                <button key={f.key} className="inv3-feat" onClick={() => importByKey(f.key)} disabled={shareBusy}>
-                  <span className="inv3-feat-name">{f.name}</span>
-                  <span className="muted">{f.count}</span>
-                </button>
-              ))}
-            </div>
-          )}
         </div>
       </aside>
 
       {/* ===== CENTER: weapons grid / skin chooser ===== */}
       <section className="inv3-main">
+        {/* Which loadout am I editing? The centre panel is where changes land,
+            but nothing here said what they landed in — the active loadout was
+            only distinguishable by a highlight in the left list. */}
+        {activeLoadout && (
+          <div className="inv3-editing">
+            <span className="inv3-editing-dot" style={{ background: activeLoadout.color ?? "var(--color-accent)" }} />
+            <span className="inv3-editing-label">Editing</span>
+            <strong className="inv3-editing-name">{activeLoadout.name}</strong>
+            <span className="inv3-editing-count">{loadoutSize(activeLoadout)} items</span>
+            <span className="inv3-editing-side">
+              viewing <strong>{side.toUpperCase()}</strong>
+            </span>
+          </div>
+        )}
+
         <div className="inv3-topbar">
           <div className="inv3-sides">
             {(["t", "ct"] as Side[]).map((s) => (
@@ -925,77 +775,6 @@ export default function InventorySimulator() {
               </div>
             )}
 
-            {/* ---- Workshop skins for this weapon ---- */}
-            <div className="inv3-ws">
-              <div className="inv3-ws-head">
-                <strong>Workshop</strong>
-                <span className="muted">
-                  Custom skins mounted on the server. Everyone needs the addon downloaded to see them.
-                </span>
-              </div>
-
-              {isAdmin && (
-                <div className="inv3-ws-add">
-                  <input
-                    className="input"
-                    placeholder="Paste a Workshop link or id…"
-                    value={wsInput}
-                    onChange={(e) => setWsInput(e.target.value)}
-                    onKeyDown={(e) => { if (e.key === "Enter") addWorkshopSkin(); }}
-                    disabled={wsBusy}
-                  />
-                  <button className="btn small" onClick={addWorkshopSkin} disabled={wsBusy || !wsInput.trim()}>
-                    {wsBusy ? "Adding…" : "Add"}
-                  </button>
-                </div>
-              )}
-
-              {wsJobs.map(job => (
-                <div key={job.id} style={{ padding: 12, marginTop: 12, background: "rgba(0,0,0,0.5)", borderRadius: 8 }}>
-                  <div style={{ display: "flex", justifyContent: "space-between", marginBottom: 6 }}>
-                    <span style={{ fontWeight: 600 }}>{job.name || "Fetching info..."}</span>
-                    <span className="eyebrow">{job.step} ({job.stepIndex + 1}/{job.steps.length})</span>
-                  </div>
-                  <div style={{ fontSize: "0.85em", color: "rgba(255,255,255,0.7)" }}>{job.note}</div>
-                  {job.status === "guard_pending" && (
-                    <div style={{ marginTop: 8, padding: 8, background: "rgba(255, 50, 50, 0.2)", color: "#ff8888", borderRadius: 4, fontWeight: "bold" }}>
-                      Pending steam verification from evan
-                    </div>
-                  )}
-                </div>
-              ))}
-
-              {wsMsg && wsJobs.length === 0 && (
-                <p className={`inv3-ws-msg ${wsMsg.kind}`}>{wsMsg.text}</p>
-              )}
-
-              {workshopForWeapon.length === 0 ? (
-                <p className="empty-hint">
-                  {isAdmin
-                    ? "No Workshop skins for this weapon yet — paste a link above."
-                    : "No Workshop skins for this weapon yet."}
-                </p>
-              ) : (
-                <div className="inv3-skins">
-                  {workshopForWeapon.map((ws) => (
-                    <div key={ws.workshopId} className="inv3-skin inv3-ws-skin">
-                      <button
-                        className="inv3-skin-pick"
-                        onClick={() => equipWorkshopSkin(ws)}
-                        title={ws.primaryMaterial ?? "Material path not extracted yet"}
-                      >
-                        {/* eslint-disable-next-line @next/next/no-img-element */}
-                        <img src={ws.preview?.webPath ?? "/default_pp.png"} alt={ws.name} loading="lazy" />
-                        <span className="inv3-skin-name">{ws.name}</span>
-                      </button>
-                      <span className={`inv3-ws-badge ${ws.deployedAt ? "live" : "pending"}`}>
-                        {ws.deployedAt ? "on server" : "not deployed"}
-                      </span>
-                    </div>
-                  ))}
-                </div>
-              )}
-            </div>
 
             {skinsLoading ? (
               <p className="empty-hint">Loading skins…</p>
