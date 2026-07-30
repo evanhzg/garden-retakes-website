@@ -24,40 +24,54 @@ export function Columns({
   const maxIdx = data.findIndex((d) => d.value === max);
   const barW = 100 / data.length;
 
+  const peak = data[maxIdx];
+  const peakH = peak ? Math.max(1.5, (peak.value / max) * (height - 22)) : 0;
+
   return (
-    <div className="chart-wrap">
+    <div className="chart-wrap" style={{ position: "relative" }}>
       <svg viewBox={`0 0 100 ${height}`} preserveAspectRatio="none" className="chart-columns" style={{ height }}>
         {data.map((d, i) => {
           const h = Math.max(1.5, (d.value / max) * (height - 22));
           return (
-            <g key={d.label}>
-              <rect
-                className="chart-col"
-                x={i * barW + barW * 0.18}
-                y={height - 14 - h}
-                width={barW * 0.64}
-                height={h}
-                rx={1.5}
-                fill={color}
-                opacity={d.value === 0 ? 0.18 : 1}
-              >
-                <title>{`${d.label}: ${fmt(d.value)}${valueSuffix}${d.hint ? ` — ${d.hint}` : ""}`}</title>
-              </rect>
-              {i === maxIdx && d.value > 0 && (
-                <text
-                  x={i * barW + barW / 2}
-                  y={height - 17 - h}
-                  textAnchor="middle"
-                  className="chart-value-label"
-                >
-                  {fmt(d.value)}
-                </text>
-              )}
-            </g>
+            <rect
+              key={d.label}
+              className="chart-col"
+              x={i * barW + barW * 0.18}
+              y={height - 14 - h}
+              width={barW * 0.64}
+              height={h}
+              rx={1.5}
+              fill={color}
+              opacity={d.value === 0 ? 0.18 : 1}
+            >
+              <title>{`${d.label}: ${fmt(d.value)}${valueSuffix}${d.hint ? ` — ${d.hint}` : ""}`}</title>
+            </rect>
           );
         })}
         <line x1="0" y1={height - 13} x2="100" y2={height - 13} className="chart-baseline" />
       </svg>
+
+      {/* The peak label is HTML, not SVG <text>. This chart stretches to its
+          container with preserveAspectRatio="none", which scales X and Y by
+          different factors — text inside it came out horizontally smeared
+          (a 3-digit figure like "207" rendered several times too wide). */}
+      {peak && peak.value > 0 && (
+        <span
+          className="chart-value-label num"
+          style={{
+            position: "absolute",
+            left: `${maxIdx * barW + barW / 2}%`,
+            bottom: peakH + 18,
+            transform: "translateX(-50%)",
+            pointerEvents: "none",
+            whiteSpace: "nowrap",
+          }}
+        >
+          {fmt(peak.value)}
+          {valueSuffix}
+        </span>
+      )}
+
       <div className="chart-x-labels">
         <span>{data[0].label}</span>
         <span>{data[data.length - 1].label}</span>

@@ -1,6 +1,7 @@
 "use client";
 
-import React, { useState, useRef, useEffect } from "react";
+import React, { useState, useRef, useEffect, useCallback } from "react";
+import { createPortal } from "react-dom";
 import { motion, AnimatePresence } from "framer-motion";
 import Link from "next/link";
 import AvatarImage from "@/components/AvatarImage";
@@ -19,6 +20,51 @@ export default function PlayerBubble({ steamId, name, children }: PlayerBubblePr
   const triggerRef = useRef<HTMLDivElement>(null);
   const popoverRef = useRef<HTMLDivElement>(null);
   const { socket } = useSocket();
+
+  // The bubble is portalled to <body> and positioned in viewport coordinates.
+  // It used to be position:absolute/bottom:100% inside the row, which meant two
+  // things: it always opened upward, and any ancestor with overflow (the app
+  // shell's scroll container) clipped it — so rows near the top of the list had
+  // their preview cut off.
+  const WIDTH = 320;
+  const GAP = 12;
+  const [pos, setPos] = useState<{ left: number; top: number; placement: "above" | "below" } | null>(null);
+
+  const place = useCallback(() => {
+    const el = triggerRef.current;
+    if (!el) return;
+    const r = el.getBoundingClientRect();
+    const estimated = popoverRef.current?.offsetHeight ?? 320;
+
+    const roomAbove = r.top;
+    const roomBelow = window.innerHeight - r.bottom;
+    // Prefer above (the original behaviour) but flip when it would not fit.
+    const placement: "above" | "below" =
+      roomAbove >= estimated + GAP || roomAbove >= roomBelow ? "above" : "below";
+
+    const top = placement === "above" ? r.top - GAP - estimated : r.bottom + GAP;
+
+    // Keep it on screen horizontally regardless of how close the row is to an edge.
+    const left = Math.min(
+      Math.max(GAP, r.left + r.width / 2 - WIDTH / 2),
+      window.innerWidth - WIDTH - GAP,
+    );
+
+    setPos({ left, top: Math.max(GAP, Math.min(top, window.innerHeight - estimated - GAP)), placement });
+  }, []);
+
+  useEffect(() => {
+    if (!isOpen) return;
+    place();
+    // Re-place on anything that moves the trigger. Capture catches scrolls in
+    // the inner scroll container, not just the window.
+    window.addEventListener("scroll", place, true);
+    window.addEventListener("resize", place);
+    return () => {
+      window.removeEventListener("scroll", place, true);
+      window.removeEventListener("resize", place);
+    };
+  }, [isOpen, place, data]);
 
   // Close when clicking outside
   useEffect(() => {
@@ -73,20 +119,20 @@ export default function PlayerBubble({ steamId, name, children }: PlayerBubblePr
         {children}
       </div>
 
+      {typeof document !== "undefined" && createPortal(
       <AnimatePresence>
         {isOpen && (
           <motion.div
             ref={popoverRef}
-            initial={{ opacity: 0, y: 10, scale: 0.95 }}
+            initial={{ opacity: 0, y: pos?.placement === "below" ? -10 : 10, scale: 0.95 }}
             animate={{ opacity: 1, y: 0, scale: 1 }}
-            exit={{ opacity: 0, y: 10, scale: 0.95 }}
+            exit={{ opacity: 0, y: pos?.placement === "below" ? -10 : 10, scale: 0.95 }}
             transition={{ type: "spring", stiffness: 300, damping: 25 }}
             style={{
-              position: "absolute",
-              bottom: "100%",
-              left: "50%",
-              transform: "translateX(-50%)",
-              marginBottom: 12,
+              position: "fixed",
+              left: pos?.left ?? -9999,
+              top: pos?.top ?? -9999,
+              visibility: pos ? "visible" : "hidden",
               width: 320,
               backgroundColor: "rgba(20, 20, 25, 0.95)",
               backdropFilter: "blur(12px)",
@@ -185,7 +231,9 @@ export default function PlayerBubble({ steamId, name, children }: PlayerBubblePr
             </div>
           </motion.div>
         )}
-      </AnimatePresence>
+      </AnimatePresence>,
+      document.body,
+      )}
     </div>
   );
 }

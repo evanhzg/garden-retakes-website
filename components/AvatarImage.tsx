@@ -20,11 +20,13 @@ export default function AvatarImage({
   src,
   alt = "Avatar",
   className,
+  style,
 }: {
   steamId: string | bigint;
   src?: string | null;
   alt?: string;
   className?: string;
+  style?: React.CSSProperties;
 }) {
   const idStr = steamId.toString();
   const [imgSrc, setImgSrc] = useState<string>(src || DEFAULT_AVATAR);
@@ -50,6 +52,7 @@ export default function AvatarImage({
     // eslint-disable-next-line @next/next/no-img-element
     <img
       className={className}
+      style={style}
       src={imgSrc}
       alt={alt}
       loading="lazy"

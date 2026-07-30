@@ -99,27 +99,11 @@ export default function LiveMatchPage() {
     }
   };
 
-  if (loading) {
-    return (
-      <main className="container p-4 mx-auto max-w-5xl mt-12 text-center">
-        <h1 className="text-3xl font-black mb-4">Connecting to Server...</h1>
-        <p className="text-zinc-400">Fetching live match data...</p>
-      </main>
-    );
-  }
-
-  if (!isLive || !match) {
-    return (
-      <main className="container p-4 mx-auto max-w-5xl mt-12 text-center">
-        <h1 className="text-4xl font-black mb-4 text-zinc-300">No Live Match</h1>
-        <p className="text-zinc-500 mb-8">
-          The server is currently idle or playing a warmup mode.
-        </p>
-        <Link href="/" className="px-6 py-2 bg-emerald-600/20 text-emerald-400 rounded hover:bg-emerald-600/40 transition">
-          Return Home
-        </Link>
-      </main>
-    );
+  // Idle is the state this page is in most of the time, so it gets the same
+  // care as a live match rather than a one-line apology: what the page will
+  // show when a round starts, how to get on the server, and where to go now.
+  if (loading || !isLive || !match) {
+    return <LiveIdle loading={loading} />;
   }
 
   const teamA = match.Players.filter(p => p.Team === "A");
@@ -344,5 +328,141 @@ function PlayerTable({
         </tbody>
       </table>
     </div>
+  );
+}
+
+/* ─────────────────────────────────────────────────────────────────────────
+   Idle / connecting state.
+
+   The server is not in a live round most of the time, so this is the view the
+   page usually shows. It previously read "No Live Match" over a dead grey
+   page. Now it explains what will appear here, offers the connect action, and
+   keeps a slow scanline running so the page reads as watching rather than
+   broken.
+   ───────────────────────────────────────────────────────────────────── */
+function LiveIdle({ loading }: { loading: boolean }) {
+  const serverAddress = process.env.NEXT_PUBLIC_SERVER_ADDRESS ?? "";
+  const [copied, setCopied] = useState(false);
+
+  const copy = async () => {
+    try {
+      await navigator.clipboard.writeText(`connect ${serverAddress}`);
+      setCopied(true);
+      setTimeout(() => setCopied(false), 1600);
+    } catch {}
+  };
+
+  const willShow = [
+    { k: "Scoreboard", v: "Live score, round number and side" },
+    { k: "Players", v: "Both teams with K/D/A and ADR as it happens" },
+    { k: "Economy", v: "Buy state and equipment value per side" },
+    { k: "Timeline", v: "Plants, defuses and clutches as they land" },
+  ];
+
+  return (
+    <main style={{ padding: "clamp(48px, 8vw, 96px) clamp(20px, 5vw, 64px)" }}>
+      <div style={{ maxWidth: 1100, marginInline: "auto" }}>
+        <div style={{ display: "flex", alignItems: "center", gap: 14, marginBottom: 22 }}>
+          <span
+            style={{
+              display: "inline-flex",
+              alignItems: "center",
+              gap: 8,
+              background: loading ? "var(--color-neutral-200)" : "var(--color-surface)",
+              border: "1px solid var(--color-divider)",
+              padding: "6px 12px",
+              fontSize: 11,
+              letterSpacing: "0.1em",
+              textTransform: "uppercase",
+              fontWeight: 600,
+            }}
+          >
+            <span
+              className="live-dot"
+              style={{ background: loading ? "var(--color-neutral-500)" : "var(--color-neutral-400)" }}
+            />
+            {loading ? "Connecting" : "Server idle"}
+          </span>
+          <span className="rule-draw" style={{ flex: 1, height: 2, background: "var(--color-divider)" }} />
+        </div>
+
+        <h1 style={{ fontSize: "clamp(38px, 6vw, 72px)", lineHeight: 0.98, margin: "0 0 18px" }}>
+          {loading ? "Reading the server…" : "Nothing live right now."}
+        </h1>
+
+        <p
+          style={{
+            fontSize: 17,
+            maxWidth: "52ch",
+            color: "color-mix(in srgb, var(--color-text) 72%, transparent)",
+            margin: "0 0 36px",
+          }}
+        >
+          {loading
+            ? "Asking the game server for the current round."
+            : "The server is idle or in warmup. This page refreshes on its own — leave it open and the match will appear here the moment a round starts."}
+        </p>
+
+        <div style={{ display: "flex", gap: 12, flexWrap: "wrap", marginBottom: 56 }}>
+          {serverAddress && (
+            <>
+              <a className="btn btn-primary" href={`steam://connect/${serverAddress}`}>
+                Join the server
+              </a>
+              <button type="button" className="btn btn-secondary" onClick={copy}>
+                {copied ? "Copied" : `Copy connect ${serverAddress}`}
+              </button>
+            </>
+          )}
+          <Link className="btn btn-secondary" href="/">
+            Ladder
+          </Link>
+          <Link className="btn btn-secondary" href="/stats">
+            Season stats
+          </Link>
+        </div>
+
+        <div style={{ borderTop: "2px solid var(--color-divider)", paddingTop: 28 }}>
+          <h2 style={{ fontSize: 13, letterSpacing: "0.08em", textTransform: "uppercase", marginBottom: 20 }}>
+            What appears here during a match
+          </h2>
+          <div
+            style={{
+              display: "grid",
+              gridTemplateColumns: "repeat(auto-fit, minmax(220px, 1fr))",
+              gap: 2,
+              background: "var(--color-divider)",
+              border: "1px solid var(--color-divider)",
+            }}
+          >
+            {willShow.map((f, i) => (
+              <div
+                key={f.k}
+                style={{
+                  background: "var(--color-bg)",
+                  padding: "20px 18px",
+                  animation: "gr-fade-up 0.5s cubic-bezier(.16,1,.3,1) both",
+                  animationDelay: `${0.05 + i * 0.07}s`,
+                }}
+              >
+                <div
+                  style={{
+                    fontFamily: "var(--font-heading)",
+                    fontWeight: 800,
+                    fontSize: 15,
+                    marginBottom: 6,
+                  }}
+                >
+                  {f.k}
+                </div>
+                <div style={{ fontSize: 13, color: "color-mix(in srgb, var(--color-text) 62%, transparent)" }}>
+                  {f.v}
+                </div>
+              </div>
+            ))}
+          </div>
+        </div>
+      </div>
+    </main>
   );
 }

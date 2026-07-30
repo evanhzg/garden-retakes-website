@@ -204,19 +204,18 @@ export default function NavBar({
         zIndex: 30,
       }}
     >
-      {/* Wordmark: RE, then four accent E, then TAKES. */}
-      <Link
-        href={getHref("/")}
-        style={{
-          fontFamily: "var(--font-heading)",
-          fontWeight: 800,
-          fontSize: 20,
-          letterSpacing: "-0.02em",
-          textDecoration: "none",
-          color: "var(--color-text)",
-        }}
-      >
-        RE<span style={{ color: "var(--color-accent)" }}>EEEE</span>TAKES
+      {/* Wordmark. At rest it reads RETAKES; the accent E stretch it out to
+          REEEEETAKES on hover, one letter at a time. */}
+      <Link href={getHref("/")} className="wordmark" aria-label="REEEEETAKES">
+        RE
+        <span className="wordmark-ee" aria-hidden>
+          {[0, 1, 2, 3].map((i) => (
+            <span key={i} className="wordmark-e" style={{ transitionDelay: `${i * 45}ms` }}>
+              E
+            </span>
+          ))}
+        </span>
+        TAKES
       </Link>
 
       <nav style={{ display: "flex", alignItems: "center", gap: "clamp(14px, 2.4vw, 36px)" }}>

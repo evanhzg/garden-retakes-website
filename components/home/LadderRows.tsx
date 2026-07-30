@@ -58,11 +58,14 @@ export default function LadderRows({ rows }: { rows: LadderRow[] }) {
                 {String(i + 1).padStart(2, "0")}
               </div>
 
+              {/* Desaturated at rest, full colour as the row opens — the
+                  portrait "arrives" with the stats rather than sitting apart. */}
               <AvatarImage
                 steamId={row.steamId}
                 src={row.avatar}
                 alt={row.name}
-                className="grayscale avatar"
+                className="avatar avatar-desat"
+                style={{ filter: open ? "grayscale(0) contrast(1)" : undefined }}
               />
 
               <div style={{ flex: "1 1 auto", minWidth: 0 }}>
@@ -97,16 +100,18 @@ export default function LadderRows({ rows }: { rows: LadderRow[] }) {
               <div
                 className="gr-preview"
                 style={{
-                  maxWidth: open ? 280 : 0,
+                  maxWidth: open ? 300 : 0,
                   opacity: open ? 1 : 0,
                   display: "flex",
                   gap: 24,
                   flexShrink: 0,
                 }}
               >
-                <Stat label="K/D" value={row.kd?.toFixed(2)} />
-                <Stat label="ADR" value={row.adr != null ? Math.round(row.adr) : undefined} />
-                <Stat label="Win" value={row.winPct != null ? `${Math.round(row.winPct)}%` : undefined} />
+                {/* Each figure follows the one before it, so the readout reads
+                    as it opens instead of all three landing at once. */}
+                <Stat label="K/D" value={row.kd?.toFixed(2)} open={open} index={0} />
+                <Stat label="ADR" value={row.adr != null ? Math.round(row.adr) : undefined} open={open} index={1} />
+                <Stat label="Win" value={row.winPct != null ? `${Math.round(row.winPct)}%` : undefined} open={open} index={2} />
               </div>
             </div>
           </Reveal>
@@ -116,9 +121,27 @@ export default function LadderRows({ rows }: { rows: LadderRow[] }) {
   );
 }
 
-function Stat({ label, value }: { label: string; value?: string | number }) {
+function Stat({
+  label,
+  value,
+  open,
+  index,
+}: {
+  label: string;
+  value?: string | number;
+  open: boolean;
+  index: number;
+}) {
   return (
-    <div style={{ whiteSpace: "nowrap" }}>
+    <div
+      style={{
+        whiteSpace: "nowrap",
+        opacity: open ? 1 : 0,
+        transform: open ? "none" : "translateX(-8px)",
+        transition: "opacity 0.3s cubic-bezier(.16,1,.3,1), transform 0.3s cubic-bezier(.16,1,.3,1)",
+        transitionDelay: open ? `${0.06 + index * 0.05}s` : "0s",
+      }}
+    >
       <div className="num" style={{ fontSize: 15, fontWeight: 600 }}>
         {value ?? "—"}
       </div>

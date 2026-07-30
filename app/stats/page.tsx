@@ -4,47 +4,10 @@ import { summarize, dayKey, formatDate } from "@/lib/stats";
 import { resolveNames, nameFrom, NameMap } from "@/lib/names";
 import AvatarImage from "@/components/AvatarImage";
 import { Columns, HBars, SideSplitBars, Histogram } from "@/components/stats/charts";
-import PlayerBubble from "@/components/social/PlayerBubble";
+import LeaderboardTabs from "@/components/stats/LeaderboardTabs";
 
 export const dynamic = "force-dynamic";
 export const revalidate = 60;
-
-function Leaderboard({
-  title,
-  rows,
-  names,
-  format,
-}: {
-  title: string;
-  rows: { steamId: string; value: number }[];
-  names: NameMap;
-  format: (v: number) => string;
-}) {
-  return (
-    <div className="side-card">
-      <h3>{title}</h3>
-      <table className="ladder-table">
-        <tbody>
-          {rows.map((p, i) => (
-            <tr key={p.steamId}>
-              <td className="rank-cell">{i + 1}</td>
-              <td>
-                <PlayerBubble steamId={p.steamId} name={nameFrom(names, p.steamId)}>
-                  <div className="ladder-player">
-                    <span className="ladder-avatar"><AvatarImage steamId={p.steamId} /></span>
-                    <span>{nameFrom(names, p.steamId)}</span>
-                  </div>
-                </PlayerBubble>
-              </td>
-              <td style={{ fontWeight: 800 }}>{format(p.value)}</td>
-            </tr>
-          ))}
-          {rows.length === 0 && <tr><td className="muted" colSpan={3}>Not enough data yet.</td></tr>}
-        </tbody>
-      </table>
-    </div>
-  );
-}
 
 export default async function StatsPage() {
   const season = await getActiveSeason();
@@ -157,24 +120,33 @@ export default async function StatsPage() {
       .sort((a, b) => b.value - a.value)
       .slice(0, 5);
 
-  const boards: { title: string; rows: { steamId: string; value: number }[]; format: (v: number) => string }[] = [
-    { title: "Highest ADR", rows: top(s => s.adr), format: v => v.toFixed(0) },
-    { title: "Most Clutches", rows: top(s => s.clutches), format: v => String(v) },
+  // Ten boards, shown one at a time as tabs over a single table rather than ten
+  // stacked tables of the same five players. `unit` labels the value column so
+  // the number is readable without the board title above it.
+  const boards: {
+    title: string;
+    unit: string;
+    rows: { steamId: string; value: number }[];
+    format: (v: number) => string;
+  }[] = [
+    { title: "ADR", unit: "ADR", rows: top(s => s.adr), format: v => v.toFixed(0) },
+    { title: "Clutches", unit: "Clutches", rows: top(s => s.clutches), format: v => String(v) },
     {
-      title: "Best Entry (OK %)",
+      title: "Entry",
+      unit: "Opening kill %",
       rows: top(
         s => (100 * s.openingKills) / Math.max(1, s.openingKills + s.openingDeaths),
         s => s.openingKills + s.openingDeaths >= 5
       ),
       format: v => `${v.toFixed(1)}%`,
     },
-    { title: "Highest KAST", rows: top(s => s.kast), format: v => `${v.toFixed(1)}%` },
-    { title: "Headshot %", rows: top(s => s.hs, s => s.kills >= 50), format: v => `${v.toFixed(1)}%` },
-    { title: "Util Dmg / Round", rows: top(s => s.utilPerRound), format: v => v.toFixed(1) },
-    { title: "Trade Kills", rows: top(s => s.tradeKills), format: v => String(v) },
-    { title: "Bomb Plants + Defuses", rows: top(s => s.plants + s.defuses), format: v => String(v) },
-    { title: "Multi-kill Rounds", rows: top(s => s.multiKills), format: v => String(v) },
-    { title: "Most Rounds Played", rows: top(s => s.rounds), format: v => String(v) },
+    { title: "KAST", unit: "KAST", rows: top(s => s.kast), format: v => `${v.toFixed(1)}%` },
+    { title: "Headshots", unit: "HS %", rows: top(s => s.hs, s => s.kills >= 50), format: v => `${v.toFixed(1)}%` },
+    { title: "Utility", unit: "Util dmg / round", rows: top(s => s.utilPerRound), format: v => v.toFixed(1) },
+    { title: "Trades", unit: "Trade kills", rows: top(s => s.tradeKills), format: v => String(v) },
+    { title: "Bomb", unit: "Plants + defuses", rows: top(s => s.plants + s.defuses), format: v => String(v) },
+    { title: "Multi-kills", unit: "Multi-kill rounds", rows: top(s => s.multiKills), format: v => String(v) },
+    { title: "Rounds", unit: "Rounds played", rows: top(s => s.rounds), format: v => String(v) },
   ];
 
   const idsToResolve = Array.from(new Set(boards.flatMap(b => b.rows.map(r => BigInt(r.steamId)))));
@@ -228,13 +200,21 @@ export default async function StatsPage() {
       {/* ---------- Leaderboards ---------- */}
       <section className="panel" style={{ marginTop: 16 }}>
         <h3 style={{ marginBottom: 4 }}>Season leaders</h3>
-        <p className="muted" style={{ fontSize: "0.78rem", margin: 0 }}>Minimum 10 ranked rounds to qualify.</p>
+        <p className="muted" style={{ fontSize: "0.78rem", margin: "0 0 14px" }}>
+          Minimum 10 ranked rounds to qualify.
+        </p>
+        <LeaderboardTabs
+          boards={boards.map(b => ({
+            title: b.title,
+            unit: b.unit,
+            rows: b.rows.map(r => ({
+              steamId: r.steamId,
+              name: nameFrom(names, r.steamId),
+              value: b.format(r.value),
+            })),
+          }))}
+        />
       </section>
-      <div className="split-cards" style={{ marginTop: 12 }}>
-        {boards.map(b => (
-          <Leaderboard key={b.title} title={b.title} rows={b.rows} names={names} format={b.format} />
-        ))}
-      </div>
     </>
   );
 }
