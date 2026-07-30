@@ -1,71 +1,136 @@
 "use client";
 
-import { useEffect } from "react";
+import { useEffect, useRef } from "react";
 import { usePathname } from "next/navigation";
-import { motion, useMotionTemplate, useMotionValue, useSpring, useTransform } from "framer-motion";
 
 export default function DynamicGridBackground() {
   const pathname = usePathname();
-  const isGames = pathname.startsWith("/games");
-
-  const mouseX = useMotionValue(0);
-  const mouseY = useMotionValue(0);
+  const isGames = pathname?.startsWith("/games");
+  const canvasRef = useRef<HTMLCanvasElement>(null);
 
   useEffect(() => {
+    const canvas = canvasRef.current;
+    if (!canvas) return;
+    const ctx = canvas.getContext("2d");
+    if (!ctx) return;
+
+    let animationFrameId: number;
+    
+    // Config
+    const GRID_SIZE = 20;
+    const LENS_RADIUS = 300;
+    const MAGNIFICATION = 0.8; // Strength of the bulge/zoom
+
+    let mouseX = -1000;
+    let mouseY = -1000;
+    let targetMouseX = -1000;
+    let targetMouseY = -1000;
+
     const handleMouseMove = (e: MouseEvent) => {
-      // Check if mouse is hovering an interactive element (a, button, input)
-      // or an element with a background that should block the lens.
-      const target = e.target as HTMLElement;
-      const isInteractive = target.closest("a, button, input, [role='button'], .glass-panel");
-      
-      if (!isInteractive) {
-        mouseX.set(e.clientX);
-        mouseY.set(e.clientY);
-      }
+      targetMouseX = e.clientX;
+      targetMouseY = e.clientY;
     };
 
     window.addEventListener("mousemove", handleMouseMove);
-    return () => window.removeEventListener("mousemove", handleMouseMove);
-  }, [mouseX, mouseY]);
 
-  const smoothX = useSpring(mouseX, { stiffness: 50, damping: 20 });
-  const smoothY = useSpring(mouseY, { stiffness: 50, damping: 20 });
+    const resize = () => {
+      canvas.width = window.innerWidth;
+      canvas.height = window.innerHeight;
+    };
+    window.addEventListener("resize", resize);
+    resize();
 
-  const bgXBase = useTransform(smoothX, (v) => `${v * -0.02}px`);
-  const bgYBase = useTransform(smoothY, (v) => `${v * -0.02}px`);
+    const draw = () => {
+      // Smooth tracking
+      mouseX += (targetMouseX - mouseX) * 0.12;
+      mouseY += (targetMouseY - mouseY) * 0.12;
 
-  const bgXZoom = useTransform(smoothX, (v) => `${v * -0.06}px`);
-  const bgYZoom = useTransform(smoothY, (v) => `${v * -0.06}px`);
+      ctx.clearRect(0, 0, canvas.width, canvas.height);
+      
+      const cols = Math.ceil(canvas.width / GRID_SIZE) + 1;
+      const rows = Math.ceil(canvas.height / GRID_SIZE) + 1;
+
+      // 1. Calculate distorted points
+      const points: {x: number, y: number}[][] = [];
+
+      for (let i = 0; i <= rows; i++) {
+        const row: {x: number, y: number}[] = [];
+        for (let j = 0; j <= cols; j++) {
+          const base_x = j * GRID_SIZE;
+          const base_y = i * GRID_SIZE;
+          
+          const dx = base_x - mouseX;
+          const dy = base_y - mouseY;
+          const dist = Math.sqrt(dx * dx + dy * dy);
+          
+          let distorted_x = base_x;
+          let distorted_y = base_y;
+
+          if (dist < LENS_RADIUS) {
+            // Push points away to create a zoom/magnify effect
+            const force = Math.pow(1 - dist / LENS_RADIUS, 2);
+            distorted_x += dx * force * MAGNIFICATION;
+            distorted_y += dy * force * MAGNIFICATION;
+          }
+          row.push({ x: distorted_x, y: distorted_y });
+        }
+        points.push(row);
+      }
+
+      // 2. Draw the grid lines
+      ctx.beginPath();
+      // Horizontal lines
+      for (let i = 0; i <= rows; i++) {
+        for (let j = 0; j <= cols; j++) {
+          if (j === 0) ctx.moveTo(points[i][j].x, points[i][j].y);
+          else ctx.lineTo(points[i][j].x, points[i][j].y);
+        }
+      }
+      // Vertical lines
+      for (let j = 0; j <= cols; j++) {
+        for (let i = 0; i <= rows; i++) {
+          if (i === 0) ctx.moveTo(points[i][j].x, points[i][j].y);
+          else ctx.lineTo(points[i][j].x, points[i][j].y);
+        }
+      }
+      
+      ctx.strokeStyle = "rgba(168, 85, 247, 0.25)";
+      ctx.lineWidth = 1;
+      ctx.stroke();
+
+      // 3. Add a subtle ambient glow over the lens
+      const gradient = ctx.createRadialGradient(mouseX, mouseY, 0, mouseX, mouseY, LENS_RADIUS * 0.8);
+      gradient.addColorStop(0, "rgba(168, 85, 247, 0.15)");
+      gradient.addColorStop(1, "rgba(168, 85, 247, 0)");
+      ctx.fillStyle = gradient;
+      ctx.fillRect(0, 0, canvas.width, canvas.height);
+
+      animationFrameId = requestAnimationFrame(draw);
+    };
+
+    draw();
+
+    return () => {
+      window.removeEventListener("mousemove", handleMouseMove);
+      window.removeEventListener("resize", resize);
+      cancelAnimationFrame(animationFrameId);
+    };
+  }, []);
 
   if (isGames) return null;
 
   return (
-    <div style={{ pointerEvents: 'none', position: 'fixed', top: 0, right: 0, bottom: 0, left: 0, zIndex: -1, overflow: 'hidden' }}>
-      {/* Base Grid Pattern */}
-      <motion.div 
-        style={{
-          position: 'absolute',
-          top: -100, right: -100, bottom: -100, left: -100,
-          backgroundImage: 'linear-gradient(to right, rgba(168, 85, 247, 0.15) 1px, transparent 1px), linear-gradient(to bottom, rgba(168, 85, 247, 0.15) 1px, transparent 1px)',
-          backgroundSize: '20px 20px',
-          x: bgXBase,
-          y: bgYBase
-        }} 
-      />
-      
-      {/* Zoomed/Distorted Grid Lens */}
-      <motion.div
-        style={{
-          position: 'absolute',
-          top: -100, right: -100, bottom: -100, left: -100,
-          backgroundImage: 'linear-gradient(to right, rgba(168, 85, 247, 0.4) 2px, transparent 2px), linear-gradient(to bottom, rgba(168, 85, 247, 0.4) 2px, transparent 2px)',
-          backgroundSize: '40px 40px',
-          x: bgXZoom,
-          y: bgYZoom,
-          WebkitMaskImage: useMotionTemplate`radial-gradient(350px circle at calc(${mouseX}px + 100px) calc(${mouseY}px + 100px), black 0%, transparent 100%)`,
-          maskImage: useMotionTemplate`radial-gradient(350px circle at calc(${mouseX}px + 100px) calc(${mouseY}px + 100px), black 0%, transparent 100%)`,
-        }}
-      />
-    </div>
+    <canvas 
+      ref={canvasRef}
+      style={{
+        pointerEvents: 'none',
+        position: 'fixed',
+        top: 0,
+        left: 0,
+        width: '100vw',
+        height: '100vh',
+        zIndex: -1,
+      }}
+    />
   );
 }
