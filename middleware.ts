@@ -58,6 +58,18 @@ export function middleware(req: NextRequest) {
 
   const url = req.nextUrl.clone();
 
+  // Behind a reverse proxy, req.nextUrl carries the *internal* listen port (3000),
+  // and assigning url.host without a port leaves that port in place. That leaked
+  // into public redirects — https://dev.retakes.fr/games sent users to
+  // https://games.dev.retakes.fr:3000/, which is not reachable from outside.
+  //
+  // The Host header is what the client actually asked for, so it decides the port:
+  // extractSubdomain already folds an explicit port into baseHost (localhost:3000),
+  // so anything still on url.port here is the internal one.
+  if (!baseHost.includes(":")) {
+    url.port = "";
+  }
+
   // 1. If accessing a subdomain route from the main domain, redirect to subdomain
   for (const [sub, route] of Object.entries(SUBDOMAIN_ROUTES)) {
     if (subdomain !== sub && (url.pathname === route || url.pathname.startsWith(`${route}/`))) {
