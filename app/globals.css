@@ -158,6 +158,10 @@ body {
   font-weight: 400;
   line-height: 1.55;
   overflow: hidden;
+  /* Header then scroll region: the column lets .layout-wrapper claim the
+     remainder without anyone hardcoding the header's height. */
+  display: flex;
+  flex-direction: column;
 }
 
 /* ── type scale ─────────────────────────────────────────────────────────── */
@@ -4235,9 +4239,10 @@ body.is-docs-page .left-sidebar {
    ============================================================ */
 .layout-wrapper {
   display: flex;
-  /* Fills the viewport below the header; the header's live height is published
-     by NavBar as --games-top-inset. */
-  height: calc(100dvh - var(--games-top-inset, 72px));
+  /* Fills whatever the sticky header leaves. This used to subtract a fixed
+     72px via --games-top-inset, a variable nothing ever actually set, so the
+     figure was guesswork that broke whenever the header wrapped. */
+  flex: 1;
   min-height: 0;
   overflow: hidden;
 }

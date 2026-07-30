@@ -5,6 +5,7 @@ import { usePathname, useRouter } from "next/navigation";
 import { useEffect, useState, useRef } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import { ThemeToggle } from "./ThemeToggle";
+import AvatarImage from "./AvatarImage";
 
 type NavLink = {
   href: string;
@@ -12,20 +13,22 @@ type NavLink = {
   isSection?: boolean;
   isLive?: boolean;
   adminOnly?: boolean;
+  /** Shown inline in the bar; everything else falls into the More menu. */
+  primary?: boolean;
 };
 
 // Several routes existed with no way to reach them from the nav — /players,
 // /pros, /compare, /docs, /request-skin and /settings were all reachable only by
 // typing the URL or following a link from inside another page.
 const CS2_LINKS: NavLink[] = [
-  { href: "/", label: "Ladder" },
-  { href: "/players", label: "Players" },
-  { href: "/stats", label: "Stats" },
+  { href: "/", label: "Ladder", primary: true },
+  { href: "/players", label: "Players", primary: true },
+  { href: "/stats", label: "Stats", primary: true },
+  { href: "/teams", label: "Teams", primary: true },
+  { href: "/live", label: "Live", isLive: true, primary: true },
   { href: "/compare", label: "Compare" },
-  { href: "/teams", label: "CR Teams" },
   { href: "/pros", label: "Pros" },
   { href: "/duels", label: "Duels" },
-  { href: "/live", label: "LIVE", isLive: true },
   { href: "/inventory", label: "Inventory" },
   { href: "/request-skin", label: "Request skin" },
   { href: "/docs", label: "Docs" },
@@ -36,9 +39,10 @@ const CS2_LINKS: NavLink[] = [
 ];
 
 const GAMES_LINKS: NavLink[] = [
+  { href: "/games", label: "Games Hub", primary: true },
+  { href: "/games/ladder", label: "Ladder", primary: true },
+  { href: "/games/roadmap", label: "Roadmap" },
   { href: "/", label: "CS2", isSection: true },
-  { href: "/games", label: "Games Hub" },
-  { href: "/games/roadmap", label: "Games Roadmap" },
 ];
 
 type Session = {
@@ -172,196 +176,196 @@ export default function NavBar({
     );
   }
 
+  const primary = links.filter((l) => l.primary);
+  const overflow = links.filter((l) => !l.primary);
+
+  const linkStyle = (active: boolean): React.CSSProperties => ({
+    fontSize: 13,
+    letterSpacing: "0.06em",
+    textTransform: "uppercase",
+    textDecoration: "none",
+    color: active ? "var(--color-accent)" : "var(--color-text)",
+    whiteSpace: "nowrap",
+  });
+
   return (
-    <>
-      <header 
-        ref={headerRef} 
+    <header
+      ref={headerRef}
+      style={{
+        display: "flex",
+        alignItems: "center",
+        justifyContent: "space-between",
+        gap: "clamp(12px, 2vw, 28px)",
+        padding: "22px clamp(20px, 5vw, 64px)",
+        borderBottom: "2px solid var(--color-divider)",
+        position: "sticky",
+        top: 0,
+        background: "var(--color-bg)",
+        zIndex: 30,
+      }}
+    >
+      {/* Wordmark: RE, then four accent E, then TAKES. */}
+      <Link
+        href={getHref("/")}
         style={{
-          position: 'fixed',
-          top: '20px',
-          left: '24px',
-          right: '24px',
-          zIndex: 50,
-          display: 'flex',
-          justifyContent: 'space-between',
-          alignItems: 'flex-start',
-          pointerEvents: 'none'
+          fontFamily: "var(--font-heading)",
+          fontWeight: 800,
+          fontSize: 20,
+          letterSpacing: "-0.02em",
+          textDecoration: "none",
+          color: "var(--color-text)",
         }}
       >
-        <div style={{ display: 'flex', flexDirection: 'column', gap: '12px', pointerEvents: 'auto' }}>
-          <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-            <Link 
-              href={getHref("/")} 
+        RE<span style={{ color: "var(--color-accent)" }}>EEEE</span>TAKES
+      </Link>
+
+      <nav style={{ display: "flex", alignItems: "center", gap: "clamp(14px, 2.4vw, 36px)" }}>
+        {primary.map((l) => {
+          const active = l.href === "/" ? pathname === "/" : pathname.startsWith(l.href);
+          const live = l.isLive && isLiveServer;
+          return (
+            <Link
+              key={l.href}
+              href={getHref(l.href)}
+              className="link-underline"
               style={{
-                display: 'flex',
-                alignItems: 'center',
-                gap: '12px',
-                padding: '8px 16px',
-                background: 'color-mix(in srgb, var(--panel) 40%, transparent)',
-                backdropFilter: 'blur(16px)',
-                WebkitBackdropFilter: 'blur(16px)',
-                border: '1px solid color-mix(in srgb, var(--border) 20%, transparent)',
-                borderRadius: '999px',
-                boxShadow: 'var(--shadow)',
-                color: 'var(--text)',
-                textDecoration: 'none'
+                ...linkStyle(active),
+                ...(live ? { color: "var(--color-accent-700)", display: "flex", alignItems: "center", gap: 6 } : null),
               }}
             >
-              <img src="/retakes_logo.png" alt="Logo" style={{ width: '24px', height: '24px', objectFit: 'contain' }} />
-              <span style={{ fontWeight: 800, letterSpacing: '2px', fontSize: '13px' }}>REEEETAKES</span>
+              {live && <span className="live-dot" />}
+              {l.label}
             </Link>
-            
-            <button 
-              onClick={() => setMenuOpen(!menuOpen)}
-              style={{
-                width: '42px',
-                height: '42px',
-                display: 'flex',
-                flexDirection: 'column',
-                justifyContent: 'center',
-                alignItems: 'center',
-                gap: '5px',
-                background: 'color-mix(in srgb, var(--panel) 40%, transparent)',
-                backdropFilter: 'blur(16px)',
-                WebkitBackdropFilter: 'blur(16px)',
-                border: '1px solid color-mix(in srgb, var(--border) 20%, transparent)',
-                borderRadius: '50%',
-                cursor: 'pointer',
-                color: 'var(--text)',
-                boxShadow: 'var(--shadow)'
-              }}
-            >
-              <motion.span animate={menuOpen ? { rotate: 45, y: 7 } : { rotate: 0, y: 0 }} style={{ width: '16px', height: '2px', background: 'currentColor', borderRadius: '2px' }} />
-              <motion.span animate={menuOpen ? { opacity: 0 } : { opacity: 1 }} style={{ width: '16px', height: '2px', background: 'currentColor', borderRadius: '2px' }} />
-              <motion.span animate={menuOpen ? { rotate: -45, y: -7 } : { rotate: 0, y: 0 }} style={{ width: '16px', height: '2px', background: 'currentColor', borderRadius: '2px' }} />
-            </button>
-          </div>
+          );
+        })}
 
-          <AnimatePresence>
-            {menuOpen && (
-              <motion.nav 
-                initial={{ opacity: 0, y: -10, scale: 0.95 }}
-                animate={{ opacity: 1, y: 0, scale: 1 }}
-                exit={{ opacity: 0, y: -10, scale: 0.95 }}
-                transition={{ duration: 0.2, ease: "easeOut" }}
-                style={{
-                  display: 'flex',
-                  flexDirection: 'column',
-                  background: 'color-mix(in srgb, var(--panel) 70%, transparent)',
-                  backdropFilter: 'blur(20px)',
-                  WebkitBackdropFilter: 'blur(20px)',
-                  border: '1px solid var(--border)',
-                  borderRadius: '20px',
-                  padding: '12px',
-                  boxShadow: 'var(--shadow-hover)',
-                  width: '240px',
-                  gap: '4px'
-                }}
-              >
-                {links.map(l => {
-                  const isActive = l.href === "/" ? pathname === "/" : pathname.startsWith(l.href);
-                  return (
-                    <Link
-                      key={l.href}
-                      href={getHref(l.href)}
-                      onClick={() => setMenuOpen(false)}
-                      style={{
-                        position: 'relative',
-                        padding: '10px 16px',
-                        borderRadius: '12px',
-                        display: 'flex',
-                        alignItems: 'center',
-                        justifyContent: 'space-between',
-                        textDecoration: 'none',
-                        color: isActive ? 'var(--accent)' : 'var(--text)',
-                        background: isActive ? 'var(--accent-soft)' : 'transparent',
-                        fontWeight: isActive ? 700 : 500,
-                        fontSize: '14px',
-                        transition: 'background 0.2s, color 0.2s'
-                      }}
-                    >
-                      <span>{l.label}</span>
-                      {l.isLive && isLiveServer && (
-                        <span style={{ width: '8px', height: '8px', borderRadius: '50%', background: '#10b981', boxShadow: '0 0 8px #10b981' }} />
-                      )}
-                    </Link>
-                  );
-                })}
-              </motion.nav>
-            )}
-          </AnimatePresence>
-        </div>
-
-        <div style={{ display: 'flex', alignItems: 'center', gap: '12px', pointerEvents: 'auto' }}>
-          <div style={{
-            background: 'color-mix(in srgb, var(--panel) 40%, transparent)',
-            backdropFilter: 'blur(16px)',
-            WebkitBackdropFilter: 'blur(16px)',
-            border: '1px solid color-mix(in srgb, var(--border) 20%, transparent)',
-            borderRadius: '999px',
-            display: 'flex',
-            alignItems: 'center',
-            padding: '4px',
-            boxShadow: 'var(--shadow)'
-          }}>
-            <ThemeToggle />
-          </div>
-
-          <div style={{
-            background: 'color-mix(in srgb, var(--panel) 40%, transparent)',
-            backdropFilter: 'blur(16px)',
-            WebkitBackdropFilter: 'blur(16px)',
-            border: '1px solid color-mix(in srgb, var(--border) 20%, transparent)',
-            borderRadius: '999px',
-            overflow: 'hidden',
-            boxShadow: 'var(--shadow)',
-            display: 'flex'
-          }}>
-            {session.authenticated ? (
-              <Link 
-                href={getHref("/profile")} 
-                style={{ display: 'flex', alignItems: 'center', gap: '8px', padding: '6px 12px 6px 6px', textDecoration: 'none', color: 'var(--text)' }}
-              >
-                {session.avatar && <img src={session.avatar} alt="Avatar" style={{ width: '28px', height: '28px', borderRadius: '50%' }} />}
-                <span style={{ fontSize: '13px', fontWeight: 600 }}>{session.name ?? "Profile"}</span>
-              </Link>
-            ) : (
-              <a 
-                href={`/api/auth/steam/login?returnTo=${encodeURIComponent(pathname)}`} 
-                style={{ padding: '10px 20px', fontSize: '13px', fontWeight: 600, textDecoration: 'none', color: 'var(--text)' }}
-              >
-                Sign In
-              </a>
-            )}
-          </div>
-
-          {inGame && (
+        {overflow.length > 0 && (
+          <div style={{ position: "relative" }}>
             <button
               type="button"
-              onClick={() => setHidden(true)}
-              title="Hide header for a distraction-free game"
+              onClick={() => setMenuOpen((v) => !v)}
+              aria-expanded={menuOpen}
               style={{
-                width: '40px',
-                height: '40px',
-                borderRadius: '50%',
-                background: 'color-mix(in srgb, var(--panel) 40%, transparent)',
-                backdropFilter: 'blur(16px)',
-                WebkitBackdropFilter: 'blur(16px)',
-                border: '1px solid color-mix(in srgb, var(--border) 20%, transparent)',
-                color: 'var(--text)',
-                cursor: 'pointer',
-                display: 'flex',
-                alignItems: 'center',
-                justifyContent: 'center'
+                ...linkStyle(false),
+                background: "none",
+                border: 0,
+                cursor: "pointer",
+                font: "inherit",
+                fontSize: 13,
+                letterSpacing: "0.06em",
+                textTransform: "uppercase",
+                display: "flex",
+                alignItems: "center",
+                gap: 6,
+                padding: 0,
               }}
             >
-              <svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" strokeWidth="2.4" strokeLinecap="round" strokeLinejoin="round">
-                <path d="M6 15l6-6 6 6" />
-              </svg>
+              More
+              <motion.svg
+                viewBox="0 0 24 24"
+                width="12"
+                height="12"
+                fill="none"
+                stroke="currentColor"
+                strokeWidth="3"
+                strokeLinecap="round"
+                strokeLinejoin="round"
+                animate={{ rotate: menuOpen ? 180 : 0 }}
+                transition={{ duration: 0.2 }}
+              >
+                <path d="M6 9l6 6 6-6" />
+              </motion.svg>
             </button>
-          )}
-        </div>
-      </header>
-    </>
+
+            <AnimatePresence>
+              {menuOpen && (
+                <motion.div
+                  initial={{ opacity: 0, y: -6 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  exit={{ opacity: 0, y: -6 }}
+                  transition={{ duration: 0.18, ease: [0.16, 1, 0.3, 1] }}
+                  style={{
+                    position: "absolute",
+                    top: "calc(100% + 14px)",
+                    right: 0,
+                    display: "flex",
+                    flexDirection: "column",
+                    minWidth: 200,
+                    padding: "var(--space-2)",
+                    background: "var(--color-surface)",
+                    border: "1px solid var(--color-divider)",
+                    boxShadow: "var(--shadow-lg)",
+                    zIndex: 40,
+                  }}
+                >
+                  {overflow.map((l) => {
+                    const active = pathname.startsWith(l.href);
+                    return (
+                      <Link
+                        key={l.href}
+                        href={getHref(l.href)}
+                        onClick={() => setMenuOpen(false)}
+                        style={{
+                          padding: "9px 12px",
+                          fontSize: 13,
+                          textDecoration: "none",
+                          color: active ? "var(--color-accent)" : "var(--color-text)",
+                          borderTop: l.isSection ? "1px solid var(--color-divider)" : undefined,
+                          marginTop: l.isSection ? "var(--space-2)" : undefined,
+                          paddingTop: l.isSection ? "var(--space-3)" : undefined,
+                        }}
+                      >
+                        {l.label}
+                      </Link>
+                    );
+                  })}
+                </motion.div>
+              )}
+            </AnimatePresence>
+          </div>
+        )}
+
+        <ThemeToggle />
+
+        {session.authenticated ? (
+          <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
+            {session.steamId && (
+              <Link href={getHref("/profile")} title={session.name ?? "Profile"}>
+                <AvatarImage
+                  steamId={session.steamId}
+                  src={session.avatar}
+                  alt={session.name ?? "Profile"}
+                  className="avatar avatar-sm"
+                />
+              </Link>
+            )}
+            <a className="btn btn-secondary" href="/api/auth/logout" style={{ fontSize: 12 }}>
+              Log out
+            </a>
+          </div>
+        ) : (
+          <a
+            className="btn btn-secondary"
+            href={`/games/login?returnTo=${encodeURIComponent(pathname)}`}
+            style={{ fontSize: 12 }}
+          >
+            Sign in
+          </a>
+        )}
+
+        {inGame && (
+          <button
+            type="button"
+            onClick={() => setHidden(true)}
+            title="Hide header for a distraction-free game"
+            className="btn btn-icon btn-secondary"
+          >
+            <svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" strokeWidth="2.4" strokeLinecap="round" strokeLinejoin="round">
+              <path d="M6 15l6-6 6 6" />
+            </svg>
+          </button>
+        )}
+      </nav>
+    </header>
   );
 }
