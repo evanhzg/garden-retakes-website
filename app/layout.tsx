@@ -5,7 +5,6 @@ import path from "path";
 import { prisma } from "@/lib/db";
 import { resolveAvatars } from "@/lib/avatars";
 import NavBar from "@/components/NavBar";
-import LeftSidebar from "@/components/LeftSidebar";
 import PageLoader from "@/components/PageLoader";
 import RouteLoader from "@/components/RouteLoader";
 import "./globals.css";
@@ -99,17 +98,12 @@ export default async function RootLayout({ children }: { children: React.ReactNo
       <body>
         <PageLoader />
         <ThemeProvider attribute="class" defaultTheme="system" enableSystem>
-          <div className="bg-orbs" aria-hidden="true">
-            <span className="orb orb-1" />
-            <span className="orb orb-2" />
-            <span className="orb orb-3" />
-          </div>
-          
+          {/* The three blurred orbs were the last of the old purple/pink wash
+              (#ec4899 / #a855f7 / #d946ef) and fought the Modernist ground. */}
           <DynamicGridBackground />
           <RouteLoader />
           <NavBar avatarPlayers={avatarPlayers} host={host} protocol={protocol} />
           <div className="layout-wrapper">
-            <LeftSidebar players={avatarPlayers} host={host} protocol={protocol} />
             <div className="main-content">
               <main className="container">{children}</main>
             </div>

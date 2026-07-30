@@ -8,6 +8,7 @@ import { resolveAvatars } from "@/lib/avatars";
 import { getLastSessionStandout } from "@/lib/hero";
 import Reveal from "@/components/home/Reveal";
 import LadderRows, { type LadderRow } from "@/components/home/LadderRows";
+import CountUp from "@/components/home/CountUp";
 
 export const dynamic = "force-dynamic";
 export const revalidate = 30;
@@ -234,19 +235,22 @@ function Hero({
             Ranked sessions, Competitive 2v2/3v3, clutch rounds — and a skin loadout that follows you
             in-game. Jump on the server and climb the ladder.
           </p>
-          <div style={{ display: "flex", gap: 14, alignItems: "center", flexWrap: "wrap" }}>
-            <ConnectButton serverAddress={serverAddress} />
+          {/* No connect button here — the CTA band at the foot of the page owns
+              that action, so the hero stays a statement rather than a form. */}
+          <div style={{ display: "flex", gap: 24, alignItems: "center", flexWrap: "wrap" }}>
             <Link
               href="#ladder"
-              style={{
-                fontSize: 13,
-                letterSpacing: "0.06em",
-                textTransform: "uppercase",
-                textDecoration: "underline",
-                textUnderlineOffset: 4,
-              }}
+              className="link-underline"
+              style={{ fontSize: 13, letterSpacing: "0.06em", textTransform: "uppercase" }}
             >
               See the ladder ↓
+            </Link>
+            <Link
+              href="/stats"
+              className="link-underline"
+              style={{ fontSize: 13, letterSpacing: "0.06em", textTransform: "uppercase" }}
+            >
+              Season stats
             </Link>
           </div>
         </div>
@@ -273,11 +277,18 @@ function Hero({
                 marginBottom: 6,
               }}
             >
+              <span className="live-dot" style={{ marginRight: 6 }} />
               {season ? `${season} · Live` : "Server"}
             </div>
-            <div className="num" style={{ fontWeight: 700, fontSize: 30, lineHeight: 1, color: "var(--color-accent)" }}>
-              {activePlayers ?? "—"}
-            </div>
+            {activePlayers == null ? (
+              <div className="num" style={{ fontWeight: 700, fontSize: 30, lineHeight: 1, color: "var(--color-accent)" }}>—</div>
+            ) : (
+              <CountUp
+                value={activePlayers}
+                className="num"
+                style={{ display: "block", fontWeight: 700, fontSize: 30, lineHeight: 1, color: "var(--color-accent)" }}
+              />
+            )}
             <div
               style={{
                 fontSize: 12,
@@ -339,34 +350,19 @@ function Standout(p: {
   rounds: number;
 }) {
   const stats = [
-    { label: "K/D", value: p.kd.toFixed(2) },
-    { label: "ADR", value: Math.round(p.adr) },
-    { label: "Win %", value: Math.round(p.winPct) },
-    { label: "Rounds", value: p.rounds },
+    { label: "K/D", value: p.kd, decimals: 2 },
+    { label: "ADR", value: p.adr, decimals: 0 },
+    { label: "Win %", value: p.winPct, decimals: 0, suffix: "%" },
+    { label: "Rounds", value: p.rounds, decimals: 0 },
   ];
 
   return (
     <Reveal as="section" style={{ padding: `clamp(64px, 9vw, 120px) ${PAD}`, position: "relative" }}>
-      <div
-        style={{
-          display: "grid",
-          gridTemplateColumns: "minmax(0, 5fr) minmax(0, 7fr)",
-          gap: "clamp(16px, 3vw, 40px)",
-          alignItems: "center",
-        }}
-      >
-        <div style={{ position: "relative" }}>
-          <AvatarImage
-            steamId={p.steamId}
-            src={p.avatar}
-            alt={p.name}
-            className="grayscale"
-          />
-          <div
+      <div style={{ maxWidth: 1280, marginInline: "auto" }}>
+        <div style={{ display: "flex", alignItems: "center", gap: 14, marginBottom: 20 }}>
+          <span
+            className="gr-pop"
             style={{
-              position: "absolute",
-              top: 16,
-              left: 16,
               background: "var(--color-accent)",
               color: "var(--color-bg)",
               fontSize: 11,
@@ -377,15 +373,24 @@ function Standout(p: {
             }}
           >
             ★ Standout — Today
-          </div>
+          </span>
+          <span className="rule-draw" style={{ flex: 1, height: 2, background: "var(--color-divider)" }} />
         </div>
 
         <div style={{ position: "relative" }}>
-          <h2 style={{ fontSize: "clamp(32px, 4vw, 52px)", letterSpacing: "-0.02em", margin: "0 0 4px" }}>
-            <Link href={`/players/${p.steamId}`} style={{ color: "inherit", textDecoration: "none" }}>
-              {p.name}
-            </Link>
-          </h2>
+          <div style={{ display: "flex", alignItems: "center", gap: 18, marginBottom: 4 }}>
+            <AvatarImage
+              steamId={p.steamId}
+              src={p.avatar}
+              alt={p.name}
+              className="grayscale avatar avatar-xl"
+            />
+            <h2 style={{ fontSize: "clamp(32px, 4vw, 52px)", letterSpacing: "-0.02em", margin: 0 }}>
+              <Link href={`/players/${p.steamId}`} className="link-underline" style={{ color: "inherit", textDecoration: "none" }}>
+                {p.name}
+              </Link>
+            </h2>
+          </div>
           <div
             style={{
               fontSize: 14,
@@ -406,18 +411,20 @@ function Standout(p: {
           >
             {stats.map((s) => (
               <div key={s.label}>
-                <div
+                <CountUp
+                  value={s.value}
+                  decimals={s.decimals}
+                  suffix={s.suffix}
                   className="num"
                   style={{
+                    display: "block",
                     fontWeight: 700,
                     fontSize: "clamp(28px, 3vw, 40px)",
                     color: "var(--color-accent)",
                     lineHeight: 1,
                     marginBottom: 6,
                   }}
-                >
-                  {s.value}
-                </div>
+                />
                 <div
                   style={{
                     fontSize: 12,

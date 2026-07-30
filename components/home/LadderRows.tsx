@@ -62,7 +62,7 @@ export default function LadderRows({ rows }: { rows: LadderRow[] }) {
                 steamId={row.steamId}
                 src={row.avatar}
                 alt={row.name}
-                className="grayscale"
+                className="grayscale avatar"
               />
 
               <div style={{ flex: "1 1 auto", minWidth: 0 }}>
