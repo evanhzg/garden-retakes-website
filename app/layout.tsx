@@ -39,6 +39,7 @@ export const viewport: Viewport = {
 };
 import { ThemeProvider } from "@/components/ThemeProvider";
 import { headers } from "next/headers";
+import DynamicGridBackground from "@/components/DynamicGridBackground";
 
 export default async function RootLayout({ children }: { children: React.ReactNode }) {
   const headersList = headers();
@@ -78,6 +79,7 @@ export default async function RootLayout({ children }: { children: React.ReactNo
             <span className="orb orb-3" />
           </div>
           
+          <DynamicGridBackground />
           <RouteLoader />
           <NavBar avatarPlayers={avatarPlayers} host={host} protocol={protocol} />
           <div className="layout-wrapper">

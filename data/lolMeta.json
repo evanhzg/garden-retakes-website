@@ -1,27 +1,28 @@
 {
   "topPicks": [
-    "Ambessa",
-    "Nautilus",
-    "Camille",
-    "Cassiopeia",
-    "Syndra",
-    "Viktor",
-    "Shen",
-    "Ezreal",
+    "K'Sante",
     "Vi",
-    "Lee Sin"
+    "Azir",
+    "Varus",
+    "Rell",
+    "Aatrox",
+    "Sejuani",
+    "Orianna",
+    "Kalista",
+    "Nautilus"
   ],
   "topBans": [
-    "Nocturne",
+    "Rumble",
+    "Ashe",
+    "Senna",
+    "Lucian",
+    "Neeko",
+    "Renata Glasc",
+    "Maokai",
+    "Jax",
     "Poppy",
-    "Locke",
-    "Jayce",
-    "Orianna",
-    "Vayne",
-    "Akali",
-    "Syndra",
-    "Cassiopeia",
-    "Vi"
+    "Tristana"
   ],
-  "updatedAt": 1785195489798
+  "updatedAt": 1785199089765,
+  "isFallback": true
 }

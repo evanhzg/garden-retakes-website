@@ -1,35 +1,47 @@
 import Link from "next/link";
 import { DOC_SECTIONS } from "@/lib/apiDocs";
 import "./docs.css";
+import DocsNav from "./DocsNav";
+import fs from "fs";
+import path from "path";
 
 export const metadata = {
-  title: "Garden Retakes — API Docs",
-  description: "API and socket protocol documentation for retakes.fr",
+  title: "Garden Retakes — Docs",
+  description: "Documentation for Plugins, Games, Website, and APIs",
 };
 
 export default function DocsLayout({ children }: { children: React.ReactNode }) {
+  // Read MD files dynamically for the sidebar
+  const contentDir = path.join(process.cwd(), "content/docs");
+  let navStructure: Record<string, string[]> = {
+    Plugins: [],
+    Games: [],
+    Website: [],
+  };
+
+  try {
+    if (fs.existsSync(contentDir)) {
+      const dirs = fs.readdirSync(contentDir);
+      for (const dir of dirs) {
+        const dirPath = path.join(contentDir, dir);
+        if (fs.statSync(dirPath).isDirectory()) {
+          const files = fs.readdirSync(dirPath)
+            .filter(f => f.endsWith(".md"))
+            .map(f => f.replace(".md", ""));
+            
+          // Map directory name to proper capitalization if possible
+          const catName = dir.charAt(0).toUpperCase() + dir.slice(1);
+          navStructure[catName] = files;
+        }
+      }
+    }
+  } catch (e) {
+    console.error(e);
+  }
+
   return (
     <div className="docs-layout">
-      <aside className="docs-sidebar glass-panel">
-        <Link href="/docs" className="docs-logo">
-          <span className="docs-logo-mark">🌱</span>
-          <span>
-            <strong>Garden API</strong>
-            <small>docs.retakes.fr</small>
-          </span>
-        </Link>
-        <nav className="docs-nav">
-          <Link href="/docs" className="docs-nav-link">Overview</Link>
-          {DOC_SECTIONS.map((s) => (
-            <Link key={s.slug} href={`/docs/${s.slug}`} className="docs-nav-link">
-              {s.title}
-            </Link>
-          ))}
-        </nav>
-        <div className="docs-sidebar-footer">
-          <Link href="/">← retakes.fr</Link>
-        </div>
-      </aside>
+      <DocsNav navStructure={navStructure} apiSections={DOC_SECTIONS} />
       <main className="docs-main">{children}</main>
     </div>
   );
