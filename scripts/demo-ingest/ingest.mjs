@@ -40,7 +40,13 @@ const has = (name) => process.argv.includes(`--${name}`);
 const log = (...a) => console.log("·", ...a);
 const warn = (...a) => console.warn("!", ...a);
 
-/** Downloads and gunzips a FACEIT demo. They are served as .dem.gz. */
+/**
+ * Downloads and decompresses a FACEIT demo.
+ *
+ * FACEIT serves CS2 demos as `.dem.zst` (Zstandard) from a Backblaze CDN —
+ * the old `.dem.gz` form is CS:GO-era. Node gained native zstd streams in
+ * 22.15, which is why this needs Node 22.15+; there is no dependency for it.
+ */
 async function fetchDemo(url, id) {
   fs.mkdirSync(CACHE, { recursive: true });
   const dest = path.join(CACHE, `${id}.dem`);
@@ -49,13 +55,21 @@ async function fetchDemo(url, id) {
   const res = await fetch(url);
   if (!res.ok) throw new Error(`demo download ${res.status}`);
 
+  let decompress = null;
+  if (url.endsWith(".zst")) {
+    if (typeof zlib.createZstdDecompress !== "function") {
+      throw new Error(`this demo is .zst and Node ${process.version} has no zstd — needs 22.15+`);
+    }
+    decompress = zlib.createZstdDecompress();
+  } else if (url.endsWith(".gz")) {
+    decompress = zlib.createGunzip();
+  }
+
   const tmp = `${dest}.part`;
   const body = Readable.fromWeb(res.body);
-  if (url.endsWith(".gz")) {
-    await pipeline(body, zlib.createGunzip(), fs.createWriteStream(tmp));
-  } else {
-    await pipeline(body, fs.createWriteStream(tmp));
-  }
+  await (decompress
+    ? pipeline(body, decompress, fs.createWriteStream(tmp))
+    : pipeline(body, fs.createWriteStream(tmp)));
   fs.renameSync(tmp, dest);
   return dest;
 }

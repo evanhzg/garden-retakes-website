@@ -48,12 +48,43 @@ export function verifySessionToken(token: string | undefined): Session | null {
   }
 }
 
+/**
+ * Local development auto-login.
+ *
+ * Steam OpenID cannot round-trip to http://localhost, so signing in on a dev
+ * machine is impossible. When DEV_AUTH_STEAMID is set, that SteamID is treated
+ * as the signed-in user.
+ *
+ * Two independent guards, because this must be impossible to reach in
+ * production and one of them alone is not enough:
+ *
+ *  1. NODE_ENV must not be "production". `npm start` sets it, so any real
+ *     deployment fails this check even if the variable below leaked into its
+ *     environment.
+ *  2. DEV_AUTH_STEAMID must be explicitly present. It lives only in the local
+ *     .env, which is gitignored.
+ *
+ * Losing either guard leaves the other standing.
+ */
+function devSession(): Session | null {
+  if (process.env.NODE_ENV === "production") return null;
+  const id = process.env.DEV_AUTH_STEAMID;
+  if (!id || !/^\d{17}$/.test(id)) return null;
+  return {
+    steamId: id,
+    name: process.env.DEV_AUTH_NAME || undefined,
+    iat: Date.now(),
+  };
+}
+
 /** Read the current session (safe to call in RSC and route handlers). */
 export function getSession(): Session | null {
   try {
-    return verifySessionToken(cookies().get(SESSION_COOKIE)?.value);
+    const real = verifySessionToken(cookies().get(SESSION_COOKIE)?.value);
+    // A real cookie always wins, so logging in properly still works locally.
+    return real ?? devSession();
   } catch {
-    return null;
+    return devSession();
   }
 }
 

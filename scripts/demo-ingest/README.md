@@ -53,6 +53,13 @@ one many players also make; an empty cell is either creative or wrong, and the
 count is what distinguishes them. This is the corpus the Practice mode's
 utility scoring will read.
 
+## Requirements
+
+**Node 22.15 or newer.** FACEIT serves CS2 demos as `.dem.zst` (Zstandard) from
+a Backblaze CDN — the `.dem.gz` form was CS:GO-era. Node gained native zstd
+streams in 22.15, so there is no dependency for it, but older Node will fail on
+download with a clear message.
+
 ## Limits worth knowing
 
 - FACEIT publishes demos on a delay; very recent matches often have none yet.
