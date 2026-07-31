@@ -12,8 +12,9 @@ import {
   metricsOf, buildPopulation, scoreCategories, overallScore, buildSuggestions,
   byMap, bySide, clutchBreakdown, deathTiming, formTrend, consistency,
   multiKills, openingDuels, eloByMap, byHour, objectiveImpact,
-  CATEGORY_LABEL, DEMO_DERIVED, type Round,
+  CATEGORY_LABEL, METRIC_LABEL, DEMO_DERIVED, type Round,
 } from "@/lib/leetify";
+import { loadBenchmark, availableBands, percentileAgainst } from "@/lib/benchmarks";
 
 export const dynamic = "force-dynamic";
 export const revalidate = 120;
@@ -111,6 +112,10 @@ export default async function InsightsPage({
   const objective = objectiveImpact(mine);
 
   const globalAvg = metricsOf(everyone as Round[]);
+
+  // FACEIT ladders from the local demo ingest; absent until it has been run.
+  const benchmark = loadBenchmark();
+  const bands = availableBands(benchmark);
 
   return (
     <div style={{ padding: `clamp(40px, 6vw, 72px) ${PAD} 96px` }}>
@@ -351,6 +356,71 @@ export default async function InsightsPage({
         <Reveal>
           <Section title="14 · Rating by hour (UTC)">
             <Columns data={hours.map(h => ({ label: h.label, value: Number(h.value.toFixed(2)), hint: h.hint }))} />
+          </Section>
+        </Reveal>
+      )}
+
+      {/* ── 15. FACEIT benchmark ──────────────────────────────────────── */}
+      {benchmark && bands.length > 0 && (
+        <Reveal>
+          <Section title="15 · Against FACEIT">
+            <p className="text-muted" style={{ maxWidth: "62ch", marginBottom: 16 }}>
+              The same metrics scored against demos parsed from FACEIT pugs, so this is your standing
+              outside this server. Ingested {new Date(benchmark.generatedAt).toLocaleDateString()}.
+            </p>
+            <table className="table">
+              <thead>
+                <tr>
+                  <th>Metric</th>
+                  <th style={{ textAlign: "right" }}>You</th>
+                  {bands.map((b) => (
+                    <th key={b} style={{ textAlign: "right" }}>
+                      {b === "pro" ? "Pro" : `Lvl ${b}`}
+                      <br />
+                      <span className="text-muted" style={{ fontWeight: 400 }}>
+                        {benchmark.bands[b].samples}
+                      </span>
+                    </th>
+                  ))}
+                </tr>
+              </thead>
+              <tbody>
+                {(["adr", "kast", "hsPct", "utilDmgPerRound", "tradeKillsPerRound", "openingWinPct"] as const).map((key) => (
+                  <tr key={key}>
+                    <td>{METRIC_LABEL[key] ?? key}</td>
+                    <td className="num" style={{ textAlign: "right", fontWeight: 700 }}>
+                      {career[key].toFixed(1)}
+                    </td>
+                    {bands.map((b) => {
+                      const p = percentileAgainst(benchmark.bands[b], key, career[key], benchmark.ladder);
+                      return (
+                        <td key={b} className="num" style={{ textAlign: "right" }}>
+                          {p == null ? "—" : `${Math.round(p)}th`}
+                        </td>
+                      );
+                    })}
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </Section>
+        </Reveal>
+      )}
+
+      {!benchmark && (
+        <Reveal>
+          <Section title="15 · Against FACEIT">
+            <p className="text-muted" style={{ maxWidth: "62ch" }}>
+              No FACEIT benchmark ingested yet. Run the local pipeline to build one — it parses demos on
+              your machine and commits only the percentile ladders, never the demos:
+            </p>
+            <pre
+              style={{
+                marginTop: 12, padding: 14, overflowX: "auto",
+                background: "var(--color-surface)", border: "1px solid var(--color-divider)",
+                fontFamily: "var(--font-mono)", fontSize: 12,
+              }}
+            >{`node scripts/demo-ingest/ingest.mjs --player <nickname> --matches 20`}</pre>
           </Section>
         </Reveal>
       )}

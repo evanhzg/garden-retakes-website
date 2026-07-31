@@ -14,3 +14,6 @@ public/pkmn/*.rar
 # Scratch build dir used to verify a build beside a running dev server
 .next-verify/
 .next-deploy/
+
+# Local demo ingest — demos are large and never committed.
+.demo-cache/
