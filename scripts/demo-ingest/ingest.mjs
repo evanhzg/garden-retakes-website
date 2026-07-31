@@ -29,6 +29,40 @@ const ROOT = process.cwd();
 const CACHE = path.join(ROOT, ".demo-cache");
 const OUT = path.join(ROOT, "data", "benchmarks");
 
+/**
+ * Load .env into process.env.
+ *
+ * Next.js does this for the app, but a standalone node script gets nothing —
+ * so running this the way the README documents reported "FACEIT_API_KEY is not
+ * set" even when it was sitting in .env. Kept dependency-free rather than
+ * pulling in dotenv for one file.
+ *
+ * Real environment variables always win, so `FACEIT_API_KEY=x node ...` still
+ * overrides the file.
+ */
+function loadEnv() {
+  for (const name of [".env.local", ".env"]) {
+    const file = path.join(ROOT, name);
+    if (!fs.existsSync(file)) continue;
+    for (const raw of fs.readFileSync(file, "utf8").split("\n")) {
+      const line = raw.trim();
+      if (!line || line.startsWith("#")) continue;
+      const eq = line.indexOf("=");
+      if (eq === -1) continue;
+      const key = line.slice(0, eq).trim();
+      if (!key || key in process.env) continue;
+      let value = line.slice(eq + 1).trim();
+      // Strip one matching pair of surrounding quotes.
+      const q = value[0];
+      if ((q === '"' || q === "'") && value.endsWith(q) && value.length > 1) {
+        value = value.slice(1, -1);
+      }
+      process.env[key] = value;
+    }
+  }
+}
+loadEnv();
+
 function arg(name, fallback = null) {
   const i = process.argv.indexOf(`--${name}`);
   if (i === -1) return fallback;
@@ -39,6 +73,29 @@ const has = (name) => process.argv.includes(`--${name}`);
 
 const log = (...a) => console.log("·", ...a);
 const warn = (...a) => console.warn("!", ...a);
+
+/**
+ * Node's fetch reports every network problem as the bare string "fetch failed"
+ * and hides the real reason on `.cause`, which makes a failed run impossible to
+ * diagnose. Unwrap it and name the common causes.
+ */
+function describe(e) {
+  const cause = e?.cause;
+  const code = cause?.code ?? e?.code;
+  const detail = cause?.message ?? "";
+
+  if (code === "ENOTFOUND" || code === "EAI_AGAIN") {
+    return `cannot resolve ${cause?.hostname ?? "the demo CDN"} — DNS/network blocked (${code})`;
+  }
+  if (code === "ECONNRESET" || code === "UND_ERR_SOCKET") {
+    return `connection dropped mid-download (${code}) — usually transient, re-run`;
+  }
+  if (code === "ETIMEDOUT" || code === "UND_ERR_CONNECT_TIMEOUT") {
+    return `timed out reaching the demo CDN (${code})`;
+  }
+  if (code === "ENOSPC") return "out of disk space while writing the demo";
+  return detail ? `${e.message} — ${detail}` : e?.message ?? String(e);
+}
 
 /**
  * Downloads and decompresses a FACEIT demo.
@@ -156,7 +213,7 @@ async function main() {
         grenades.push(...d.grenades);
         log(`  ${h.match_id}: ${d.map}, band ${band}, ${d.perPlayer.length} players`);
       } catch (e) {
-        warn(`  ${h.match_id}: ${e.message}`);
+        warn(`  ${h.match_id}: ${describe(e)}`);
       }
     }
   }
