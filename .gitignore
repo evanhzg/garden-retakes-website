@@ -17,3 +17,6 @@ public/pkmn/*.rar
 
 # Local demo ingest — demos are large and never committed.
 .demo-cache/
+
+# Verification build output (NEXT_DIST_DIR), never committed.
+.next-prod/
