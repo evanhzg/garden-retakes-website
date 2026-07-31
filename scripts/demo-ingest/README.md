@@ -60,6 +60,26 @@ a Backblaze CDN — the `.dem.gz` form was CS:GO-era. Node gained native zstd
 streams in 22.15, so there is no dependency for it, but older Node will fail on
 download with a clear message.
 
+## FACEIT auto-download is currently broken (their side)
+
+As of 2026-07, the `demo_url` FACEIT returns points at
+`demos-europe-central.backblaze.faceit-cdn.net`, and **that host has no public
+DNS record**. Verified against the system resolver, 1.1.1.1 and 8.8.8.8 — all
+three answer NOERROR with no address, across 15 matches including same-day ones.
+`distribution.faceit-cdn.net` in the same zone resolves normally, so the zone is
+live and only the demo hosts are missing.
+
+Nothing in this tool can work around a hostname that does not resolve. Until
+FACEIT publishes those records, use the offline path:
+
+1. Open the match on faceit.com and download the demo through the browser.
+2. Drop the `.dem` (or `.dem.zst`, decompress it first) into a folder.
+3. `node scripts/demo-ingest/ingest.mjs --local ./demos --band 7-8`
+
+Everything after the download — parsing, banding, ladders, nade clusters — is
+identical on both paths, so the offline route produces exactly the same
+artefacts.
+
 ## Limits worth knowing
 
 - FACEIT publishes demos on a delay; very recent matches often have none yet.

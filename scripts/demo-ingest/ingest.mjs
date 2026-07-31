@@ -84,8 +84,22 @@ function describe(e) {
   const code = cause?.code ?? e?.code;
   const detail = cause?.message ?? "";
 
-  if (code === "ENOTFOUND" || code === "EAI_AGAIN") {
-    return `cannot resolve ${cause?.hostname ?? "the demo CDN"} — DNS/network blocked (${code})`;
+  if (code === "ENOTFOUND" || code === "EAI_AGAIN" || code === "ENODATA") {
+    const host = cause?.hostname ?? "the demo host";
+    // Observed 2026-07: every *.backblaze.faceit-cdn.net demo host answers
+    // NOERROR-with-no-A-record from every public resolver (system, 1.1.1.1,
+    // 8.8.8.8), while distribution.faceit-cdn.net resolves normally. The URLs
+    // FACEIT returns are therefore not publicly downloadable. That is on their
+    // side, so do not send people hunting through their own network config.
+    if (/faceit-cdn\.net$/.test(host)) {
+      return (
+        `${host} has no public DNS record — FACEIT's demo CDN is not resolvable, ` +
+        `so this URL cannot be downloaded from anywhere.\n` +
+        `      Workaround: download the demo from the match page in your browser, then\n` +
+        `      node scripts/demo-ingest/ingest.mjs --local <dir> --band <band>`
+      );
+    }
+    return `cannot resolve ${host} (${code}) — check your network or DNS`;
   }
   if (code === "ECONNRESET" || code === "UND_ERR_SOCKET") {
     return `connection dropped mid-download (${code}) — usually transient, re-run`;
