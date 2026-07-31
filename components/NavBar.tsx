@@ -23,6 +23,7 @@ type NavLink = {
 const CS2_LINKS: NavLink[] = [
   { href: "/", label: "Ladder", primary: true },
   { href: "/players", label: "Players", primary: true },
+  { href: "/insights", label: "Insights", primary: true },
   { href: "/stats", label: "Stats", primary: true },
   { href: "/teams", label: "Teams", primary: true },
   { href: "/live", label: "Live", isLive: true, primary: true },
