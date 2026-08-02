@@ -24,7 +24,9 @@ export const metadata = {
   description: "Aim, utility, teamplay, positioning and trading — scored against the server.",
 };
 
-const PAD = "clamp(20px, 5vw, 64px)";
+// The horizontal gutter now comes from .container (--page-pad); PAD is the
+// vertical rhythm only, so a page can no longer drift from the site gutter.
+const PAD = "0px";
 const RECENT_ROUNDS = 150;
 const MIN_ROUNDS = 25;
 

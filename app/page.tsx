@@ -13,7 +13,9 @@ import CountUp from "@/components/home/CountUp";
 export const dynamic = "force-dynamic";
 export const revalidate = 30;
 
-const PAD = "clamp(20px, 5vw, 64px)";
+// The horizontal gutter now comes from .container (--page-pad); PAD is the
+// vertical rhythm only, so a page can no longer drift from the site gutter.
+const PAD = "0px";
 
 export default async function HomePage() {
   const serverAddress = process.env.NEXT_PUBLIC_SERVER_ADDRESS ?? "127.0.0.1:27015";
@@ -156,11 +158,14 @@ export default async function HomePage() {
         </div>
       </section>
 
+      {/* The accent band is meant to touch both edges of the viewport, so it
+          escapes the page gutter and re-applies it to its own contents. */}
       <section
+        className="full-bleed full-bleed-inset"
         style={{
           background: "var(--color-accent)",
           color: "var(--color-bg)",
-          padding: `clamp(56px, 8vw, 96px) ${PAD}`,
+          paddingBlock: "clamp(56px, 8vw, 96px)",
         }}
       >
         <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", gap: 24, flexWrap: "wrap" }}>
@@ -310,7 +315,10 @@ function Marquee({ items }: { items: string[] }) {
   // invisible.
   const doubled = [...items, ...items];
   return (
+    // Full-bleed: a marquee that stops short of the viewport edge reads as a
+    // boxed widget rather than a rail running under the page.
     <div
+      className="full-bleed"
       style={{
         borderTop: "2px solid var(--color-divider)",
         borderBottom: "2px solid var(--color-divider)",

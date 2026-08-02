@@ -528,3 +528,59 @@ model SkinJob {
 
   @@map("skin_jobs")
 }
+
+// ── Feed ────────────────────────────────────────────────────────────────
+// Clips and their reactions. New tables only — nothing here touches the
+// tables the game plugin owns, so adding them cannot affect the server.
+
+model FeedClip {
+  Id          Int      @id @default(autoincrement())
+  SteamId     BigInt   @db.UnsignedBigInt
+  Title       String   @db.VarChar(140)
+  Description String?  @db.VarChar(500)
+  /// "upload" (a file in data/clips) or "youtube" (a video id).
+  Kind        String   @db.VarChar(16)
+  /// Stored filename for an upload, or the YouTube video id.
+  Source      String   @db.VarChar(255)
+  /// Poster frame for uploads; YouTube serves its own.
+  Thumb       String?  @db.VarChar(255)
+  Bytes       Int?
+  /// Seconds, when known (the highlight pipeline reports it).
+  DurationSec Int?
+  /// JSON array of {name,height,url} for R2-hosted clips, newest quality first.
+  Variants    String?  @db.Text
+  /// Stable id from the highlight pipeline, so a re-publish updates in place.
+  ExternalId  String?  @db.VarChar(190) @unique
+  CreatedAt   DateTime @default(now()) @db.DateTime(6)
+
+  Likes    FeedClipLike[]
+  Comments FeedClipComment[]
+
+  @@index([SteamId])
+  @@index([CreatedAt])
+  @@map("FeedClips")
+}
+
+model FeedClipLike {
+  ClipId  Int
+  SteamId BigInt   @db.UnsignedBigInt
+  AtUtc   DateTime @default(now()) @db.DateTime(6)
+
+  Clip FeedClip @relation(fields: [ClipId], references: [Id], onDelete: Cascade)
+
+  @@id([ClipId, SteamId])
+  @@map("FeedClipLikes")
+}
+
+model FeedClipComment {
+  Id      Int      @id @default(autoincrement())
+  ClipId  Int
+  SteamId BigInt   @db.UnsignedBigInt
+  Body    String   @db.VarChar(500)
+  AtUtc   DateTime @default(now()) @db.DateTime(6)
+
+  Clip FeedClip @relation(fields: [ClipId], references: [Id], onDelete: Cascade)
+
+  @@index([ClipId])
+  @@map("FeedClipComments")
+}
