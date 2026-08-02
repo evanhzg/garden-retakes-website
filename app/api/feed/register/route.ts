@@ -35,9 +35,20 @@ const isHttps = (u: string) => {
 };
 
 export async function POST(req: Request) {
-  const expected = process.env.INVSIM_API_KEY || process.env.ADMIN_KEY;
+  // Accept EITHER shared secret.
+  //
+  // This first read `INVSIM_API_KEY || ADMIN_KEY` while lib/adminAuth reads
+  // `ADMIN_KEY || INVSIM_API_KEY` — the opposite precedence. Locally ADMIN_KEY
+  // is empty so both collapse to the same value and it passed every test; in
+  // production both are set to different values, so the two disagreed and a
+  // perfectly valid admin key was rejected here.
+  //
+  // Matching either is right for this endpoint regardless: it only creates feed
+  // clips, so it does not need the narrower single-key semantics the admin
+  // pages use.
   const given = req.headers.get("x-api-key");
-  if (!expected || given !== expected) {
+  const accepted = [process.env.ADMIN_KEY, process.env.INVSIM_API_KEY].filter(Boolean);
+  if (!given || !accepted.includes(given)) {
     return NextResponse.json({ error: "bad key" }, { status: 403 });
   }
 
