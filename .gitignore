@@ -20,3 +20,12 @@ public/pkmn/*.rar
 
 # Verification build output (NEXT_DIST_DIR), never committed.
 .next-prod/
+
+# Uploaded custom skin VPKs and their records — binaries, per-deployment state.
+data/custom_skins/*
+!data/custom_skins/.gitkeep
+public/fastdl/*.vpk
+
+# Uploaded feed clips and avatars — user content, not source.
+data/clips/
+data/avatars/

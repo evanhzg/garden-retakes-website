@@ -115,6 +115,8 @@ Copy `.env.example` to `.env` and fill in the values:
 | `NEXT_PUBLIC_ASSETS_BASE_URL` | Optional | CDN for skin/sticker images (defaults to `https://cdn.cstrike.app`) |
 | `RCON_HOST` / `RCON_PORT` / `RCON_PASSWORD` | Admin panel | Game server RCON credentials for the `/admin` RCON console |
 | `ADMIN_KEY` | Admin panel | Superuser key for the admin pages (`?key=…`); falls back to `INVSIM_API_KEY` |
+| `GAMESERVER_FTP_HOST` / `_PORT` / `_USER` / `_PASSWORD` / `_SECURE` | Custom skins | FTP account on the game server, rooted at its `csgo` directory. Used by `/admin/skins` and the workshop sync |
+| `GAMESERVER_SKINS_DIR` | Optional | Where `/admin/skins` uploads a VPK on the game server (default `/custom_skins`). Must be a path CS2 mounts — see the reference on that page |
 
 Generate a strong `AUTH_SECRET`:
 ```bash
@@ -182,6 +184,7 @@ The `/admin` page provides a web-based interface for:
 - Editing player roles (Owner / Admin / Mod)
 - Browsing and editing live config values
 - A browser-based RCON console (requires `RCON_*` environment variables)
+- Uploading custom skin VPKs to the game server (`/admin/skins`, requires the Admin role and `GAMESERVER_FTP_*`)
 
 Access is gated by the `GardenAdmins` database table (shared with the plugin) or the `ADMIN_KEY` environment variable.
 
