@@ -2,6 +2,7 @@ import { NextResponse } from "next/server";
 import { AdminLevel, getAdminContext } from "@/lib/adminAuth";
 import {
   banPlayer,
+  changeGameMode,
   changeMap,
   clearName,
   kickPlayer,
@@ -19,6 +20,7 @@ export const dynamic = "force-dynamic";
 const REQUIRED: Record<string, number> = {
   kick: AdminLevel.Moderator,
   map: AdminLevel.Moderator,
+  gamemode: AdminLevel.Admin,
   slay: AdminLevel.Admin,
   ban: AdminLevel.Admin,
   unban: AdminLevel.Admin,
@@ -57,6 +59,9 @@ export async function POST(req: Request) {
       break;
     case "slay":
       result = await slayPlayer(ctx, str("name"));
+      break;
+    case "gamemode":
+      result = await changeGameMode(ctx, str("mode"));
       break;
     case "map":
       result = await changeMap(ctx, str("map"));

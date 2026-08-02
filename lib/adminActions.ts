@@ -1,6 +1,7 @@
 import { prisma } from "@/lib/db";
 import { rconExec } from "@/lib/rcon";
 import { AdminContext, AdminLevel, logAdminAction } from "@/lib/adminAuth";
+import { isGameMode } from "@/lib/gameModes";
 
 // W2: admin panel actions. Design principle — the WEBSITE owns persistence
 // (bans / name overrides / roles are written to the shared DB via Prisma so
@@ -62,6 +63,19 @@ export async function changeMap(ctx: AdminContext, map: string): Promise<ActionR
   return out === null
     ? { ok: false, message: "Server unreachable — map not changed." }
     : { ok: true, message: `Changing map to ${clean}…` };
+}
+
+/** Switch the plugin's active game mode. Validated against the shared list. */
+export async function changeGameMode(ctx: AdminContext, mode: string): Promise<ActionResult> {
+  const clean = mode.trim().toLowerCase();
+  if (!isGameMode(clean)) {
+    return { ok: false, message: `Unknown game mode “${mode}”.` };
+  }
+  const out = await tryRcon(`css_gamemode ${clean}`);
+  await logAdminAction(ctx, "gamemode_change", undefined, clean);
+  return out === null
+    ? { ok: false, message: "Server unreachable — mode not changed." }
+    : { ok: true, message: `Switching to ${clean}…` };
 }
 
 // ---------- persistent actions (DB authoritative + best-effort live) ----------

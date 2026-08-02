@@ -11,6 +11,7 @@ export default async function AdminPage({
 }) {
   const ctx = await getAdminContext(searchParams.key);
   const allowed = ctx.level >= AdminLevel.Moderator;
+  const keyQuery = searchParams.key ? `?key=${encodeURIComponent(searchParams.key)}` : "";
 
   if (!allowed) {
     return (
@@ -40,8 +41,16 @@ export default async function AdminPage({
         </div>
         <p className="muted" style={{ marginTop: -4 }}>
           Signed in as {ctx.name || "admin"}. Every action is recorded in the{" "}
-          <Link href={`/admin-log${searchParams.key ? `?key=${searchParams.key}` : ""}`}>admin log</Link>.
+          <Link href={`/admin-log${keyQuery}`}>admin log</Link>.
         </p>
+        <div style={{ display: "flex", gap: "var(--space-2)", flexWrap: "wrap", marginTop: "var(--space-3)" }}>
+          <Link className="btn btn-secondary" href={`/admin/skins${keyQuery}`}>
+            Custom skins
+          </Link>
+          <Link className="btn btn-secondary" href={`/admin-log${keyQuery}`}>
+            Admin log
+          </Link>
+        </div>
       </section>
 
       <AdminPanel viewerLevel={ctx.level} adminKey={searchParams.key} />
