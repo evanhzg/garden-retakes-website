@@ -96,6 +96,13 @@ export default async function RootLayout({ children }: { children: React.ReactNo
       className={`${sans.variable} ${mono.variable}`}
     >
       <body>
+        {/* Applied before first paint so an override does not flash the wrong
+            state on load. Mirrors MotionToggle's storage key and attribute. */}
+        <script
+          dangerouslySetInnerHTML={{
+            __html: `try{var m=localStorage.getItem("garden_motion");if(m==="full"||m==="off"){document.documentElement.setAttribute("data-motion",m)}}catch(e){}`,
+          }}
+        />
         <PageLoader />
         <ThemeProvider attribute="class" defaultTheme="system" enableSystem>
           {/* The three blurred orbs were the last of the old purple/pink wash

@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useRef } from "react";
+import { useEffect, useRef, useState } from "react";
 import { usePathname } from "next/navigation";
 
 export default function DynamicGridBackground() {
@@ -8,6 +8,15 @@ export default function DynamicGridBackground() {
   // rest of the site, so the grid renders there too. It used to bail on /games.
   const pathname = usePathname();
   const canvasRef = useRef<HTMLCanvasElement>(null);
+  // Bumped by MotionToggle so the canvas rebuilds with the new preference
+  // instead of staying static until the next navigation.
+  const [motionNonce, setMotionNonce] = useState(0);
+
+  useEffect(() => {
+    const onChange = () => setMotionNonce((n) => n + 1);
+    window.addEventListener("garden:motion", onChange);
+    return () => window.removeEventListener("garden:motion", onChange);
+  }, []);
 
   useEffect(() => {
     const canvas = canvasRef.current;
@@ -21,6 +30,9 @@ export default function DynamicGridBackground() {
     const GRID_SIZE = 20;
     const LENS_RADIUS = 300;
     const MAGNIFICATION = 0.8; // Strength of the bulge/zoom
+    // Drawn at full strength; the canvas element carries the 0.3 (see below),
+    // so the composited grid lands at exactly 0.3 rather than 0.3 × 0.3.
+    const GRID_OPACITY = 1;
 
     // Read the live theme so the grid follows the palette instead of hardcoding
     // it — this is what kept the old purple around after the restyle.
@@ -35,7 +47,12 @@ export default function DynamicGridBackground() {
     const [r, g, b] = rgb("--accent", "#d93d0b");
     const [ir, ig, ib] = rgb("--muted", "#6f6758");
 
-    const reduced = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
+    // Same rule the CSS uses: the OS preference decides unless data-motion on
+    // <html> overrides it. Read fresh here so the toggle takes effect at once.
+    const motionPref = () => document.documentElement.getAttribute("data-motion");
+    const reduced =
+      motionPref() === "off" ||
+      (motionPref() !== "full" && window.matchMedia("(prefers-reduced-motion: reduce)").matches);
 
     let mouseX = -1000;
     let mouseY = -1000;
@@ -112,13 +129,13 @@ export default function DynamicGridBackground() {
       
       // Ink-neutral rules; the accent is spent only inside the lens, so the
       // colour reads as a response to the cursor rather than a background wash.
-      ctx.strokeStyle = `rgba(${ir}, ${ig}, ${ib}, 0.16)`;
+      ctx.strokeStyle = `rgba(${ir}, ${ig}, ${ib}, ${GRID_OPACITY})`;
       ctx.lineWidth = 1;
       ctx.stroke();
 
       // 3. Add a subtle ambient glow over the lens
       const gradient = ctx.createRadialGradient(mouseX, mouseY, 0, mouseX, mouseY, LENS_RADIUS * 0.8);
-      gradient.addColorStop(0, `rgba(${r}, ${g}, ${b}, 0.13)`);
+      gradient.addColorStop(0, `rgba(${r}, ${g}, ${b}, ${GRID_OPACITY * 0.8})`);
       gradient.addColorStop(1, `rgba(${r}, ${g}, ${b}, 0)`);
       ctx.fillStyle = gradient;
       ctx.fillRect(0, 0, canvas.width, canvas.height);
@@ -142,11 +159,20 @@ export default function DynamicGridBackground() {
       window.removeEventListener("resize", resize);
       cancelAnimationFrame(animationFrameId);
     };
-  }, [pathname]);
+  }, [pathname, motionNonce]);
 
   return (
-    <canvas 
+    // z-index 0, not -1. A negative-z child of <body> paints *behind* the body
+    // background, so whether the grid was visible at all came down to how a
+    // given engine resolves root-background propagation — which is why it
+    // showed in Chrome and not in Edge. The background now lives on <html> and
+    // the app shell sits at z-index 1 above this (see globals.css).
+    //
+    // The 0.3 is here rather than in the stroke colour so it governs the whole
+    // layer — rules and lens glow together.
+    <canvas
       ref={canvasRef}
+      aria-hidden
       style={{
         pointerEvents: 'none',
         position: 'fixed',
@@ -154,7 +180,8 @@ export default function DynamicGridBackground() {
         left: 0,
         width: '100vw',
         height: '100vh',
-        zIndex: -1,
+        zIndex: 0,
+        opacity: 0.3,
       }}
     />
   );
