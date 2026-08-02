@@ -38,3 +38,21 @@ ALTER TABLE `FeedClips`
   ADD COLUMN IF NOT EXISTS `Variants` TEXT NULL,
   ADD COLUMN IF NOT EXISTS `ExternalId` VARCHAR(190) NULL,
   ADD UNIQUE INDEX IF NOT EXISTS `FeedClips_ExternalId_key` (`ExternalId`);
+
+-- Demo submissions for the highlight pipeline.
+CREATE TABLE IF NOT EXISTS `FeedDemos` (
+  `Id`           INT AUTO_INCREMENT PRIMARY KEY,
+  `SteamId`      BIGINT UNSIGNED NOT NULL,
+  `FileName`     VARCHAR(255) NOT NULL,
+  `ObjectKey`    VARCHAR(320) NULL,
+  `Bytes`        BIGINT UNSIGNED NULL,
+  `Rounds`       VARCHAR(120) NULL,
+  `FocusSteamId` BIGINT UNSIGNED NULL,
+  `Status`       VARCHAR(16) NOT NULL DEFAULT 'uploading',
+  `Note`         VARCHAR(500) NULL,
+  `ClipCount`    INT NOT NULL DEFAULT 0,
+  `CreatedAt`    DATETIME(6) NOT NULL DEFAULT CURRENT_TIMESTAMP(6),
+  `ProcessedAt`  DATETIME(6) NULL,
+  INDEX `FeedDemos_SteamId_idx` (`SteamId`),
+  INDEX `FeedDemos_Status_idx` (`Status`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;

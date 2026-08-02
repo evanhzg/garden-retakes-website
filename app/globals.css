@@ -7034,3 +7034,28 @@ html[data-motion="off"] .main-content { scroll-behavior: auto; }
 .clip-desc { min-height: calc(1.55em * 2); }
 /* The stand-in reads as metadata, not as something the author wrote. */
 .clip-desc.is-placeholder { color: color-mix(in srgb, var(--color-text) 42%, transparent); font-style: italic; }
+
+/* ── demo upload (feed) ─────────────────────────────────────────────────
+   The file goes browser -> R2 directly, so the only thing on screen is
+   progress and what the pipeline was asked to cut. */
+.demo-upload { display: grid; gap: var(--space-6); }
+.demo-fields { display: grid; grid-template-columns: repeat(auto-fit, minmax(190px, 1fr)); gap: var(--space-4); }
+.demo-progress { display: grid; grid-template-columns: minmax(0, 1fr) 44px; gap: var(--space-3); align-items: center; }
+.demo-progress .num { font-size: 12px; text-align: right; }
+
+.demo-mine ul { list-style: none; margin: var(--space-2) 0 0; padding: 0; display: grid; gap: var(--space-2); }
+.demo-mine li {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) max-content;
+  gap: 4px var(--space-3);
+  align-items: center;
+  padding: var(--space-2) var(--space-3);
+  background: var(--color-surface);
+  border: 1px solid var(--color-divider);
+}
+.demo-mine-name { font-weight: 700; font-size: 13px; overflow-wrap: anywhere; }
+.demo-mine-meta {
+  grid-column: 1 / -1;
+  font-size: 11px;
+  color: color-mix(in srgb, var(--color-text) 55%, transparent);
+}

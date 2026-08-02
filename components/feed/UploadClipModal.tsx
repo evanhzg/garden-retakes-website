@@ -2,6 +2,7 @@
 
 import { useEffect, useRef, useState } from "react";
 import { youtubeId } from "@/lib/feedShared";
+import DemoUpload from "@/components/feed/DemoUpload";
 
 // Posting a clip: drop a file or paste a YouTube link, in one dialog.
 //
@@ -19,6 +20,8 @@ export default function UploadClipModal({
   onClose: () => void;
   onPosted: () => void;
 }) {
+  // Two ways in: a finished clip, or a demo for the pipeline to cut.
+  const [mode, setMode] = useState<"clip" | "demo">("clip");
   const [title, setTitle] = useState("");
   const [description, setDescription] = useState("");
   const [file, setFile] = useState<File | null>(null);
@@ -85,10 +88,28 @@ export default function UploadClipModal({
     <div className="pro-modal" role="dialog" aria-modal="true" aria-labelledby="post-clip" onClick={() => !busy && onClose()}>
       <div className="pro-modal-card" onClick={(e) => e.stopPropagation()}>
         <div className="pro-modal-head">
-          <h2 id="post-clip">Post a clip</h2>
+          <h2 id="post-clip">{mode === "clip" ? "Post a clip" : "Upload a demo"}</h2>
           <button className="btn btn-secondary" onClick={onClose} disabled={busy}>Close</button>
         </div>
 
+        <div className="pro-tabs" role="tablist" aria-label="What are you posting">
+          <button role="tab" aria-selected={mode === "clip"} className={`pro-tab ${mode === "clip" ? "active" : ""}`} onClick={() => setMode("clip")}>
+            A clip
+          </button>
+          <button role="tab" aria-selected={mode === "demo"} className={`pro-tab ${mode === "demo" ? "active" : ""}`} onClick={() => setMode("demo")}>
+            A demo
+          </button>
+        </div>
+
+        {mode === "demo" ? (
+          <div className="pro-panel">
+            <p className="muted" style={{ fontSize: 13, marginTop: 0 }}>
+              Upload a match demo and the highlight pipeline cuts it for you - every ace, 4K and 3K,
+              recorded in game and published here. Name specific rounds or a player to narrow it down.
+            </p>
+            <DemoUpload onPosted={onPosted} />
+          </div>
+        ) : (
         <form onSubmit={submit} className="clip-form">
           <label
             className={`skin-drop${dragging ? " is-over" : ""}`}
@@ -190,6 +211,7 @@ export default function UploadClipModal({
             </button>
           </div>
         </form>
+        )}
       </div>
     </div>
   );

@@ -584,3 +584,32 @@ model FeedClipComment {
   @@index([ClipId])
   @@map("FeedClipComments")
 }
+
+/// A demo a player uploaded for the highlight pipeline to cut.
+///
+/// The file itself lives in R2, not here — Vercel caps a request body at
+/// 4.5 MB and a demo is 100-300 MB, so the browser PUTs straight to the bucket
+/// with a presigned URL. The row tracks what was asked for and how far it got,
+/// and the object is deleted once clips exist so demos do not accumulate.
+model FeedDemo {
+  Id           Int      @id @default(autoincrement())
+  SteamId      BigInt   @db.UnsignedBigInt
+  FileName     String   @db.VarChar(255)
+  /// Object key in the bucket; null once the demo has been wiped.
+  ObjectKey    String?  @db.VarChar(320)
+  Bytes        BigInt?  @db.UnsignedBigInt
+  /// Comma-separated round numbers to cut, or null for every highlight found.
+  Rounds       String?  @db.VarChar(120)
+  /// Whose plays to cut. Defaults to the uploader.
+  FocusSteamId BigInt?  @db.UnsignedBigInt
+  /// uploading -> pending -> processing -> done | failed
+  Status       String   @default("uploading") @db.VarChar(16)
+  Note         String?  @db.VarChar(500)
+  ClipCount    Int      @default(0)
+  CreatedAt    DateTime @default(now()) @db.DateTime(6)
+  ProcessedAt  DateTime? @db.DateTime(6)
+
+  @@index([SteamId])
+  @@index([Status])
+  @@map("FeedDemos")
+}

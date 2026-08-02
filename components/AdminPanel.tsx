@@ -4,6 +4,7 @@ import { useCallback, useEffect, useState } from "react";
 import RconConsole from "@/components/RconConsole";
 import SkinManager from "@/components/admin/SkinManager";
 import PluginConfigEditor from "@/components/admin/PluginConfigEditor";
+import PendingDemos from "@/components/admin/PendingDemos";
 import { GAME_MODES } from "@/lib/gameModes";
 
 // The panel was three stacked sections with the player table — the tallest of
@@ -32,7 +33,7 @@ type LogEntry = {
   detail: string | null;
 };
 
-type TabId = "players" | "server" | "config" | "console" | "skins" | "log";
+type TabId = "players" | "server" | "config" | "console" | "skins" | "demos" | "log";
 
 const ROLE_LABEL = ["—", "Moderator", "Admin", "Owner"];
 
@@ -72,6 +73,7 @@ export default function AdminPanel({
     { id: "config", label: "Plugin config", show: canAdmin },
     { id: "console", label: "Console", show: canAdmin },
     { id: "skins", label: "Custom skins", show: true },
+    { id: "demos", label: "Demo queue", show: canAdmin },
     { id: "log", label: "Log", show: true },
   ];
 
@@ -317,6 +319,8 @@ export default function AdminPanel({
         {tab === "console" && canAdmin && <RconConsole adminKey={adminKey} />}
 
         {tab === "skins" && <SkinManager adminKey={adminKey} canUpload={canAdmin} />}
+
+        {tab === "demos" && canAdmin && <PendingDemos adminKey={adminKey} />}
 
         {tab === "log" && (
           <div className="adm-scroll">
