@@ -18,7 +18,7 @@ export type LoadoutSnapshot = {
 
 // Lowercase, no caps, ambiguity-free alphabet (no 0/o/1/l/i) — short keys stay
 // easy to read out loud and type in chat.
-const ALPHABET = "23456789abcdefghjkmnpqrstuvwxyz";
+export const ALPHABET = "23456789abcdefghjkmnpqrstuvwxyz";
 
 export function generateKey(length = 6): string {
   let key = "";
@@ -27,6 +27,10 @@ export function generateKey(length = 6): string {
   }
   return key;
 }
+
+/** The loadout a snapshot came from, used to tell a re-share from a collision. */
+export const snapshotLoadoutId = (snapshot: LoadoutSnapshot): string | undefined =>
+  snapshot.loadout?.id;
 
 /** All item ids a loadout references (both sides + knife/glove slots). */
 function referencedItemIds(loadout: Loadout): Set<string> {

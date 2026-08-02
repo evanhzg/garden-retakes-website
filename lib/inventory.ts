@@ -47,6 +47,12 @@ export type InventoryItem = {
   /** Paint kit index. */
   paint: number;
   image: string;
+  /**
+   * Rarity colour (hex) as cs2-lib reports it. Optional: stores written before
+   * the equipped board existed have no rarity, and the board falls back to the
+   * neutral tier rather than refusing to render them.
+   */
+  rarity?: string;
   wear: number;
   seed: number;
   statTrak: boolean;
@@ -95,6 +101,35 @@ export const LOADOUT_COLORS: { name: string; hex: string }[] = [
   { name: "Slate", hex: "#64748b" },
 ];
 
+/**
+ * CS2 rarity tiers, lowest first.
+ *
+ * cs2-lib reports rarity as the colour hex rather than a name, and the same
+ * tier ships under more than one hex (the golds especially), so this maps every
+ * hex we see onto one tier. `tier` doubles as the sort rank in the chooser.
+ */
+export const RARITY_TIERS: { tier: number; name: string; hexes: string[] }[] = [
+  { tier: 0, name: "Consumer", hexes: ["#b0c3d9"] },
+  { tier: 1, name: "Industrial", hexes: ["#5e98d9"] },
+  { tier: 2, name: "Mil-Spec", hexes: ["#4b69ff"] },
+  { tier: 3, name: "Restricted", hexes: ["#8847ff"] },
+  { tier: 4, name: "Classified", hexes: ["#d32ce6"] },
+  { tier: 5, name: "Covert", hexes: ["#eb4b4b"] },
+  { tier: 6, name: "Exceedingly rare", hexes: ["#e4ae39", "#ffd700", "#ffae39"] },
+];
+
+const RARITY_BY_HEX = new Map(
+  RARITY_TIERS.flatMap((t) => t.hexes.map((hex) => [hex, t] as const))
+);
+
+/** Tier for a rarity hex, or null when it is missing or unrecognised. */
+export function rarityOf(hex?: string | null) {
+  return hex ? RARITY_BY_HEX.get(hex.toLowerCase()) ?? null : null;
+}
+
+export const rarityRank = (hex?: string | null) => rarityOf(hex)?.tier ?? -1;
+export const rarityName = (hex?: string | null) => rarityOf(hex)?.name ?? "Unknown";
+
 /** Stable key for a catalog skin (used for favourites). */
 export function skinKey(def: number, paint: number): string {
   return `${def}:${paint}`;
@@ -128,6 +163,36 @@ export const SLOT_ANCHORS: { x: number; y: number }[] = [
   { x: 60, y: 58 },
   { x: 78, y: 58 },
 ];
+
+export const M4A4 = 16;
+export const M4A1S = 60;
+
+/**
+ * The slots the equipped board always shows, per side.
+ *
+ * Shared with the profile preview so both surfaces agree on what "your
+ * loadout" means. The board renders these in order whether or not they are
+ * filled — an empty slot you can see and click is the point — and appends any
+ * *other* weapon equipped on that side after them, so nothing is ever hidden.
+ */
+export const SIGNATURE_SLOTS: Record<Side, { def: number; label: string; m4?: boolean }[]> = {
+  t: [
+    { def: 7, label: "AK-47" },
+    { def: 9, label: "AWP" },
+    { def: 1, label: "Desert Eagle" },
+    { def: 4, label: "Glock-18" },
+  ],
+  ct: [
+    { def: M4A4, label: "M4", m4: true },
+    { def: 9, label: "AWP" },
+    { def: 1, label: "Desert Eagle" },
+    { def: 61, label: "USP-S" },
+  ],
+};
+
+/** Signature guns + knife + gloves, both sides — the completeness denominator. */
+export const TOTAL_SIGNATURE_SLOTS =
+  (SIGNATURE_SLOTS.t.length + 2) + (SIGNATURE_SLOTS.ct.length + 2);
 
 /** Loadout item count across both sides (for the switcher badges). */
 export function loadoutSize(loadout: Loadout): number {
