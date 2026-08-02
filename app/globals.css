@@ -7013,3 +7013,25 @@ html[data-motion="off"] .main-content { scroll-behavior: auto; }
   padding: 1px 4px; background: color-mix(in srgb, var(--color-text) 8%, transparent);
 }
 .clip-help-note { color: color-mix(in srgb, var(--color-text) 65%, transparent); }
+
+/* Cards sit in a grid, so a one-line title next to a two-line one, or a clip
+   with no description next to one with a paragraph, made every card a
+   different height. Both slots now reserve their space and clamp their
+   overflow, so the grid lines up whatever the content. */
+.clip-body { min-height: calc(1.3em * 2 + 1.55em * 2 + 4px); align-content: start; }
+.clip-title {
+  display: -webkit-box;
+  -webkit-line-clamp: 2;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
+  min-height: calc(1.3em * 2);
+}
+.clip-desc {
+  display: -webkit-box;
+  -webkit-line-clamp: 2;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
+  min-height: calc(1.55em * 2);
+}
+/* The stand-in reads as metadata, not as something the author wrote. */
+.clip-desc.is-placeholder { color: color-mix(in srgb, var(--color-text) 42%, transparent); font-style: italic; }

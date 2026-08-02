@@ -36,6 +36,18 @@ type Comment = {
   mine: boolean;
 };
 
+/**
+ * Cards live in a grid, so a clip with no description was a whole line shorter
+ * than its neighbours. Rather than filler text, say something true about where
+ * the clip came from — the pipeline already writes "Round N - map" for its own,
+ * so this only ever shows for hand-posted clips.
+ */
+const describeFallback = (clip: Clip): string => {
+  if (clip.kind === "youtube") return "Shared from YouTube";
+  if (clip.kind === "r2") return "Server highlight";
+  return "Community clip";
+};
+
 const ago = (iso: string) => {
   const s = Math.max(1, (Date.now() - new Date(iso).getTime()) / 1000);
   const units: [number, string][] = [
@@ -191,7 +203,9 @@ export default function ClipCard({ clip, signedIn }: { clip: Clip; signedIn: boo
 
       <div className="clip-body">
         <h3 className="clip-title">{clip.title}</h3>
-        {clip.description && <p className="clip-desc">{clip.description}</p>}
+        <p className={`clip-desc ${clip.description ? "" : "is-placeholder"}`}>
+          {clip.description || describeFallback(clip)}
+        </p>
       </div>
 
       <footer className="clip-actions">
