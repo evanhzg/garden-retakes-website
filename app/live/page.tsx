@@ -1,10 +1,20 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import Head from "next/head";
 import Link from "next/link";
-import Image from "next/image";
 import AvatarImage from "@/components/AvatarImage";
+
+// The live-match view was written in Tailwind classes; the project has no
+// Tailwind, so none of them did anything and the page fell back to bare HTML
+// wrapped in a few real `.panel`s. It now uses the same tokens as LiveIdle
+// below, which was already converted.
+
+// The horizontal gutter now comes from .container (--page-pad); PAD is the
+// vertical rhythm only, so a page can no longer drift from the site gutter.
+const PAD = "0px";
+
+/** Team A takes the accent, team B its counterpart. */
+const TEAM_COLOR = { a: "var(--color-accent)", b: "var(--color-accent-2)" } as const;
 
 interface LivePlayer {
   SteamId: string;
@@ -110,223 +120,412 @@ export default function LiveMatchPage() {
   const teamB = match.Players.filter(p => p.Team === "B");
 
   return (
-    <main className="container p-4 mx-auto max-w-6xl mt-8">
-      <Head>
-        <title>Live Spectator - Garden Retakes</title>
-      </Head>
-
-      <div className="flex flex-col md:flex-row justify-between items-start md:items-center mb-10 gap-4">
-        <div>
-          <div className="flex items-center gap-3">
-            <div className="w-3 h-3 rounded-full bg-red-500 animate-pulse shadow-[0_0_8px_rgba(239,68,68,0.8)]" />
-            <h1 className="text-2xl font-black uppercase tracking-widest text-red-500">
+    <main style={{ padding: `clamp(32px, 6vw, 64px) ${PAD}` }}>
+      <div style={{ maxWidth: 1280, marginInline: "auto" }}>
+        <div
+          style={{
+            display: "flex",
+            justifyContent: "space-between",
+            alignItems: "flex-end",
+            gap: 20,
+            flexWrap: "wrap",
+            borderBottom: "2px solid var(--color-divider)",
+            paddingBottom: 20,
+            marginBottom: 28,
+          }}
+        >
+          <div>
+            <span className="kicker" style={{ display: "flex", alignItems: "center", gap: 8 }}>
+              <span className="live-dot" />
               Live
+            </span>
+            <h1 style={{ fontSize: "clamp(30px, 4.2vw, 52px)", letterSpacing: "-0.02em", margin: "10px 0 0" }}>
+              {match.Map}
             </h1>
-          </div>
-          <div className="text-zinc-400 text-sm font-semibold uppercase tracking-wider mt-1">
-            {match.Mode} • <span className="text-zinc-200">{match.Map}</span>
-          </div>
-        </div>
-
-        {isAdmin && (
-          <div className="panel bg-zinc-950 border border-red-900/30 flex items-center gap-3 p-3 !m-0">
-            <span className="text-xs font-bold uppercase tracking-wider text-red-400 mr-2">Mod Controls</span>
-            <select 
-              className="input !py-1 !px-2 text-sm"
-              onChange={(e) => {
-                if(e.target.value) {
-                  handleAdminAction(`css_gmap ${e.target.value}`);
-                  e.target.value = "";
-                }
+            <div
+              style={{
+                fontSize: 13,
+                letterSpacing: "0.06em",
+                textTransform: "uppercase",
+                color: "color-mix(in srgb, var(--color-text) 62%, transparent)",
+                marginTop: 6,
               }}
-              defaultValue=""
             >
-              <option value="" disabled>Change Map...</option>
-              {COMMON_MAPS.map(m => <option key={m} value={m}>{m}</option>)}
-            </select>
-            <div className="flex gap-2">
-              <input 
-                type="text" 
-                placeholder="Custom map..." 
-                className="input !py-1 !px-2 text-sm w-32"
+              {match.Mode}
+              {match.IsRanked ? " · Ranked" : ""}
+            </div>
+          </div>
+
+          {isAdmin && (
+            <div
+              style={{
+                display: "flex",
+                alignItems: "center",
+                gap: "var(--space-2)",
+                flexWrap: "wrap",
+                border: "1px solid var(--color-divider)",
+                padding: "var(--space-2) var(--space-3)",
+                background: "var(--color-surface)",
+              }}
+            >
+              <span className="kicker" style={{ fontSize: 11 }}>
+                Mod
+              </span>
+              <label className="sr-only" htmlFor="live-map-select">
+                Change map
+              </label>
+              <select
+                id="live-map-select"
+                className="input"
+                style={{ width: "auto" }}
+                onChange={(e) => {
+                  if (e.target.value) {
+                    handleAdminAction(`css_gmap ${e.target.value}`);
+                    e.target.value = "";
+                  }
+                }}
+                defaultValue=""
+              >
+                <option value="" disabled>
+                  Change map…
+                </option>
+                {COMMON_MAPS.map((m) => (
+                  <option key={m} value={m}>
+                    {m}
+                  </option>
+                ))}
+              </select>
+              <label className="sr-only" htmlFor="live-map-custom">
+                Custom map name
+              </label>
+              <input
+                id="live-map-custom"
+                className="input"
+                style={{ width: 150 }}
+                type="text"
+                placeholder="Custom map…"
                 value={customMap}
-                onChange={e => setCustomMap(e.target.value)}
+                onChange={(e) => setCustomMap(e.target.value)}
               />
-              <button 
-                className="btn small"
+              <button
+                type="button"
+                className="btn btn-secondary"
                 onClick={() => {
-                  if(customMap) handleAdminAction(`css_gmap ${customMap}`);
+                  if (customMap) handleAdminAction(`css_gmap ${customMap}`);
                 }}
               >
                 Go
               </button>
             </div>
-          </div>
-        )}
-      </div>
-
-      {match.IsCr && (
-        <div className="panel mb-8 p-8 relative overflow-hidden bg-gradient-to-b from-zinc-900 to-black border border-zinc-800 shadow-2xl">
-          <div className="absolute top-0 left-0 w-1/2 h-full bg-gradient-to-r from-amber-500/10 to-transparent pointer-events-none" />
-          <div className="absolute top-0 right-0 w-1/2 h-full bg-gradient-to-l from-blue-500/10 to-transparent pointer-events-none" />
-          
-          <div className="flex flex-col md:flex-row items-center justify-between gap-6 relative z-10">
-            <div className="flex-1 text-center md:text-right">
-              <h2 className="text-4xl font-black text-amber-400 mb-2">{match.TeamAName}</h2>
-              <div className="text-xs text-zinc-400 font-bold uppercase tracking-widest bg-black/40 inline-block px-3 py-1 rounded">
-                ELO if Win: <span className="text-emerald-400">{match.WinPredictionA.split("/")[0]}</span> • Loss: <span className="text-red-400">{match.WinPredictionA.split("/")[1]}</span>
-              </div>
-            </div>
-            
-            <div className="text-7xl font-black tabular-nums tracking-tighter flex items-center gap-6 text-white drop-shadow-xl">
-              <span className={match.ScoreA > match.ScoreB ? "text-amber-400" : ""}>{match.ScoreA}</span>
-              <span className="text-zinc-700 text-5xl font-light">-</span>
-              <span className={match.ScoreB > match.ScoreA ? "text-blue-400" : ""}>{match.ScoreB}</span>
-            </div>
-
-            <div className="flex-1 text-center md:text-left">
-              <h2 className="text-4xl font-black text-blue-400 mb-2">{match.TeamBName}</h2>
-              <div className="text-xs text-zinc-400 font-bold uppercase tracking-widest bg-black/40 inline-block px-3 py-1 rounded">
-                ELO if Win: <span className="text-emerald-400">{match.WinPredictionB.split("/")[0]}</span> • Loss: <span className="text-red-400">{match.WinPredictionB.split("/")[1]}</span>
-              </div>
-            </div>
-          </div>
+          )}
         </div>
-      )}
 
-      {/* Players */}
-      <div className={`grid gap-6 ${match.IsCr ? 'lg:grid-cols-2' : 'grid-cols-1'}`}>
-        {match.IsCr ? (
-          <>
-            <PlayerTable teamName={match.TeamAName} players={teamA} isRanked={match.IsRanked} color="amber" isAdmin={isAdmin} onAdminAction={handleAdminAction} />
-            <PlayerTable teamName={match.TeamBName} players={teamB} isRanked={match.IsRanked} color="blue" isAdmin={isAdmin} onAdminAction={handleAdminAction} />
-          </>
-        ) : (
-          <PlayerTable teamName="Scoreboard" players={match.Players} isRanked={match.IsRanked} color="amber" isAdmin={isAdmin} onAdminAction={handleAdminAction} />
+        {match.IsCr && (
+          <Scoreboard
+            teamA={match.TeamAName}
+            teamB={match.TeamBName}
+            scoreA={match.ScoreA}
+            scoreB={match.ScoreB}
+            predictionA={match.WinPredictionA}
+            predictionB={match.WinPredictionB}
+          />
         )}
-      </div>
 
-      {/* Head to Head */}
-      {match.HeadToHead && match.HeadToHead.length > 0 && (
-        <div className="mt-8 panel border border-zinc-800/50 bg-black/40">
-          <h3 className="text-xl font-black mb-4 text-emerald-400 uppercase tracking-wider">🔥 Head-to-Head Dominance</h3>
-          <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-4">
-            {match.HeadToHead.map((h2h, idx) => (
-              <div key={idx} className="flex justify-between items-center p-4 rounded-xl bg-zinc-900/80 border border-zinc-800 shadow-lg">
-                <span className="font-bold text-white truncate max-w-[120px]">{h2h.KillerName}</span>
-                <div className="flex flex-col items-center mx-2">
-                  <span className="text-red-400 font-black px-3 py-1 bg-red-950/30 rounded border border-red-900/50 tabular-nums">
-                    {h2h.Kills} - 0
+        <div
+          style={{
+            display: "grid",
+            gridTemplateColumns: match.IsCr ? "repeat(auto-fit, minmax(340px, 1fr))" : "minmax(0, 1fr)",
+            gap: "var(--space-6)",
+          }}
+        >
+          {match.IsCr ? (
+            <>
+              <PlayerTable teamName={match.TeamAName} players={teamA} isRanked={match.IsRanked} side="a" isAdmin={isAdmin} onAdminAction={handleAdminAction} />
+              <PlayerTable teamName={match.TeamBName} players={teamB} isRanked={match.IsRanked} side="b" isAdmin={isAdmin} onAdminAction={handleAdminAction} />
+            </>
+          ) : (
+            <PlayerTable teamName="Scoreboard" players={match.Players} isRanked={match.IsRanked} side="a" isAdmin={isAdmin} onAdminAction={handleAdminAction} />
+          )}
+        </div>
+
+        {match.HeadToHead && match.HeadToHead.length > 0 && (
+          <section style={{ marginTop: "clamp(40px, 6vw, 64px)" }}>
+            <div style={{ display: "flex", alignItems: "center", gap: 14, marginBottom: 20 }}>
+              <h2 style={{ fontSize: 13, letterSpacing: "0.08em", textTransform: "uppercase", margin: 0 }}>
+                Head to head
+              </h2>
+              <span className="rule-draw" style={{ flex: 1, height: 2, background: "var(--color-divider)" }} />
+            </div>
+            <div
+              style={{
+                display: "grid",
+                gridTemplateColumns: "repeat(auto-fit, minmax(260px, 1fr))",
+                gap: 2,
+                background: "var(--color-divider)",
+                border: "1px solid var(--color-divider)",
+              }}
+            >
+              {match.HeadToHead.map((h2h) => (
+                <div
+                  key={`${h2h.KillerName}-${h2h.VictimName}`}
+                  style={{
+                    display: "flex",
+                    alignItems: "center",
+                    justifyContent: "space-between",
+                    gap: 12,
+                    background: "var(--color-bg)",
+                    padding: "16px 18px",
+                  }}
+                >
+                  <span style={{ fontWeight: 700, minWidth: 0, overflow: "hidden", textOverflow: "ellipsis" }}>
+                    {h2h.KillerName}
+                  </span>
+                  <span className="num" style={{ fontWeight: 700, color: "var(--color-accent)", flex: "none" }}>
+                    {h2h.Kills}&ndash;0
+                  </span>
+                  <span
+                    style={{
+                      minWidth: 0,
+                      overflow: "hidden",
+                      textOverflow: "ellipsis",
+                      textAlign: "right",
+                      color: "color-mix(in srgb, var(--color-text) 55%, transparent)",
+                    }}
+                  >
+                    {h2h.VictimName}
                   </span>
                 </div>
-                <span className="text-zinc-500 truncate max-w-[120px]">{h2h.VictimName}</span>
-              </div>
-            ))}
-          </div>
-        </div>
-      )}
-
+              ))}
+            </div>
+          </section>
+        )}
+      </div>
     </main>
   );
 }
 
-function PlayerTable({ 
-  teamName, 
-  players, 
-  isRanked, 
-  color,
-  isAdmin,
-  onAdminAction
-}: { 
-  teamName: string, 
-  players: LivePlayer[], 
-  isRanked: boolean, 
-  color: "amber" | "blue",
-  isAdmin: boolean,
-  onAdminAction: (cmd: string) => void
+/** Competitive-round header: both team names, the score and the Elo swing. */
+function Scoreboard({
+  teamA,
+  teamB,
+  scoreA,
+  scoreB,
+  predictionA,
+  predictionB,
+}: {
+  teamA: string;
+  teamB: string;
+  scoreA: number;
+  scoreB: number;
+  predictionA: string;
+  predictionB: string;
 }) {
-  const colorClass = color === "amber" ? "text-amber-400" : "text-blue-400";
-  const bgClass = color === "amber" ? "from-amber-950/20" : "from-blue-950/20";
-  const borderClass = color === "amber" ? "border-amber-900/20" : "border-blue-900/20";
-  
+  const side = (name: string, prediction: string, color: string, align: "right" | "left") => {
+    const [win, loss] = prediction.split("/");
+    return (
+      <div style={{ flex: 1, textAlign: align, minWidth: 220 }}>
+        <div style={{ fontFamily: "var(--font-heading)", fontWeight: 800, fontSize: "clamp(22px, 2.6vw, 34px)", color }}>
+          {name}
+        </div>
+        <div
+          style={{
+            fontSize: 12,
+            letterSpacing: "0.06em",
+            textTransform: "uppercase",
+            color: "color-mix(in srgb, var(--color-text) 60%, transparent)",
+            marginTop: 6,
+          }}
+        >
+          Win <span className="num" style={{ color: "var(--color-text)" }}>{win}</span> · Loss{" "}
+          <span className="num" style={{ color: "var(--color-text)" }}>{loss}</span>
+        </div>
+      </div>
+    );
+  };
+
   return (
-    <div className={`panel border ${borderClass} bg-gradient-to-br ${bgClass} to-transparent overflow-x-auto`}>
-      <h3 className={`text-2xl font-black mb-4 ${colorClass}`}>{teamName}</h3>
-      <table className="w-full text-left border-collapse min-w-[500px]">
-        <thead>
-          <tr className={`border-b ${borderClass} text-xs uppercase tracking-wider text-zinc-500`}>
-            <th className="py-3 px-2 font-black">Player</th>
-            <th className="py-3 px-2 text-right font-black">K</th>
-            <th className="py-3 px-2 text-right font-black">A</th>
-            <th className="py-3 px-2 text-right font-black">D</th>
-            <th className="py-3 px-2 text-right font-black">DMG</th>
-            <th className="py-3 px-2 text-right font-black text-emerald-400">Rating</th>
-            {isAdmin && <th className="py-3 px-2 text-right font-black text-red-500">Mod</th>}
-          </tr>
-        </thead>
-        <tbody className="tabular-nums">
-          {players.sort((a, b) => b.Kills - a.Kills).map((p) => {
-            const rating = ((p.Kills * 1) + (p.Assists * 0.5) + (p.Damage * 0.01)) / Math.max(1, p.Deaths);
-            return (
-              <tr key={p.SteamId} className={`border-b ${borderClass} last:border-0 hover:bg-white/[0.04] transition-colors`}>
-                <td className="py-3 px-2">
-                  <div className="flex items-center gap-3">
-                    <Link href={`/players/${p.SteamId}`} className="shrink-0">
-                      {/* Steam avatar, resolved and cached by AvatarImage —
-                          this used to point at a local /<steamId>_pp.png. */}
-                      <AvatarImage
-                        steamId={String(p.SteamId)}
-                        alt={p.Name}
-                        className="shadow-md border border-zinc-800 bg-zinc-900"
-                      />
-                    </Link>
-                    <div className="flex flex-col">
-                      <Link href={`/players/${p.SteamId}`} className="font-bold text-white hover:text-emerald-400 transition truncate max-w-[150px]">
-                        {p.Name}
-                      </Link>
-                      {isRanked && (
-                        <div className="flex items-center gap-1 mt-0.5">
-                          <span className="text-[10px] font-bold uppercase tracking-widest text-zinc-500">ELO</span>
-                          <span className="text-xs font-black text-accent">{p.Elo}</span>
-                        </div>
-                      )}
-                    </div>
-                  </div>
-                </td>
-                <td className="py-3 px-2 text-right font-semibold text-white">{p.Kills}</td>
-                <td className="py-3 px-2 text-right font-medium text-zinc-400">{p.Assists}</td>
-                <td className="py-3 px-2 text-right font-medium text-zinc-400">{p.Deaths}</td>
-                <td className="py-3 px-2 text-right font-medium text-zinc-500">{p.Damage}</td>
-                <td className="py-3 px-2 text-right">
-                  <span className={`font-black px-2 py-1 rounded bg-black/40 border border-zinc-800 ${rating >= 1.0 ? 'text-emerald-400' : 'text-zinc-400'}`}>
-                    {rating.toFixed(2)}
-                  </span>
-                </td>
-                {isAdmin && (
-                  <td className="py-3 px-2 text-right">
-                    <button 
-                      onClick={() => onAdminAction(`css_gkick ${p.SteamId}`)}
-                      className="p-1.5 rounded bg-red-950/40 text-red-500 hover:bg-red-900/60 transition border border-red-900/50"
-                      title={`Kick ${p.Name}`}
-                    >
-                      <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-                        <path d="M18 6 6 18"/><path d="m6 6 12 12"/>
-                      </svg>
-                    </button>
-                  </td>
-                )}
-              </tr>
-            );
-          })}
-          {players.length === 0 && (
+    <div
+      style={{
+        display: "flex",
+        alignItems: "center",
+        justifyContent: "space-between",
+        gap: "clamp(16px, 4vw, 48px)",
+        flexWrap: "wrap",
+        border: "2px solid var(--color-divider)",
+        padding: "clamp(24px, 4vw, 40px)",
+        marginBottom: "clamp(32px, 5vw, 48px)",
+      }}
+    >
+      {side(teamA, predictionA, TEAM_COLOR.a, "right")}
+
+      <div
+        className="num"
+        style={{
+          display: "flex",
+          alignItems: "center",
+          gap: "clamp(12px, 2vw, 28px)",
+          fontWeight: 700,
+          fontSize: "clamp(44px, 7vw, 84px)",
+          lineHeight: 1,
+          letterSpacing: "-0.04em",
+        }}
+      >
+        <span style={{ color: scoreA > scoreB ? TEAM_COLOR.a : "inherit" }}>{scoreA}</span>
+        <span style={{ color: "var(--color-divider)", fontWeight: 400 }}>&ndash;</span>
+        <span style={{ color: scoreB > scoreA ? TEAM_COLOR.b : "inherit" }}>{scoreB}</span>
+      </div>
+
+      {side(teamB, predictionB, TEAM_COLOR.b, "left")}
+    </div>
+  );
+}
+
+function PlayerTable({
+  teamName,
+  players,
+  isRanked,
+  side,
+  isAdmin,
+  onAdminAction,
+}: {
+  teamName: string;
+  players: LivePlayer[];
+  isRanked: boolean;
+  side: "a" | "b";
+  isAdmin: boolean;
+  onAdminAction: (cmd: string) => void;
+}) {
+  const numeric: React.CSSProperties = { textAlign: "right" };
+  // `players` is state owned by the page — sorting in place would mutate it and
+  // reorder the other team's table as a side effect on the next render.
+  const ordered = [...players].sort((a, b) => b.Kills - a.Kills);
+
+  return (
+    <div style={{ minWidth: 0 }}>
+      <div style={{ display: "flex", alignItems: "center", gap: 12, marginBottom: 14 }}>
+        <h2
+          style={{
+            fontSize: "clamp(20px, 2.4vw, 28px)",
+            letterSpacing: "-0.02em",
+            margin: 0,
+            color: TEAM_COLOR[side],
+          }}
+        >
+          {teamName}
+        </h2>
+        <span className="rule-draw" style={{ flex: 1, height: 2, background: "var(--color-divider)" }} />
+      </div>
+
+      <div style={{ overflowX: "auto" }}>
+        <table className="table num" style={{ minWidth: 460 }}>
+          <thead>
             <tr>
-              <td colSpan={isAdmin ? 7 : 6} className="py-8 text-center text-zinc-500 italic font-medium">
-                No players currently assigned.
-              </td>
+              <th scope="col">Player</th>
+              <th scope="col" style={numeric}>K</th>
+              <th scope="col" style={numeric}>A</th>
+              <th scope="col" style={numeric}>D</th>
+              <th scope="col" style={numeric}>DMG</th>
+              <th scope="col" style={numeric}>Rating</th>
+              {isAdmin && (
+                <th scope="col" style={numeric}>
+                  Mod
+                </th>
+              )}
             </tr>
-          )}
-        </tbody>
-      </table>
+          </thead>
+          <tbody>
+            {ordered.map((p) => {
+              const rating = (p.Kills + p.Assists * 0.5 + p.Damage * 0.01) / Math.max(1, p.Deaths);
+              return (
+                <tr key={p.SteamId}>
+                  <td>
+                    <div style={{ display: "flex", alignItems: "center", gap: 10, minWidth: 0 }}>
+                      <Link href={`/players/${p.SteamId}`} style={{ flex: "none" }}>
+                        {/* Steam avatar, resolved and cached by AvatarImage —
+                            this used to point at a local /<steamId>_pp.png. */}
+                        <AvatarImage steamId={String(p.SteamId)} alt={p.Name} className="avatar" />
+                      </Link>
+                      <div style={{ minWidth: 0 }}>
+                        <Link
+                          href={`/players/${p.SteamId}`}
+                          className="link-underline"
+                          style={{
+                            fontWeight: 700,
+                            color: "inherit",
+                            textDecoration: "none",
+                            display: "block",
+                            overflow: "hidden",
+                            textOverflow: "ellipsis",
+                            whiteSpace: "nowrap",
+                            maxWidth: 160,
+                          }}
+                        >
+                          {p.Name}
+                        </Link>
+                        {isRanked && (
+                          <span
+                            style={{
+                              fontSize: 11,
+                              letterSpacing: "0.08em",
+                              textTransform: "uppercase",
+                              color: "color-mix(in srgb, var(--color-text) 55%, transparent)",
+                            }}
+                          >
+                            Elo <span style={{ color: "var(--color-accent)", fontWeight: 700 }}>{p.Elo}</span>
+                          </span>
+                        )}
+                      </div>
+                    </div>
+                  </td>
+                  <td style={{ ...numeric, fontWeight: 700 }}>{p.Kills}</td>
+                  <td style={numeric}>{p.Assists}</td>
+                  <td style={numeric}>{p.Deaths}</td>
+                  <td style={numeric}>{p.Damage}</td>
+                  <td style={numeric}>
+                    <span style={{ fontWeight: 700, color: rating >= 1 ? "var(--color-accent)" : "inherit" }}>
+                      {rating.toFixed(2)}
+                    </span>
+                  </td>
+                  {isAdmin && (
+                    <td style={numeric}>
+                      <button
+                        type="button"
+                        className="btn btn-secondary btn-icon"
+                        onClick={() => onAdminAction(`css_gkick ${p.SteamId}`)}
+                        title={`Kick ${p.Name}`}
+                        aria-label={`Kick ${p.Name}`}
+                      >
+                        <svg
+                          xmlns="http://www.w3.org/2000/svg"
+                          width="16"
+                          height="16"
+                          viewBox="0 0 24 24"
+                          fill="none"
+                          stroke="currentColor"
+                          strokeWidth="2"
+                          strokeLinecap="round"
+                          strokeLinejoin="round"
+                          aria-hidden
+                        >
+                          <path d="M18 6 6 18" />
+                          <path d="m6 6 12 12" />
+                        </svg>
+                      </button>
+                    </td>
+                  )}
+                </tr>
+              );
+            })}
+            {ordered.length === 0 && (
+              <tr>
+                <td colSpan={isAdmin ? 7 : 6} className="muted" style={{ textAlign: "center", padding: 24 }}>
+                  No players currently assigned.
+                </td>
+              </tr>
+            )}
+          </tbody>
+        </table>
+      </div>
     </div>
   );
 }
@@ -360,7 +559,7 @@ function LiveIdle({ loading }: { loading: boolean }) {
   ];
 
   return (
-    <main style={{ padding: "clamp(48px, 8vw, 96px) clamp(20px, 5vw, 64px)" }}>
+    <main style={{ padding: "clamp(48px, 8vw, 96px) 0" }}>
       <div style={{ maxWidth: 1100, marginInline: "auto" }}>
         <div style={{ display: "flex", alignItems: "center", gap: 14, marginBottom: 22 }}>
           <span

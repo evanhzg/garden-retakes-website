@@ -1,177 +1,156 @@
 "use client";
 
-import React, { useState } from 'react';
-import IntegrationStatus from '@/components/IntegrationStatus';
+import Link from "next/link";
+import React, { useState } from "react";
+import IntegrationStatus from "@/components/IntegrationStatus";
+
+// This page was written in Tailwind utility classes, and the project has no
+// Tailwind — every one of them resolved to nothing, so the page rendered as
+// unstyled HTML. It now uses the same tokens and primitives as the rest of the
+// site. The direct .vpk upload that used to live at the bottom moved to
+// /admin/skins, because it wrote straight into the game server's content
+// directory from an endpoint with no authorization on it.
 
 export default function SkinRequestPage() {
-    const [workshopUrl, setWorkshopUrl] = useState('');
-    const [previewImages, setPreviewImages] = useState([]);
-    const [jobId, setJobId] = useState(null);
-    const [loading, setLoading] = useState(false);
-    const [error, setError] = useState<string | null>(null);
+  const [workshopUrl, setWorkshopUrl] = useState("");
+  const [previewImages, setPreviewImages] = useState<string[]>([]);
+  const [jobId, setJobId] = useState<number | null>(null);
+  const [loading, setLoading] = useState(false);
+  const [error, setError] = useState<string | null>(null);
 
-    const handleScrape = async (e: React.FormEvent) => {
-        e.preventDefault();
-        setLoading(true);
-        setError(null);
+  const handleScrape = async (e: React.FormEvent) => {
+    e.preventDefault();
+    setLoading(true);
+    setError(null);
 
-        try {
-            const res = await fetch('/api/scrape-workshop', {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ workshopUrl })
-            });
+    try {
+      const res = await fetch("/api/scrape-workshop", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ workshopUrl }),
+      });
 
-            const data = await res.json();
-            if (!res.ok) throw new Error(data.error || 'Failed to fetch workshop data');
-            
-            setPreviewImages(data.imageUrls);
-        } catch (err: any) {
-            setError(err?.message || "An unexpected error occurred");
-        } finally {
-            setLoading(false);
-        }
-    };
+      const data = await res.json();
+      if (!res.ok) throw new Error(data.error || "Failed to fetch workshop data");
 
-    const handleSubmitJob = async (imageUrl: string) => {
-        setLoading(true);
-        setError(null);
-        try {
-            console.log("Submitting job for image:", imageUrl);
-            const res = await fetch('/api/jobs', { 
-                method: 'POST', 
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ workshopUrl, imageUrl }) 
-            });
-            const data = await res.json();
-            
-            if (!res.ok) throw new Error(data.error || 'Failed to submit job');
-            
-            setJobId(data.id);
-        } catch (err: any) {
-            setError(err?.message || "An unexpected error occurred");
-        } finally {
-            setLoading(false);
-        }
-    };
+      setPreviewImages(data.imageUrls ?? []);
+    } catch (err) {
+      setError(err instanceof Error ? err.message : "An unexpected error occurred");
+    } finally {
+      setLoading(false);
+    }
+  };
 
-    return (
-        <div className="min-h-screen bg-slate-900 text-slate-100 p-8">
-            <div className="max-w-4xl mx-auto space-y-8">
-                <div>
-                    <h1 className="text-3xl font-bold mb-2 text-white">Request Custom Skin</h1>
-                    <p className="text-slate-400">Paste a Steam Workshop URL to start the automated baking and compilation pipeline.</p>
-                </div>
+  const handleSubmitJob = async (imageUrl: string) => {
+    setLoading(true);
+    setError(null);
+    try {
+      const res = await fetch("/api/jobs", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ workshopUrl, imageUrl }),
+      });
+      const data = await res.json();
+      if (!res.ok) throw new Error(data.error || "Failed to submit job");
 
-                <form onSubmit={handleScrape} className="space-y-4 bg-slate-800 p-6 rounded-lg border border-slate-700">
-                    <div>
-                        <label className="block text-sm font-medium mb-2 text-slate-300">Steam Workshop URL</label>
-                        <div className="flex space-x-4">
-                            <input
-                                type="url"
-                                value={workshopUrl}
-                                onChange={(e) => setWorkshopUrl(e.target.value)}
-                                placeholder="https://steamcommunity.com/sharedfiles/filedetails/?id=..."
-                                className="flex-1 bg-slate-900 border border-slate-600 rounded-md px-4 py-2 text-white focus:outline-none focus:ring-2 focus:ring-blue-500"
-                                required
-                            />
-                            <button
-                                type="submit"
-                                disabled={loading}
-                                className="bg-blue-600 hover:bg-blue-700 disabled:opacity-50 text-white font-medium py-2 px-6 rounded-md transition-colors"
-                            >
-                                {loading ? 'Scanning...' : 'Scan Workshop'}
-                            </button>
-                        </div>
-                    </div>
-                    {error && <p className="text-red-400 text-sm">{error}</p>}
-                </form>
+      setJobId(data.id);
+    } catch (err) {
+      setError(err instanceof Error ? err.message : "An unexpected error occurred");
+    } finally {
+      setLoading(false);
+    }
+  };
 
-                {previewImages.length > 0 && !jobId && (
-                    <div className="bg-slate-800 p-6 rounded-lg border border-slate-700">
-                        <h2 className="text-xl font-bold mb-4 text-white">Select Texture Map</h2>
-                        <p className="text-sm text-slate-400 mb-6">We found these images on the workshop page. Select the raw texture map you want to bake.</p>
-                        
-                        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-                            {previewImages.map((url, i) => (
-                                <div key={i} className="group relative rounded-md overflow-hidden border border-slate-600 bg-slate-900 aspect-video">
-                                    <img src={url} alt={`Preview ${i}`} className="w-full h-full object-cover" />
-                                    <div className="absolute inset-0 bg-black/60 opacity-0 group-hover:opacity-100 flex items-center justify-center transition-opacity">
-                                        <button 
-                                            onClick={() => handleSubmitJob(url)}
-                                            className="bg-blue-500 hover:bg-blue-400 text-white font-bold py-2 px-4 rounded"
-                                        >
-                                            Process This Image
-                                        </button>
-                                    </div>
-                                </div>
-                            ))}
-                        </div>
-                    </div>
-                )}
+  return (
+    <>
+      <section className="panel">
+        <span className="kicker">Skins</span>
+        <h2 style={{ marginTop: "var(--space-2)" }}>Request a custom skin</h2>
+        <p className="muted" style={{ maxWidth: "68ch", marginBottom: 0 }}>
+          Paste a Steam Workshop URL to start the baking and compilation pipeline. The page pulls the images off
+          the workshop listing so you can pick the raw texture map to bake.
+        </p>
+      </section>
 
-                {jobId && (
-                    <div className="mt-8">
-                        <IntegrationStatus jobId={jobId} />
-                    </div>
-                )}
-            </div>
-            
-            <div className="max-w-4xl mx-auto space-y-8 mt-12">
-                <div>
-                    <h2 className="text-2xl font-bold mb-2 text-white">Direct File Upload & FastDL</h2>
-                    <p className="text-slate-400">Because Valve banned custom weapon skins from the Workshop, this tool bypasses it by providing FastDL. Upload your compiled raw `.vpk` or `.zip` here. It will be pushed to the game server via FTP and hosted on this website for FastDL. <strong>Make sure your game server's server.cfg has:</strong> <code>sv_downloadurl &quot;https://your-domain.com/fastdl/&quot;</code> and that you have a FastDL plugin installed on the game server to force clients to download it.</p>
-                </div>
+      <section className="panel">
+        <h2>Workshop item</h2>
+        <form onSubmit={handleScrape}>
+          <div className="field" style={{ maxWidth: 640 }}>
+            <label htmlFor="workshop-url">Steam Workshop URL</label>
+            <input
+              id="workshop-url"
+              className="input"
+              type="url"
+              value={workshopUrl}
+              onChange={(e) => setWorkshopUrl(e.target.value)}
+              placeholder="https://steamcommunity.com/sharedfiles/filedetails/?id=…"
+              required
+            />
+          </div>
+          <button className="btn btn-primary" type="submit" disabled={loading} style={{ marginTop: "var(--space-4)" }}>
+            {loading ? "Scanning…" : "Scan workshop"}
+          </button>
+        </form>
 
-                <form onSubmit={async (e) => {
-                    e.preventDefault();
-                    setLoading(true);
-                    setError(null);
-                    const fileInput = e.currentTarget.elements.namedItem('skinFile') as HTMLInputElement;
-                    const file = fileInput?.files?.[0];
-                    if (!file) {
-                        setError('Please select a file to upload.');
-                        setLoading(false);
-                        return;
-                    }
-                    const formData = new FormData();
-                    formData.append('file', file);
-                    try {
-                        const res = await fetch('/api/upload-skin', {
-                            method: 'POST',
-                            body: formData
-                        });
-                        const data = await res.json();
-                        if (!res.ok) throw new Error(data.error || 'Failed to upload skin');
-                        alert(data.message || 'Successfully uploaded skin!');
-                        fileInput.value = '';
-                    } catch (err: any) {
-                        setError(err?.message || "An unexpected error occurred during upload");
-                    } finally {
-                        setLoading(false);
-                    }
-                }} className="space-y-4 bg-slate-800 p-6 rounded-lg border border-slate-700">
-                    <div>
-                        <label className="block text-sm font-medium mb-2 text-slate-300">Raw Skin File (.vpk or .zip)</label>
-                        <div className="flex space-x-4">
-                            <input
-                                type="file"
-                                name="skinFile"
-                                accept=".vpk,.zip"
-                                className="flex-1 bg-slate-900 border border-slate-600 rounded-md px-4 py-2 text-white focus:outline-none focus:ring-2 focus:ring-blue-500"
-                                required
-                            />
-                            <button
-                                type="submit"
-                                disabled={loading}
-                                className="bg-purple-600 hover:bg-purple-700 disabled:opacity-50 text-white font-medium py-2 px-6 rounded-md transition-colors"
-                            >
-                                {loading ? 'Uploading...' : 'Upload File'}
-                            </button>
-                        </div>
-                    </div>
-                </form>
-            </div>
+        <div aria-live="assertive" role="alert">
+          {error && (
+            <p className="skin-note skin-note-error" style={{ marginTop: "var(--space-4)" }}>
+              <span>
+                <strong>Failed.</strong> {error}
+              </span>
+            </p>
+          )}
         </div>
-    );
+      </section>
+
+      {previewImages.length > 0 && !jobId && (
+        <section className="panel">
+          <h2>Select the texture map</h2>
+          <p className="muted" style={{ maxWidth: "68ch" }}>
+            These are the images on the workshop page. Pick the raw texture map you want to bake — not the
+            rendered preview shot.
+          </p>
+
+          <div className="card-grid">
+            {previewImages.map((url, i) => (
+              <figure key={url} className="item-card" style={{ margin: 0 }}>
+                {/* Remote workshop CDN images, so a plain img rather than next/image. */}
+                {/* eslint-disable-next-line @next/next/no-img-element */}
+                <img src={url} alt={`Workshop image ${i + 1}`} />
+                <button
+                  type="button"
+                  className="btn btn-primary btn-block"
+                  disabled={loading}
+                  onClick={() => handleSubmitJob(url)}
+                >
+                  Process this image
+                </button>
+              </figure>
+            ))}
+          </div>
+        </section>
+      )}
+
+      {jobId && (
+        <section className="panel">
+          <h2>Pipeline</h2>
+          <IntegrationStatus jobId={jobId} />
+        </section>
+      )}
+
+      <section className="panel">
+        <h2>Already have a packed VPK?</h2>
+        <p style={{ maxWidth: "70ch", fontSize: 14 }}>
+          A finish authored locally — Substance plus the CS2 Workshop Tools — skips this pipeline entirely.
+          Pack it into a VPK and upload it on{" "}
+          <Link href="/admin/skins">the custom skins admin page</Link>, which validates the archive, shows you
+          what is inside it, and pushes it to the game server. That page also carries the reference for exactly
+          what the VPK has to contain.
+        </p>
+        <Link className="btn btn-secondary" href="/admin/skins">
+          Upload a VPK
+        </Link>
+      </section>
+    </>
+  );
 }
