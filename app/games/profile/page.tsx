@@ -3,6 +3,7 @@ import Link from "next/link";
 import { getSession } from "@/lib/auth";
 import { prisma } from "@/lib/db";
 import AvatarImage from "@/components/AvatarImage";
+import GamesPopCard from "@/components/games/GamesPopCard";
 import "./profile.css";
 
 export const dynamic = "force-dynamic";
@@ -51,11 +52,16 @@ export default async function GamesProfilePage() {
 
   const steamId = BigInt(session.steamId);
 
-  const [rows, profile] = await Promise.all([
+  const [rows, profile, webProfile] = await Promise.all([
     prisma.webGameStats.findMany({ where: { SteamId: steamId }, orderBy: { Elo: "desc" } }),
     prisma.playerProfile.findUnique({
       where: { SteamId: steamId },
       select: { LastKnownName: true },
+    }),
+    // The Pop config the CS2 profile used to own.
+    prisma.gardenWebProfile.findUnique({
+      where: { SteamId: steamId },
+      select: { PopConfig: true },
     }),
   ]);
 
@@ -93,6 +99,8 @@ export default async function GamesProfilePage() {
             </Link>
           </div>
         </div>
+
+        <GamesPopCard initialPopConfig={webProfile?.PopConfig ?? null} />
 
         <dl className="gprofile-stats">
           <div><dt>Games played</dt><dd>{played}</dd></div>

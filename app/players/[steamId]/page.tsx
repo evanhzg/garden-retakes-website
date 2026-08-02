@@ -8,6 +8,7 @@ import { dayKey, fetchRows, groupBy, ratingClass, sideName, summarize, formatDat
 import CharacterHero from "@/components/CharacterHero";
 import AvatarImage from "@/components/AvatarImage";
 import ProfileActivity from "@/components/ProfileActivity";
+import ProfileStats from "@/components/profile/ProfileStats";
 
 export const dynamic = "force-dynamic";
 export const revalidate = 30;
@@ -101,16 +102,25 @@ export default async function PlayerPage({
   const isOwnPage = getSession()?.steamId === params.steamId;
   const total = summarize(rows);
 
-  const bySide = groupBy(rows, (r) => sideName(r.TeamNum)).map(
-    ([side, sideRows]) => [side, summarize(sideRows)] as const
-  );
+  // Same shape the signed-in profile builds, so both pages render through the
+  // one ProfileStats component instead of keeping two copies of these tables.
+  const bySide = groupBy(rows, (r) => sideName(r.TeamNum)).map(([side, sideRows]) => ({
+    side,
+    summary: summarize(sideRows),
+  }));
   const byMap = groupBy(rows, (r) => r.Map)
-    .map(([map, mapRows]) => [map, summarize(mapRows)] as const)
-    .sort((a, b) => b[1].rounds - a[1].rounds);
+    .map(([map, mapRows]) => ({ map, summary: summarize(mapRows) }))
+    .sort((a, b) => b.summary.rounds - a.summary.rounds);
   const byDay = groupBy(rows, (r) => dayKey(r.PlayedAtUtc))
-    .map(([day, dayRows]) => [day, summarize(dayRows)] as const)
     .sort((a, b) => (a[0] < b[0] ? 1 : -1))
-    .slice(0, 14);
+    .slice(0, 30)
+    .map(([day, dayRows]) => ({
+      day,
+      summary: summarize(dayRows),
+      maps: groupBy(dayRows, (r) => r.Map)
+        .map(([map, mapRows]) => ({ map, summary: summarize(mapRows) }))
+        .sort((a, b) => b.summary.rounds - a.summary.rounds),
+    }));
 
   const recentRatings = rows
     .filter((r) => !r.WasAfk)
@@ -293,158 +303,16 @@ export default async function PlayerPage({
       )}
 
       {/* ---------- Per side ---------- */}
-      <section className="panel">
-        <h2>Per side</h2>
-        {bySide.length === 0 ? (
-          <p className="empty-hint">No rounds recorded with these filters yet.</p>
-        ) : (
-          <div className="split-cards">
-            {bySide.map(([side, s]) => (
-              <div key={side} className="side-card">
-                <h3>
-                  <span>{side === "T" ? "Terrorist (defense)" : "Counter-Terrorist (retake)"}</span>
-                  <span className={`side-tag ${side === "T" ? "side-t" : "side-ct"}`}>{side}</span>
-                </h3>
-                <div className="stat-grid">
-                  <div className="stat-card">
-                    <div className={`value ${ratingClass(s.rating)}`}>{s.rating.toFixed(2)}</div>
-                    <div className="label">Rating</div>
-                  </div>
-                  <div className="stat-card">
-                    <div className="value">{s.kd.toFixed(2)}</div>
-                    <div className="label">K/D</div>
-                  </div>
-                  <div className="stat-card">
-                    <div className="value">{s.adr.toFixed(0)}</div>
-                    <div className="label">ADR</div>
-                  </div>
-                  <div className="stat-card">
-                    <div className="value">{s.winPct.toFixed(0)}%</div>
-                    <div className="label">Win % · {s.rounds} rounds</div>
-                  </div>
-                </div>
-              </div>
-            ))}
-          </div>
-        )}
-      </section>
+      <ProfileStats
+        steamId={params.steamId}
+        signedIn={Boolean(getSession())}
+        total={total}
+        bySide={bySide}
+        byMap={byMap}
+        byDay={byDay}
+        recentRatings={recentRatings}
+      />
 
-      {/* ---------- Per map ---------- */}
-      <section className="panel">
-        <h2>Per map</h2>
-        {byMap.length === 0 ? (
-          <p className="empty-hint">Nothing yet.</p>
-        ) : (
-          <table>
-            <thead>
-              <tr>
-                <th>Map</th>
-                <th>Rounds</th>
-                <th>Win %</th>
-                <th>K — D</th>
-                <th>ADR</th>
-                <th>KAST</th>
-                <th>Rating</th>
-              </tr>
-            </thead>
-            <tbody>
-              {byMap.map(([map, s]) => (
-                <tr key={map}>
-                  <td style={{ fontWeight: 700 }}>{map}</td>
-                  <td>{s.rounds}</td>
-                  <td>{s.winPct.toFixed(0)}%</td>
-                  <td>
-                    {s.kills} — {s.deaths}
-                  </td>
-                  <td>{s.adr.toFixed(0)}</td>
-                  <td>{s.kast.toFixed(0)}%</td>
-                  <td className={ratingClass(s.rating)} style={{ fontWeight: 800 }}>
-                    {s.rating.toFixed(2)}
-                  </td>
-                </tr>
-              ))}
-            </tbody>
-          </table>
-        )}
-      </section>
-
-      {/* ---------- Per day ---------- */}
-      <section className="panel">
-        <h2>Per day (last {byDay.length})</h2>
-        {byDay.length === 0 ? (
-          <p className="empty-hint">Nothing yet.</p>
-        ) : (
-          <table>
-            <thead>
-              <tr>
-                <th>Day</th>
-                <th>Rounds</th>
-                <th>Win %</th>
-                <th>K — D</th>
-                <th>ADR</th>
-                <th>Clutches</th>
-                <th>Rating</th>
-              </tr>
-            </thead>
-            <tbody>
-              {byDay.map(([day, s]) => (
-                <tr key={day}>
-                  <td style={{ fontWeight: 700 }}>{formatDate(day)}</td>
-                  <td>{s.rounds}</td>
-                  <td>{s.winPct.toFixed(0)}%</td>
-                  <td>
-                    {s.kills} — {s.deaths}
-                  </td>
-                  <td>{s.adr.toFixed(0)}</td>
-                  <td>{s.clutches}</td>
-                  <td className={ratingClass(s.rating)} style={{ fontWeight: 800 }}>
-                    {s.rating.toFixed(2)}
-                  </td>
-                </tr>
-              ))}
-            </tbody>
-          </table>
-        )}
-      </section>
-
-      {/* ---------- Extras ---------- */}
-      <section className="panel">
-        <h2>Details</h2>
-        <div className="stat-grid">
-          <div className="stat-card">
-            <div className="value">{total.openingKills}</div>
-            <div className="label">Opening kills ({total.openingDeaths} deaths)</div>
-          </div>
-          <div className="stat-card">
-            <div className="value">{total.clutches}</div>
-            <div className="label">Clutches won</div>
-          </div>
-          <div className="stat-card">
-            <div className="value">{total.multiKills}</div>
-            <div className="label">Multi-kill rounds</div>
-          </div>
-          <div className="stat-card">
-            <div className="value">{total.tradeKills}</div>
-            <div className="label">Trade kills</div>
-          </div>
-          <div className="stat-card">
-            <div className="value">{total.utilPerRound.toFixed(1)}</div>
-            <div className="label">Util dmg / round</div>
-          </div>
-          <div className="stat-card">
-            <div className="value">{total.enemiesFlashed}</div>
-            <div className="label">Enemies flashed</div>
-          </div>
-          <div className="stat-card">
-            <div className="value">{total.defuses}</div>
-            <div className="label">Defuses ({total.plants} plants)</div>
-          </div>
-          <div className="stat-card">
-            <div className="value">{total.kpr.toFixed(2)}</div>
-            <div className="label">Kills / round</div>
-          </div>
-        </div>
-      </section>
     </>
   );
 }

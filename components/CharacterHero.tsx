@@ -1,48 +1,50 @@
 "use client";
 
 import { useEffect, useState } from "react";
+import AvatarImage from "@/components/AvatarImage";
 import type { PublicLoadout, PublicLoadoutSlot } from "@/app/api/inventory/[steamId]/route";
+
+// The read-only twin of ProfileHero, shown on /players/[steamId] and
+// /pros/[slug]. It used to be the same character-image-with-overlays treatment
+// as the old ProfileShowcase — stats floating over a full-bleed PNG behind a
+// scrim, with a button to hide them so you could see the art underneath. It now
+// shares ProfileHero's markup and .pro-* styles, so your own profile and the
+// one everyone else sees are the same page with different permissions.
 
 type StatEntry = { label: string; value: string; big?: boolean };
 
-function GunCard({ slot }: { slot: PublicLoadoutSlot }) {
+const skinLabel = (slot: PublicLoadoutSlot) =>
+  slot.hasSkin && slot.skinName ? slot.skinName.split(" | ")[1] ?? slot.label : null;
+
+function GunCard({ slot, label }: { slot: PublicLoadoutSlot; label?: string }) {
+  const skin = skinLabel(slot);
   return (
-    <div className={`ps-gun ${slot.hasSkin ? "has-skin" : "empty"}`}>
+    <div className={`pro-gun ${skin ? "has" : ""}`}>
       {slot.image ? (
         // eslint-disable-next-line @next/next/no-img-element
-        <img src={slot.image} alt={slot.label} loading="lazy" />
+        <img src={slot.image} alt="" loading="lazy" />
       ) : (
-        <div className="ps-gun-ph" />
+        <span className="pro-gun-ph" aria-hidden />
       )}
-      <div className="ps-gun-label">
-        <span className="ps-gun-name">
-          {slot.hasSkin && slot.skinName
-            ? slot.skinName.split(" | ")[1] ?? slot.label
-            : slot.label}
-        </span>
-      </div>
+      <span className="pro-gun-label">{label ?? slot.label}</span>
+      <span className="pro-gun-skin">{skin ?? "Default"}</span>
     </div>
   );
 }
 
-/**
- * Full-width character image hero with overlaid stats + active loadout preview.
- * Used on /players/[steamId] pages (read-only; no editing).
- */
 export default function CharacterHero({
   steamId,
   playerName,
   stats,
-  characterSrc,
 }: {
   steamId: string;
   playerName: string;
   stats: StatEntry[];
+  /** Kept for call-site compatibility; the character PNG is no longer used. */
   characterSrc?: string | null;
 }) {
   const [loadout, setLoadout] = useState<PublicLoadout | null>(null);
   const [side, setSide] = useState<"t" | "ct">("t");
-  const [overlaysVisible, setOverlaysVisible] = useState(true);
 
   useEffect(() => {
     fetch(`/api/inventory/${steamId}`)
@@ -54,87 +56,55 @@ export default function CharacterHero({
   const slots = side === "t" ? loadout?.t : loadout?.ct;
   const knife = side === "t" ? loadout?.knife.t : loadout?.knife.ct;
   const gloves = side === "t" ? loadout?.gloves.t : loadout?.gloves.ct;
+  const hasLoadout = Boolean(loadout && ((slots?.length ?? 0) > 0 || knife || gloves));
 
   return (
-    <section className="profile-showcase">
-      <div className="ps-stage">
-        {/* eslint-disable-next-line @next/next/no-img-element */}
-        <img
-          className="ps-bg"
-          src={characterSrc || `/${steamId}_character.PNG`}
-          alt=""
-          onError={(e) => {
-            const target = e.currentTarget as HTMLImageElement;
-            if (target.src.includes("/default_character.PNG")) return;
-            
-            if (target.src.endsWith(".png")) {
-              target.src = target.src.replace(/\.png$/, ".PNG");
-            } else {
-              target.src = "/default_character.PNG";
-            }
-          }}
-        />
-        <div className="ps-scrim" aria-hidden="true" />
-
-        {/* Toggle button */}
-        <button
-          className="ps-overlay-toggle btn small secondary"
-          onClick={() => setOverlaysVisible((v) => !v)}
-          title={overlaysVisible ? "Hide overlays" : "Show overlays"}
-        >
-          {overlaysVisible ? "Hide overlays" : "Show overlays"}
-        </button>
-
-        {/* Overlays wrapper — fades in/out */}
-        <div className={`ps-overlays ${overlaysVisible ? "visible" : "hidden"}`}>
-          {/* Name — top center */}
-          <div className="ps-username">
-            <div className="ps-name" style={{ cursor: "default" }}>
-              {playerName}
-            </div>
-            <div className="ps-steamid">SteamID64 {steamId}</div>
-          </div>
-
-          {/* Stats — left */}
-          <div className="ps-stats">
-            {stats.map((s) => (
-              <div key={s.label} className={`ps-stat${s.big ? " big" : ""}`}>
-                <span className="v">{s.value}</span>
-                <span className="k">{s.label}</span>
-              </div>
-            ))}
-          </div>
-
-          {/* Loadout — right */}
-          {loadout && (
-            <div className="ps-loadout">
-              <div className="ps-side-toggle">
-                {(["t", "ct"] as const).map((s) => (
-                  <button
-                    key={s}
-                    className={`ps-side ${side === s ? "active" : ""} side-${s}`}
-                    onClick={() => setSide(s)}
-                  >
-                    {s.toUpperCase()}
-                  </button>
-                ))}
-              </div>
-
-              <div className="ps-guns">
-                {(slots ?? []).map((slot, i) => (
-                  <GunCard key={i} slot={slot} />
-                ))}
-              </div>
-
-              {/* Knife + Gloves */}
-              <div className="ps-guns ps-extras" style={{ marginTop: 8 }}>
-                {knife && <GunCard slot={{ ...knife, label: "🗡 Knife" }} />}
-                {gloves && <GunCard slot={{ ...gloves, label: "🧤 Gloves" }} />}
-              </div>
-            </div>
-          )}
+    <section className="pro-hero">
+      <div className="pro-id">
+        <AvatarImage steamId={steamId} alt={playerName} className="grayscale avatar avatar-xl" />
+        <div style={{ minWidth: 0 }}>
+          <span className="kicker">Player</span>
+          <h1 className="pro-name">{playerName}</h1>
+          <div className="pro-sub num">{steamId}</div>
         </div>
       </div>
+
+      {stats.length > 0 && (
+        <div className="pro-headline">
+          {stats.map((s) => (
+            <div key={s.label} className="pro-stat">
+              <span className="num pro-stat-v">{s.value}</span>
+              <span className="pro-stat-k">{s.label}</span>
+            </div>
+          ))}
+        </div>
+      )}
+
+      {hasLoadout && (
+        <div className="pro-loadout">
+          <div className="pro-loadout-head">
+            <h2>Equipped</h2>
+            <div className="pro-sides" role="group" aria-label="Side">
+              {(["t", "ct"] as const).map((s) => (
+                <button
+                  key={s}
+                  className={`pro-sidebtn ${side === s ? "active" : ""}`}
+                  onClick={() => setSide(s)}
+                >
+                  {s.toUpperCase()}
+                </button>
+              ))}
+            </div>
+          </div>
+          <div className="pro-guns">
+            {(slots ?? []).map((slot, i) => (
+              <GunCard key={`${side}-${i}`} slot={slot} />
+            ))}
+            {knife && <GunCard slot={knife} label="Knife" />}
+            {gloves && <GunCard slot={gloves} label="Gloves" />}
+          </div>
+        </div>
+      )}
     </section>
   );
 }

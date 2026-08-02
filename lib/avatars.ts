@@ -1,3 +1,4 @@
+import path from "node:path";
 import { prisma } from "@/lib/db";
 
 /**
@@ -18,6 +19,21 @@ const STEAM_BATCH = 100; // hard API limit, not a tuning knob
 const REFRESH_AFTER_MS = 7 * 24 * 60 * 60 * 1000;
 
 export const DEFAULT_AVATAR = "/default_pp.png";
+
+/** Where a cropped upload from the profile settings modal is served from. */
+export const CUSTOM_AVATAR_PREFIX = "/api/profile/avatar/";
+
+/**
+ * On-disk home for uploaded avatars.
+ *
+ * Lives here rather than in the route file because App Router route modules may
+ * only export handlers and route config — a stray constant export breaks the
+ * build.
+ */
+export const AVATAR_DIR = path.join(process.cwd(), "data", "avatars");
+
+export const isCustomAvatar = (url: string | null | undefined): boolean =>
+  Boolean(url && url.startsWith(CUSTOM_AVATAR_PREFIX));
 
 type Row = { SteamId: bigint; AvatarUrl: string | null; UpdatedAt: Date };
 
@@ -75,8 +91,13 @@ export async function resolveAvatars(steamIds: (string | bigint)[]): Promise<Rec
 
   for (const id of ids) {
     const row = cached.get(id);
-    if (row?.AvatarUrl && row.UpdatedAt.getTime() > cutoff) out[id] = row.AvatarUrl;
-    else stale.push(id);
+    // A player-uploaded avatar is never stale. Without this the weekly Steam
+    // refresh would quietly overwrite a custom avatar with the Steam one.
+    if (row?.AvatarUrl && (isCustomAvatar(row.AvatarUrl) || row.UpdatedAt.getTime() > cutoff)) {
+      out[id] = row.AvatarUrl;
+    } else {
+      stale.push(id);
+    }
   }
 
   if (stale.length > 0) {

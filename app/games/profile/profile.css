@@ -208,3 +208,55 @@
   .gprofile-cta:hover { transform: none; }
   .gprofile-bar span { animation: none; }
 }
+
+/* ── Garden-Pop ─────────────────────────────────────────────────────────
+   Moved here from the CS2 profile hero, where it sat behind the stats as a
+   full-bleed backdrop. On the games profile it is a character card between
+   the identity block and the standings, which is what it always wanted to be.
+   Due a proper design pass. */
+.gprofile-pop {
+  display: grid;
+  justify-items: center;
+  gap: 0.6rem;
+  order: 3;
+  flex: 1 1 200px;
+  max-width: 260px;
+}
+.gprofile-pop-stage {
+  width: 100%;
+  aspect-ratio: 1 / 1;
+  min-height: 180px;
+  background:
+    radial-gradient(circle at 50% 35%,
+      color-mix(in srgb, var(--accent) 14%, transparent) 0%,
+      transparent 65%),
+    var(--panel);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  overflow: hidden;
+}
+.gprofile-pop-loading {
+  display: grid;
+  place-items: center;
+  height: 100%;
+  font-size: 0.72rem;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  color: var(--muted);
+}
+.gprofile-pop .gprofile-ghost {
+  padding: 0.45rem 1rem;
+  font-size: 0.8rem;
+  cursor: pointer;
+  background: transparent;
+  font-family: inherit;
+}
+.gprofile-pop-error {
+  margin: 0;
+  font-size: 0.78rem;
+  color: #e11d48;
+}
+
+@media (max-width: 720px) {
+  .gprofile-pop { order: 2; max-width: 200px; margin-inline: auto; }
+}
