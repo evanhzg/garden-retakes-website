@@ -17,20 +17,20 @@ type NavLink = {
   primary?: boolean;
 };
 
-// Several routes existed with no way to reach them from the nav — /players,
-// /pros, /compare, /docs, /request-skin and /settings were all reachable only by
-// typing the URL or following a link from inside another page.
+// /players, /pros and /teams are deliberately absent: the ladder, stats tables
+// and search all link straight into /players/[steamId], so a top-level entry
+// duplicated a journey people were already taking — and /teams and /pros were
+// thin enough that surfacing them cost more attention than they returned. The
+// routes still exist and still resolve.
 const CS2_LINKS: NavLink[] = [
   { href: "/", label: "Ladder", primary: true },
-  { href: "/players", label: "Players", primary: true },
   { href: "/insights", label: "Insights", primary: true },
   { href: "/stats", label: "Stats", primary: true },
-  { href: "/teams", label: "Teams", primary: true },
+  { href: "/inventory", label: "Inventory", primary: true },
+  { href: "/feed", label: "Feed", primary: true },
   { href: "/live", label: "Live", isLive: true, primary: true },
   { href: "/compare", label: "Compare" },
-  { href: "/pros", label: "Pros" },
   { href: "/duels", label: "Duels" },
-  { href: "/inventory", label: "Inventory" },
   { href: "/request-skin", label: "Request skin" },
   { href: "/docs", label: "Docs" },
   { href: "/commands", label: "Commands" },
@@ -197,7 +197,7 @@ export default function NavBar({
         alignItems: "center",
         justifyContent: "space-between",
         gap: "clamp(12px, 2vw, 28px)",
-        padding: "22px clamp(20px, 5vw, 64px)",
+        padding: "22px var(--page-pad)",
         borderBottom: "2px solid var(--color-divider)",
         position: "sticky",
         top: 0,
