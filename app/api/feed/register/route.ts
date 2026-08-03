@@ -26,6 +26,9 @@ type Incoming = {
   thumb?: string | null;
   durationSec?: number | null;
   variants: Variant[];
+  /** A /clip mark: hidden until named. */
+  unlisted?: boolean;
+  sessionId?: string;
 };
 
 const isHttps = (u: string) => {
@@ -92,6 +95,11 @@ export async function POST(req: Request) {
       DurationSec: c.durationSec ?? null,
       PlayerName: typeof c.playerName === "string" ? c.playerName.slice(0, 64) : null,
       Variants: JSON.stringify(variants),
+      // A clip cut from a /clip mark carries a machine-written title, so it
+      // stays out of the feed until its owner names it. Pipeline highlights
+      // are detected plays with real titles and go straight up.
+      Unlisted: c.unlisted === true,
+      SessionId: typeof c.sessionId === "string" ? c.sessionId.slice(0, 64) : null,
     };
 
     const existing = await prisma.feedClip.findUnique({ where: { ExternalId: c.id } });

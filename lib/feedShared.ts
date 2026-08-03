@@ -67,3 +67,40 @@ export const DEMO_EXTENSIONS = [".dem", ".dem.gz", ".dem.bz2", ".dem.zst", ".dem
 export const DEMO_FILE_RE = /\.dem$|\.dem\.(gz|bz2|zst|zstd|xz)$|\.(zip|7z)$/i;
 
 export const isDemoFile = (name: string) => DEMO_FILE_RE.test(name.trim());
+
+/**
+ * Clip tags.
+ *
+ * A fixed list rather than free text: tags are only worth having if two people
+ * labelling the same thing pick the same word, and free tagging reliably
+ * produces "ace", "ACE" and "1v5" for one clip. Colours are fixed here too so a
+ * tag looks the same everywhere it appears.
+ */
+export const CLIP_TAGS = [
+  { id: "ace", label: "Ace", colour: "#e8b53a" },
+  { id: "clutch", label: "Clutch", colour: "#e8703a" },
+  { id: "multikill", label: "Multi-kill", colour: "#d8564a" },
+  { id: "sniper", label: "AWP", colour: "#7fbf5f" },
+  { id: "knife", label: "Knife", colour: "#b58fd8" },
+  { id: "nade", label: "Utility", colour: "#8bb8d8" },
+  { id: "clutchfail", label: "Choke", colour: "#9b9797" },
+  { id: "funny", label: "Funny", colour: "#e85fa8" },
+  { id: "teamplay", label: "Teamplay", colour: "#5fc9c9" },
+] as const;
+
+export type ClipTagId = (typeof CLIP_TAGS)[number]["id"];
+
+export const isClipTag = (v: string): v is ClipTagId => CLIP_TAGS.some((t) => t.id === v);
+
+/** Stored as a comma-separated list; unknown values are dropped on the way in. */
+export const parseTags = (raw: string | null | undefined): string[] =>
+  (raw ?? "").split(",").map((t) => t.trim()).filter(isClipTag);
+
+export const serialiseTags = (tags: string[]): string =>
+  Array.from(new Set(tags.filter(isClipTag))).join(",").slice(0, 200);
+
+export const tagColour = (id: string): string =>
+  CLIP_TAGS.find((t) => t.id === id)?.colour ?? "#9b9797";
+
+export const tagLabel = (id: string): string =>
+  CLIP_TAGS.find((t) => t.id === id)?.label ?? id;

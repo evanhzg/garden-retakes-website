@@ -28,6 +28,7 @@ const CS2_LINKS: NavLink[] = [
   { href: "/stats", label: "Stats", primary: true },
   { href: "/inventory", label: "Inventory", primary: true },
   { href: "/feed", label: "Feed", primary: true },
+  { href: "/utility", label: "Utility", primary: true },
   { href: "/live", label: "Live", isLive: true, primary: true },
   { href: "/compare", label: "Compare" },
   { href: "/duels", label: "Duels" },

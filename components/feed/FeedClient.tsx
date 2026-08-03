@@ -3,6 +3,7 @@
 import { useCallback, useEffect, useRef, useState } from "react";
 import ClipCard, { type Clip } from "@/components/feed/ClipCard";
 import UploadClipModal from "@/components/feed/UploadClipModal";
+import { CLIP_TAGS } from "@/lib/feedShared";
 
 // The feed: community clips, plus CS2's own update stream.
 //
@@ -35,6 +36,7 @@ export default function FeedClient({ signedIn, isAdmin = false }: { signedIn: bo
   const [range, setRange] = useState<Range>("week");
   const [sort, setSort] = useState<Sort>("new");
   const [kind, setKind] = useState<Kind>("");
+  const [tag, setTag] = useState("");
   const [query, setQuery] = useState("");
   /** Debounced, so typing does not fire a request per keystroke. */
   const [search, setSearch] = useState("");
@@ -71,6 +73,7 @@ export default function FeedClient({ signedIn, isAdmin = false }: { signedIn: bo
     try {
       const params = new URLSearchParams({ range, sort });
       if (kind) params.set("kind", kind);
+      if (tag) params.set("tag", tag);
       if (search) params.set("q", search);
       const res = await fetch(`/api/feed?${params}`, { cache: "no-store" });
       const json = await res.json();
@@ -91,7 +94,7 @@ export default function FeedClient({ signedIn, isAdmin = false }: { signedIn: bo
       setError("Could not reach the server.");
       setClips([]);
     }
-  }, [range, sort, kind, search]);
+  }, [range, sort, kind, search, tag]);
 
   useEffect(() => {
     if (tab === "clips") loadClips();
@@ -260,6 +263,19 @@ export default function FeedClient({ signedIn, isAdmin = false }: { signedIn: bo
                   {KINDS.map((k) => (
                     <button key={k.id} className={`chip ${kind === k.id ? "active" : ""}`} onClick={() => setKind(k.id)}>
                       {k.label}
+                    </button>
+                  ))}
+                </div>
+                <div className="feed-filter-group feed-tagfilter" role="group" aria-label="Tag">
+                  {CLIP_TAGS.map((t) => (
+                    <button
+                      key={t.id}
+                      className={`clip-tag pick ${tag === t.id ? "on" : ""}`}
+                      style={{ ["--tint" as string]: t.colour }}
+                      aria-pressed={tag === t.id}
+                      onClick={() => setTag(tag === t.id ? "" : t.id)}
+                    >
+                      {t.label}
                     </button>
                   ))}
                 </div>

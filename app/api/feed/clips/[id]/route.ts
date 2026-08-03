@@ -2,6 +2,7 @@ import { NextResponse } from "next/server";
 import { prisma } from "@/lib/db";
 import { getSession } from "@/lib/auth";
 import { AdminLevel, getAdminContext, logAdminAction } from "@/lib/adminAuth";
+import { serialiseTags } from "@/lib/feedShared";
 
 export const dynamic = "force-dynamic";
 export const runtime = "nodejs";
@@ -54,7 +55,14 @@ export async function PATCH(req: Request, { params }: { params: { id: string } }
   if (!clip) return NextResponse.json({ error: "No such clip." }, { status: 404 });
   if (!actor.canEdit) return NextResponse.json({ error: "Not yours to edit." }, { status: 403 });
 
-  let body: { title?: string; description?: string | null; steamId?: string; playerName?: string | null };
+  let body: {
+    title?: string;
+    description?: string | null;
+    steamId?: string;
+    playerName?: string | null;
+    unlisted?: boolean;
+    tags?: unknown[];
+  };
   try {
     body = await req.json();
   } catch {
@@ -74,6 +82,14 @@ export async function PATCH(req: Request, { params }: { params: { id: string } }
   }
   if (typeof body.playerName === "string") {
     data.PlayerName = body.playerName.trim().slice(0, 64) || null;
+  }
+  // Publishing is the owner's call and one-way through this route: naming a
+  // /clip mark is what takes it out of the unlisted state.
+  if (Array.isArray(body.tags)) {
+    data.Tags = serialiseTags(body.tags.map(String));
+  }
+  if (body.unlisted !== undefined) {
+    data.Unlisted = Boolean(body.unlisted);
   }
 
   // Reassigning whose play it is hands edit rights to that person, so only

@@ -7391,3 +7391,38 @@ html[data-motion="off"] .main-content { scroll-behavior: auto; }
 
 .util-notes { font-size: 13px; color: var(--muted); margin: 0 0 12px; }
 .util-actions { display: flex; gap: 8px; flex-wrap: wrap; margin-bottom: 10px; }
+
+/* A /clip mark waiting for its owner to name it. */
+.clip-unlisted {
+  display: flex; align-items: center; gap: 10px; flex-wrap: wrap;
+  margin: 0 0 8px; padding: 8px 10px;
+  border-radius: 9px;
+  background: color-mix(in srgb, var(--color-accent) 12%, transparent);
+  border: 1.5px dashed color-mix(in srgb, var(--color-accent) 45%, transparent);
+  font-size: 12.5px;
+}
+.clip-unlisted .btn { margin-left: auto; padding: 4px 11px; font-size: 12px; }
+
+.clip-download { padding: 4px 9px; font-size: 15px; line-height: 1; text-decoration: none; }
+
+/* Clip tags: a fixed palette so a tag reads the same everywhere. */
+.clip-tags { display: flex; gap: 5px; flex-wrap: wrap; margin: 7px 0 0; }
+.clip-tag {
+  display: inline-flex; align-items: center;
+  padding: 2px 8px; border-radius: 999px;
+  font-size: 11px; font-weight: 700; letter-spacing: 0.01em;
+  color: var(--tint);
+  background: color-mix(in srgb, var(--tint) 16%, transparent);
+  border: 1px solid color-mix(in srgb, var(--tint) 45%, transparent);
+}
+/* The same pill, as a button, in the editor and the filter row. */
+.clip-tag.pick { cursor: pointer; font: inherit; font-size: 11px; font-weight: 700; padding: 3px 10px; }
+.clip-tag.pick:hover { background: color-mix(in srgb, var(--tint) 26%, transparent); }
+.clip-tag.pick.on { background: var(--tint); color: #17130f; border-color: transparent; }
+
+.clip-tagpick { display: flex; gap: 5px; flex-wrap: wrap; }
+.clip-tagpick-label {
+  display: block; font-size: 12px; margin-bottom: 5px;
+  color: color-mix(in srgb, var(--color-text) 70%, transparent);
+}
+.feed-tagfilter { flex-wrap: wrap; }

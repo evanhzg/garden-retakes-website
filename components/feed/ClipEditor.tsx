@@ -3,6 +3,7 @@
 import { useEffect, useState } from "react";
 import { createPortal } from "react-dom";
 import type { Clip } from "@/components/feed/ClipCard";
+import { CLIP_TAGS } from "@/lib/feedShared";
 
 // Edit or remove a clip.
 //
@@ -30,6 +31,8 @@ export default function ClipEditor({
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [confirmDelete, setConfirmDelete] = useState(false);
+  const [publish, setPublish] = useState(true);
+  const [tags, setTags] = useState<string[]>(clip.tags ?? []);
   const [mounted, setMounted] = useState(false);
 
   useEffect(() => setMounted(true), []);
@@ -49,7 +52,11 @@ export default function ClipEditor({
         title: title.trim(),
         description: description.trim(),
         playerName: playerName.trim(),
+        tags,
       };
+      // Naming a /clip mark is what publishes it — that is the whole point of
+      // the unlisted state, so saving a title takes it out of one.
+      if (clip.unlisted && publish) patch.unlisted = false;
       // Only send the owner when it actually changed — the API rejects it from
       // non-moderators, and sending it unchanged would fail for the author.
       if (isAdmin && steamId.trim() !== clip.steamId) patch.steamId = steamId.trim();
@@ -66,6 +73,8 @@ export default function ClipEditor({
         title: title.trim(),
         description: description.trim() || null,
         steamId: (patch.steamId as string) ?? clip.steamId,
+        tags,
+        ...(clip.unlisted && publish ? { unlisted: false } : {}),
       });
     } catch {
       setError("Network error — nothing was changed.");
@@ -95,7 +104,7 @@ export default function ClipEditor({
     <div className="pro-modal" role="dialog" aria-modal="true" aria-labelledby="clip-edit" onClick={() => !busy && onClose()}>
       <div className="pro-modal-card" style={{ width: "min(560px, 100%)" }} onClick={(e) => e.stopPropagation()}>
         <div className="pro-modal-head">
-          <h2 id="clip-edit">Edit clip</h2>
+          <h2 id="clip-edit">{clip.unlisted ? "Name your clip" : "Edit clip"}</h2>
           <button className="btn btn-secondary" onClick={onClose} disabled={busy}>Close</button>
         </div>
 
@@ -137,6 +146,34 @@ export default function ClipEditor({
               />
               <p className="pro-settings-hint">Whose play this is. Changing it moves the clip to their profile.</p>
             </div>
+          )}
+
+          <div className="field">
+            <span className="clip-tagpick-label">Tags</span>
+            <div className="clip-tagpick">
+              {CLIP_TAGS.map((t) => {
+                const on = tags.includes(t.id);
+                return (
+                  <button
+                    key={t.id}
+                    type="button"
+                    className={`clip-tag pick ${on ? "on" : ""}`}
+                    style={{ ["--tint" as string]: t.colour }}
+                    aria-pressed={on}
+                    onClick={() => setTags((cur) => (on ? cur.filter((x) => x !== t.id) : [...cur, t.id]))}
+                  >
+                    {t.label}
+                  </button>
+                );
+              })}
+            </div>
+          </div>
+
+          {clip.unlisted && (
+            <label className="util-toggle">
+              <input type="checkbox" checked={publish} onChange={(e) => setPublish(e.target.checked)} />
+              Put it on the feed when I save
+            </label>
           )}
 
           <div aria-live="assertive" role="alert">

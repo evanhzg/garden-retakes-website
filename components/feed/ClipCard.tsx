@@ -6,6 +6,7 @@ import AvatarImage from "@/components/AvatarImage";
 import ClipModal from "@/components/feed/ClipModal";
 import ClipEditor from "@/components/feed/ClipEditor";
 import ShareMenu from "@/components/feed/ShareMenu";
+import { tagColour, tagLabel } from "@/lib/feedShared";
 import type { Variant } from "@/components/feed/VideoPlayer";
 
 export type Clip = {
@@ -29,6 +30,10 @@ export type Clip = {
   likedByMe: boolean;
   mine: boolean;
   canEdit?: boolean;
+  /** Waiting for its owner to name it; only they can see it. */
+  unlisted?: boolean;
+  sessionId?: string | null;
+  tags?: string[];
 };
 
 type Comment = {
@@ -126,6 +131,10 @@ export default function ClipCard({
     if (clip.kind === "r2") return [{ name: "Source", height: 0, url: clip.source }];
     return [];
   })();
+
+  // Best rendition, and only for something we host — a YouTube clip is not
+  // ours to hand out, and linking one as a "download" would just 404.
+  const downloadUrl = clip.kind === "youtube" ? null : variants[0]?.url ?? null;
 
   const toggleLike = async () => {
     if (!signedIn || busy) return;
@@ -240,10 +249,25 @@ export default function ClipCard({
       </div>
 
       <div className="clip-body">
+        {clip.unlisted && (
+          <p className="clip-unlisted">
+            Only you can see this. Give it a name to put it on the feed.
+            <button className="btn btn-primary" onClick={() => setEditing(true)}>Name &amp; publish</button>
+          </p>
+        )}
         <h3 className="clip-title">{clip.title}</h3>
         <p className={`clip-desc ${clip.description ? "" : "is-placeholder"}`}>
           {clip.description || describeFallback(clip)}
         </p>
+        {clip.tags && clip.tags.length > 0 && (
+          <p className="clip-tags">
+            {clip.tags.map((t) => (
+              <span key={t} className="clip-tag" style={{ ["--tint" as string]: tagColour(t) }}>
+                {tagLabel(t)}
+              </span>
+            ))}
+          </p>
+        )}
       </div>
 
       <footer className="clip-actions">
@@ -260,6 +284,16 @@ export default function ClipCard({
           💬 <span className="num">{count}</span>
         </button>
         <ShareMenu clipId={clip.id} title={clip.title} compact />
+        {downloadUrl && (
+          <a
+            className="btn btn-ghost clip-download"
+            href={downloadUrl}
+            download={`${clip.title.replace(/[^\w -]+/g, "").trim() || "clip"}.mp4`}
+            title="Download this clip"
+          >
+            ↓
+          </a>
+        )}
       </footer>
 
       {showComments && (

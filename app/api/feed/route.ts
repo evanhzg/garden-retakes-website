@@ -5,6 +5,7 @@ import { prisma } from "@/lib/db";
 import { getSession } from "@/lib/auth";
 import { resolveNames, nameFrom } from "@/lib/names";
 import { resolveAvatars } from "@/lib/avatars";
+import { parseTags } from "@/lib/feedShared";
 import {
   CLIP_DIR,
   CLIP_TYPES,
@@ -31,10 +32,20 @@ export async function GET(req: Request) {
   const steamId = url.searchParams.get("steamId");
   const q = (url.searchParams.get("q") ?? "").trim().toLowerCase();
   const kind = url.searchParams.get("kind");
+  const tag = (url.searchParams.get("tag") ?? "").trim();
   const take = Math.min(60, Math.max(1, Number(url.searchParams.get("take") ?? 30)));
+
+  // An unlisted clip is one the pipeline made from a /clip mark: it has a
+  // machine-written title nobody chose, so it stays out of the feed until its
+  // owner names it. They still see their own, to do exactly that.
+  const me = getSession()?.steamId ?? null;
+  const visibility = me
+    ? { OR: [{ Unlisted: false }, { SteamId: BigInt(me) }] }
+    : { Unlisted: false };
 
   const since = rangeStart(range);
   const where = {
+    ...visibility,
     ...(since ? { CreatedAt: { gte: since } } : {}),
     ...(steamId && /^\d{17}$/.test(steamId) ? { SteamId: BigInt(steamId) } : {}),
     ...(kind && ["upload", "youtube", "r2"].includes(kind) ? { Kind: kind } : {}),
@@ -109,6 +120,9 @@ export async function GET(req: Request) {
       likes: c._count.Likes,
       comments: c._count.Comments,
       likedByMe: liked.has(c.Id),
+      unlisted: c.Unlisted,
+      tags: parseTags(c.Tags),
+      sessionId: c.SessionId,
       mine: session?.steamId === sid,
       canEdit: session?.steamId === sid,
     };
@@ -117,15 +131,19 @@ export async function GET(req: Request) {
   // Free-text search happens here rather than in SQL: the name shown may come
   // from a profile, a name override or the demo, none of which the clip row
   // knows about on its own.
+  // Tag filtering happens here rather than in SQL: tags are a comma list, so a
+  // LIKE would match "clutchfail" when asked for "clutch".
+  const tagged = tag ? rows.filter((r) => r.tags.includes(tag)) : rows;
+
   const filtered = q
-    ? rows.filter(
+    ? tagged.filter(
         (r) =>
           r.title.toLowerCase().includes(q) ||
           (r.description ?? "").toLowerCase().includes(q) ||
           r.author.toLowerCase().includes(q) ||
           r.steamId.includes(q)
       )
-    : rows;
+    : tagged;
 
   return NextResponse.json({ clips: filtered });
 }

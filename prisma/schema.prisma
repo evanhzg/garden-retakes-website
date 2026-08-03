@@ -538,6 +538,13 @@ model SkinJob {
 model FeedClip {
   Id          Int      @id @default(autoincrement())
   SteamId     BigInt   @db.UnsignedBigInt
+  /// Hidden from the feed until its owner names it. A clip cut from a /clip
+  /// mark arrives with a machine-written title nobody chose, so it waits.
+  Unlisted    Boolean  @default(false)
+  /// Which play session it came from, for per-session compilations.
+  SessionId   String?  @db.VarChar(64)
+  /// Comma-separated ids from the fixed tag list in lib/feedShared.
+  Tags        String   @default("") @db.VarChar(200)
   Title       String   @db.VarChar(140)
   Description String?  @db.VarChar(500)
   /// "upload" (a file in data/clips) or "youtube" (a video id).
@@ -671,4 +678,37 @@ model GardenNade {
   @@index([Map])
   @@index([Map, Area])
   @@map("GardenNades")
+}
+
+/// A `/clip` mark from the game server, waiting for the pipeline to cut it.
+///
+/// The server knows *when* something happened but cannot make a video — a demo
+/// holds no pictures. So it records the mark, and the local pipeline turns it
+/// into a clip later.
+model GardenClipRequest {
+  Id          Int     @id @default(autoincrement())
+  SteamId     BigInt  @db.UnsignedBigInt
+  PlayerName  String  @default("") @db.VarChar(64)
+  Map         String  @db.VarChar(64)
+  /// GOTV demo name without extension, as the server recorded it.
+  DemoFile    String  @db.VarChar(160)
+  /// One per map load — what groups a night's clips together.
+  SessionId   String  @db.VarChar(64)
+  /// Server tick when /clip was typed; the clip ends here.
+  Tick        Int
+  /// How far back from Tick to start.
+  DurationSec Int     @default(15)
+  /// pending -> processing -> done | failed
+  Status      String  @default("pending") @db.VarChar(16)
+  Note        String? @db.VarChar(500)
+  /// The published clip, once there is one.
+  ClipId      Int?
+
+  CreatedAt   DateTime  @default(now()) @db.DateTime(6)
+  ProcessedAt DateTime? @db.DateTime(6)
+
+  @@index([Status])
+  @@index([SessionId])
+  @@index([SteamId])
+  @@map("GardenClipRequests")
 }
