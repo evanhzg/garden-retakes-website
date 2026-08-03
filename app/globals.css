@@ -7874,3 +7874,94 @@ header .avatar-sm { width: 34px; height: 34px; }
 }
 .rating-defs dt { font-size: 13px; }
 .rating-defs dd { margin: 0; font-size: 13px; text-align: right; }
+
+/* ---------------------------------------------------------------------------
+   Admin: a dashboard rather than seven equal tabs.
+
+   A flat strip made every section look equally likely to be what you wanted and
+   gave no clue what any of them did before clicking. Grouped navigation with a
+   line of description each means the panel can be read instead of explored, and
+   the content pane gets a header saying where you are.
+   --------------------------------------------------------------------------- */
+
+.adm-shell {
+  display: grid;
+  grid-template-columns: 232px minmax(0, 1fr);
+  gap: var(--space-4);
+  align-items: start;
+}
+/* Below this the sidebar would leave the content unusably narrow. */
+@media (max-width: 860px) { .adm-shell { grid-template-columns: 1fr; } }
+
+.adm-nav {
+  display: grid;
+  gap: 14px;
+  padding: 12px;
+  background: var(--color-surface);
+  border: 1px solid var(--color-divider);
+  border-radius: 12px;
+  position: sticky;
+  top: 12px;
+}
+@media (max-width: 860px) { .adm-nav { position: static; } }
+
+.adm-nav-group { display: grid; gap: 2px; }
+.adm-nav-title {
+  font-size: 10px; text-transform: uppercase; letter-spacing: 0.08em;
+  color: var(--muted); padding: 0 8px 4px;
+}
+
+.adm-nav-item {
+  display: flex; align-items: flex-start; gap: 9px;
+  width: 100%; padding: 7px 9px;
+  background: none; border: 0; border-radius: 9px;
+  font: inherit; color: inherit; text-align: left; cursor: pointer;
+  transition: background 0.14s ease, color 0.14s ease;
+}
+.adm-nav-item:hover { background: color-mix(in srgb, var(--color-text) 8%, transparent); }
+.adm-nav-item.active { background: var(--btn-primary-bg); color: var(--btn-primary-ink); }
+.adm-nav-item.active .adm-nav-hint { color: inherit; opacity: 0.75; }
+
+.adm-nav-icon { font-size: 13px; line-height: 1.5; opacity: 0.85; flex: none; }
+.adm-nav-text { display: grid; gap: 1px; min-width: 0; }
+.adm-nav-label { display: flex; align-items: center; gap: 6px; font-size: 13px; font-weight: 700; }
+.adm-nav-hint { font-size: 11px; color: var(--muted); line-height: 1.35; }
+
+.adm-head { margin-bottom: 14px; padding-bottom: 12px; border-bottom: 1px solid var(--color-divider); }
+.adm-head h2 { margin: 0 0 2px; font-size: 20px; letter-spacing: -0.015em; }
+.adm-head p { margin: 0; font-size: 13px; color: var(--muted); }
+
+/* ---- overview tiles ---- */
+.adm-overview { display: grid; gap: var(--space-4); }
+.adm-cards { display: grid; grid-template-columns: repeat(auto-fill, minmax(160px, 1fr)); gap: 8px; }
+
+.adm-card {
+  display: grid; gap: 2px; align-content: start;
+  padding: 12px;
+  background: var(--color-bg);
+  border: 1px solid var(--color-divider);
+  border-radius: 11px;
+  font: inherit; color: inherit; text-align: left;
+  cursor: default;
+}
+.adm-card.is-link { cursor: pointer; }
+.adm-card.is-link:hover { border-color: var(--color-accent); }
+/* Only the tiles that mean "someone is blocked until you act" shout. */
+.adm-card.attention {
+  border-color: var(--color-accent);
+  background: color-mix(in srgb, var(--color-accent) 10%, var(--color-bg));
+}
+.adm-card-v { font-size: 26px; font-weight: 800; line-height: 1.1; }
+.adm-card-k { font-size: 12px; font-weight: 700; }
+.adm-card-hint { font-size: 11px; color: var(--muted); }
+
+.adm-strip {
+  display: flex; flex-wrap: wrap; gap: 8px 28px;
+  padding: 12px 14px;
+  background: var(--color-bg);
+  border: 1px solid var(--color-divider);
+  border-radius: 11px;
+}
+.adm-strip > div { display: grid; gap: 1px; }
+.adm-strip-k { font-size: 10px; text-transform: uppercase; letter-spacing: 0.07em; color: var(--muted); }
+.adm-strip-v { font-size: 13px; font-weight: 600; }

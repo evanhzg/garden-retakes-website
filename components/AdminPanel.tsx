@@ -5,6 +5,7 @@ import RconConsole from "@/components/RconConsole";
 import SkinManager from "@/components/admin/SkinManager";
 import PluginConfigEditor from "@/components/admin/PluginConfigEditor";
 import PendingDemos from "@/components/admin/PendingDemos";
+import AdminOverview from "@/components/admin/AdminOverview";
 import { GAME_MODES } from "@/lib/gameModes";
 
 // The panel was three stacked sections with the player table — the tallest of
@@ -33,7 +34,46 @@ type LogEntry = {
   detail: string | null;
 };
 
-type TabId = "players" | "server" | "config" | "console" | "skins" | "demos" | "log";
+type TabId = "overview" | "players" | "server" | "config" | "console" | "skins" | "demos" | "log";
+
+/**
+ * Sections, grouped.
+ *
+ * A flat strip of seven tabs made every section look equally likely to be what
+ * you wanted, and gave no clue what any of them did before clicking. Grouping
+ * them by what they act on — people, the server itself, what players posted,
+ * the system — plus a line of description each, means the panel can be read
+ * rather than explored.
+ */
+const SECTIONS: {
+  group: string;
+  items: { id: TabId; label: string; icon: string; hint: string; level: number }[];
+}[] = [
+  {
+    group: "Overview",
+    items: [{ id: "overview", label: "Dashboard", icon: "◈", hint: "What needs attention", level: 1 }],
+  },
+  {
+    group: "Community",
+    items: [
+      { id: "players", label: "Players", icon: "◉", hint: "Roles, names, bans", level: 0 },
+      { id: "skins", label: "Custom skins", icon: "✦", hint: "VPKs served to clients", level: 0 },
+      { id: "demos", label: "Queue", icon: "⏵", hint: "Demos and clip marks waiting", level: 2 },
+    ],
+  },
+  {
+    group: "Server",
+    items: [
+      { id: "server", label: "Control", icon: "▣", hint: "Map, game mode, restarts", level: 1 },
+      { id: "config", label: "Plugin config", icon: "⚙", hint: "Rankings, allocator, game rules", level: 2 },
+      { id: "console", label: "Console", icon: "❯", hint: "Raw RCON", level: 2 },
+    ],
+  },
+  {
+    group: "System",
+    items: [{ id: "log", label: "Audit log", icon: "☰", hint: "Who did what", level: 0 }],
+  },
+];
 
 const ROLE_LABEL = ["—", "Moderator", "Admin", "Owner"];
 
@@ -55,7 +95,7 @@ export default function AdminPanel({
   viewerLevel: number;
   adminKey?: string;
 }) {
-  const [tab, setTab] = useState<TabId>("players");
+  const [tab, setTab] = useState<TabId>("overview");
   const [players, setPlayers] = useState<Player[]>([]);
   const [q, setQ] = useState("");
   const [loading, setLoading] = useState(false);
@@ -67,15 +107,28 @@ export default function AdminPanel({
   const canAdmin = viewerLevel >= 2;
   const canOwner = viewerLevel >= 3;
 
-  const TABS: { id: TabId; label: string; show: boolean }[] = [
-    { id: "players", label: "Players", show: true },
-    { id: "server", label: "Server", show: canMod },
-    { id: "config", label: "Plugin config", show: canAdmin },
-    { id: "console", label: "Console", show: canAdmin },
-    { id: "skins", label: "Custom skins", show: true },
-    { id: "demos", label: "Demo queue", show: canAdmin },
-    { id: "log", label: "Log", show: true },
-  ];
+  // Sections above a viewer's level are hidden rather than shown disabled: a
+  // greyed-out row invites a request for access the panel cannot grant.
+  const visible = SECTIONS.map((sec) => ({
+    ...sec,
+    items: sec.items.filter((i) => viewerLevel >= i.level),
+  })).filter((sec) => sec.items.length > 0);
+
+  const current = SECTIONS.flatMap((s) => s.items).find((i) => i.id === tab);
+
+  // The open section lives in the URL, so a reload — or a link to someone —
+  // lands where it should.
+  useEffect(() => {
+    const t = new URLSearchParams(window.location.search).get("tab");
+    if (t && SECTIONS.some((s) => s.items.some((i) => i.id === t))) setTab(t as TabId);
+  }, []);
+
+  const go = (id: string) => {
+    setTab(id as TabId);
+    const q = new URLSearchParams(window.location.search);
+    q.set("tab", id);
+    window.history.replaceState(null, "", `${window.location.pathname}?${q}`);
+  };
 
   const load = useCallback(
     async (query: string) => {
@@ -141,24 +194,44 @@ export default function AdminPanel({
     <>
       {toast && <div className={`admin-toast ${toast.ok ? "ok" : "error"}`}>{toast.text}</div>}
 
-      <div className="adm-tabs" role="tablist" aria-label="Admin sections">
-        {TABS.filter((t) => t.show).map((t) => (
+      <div className="adm-shell">
+      <nav className="adm-nav" aria-label="Admin sections">
+        {visible.map((sec) => (
+          <div key={sec.group} className="adm-nav-group">
+            <span className="adm-nav-title">{sec.group}</span>
+            {sec.items.map((t) => (
           <button
             key={t.id}
-            role="tab"
             id={`adm-tab-${t.id}`}
-            aria-selected={tab === t.id}
+            aria-current={tab === t.id ? "page" : undefined}
             aria-controls={`adm-panel-${t.id}`}
-            className={`pro-tab ${tab === t.id ? "active" : ""}`}
-            onClick={() => setTab(t.id)}
+            className={`adm-nav-item ${tab === t.id ? "active" : ""}`}
+            onClick={() => go(t.id)}
           >
-            {t.label}
-            {t.id === "players" && players.length > 0 && <span className="pro-tab-count">{players.length}</span>}
+            <span className="adm-nav-icon" aria-hidden>{t.icon}</span>
+            <span className="adm-nav-text">
+              <span className="adm-nav-label">
+                {t.label}
+                {t.id === "players" && players.length > 0 && <span className="pro-tab-count">{players.length}</span>}
+              </span>
+              <span className="adm-nav-hint">{t.hint}</span>
+            </span>
           </button>
+            ))}
+          </div>
         ))}
-      </div>
+      </nav>
 
-      <div className="adm-panel" role="tabpanel" id={`adm-panel-${tab}`} aria-labelledby={`adm-tab-${tab}`}>
+      <div className="adm-panel" id={`adm-panel-${tab}`} aria-labelledby={`adm-tab-${tab}`}>
+        {current && (
+          <header className="adm-head">
+            <h2>{current.label}</h2>
+            <p>{current.hint}</p>
+          </header>
+        )}
+
+        {tab === "overview" && <AdminOverview adminKey={adminKey ?? ""} onGo={go} />}
+
         {tab === "players" && (
           <>
             <form
@@ -354,6 +427,7 @@ export default function AdminPanel({
             )}
           </div>
         )}
+      </div>
       </div>
     </>
   );
