@@ -8,10 +8,10 @@
  */
 
 export type FeedRange = "day" | "week" | "month" | "all";
-export type FeedSort = "new" | "likes";
+export type FeedSort = "new" | "likes" | "comments";
 
 export const isRange = (v: string): v is FeedRange => ["day", "week", "month", "all"].includes(v);
-export const isSort = (v: string): v is FeedSort => ["new", "likes"].includes(v);
+export const isSort = (v: string): v is FeedSort => ["new", "likes", "comments"].includes(v);
 
 /** Start of the window for a range, or null for all-time. */
 export function rangeStart(range: FeedRange): Date | null {

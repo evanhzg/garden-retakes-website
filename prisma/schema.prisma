@@ -551,6 +551,9 @@ model FeedClip {
   Variants    String?  @db.Text
   /// Stable id from the highlight pipeline, so a re-publish updates in place.
   ExternalId  String?  @db.VarChar(190) @unique
+  /// In-game name from the demo, for players who have no profile on the site.
+  /// Shown instead of a bare SteamID64, but never linked.
+  PlayerName  String?  @db.VarChar(64)
   CreatedAt   DateTime @default(now()) @db.DateTime(6)
 
   Likes    FeedClipLike[]

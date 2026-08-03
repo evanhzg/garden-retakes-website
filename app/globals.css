@@ -7059,3 +7059,27 @@ html[data-motion="off"] .main-content { scroll-behavior: auto; }
   font-size: 11px;
   color: color-mix(in srgb, var(--color-text) 55%, transparent);
 }
+
+/* ── feed: search, guest authors, clip editing ──────────────────────────── */
+.feed-search { display: flex; gap: var(--space-2); align-items: center; margin-bottom: var(--space-3); }
+.feed-search .input { max-width: 420px; }
+
+.clip-head-right { display: flex; align-items: center; gap: var(--space-2); }
+.clip-edit-btn { font-size: 11px; padding: 2px 6px; }
+
+/* A player with no profile here is still named — just not linked, and dimmed
+   so the difference is visible rather than a link that goes nowhere. */
+.clip-author.is-guest {
+  opacity: 0.62;
+  cursor: default;
+  text-decoration: none;
+}
+.clip-author.is-guest:hover { color: inherit; }
+
+.clip-edit-actions { display: flex; align-items: center; justify-content: flex-end; gap: var(--space-2); flex-wrap: wrap; }
+.clip-delete { color: #e11d48; margin-right: auto; }
+.clip-delete:hover { background: color-mix(in srgb, #e11d48 12%, transparent); }
+
+@media (max-width: 560px) {
+  .feed-search .input { max-width: none; }
+}

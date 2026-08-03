@@ -29,12 +29,15 @@ export async function GET(req: Request) {
   const range = isRange(rangeRaw) ? rangeRaw : "all";
   const sort = isSort(sortRaw) ? sortRaw : "new";
   const steamId = url.searchParams.get("steamId");
+  const q = (url.searchParams.get("q") ?? "").trim().toLowerCase();
+  const kind = url.searchParams.get("kind");
   const take = Math.min(60, Math.max(1, Number(url.searchParams.get("take") ?? 30)));
 
   const since = rangeStart(range);
   const where = {
     ...(since ? { CreatedAt: { gte: since } } : {}),
     ...(steamId && /^\d{17}$/.test(steamId) ? { SteamId: BigInt(steamId) } : {}),
+    ...(kind && ["upload", "youtube", "r2"].includes(kind) ? { Kind: kind } : {}),
   };
 
   let clips;
@@ -43,7 +46,12 @@ export async function GET(req: Request) {
       where,
       // "Most liked" still has to break ties by date, or equally-liked clips
       // shuffle between requests.
-      orderBy: sort === "likes" ? [{ Likes: { _count: "desc" } }, { CreatedAt: "desc" }] : { CreatedAt: "desc" },
+      orderBy:
+        sort === "likes"
+          ? [{ Likes: { _count: "desc" } }, { CreatedAt: "desc" }]
+          : sort === "comments"
+            ? [{ Comments: { _count: "desc" } }, { CreatedAt: "desc" }]
+            : { CreatedAt: "desc" },
       take,
       include: { _count: { select: { Likes: true, Comments: true } } },
     });
@@ -54,6 +62,18 @@ export async function GET(req: Request) {
 
   const session = getSession();
   const ids = clips.map((c) => c.SteamId);
+  // Which of these SteamIDs actually have a profile here. A clip cut from a
+  // demo often features someone who has never visited the site, and linking to
+  // an empty profile is worse than not linking at all.
+  const known = new Set(
+    (
+      await prisma.playerProfile.findMany({
+        where: { SteamId: { in: ids } },
+        select: { SteamId: true },
+      })
+    ).map((p) => p.SteamId.toString())
+  );
+
   const [names, avatars, myLikes] = await Promise.all([
     resolveNames(ids),
     resolveAvatars(ids),
@@ -66,12 +86,18 @@ export async function GET(req: Request) {
   ]);
   const liked = new Set(myLikes.map((l) => l.ClipId));
 
-  return NextResponse.json({
-    clips: clips.map((c) => ({
+  const rows = clips.map((c) => {
+    const sid = c.SteamId.toString();
+    const isUser = known.has(sid);
+    // A site profile wins; otherwise the in-game name the demo carried; only
+    // then the raw id, which at least identifies them.
+    const author = isUser ? nameFrom(names, c.SteamId) : c.PlayerName || nameFrom(names, c.SteamId);
+    return {
       id: c.Id,
-      steamId: c.SteamId.toString(),
-      author: nameFrom(names, c.SteamId),
-      avatar: avatars[c.SteamId.toString()],
+      steamId: sid,
+      author,
+      authorIsUser: isUser,
+      avatar: isUser ? avatars[sid] : undefined,
       title: c.Title,
       description: c.Description,
       kind: c.Kind,
@@ -83,9 +109,25 @@ export async function GET(req: Request) {
       likes: c._count.Likes,
       comments: c._count.Comments,
       likedByMe: liked.has(c.Id),
-      mine: session?.steamId === c.SteamId.toString(),
-    })),
+      mine: session?.steamId === sid,
+      canEdit: session?.steamId === sid,
+    };
   });
+
+  // Free-text search happens here rather than in SQL: the name shown may come
+  // from a profile, a name override or the demo, none of which the clip row
+  // knows about on its own.
+  const filtered = q
+    ? rows.filter(
+        (r) =>
+          r.title.toLowerCase().includes(q) ||
+          (r.description ?? "").toLowerCase().includes(q) ||
+          r.author.toLowerCase().includes(q) ||
+          r.steamId.includes(q)
+      )
+    : rows;
+
+  return NextResponse.json({ clips: filtered });
 }
 
 export async function POST(req: Request) {

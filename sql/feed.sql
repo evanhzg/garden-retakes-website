@@ -56,3 +56,6 @@ CREATE TABLE IF NOT EXISTS `FeedDemos` (
   INDEX `FeedDemos_SteamId_idx` (`SteamId`),
   INDEX `FeedDemos_Status_idx` (`Status`)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
+
+-- In-game name from the demo, for players with no site profile.
+ALTER TABLE `FeedClips` ADD COLUMN IF NOT EXISTS `PlayerName` VARCHAR(64) NULL;

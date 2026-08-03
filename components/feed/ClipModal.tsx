@@ -1,6 +1,7 @@
 "use client";
 
-import { useEffect } from "react";
+import { useEffect, useState } from "react";
+import { createPortal } from "react-dom";
 import Link from "next/link";
 import AvatarImage from "@/components/AvatarImage";
 import VideoPlayer, { type Variant } from "@/components/feed/VideoPlayer";
@@ -19,6 +20,13 @@ export default function ClipModal({
   variants: Variant[];
   onClose: () => void;
 }) {
+  // Portalled to <body>. Rendered in place it sat inside the clip card, and an
+  // ancestor with a transform in its animation keyframes becomes the containing
+  // block for position:fixed — so once the feed was long enough to scroll, the
+  // modal anchored to the card rather than the viewport.
+  const [mounted, setMounted] = useState(false);
+  useEffect(() => setMounted(true), []);
+
   useEffect(() => {
     const onKey = (e: KeyboardEvent) => {
       // Escape closes — unless the player is fullscreen, where the browser
@@ -26,16 +34,22 @@ export default function ClipModal({
       if (e.key === "Escape" && !document.fullscreenElement) onClose();
     };
     window.addEventListener("keydown", onKey);
-    // The page behind must not scroll while this is open.
-    const previous = document.body.style.overflow;
-    document.body.style.overflow = "hidden";
+
+    // .main-content is the scroll container, not <body>, so locking the body
+    // did nothing and the feed kept scrolling behind the modal.
+    const scroller = document.querySelector<HTMLElement>(".main-content");
+    const previous = scroller?.style.overflow ?? "";
+    if (scroller) scroller.style.overflow = "hidden";
+
     return () => {
       window.removeEventListener("keydown", onKey);
-      document.body.style.overflow = previous;
+      if (scroller) scroller.style.overflow = previous;
     };
   }, [onClose]);
 
-  return (
+  if (!mounted) return null;
+
+  return createPortal(
     <div className="clip-modal" role="dialog" aria-modal="true" aria-label={clip.title} onClick={onClose}>
       <div className="clip-modal-card" onClick={(e) => e.stopPropagation()}>
         <button className="clip-modal-close" onClick={onClose} aria-label="Close">×</button>
@@ -62,6 +76,7 @@ export default function ClipModal({
           {clip.description && <p className="clip-desc">{clip.description}</p>}
         </div>
       </div>
-    </div>
+    </div>,
+    document.body
   );
 }

@@ -12,7 +12,7 @@ import UploadClipModal from "@/components/feed/UploadClipModal";
 type Update = { id: string; title: string; url: string; date: string; summary: string; source: string };
 type Tab = "clips" | "updates";
 type Range = "day" | "week" | "month" | "all";
-type Sort = "new" | "likes";
+type Sort = "new" | "likes" | "comments";
 
 const RANGES: { id: Range; label: string }[] = [
   { id: "day", label: "Today" },
@@ -21,10 +21,23 @@ const RANGES: { id: Range; label: string }[] = [
   { id: "all", label: "All time" },
 ];
 
-export default function FeedClient({ signedIn }: { signedIn: boolean }) {
+type Kind = "" | "r2" | "upload" | "youtube";
+
+const KINDS: { id: Kind; label: string }[] = [
+  { id: "", label: "Everything" },
+  { id: "r2", label: "From demos" },
+  { id: "upload", label: "Uploads" },
+  { id: "youtube", label: "YouTube" },
+];
+
+export default function FeedClient({ signedIn, isAdmin = false }: { signedIn: boolean; isAdmin?: boolean }) {
   const [tab, setTab] = useState<Tab>("clips");
   const [range, setRange] = useState<Range>("week");
   const [sort, setSort] = useState<Sort>("new");
+  const [kind, setKind] = useState<Kind>("");
+  const [query, setQuery] = useState("");
+  /** Debounced, so typing does not fire a request per keystroke. */
+  const [search, setSearch] = useState("");
 
   const [clips, setClips] = useState<Clip[] | null>(null);
   const [updates, setUpdates] = useState<Update[] | null>(null);
@@ -42,10 +55,18 @@ export default function FeedClient({ signedIn }: { signedIn: boolean }) {
     if (t === "updates" || t === "clips") setTab(t);
   }, []);
 
+  useEffect(() => {
+    const t = setTimeout(() => setSearch(query.trim()), 250);
+    return () => clearTimeout(t);
+  }, [query]);
+
   const loadClips = useCallback(async () => {
     setError(null);
     try {
-      const res = await fetch(`/api/feed?range=${range}&sort=${sort}`, { cache: "no-store" });
+      const params = new URLSearchParams({ range, sort });
+      if (kind) params.set("kind", kind);
+      if (search) params.set("q", search);
+      const res = await fetch(`/api/feed?${params}`, { cache: "no-store" });
       const json = await res.json();
       if (!res.ok) {
         setError(json.error ?? "Could not load the feed.");
@@ -57,7 +78,7 @@ export default function FeedClient({ signedIn }: { signedIn: boolean }) {
       setError("Could not reach the server.");
       setClips([]);
     }
-  }, [range, sort]);
+  }, [range, sort, kind, search]);
 
   useEffect(() => {
     if (tab === "clips") loadClips();
@@ -127,6 +148,21 @@ export default function FeedClient({ signedIn }: { signedIn: boolean }) {
         <div className="pro-panel">
           {tab === "clips" ? (
             <>
+              <div className="feed-search">
+                <label className="sr-only" htmlFor="feed-q">Search clips</label>
+                <input
+                  id="feed-q"
+                  className="input"
+                  type="search"
+                  value={query}
+                  placeholder="Search a player, a title, a map…"
+                  onChange={(e) => setQuery(e.target.value)}
+                />
+                {query && (
+                  <button className="btn btn-ghost" onClick={() => setQuery("")}>Clear</button>
+                )}
+              </div>
+
               <div className="feed-filters">
                 <div className="feed-filter-group" role="group" aria-label="Time range">
                   {RANGES.map((r) => (
@@ -135,9 +171,17 @@ export default function FeedClient({ signedIn }: { signedIn: boolean }) {
                     </button>
                   ))}
                 </div>
+                <div className="feed-filter-group" role="group" aria-label="Source">
+                  {KINDS.map((k) => (
+                    <button key={k.id} className={`chip ${kind === k.id ? "active" : ""}`} onClick={() => setKind(k.id)}>
+                      {k.label}
+                    </button>
+                  ))}
+                </div>
                 <div className="feed-filter-group" role="group" aria-label="Sort">
                   <button className={`chip ${sort === "new" ? "active" : ""}`} onClick={() => setSort("new")}>Newest</button>
                   <button className={`chip ${sort === "likes" ? "active" : ""}`} onClick={() => setSort("likes")}>Most liked</button>
+                  <button className={`chip ${sort === "comments" ? "active" : ""}`} onClick={() => setSort("comments" as Sort)}>Most discussed</button>
                 </div>
               </div>
 
@@ -152,7 +196,9 @@ export default function FeedClient({ signedIn }: { signedIn: boolean }) {
               ) : clips.length === 0 ? (
                 <div className="empty-hint">
                   <p style={{ margin: 0 }}>
-                    Nothing here{range === "all" ? " yet" : " in this window"}.
+                    {search
+                      ? `Nothing matches "${search}".`
+                      : `Nothing here${range === "all" ? " yet" : " in this window"}.`}
                   </p>
                   {range !== "all" && (
                     <button className="btn btn-secondary" style={{ marginTop: 12 }} onClick={() => setRange("all")}>
@@ -163,7 +209,7 @@ export default function FeedClient({ signedIn }: { signedIn: boolean }) {
               ) : (
                 <div className="feed-grid">
                   {clips.map((c) => (
-                    <ClipCard key={c.id} clip={c} signedIn={signedIn} />
+                    <ClipCard key={c.id} clip={c} signedIn={signedIn} isAdmin={isAdmin} onChanged={loadClips} />
                   ))}
                 </div>
               )}

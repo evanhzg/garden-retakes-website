@@ -21,6 +21,8 @@ type Incoming = {
   title: string;
   description?: string | null;
   steamId?: string | null;
+  /** In-game name from the demo, for players with no site profile. */
+  playerName?: string | null;
   thumb?: string | null;
   durationSec?: number | null;
   variants: Variant[];
@@ -88,6 +90,7 @@ export async function POST(req: Request) {
       Source: variants[0].url.slice(0, 255),
       Thumb: c.thumb && isHttps(c.thumb) ? c.thumb.slice(0, 255) : null,
       DurationSec: c.durationSec ?? null,
+      PlayerName: typeof c.playerName === "string" ? c.playerName.slice(0, 64) : null,
       Variants: JSON.stringify(variants),
     };
 

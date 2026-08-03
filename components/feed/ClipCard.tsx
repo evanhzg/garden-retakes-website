@@ -4,12 +4,15 @@ import Link from "next/link";
 import { useState } from "react";
 import AvatarImage from "@/components/AvatarImage";
 import ClipModal from "@/components/feed/ClipModal";
+import ClipEditor from "@/components/feed/ClipEditor";
 import type { Variant } from "@/components/feed/VideoPlayer";
 
 export type Clip = {
   id: number;
   steamId: string;
   author: string;
+  /** False when the player has no profile here — shown, but not linked. */
+  authorIsUser?: boolean;
   avatar?: string;
   title: string;
   description: string | null;
@@ -24,12 +27,15 @@ export type Clip = {
   comments: number;
   likedByMe: boolean;
   mine: boolean;
+  canEdit?: boolean;
 };
 
 type Comment = {
   id: number;
   steamId: string;
   author: string;
+  /** False when the player has no profile here — shown, but not linked. */
+  authorIsUser?: boolean;
   avatar?: string;
   body: string;
   at: string;
@@ -64,7 +70,34 @@ const ago = (iso: string) => {
   return new Date(iso).toLocaleDateString();
 };
 
-export default function ClipCard({ clip, signedIn }: { clip: Clip; signedIn: boolean }) {
+/** Author line: a link for site members, plain dimmed text for everyone else. */
+function Author({ clip }: { clip: Clip }) {
+  const inner = (
+    <>
+      <AvatarImage steamId={clip.steamId} src={clip.avatar} alt={clip.author} className="avatar avatar-sm" />
+      {clip.author}
+    </>
+  );
+  return clip.authorIsUser === false ? (
+    <span className="clip-author is-guest" title="No profile on this site yet">{inner}</span>
+  ) : (
+    <Link href={`/players/${clip.steamId}`} className="clip-author">{inner}</Link>
+  );
+}
+
+export default function ClipCard({
+  clip: initial,
+  signedIn,
+  isAdmin = false,
+  onChanged,
+}: {
+  clip: Clip;
+  signedIn: boolean;
+  isAdmin?: boolean;
+  onChanged?: () => void;
+}) {
+  const [clip, setClip] = useState(initial);
+  const [editing, setEditing] = useState(false);
   const [likes, setLikes] = useState(clip.likes);
   const [liked, setLiked] = useState(clip.likedByMe);
   const [busy, setBusy] = useState(false);
@@ -154,11 +187,15 @@ export default function ClipCard({ clip, signedIn }: { clip: Clip; signedIn: boo
   return (
     <article className="clip">
       <header className="clip-head">
-        <Link href={`/players/${clip.steamId}`} className="clip-author">
-          <AvatarImage steamId={clip.steamId} src={clip.avatar} alt={clip.author} className="avatar avatar-sm" />
-          {clip.author}
-        </Link>
-        <span className="clip-time" title={new Date(clip.createdAt).toLocaleString()}>{ago(clip.createdAt)}</span>
+        <Author clip={clip} />
+        <span className="clip-head-right">
+          {(clip.canEdit || isAdmin) && (
+            <button className="btn btn-ghost clip-edit-btn" onClick={() => setEditing(true)} title="Edit this clip">
+              Edit
+            </button>
+          )}
+          <span className="clip-time" title={new Date(clip.createdAt).toLocaleString()}>{ago(clip.createdAt)}</span>
+        </span>
       </header>
 
       <div className="clip-media">
@@ -273,6 +310,23 @@ export default function ClipCard({ clip, signedIn }: { clip: Clip; signedIn: boo
       )}
 
       {open && <ClipModal clip={clip} variants={variants} onClose={() => setOpen(false)} />}
+
+      {editing && (
+        <ClipEditor
+          clip={clip}
+          isAdmin={isAdmin}
+          onClose={() => setEditing(false)}
+          onSaved={(patch) => {
+            setClip((c) => ({ ...c, ...patch }));
+            setEditing(false);
+            onChanged?.();
+          }}
+          onDeleted={() => {
+            setEditing(false);
+            onChanged?.();
+          }}
+        />
+      )}
     </article>
   );
 }
