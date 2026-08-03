@@ -7833,3 +7833,44 @@ header .avatar-sm { width: 34px; height: 34px; }
 }
 .medal-icon { font-size: 14px; line-height: 1; }
 .medal-name { color: var(--color-text); }
+
+/* ---------------------------------------------------------------------------
+   The rating explainer on /stats.
+
+   Collapsed by default: most visits are not asking how the number is made, and
+   a page of algebra above the tables would bury them.
+   --------------------------------------------------------------------------- */
+
+.rating-doc { padding: 0; overflow: hidden; }
+.rating-doc-toggle {
+  display: flex; align-items: center; justify-content: space-between; gap: 12px;
+  width: 100%; padding: 14px 16px;
+  background: none; border: 0; font: inherit; color: inherit; cursor: pointer; text-align: left;
+}
+.rating-doc-toggle:hover { background: color-mix(in srgb, var(--color-accent) 8%, transparent); }
+.rating-doc-toggle > span:last-child { font-size: 20px; color: var(--color-accent); }
+
+.rating-doc-body { padding: 0 16px 18px; max-width: 76ch; }
+.rating-doc-body h3 { margin: 18px 0 6px; font-size: 18px; }
+.rating-doc-body h4 { margin: 16px 0 6px; font-size: 14px; }
+.rating-doc-body p { margin: 0 0 10px; font-size: 14px; line-height: 1.6; }
+
+.rating-formula {
+  margin: 0 0 12px;
+  padding: 12px 14px;
+  background: var(--color-surface);
+  border: 1px solid var(--color-divider);
+  border-radius: 10px;
+  font-size: 12.5px;
+  line-height: 1.6;
+  overflow-x: auto;
+  white-space: pre;
+}
+
+.rating-defs { margin: 0 0 12px; display: grid; gap: 4px; }
+.rating-defs > div {
+  display: grid; grid-template-columns: minmax(0, 1fr) auto; gap: 12px;
+  padding: 4px 0; border-bottom: 1px solid var(--color-divider);
+}
+.rating-defs dt { font-size: 13px; }
+.rating-defs dd { margin: 0; font-size: 13px; text-align: right; }

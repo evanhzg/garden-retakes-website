@@ -5,6 +5,7 @@ import { resolveNames, nameFrom, NameMap } from "@/lib/names";
 import AvatarImage from "@/components/AvatarImage";
 import { Columns, HBars, SideSplitBars, Histogram } from "@/components/stats/charts";
 import LeaderboardTabs from "@/components/stats/LeaderboardTabs";
+import HowRatingWorks from "@/components/stats/HowRatingWorks";
 
 export const dynamic = "force-dynamic";
 export const revalidate = 60;
@@ -168,6 +169,8 @@ export default async function StatsPage() {
           <div className="stat-tile accent"><strong>{totals.aces}</strong><span>4k+ Rounds</span></div>
         </div>
       </section>
+
+      <HowRatingWorks />
 
       {/* ---------- Activity + rating distribution ---------- */}
       <div className="chart-grid-2" style={{ marginTop: 16 }}>
