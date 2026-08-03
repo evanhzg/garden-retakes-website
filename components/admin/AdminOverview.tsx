@@ -44,6 +44,8 @@ export default function AdminOverview({
   const { t } = useI18n();
   const [data, setData] = useState<Overview | null>(null);
   const [error, setError] = useState<string | null>(null);
+  const [opening, setOpening] = useState(false);
+  const [note, setNote] = useState<string | null>(null);
 
   useEffect(() => {
     fetch(`/api/admin/overview${adminKey ? `?key=${encodeURIComponent(adminKey)}` : ""}`, { cache: "no-store" })
@@ -106,6 +108,10 @@ export default function AdminOverview({
           <span className="adm-strip-k">{t("admin.overview.season_vote")}</span>
           <span className="adm-strip-v">{pollLabel}</span>
         </div>
+      </div>
+
+      <div aria-live="polite">
+        {note && <p className="skin-note skin-note-ok"><span>{note}</span></p>}
       </div>
     </div>
   );

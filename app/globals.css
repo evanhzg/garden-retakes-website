@@ -10057,3 +10057,7 @@ body.inv-fullscreen .main-content > main.container { flex: none; }
   /* The board rail's per-side minimum is wider than a phone. */
   .inv4-boardside { min-width: 0; }
 }
+
+/* The season-vote controls sit with the season line they act on. */
+.adm-strip-actions { margin-left: auto; display: flex; gap: 8px; align-items: center; }
+@media (max-width: 640px) { .adm-strip-actions { margin-left: 0; width: 100%; } }
