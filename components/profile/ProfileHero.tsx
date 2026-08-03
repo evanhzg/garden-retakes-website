@@ -5,6 +5,7 @@ import { useEffect, useMemo, useState } from "react";
 import AvatarImage from "@/components/AvatarImage";
 import ProfileSettingsModal from "@/components/profile/ProfileSettingsModal";
 import FeaturedClip from "@/components/profile/FeaturedClip";
+import { ConnectionsBar } from "@/components/profile/Connections";
 import { M4A1S, M4A4, SIGNATURE_SLOTS, normaliseStore } from "@/lib/inventory";
 import type { InventoryItem, InventoryStore, Loadout, Side } from "@/lib/inventory";
 import type { ProfileHeroStats } from "@/app/profile/page";
@@ -23,19 +24,38 @@ type WeaponEntry = { def: number; name: string; image: string };
 const SIDES: Side[] = ["t", "ct"];
 const skinLabel = (name: string) => name.split(" | ")[1] ?? name;
 
+/** Shape of /api/inventory/[steamId], for a profile that is not the viewer's. */
+type PublicSlot = { label: string; image: string | null; hasSkin: boolean; skinName?: string };
+type PublicLoadout = {
+  name: string;
+  t: PublicSlot[];
+  ct: PublicSlot[];
+  knife: { t: PublicSlot; ct: PublicSlot };
+  gloves: { t: PublicSlot; ct: PublicSlot };
+};
+
 export default function ProfileHero({
   steamId,
   initialName,
   bio,
   country,
   stats,
+  owner = true,
 }: {
   steamId: string;
   initialName: string;
   bio: string | null;
   country: string | null;
   stats: ProfileHeroStats;
+  /**
+   * Whose profile this is. Someone else's is the same page minus the controls
+   * that only make sense on your own, and its loadout comes from the public
+   * read rather than the private one — same layout either way, which is the
+   * point: a player page and your page should not be two different designs.
+   */
+  owner?: boolean;
 }) {
+  const [publicLoadout, setPublicLoadout] = useState<PublicLoadout | null>(null);
   const [store, setStore] = useState<InventoryStore | null>(null);
   const [baseImages, setBaseImages] = useState<Map<number, string>>(new Map());
   const [side, setSide] = useState<Side>("t");
@@ -48,6 +68,13 @@ export default function ProfileHero({
   const [settingsOpen, setSettingsOpen] = useState(false);
 
   useEffect(() => {
+    if (!owner) {
+      fetch(`/api/inventory/${steamId}`)
+        .then((r) => r.json())
+        .then((d) => setPublicLoadout(d ?? null))
+        .catch(() => setPublicLoadout(null));
+      return;
+    }
     fetch("/api/inventory")
       .then((r) => r.json())
       .then((d) => setStore(normaliseStore(d)))
@@ -61,7 +88,7 @@ export default function ProfileHero({
         setBaseImages(map);
       })
       .catch(() => {});
-  }, []);
+  }, [owner, steamId]);
 
   const loadout: Loadout | undefined = useMemo(
     () => store?.loadouts.find((l) => l.id === store.activeLoadoutId) ?? store?.loadouts[0],
@@ -72,6 +99,24 @@ export default function ProfileHero({
     id ? store?.items.find((i) => i.id === id) : undefined;
 
   const slots = useMemo(() => {
+    if (!owner) {
+      const p = publicLoadout;
+      if (!p) return [];
+      const guns = (side === "t" ? p.t : p.ct).map((g) => ({
+        key: g.label,
+        label: g.label,
+        image: g.image,
+        skin: g.hasSkin ? (g.skinName ?? "").split(" | ")[1] ?? g.skinName ?? null : null,
+        rarity: undefined as string | undefined,
+      }));
+      const k = side === "t" ? p.knife.t : p.knife.ct;
+      const gl = side === "t" ? p.gloves.t : p.gloves.ct;
+      return [
+        ...guns,
+        { key: "knife", label: "Knife", image: k.image, skin: k.hasSkin ? k.skinName ?? null : null, rarity: undefined },
+        { key: "gloves", label: "Gloves", image: gl.image, skin: gl.hasSkin ? gl.skinName ?? null : null, rarity: undefined },
+      ];
+    }
     const preferredM4 = loadout?.preferredM4 ?? M4A4;
     const guns = SIGNATURE_SLOTS[side].map((slot) => {
       const def = slot.m4 ? preferredM4 : slot.def;
@@ -92,7 +137,7 @@ export default function ProfileHero({
       { key: "gloves", label: "Gloves", image: gloves?.image ?? null, skin: gloves ? skinLabel(gloves.skinName) : null, rarity: gloves?.rarity },
     ];
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [loadout, side, baseImages, store]);
+  }, [loadout, side, baseImages, store, owner, publicLoadout]);
 
   const saveName = async () => {
     const trimmed = draft.trim();
@@ -144,8 +189,8 @@ export default function ProfileHero({
       <div className="pro-id">
         <AvatarImage steamId={steamId} className="grayscale avatar avatar-xl" />
         <div style={{ minWidth: 0 }}>
-          <span className="kicker">Your profile</span>
-          {editing ? (
+          <span className="kicker">{owner ? "Your profile" : "Player"}</span>
+          {owner && editing ? (
             <div className="pro-name-edit">
               <label className="sr-only" htmlFor="pro-name">Display name</label>
               <input
@@ -168,15 +213,17 @@ export default function ProfileHero({
           ) : (
             <h1 className="pro-name">
               {name}
-              <button
-                className="btn btn-ghost pro-name-btn"
-                onClick={() => {
-                  setDraft(name);
-                  setEditing(true);
-                }}
-              >
-                Edit
-              </button>
+              {owner && (
+                <button
+                  className="btn btn-ghost pro-name-btn"
+                  onClick={() => {
+                    setDraft(name);
+                    setEditing(true);
+                  }}
+                >
+                  Edit
+                </button>
+              )}
             </h1>
           )}
           <div className="pro-sub num">
@@ -184,6 +231,9 @@ export default function ProfileHero({
             {country ? ` · ${country}` : ""}
           </div>
           {bio && <p className="pro-bio">{bio}</p>}
+          {/* Who they are elsewhere, right under the name — it used to be a lone
+              Discord button near the bottom of the page. */}
+          <ConnectionsBar steamId={steamId} />
           {error && (
             <p className="skin-note skin-note-error" role="alert" style={{ marginTop: "var(--space-2)" }}>
               <span>{error}</span>
@@ -191,12 +241,16 @@ export default function ProfileHero({
           )}
         </div>
         <div className="pro-id-actions">
-          {/* Settings used to live in a panel at the very bottom of the page. */}
-          <button className="btn btn-primary" onClick={() => setSettingsOpen(true)}>
-            Settings
-          </button>
+          {owner && (
+            <>
+              {/* Settings used to live in a panel at the very bottom of the page. */}
+              <button className="btn btn-primary" onClick={() => setSettingsOpen(true)}>
+                Settings
+              </button>
+              <Link className="btn btn-secondary" href="/inventory">Loadouts</Link>
+            </>
+          )}
           <Link className="btn btn-secondary" href={`/compare?a=${steamId}`}>Compare</Link>
-          <Link className="btn btn-secondary" href="/inventory">Loadouts</Link>
         </div>
       </div>
 
@@ -227,7 +281,7 @@ export default function ProfileHero({
 
         <div className="pro-loadout">
         <div className="pro-loadout-head">
-          <h2>Equipped{loadout ? ` — ${loadout.name}` : ""}</h2>
+          <h2>Equipped{owner ? (loadout ? ` — ${loadout.name}` : "") : publicLoadout ? ` — ${publicLoadout.name}` : ""}</h2>
           <div className="pro-sides" role="group" aria-label="Side">
             {SIDES.map((s) => (
               <button key={s} className={`pro-sidebtn ${side === s ? "active" : ""}`} onClick={() => setSide(s)}>
@@ -235,7 +289,7 @@ export default function ProfileHero({
               </button>
             ))}
           </div>
-          <Link className="btn btn-ghost" href="/inventory">Edit →</Link>
+          {owner && <Link className="btn btn-ghost" href="/inventory">Edit →</Link>}
         </div>
         <div className="pro-guns">
           {slots.map((slot, i) => (
@@ -261,7 +315,7 @@ export default function ProfileHero({
 
       </div>
 
-      {settingsOpen && <ProfileSettingsModal onClose={() => setSettingsOpen(false)} />}
+      {owner && settingsOpen && <ProfileSettingsModal onClose={() => setSettingsOpen(false)} />}
     </section>
   );
 }

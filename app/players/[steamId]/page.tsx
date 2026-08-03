@@ -9,7 +9,7 @@ import CharacterHero from "@/components/CharacterHero";
 import AvatarImage from "@/components/AvatarImage";
 import ProfileActivity from "@/components/ProfileActivity";
 import ProfileStats from "@/components/profile/ProfileStats";
-import FeaturedClip from "@/components/profile/FeaturedClip";
+import ProfileHero from "@/components/profile/ProfileHero";
 
 export const dynamic = "force-dynamic";
 export const revalidate = 30;
@@ -146,41 +146,31 @@ export default async function PlayerPage({
       />
 
       {/* ---------- Hero ---------- */}
-      <section className="panel">
-        <div className="player-hero">
-          <div className="player-avatar">
-            <AvatarImage steamId={params.steamId} />
-          </div>
-          <div style={{ flex: 1, minWidth: 220 }}>
-            <h1 className="hero-name">
-              {name}
-              {override && <span className="mini-badge">custom name</span>}
-            </h1>
-            <div className="hero-sub">
-              SteamID64 {params.steamId}
-              {webProfile?.Country ? ` · ${webProfile.Country}` : ""}
-              {rankedOnly ? " · ranked rounds only" : " · all rounds"}
-            </div>
-            <ProfileActivity steamId={params.steamId} lastConnectedUtc={profile?.LastSeenAtUtc} />
-            {webProfile?.Bio && <p className="player-bio">{webProfile.Bio}</p>}
-          </div>
-          {/* Their best clip, right in the hero — a profile should open on the
-              thing worth watching. Renders nothing when they have none. */}
-          <div className="player-hero-feature">
-            <FeaturedClip steamId={params.steamId} />
-          </div>
-          <div className="player-hero-actions">
-            {isOwnPage && (
-              <Link className="btn small secondary" href="/profile">
-                ✎ Edit profile
-              </Link>
-            )}
-            <Link className="btn secondary" href={`/compare?a=${params.steamId}`}>
-              ⚔ Compare
-            </Link>
-          </div>
-        </div>
+      {/* The same hero as /profile. A player page and your own page were two
+          different designs of the same thing, so this is the one design with
+          the owner-only controls turned off. */}
+      <ProfileHero
+        owner={false}
+        steamId={params.steamId}
+        initialName={name}
+        bio={webProfile?.Bio ?? null}
+        country={webProfile?.Country ?? null}
+        stats={{
+          elo: seasonStats?.Elo ?? null,
+          peakElo: seasonStats?.PeakElo ?? null,
+          rating: total.rating,
+          kd: total.kd,
+          adr: total.adr,
+          winPct: total.winPct,
+          rounds: total.rounds,
+          hs: total.hs,
+          kast: total.kast,
+          clutches: total.clutches,
+          openingKills: total.openingKills,
+        }}
+      />
 
+      <section className="pro-section">
         <div className="chip-row" style={{ marginTop: 16, marginBottom: 0 }}>
           {seasons.map((s) => (
             <a

@@ -712,3 +712,24 @@ model GardenClipRequest {
   @@index([SteamId])
   @@map("GardenClipRequests")
 }
+
+/// A link on someone's profile, and whether anyone else may see it.
+///
+/// Steam, Discord and FACEIT are already known from elsewhere — this stores
+/// their *visibility* alongside the handles people type in themselves, so one
+/// row type covers "show my FACEIT" and "here is my YouTube" rather than the
+/// page having two unrelated notions of a connection.
+model GardenProfileLink {
+  SteamId  BigInt
+  /// steam | discord | faceit | x | youtube | instagram
+  Provider String  @db.VarChar(16)
+  /// Handle or full URL as typed; empty for providers we already know.
+  Handle   String  @default("") @db.VarChar(160)
+  /// Off by default: a link nobody chose to publish stays private.
+  Public   Boolean @default(false)
+
+  UpdatedAt DateTime @updatedAt @db.DateTime(6)
+
+  @@id([SteamId, Provider])
+  @@map("GardenProfileLinks")
+}

@@ -2,6 +2,7 @@
 
 import { useCallback, useEffect, useRef, useState } from "react";
 import MotionToggle from "@/components/MotionToggle";
+import ConnectionsEditor from "@/components/profile/Connections";
 
 // Profile settings, moved out of a panel at the very bottom of the page into a
 // modal reachable from the hero. The old form was a vertical list of unrelated
@@ -143,6 +144,7 @@ export default function ProfileSettingsModal({ onClose }: { onClose: () => void 
         {!data ? (
           <p className="muted">Loading your profile…</p>
         ) : (
+          <>
           <form className="pro-settings" onSubmit={onSubmit}>
             <div className="pro-settings-avatar">
               <div className="pro-settings-avatar-frame">
@@ -239,6 +241,15 @@ export default function ProfileSettingsModal({ onClose }: { onClose: () => void 
               </div>
             </div>
           </form>
+
+          {/* Connections save on their own — they are a different shape of data
+              and a different request, and folding them into this form would tie
+              a handle change to an avatar upload. */}
+          <section className="pro-settings-conn">
+            <h3>Connections</h3>
+            <ConnectionsEditor />
+          </section>
+          </>
         )}
       </div>
 
