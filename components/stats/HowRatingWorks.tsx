@@ -10,6 +10,20 @@ import { useState } from "react";
 //
 // Collapsed by default: most visits to the stats page are not asking this
 // question, and a page of algebra above the tables would bury them.
+//
+// Season 2 adds four things to the bottom half of this document — map points,
+// a daily consistency pass, a season-long consistency figure and a harsher Elo
+// — and they are appended as their own section rather than woven into the
+// Season 1 prose above. Two reasons. A player who already read this page should
+// be able to find what is new without re-reading what is not, and when Season 2
+// stops being news the section comes out in one piece instead of being unpicked
+// from five paragraphs.
+//
+// Where a Season 2 coefficient is written as a name rather than a number it is
+// because the server has not fixed that number yet. The whole point of this
+// page is that you can check the arithmetic, and a made-up constant printed in
+// the same typeface as a real one would quietly destroy that — so the shape is
+// published now and the constants follow when the season opens.
 
 const W = { kill: 0.3, damage: 0.2, survival: 0.15, kast: 0.15, impact: 0.2 };
 
@@ -43,10 +57,14 @@ export default function HowRatingWorks() {
   ];
 
   return (
-    <section className="panel rating-doc">
+    <section className="panel rating-doc" id="how">
       <button className="rating-doc-toggle" onClick={() => setOpen((v) => !v)} aria-expanded={open}>
-        <span>
+        {/* The badge rides in the header because the panel is shut on arrival:
+            a section nobody opens cannot announce that the rules changed, and
+            the closed toggle is the only surface this document ever gets. */}
+        <span className="rating-doc-title">
           <strong>{t("stats.howRatingWorks.title")}</strong>
+          <span className="rating-s2-badge">{t("stats.howRatingWorks.s2Badge")}</span>
           <span className="muted"> {t("stats.howRatingWorks.subtitle")}</span>
         </span>
         <span aria-hidden>{open ? "−" : "+"}</span>
@@ -74,7 +92,11 @@ export default function HowRatingWorks() {
             {t("stats.howRatingWorks.ratingSum1")}
             <span className="num">1.00</span>{t("stats.howRatingWorks.ratingSum2")}
             <span className="num">1.00</span> {t("stats.howRatingWorks.ratingSum3")}
-            <span className="num">{t("auto.howratingworks.0_00_ndash_5_00")}</span>{t("stats.howRatingWorks.ratingSum4")}
+            {/* Written out rather than pulled from the dictionary: the entry
+                for this range holds a literal "&ndash;", which React escapes,
+                so the page was printing the entity instead of a dash. A number
+                range is not translatable copy anyway. */}
+            <span className="num">0.00–5.00</span>{t("stats.howRatingWorks.ratingSum4")}
           </p>
 
           <h4>{t("stats.howRatingWorks.averageHeading")}</h4>
@@ -127,7 +149,7 @@ change   = K × (won − expected) × performanceFactor`}
           </p>
           <p className="muted">
             {t("stats.howRatingWorks.eloBounds1")}
-            <span className="num">{t("auto.howratingworks.0_ndash_35_000")}</span> {t("stats.howRatingWorks.eloBounds2")}
+            <span className="num">0–35,000</span> {t("stats.howRatingWorks.eloBounds2")}
             <span className="num">5,000</span>{t("stats.howRatingWorks.eloBounds3")}
           </p>
 
@@ -135,6 +157,63 @@ change   = K × (won − expected) × performanceFactor`}
           <p>
             {t("stats.howRatingWorks.seasonDesc")}
           </p>
+
+          {/* ---------- Season 2 ---------- */}
+
+          <h3>{t("stats.howRatingWorks.s2Heading")}</h3>
+          <p>{t("stats.howRatingWorks.s2Desc")}</p>
+          <p className="rating-note">{t("stats.howRatingWorks.s2Note")}</p>
+
+          <h4>{t("stats.howRatingWorks.swingHeading")}</h4>
+          <p>{t("stats.howRatingWorks.swingDesc1")}</p>
+          <pre className="rating-formula num">
+{`change = K × (won − expected)
+           × performanceFactor
+           × consistencyMultiplier
+
+K      = kUp    on a gain
+         kDown  on a loss,  kDown > kUp`}
+          </pre>
+          <p>{t("stats.howRatingWorks.swingDesc2")}</p>
+
+          <h4>{t("stats.howRatingWorks.mapHeading")}</h4>
+          <p>{t("stats.howRatingWorks.mapDesc1")}</p>
+          <pre className="rating-formula num">
+{`vsSelf   = rating here ÷ rating everywhere
+vsServer = rating here ÷ server avg here
+
+mapPoints = wSelf   × (vsSelf   − 1)
+          + wServer × (vsServer − 1)`}
+          </pre>
+          <p>{t("stats.howRatingWorks.mapDesc2")}</p>
+          <p>{t("stats.howRatingWorks.mapWhy")}</p>
+
+          <h4>{t("stats.howRatingWorks.dailyHeading")}</h4>
+          <p>
+            {t("stats.howRatingWorks.dailyDesc1")}{" "}
+            <span className="num">01:00</span>{" "}
+            {t("stats.howRatingWorks.dailyDesc1b")}
+          </p>
+          <pre className="rating-formula num">
+{`spread      = std dev of yesterday's ratings
+consistency = 1 − (spread ÷ your mean)
+
+multiplier  = 1 + kSteady × consistency`}
+          </pre>
+          <p>{t("stats.howRatingWorks.dailyDesc2")}</p>
+          <p>{t("stats.howRatingWorks.dailyDesc3")}</p>
+          <p>{t("stats.howRatingWorks.dailyMultiplier")}</p>
+
+          <h4>{t("stats.howRatingWorks.globalHeading")}</h4>
+          <p>{t("stats.howRatingWorks.globalDesc")}</p>
+
+          <h4>{t("stats.howRatingWorks.freezeHeading")}</h4>
+          <p>
+            {t("stats.howRatingWorks.freezeDesc1")}{" "}
+            <span className="num">72</span>{" "}
+            {t("stats.howRatingWorks.freezeDesc1b")}
+          </p>
+          <p>{t("stats.howRatingWorks.freezeDesc2")}</p>
         </div>
       )}
     </section>

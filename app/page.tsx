@@ -14,6 +14,7 @@ import CountUp from "@/components/home/CountUp";
 import SkinsBanner from "@/components/home/SkinsBanner";
 import ModesShowcase from "@/components/home/ModesShowcase";
 import StatsPreview from "@/components/home/StatsPreview";
+import SeasonTwo from "@/components/home/SeasonTwo";
 import ClipsPreview from "@/components/home/ClipsPreview";
 import Podium from "@/components/home/Podium";
 import { getT } from "@/lib/serverI18n";
@@ -157,6 +158,13 @@ export default async function HomePage() {
         totals={siteTotals}
         example={rows.find((r) => r.avatar) ?? rows[0] ?? null}
       />
+
+      {/* Directly after the stats block, because that block is what establishes
+          that rounds are scored at all — the Season 2 changes are only news to
+          someone who has just been told there is a number to change. It also
+          puts the two links to /stats within a screen of each other rather
+          than scattering them down the page. */}
+      <SeasonTwo />
 
       <ModesShowcase />
 

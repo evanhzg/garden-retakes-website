@@ -10061,3 +10061,100 @@ body.inv-fullscreen .main-content > main.container { flex: none; }
 /* The season-vote controls sit with the season line they act on. */
 .adm-strip-actions { margin-left: auto; display: flex; gap: 8px; align-items: center; }
 @media (max-width: 640px) { .adm-strip-actions { margin-left: 0; width: 100%; } }
+
+/* ---------------------------------------------------------------------------
+   Season 2 — the scoring changes, on /stats and on the homepage.
+
+   Appended in one block rather than merged into the sections above because
+   Season 2 is an announcement with an end date. When the changes stop being
+   news, this block, components/home/SeasonTwo.tsx and its mount in app/page.tsx
+   come out together in one deletion; rules interleaved with the permanent
+   styles could not be withdrawn that cleanly, and the ones nobody dared delete
+   are how a stylesheet turns into sediment.
+
+   Written narrow-first throughout. The explainer already fills the width of a
+   phone, so anything added inside it has to come out of the text measure rather
+   than out of the viewport.
+   --------------------------------------------------------------------------- */
+
+/* The explainer opens shut, so its header is the only place a badge can be
+   seen without a click. min-width: 0 lets the title shrink on a narrow screen
+   instead of shouldering the +/− marker off the end of the row, and the wrap
+   lets the badge drop under the heading rather than squeezing it. */
+.rating-doc-title {
+  min-width: 0;
+  display: flex; align-items: baseline; flex-wrap: wrap; gap: 4px 8px;
+}
+
+.rating-s2-badge {
+  flex: 0 0 auto;
+  padding: 2px 7px;
+  font-size: 11px; font-weight: 700;
+  letter-spacing: 0.06em; text-transform: uppercase;
+  background: var(--btn-primary-bg); color: var(--btn-primary-ink);
+}
+
+/* An aside, not another paragraph. It qualifies the formulas rather than
+   continuing them, and a reader skimming this page for numbers should be able
+   to tell at a glance that this line is not one of them. */
+.rating-note {
+  margin: 0 0 12px;
+  padding: 8px 10px;
+  border-left: 2px solid var(--color-accent);
+  background: var(--color-surface);
+  color: var(--muted);
+  font-size: 13px; line-height: 1.6;
+}
+
+/* ---- homepage summary ---- */
+
+/* auto-fit rather than a fixed count so the row reflows on its own between the
+   phone rule below and a desktop; five items divide badly into any fixed
+   number of columns, and a half-empty last row of fixed tracks looks like a
+   missing item rather than the end of the list. */
+.season2-grid {
+  list-style: none; margin: 0; padding: 0;
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));
+  gap: 10px;
+}
+
+/* The glyph spans both rows so the term and its line share one text column and
+   stay aligned with each other; minmax(0, 1fr) on that column is what stops a
+   long unbroken word from widening the tile past the grid track. */
+.season2-item {
+  display: grid;
+  grid-template-columns: auto minmax(0, 1fr);
+  gap: 4px 10px;
+  align-content: start;
+  padding: 14px;
+  background: var(--color-bg);
+  border: 1px solid var(--color-divider);
+  border-top: 3px solid var(--color-accent);
+}
+
+.season2-glyph {
+  grid-row: span 2;
+  font-size: 18px; line-height: 1.3;
+  color: var(--color-accent);
+}
+.season2-term {
+  margin: 0;
+  font-size: 15px; font-weight: 700; line-height: 1.3;
+  color: var(--color-text);
+}
+.season2-line {
+  margin: 0;
+  font-size: 13px; line-height: 1.55;
+  color: var(--muted);
+  overflow-wrap: anywhere;
+}
+
+@media (max-width: 720px) {
+  /* Three tracks of 240px is comfortable; the two or three that fit a tablet
+     are not, and the copy is short enough that a single column reads as a list
+     rather than as a long scroll. This also guarantees the tiles cannot press
+     against the 360px floor, where the tile padding eats the track minimum. */
+  .season2-grid { grid-template-columns: 1fr; }
+  .season2-item { padding: 12px; }
+}
