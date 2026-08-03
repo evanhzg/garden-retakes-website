@@ -76,6 +76,8 @@ export default function NavBar({
   /** A link's label in the current language, falling back to its English. */
   const tr = (l: { label: string; key?: string }) => (l.key ? t(l.key) : l.label);
   const [menuOpen, setMenuOpen] = useState(false);
+  /** The phone drawer. Every link lives in it, not just the overflow ones. */
+  const [drawerOpen, setDrawerOpen] = useState(false);
   
   const headerRef = useRef<HTMLElement>(null);
   const moreRef = useRef<HTMLDivElement>(null);
@@ -85,6 +87,24 @@ export default function NavBar({
   // The More menu had no way out but clicking More again — every other menu on
   // the site closes on an outside click, and this one stayed open while you
   // went off to use something else.
+  useEffect(() => {
+    setDrawerOpen(false);
+  }, [pathname]);
+
+  useEffect(() => {
+    if (!drawerOpen) return;
+    // .main-content is the scroll container, so locking <body> would do nothing.
+    const scroller = document.querySelector<HTMLElement>(".main-content");
+    const previous = scroller?.style.overflow ?? "";
+    if (scroller) scroller.style.overflow = "hidden";
+    const onKey = (e: KeyboardEvent) => e.key === "Escape" && setDrawerOpen(false);
+    window.addEventListener("keydown", onKey);
+    return () => {
+      if (scroller) scroller.style.overflow = previous;
+      window.removeEventListener("keydown", onKey);
+    };
+  }, [drawerOpen]);
+
   useEffect(() => {
     if (!menuOpen) return;
     const onPointerDown = (e: PointerEvent) => {
@@ -371,6 +391,19 @@ export default function NavBar({
           </div>
         )}
 
+        <button
+          type="button"
+          className="nav-burger"
+          aria-expanded={drawerOpen}
+          aria-controls="nav-drawer"
+          aria-label={drawerOpen ? "Close menu" : "Open menu"}
+          onClick={() => setDrawerOpen((v) => !v)}
+        >
+          <span className={`nav-burger-box ${drawerOpen ? "open" : ""}`} aria-hidden>
+            <span /><span /><span />
+          </span>
+        </button>
+
         <NotificationCenter />
 
         {session.authenticated ? (
@@ -420,6 +453,49 @@ export default function NavBar({
           </button>
         )}
       </nav>
+
+      {/* The phone menu. Every link is in here — primary and overflow both —
+          because a burger that only holds half the site is worse than none:
+          you cannot tell which half you are missing. */}
+      {drawerOpen && (
+        <div className="nav-drawer-scrim" onClick={() => setDrawerOpen(false)} aria-hidden />
+      )}
+      <div id="nav-drawer" className={`nav-drawer ${drawerOpen ? "open" : ""}`} role="dialog" aria-modal="true" aria-label={t("nav.more")}>
+        <div className="nav-drawer-inner">
+          {links.map((l) => {
+            const active = l.href === "/" ? pathname === "/" : pathname.startsWith(l.href);
+            return (
+              <Link
+                key={l.href}
+                href={getHref(l.href)}
+                className={`nav-drawer-item ${active ? "active" : ""}`}
+                data-section={l.isSection ? "true" : undefined}
+                onClick={() => setDrawerOpen(false)}
+              >
+                {tr(l)}
+                {l.isLive && isLiveServer && <span className="live-dot" aria-hidden />}
+              </Link>
+            );
+          })}
+
+          <div className="nav-drawer-foot">
+            {session.authenticated ? (
+              <a className="btn btn-secondary" href="/api/auth/logout">{t("nav.signOut")}</a>
+            ) : (
+              <a
+                className="btn btn-primary"
+                href={
+                  isGamesSection
+                    ? `/games/login?returnTo=${encodeURIComponent(pathname)}`
+                    : `/api/auth/steam/login?returnTo=${encodeURIComponent(pathname)}`
+                }
+              >
+                {t("nav.signIn")}
+              </a>
+            )}
+          </div>
+        </div>
+      </div>
     </header>
   );
 }

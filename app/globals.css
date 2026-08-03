@@ -9181,3 +9181,168 @@ body.inv-fullscreen .main-content > main.container { flex: none; }
   border-radius: 0;
   padding: 7px 10px;
 }
+
+/* ---------------------------------------------------------------------------
+   The phone header.
+
+   The header was a single flex row holding the wordmark, every primary link,
+   the More menu, notifications and the avatar. On a phone that row is wider
+   than the screen, so links simply ran off the edge with no way to reach them
+   — the More menu did not help because it only ever held the overflow half.
+
+   Below 900px the inline nav is replaced by one burger opening a drawer that
+   contains every link, primary and overflow together. A menu holding half the
+   site is worse than no menu: you cannot tell which half you are missing.
+   --------------------------------------------------------------------------- */
+
+.nav-burger { display: none; }
+
+@media (max-width: 900px) {
+  /* The links row and the More menu both go; the drawer replaces them. */
+  header > nav > a:not(.btn),
+  header > nav > div:has(> .adm-nav),
+  .site-header nav > a:not(.btn) { display: none; }
+
+  header > nav > div:has(> button[aria-haspopup="menu"]) { display: none; }
+
+  .nav-burger {
+    display: inline-flex; align-items: center; justify-content: center;
+    width: 40px; height: 40px;
+    background: none; border: 0; border-radius: 9px;
+    color: inherit; cursor: pointer;
+  }
+  .nav-burger:hover { background: color-mix(in srgb, var(--color-text) 10%, transparent); }
+  .nav-burger-box { display: grid; gap: 4px; width: 20px; }
+  .nav-burger-box > span {
+    display: block; height: 2px; width: 100%;
+    background: currentColor; border-radius: 2px;
+    transition: transform 0.22s cubic-bezier(.16,1,.3,1), opacity 0.16s ease;
+  }
+  /* Becomes a cross, so the same control closes what it opened. */
+  .nav-burger-box.open > span:nth-child(1) { transform: translateY(6px) rotate(45deg); }
+  .nav-burger-box.open > span:nth-child(2) { opacity: 0; }
+  .nav-burger-box.open > span:nth-child(3) { transform: translateY(-6px) rotate(-45deg); }
+
+  /* The wordmark's per-letter stretch is a hover effect, and a phone has no
+     hover — it would either never play or fire on tap and delay navigation. */
+  .wordmark-e { max-width: 0.62em; opacity: 1; transform: none; transition: none; }
+
+  header { padding-inline: var(--page-pad); gap: 8px; }
+}
+
+.nav-drawer-scrim {
+  position: fixed; inset: 0; z-index: 40;
+  background: rgb(0 0 0 / 0.5);
+  animation: gr-fade-in 0.18s ease both;
+}
+@keyframes gr-fade-in { from { opacity: 0; } to { opacity: 1; } }
+
+.nav-drawer {
+  position: fixed;
+  top: 0; right: 0; bottom: 0;
+  z-index: 41;
+  width: min(320px, 86vw);
+  background: var(--color-bg);
+  border-left: 1px solid var(--color-divider);
+  transform: translateX(100%);
+  transition: transform 0.26s cubic-bezier(.16,1,.3,1);
+  overflow-y: auto;
+  /* Off-screen and inert until opened, so it never steals a tap on desktop. */
+  visibility: hidden;
+}
+.nav-drawer.open { transform: none; visibility: visible; }
+@media (min-width: 901px) { .nav-drawer, .nav-drawer-scrim { display: none; } }
+
+.nav-drawer-inner {
+  display: grid; gap: 2px;
+  padding: calc(env(safe-area-inset-top, 0px) + 68px) 12px calc(env(safe-area-inset-bottom, 0px) + 20px);
+}
+.nav-drawer-item {
+  display: flex; align-items: center; gap: 8px;
+  /* A comfortable thumb target, not a text-height link. */
+  min-height: 46px;
+  padding: 0 12px;
+  border-radius: 10px;
+  font-size: 15px; font-weight: 600;
+  color: var(--color-text); text-decoration: none;
+}
+.nav-drawer-item:hover { background: color-mix(in srgb, var(--color-text) 8%, transparent); }
+.nav-drawer-item.active { background: var(--btn-primary-bg); color: var(--btn-primary-ink); }
+.nav-drawer-item[data-section="true"] {
+  border-top: 1px solid var(--color-divider);
+  border-radius: 0; margin-top: 8px; padding-top: 8px;
+}
+.nav-drawer-foot { margin-top: 14px; display: grid; }
+
+@media (prefers-reduced-motion: reduce) {
+  .nav-drawer { transition: none; }
+  .nav-burger-box > span { transition: none; }
+}
+
+/* ---------------------------------------------------------------------------
+   Site-wide phone safeguards.
+
+   These are the cross-cutting rules rather than per-page fixes: a page should
+   never scroll sideways, and anything that is legitimately wider than a phone
+   (tables, code, formulas) should scroll inside its own box instead of taking
+   the page with it.
+   --------------------------------------------------------------------------- */
+
+@media (max-width: 720px) {
+  /* The single most common cause of a sideways page: one wide child. Clipping
+     here means a stray element is cropped rather than dragging the whole
+     layout out of alignment. */
+  .main-content { overflow-x: hidden; }
+
+  /* Long unbroken strings — SteamID64s, share keys, skin names — are the other
+     cause, and they cannot reflow without being told to. */
+  .num, .skin-path, .adm-steamid, .pro-sub, .share-link .input { overflow-wrap: anywhere; }
+
+  /* Tables keep their columns and scroll inside themselves. Hiding columns
+     would decide for the reader which numbers matter. */
+  .table-wrap, .adm-scroll, .pro-table-wrap {
+    overflow-x: auto;
+    -webkit-overflow-scrolling: touch;
+  }
+  table.table { min-width: 520px; }
+
+  /* Formulas are pre-formatted and cannot wrap. */
+  .rating-formula { font-size: 11px; }
+
+  /* Dialogs must fit the screen and scroll internally rather than growing past
+     the bottom where the buttons become unreachable. */
+  .pro-modal-card,
+  .clip-modal-card {
+    width: min(100%, 100vw - 20px);
+    max-height: calc(100dvh - 24px);
+    overflow-y: auto;
+  }
+
+  /* Grids that assume desktop widths. */
+  .feed-grid { grid-template-columns: 1fr; }
+  .home-split,
+  .home-hero-row,
+  .pro-showcase,
+  .util-layout,
+  .adm-shell { grid-template-columns: 1fr; }
+  .podium { grid-template-columns: 1fr; }
+  .podium-slot[data-rank="1"] { transform: none; }
+
+  /* Anything absolutely placed against the right edge can leave the viewport
+     once the viewport is narrower than the element. */
+  .share-menu,
+  .notif-panel,
+  .mention-menu { right: 0; left: auto; width: min(300px, calc(100vw - 24px)); }
+
+  /* Touch targets. */
+  .btn, .chip, .util-map, .pro-sidebtn, .inv4-sidebtn { min-height: 40px; }
+
+  /* The footer band's two halves stack rather than squeezing. */
+  .site-footer-inner { flex-direction: column; align-items: flex-start; }
+}
+
+/* The marquee is decorative and full-bleed; on a phone it is the one thing
+   allowed to be wider than the screen, so it must not create a scrollbar. */
+@media (max-width: 720px) {
+  .gr-marquee, .full-bleed { max-width: 100vw; overflow-x: clip; }
+}
