@@ -8,6 +8,7 @@ import LeaderboardTabs from "@/components/stats/LeaderboardTabs";
 import HowRatingWorks from "@/components/stats/HowRatingWorks";
 import LadderRows from "@/components/home/LadderRows";
 import { ladderRows } from "@/lib/ladder";
+import SeasonBreakBanner from "@/components/SeasonBreakBanner";
 import { getT } from "@/lib/serverI18n";
 
 export const dynamic = "force-dynamic";
@@ -22,6 +23,7 @@ export default async function StatsPage() {
   if (!season) {
     return (
       <section className="panel">
+        <SeasonBreakBanner />
         <h2>{t("auto.page.global_stats")}</h2>
         <p className="muted">{t("auto.page.no_active_season_found")}</p>
       </section>
@@ -166,6 +168,7 @@ export default async function StatsPage() {
 
   return (
     <>
+      <SeasonBreakBanner />
       <section className="panel" style={{ marginTop: 16 }}>
         <div className="stats-ladder-head">
           <h3 style={{ margin: 0 }}>{t("auto.page.ladder")} {season.Name ?? `Season ${season.Id}`}</h3>

@@ -4,6 +4,7 @@ import { useEffect, useState } from "react";
 import Link from "next/link";
 import { useI18n } from '@/components/I18nProvider';
 import AvatarImage from "@/components/AvatarImage";
+import SeasonBreakBanner from "@/components/SeasonBreakBanner";
 
 // The live-match view was written in Tailwind classes; the project has no
 // Tailwind, so none of them did anything and the page fell back to bare HTML
@@ -125,6 +126,7 @@ export default function LiveMatchPage() {
   return (
     <main style={{ padding: `clamp(32px, 6vw, 64px) ${PAD}` }}>
       <div style={{ maxWidth: 1280, marginInline: "auto" }}>
+        <SeasonBreakBanner />
         <div
           style={{
             display: "flex",

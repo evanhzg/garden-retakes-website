@@ -400,6 +400,25 @@ export default function AdminPanel({
                 <strong>{t("admin.freeze.title")}</strong>
                 <span>{t("admin.freeze.body")}</span>
                 <span className="adm-freeze-when">{t("admin.freeze.when", { date: freezeAt, left: freezeIn })}</span>
+                {canOwner && (
+                  <button 
+                    className="btn btn-secondary" 
+                    style={{ marginTop: 12, alignSelf: "flex-start" }}
+                    onClick={async () => {
+                      if (!confirm("Are you sure you want to start the season?")) return;
+                      const res = await fetch("/api/admin/rcon", {
+                        method: "POST",
+                        headers: { "Content-Type": "application/json" },
+                        body: JSON.stringify({ command: "!season_start", key: adminKey }),
+                      });
+                      const data = await res.json();
+                      flash(res.ok, res.ok ? "Season started." : data.error ?? "Failed to start season.");
+                      if (res.ok) load(q);
+                    }}
+                  >
+                    {t("season.break.start_season")}
+                  </button>
+                )}
               </div>
             )}
 
@@ -425,7 +444,7 @@ export default function AdminPanel({
                   return (
                     <button
                       key={f.id}
-                      className={`adm-flavour ${live.mode === "retakes" && f.id === "retakes" ? "live" : ""} ${paused ? "is-paused" : ""}`}
+                      className={`adm-flavour ${live.mode === "retakes" && f.id === "retakes" ? "live" : ""} ${paused ? "is-paused is-disabled-hatch" : ""}`}
                       disabled={!canAdmin || paused || short || odd}
                       title={
                         !canAdmin ? "Admin role required"

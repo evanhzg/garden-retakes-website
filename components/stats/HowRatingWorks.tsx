@@ -214,6 +214,9 @@ multiplier  = 1 + kSteady × consistency`}
             {t("stats.howRatingWorks.freezeDesc1b")}
           </p>
           <p>{t("stats.howRatingWorks.freezeDesc2")}</p>
+
+          <h4>{t("stats.howRatingWorks.calibrationHeading")}</h4>
+          <p>{t("stats.howRatingWorks.calibrationDesc")}</p>
         </div>
       )}
     </section>

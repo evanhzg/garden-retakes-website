@@ -97,7 +97,7 @@
   "home.season2.map.term": "La performance par map rapporte",
   "home.season2.map.line": "Ce que vous valez sur une map, mesuré à la fois face à votre propre moyenne dessus et face à celle du serveur.",
   "home.season2.daily.term": "La régularité, notée chaque nuit",
-  "home.season2.daily.line": "À 01:00 heure de Paris, votre veille est notée sur la ressemblance de ses rounds, et ça multiplie le lendemain.",
+  "home.season2.daily.line": "À 01h00, heure de Paris, vos rounds de la veille sont notés sur leur régularité, et cela multiplie les gains de votre prochaine session.",
   "home.season2.global.term": "Et sur toute la saison",
   "home.season2.global.line": "Une régularité globale alimente le même multiplicateur, lentement, pour qu'une mauvaise soirée n'efface pas trois mois.",
   "home.season2.freeze.term": "Les saisons finissent au vote",
@@ -1850,7 +1850,7 @@
   "stats.howRatingWorks.dailyDesc1b": "heure de Paris, le serveur relit tous vos rounds classés de la veille et note à quel point ils se ressemblent. C'est une passe à part, lancée une fois, sur une journée terminée : la régularité est une propriété d'une soirée entière et ne peut pas se calculer pendant qu'on la joue.",
   "stats.howRatingWorks.dailyDesc2": "Elle se mesure par rapport à vous, pas par rapport au classement. Dix rounds à 0,80 valent mieux que cinq à 1,60 et cinq à 0,10, même si le deuxième joueur a fait la plus grosse soirée et la meilleure moyenne. Un serveur de retakes est une file d'inconnus qui ont quatre secondes pour décider qui prend quel angle : celui sur qui tout le monde peut compter vaut plus, pour cette file, que celui qui est injouable quatre rounds sur cinq.",
   "stats.howRatingWorks.dailyDesc3": "C'est aussi pour ça qu'une mauvaise journée régulière rapporte quand même. Mal jouer de la même manière à chaque round est un problème réparable : il a une cause, quelqu'un peut la nommer, et vous pouvez aller la travailler. Alterner le bon et le mauvais au hasard n'apprend rien à personne, et surtout pas aux quatre joueurs qui comptent sur vous.",
-  "stats.howRatingWorks.dailyMultiplier": "Ce que produit cette passe, ce ne sont pas des points mais un multiplicateur sur les mouvements d'Elo du lendemain. Il tient tant que vous entretenez la série et retombe vers 1,00 dès que vous arrêtez : il ne se met jamais en banque. Le bonus appartient à la série, pas au compte — le jour où vous cessez d'être prévisible est le jour où il cesse d'être versé.",
+  "stats.howRatingWorks.dailyMultiplier": "Ce que produit cette passe, ce ne sont pas des points mais un multiplicateur sur les mouvements d'Elo de votre prochaine session. Le multiplicateur persiste jusqu'à votre prochaine session — faire une pause ne réinitialise pas votre série de constance. Il tient tant que vous entretenez la série et retombe vers 1,00 dès que vous arrêtez : il ne se met jamais en banque. Le bonus appartient à la série, pas au compte — le jour où vous cessez d'être prévisible est le jour où il cesse d'être versé.",
   "stats.howRatingWorks.globalHeading": "Régularité globale",
   "stats.howRatingWorks.globalDesc": "En parallèle de la passe quotidienne, la saison tient une seule régularité globale sur toutes vos journées classées, et elle alimente le même multiplicateur avec un poids plus faible. Elle bouge lentement, volontairement : un samedi raté ne doit pas effacer trois mois de présence, et un samedi brillant ne doit pas les acheter.",
   "stats.howRatingWorks.freezeHeading": "Le gel de 72 heures",
@@ -2009,5 +2009,13 @@
   "admin.season.start_confirm": "Démarrer la prochaine saison maintenant ?\n\nLe vote de saison se ferme immédiatement et plus aucun vote ne pourra être exprimé. L'ELO est dégelé et les retakes classés et compétitifs redeviennent disponibles. Cette action est irréversible.",
   "admin.season.start_done": "Vote de saison fermé. L'ELO est dégelé — les retakes classés et compétitifs sont de nouveau disponibles. Attribuez les médailles quand vous le souhaitez.",
   "admin.season.start_failed": "Impossible de démarrer la saison. Rien n'a été modifié.",
-  "home.seasonVote.frozen": "La saison est terminée : l'ELO est gelé et seuls les retakes classiques tournent. Le classé et le compétitif reviennent au début de la prochaine saison, dès la fermeture de ce vote."
+  "home.seasonVote.frozen": "La saison est terminée : l'ELO est gelé et seuls les retakes classiques tournent. Le classé et le compétitif reviennent au début de la prochaine saison, dès la fermeture de ce vote.",
+  "home.season2.calibration.term": "Étalonnage sur 70 rounds",
+  "home.season2.calibration.line": "Vos 70 premiers rounds classés calculent mais masquent votre Elo pour définir un point de départ juste.",
+  "stats.howRatingWorks.calibrationHeading": "Étalonnage sur 70 rounds",
+  "stats.howRatingWorks.calibrationDesc": "Vos 70 premiers rounds classés de la Saison 2 constituent une période d'étalonnage. Votre ELO est calculé mais masqué jusqu'à ce que vous l'ayez terminée — ensuite, votre ELO de départ est fixé entre 4 500 et 6 500 selon vos performances.",
+  "season.break.banner.frozen": "La saison 1 est en pause. Les retakes classés et compétitifs reviendront le {date}. Votez sur {link}.",
+  "season.break.banner.soon": "La saison 2 commence bientôt — restez à l'écoute.",
+  "season.break.start_season": "Démarrer la saison",
+  "season.break.start_season_desc": "Exécutez !season_start en jeu pour ouvrir la saison."
 }

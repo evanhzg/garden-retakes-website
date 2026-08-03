@@ -37,6 +37,7 @@ const CHANGES: readonly Change[] = [
   // a year, so it goes last even though it is the most absolute rule here.
   { termKey: "home.season2.elo.term", lineKey: "home.season2.elo.line", glyph: "↕" },
   { termKey: "home.season2.map.term", lineKey: "home.season2.map.line", glyph: "◎" },
+  { termKey: "home.season2.calibration.term", lineKey: "home.season2.calibration.line", glyph: "○" },
   { termKey: "home.season2.daily.term", lineKey: "home.season2.daily.line", glyph: "◷" },
   { termKey: "home.season2.global.term", lineKey: "home.season2.global.line", glyph: "∞" },
   { termKey: "home.season2.freeze.term", lineKey: "home.season2.freeze.line", glyph: "‖" },

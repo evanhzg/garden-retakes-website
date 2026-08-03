@@ -10387,3 +10387,29 @@ body.inv-fullscreen .main-content > main.container { flex: none; }
     padding: var(--space-3);
   }
 }
+
+
+/* Hatching for disabled states */
+.is-disabled-hatch,
+[disabled]:not(input):not(select):not(textarea),
+.is-paused {
+  position: relative;
+  opacity: 0.5;
+  pointer-events: none;
+  overflow: hidden;
+}
+.is-disabled-hatch::after,
+[disabled]:not(input):not(select):not(textarea)::after,
+.is-paused::after {
+  content: '';
+  position: absolute;
+  inset: 0;
+  background-image: repeating-linear-gradient(
+    -45deg,
+    transparent,
+    transparent 6px,
+    rgba(128,128,128,0.15) 6px,
+    rgba(128,128,128,0.15) 8px
+  );
+  pointer-events: none;
+}
