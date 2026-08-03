@@ -185,9 +185,9 @@
 }
 
 .btn-invite {
-  background: rgba(59, 130, 246, 0.2);
-  color: #60a5fa;
-  border: 1px solid #3b82f6;
+  background: color-mix(in srgb, var(--color-accent) 20%, transparent);
+  color: var(--color-accent-2);
+  border: 1px solid var(--color-accent);
   padding: 4px 12px;
   border-radius: 4px;
   cursor: pointer;
@@ -197,7 +197,7 @@
 }
 
 .btn-invite:hover {
-  background: #3b82f6;
+  background: var(--color-accent);
   color: #fff;
 }
 
@@ -271,22 +271,7 @@
 
 .add-friend-form input:focus {
   outline: none;
-  border-color: #3b82f6;
-}
-
-.btn-primary {
-  background: #3b82f6;
-  color: #fff;
-  border: none;
-  padding: 12px;
-  border-radius: 8px;
-  font-weight: bold;
-  cursor: pointer;
-  transition: background 0.2s;
-}
-
-.btn-primary:hover {
-  background: #2563eb;
+  border-color: var(--color-accent);
 }
 
 /* ---------- Notification Toast ---------- */

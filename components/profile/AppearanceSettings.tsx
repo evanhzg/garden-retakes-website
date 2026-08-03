@@ -18,14 +18,34 @@ const THEMES = [
   { id: "system", label: "settings.theme.system", icon: "◐" },
 ];
 
-export default function AppearanceSettings() {
+const ACCENTS = [
+  { id: "cyan", label: "settings.accent.cyan", color: "#06b6d4" },
+  { id: "orange", label: "settings.accent.orange", color: "#ff4a28" },
+  { id: "blue", label: "settings.accent.blue", color: "#3b82f6" },
+  { id: "pink", label: "settings.accent.pink", color: "#ec4899" },
+  { id: "beige", label: "settings.accent.beige", color: "#d97706" },
+];
+
+export default function AppearanceSettings({
+  initialAccent = "orange",
+  onAccentChange,
+}: {
+  initialAccent?: string;
+  onAccentChange?: (color: string) => void;
+}) {
   const { theme, setTheme } = useTheme();
   const { locale, setLocale, t } = useI18n();
   const [mounted, setMounted] = useState(false);
+  const [accent, setAccent] = useState(initialAccent);
 
   // next-themes only knows the resolved theme after mount; rendering before
   // that marks the wrong option as current for a frame.
   useEffect(() => setMounted(true), []);
+
+  const handleAccentChange = (id: string) => {
+    setAccent(id);
+    if (onAccentChange) onAccentChange(id);
+  };
 
   return (
     <section className="pro-settings-conn">
@@ -67,6 +87,34 @@ export default function AppearanceSettings() {
         </div>
       </div>
       <p className="pro-settings-hint">{t("settings.languageHint")}</p>
+
+      <div className="pref-row">
+        <span className="pref-label">{t("settings.accent_color")}</span>
+        <div className="pref-choices" role="group" aria-label={t("settings.accent_color")}>
+          {ACCENTS.map((a) => (
+            <button
+              key={a.id}
+              type="button"
+              className={`pref-choice ${accent === a.id ? "on" : ""}`}
+              aria-pressed={accent === a.id}
+              onClick={() => handleAccentChange(a.id)}
+            >
+              <span
+                aria-hidden
+                style={{
+                  display: "inline-block",
+                  width: "12px",
+                  height: "12px",
+                  borderRadius: "50%",
+                  backgroundColor: a.color,
+                  marginRight: "4px",
+                }}
+              />
+              {t(a.label)}
+            </button>
+          ))}
+        </div>
+      </div>
     </section>
   );
 }

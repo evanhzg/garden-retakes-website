@@ -33,9 +33,10 @@ export async function GET() {
   if (!session) return NextResponse.json({ error: "not signed in" }, { status: 401 });
 
   const steamId = BigInt(session.steamId);
-  const [override, profile] = await Promise.all([
+  const [override, profile, playerProfile] = await Promise.all([
     prisma.gardenNameOverride.findUnique({ where: { SteamId: steamId } }),
     prisma.gardenWebProfile.findUnique({ where: { SteamId: steamId } }),
+    prisma.playerProfile.findUnique({ where: { SteamId: steamId } }),
   ]);
 
   return NextResponse.json({
@@ -47,6 +48,7 @@ export async function GET() {
     bio: profile?.Bio ?? null,
     country: profile?.Country ?? null,
     popConfig: profile?.PopConfig ?? null,
+    accentColor: playerProfile?.accentColor ?? null,
   });
 }
 
@@ -110,6 +112,14 @@ export async function POST(req: Request) {
       ...(popConfigRaw !== undefined && { PopConfig: popConfigRaw }),
     },
   });
+
+  if (body.accentColor !== undefined) {
+    const accentColor = typeof body.accentColor === "string" ? body.accentColor : null;
+    await prisma.playerProfile.update({
+      where: { SteamId: steamId },
+      data: { accentColor },
+    }).catch(() => {}); // ignore if player profile doesn't exist
+  }
 
   return NextResponse.json({ ok: true });
 }

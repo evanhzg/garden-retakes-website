@@ -24,6 +24,7 @@ type ProfileData = {
   avatarUrl: string | null;
   bio: string | null;
   country: string | null;
+  accentColor: string | null;
 };
 
 const BIO_MAX = 280;
@@ -258,7 +259,15 @@ export default function ProfileSettingsModal({ onClose }: { onClose: () => void 
           {/* Connections save on their own — they are a different shape of data
               and a different request, and folding them into this form would tie
               a handle change to an avatar upload. */}
-          <AppearanceSettings />
+          <AppearanceSettings
+            initialAccent={data.accentColor ?? "orange"}
+            onAccentChange={async (c) => {
+              if (await save({ accentColor: c })) {
+                setData((d) => (d ? { ...d, accentColor: c } : d));
+                document.documentElement.setAttribute("data-accent", c);
+              }
+            }}
+          />
 
           <section className="pro-settings-conn">
             <h3>{t("auto.profilesettingsmodal.connections")}</h3>

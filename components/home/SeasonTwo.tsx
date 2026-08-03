@@ -47,7 +47,7 @@ export default function SeasonTwo() {
   const t = getT();
 
   return (
-    <section className="home-block" aria-labelledby="season2-heading">
+    <section className="home-block season2-wrapper" aria-labelledby="season2-heading">
       <header className="home-block-head">
         <span className="kicker">{t("home.season2.kicker")}</span>
         <h2 id="season2-heading">{t("home.season2.title")}</h2>

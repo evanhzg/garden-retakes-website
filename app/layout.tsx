@@ -61,6 +61,7 @@ export const viewport: Viewport = {
 import { ThemeProvider } from "@/components/ThemeProvider";
 import { cookies, headers } from "next/headers";
 import DynamicGridBackground from "@/components/DynamicGridBackground";
+import { getSession } from "@/lib/auth";
 
 export default async function RootLayout({ children }: { children: React.ReactNode }) {
   const headersList = headers();
@@ -69,6 +70,8 @@ export default async function RootLayout({ children }: { children: React.ReactNo
   const locale = resolveLocale(cookies().get(LOCALE_COOKIE)?.value, headersList.get("accept-language"));
   const host = headersList.get("host") || "retakes.fr";
   const protocol = headersList.get("x-forwarded-proto") || "https";
+  const session = getSession();
+  
   // Find all players with custom avatars
   const publicDir = path.join(process.cwd(), "public");
   let customAvatarIds: string[] = [];
@@ -96,10 +99,22 @@ export default async function RootLayout({ children }: { children: React.ReactNo
     avatarSrc: navAvatars[p.SteamId.toString()],
   }));
 
+  let userAccent = "orange";
+  if (session) {
+    const userProfile = await prisma.playerProfile.findUnique({
+      where: { SteamId: BigInt(session.steamId) },
+      select: { accentColor: true }
+    });
+    if (userProfile?.accentColor) {
+      userAccent = userProfile.accentColor;
+    }
+  }
+
   return (
     <html
       lang={locale}
       suppressHydrationWarning
+      data-accent={userAccent}
       className={`${sans.variable} ${mono.variable}`}
     >
       <body>

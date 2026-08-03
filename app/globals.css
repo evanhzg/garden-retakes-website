@@ -10120,15 +10120,66 @@ body.inv-fullscreen .main-content > main.container { flex: none; }
 /* The glyph spans both rows so the term and its line share one text column and
    stay aligned with each other; minmax(0, 1fr) on that column is what stops a
    long unbroken word from widening the tile past the grid track. */
+.season2-wrapper {
+  position: relative;
+  isolation: isolate;
+}
+
+.season2-wrapper::before {
+  content: "";
+  position: absolute;
+  top: -50px; left: -100px;
+  width: 400px; height: 400px;
+  background: radial-gradient(circle, color-mix(in srgb, var(--color-accent) 15%, transparent) 0%, transparent 70%);
+  border-radius: 50%;
+  z-index: -1;
+  pointer-events: none;
+}
+
+.season2-wrapper::after {
+  content: "";
+  position: absolute;
+  bottom: -50px; right: -100px;
+  width: 400px; height: 400px;
+  background: radial-gradient(circle, color-mix(in srgb, var(--color-accent-2) 15%, transparent) 0%, transparent 70%);
+  border-radius: 50%;
+  z-index: -1;
+  pointer-events: none;
+}
+
 .season2-item {
   display: grid;
   grid-template-columns: auto minmax(0, 1fr);
-  gap: 4px 10px;
+  gap: 6px 14px;
   align-content: start;
-  padding: 14px;
-  background: var(--color-bg);
-  border: 1px solid var(--color-divider);
-  border-top: 3px solid var(--color-accent);
+  padding: 20px;
+  background: color-mix(in srgb, var(--color-surface) 65%, transparent);
+  backdrop-filter: blur(12px);
+  -webkit-backdrop-filter: blur(12px);
+  border: 1px solid color-mix(in srgb, var(--color-divider) 60%, transparent);
+  border-radius: 16px;
+  position: relative;
+  overflow: hidden;
+  transition: transform 0.3s cubic-bezier(0.22, 1, 0.36, 1), box-shadow 0.3s ease, border-color 0.3s ease;
+}
+
+.season2-item::before {
+  content: "";
+  position: absolute;
+  top: 0; left: 0; right: 0;
+  height: 4px;
+  background: var(--color-accent);
+  transition: background 0.3s ease;
+}
+
+.season2-item:hover {
+  transform: translateY(-4px) scale(1.02);
+  border-color: color-mix(in srgb, var(--color-accent) 45%, transparent);
+  box-shadow: 0 16px 32px -10px rgba(0,0,0,0.3);
+}
+
+.season2-item:hover::before {
+  background: var(--gradient, linear-gradient(120deg, var(--color-accent), var(--color-accent-2)));
 }
 
 .season2-glyph {
@@ -10410,4 +10461,57 @@ body.inv-fullscreen .main-content > main.container { flex: none; }
     rgba(128,128,128,0.15) 8px
   );
   pointer-events: none;
+}
+
+/* Custom User Accents */
+[data-theme="light"][data-accent="cyan"], html[data-accent="cyan"] {
+  --color-accent: #0284c7;
+  --color-accent-2: #06b6d4;
+  --btn-primary-bg: #0284c7;
+  --btn-primary-bg-hover: #0369a1;
+}
+[data-theme="dark"][data-accent="cyan"] {
+  --color-accent: #06b6d4;
+  --color-accent-2: #22d3ee;
+  --btn-primary-bg: #06b6d4;
+  --btn-primary-bg-hover: #0891b2;
+}
+
+[data-theme="light"][data-accent="blue"], html[data-accent="blue"] {
+  --color-accent: #1d4ed8;
+  --color-accent-2: #2563eb;
+  --btn-primary-bg: #1d4ed8;
+  --btn-primary-bg-hover: #1e40af;
+}
+[data-theme="dark"][data-accent="blue"] {
+  --color-accent: #3b82f6;
+  --color-accent-2: #60a5fa;
+  --btn-primary-bg: #3b82f6;
+  --btn-primary-bg-hover: #2563eb;
+}
+
+[data-theme="light"][data-accent="pink"], html[data-accent="pink"] {
+  --color-accent: #be185d;
+  --color-accent-2: #db2777;
+  --btn-primary-bg: #be185d;
+  --btn-primary-bg-hover: #9d174d;
+}
+[data-theme="dark"][data-accent="pink"] {
+  --color-accent: #ec4899;
+  --color-accent-2: #f472b6;
+  --btn-primary-bg: #ec4899;
+  --btn-primary-bg-hover: #db2777;
+}
+
+[data-theme="light"][data-accent="beige"], html[data-accent="beige"] {
+  --color-accent: #92400e;
+  --color-accent-2: #b45309;
+  --btn-primary-bg: #92400e;
+  --btn-primary-bg-hover: #78350f;
+}
+[data-theme="dark"][data-accent="beige"] {
+  --color-accent: #d97706;
+  --color-accent-2: #f59e0b;
+  --btn-primary-bg: #d97706;
+  --btn-primary-bg-hover: #b45309;
 }

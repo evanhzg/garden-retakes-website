@@ -32,6 +32,7 @@ model PlayerProfile {
   FirstSeenAtUtc   DateTime @db.DateTime(6)
   LastSeenAtUtc    DateTime @db.DateTime(6)
   TimeSpentSeconds Int      @default(0)
+  accentColor      String?
 
   @@map("PlayerProfiles")
 }
