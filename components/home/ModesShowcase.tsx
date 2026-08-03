@@ -14,7 +14,8 @@ import { getT } from '@/lib/serverI18n';
 // exists to be read on first paint should not cost a hydration payload.
 
 type Presentation = {
-  line: string;
+  /** Dictionary key; the copy itself lives in locales so it can be translated. */
+  lineKey: string;
   // Marks are plain Unicode from the Geometric Shapes and Dingbats blocks
   // rather than an icon set, because a strict CSP blocks external requests and
   // an icon library would be several kilobytes of JavaScript for ten glyphs.
@@ -29,31 +30,31 @@ type Presentation = {
 
 const PRESENTATION: Partial<Record<GameModeId, Presentation>> = {
   retakes: {
-    line: "The bomb is already down when you spawn. Sites, loadouts and teams rebalance every round.",
+    lineKey: "home.modes.retakes",
     glyph: "◎",
     size: "feature",
   },
   practice: {
-    line: "Throw the same smoke fifty times, then walk the prefire route until it is muscle memory.",
+    lineKey: "home.modes.practice",
     glyph: "◇",
     size: "wide",
   },
-  executes: { line: "The T side runs a called script and you are one part of it.", glyph: "▷" },
-  duels: { line: "One arena, one opponent, no economy to hide behind.", glyph: "✕" },
+  executes: { lineKey: "home.modes.executes", glyph: "▷" },
+  duels: { lineKey: "home.modes.duels", glyph: "✕" },
   spelltakers: {
-    line: "Abilities on cooldown, a single lane, and a fight that never quite stops.",
+    lineKey: "home.modes.spelltakers",
     glyph: "✦",
     size: "wide",
   },
-  wingman: { line: "Two a side on the short maps, where one trade decides the round.", glyph: "◫" },
-  faststrat: { line: "A strat lands on your screen and the clock starts. Read it, run it.", glyph: "≫" },
-  defender: { line: "You hold the site while the script comes at you from three angles.", glyph: "▣" },
+  wingman: { lineKey: "home.modes.wingman", glyph: "◫" },
+  faststrat: { lineKey: "home.modes.faststrat", glyph: "≫" },
+  defender: { lineKey: "home.modes.defender", glyph: "▣" },
   hideandseek: {
-    line: "One hunter, a full map, and everyone else folded into the geometry.",
+    lineKey: "home.modes.hideandseek",
     glyph: "◐",
     size: "wide",
   },
-  edit: { line: "Noclip, markers and no timer. Build the setup, then show it.", glyph: "✎" },
+  edit: { lineKey: "home.modes.edit", glyph: "✎" },
 };
 
 // Display order rather than list order: the spans above only tile the
@@ -93,7 +94,7 @@ export default function ModesShowcase() {
         id: mode.id,
         label: mode.label,
         hint: mode.hint,
-        line: p?.line ?? "",
+        line: p?.lineKey ? t(p.lineKey) : "",
         glyph: p?.glyph ?? "◆",
         size: p?.size,
       };

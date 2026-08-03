@@ -1946,5 +1946,15 @@
   "next": "Next",
   "resultTitle": "Result Title",
   "playAgain": "Play Again",
-  "waitingOthers": "Waiting Others"
+  "waitingOthers": "Waiting Others",
+  "home.modes.retakes": "The bomb is already down when you spawn. Sites, loadouts and teams rebalance every round.",
+  "home.modes.practice": "Throw the same smoke fifty times, then walk the prefire route until it is muscle memory.",
+  "home.modes.executes": "The T side runs a called script and you are one part of it.",
+  "home.modes.duels": "One arena, one opponent, no economy to hide behind.",
+  "home.modes.spelltakers": "Abilities on cooldown, a single lane, and a fight that never quite stops.",
+  "home.modes.wingman": "Two a side on the short maps, where one trade decides the round.",
+  "home.modes.faststrat": "A strat lands on your screen and the clock starts. Read it, run it.",
+  "home.modes.defender": "You hold the site while the script comes at you from three angles.",
+  "home.modes.hideandseek": "One hunter, everyone else somewhere they should not fit.",
+  "home.modes.edit": "No bomb, no timer, noclip on. For building spawns and lineups."
 }

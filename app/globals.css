@@ -9952,3 +9952,108 @@ body.inv-fullscreen .main-content > main.container { flex: none; }
     padding: 0 10px !important;
   }
 }
+
+/* ---------------------------------------------------------------------------
+   Plugin config on a phone.
+
+   The editor is a two-column grid whose first track has a 150px floor, so on a
+   narrow screen the fields column is pushed past the right edge — and it sits
+   inside .adm-panel, which cannot scroll sideways, so the overflow is simply
+   cut off rather than reachable. Everything below unstacks it and removes the
+   floors that were doing the pushing.
+   --------------------------------------------------------------------------- */
+
+@media (max-width: 860px) {
+  .cfg-body {
+    grid-template-columns: minmax(0, 1fr);
+    gap: var(--space-4);
+  }
+
+  /* The section list becomes a scrolling rail: as a stack it is a screen of
+     links before the first field. */
+  .cfg-nav {
+    display: flex;
+    gap: 6px;
+    overflow-x: auto;
+    -webkit-overflow-scrolling: touch;
+    overscroll-behavior-x: contain;
+    padding-bottom: 4px;
+    scrollbar-width: none;
+  }
+  .cfg-nav::-webkit-scrollbar { height: 0; }
+  .cfg-nav-item {
+    flex: 0 0 auto;
+    min-height: 40px;
+    border-radius: 9px;
+    border-left: 0;
+    white-space: nowrap;
+  }
+
+  /* A nested scroller inside a page that already scrolls fights the same
+     drag; the fields simply run on. */
+  .cfg-fields {
+    max-height: none;
+    overflow-y: visible;
+    padding-right: 0;
+  }
+
+  /* Numbers and paths are the widest things here and cannot reflow on their
+     own. */
+  .cfg-field { padding-inline: 0; }
+  .cfg-field > label { overflow-wrap: anywhere; }
+  .cfg-field .input,
+  .cfg-field select.input { width: 100%; min-width: 0; }
+
+  .cfg-targets .cfg-target { min-height: 40px; }
+  .cfg-diff { max-height: none; }
+}
+
+/* ---------------------------------------------------------------------------
+   The ladder readout on a phone.
+
+   Hovering is what opens it, and a phone has no hover — the tap handler opens
+   it instead, but the panel is laid out beside the row and simply had nowhere
+   to go, so it squeezed the name to nothing and showed a sliced third of
+   itself. It becomes a full-width block under the row instead.
+   --------------------------------------------------------------------------- */
+
+@media (max-width: 720px) {
+  .gr-row { flex-wrap: wrap; row-gap: 10px; }
+  .gr-preview {
+    /* Overrides the inline max-width the component animates, which is what was
+       clipping it — !important is the only lever against an inline style. */
+    max-width: 100% !important;
+    flex: 1 0 100%;
+    margin-right: 0;
+    opacity: 1 !important;
+  }
+  .gr-preview > * { width: 100%; }
+}
+
+/* ---------------------------------------------------------------------------
+   Fixed widths that predate the phone pass.
+
+   A bare `width: 680px` is a floor as well as a ceiling: below that viewport it
+   simply hangs off the edge. Capping each at the container removes the overflow
+   without touching the desktop size, since `min()` picks the fixed value
+   whenever there is room for it.
+   --------------------------------------------------------------------------- */
+
+.measure,
+.hero-inner,
+.profile-editor,
+.admin-toast,
+.feed-search .input { max-width: 100%; }
+
+@media (max-width: 720px) {
+  /* The search field is a flex child sized by its own width rather than the
+     row, so it pushed the Clear and Refresh buttons off the end. */
+  .feed-search { flex-wrap: wrap; }
+  .feed-search .input { flex: 1 1 100%; width: auto; }
+
+  /* Toasts anchored to a corner must respect the opposite edge too. */
+  .admin-toast, .toast-item { max-width: calc(100vw - 24px); }
+
+  /* The board rail's per-side minimum is wider than a phone. */
+  .inv4-boardside { min-width: 0; }
+}

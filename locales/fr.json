@@ -1946,5 +1946,15 @@
   "next": "Suivant",
   "resultTitle": "Résultat",
   "playAgain": "Rejouer",
-  "waitingOthers": "En attente des autres..."
+  "waitingOthers": "En attente des autres...",
+  "home.modes.retakes": "La bombe est déjà posée quand tu apparais. Sites, équipements et équipes se rééquilibrent à chaque round.",
+  "home.modes.practice": "Lance cinquante fois la même smoke, puis répète le prefire jusqu'à l'avoir dans les doigts.",
+  "home.modes.executes": "Le côté T déroule un script appelé et tu en es une pièce.",
+  "home.modes.duels": "Une arène, un adversaire, aucune économie derrière laquelle se cacher.",
+  "home.modes.spelltakers": "Des sorts en cooldown, une seule voie, et un combat qui ne s'arrête jamais vraiment.",
+  "home.modes.wingman": "Deux contre deux sur les petites maps, où un seul trade décide du round.",
+  "home.modes.faststrat": "Une strat s'affiche et le chrono démarre. Lis-la, exécute-la.",
+  "home.modes.defender": "Tu tiens le site pendant que le script arrive par trois angles.",
+  "home.modes.hideandseek": "Un chasseur, et tous les autres planqués là où ils ne devraient pas tenir.",
+  "home.modes.edit": "Pas de bombe, pas de chrono, noclip actif. Pour construire spawns et lineups."
 }
