@@ -1,6 +1,6 @@
 "use client";
 
-import { useCallback, useEffect, useState } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 import ClipCard, { type Clip } from "@/components/feed/ClipCard";
 import UploadClipModal from "@/components/feed/UploadClipModal";
 
@@ -40,6 +40,11 @@ export default function FeedClient({ signedIn, isAdmin = false }: { signedIn: bo
   const [search, setSearch] = useState("");
 
   const [clips, setClips] = useState<Clip[] | null>(null);
+  const [refreshing, setRefreshing] = useState(false);
+  /** How many clips arrived since this view was loaded, if we did not take them. */
+  const [pending, setPending] = useState(0);
+  /** What the server had last time we looked, to tell new from merely reordered. */
+  const seen = useRef<{ latestId: number; total: number } | null>(null);
   const [updates, setUpdates] = useState<Update[] | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [uploading, setUploading] = useState(false);
@@ -62,6 +67,7 @@ export default function FeedClient({ signedIn, isAdmin = false }: { signedIn: bo
 
   const loadClips = useCallback(async () => {
     setError(null);
+    setPending(0);
     try {
       const params = new URLSearchParams({ range, sort });
       if (kind) params.set("kind", kind);
@@ -74,6 +80,13 @@ export default function FeedClient({ signedIn, isAdmin = false }: { signedIn: bo
         return;
       }
       setClips(json.clips);
+      // Re-baseline: whatever is on screen now is what we have seen.
+      try {
+        const l = await fetch("/api/feed/latest", { cache: "no-store" }).then((r) => r.json());
+        seen.current = { latestId: l.latestId ?? 0, total: l.total ?? 0 };
+      } catch {
+        /* the poller will pick it up */
+      }
     } catch {
       setError("Could not reach the server.");
       setClips([]);
@@ -82,6 +95,64 @@ export default function FeedClient({ signedIn, isAdmin = false }: { signedIn: bo
 
   useEffect(() => {
     if (tab === "clips") loadClips();
+  }, [tab, loadClips]);
+
+  /** Reload without touching the rest of the page. */
+  const refresh = useCallback(async () => {
+    setRefreshing(true);
+    try {
+      await loadClips();
+    } finally {
+      setRefreshing(false);
+    }
+  }, [loadClips]);
+
+  // Watch for clips posted while this tab is open.
+  //
+  // New ones are pulled in silently when you are at the top of the feed, where
+  // the list growing is what you would expect. Once scrolled down they are
+  // announced instead and wait for a click — reordering the page under someone
+  // reading a clip, or half-way through a comment, would be hostile.
+  //
+  // Polling pauses on a hidden tab: a backgrounded feed does not need to know.
+  useEffect(() => {
+    if (tab !== "clips") return;
+
+    const tick = async () => {
+      if (document.hidden) return;
+      try {
+        const res = await fetch("/api/feed/latest", { cache: "no-store" });
+        if (!res.ok) return;
+        const { latestId = 0, total = 0 } = await res.json();
+        const before = seen.current;
+        if (!before) {
+          seen.current = { latestId, total };
+          return;
+        }
+        if (latestId === before.latestId && total === before.total) return;
+
+        const added = Math.max(0, latestId > before.latestId ? total - before.total : 0);
+        const scroller = document.querySelector<HTMLElement>(".main-content");
+        const atTop = (scroller?.scrollTop ?? window.scrollY) < 80;
+
+        if (atTop && !document.querySelector(".clip-modal, .pro-modal")) {
+          await loadClips();
+        } else {
+          seen.current = { latestId, total };
+          setPending((n) => n + (added || 1));
+        }
+      } catch {
+        /* offline, or the server is restarting — try again next tick */
+      }
+    };
+
+    const id = window.setInterval(tick, 30_000);
+    const onVisible = () => !document.hidden && tick();
+    document.addEventListener("visibilitychange", onVisible);
+    return () => {
+      window.clearInterval(id);
+      document.removeEventListener("visibilitychange", onVisible);
+    };
   }, [tab, loadClips]);
 
   useEffect(() => {
@@ -161,7 +232,21 @@ export default function FeedClient({ signedIn, isAdmin = false }: { signedIn: bo
                 {query && (
                   <button className="btn btn-ghost" onClick={() => setQuery("")}>Clear</button>
                 )}
+                <button
+                  className="btn btn-secondary feed-refresh"
+                  onClick={refresh}
+                  disabled={refreshing}
+                  title="Reload the clips without reloading the page"
+                >
+                  <span aria-hidden className={refreshing ? "spin" : ""}>⟳</span> {refreshing ? "Refreshing…" : "Refresh"}
+                </button>
               </div>
+
+              {pending > 0 && (
+                <button className="feed-new-pill" onClick={refresh}>
+                  {pending} new clip{pending === 1 ? "" : "s"} — show
+                </button>
+              )}
 
               <div className="feed-filters">
                 <div className="feed-filter-group" role="group" aria-label="Time range">

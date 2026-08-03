@@ -5,6 +5,7 @@ import { useState } from "react";
 import AvatarImage from "@/components/AvatarImage";
 import ClipModal from "@/components/feed/ClipModal";
 import ClipEditor from "@/components/feed/ClipEditor";
+import ShareMenu from "@/components/feed/ShareMenu";
 import type { Variant } from "@/components/feed/VideoPlayer";
 
 export type Clip = {
@@ -258,6 +259,7 @@ export default function ClipCard({
         <button className="clip-comment-toggle" onClick={openComments} aria-expanded={showComments}>
           💬 <span className="num">{count}</span>
         </button>
+        <ShareMenu clipId={clip.id} title={clip.title} compact />
       </footer>
 
       {showComments && (

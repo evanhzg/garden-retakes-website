@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useRef, useState } from "react";
+import { createPortal } from "react-dom";
 import { youtubeId } from "@/lib/feedShared";
 import DemoUpload from "@/components/feed/DemoUpload";
 
@@ -32,10 +33,26 @@ export default function UploadClipModal({
   const [error, setError] = useState<string | null>(null);
   const inputRef = useRef<HTMLInputElement>(null);
 
+  // Portalled to <body>, and the scroll lock goes on .main-content, which is
+  // the scroll container here. Rendered in place this sat inside the feed
+  // section, and an ancestor with a transform in its animation keyframes is the
+  // containing block for position:fixed — so once the feed had enough clips to
+  // scroll, the dialog anchored to the section instead of the viewport.
+  const [mounted, setMounted] = useState(false);
+  useEffect(() => setMounted(true), []);
+
   useEffect(() => {
     const onKey = (e: KeyboardEvent) => e.key === "Escape" && !busy && onClose();
     window.addEventListener("keydown", onKey);
-    return () => window.removeEventListener("keydown", onKey);
+
+    const scroller = document.querySelector<HTMLElement>(".main-content");
+    const previous = scroller?.style.overflow ?? "";
+    if (scroller) scroller.style.overflow = "hidden";
+
+    return () => {
+      window.removeEventListener("keydown", onKey);
+      if (scroller) scroller.style.overflow = previous;
+    };
   }, [onClose, busy]);
 
   // Revoke the object URL when the chosen file changes or the dialog closes.
@@ -84,7 +101,9 @@ export default function UploadClipModal({
     }
   };
 
-  return (
+  if (!mounted) return null;
+
+  return createPortal(
     <div className="pro-modal" role="dialog" aria-modal="true" aria-labelledby="post-clip" onClick={() => !busy && onClose()}>
       <div className="pro-modal-card" onClick={(e) => e.stopPropagation()}>
         <div className="pro-modal-head">
@@ -215,6 +234,7 @@ export default function UploadClipModal({
         </form>
         )}
       </div>
-    </div>
+    </div>,
+    document.body
   );
 }

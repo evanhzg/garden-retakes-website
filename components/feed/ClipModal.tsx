@@ -4,6 +4,7 @@ import { useEffect, useState } from "react";
 import { createPortal } from "react-dom";
 import Link from "next/link";
 import AvatarImage from "@/components/AvatarImage";
+import ShareMenu from "@/components/feed/ShareMenu";
 import VideoPlayer, { type Variant } from "@/components/feed/VideoPlayer";
 import type { Clip } from "@/components/feed/ClipCard";
 
@@ -68,11 +69,22 @@ export default function ClipModal({
         </div>
 
         <div className="clip-modal-meta">
-          <h2>{clip.title}</h2>
-          <Link href={`/players/${clip.steamId}`} className="clip-author">
-            <AvatarImage steamId={clip.steamId} src={clip.avatar} alt={clip.author} className="avatar avatar-sm" />
-            {clip.author}
-          </Link>
+          <div className="clip-modal-meta-head">
+            <h2>{clip.title}</h2>
+            <ShareMenu clipId={clip.id} title={clip.title} />
+          </div>
+          {/* Same rule as the card: only link players who have a profile here. */}
+          {clip.authorIsUser === false ? (
+            <span className="clip-author is-guest" title="No profile on this site yet">
+              <AvatarImage steamId={clip.steamId} src={clip.avatar} alt={clip.author} className="avatar avatar-sm" />
+              {clip.author}
+            </span>
+          ) : (
+            <Link href={`/players/${clip.steamId}`} className="clip-author">
+              <AvatarImage steamId={clip.steamId} src={clip.avatar} alt={clip.author} className="avatar avatar-sm" />
+              {clip.author}
+            </Link>
+          )}
           {clip.description && <p className="clip-desc">{clip.description}</p>}
         </div>
       </div>
