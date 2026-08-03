@@ -5,7 +5,6 @@ import path from "path";
 import { getActiveSeason, prisma } from "@/lib/db";
 import { getSession } from "@/lib/auth";
 import { dayKey, fetchRows, groupBy, ratingClass, sideName, summarize, formatDate, formatPlaytime } from "@/lib/stats";
-import CharacterHero from "@/components/CharacterHero";
 import AvatarImage from "@/components/AvatarImage";
 import ProfileActivity from "@/components/ProfileActivity";
 import ProfileStats from "@/components/profile/ProfileStats";
@@ -131,20 +130,6 @@ export default async function PlayerPage({
 
   return (
     <>
-      {/* ---------- Character image hero ---------- */}
-      <CharacterHero
-        steamId={params.steamId}
-        playerName={name}
-        stats={[
-          { label: "Rating", value: total.rating.toFixed(2), big: true },
-          { label: `CS Rating${seasonStats?.PeakElo ? ` · peak ${seasonStats.PeakElo}` : ""}`, value: String(seasonStats?.Elo ?? "—") },
-          { label: "K/D", value: total.kd.toFixed(2) },
-          { label: "ADR", value: total.adr.toFixed(0) },
-          { label: `Win rate · ${total.rounds} rds`, value: `${total.winPct.toFixed(0)}%` },
-          { label: `Clutches · ${total.openingKills} OK`, value: String(total.clutches) },
-        ]}
-      />
-
       {/* ---------- Hero ---------- */}
       {/* The same hero as /profile. A player page and your own page were two
           different designs of the same thing, so this is the one design with
@@ -192,30 +177,12 @@ export default async function PlayerPage({
 
       {/* ---------- Headline numbers ---------- */}
       <section className="panel">
-        <div className="bigstat-row">
-          <div className="bigstat">
-            <div className={`num ${ratingClass(total.rating)}`}>{total.rating.toFixed(2)}</div>
-            <div className="cap">Rating</div>
-          </div>
-          <div className="bigstat">
-            <div className="num rating-neutral">{seasonStats?.Elo ?? "—"}</div>
-            <div className="cap">CS Rating (peak {seasonStats?.PeakElo ?? "—"})</div>
-          </div>
-          <div className="bigstat">
-            <div className="num rating-neutral">{total.kd.toFixed(2)}</div>
-            <div className="cap">
-              K/D ({total.kills}/{total.deaths})
-            </div>
-          </div>
-          <div className="bigstat">
-            <div className="num rating-neutral">{total.rounds}</div>
-            <div className="cap">Rounds · {byMap.length} maps</div>
-          </div>
-          <div className="bigstat">
-            <div className="num rating-neutral">{formatPlaytime(profile?.TimeSpentSeconds ?? 0)}</div>
-            <div className="cap">Playtime</div>
-          </div>
-        </div>
+        {/* Rating, CS Rating, K/D and the rest are in the hero above; repeating
+            them here was the third copy on one page. Playtime was the only
+            figure this block alone carried, so it sits with the meters. */}
+        <p className="muted" style={{ margin: "0 0 4px", fontSize: 13 }}>
+          {formatPlaytime(profile?.TimeSpentSeconds ?? 0)} played · {byMap.length} maps
+        </p>
 
         <div style={{ marginTop: 18 }}>
           <div className="meter">

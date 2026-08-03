@@ -30,8 +30,8 @@ export default function DynamicGridBackground() {
     const GRID_SIZE = 20;
     const LENS_RADIUS = 150;
     const MAGNIFICATION = 0.8; // Strength of the bulge/zoom
-    // Drawn at full strength; the canvas element carries the 0.15 (see below),
-    // so the composited grid lands at exactly 0.15 rather than 0.15 × 0.15.
+    // Drawn at full strength; the canvas element carries the 0.03 (see below),
+    // so the composited grid lands at exactly 0.03 rather than 0.03 × 0.03.
     const GRID_OPACITY = 1;
 
     // Read the live theme so the grid follows the palette instead of hardcoding
@@ -217,7 +217,7 @@ export default function DynamicGridBackground() {
     // showed in Chrome and not in Edge. The background now lives on <html> and
     // the app shell sits at z-index 1 above this (see globals.css).
     //
-    // The 0.15 is here rather than in the stroke colour so it governs the whole
+    // The 0.03 is here rather than in the stroke colour so it governs the whole
     // layer — rules and lens glow together.
     <canvas
       ref={canvasRef}
@@ -230,7 +230,7 @@ export default function DynamicGridBackground() {
         width: '100vw',
         height: '100vh',
         zIndex: 0,
-        opacity: 0.15,
+        opacity: 0.03,
       }}
     />
   );
