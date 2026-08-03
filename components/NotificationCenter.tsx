@@ -81,12 +81,18 @@ export default function NotificationCenter() {
   return (
     <div className="notif" ref={wrapRef}>
       <button
-        className="notif-bell"
+        className={`notif-bell ${unread > 0 ? "has-unread" : ""}`}
         onClick={toggle}
         aria-expanded={open}
         aria-label={unread > 0 ? `${unread} unread notifications` : "Notifications"}
       >
-        <span aria-hidden>🔔</span>
+        {/* A drawn bell rather than an emoji: the emoji renders differently on
+            every platform and cannot take the accent colour when unread. */}
+        <svg viewBox="0 0 24 24" width="17" height="17" fill="none" stroke="currentColor"
+             strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" aria-hidden>
+          <path d="M18 8a6 6 0 1 0-12 0c0 7-3 9-3 9h18s-3-2-3-9" />
+          <path d="M13.7 21a2 2 0 0 1-3.4 0" />
+        </svg>
         {unread > 0 && <span className="notif-dot num">{unread > 9 ? "9+" : unread}</span>}
       </button>
 

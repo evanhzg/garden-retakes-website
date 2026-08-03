@@ -51,6 +51,20 @@ export default function FeedClient({ signedIn, isAdmin = false }: { signedIn: bo
   const [error, setError] = useState<string | null>(null);
   const [uploading, setUploading] = useState(false);
 
+  /** A clip id from ?clip= — a notification links here rather than to the bare
+   *  share page, which has no navigation and reads as a broken link. */
+  const [openClipId, setOpenClipId] = useState<number | null>(null);
+
+  useEffect(() => {
+    const c = Number(new URLSearchParams(window.location.search).get("clip"));
+    if (Number.isInteger(c) && c > 0) {
+      setOpenClipId(c);
+      // All time, newest first, so the clip is certain to be in the list.
+      setRange("all");
+      setSort("new");
+    }
+  }, []);
+
   // Restore filters from the URL once on mount.
   useEffect(() => {
     const q = new URLSearchParams(window.location.search);
@@ -310,7 +324,14 @@ export default function FeedClient({ signedIn, isAdmin = false }: { signedIn: bo
               ) : (
                 <div className="feed-grid">
                   {clips.map((c) => (
-                    <ClipCard key={c.id} clip={c} signedIn={signedIn} isAdmin={isAdmin} onChanged={loadClips} />
+                    <ClipCard
+                      key={c.id}
+                      clip={c}
+                      signedIn={signedIn}
+                      isAdmin={isAdmin}
+                      onChanged={loadClips}
+                      autoOpen={c.id === openClipId}
+                    />
                   ))}
                 </div>
               )}

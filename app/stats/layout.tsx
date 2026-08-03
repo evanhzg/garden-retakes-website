@@ -14,9 +14,11 @@ export default function StatsLayout({ children }: { children: React.ReactNode })
           <Link href="/stats" className={`chip ${pathname === "/stats" ? "active" : ""}`}>
             Overview
           </Link>
-          <Link href="/stats/heatmaps" className={`chip ${pathname === "/stats/heatmaps" ? "active" : ""}`}>
+          {/* Greyed out pending a rebuild — a tab that opens something known to
+              be wrong is worse than a tab that says it is coming. */}
+          <span className="chip is-disabled" aria-disabled="true" title="Being rebuilt">
             Map Heatmaps
-          </Link>
+          </span>
           <Link href="/stats/seasons" className={`chip ${pathname === "/stats/seasons" ? "active" : ""}`}>
             Seasons History
           </Link>

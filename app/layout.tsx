@@ -8,6 +8,8 @@ import NavBar from "@/components/NavBar";
 import PageLoader from "@/components/PageLoader";
 import RouteLoader from "@/components/RouteLoader";
 import "./globals.css";
+import { I18nProvider } from "@/components/I18nProvider";
+import { resolveLocale, LOCALE_COOKIE } from "@/lib/i18n";
 
 // Modernist: one grotesque carries headings and body, and a mono handles every
 // numeric — ELO, K/D, ADR, counters — so figures line up in tabular columns.
@@ -55,11 +57,14 @@ export const viewport: Viewport = {
   themeColor: "#a855f7",
 };
 import { ThemeProvider } from "@/components/ThemeProvider";
-import { headers } from "next/headers";
+import { cookies, headers } from "next/headers";
 import DynamicGridBackground from "@/components/DynamicGridBackground";
 
 export default async function RootLayout({ children }: { children: React.ReactNode }) {
   const headersList = headers();
+  // Read once on the server so the first paint is already in the right
+  // language — a locale applied after hydration is a visible flash.
+  const locale = resolveLocale(cookies().get(LOCALE_COOKIE)?.value, headersList.get("accept-language"));
   const host = headersList.get("host") || "retakes.fr";
   const protocol = headersList.get("x-forwarded-proto") || "https";
   // Find all players with custom avatars
@@ -91,7 +96,7 @@ export default async function RootLayout({ children }: { children: React.ReactNo
 
   return (
     <html
-      lang="en"
+      lang={locale}
       suppressHydrationWarning
       className={`${sans.variable} ${mono.variable}`}
     >
@@ -105,6 +110,7 @@ export default async function RootLayout({ children }: { children: React.ReactNo
         />
         <PageLoader />
         <ThemeProvider attribute="class" defaultTheme="system" enableSystem>
+        <I18nProvider initial={locale}>
           {/* The three blurred orbs were the last of the old purple/pink wash
               (#ec4899 / #a855f7 / #d946ef) and fought the Modernist ground. */}
           <DynamicGridBackground />
@@ -115,6 +121,7 @@ export default async function RootLayout({ children }: { children: React.ReactNo
               <main className="container">{children}</main>
             </div>
           </div>
+        </I18nProvider>
         </ThemeProvider>
       </body>
     </html>

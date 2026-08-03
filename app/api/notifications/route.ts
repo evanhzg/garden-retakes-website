@@ -70,7 +70,9 @@ export async function GET() {
       type: "CLIP_POSTED",
       icon: NOTIFICATION_META.CLIP_POSTED.icon,
       content: c.Title,
-      url: `/feed/${c.Id}`,
+      // The feed with that clip opened, rather than the bare share page —
+      // arriving somewhere with no navigation reads as a broken link.
+      url: `/feed?clip=${c.Id}`,
       at: c.CreatedAt.toISOString(),
       read: c.CreatedAt <= seenAt,
     });

@@ -1,7 +1,7 @@
 "use client";
 
 import Link from "next/link";
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import AvatarImage from "@/components/AvatarImage";
 import ClipModal from "@/components/feed/ClipModal";
 import ClipEditor from "@/components/feed/ClipEditor";
@@ -99,11 +99,14 @@ export default function ClipCard({
   signedIn,
   isAdmin = false,
   onChanged,
+  autoOpen = false,
 }: {
   clip: Clip;
   signedIn: boolean;
   isAdmin?: boolean;
   onChanged?: () => void;
+  /** Arrived here from a notification pointing at this clip. */
+  autoOpen?: boolean;
 }) {
   const [clip, setClip] = useState(initial);
   const [editing, setEditing] = useState(false);
@@ -113,6 +116,10 @@ export default function ClipCard({
   const [playing, setPlaying] = useState(false);
 
   const [open, setOpen] = useState(false);
+
+  useEffect(() => {
+    if (autoOpen) setOpen(true);
+  }, [autoOpen]);
   const [showComments, setShowComments] = useState(false);
   const [comments, setComments] = useState<Comment[] | null>(null);
   const [mentionNames, setMentionNames] = useState<Record<string, string>>({});

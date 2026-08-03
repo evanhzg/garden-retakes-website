@@ -38,7 +38,10 @@ export const isGameMode = (value: string): value is GameModeId =>
  * click fail somewhere the admin cannot see.
  */
 export const RETAKE_FLAVOURS = [
-  { id: "retakes", label: "Classic", hint: "Retakes, points off", minPlayers: 0 },
-  { id: "ranked", label: "Ranked", hint: "Points and CS Rating count", minPlayers: 4 },
-  { id: "competitive", label: "Competitive", hint: "Full 5v5 match", minPlayers: 10 },
+  { id: "retakes", label: "Classic", hint: "Retakes, points off", minPlayers: 0, evenTeams: false },
+  { id: "ranked", label: "Ranked", hint: "Points and CS Rating count", minPlayers: 4, evenTeams: false },
+  // Four, not ten: the plugin's own Ranked.MinPlayers is 4 and competitive
+  // needs the same floor. It does need an even count, though — a competitive
+  // match with uneven sides is not a match.
+  { id: "competitive", label: "Competitive", hint: "Even teams, points count", minPlayers: 4, evenTeams: true },
 ] as const;

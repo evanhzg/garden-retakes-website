@@ -37,7 +37,7 @@ export async function POST(_req: Request, { params }: { params: { id: string } }
         actorSteamId: steamId,
         type: "CLIP_LIKE",
         content: `${nameFrom(names, steamId)} liked "${clip.Title}"`,
-        actionUrl: `/feed/${clipId}`,
+        actionUrl: `/feed?clip=${clipId}`,
       });
     }
   }

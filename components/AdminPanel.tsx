@@ -371,20 +371,22 @@ export default function AdminPanel({
               <div className="adm-flavours" role="group" aria-label="Retakes">
                 {RETAKE_FLAVOURS.map((f) => {
                   const short = live.players !== null && live.players < f.minPlayers;
+                  const odd = f.evenTeams && live.players !== null && live.players % 2 !== 0;
                   return (
                     <button
                       key={f.id}
                       className={`adm-flavour ${live.mode === "retakes" && f.id === "retakes" ? "live" : ""}`}
-                      disabled={!canAdmin || short}
+                      disabled={!canAdmin || short || odd}
                       title={
                         !canAdmin ? "Admin role required"
                         : short ? `Needs ${f.minPlayers} players — ${live.players} on the server`
+                        : odd ? `Needs an even number of players — ${live.players} on the server`
                         : f.hint
                       }
                       onClick={() => doAction({ type: "gamemode", mode: f.id })}
                     >
                       <span className="adm-flavour-name">{f.label}</span>
-                      <span className="adm-flavour-hint">{short ? `needs ${f.minPlayers}` : f.hint}</span>
+                      <span className="adm-flavour-hint">{short ? `needs ${f.minPlayers}` : odd ? "needs even teams" : f.hint}</span>
                     </button>
                   );
                 })}

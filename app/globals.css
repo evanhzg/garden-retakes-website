@@ -7567,8 +7567,8 @@ html[data-motion="off"] .main-content { scroll-behavior: auto; }
 .gr-row[data-rank="1"],
 .gr-row[data-rank="2"],
 .gr-row[data-rank="3"] { border-left: 3px solid var(--color-accent); }
-.gr-row[data-rank="2"] { border-left-color: color-mix(in srgb, var(--color-accent) 80%, transparent); }
-.gr-row[data-rank="3"] { border-left-color: color-mix(in srgb, var(--color-accent) 70%, transparent); }
+.gr-row[data-rank="2"] { border-left-color: color-mix(in srgb, var(--color-accent) 40%, transparent); }
+.gr-row[data-rank="3"] { border-left-color: color-mix(in srgb, var(--color-accent) 20%, transparent); }
 
 /* The readout sat hard against the right edge with a screen's worth of empty
    space beside it. */
@@ -8239,3 +8239,115 @@ header a > .avatar { display: block; }
 .adm-flavour:disabled { opacity: 0.45; cursor: not-allowed; }
 .adm-flavour-name { font-size: 13px; font-weight: 700; }
 .adm-flavour-hint { font-size: 10px; opacity: 0.7; }
+
+/* ---------------------------------------------------------------------------
+   Fixes: notification mark, mention menu, sub-nav, inventory hover, footer.
+   --------------------------------------------------------------------------- */
+
+.notif-bell.has-unread { color: var(--color-accent); }
+
+/* The mention menu's rows were text-width targets inside a wider box, so the
+   highlight and the clickable area disagreed. */
+.mention-menu li { display: block; }
+.mention-menu button {
+  width: 100%;
+  display: flex;
+  align-items: center;
+  min-height: 30px;
+}
+.mention-menu button.on,
+.mention-menu button:hover {
+  background: color-mix(in srgb, var(--color-accent) 18%, transparent);
+}
+
+/* A mention is a link to the person. */
+.mention { cursor: pointer; }
+.mention:hover { text-decoration: underline; }
+
+/* Sub-nav: the divider was part of the button, so the sectioned item was taller
+   than its neighbours and its hover box included the rule. It is a border on
+   the row instead, square, and the labels sit on the same centre line. */
+.nav-more-item {
+  align-items: center;
+  min-height: 38px;
+}
+.nav-more-item[data-section="true"] {
+  border-top: 1px solid var(--color-divider);
+  border-radius: 0;
+  margin-top: 6px;
+  padding-top: 10px;
+}
+
+/* Inventory hover lifted the tile but not above its neighbours, so it slid
+   under the row above. */
+.inv4-weapon:hover,
+.inv4-preview-cell:hover,
+.inv4-slot:hover { position: relative; z-index: 2; }
+
+/* The ladder sat flush against the accent banner. */
+#ladder { margin-bottom: clamp(28px, 4vw, 56px); }
+
+/* The banner is the footer, so it goes full width on every page and nothing
+   follows it — while the page above it keeps its bottom padding. */
+.site-footer-band {
+  margin-top: clamp(32px, 5vw, 72px);
+  margin-bottom: 0;
+}
+
+/* Buttons that had drifted from the system: the live page's join button, the
+   profile's settings and save controls. */
+.pro-id-actions .btn,
+.pro-settings .btn,
+.live-join .btn {
+  border-radius: 8px;
+}
+
+/* Checkboxes were the browser default next to a designed form. */
+.pro-settings input[type="checkbox"],
+.conn-editor input[type="checkbox"],
+.util-toggle input[type="checkbox"] {
+  appearance: none;
+  width: 16px; height: 16px;
+  border: 1.5px solid var(--btn-secondary-border);
+  border-radius: 4px;
+  background: var(--color-bg);
+  cursor: pointer;
+  display: grid; place-content: center;
+}
+.pro-settings input[type="checkbox"]:checked,
+.conn-editor input[type="checkbox"]:checked,
+.util-toggle input[type="checkbox"]:checked {
+  background: var(--btn-primary-bg);
+  border-color: transparent;
+}
+.pro-settings input[type="checkbox"]:checked::after,
+.conn-editor input[type="checkbox"]:checked::after,
+.util-toggle input[type="checkbox"]:checked::after {
+  content: "";
+  width: 4px; height: 8px;
+  border: solid var(--btn-primary-ink);
+  border-width: 0 2px 2px 0;
+  transform: rotate(45deg) translate(-1px, -1px);
+}
+
+/* Theme / language pickers in settings. */
+.pref-row { display: flex; align-items: center; gap: 14px; flex-wrap: wrap; margin-bottom: 10px; }
+.pref-label { font-size: 13px; font-weight: 600; min-width: 84px; }
+.pref-choices { display: inline-flex; border: 1.5px solid var(--btn-secondary-border); border-radius: 9px; overflow: hidden; }
+.pref-choice {
+  display: inline-flex; align-items: center; gap: 6px;
+  padding: 7px 13px;
+  background: var(--btn-secondary-bg); border: 0;
+  border-right: 1px solid var(--btn-secondary-border);
+  font: inherit; font-size: 13px; color: var(--color-text); cursor: pointer;
+}
+.pref-choice:last-child { border-right: 0; }
+.pref-choice:hover { background: color-mix(in srgb, var(--color-accent) 12%, var(--btn-secondary-bg)); }
+.pref-choice.on { background: var(--btn-primary-bg); color: var(--btn-primary-ink); }
+
+/* A tab that is coming back, rather than one that opens something broken. */
+.chip.is-disabled {
+  opacity: 0.45;
+  cursor: not-allowed;
+  pointer-events: none;
+}

@@ -96,7 +96,7 @@ export async function POST(req: Request, { params }: { params: { id: string } })
       actorSteamId: me,
       type: "CLIP_MENTION",
       content: `${author} mentioned you: ${preview.slice(0, 120)}`,
-      actionUrl: `/feed/${clipId}`,
+      actionUrl: `/feed?clip=${clipId}`,
     });
   }
 
@@ -106,7 +106,7 @@ export async function POST(req: Request, { params }: { params: { id: string } })
       actorSteamId: me,
       type: "CLIP_COMMENT",
       content: `${author} commented on "${clip.Title}": ${preview.slice(0, 120)}`,
-      actionUrl: `/feed/${clipId}`,
+      actionUrl: `/feed?clip=${clipId}`,
     });
   }
 

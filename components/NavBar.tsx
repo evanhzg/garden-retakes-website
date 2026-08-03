@@ -345,15 +345,13 @@ export default function NavBar({
                         href={getHref(l.href)}
                         onClick={() => setMenuOpen(false)}
                         className="nav-more-item"
+                        data-section={l.isSection ? "true" : undefined}
                         style={{
                           flex: 1,
                           padding: "9px 12px",
                           fontSize: 13,
                           textDecoration: "none",
                           color: active ? "var(--color-accent)" : "var(--color-text)",
-                          borderTop: l.isSection ? "1px solid var(--color-divider)" : undefined,
-                          marginTop: l.isSection ? "var(--space-2)" : undefined,
-                          paddingTop: l.isSection ? "var(--space-3)" : undefined,
                         }}
                       >
                         {l.label}
@@ -368,7 +366,6 @@ export default function NavBar({
         )}
 
         <NotificationCenter />
-        <ThemeToggle />
 
         {session.authenticated ? (
           <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
