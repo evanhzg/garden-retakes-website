@@ -149,7 +149,7 @@ export default function ProfileEditor() {
           className="input"
           value={country}
           maxLength={2}
-          placeholder="FR"
+          placeholder={t("auto.profileeditor.fr")}
           onChange={(e) => setCountry(e.target.value.toUpperCase())}
           style={{ maxWidth: 120 }}
         />

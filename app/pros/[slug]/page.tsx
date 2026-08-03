@@ -6,6 +6,7 @@ import CharacterHero from "@/components/CharacterHero";
 import AvatarImage from "@/components/AvatarImage";
 import ProfileActivity from "@/components/ProfileActivity";
 import { notFound } from "next/navigation";
+import { getT } from '@/lib/serverI18n';
 
 export const dynamic = "force-dynamic";
 export const revalidate = 30;
@@ -17,6 +18,8 @@ export default async function ProPage({
   params: { slug: string };
   searchParams: { season?: string; ranked?: string };
 }) {
+    const t = getT();
+
   const webProfile = await prisma.gardenWebProfile.findUnique({
     where: { ProSlug: params.slug },
   });
@@ -88,11 +91,11 @@ export default async function ProPage({
           <div style={{ flex: 1, minWidth: 220 }}>
             <h1 className="hero-name flex items-center gap-2">
               {name}
-              <span className="mini-badge bg-gradient-to-r from-amber-500 to-orange-500 text-white border-0 shadow-lg px-2 py-0.5" style={{ display: 'inline-flex', alignItems: 'center', height: '18px', fontSize: '10px' }}>PRO</span>
-              {override && <span className="mini-badge">custom name</span>}
+              <span className="mini-badge bg-gradient-to-r from-amber-500 to-orange-500 text-white border-0 shadow-lg px-2 py-0.5" style={{ display: 'inline-flex', alignItems: 'center', height: '18px', fontSize: '10px' }}>{t("auto.page.pro")}</span>
+              {override && <span className="mini-badge">{t("auto.page.custom_name")}</span>}
             </h1>
             <div className="hero-sub">
-              SteamID64 {steamId.toString()}
+              {t("auto.page.steamid64")} {steamId.toString()}
               {webProfile?.Country ? ` · ${webProfile.Country}` : ""}
               {rankedOnly ? " · ranked rounds only" : " · all rounds"}
             </div>
@@ -102,12 +105,12 @@ export default async function ProPage({
           <div className="player-hero-actions">
             {isOwnPage && (
               <Link className="btn small secondary" href="/profile">
-                ✎ Edit profile
-              </Link>
+                {t("auto.page._edit_profile")}
+                                            </Link>
             )}
             <Link className="btn secondary" href={`/compare?a=${steamId.toString()}`}>
-              ⚔ Compare
-            </Link>
+              {t("auto.page._compare")}
+                                      </Link>
           </div>
         </div>
 
@@ -125,8 +128,8 @@ export default async function ProPage({
             className={`chip ${rankedOnly ? "active" : ""}`}
             href={`?season=${seasonId}${rankedOnly ? "" : "&ranked=1"}`}
           >
-            Ranked only
-          </a>
+            {t("auto.page.ranked_only")}
+                                </a>
         </div>
       </section>
 
@@ -135,52 +138,52 @@ export default async function ProPage({
         <div className="bigstat-row">
           <div className="bigstat">
             <div className={`num ${ratingClass(total.rating)}`}>{total.rating.toFixed(2)}</div>
-            <div className="cap">Rating</div>
+            <div className="cap">{t("auto.page.rating")}</div>
           </div>
           <div className="bigstat">
             <div className="num rating-neutral">{seasonStats?.Elo ?? "—"}</div>
-            <div className="cap">CS Rating (peak {seasonStats?.PeakElo ?? "—"})</div>
+            <div className="cap">{t("auto.page.cs_rating_peak")} {seasonStats?.PeakElo ?? "—"})</div>
           </div>
           <div className="bigstat">
             <div className="num rating-neutral">{total.kd.toFixed(2)}</div>
             <div className="cap">
-              K/D ({total.kills}/{total.deaths})
+              {t("auto.page.k_d")}{total.kills}/{total.deaths})
             </div>
           </div>
           <div className="bigstat">
             <div className="num rating-neutral">{total.rounds}</div>
-            <div className="cap">Rounds · {byMap.length} maps</div>
+            <div className="cap">{t("auto.page.rounds")} {byMap.length} {t("auto.page.maps")}</div>
           </div>
           <div className="bigstat">
             <div className="num rating-neutral">{formatPlaytime(profile?.TimeSpentSeconds ?? 0)}</div>
-            <div className="cap">Playtime</div>
+            <div className="cap">{t("auto.page.playtime")}</div>
           </div>
         </div>
 
         <div style={{ marginTop: 18 }}>
           <div className="meter">
-            <span className="cap">Round win %</span>
+            <span className="cap">{t("auto.page.round_win")}</span>
             <div className="track">
               <div className="fill" style={{ width: `${Math.min(100, total.winPct)}%` }} />
             </div>
             <span className="val">{total.winPct.toFixed(0)}%</span>
           </div>
           <div className="meter">
-            <span className="cap">KAST</span>
+            <span className="cap">{t("auto.page.kast")}</span>
             <div className="track">
               <div className="fill" style={{ width: `${Math.min(100, total.kast)}%` }} />
             </div>
             <span className="val">{total.kast.toFixed(0)}%</span>
           </div>
           <div className="meter">
-            <span className="cap">Headshots</span>
+            <span className="cap">{t("auto.page.headshots")}</span>
             <div className="track">
               <div className="fill" style={{ width: `${Math.min(100, total.hs)}%` }} />
             </div>
             <span className="val">{total.hs.toFixed(0)}%</span>
           </div>
           <div className="meter">
-            <span className="cap">ADR</span>
+            <span className="cap">{t("auto.page.adr")}</span>
             <div className="track">
               <div className="fill" style={{ width: `${Math.min(100, (total.adr / 150) * 100)}%` }} />
             </div>
@@ -191,8 +194,8 @@ export default async function ProPage({
         {recentRatings.length > 1 && (
           <div style={{ marginTop: 16 }}>
             <div className="cap muted" style={{ fontSize: "0.78rem", fontWeight: 700, marginBottom: 6 }}>
-              LAST {recentRatings.length} ROUNDS — RATING
-            </div>
+              {t("auto.page.last")} {recentRatings.length} {t("auto.page.rounds_rating")}
+                                      </div>
             <div className="sparkline">
               {recentRatings.map((r, i) => (
                 <span
@@ -212,9 +215,9 @@ export default async function ProPage({
 
       {/* ---------- Per side ---------- */}
       <section className="panel">
-        <h2>Per side</h2>
+        <h2>{t("auto.page.per_side")}</h2>
         {bySide.length === 0 ? (
-          <p className="empty-hint">No rounds recorded with these filters yet.</p>
+          <p className="empty-hint">{t("auto.page.no_rounds_recorded_with_these")}</p>
         ) : (
           <div className="split-cards">
             {bySide.map(([side, s]) => (
@@ -226,19 +229,19 @@ export default async function ProPage({
                 <div className="stat-grid">
                   <div className="stat-card">
                     <div className={`value ${ratingClass(s.rating)}`}>{s.rating.toFixed(2)}</div>
-                    <div className="label">Rating</div>
+                    <div className="label">{t("auto.page.rating")}</div>
                   </div>
                   <div className="stat-card">
                     <div className="value">{s.kd.toFixed(2)}</div>
-                    <div className="label">K/D</div>
+                    <div className="label">{t("auto.page.k_d")}</div>
                   </div>
                   <div className="stat-card">
                     <div className="value">{s.adr.toFixed(0)}</div>
-                    <div className="label">ADR</div>
+                    <div className="label">{t("auto.page.adr")}</div>
                   </div>
                   <div className="stat-card">
                     <div className="value">{s.winPct.toFixed(0)}%</div>
-                    <div className="label">Win % · {s.rounds} rounds</div>
+                    <div className="label">{t("auto.page.win")} {s.rounds} {t("auto.page.rounds")}</div>
                   </div>
                 </div>
               </div>
@@ -249,20 +252,20 @@ export default async function ProPage({
 
       {/* ---------- Per map ---------- */}
       <section className="panel">
-        <h2>Per map</h2>
+        <h2>{t("auto.page.per_map")}</h2>
         {byMap.length === 0 ? (
-          <p className="empty-hint">Nothing yet.</p>
+          <p className="empty-hint">{t("auto.page.nothing_yet")}</p>
         ) : (
           <table>
             <thead>
               <tr>
-                <th>Map</th>
-                <th>Rounds</th>
-                <th>Win %</th>
-                <th>K — D</th>
-                <th>ADR</th>
-                <th>KAST</th>
-                <th>Rating</th>
+                <th>{t("auto.page.map")}</th>
+                <th>{t("auto.page.rounds")}</th>
+                <th>{t("auto.page.win")}</th>
+                <th>{t("auto.page.k_d")}</th>
+                <th>{t("auto.page.adr")}</th>
+                <th>{t("auto.page.kast")}</th>
+                <th>{t("auto.page.rating")}</th>
               </tr>
             </thead>
             <tbody>
@@ -288,20 +291,20 @@ export default async function ProPage({
 
       {/* ---------- Per day ---------- */}
       <section className="panel">
-        <h2>Per day (last {byDay.length})</h2>
+        <h2>{t("auto.page.per_day_last")} {byDay.length})</h2>
         {byDay.length === 0 ? (
-          <p className="empty-hint">Nothing yet.</p>
+          <p className="empty-hint">{t("auto.page.nothing_yet")}</p>
         ) : (
           <table>
             <thead>
               <tr>
-                <th>Day</th>
-                <th>Rounds</th>
-                <th>Win %</th>
-                <th>K — D</th>
-                <th>ADR</th>
-                <th>Clutches</th>
-                <th>Rating</th>
+                <th>{t("auto.page.day")}</th>
+                <th>{t("auto.page.rounds")}</th>
+                <th>{t("auto.page.win")}</th>
+                <th>{t("auto.page.k_d")}</th>
+                <th>{t("auto.page.adr")}</th>
+                <th>{t("auto.page.clutches")}</th>
+                <th>{t("auto.page.rating")}</th>
               </tr>
             </thead>
             <tbody>
@@ -327,39 +330,39 @@ export default async function ProPage({
 
       {/* ---------- Extras ---------- */}
       <section className="panel">
-        <h2>Details</h2>
+        <h2>{t("auto.page.details")}</h2>
         <div className="stat-grid">
           <div className="stat-card">
             <div className="value">{total.openingKills}</div>
-            <div className="label">Opening kills ({total.openingDeaths} deaths)</div>
+            <div className="label">{t("auto.page.opening_kills")}{total.openingDeaths} {t("auto.page.deaths")}</div>
           </div>
           <div className="stat-card">
             <div className="value">{total.clutches}</div>
-            <div className="label">Clutches won</div>
+            <div className="label">{t("auto.page.clutches_won")}</div>
           </div>
           <div className="stat-card">
             <div className="value">{total.multiKills}</div>
-            <div className="label">Multi-kill rounds</div>
+            <div className="label">{t("auto.page.multi_kill_rounds")}</div>
           </div>
           <div className="stat-card">
             <div className="value">{total.tradeKills}</div>
-            <div className="label">Trade kills</div>
+            <div className="label">{t("auto.page.trade_kills")}</div>
           </div>
           <div className="stat-card">
             <div className="value">{total.utilPerRound.toFixed(1)}</div>
-            <div className="label">Util dmg / round</div>
+            <div className="label">{t("auto.page.util_dmg_round")}</div>
           </div>
           <div className="stat-card">
             <div className="value">{total.enemiesFlashed}</div>
-            <div className="label">Enemies flashed</div>
+            <div className="label">{t("auto.page.enemies_flashed")}</div>
           </div>
           <div className="stat-card">
             <div className="value">{total.defuses}</div>
-            <div className="label">Defuses ({total.plants} plants)</div>
+            <div className="label">{t("auto.page.defuses")}{total.plants} {t("auto.page.plants")}</div>
           </div>
           <div className="stat-card">
             <div className="value">{total.kpr.toFixed(2)}</div>
-            <div className="label">Kills / round</div>
+            <div className="label">{t("auto.page.kills_round")}</div>
           </div>
         </div>
       </section>

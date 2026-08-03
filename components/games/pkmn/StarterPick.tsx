@@ -1,6 +1,7 @@
 import React from "react";
 import { frontSprite, staticSprite, playCry } from "./sprites";
 import "./pkmn.css";
+import { getT } from '@/lib/serverI18n';
 
 const STARTERS = [
   { species: "Bulbasaur", type: "GRASS", cls: "pks-grass", blurb: "The reliable one" },
@@ -9,10 +10,12 @@ const STARTERS = [
 ];
 
 export default function StarterPick({ onPick }: { onPick: (species: string) => void }) {
+    const t = getT();
+
   return (
     <div className="pks-overlay">
-      <h2 className="pks-title">Welcome to Garden PKMN!</h2>
-      <p className="pks-sub">Professor Garden: “Choose your very first partner, trainer.”</p>
+      <h2 className="pks-title">{t("auto.starterpick.welcome_to_garden_pkmn")}</h2>
+      <p className="pks-sub">{t("auto.starterpick.professor_garden_choose_your_v")}</p>
       <div className="pks-grid">
         {STARTERS.map((s) => (
           <button

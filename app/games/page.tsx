@@ -6,6 +6,7 @@ import { useRouter } from "next/navigation";
 import { SocketProvider, useSocket } from "@/components/games/SocketProvider";
 import { useGameIdentity, usePlayerNames, displayNameFor } from "@/components/games/hooks";
 import GameIcon from "@/components/games/GameIcon";
+import { useI18n } from '@/components/I18nProvider';
 import "./games.css";
 
 // The hub is grouped into categories so the party games and the daily
@@ -86,6 +87,8 @@ export default function GamesHubWrapper() {
 }
 
 function MiniLadder() {
+    const { t } = useI18n();
+
   const [topPlayers, setTopPlayers] = useState<any[]>([]);
   useEffect(() => {
     fetch('/api/games/ladder?gameId=all')
@@ -99,12 +102,12 @@ function MiniLadder() {
   return (
     <div className="hub-panel mt-4" style={{ marginTop: '1rem' }}>
       <div className="hub-panel-head">
-        <h2>Top Players</h2>
-        <Link href="/games/ladder" className="hub-live" style={{ color: 'var(--text-dim)' }}>View all →</Link>
+        <h2>{t("auto.page.top_players")}</h2>
+        <Link href="/games/ladder" className="hub-live" style={{ color: 'var(--text-dim)' }}>{t("auto.page.view_all")}</Link>
       </div>
       <div className="lobbies-list">
         {topPlayers.length === 0 ? (
-          <p className="no-lobbies">No ranked players yet.</p>
+          <p className="no-lobbies">{t("auto.page.no_ranked_players_yet")}</p>
         ) : (
           topPlayers.map((p, i) => (
             <div key={`${p.steamId}-${p.gameId}`} className="public-lobby-card" style={{ padding: '0.75rem', gap: '0.5rem' }}>
@@ -116,7 +119,7 @@ function MiniLadder() {
                   <Link href={`/players/${p.steamId}`} className="hub-ladder-name">{p.name}</Link>
                 </div>
                 <div style={{ textAlign: 'right' }}>
-                  <div style={{ color: '#ffb800', fontWeight: 'bold' }}>{p.elo} <span style={{ fontSize: '0.7rem', color: 'var(--text-dim)', fontWeight: 'normal' }}>ELO</span></div>
+                  <div style={{ color: '#ffb800', fontWeight: 'bold' }}>{p.elo} <span style={{ fontSize: '0.7rem', color: 'var(--text-dim)', fontWeight: 'normal' }}>{t("auto.page.elo")}</span></div>
                   <div style={{ fontSize: '0.7rem', color: 'var(--text-dim)' }}>{p.gameId.toUpperCase()}</div>
                 </div>
               </div>
@@ -129,6 +132,8 @@ function MiniLadder() {
 }
 
 function GamesHub() {
+    const { t } = useI18n();
+
   const router = useRouter();
   const { socket, isAuthed, steamId } = useSocket();
   const [publicLobbies, setPublicLobbies] = useState<any[]>([]);
@@ -196,27 +201,26 @@ function GamesHub() {
       <div className="hub-inner">
         <section className="hub-hero">
           <div className="hub-hero-text">
-            <span className="hub-kicker hand">Garden · party games</span>
+            <span className="hub-kicker hand">{t("auto.page.garden_party_games")}</span>
             <h1>
-              Games <em>hub</em>
+              {t("auto.page.games")} <em>{t("auto.page.hub")}</em>
             </h1>
             <p>
-              One universal lobby for every game on the shelf. Bring friends, or
-              fill the seats with bots.
-            </p>
+              {t("auto.page.one_universal_lobby_for_every")}
+                                      </p>
             <div className="hub-hero-actions">
               <button className="hub-create" onClick={() => createLobby("none")} disabled={creating}>
                 <span className="hub-create-plus">+</span> {creating ? "Creating…" : "Create a lobby"}
               </button>
               {/* The hub had no route to the player's own record — the ladder
                   was the only way in, and it only listed the top 100. */}
-              <Link href="/games/profile" className="hub-ghost">Your profile</Link>
-              <Link href="/games/ladder" className="hub-ghost">Ladder</Link>
+              <Link href="/games/profile" className="hub-ghost">{t("auto.page.your_profile")}</Link>
+              <Link href="/games/ladder" className="hub-ghost">{t("auto.page.ladder")}</Link>
             </div>
           </div>
           <dl className="hub-stats">
-            <div className="hub-stat"><dd>{readyCount}</dd><dt>games live</dt></div>
-            <div className="hub-stat"><dd>{publicLobbies.length}</dd><dt>open lobbies</dt></div>
+            <div className="hub-stat"><dd>{readyCount}</dd><dt>{t("auto.page.games_live")}</dt></div>
+            <div className="hub-stat"><dd>{publicLobbies.length}</dd><dt>{t("auto.page.open_lobbies")}</dt></div>
           </dl>
         </section>
 
@@ -225,7 +229,7 @@ function GamesHub() {
             <span className="rejoin-pulse" />
             <span className="rejoin-text">
               <b>{myLobby.member ? "You're in a lobby" : "Rejoin your lobby"}</b>
-              <span>{myLobby.name} · {myLobby.playerCount}/{myLobby.maxPlayers ?? 8} players{myLobby.status === "PLAYING" ? " · in game" : ""}</span>
+              <span>{myLobby.name} · {myLobby.playerCount}/{myLobby.maxPlayers ?? 8} {t("auto.page.players")}{myLobby.status === "PLAYING" ? " · in game" : ""}</span>
             </span>
             <span className="rejoin-cta">{myLobby.member ? "Return →" : "Rejoin →"}</span>
           </button>
@@ -234,19 +238,19 @@ function GamesHub() {
         {!isAuthed && (
           <div className="socket-loading-banner">
             <div className="socket-spinner"></div>
-            <span>Connecting to Games Server...</span>
+            <span>{t("auto.page.connecting_to_games_server")}</span>
           </div>
         )}
 
         <div className="hub-body">
           <div className="hub-games">
             <div className="hub-section-head">
-              <h2>Choose a game</h2>
-              <div className="hub-view-toggle" role="group" aria-label="View">
-                <button className={view === "grid" ? "on" : ""} onClick={() => setViewPersist("grid")} title="Grid" aria-label="Grid view">
+              <h2>{t("auto.page.choose_a_game")}</h2>
+              <div className="hub-view-toggle" role="group" aria-label={t("auto.page.view")}>
+                <button className={view === "grid" ? "on" : ""} onClick={() => setViewPersist("grid")} title={t("auto.page.grid")} aria-label={t("auto.page.grid_view")}>
                   <svg viewBox="0 0 20 20" width="16" height="16" fill="currentColor"><rect x="2" y="2" width="7" height="7" rx="1.5"/><rect x="11" y="2" width="7" height="7" rx="1.5"/><rect x="2" y="11" width="7" height="7" rx="1.5"/><rect x="11" y="11" width="7" height="7" rx="1.5"/></svg>
                 </button>
-                <button className={view === "list" ? "on" : ""} onClick={() => setViewPersist("list")} title="List" aria-label="List view">
+                <button className={view === "list" ? "on" : ""} onClick={() => setViewPersist("list")} title={t("auto.page.list")} aria-label={t("auto.page.list_view")}>
                   <svg viewBox="0 0 20 20" width="16" height="16" fill="currentColor"><rect x="2" y="3" width="16" height="3" rx="1.5"/><rect x="2" y="8.5" width="16" height="3" rx="1.5"/><rect x="2" y="14" width="16" height="3" rx="1.5"/></svg>
                 </button>
               </div>
@@ -273,12 +277,12 @@ function GamesHub() {
                           <p className="game-card-desc">{game.description}</p>
                           <div className="game-card-meta">
                             <span className="badge badge-players">👥 {game.players}</span>
-                            {game.daily && <span className="badge badge-daily">🗓 Daily</span>}
-                            {game.quiz && <span className="badge badge-quiz">🧠 Quiz</span>}
-                            {game.ready && game.solo && <span className="badge badge-solo">Solo or friends</span>}
+                            {game.daily && <span className="badge badge-daily">{t("auto.page._daily")}</span>}
+                            {game.quiz && <span className="badge badge-quiz">{t("auto.page._quiz")}</span>}
+                            {game.ready && game.solo && <span className="badge badge-solo">{t("auto.page.solo_or_friends")}</span>}
                             {game.ready
-                              ? <span className="badge badge-play">Play →</span>
-                              : <span className="badge badge-coming">Coming soon</span>}
+                              ? <span className="badge badge-play">{t("auto.page.play")}</span>
+                              : <span className="badge badge-coming">{t("auto.page.coming_soon")}</span>}
                           </div>
                         </div>
                       </>
@@ -314,7 +318,7 @@ function GamesHub() {
                     <div className="game-card game-card-more" aria-hidden>
                       <div className="game-card-more-inner">
                         <span className="game-card-more-plus">✦</span>
-                        <span className="game-card-more-text">More games<br />coming soon</span>
+                        <span className="game-card-more-text">{t("auto.page.more_games")}<br />{t("auto.page.coming_soon")}</span>
                       </div>
                     </div>
                   )}
@@ -326,19 +330,19 @@ function GamesHub() {
           <aside className="hub-side">
             <div className="hub-panel">
               <div className="hub-panel-head">
-                <h2>Public lobbies</h2>
-                <span className="hub-live"><span className="hub-live-dot" /> live</span>
+                <h2>{t("auto.page.public_lobbies")}</h2>
+                <span className="hub-live"><span className="hub-live-dot" /> {t("auto.page.live")}</span>
               </div>
               <div className="lobbies-list">
                 {publicLobbies.length === 0 ? (
-                  <p className="no-lobbies">No public lobbies right now. Be the first to create one!</p>
+                  <p className="no-lobbies">{t("auto.page.no_public_lobbies_right_now_be")}</p>
                 ) : (
                   publicLobbies.map(lobby => (
                     <div key={lobby.id} className="public-lobby-card">
                       <div className="lobby-info">
                         <h4>{lobby.name}</h4>
                         <span className="lobby-game">{prettyGame(lobby.currentGame)}</span>
-                        <span className="lobby-host">by {displayNameFor(lobby.host, names)}</span>
+                        <span className="lobby-host">{t("auto.page.by")} {displayNameFor(lobby.host, names)}</span>
                       </div>
                       <div className="lobby-stats">
                         <span className={lobby.status === "PLAYING" ? "lobby-playing" : ""}>
@@ -349,23 +353,23 @@ function GamesHub() {
                           className="btn-join"
                           disabled={lobby.status === "PLAYING" || lobby.playerCount >= (lobby.maxPlayers ?? 8)}
                         >
-                          Join
-                        </button>
+                          {t("auto.page.join")}
+                                                          </button>
                       </div>
                     </div>
                   ))
                 )}
               </div>
               <form className="join-code-box" onSubmit={handleJoinCode}>
-                <label>Have an invite code or link?</label>
+                <label>{t("auto.page.have_an_invite_code_or_link")}</label>
                 <div className="join-code-row">
                   <input
                     type="text"
                     value={joinCode}
                     onChange={e => setJoinCode(e.target.value)}
-                    placeholder="Paste code or link"
+                    placeholder={t("auto.page.paste_code_or_link")}
                   />
-                  <button type="submit" className="btn-join" disabled={!joinCode.trim()}>Go</button>
+                  <button type="submit" className="btn-join" disabled={!joinCode.trim()}>{t("auto.page.go")}</button>
                 </div>
               </form>
             </div>

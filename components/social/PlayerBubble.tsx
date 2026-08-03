@@ -5,6 +5,7 @@ import { createPortal } from "react-dom";
 import { motion, AnimatePresence } from "framer-motion";
 import Link from "next/link";
 import AvatarImage from "@/components/AvatarImage";
+import { useI18n } from '@/components/I18nProvider';
 import { useSocket } from "@/components/games/SocketProvider";
 
 interface PlayerBubbleProps {
@@ -14,6 +15,8 @@ interface PlayerBubbleProps {
 }
 
 export default function PlayerBubble({ steamId, name, children }: PlayerBubbleProps) {
+    const { t } = useI18n();
+
   const [isOpen, setIsOpen] = useState(false);
   const [data, setData] = useState<any>(null);
   const [loading, setLoading] = useState(false);
@@ -162,7 +165,7 @@ export default function PlayerBubble({ steamId, name, children }: PlayerBubblePr
             {/* Content Body */}
             <div style={{ padding: 16 }}>
               {loading ? (
-                <div style={{ fontSize: 13, color: "rgba(255,255,255,0.5)", textAlign: "center", padding: "20px 0" }}>Loading...</div>
+                <div style={{ fontSize: 13, color: "rgba(255,255,255,0.5)", textAlign: "center", padding: "20px 0" }}>{t("auto.playerbubble.loading")}</div>
               ) : (
                 <div style={{ display: "flex", flexDirection: "column", gap: 12 }}>
                   {data?.bio && (
@@ -174,11 +177,11 @@ export default function PlayerBubble({ steamId, name, children }: PlayerBubblePr
                   {/* Quick Stats Summary */}
                   <div style={{ display: "flex", gap: 8 }}>
                     <div style={{ flex: 1, background: "rgba(255,255,255,0.03)", padding: 8, borderRadius: 8, textAlign: "center" }}>
-                      <div style={{ fontSize: 10, textTransform: "uppercase", color: "rgba(255,255,255,0.4)", marginBottom: 4 }}>Rating</div>
+                      <div style={{ fontSize: 10, textTransform: "uppercase", color: "rgba(255,255,255,0.4)", marginBottom: 4 }}>{t("auto.playerbubble.rating")}</div>
                       <div style={{ fontSize: 16, fontWeight: 700, color: "#fff" }}>{data?.rating?.toFixed(2) ?? "—"}</div>
                     </div>
                     <div style={{ flex: 1, background: "rgba(255,255,255,0.03)", padding: 8, borderRadius: 8, textAlign: "center" }}>
-                      <div style={{ fontSize: 10, textTransform: "uppercase", color: "rgba(255,255,255,0.4)", marginBottom: 4 }}>Win %</div>
+                      <div style={{ fontSize: 10, textTransform: "uppercase", color: "rgba(255,255,255,0.4)", marginBottom: 4 }}>{t("auto.playerbubble.win")}</div>
                       <div style={{ fontSize: 16, fontWeight: 700, color: "#fff" }}>{data?.winPct ? `${data.winPct.toFixed(0)}%` : "—"}</div>
                     </div>
                   </div>
@@ -194,8 +197,8 @@ export default function PlayerBubble({ steamId, name, children }: PlayerBubblePr
                 onMouseEnter={(e) => e.currentTarget.style.background = "rgba(255,255,255,0.05)"}
                 onMouseLeave={(e) => e.currentTarget.style.background = "transparent"}
               >
-                View Profile
-              </Link>
+                {t("auto.playerbubble.view_profile")}
+                                            </Link>
               <div 
                 style={{ width: 1, background: "rgba(255,255,255,0.05)" }}
               />
@@ -204,7 +207,7 @@ export default function PlayerBubble({ steamId, name, children }: PlayerBubblePr
                 style={{ flex: 1, padding: 12, background: "none", border: "none", cursor: "pointer", fontSize: 13, fontWeight: 600, color: "#4ade80", transition: "background 0.2s" }}
                 onMouseEnter={(e) => e.currentTarget.style.background = "rgba(74, 222, 128, 0.1)"}
                 onMouseLeave={(e) => e.currentTarget.style.background = "transparent"}
-                title="Add Friend"
+                title={t("auto.playerbubble.add_friend")}
               >
                 <svg viewBox="0 0 24 24" width="18" height="18" stroke="currentColor" strokeWidth="2" fill="none" strokeLinecap="round" strokeLinejoin="round" style={{ verticalAlign: "middle" }}>
                   <path d="M16 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2" />
@@ -221,7 +224,7 @@ export default function PlayerBubble({ steamId, name, children }: PlayerBubblePr
                 style={{ flex: 1, padding: 12, background: "none", border: "none", cursor: "pointer", fontSize: 13, fontWeight: 600, color: "#f87171", transition: "background 0.2s" }}
                 onMouseEnter={(e) => e.currentTarget.style.background = "rgba(248, 113, 113, 0.1)"}
                 onMouseLeave={(e) => e.currentTarget.style.background = "transparent"}
-                title="Report Player"
+                title={t("auto.playerbubble.report_player")}
               >
                 <svg viewBox="0 0 24 24" width="18" height="18" stroke="currentColor" strokeWidth="2" fill="none" strokeLinecap="round" strokeLinejoin="round" style={{ verticalAlign: "middle" }}>
                   <path d="M4 15s1-1 4-1 5 2 8 2 4-1 4-1V3s-1 1-4 1-5-2-8-2-4 1-4 1z" />

@@ -8,6 +8,7 @@
 // streaks and best scores live in localStorage under a per-game key.
 
 import React, { useCallback, useEffect, useMemo, useState } from "react";
+import { useI18n } from '@/components/I18nProvider';
 import Link from "next/link";
 import { motion, AnimatePresence } from "framer-motion";
 import { useGameLang, translator, LangToggle, QUIZ, type Lang } from "@/components/games/i18n";
@@ -80,6 +81,8 @@ const todayKey = () => new Date().toISOString().slice(0, 10);
 const msUntilNextDay = () => (Math.floor(Date.now() / 86400000) + 1) * 86400000 - Date.now();
 
 export default function QuizPage({ theme }: { theme: QuizTheme }) {
+    const { t } = useI18n();
+
   const [lang, setLang] = useGameLang(null);
   const t = translator(QUIZ, lang);
   const g = translator(theme.dict, lang);
@@ -211,7 +214,7 @@ export default function QuizPage({ theme }: { theme: QuizTheme }) {
 
       <header className="quiz-topbar">
         <div className="quiz-brand-block">
-          <Link href="/games" className="quiz-back" aria-label="Back to games">←</Link>
+          <Link href="/games" className="quiz-back" aria-label={t("auto.quizpage.back_to_games")}>←</Link>
           <div>
             <h1 className="quiz-brand">{g("brand")}</h1>
             <p className="quiz-tagline">{g("tagline")}</p>

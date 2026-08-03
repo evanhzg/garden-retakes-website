@@ -9,6 +9,7 @@ import { useGameLang, translator, LangToggle, PILEOF } from "@/components/games/
 import SoundControls from "@/components/games/sound/SoundControls";
 import { sound } from "@/components/games/sound/SoundManager";
 import "./shared.css";
+import { useI18n } from '@/components/I18nProvider';
 import "./cah.css";
 
 type Card = { id: number | string; text: string; custom?: boolean };
@@ -39,6 +40,8 @@ function FilledPrompt({ black, cards }: { black: string; cards: Card[] }) {
 const stripDot = (t: string) => t.replace(/\.$/, "");
 
 export default function CahGame() {
+    const { t } = useI18n();
+
   const { socket, steamId } = useSocket();
   const mySteamId = steamId ?? "";
 
@@ -130,7 +133,7 @@ export default function CahGame() {
       {/* ---------------------------------------------------------- top bar */}
       <header className="pile-topbar">
         <div className="pile-brand-block">
-          <span className="pile-brand">PILE OF<span className="pile-brand-dots">...</span></span>
+          <span className="pile-brand">{t("auto.cahgame.pile_of")}<span className="pile-brand-dots">...</span></span>
           <span className="pile-round">{t("round", { n: gameState.round, m: gameState.maxRounds })}</span>
         </div>
         <div className="pile-phase-pill">{phaseLabel}</div>

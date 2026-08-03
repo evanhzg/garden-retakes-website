@@ -1,4 +1,5 @@
 "use client";
+import { useI18n } from '@/components/I18nProvider';
 
 import { useState, useEffect, useRef } from "react";
 
@@ -47,6 +48,8 @@ const CLASSES = [
 const MOCK_NAMES = ["morgoth", "frost", "nton", "Taeho", "vz7y", "trezza", "garden", "Niko", "s1mple", "donk", "m0NESY", "ZywOo"];
 
 export default function SpellTakersLobby() {
+    const { t } = useI18n();
+
   const [phase, setPhase] = useState<LobbyPhase>("team-select");
   const [players, setPlayers] = useState<Player[]>([]);
   const [maps, setMaps] = useState<MapItem[]>(INITIAL_MAPS);
@@ -256,8 +259,8 @@ export default function SpellTakersLobby() {
 
       {phase !== "recap" && (
         <div className="st-header">
-          <h1>SpellTakers</h1>
-          <p className="st-subtitle">A League of Legends inspired 5v5 mode for Counter-Strike 2</p>
+          <h1>{t("auto.spelltakerslobby.spelltakers")}</h1>
+          <p className="st-subtitle">{t("auto.spelltakerslobby.a_league_of_legends_inspired_5")}</p>
         </div>
       )}
 
@@ -266,47 +269,47 @@ export default function SpellTakersLobby() {
         <div className="st-panel">
           <div className="st-teams-wrapper">
             <div className="st-team-col">
-              <h2>Team Alpha</h2>
+              <h2>{t("auto.spelltakerslobby.team_alpha")}</h2>
               <div className="st-players-list">
                 {alphaPlayers.map((p, i) => (
                   <div key={i} className={`st-player-row ${p ? (p.isReady ? 'ready' : '') : 'empty'}`}>
                     {p ? (
                       <>
-                        <img src={p.avatar} alt="avatar" />
+                        <img src={p.avatar} alt={t("auto.spelltakerslobby.avatar")} />
                         <span>{p.name}</span>
-                        {p.isReady && <span className="st-status-badge">READY</span>}
+                        {p.isReady && <span className="st-status-badge">{t("auto.spelltakerslobby.ready")}</span>}
                       </>
-                    ) : <span>Empty Slot</span>}
+                    ) : <span>{t("auto.spelltakerslobby.empty_slot")}</span>}
                   </div>
                 ))}
               </div>
-              {!myTeam && <button className="st-btn-secondary" onClick={() => joinTeam("alpha")}>Join Alpha</button>}
+              {!myTeam && <button className="st-btn-secondary" onClick={() => joinTeam("alpha")}>{t("auto.spelltakerslobby.join_alpha")}</button>}
             </div>
 
-            <div className="st-vs-divider">VS</div>
+            <div className="st-vs-divider">{t("auto.spelltakerslobby.vs")}</div>
 
             <div className="st-team-col">
-              <h2>Team Omega</h2>
+              <h2>{t("auto.spelltakerslobby.team_omega")}</h2>
               <div className="st-players-list">
                 {omegaPlayers.map((p, i) => (
                   <div key={i} className={`st-player-row ${p ? (p.isReady ? 'ready' : '') : 'empty'}`}>
                     {p ? (
                       <>
-                        <img src={p.avatar} alt="avatar" />
+                        <img src={p.avatar} alt={t("auto.spelltakerslobby.avatar")} />
                         <span>{p.name}</span>
-                        {p.isReady && <span className="st-status-badge">READY</span>}
+                        {p.isReady && <span className="st-status-badge">{t("auto.spelltakerslobby.ready")}</span>}
                       </>
-                    ) : <span>Empty Slot</span>}
+                    ) : <span>{t("auto.spelltakerslobby.empty_slot")}</span>}
                   </div>
                 ))}
               </div>
-              {!myTeam && <button className="st-btn-secondary" onClick={() => joinTeam("omega")}>Join Omega</button>}
+              {!myTeam && <button className="st-btn-secondary" onClick={() => joinTeam("omega")}>{t("auto.spelltakerslobby.join_omega")}</button>}
             </div>
           </div>
 
           {myTeam && (
             <div className="st-action-bar">
-              <button className="st-btn-danger" onClick={leaveTeam} disabled={myPlayer?.isReady}>Leave Team</button>
+              <button className="st-btn-danger" onClick={leaveTeam} disabled={myPlayer?.isReady}>{t("auto.spelltakerslobby.leave_team")}</button>
               <button className={`st-btn-primary ${myPlayer?.isReady ? 'active' : ''}`} onClick={toggleReady}>
                 {myPlayer?.isReady ? "Cancel Ready" : "Ready Up"}
               </button>
@@ -319,10 +322,10 @@ export default function SpellTakersLobby() {
       {phase === "veto" && (
         <div className="st-panel">
           <div className="st-timer-header">
-            <h2>Map Veto Phase</h2>
+            <h2>{t("auto.spelltakerslobby.map_veto_phase")}</h2>
             <div className="st-timer-circle">{timeLeft}s</div>
           </div>
-          <p className="st-subtitle">Vote to <strong>BAN</strong> an arena. Map with most votes is eliminated.</p>
+          <p className="st-subtitle">{t("auto.spelltakerslobby.vote_to")} <strong>{t("auto.spelltakerslobby.ban")}</strong> {t("auto.spelltakerslobby.an_arena_map_with_most_votes_i")}</p>
           
           <div className="st-maps-container">
             {maps.map((map) => {
@@ -336,13 +339,13 @@ export default function SpellTakersLobby() {
                   <div className="st-map-bg" style={{ backgroundImage: `url(${map.image})` }}></div>
                   <div className="st-map-overlay">
                     <h3>{map.name}</h3>
-                    {map.isBanned && <div className="st-banned-stamp">BANNED</div>}
+                    {map.isBanned && <div className="st-banned-stamp">{t("auto.spelltakerslobby.banned")}</div>}
                     
                     {/* Vote Indicators */}
                     {!map.isBanned && votesForMap.length > 0 && (
                       <div className="st-vote-avatars">
                         {votesForMap.map(v => (
-                          <img key={v.id} src={v.avatar} title={v.name} alt="vote" />
+                          <img key={v.id} src={v.avatar} title={v.name} alt={t("auto.spelltakerslobby.vote")} />
                         ))}
                       </div>
                     )}
@@ -358,18 +361,18 @@ export default function SpellTakersLobby() {
       {phase === "draft" && (
         <div className="st-panel">
           <div className="st-timer-header">
-            <h2>Draft Your Class</h2>
+            <h2>{t("auto.spelltakerslobby.draft_your_class")}</h2>
             <div className="st-timer-circle">{timeLeft}s</div>
           </div>
           
           <div className="st-draft-layout">
             <div className="st-roster st-roster-left">
-              <h3>Your Team</h3>
+              <h3>{t("auto.spelltakerslobby.your_team")}</h3>
               {ourPlayers.map((p, i) => {
                 const pickedClass = CLASSES.find(c => c.id === p?.selectedClassId);
                 return (
                   <div key={i} className={`st-roster-slot ${p?.id === myPlayerId ? 'is-me' : ''}`}>
-                    <img src={p?.avatar || ""} alt="avatar" className={!p ? 'hidden' : ''} />
+                    <img src={p?.avatar || ""} alt={t("auto.spelltakerslobby.avatar")} className={!p ? 'hidden' : ''} />
                     <div className="st-roster-info">
                       <span className="name">{p?.name || "..."}</span>
                       <span className="pick" style={{ color: pickedClass?.color }}>
@@ -397,14 +400,14 @@ export default function SpellTakersLobby() {
             </div>
 
             <div className="st-roster st-roster-right">
-              <h3>Opponents</h3>
+              <h3>{t("auto.spelltakerslobby.opponents")}</h3>
               {enemyPlayers.map((p, i) => (
                 <div key={i} className="st-roster-slot enemy">
                   <div className="st-roster-info right">
                     <span className="name">{p?.name || "..."}</span>
                     <span className="pick hidden-pick">?</span>
                   </div>
-                  <img src={p?.avatar || ""} alt="avatar" className={!p ? 'hidden' : ''} />
+                  <img src={p?.avatar || ""} alt={t("auto.spelltakerslobby.avatar")} className={!p ? 'hidden' : ''} />
                 </div>
               ))}
             </div>
@@ -416,19 +419,19 @@ export default function SpellTakersLobby() {
       {phase === "recap" && (
         <div className="st-recap-content">
           <div className="st-recap-header">
-            <h2 className="st-glow-text">Match Ready</h2>
-            <p>Arena: {finalMap.name}</p>
+            <h2 className="st-glow-text">{t("auto.spelltakerslobby.match_ready")}</h2>
+            <p>{t("auto.spelltakerslobby.arena")} {finalMap.name}</p>
           </div>
 
           <div className="st-recap-teams">
             <div className="st-recap-team">
-              <h3>YOUR TEAM</h3>
+              <h3>{t("auto.spelltakerslobby.your_team")}</h3>
               <div className="st-recap-cards">
                 {ourPlayers.map((p, i) => {
                   const picked = CLASSES.find(c => c.id === p?.selectedClassId) || CLASSES[0];
                   return (
                     <div key={i} className={`st-recap-card ${p?.id === myPlayerId ? 'my-card' : ''}`} style={{ '--theme-color': picked.color } as React.CSSProperties}>
-                      <img src={p?.avatar} alt="avatar" className="recap-avatar" />
+                      <img src={p?.avatar} alt={t("auto.spelltakerslobby.avatar")} className="recap-avatar" />
                       <div className="recap-class-icon">{picked.icon}</div>
                       <span className="recap-name">{p?.name}</span>
                       <span className="recap-class">{picked.name}</span>
@@ -438,17 +441,17 @@ export default function SpellTakersLobby() {
               </div>
             </div>
 
-            <div className="st-vs-divider vertical">VS</div>
+            <div className="st-vs-divider vertical">{t("auto.spelltakerslobby.vs")}</div>
 
             <div className="st-recap-team enemy-team">
-              <h3>OPPONENTS</h3>
+              <h3>{t("auto.spelltakerslobby.opponents")}</h3>
               <div className="st-recap-cards">
                 {enemyPlayers.map((p, i) => (
                   <div key={i} className="st-recap-card hidden-card">
-                    <img src={p?.avatar} alt="avatar" className="recap-avatar" />
+                    <img src={p?.avatar} alt={t("auto.spelltakerslobby.avatar")} className="recap-avatar" />
                     <div className="recap-class-icon">?</div>
                     <span className="recap-name">{p?.name}</span>
-                    <span className="recap-class">Hidden</span>
+                    <span className="recap-class">{t("auto.spelltakerslobby.hidden")}</span>
                   </div>
                 ))}
               </div>
@@ -457,8 +460,8 @@ export default function SpellTakersLobby() {
 
           <div className="st-center" style={{ marginTop: "40px" }}>
             <a href="steam://connect/adrien.gamergod.net:26541" className="st-btn-connect">
-              Connect to Server
-            </a>
+              {t("auto.spelltakerslobby.connect_to_server")}
+                                      </a>
           </div>
         </div>
       )}

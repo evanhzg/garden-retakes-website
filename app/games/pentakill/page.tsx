@@ -16,6 +16,7 @@ import { usePentakillPool } from "@/components/games/pentakill/usePentakillPool"
 import { PENTAKILL_COLUMNS, championHead, championOption } from "@/components/games/pentakill/columns";
 import { SearchBox, GuessGrid, Legend, shareSquares, ColumnToggles, type GuessRow } from "@/components/games/guess/GuessBoard";
 import { useGameLang, translator, LangToggle, lolTerm, PENTAKILL } from "@/components/games/i18n";
+import { useI18n } from '@/components/I18nProvider';
 import { sound } from "@/components/games/sound/SoundManager";
 import SoundControls from "@/components/games/sound/SoundControls";
 import "@/components/games/shared.css";
@@ -69,6 +70,8 @@ const save = (s: Saved) => {
 };
 
 export default function PentakillPage() {
+    const { t } = useI18n();
+
   const { pool, error, retry } = usePentakillPool();
   const [lang, setLang] = useGameLang(null);
   const t = translator(PENTAKILL, lang);
@@ -217,7 +220,7 @@ export default function PentakillPage() {
 
       <header className="hs-topbar">
         <div className="hs-brand-block">
-          <Link href="/games" className="hs-back" aria-label="Back to games">←</Link>
+          <Link href="/games" className="hs-back" aria-label={t("auto.page.back_to_games")}>←</Link>
           <div>
             <h1 className="hs-brand pk-brand">{t("brand")}</h1>
             <p className="hs-tagline">{t("tagline")}</p>

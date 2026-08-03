@@ -1,4 +1,5 @@
 "use client";
+import { useI18n } from '@/components/I18nProvider';
 
 import { useEffect, useRef, useState } from "react";
 
@@ -22,6 +23,8 @@ export default function CommentBox({
   placeholder?: string;
   id: string;
 }) {
+    const { t } = useI18n();
+
   const [text, setText] = useState("");
   const [suggestions, setSuggestions] = useState<Suggestion[]>([]);
   const [active, setActive] = useState(0);
@@ -74,7 +77,7 @@ export default function CommentBox({
   return (
     <form className="clip-comment-form" onSubmit={submit}>
       <div className="mention-wrap">
-        <label className="sr-only" htmlFor={id}>Add a comment</label>
+        <label className="sr-only" htmlFor={id}>{t("auto.commentbox.add_a_comment")}</label>
         <input
           id={id}
           ref={inputRef}

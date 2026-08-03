@@ -1,4 +1,5 @@
 import { prisma } from "@/lib/db";
+import { getT } from '@/lib/serverI18n';
 
 export const metadata = {
   title: "Admin log — Garden Retakes",
@@ -14,12 +15,14 @@ export default async function AdminLogPage({
 }: {
   searchParams: { key?: string };
 }) {
+    const t = getT();
+
   const expected = process.env.INVSIM_API_KEY;
   if (!expected || searchParams.key !== expected) {
     return (
       <div className="panel">
-        <h2>Admin log</h2>
-        <p className="muted">Access denied — append ?key=&lt;your INVSIM_API_KEY&gt;.</p>
+        <h2>{t("auto.page.admin_log")}</h2>
+        <p className="muted">{t("auto.page.access_denied_append_key_lt_yo")}</p>
       </div>
     );
   }
@@ -33,10 +36,10 @@ export default async function AdminLogPage({
     <>
       <section className="hero hero-compact">
         <div className="hero-inner">
-          <span className="eyebrow">Admin log</span>
+          <span className="eyebrow">{t("auto.page.admin_log")}</span>
           <h1>
-            Last <span className="grad">{entries.length}</span> admin actions.
-          </h1>
+            {t("auto.page.last")} <span className="grad">{entries.length}</span> {t("auto.page.admin_actions")}
+                                </h1>
         </div>
       </section>
 
@@ -44,11 +47,11 @@ export default async function AdminLogPage({
         <table>
           <thead>
             <tr>
-              <th>When (UTC)</th>
-              <th>Actor</th>
-              <th>Action</th>
-              <th>Target</th>
-              <th>Detail</th>
+              <th>{t("auto.page.when_utc")}</th>
+              <th>{t("auto.page.actor")}</th>
+              <th>{t("auto.page.action")}</th>
+              <th>{t("auto.page.target")}</th>
+              <th>{t("auto.page.detail")}</th>
             </tr>
           </thead>
           <tbody>
@@ -66,8 +69,8 @@ export default async function AdminLogPage({
             {entries.length === 0 && (
               <tr>
                 <td colSpan={5} className="muted">
-                  No admin actions logged yet.
-                </td>
+                  {t("auto.page.no_admin_actions_logged_yet")}
+                                                  </td>
               </tr>
             )}
           </tbody>

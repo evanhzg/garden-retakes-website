@@ -3,6 +3,7 @@
 import { useEffect, useRef, useState } from "react";
 import AvatarImage from "@/components/AvatarImage";
 import CommentBox, { CommentBody } from "@/components/feed/CommentBox";
+import { useI18n } from '@/components/I18nProvider';
 import type { Clip } from "@/components/feed/ClipCard";
 
 // Likes and comments, under the video in the expanded player.
@@ -33,6 +34,8 @@ const ago = (iso: string) => {
 };
 
 export default function ClipSocial({ clip, signedIn }: { clip: Clip; signedIn: boolean }) {
+    const { t } = useI18n();
+
   const [comments, setComments] = useState<Comment[] | null>(null);
   const [names, setNames] = useState<Record<string, string>>({});
   const [likes, setLikes] = useState(clip.likes);
@@ -119,9 +122,9 @@ export default function ClipSocial({ clip, signedIn }: { clip: Clip; signedIn: b
 
       <div className="clip-social-scroll" ref={listRef}>
         {comments === null ? (
-          <p className="muted" style={{ fontSize: 13 }}>Loading…</p>
+          <p className="muted" style={{ fontSize: 13 }}>{t("auto.clipsocial.loading")}</p>
         ) : comments.length === 0 ? (
-          <p className="muted" style={{ fontSize: 13 }}>No comments yet.</p>
+          <p className="muted" style={{ fontSize: 13 }}>{t("auto.clipsocial.no_comments_yet")}</p>
         ) : (
           <ul className="clip-comments-list">
             {comments.map((c) => (
@@ -141,7 +144,7 @@ export default function ClipSocial({ clip, signedIn }: { clip: Clip; signedIn: b
                       {c.likedByMe ? "♥" : "♡"} <span className="num">{c.likes ?? 0}</span>
                     </button>
                     {c.mine && (
-                      <button className="clip-comment-del" onClick={() => remove(c.id)}>Delete</button>
+                      <button className="clip-comment-del" onClick={() => remove(c.id)}>{t("auto.clipsocial.delete")}</button>
                     )}
                   </div>
                 </div>
@@ -155,8 +158,8 @@ export default function ClipSocial({ clip, signedIn }: { clip: Clip; signedIn: b
         <CommentBox id={`m-${clip.id}`} posting={posting} onSubmit={post} />
       ) : (
         <p className="muted" style={{ fontSize: 13 }}>
-          <a href="/api/auth/steam/login">Sign in</a> to like and comment.
-        </p>
+          <a href="/api/auth/steam/login">{t("auto.clipsocial.sign_in")}</a> {t("auto.clipsocial.to_like_and_comment")}
+                              </p>
       )}
     </div>
   );

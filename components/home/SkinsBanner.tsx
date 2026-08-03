@@ -2,6 +2,7 @@
 
 import Link from "next/link";
 import { useEffect, useState } from "react";
+import { useI18n } from '@/components/I18nProvider';
 import { SIGNATURE_SLOTS, rarityRank } from "@/lib/inventory";
 
 // Homepage advert for the inventory simulator at /inventory.
@@ -41,6 +42,8 @@ const PER_WEAPON = 3;
 const SECONDS_PER_SKIN = 5;
 
 export default function SkinsBanner() {
+    const { t } = useI18n();
+
   const [skins, setSkins] = useState<Skin[]>([]);
   const [drifting, setDrifting] = useState(false);
 
@@ -117,16 +120,15 @@ export default function SkinsBanner() {
       <div className="skinsb-copy full-bleed-inset">
         <div className="skinsb-text">
           <h2 className="skinsb-title" id="skinsb-title">
-            Your loadout, before you ever open a case.
-          </h2>
+            {t("auto.skinsbanner.your_loadout_before_you_ever_o")}
+                                </h2>
           <p className="skinsb-sub">
-            Build a full T and CT loadout from every skin, sticker and knife in the game — then
-            wear it on the server, no trade-up required.
-          </p>
+            {t("auto.skinsbanner.build_a_full_t_and_ct_loadout")}
+                                </p>
         </div>
         <Link className="skinsb-cta" href="/inventory">
-          Open the loadout builder →
-        </Link>
+          {t("auto.skinsbanner.open_the_loadout_builder")}
+                          </Link>
       </div>
 
       {/* Decorative: the heading and the link already say everything the rail

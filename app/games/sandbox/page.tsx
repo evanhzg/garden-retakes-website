@@ -9,6 +9,7 @@ import {
 } from "@/components/games/monopoly3d/boardSchema";
 import { listBoards } from "@/components/games/editor/boardStore";
 import "@/components/games/monopoly.css";
+import { useI18n } from '@/components/I18nProvider';
 import "./sandbox.css";
 
 const Board3D = dynamic(() => import("@/components/games/monopoly3d/Board3D"), { ssr: false });
@@ -35,6 +36,8 @@ export default function SandboxPage() {
 }
 
 function SandboxClient() {
+    const { t } = useI18n();
+
   const { socket } = useSocket();
   const [templates, setTemplates] = useState<BoardDef[]>([]);
   const [saved, setSaved] = useState<BoardDef[]>([]);
@@ -102,44 +105,44 @@ function SandboxClient() {
   return (
     <div className="mono-root" data-bg={bgTheme} data-lang="en">
       <header className="mono-topbar">
-        <div className="mono-brand"><span className="mono-brand-dot" /> SANDBOX
-          <span className="mono-brand-lang">{def.name}</span>
+        <div className="mono-brand"><span className="mono-brand-dot" /> {t("auto.page.sandbox")}
+                        <span className="mono-brand-lang">{def.name}</span>
         </div>
         <div className="mono-topbar-right">
-          <select className="mono-bg-select" value="" onChange={(e) => { if (e.target.value) onPickBoard(e.target.value); }} title="Load a board">
-            <option value="">Board…</option>
-            <option value="__blank">Blank 40</option>
+          <select className="mono-bg-select" value="" onChange={(e) => { if (e.target.value) onPickBoard(e.target.value); }} title={t("auto.page.load_a_board")}>
+            <option value="">{t("auto.page.board")}</option>
+            <option value="__blank">{t("auto.page.blank_40")}</option>
             {templates.map((t) => <option key={t.id} value={"t:" + t.id}>{t.name}</option>)}
-            {saved.map((b) => <option key={b.id} value={"s:" + b.id}>{b.name} (saved)</option>)}
+            {saved.map((b) => <option key={b.id} value={"s:" + b.id}>{b.name} {t("auto.page._saved")}</option>)}
           </select>
-          <div className="mono-view-toggle" role="group" aria-label="View">
-            <button className={viewMode === "3d" ? "on" : ""} onClick={() => setViewMode("3d")}>3D</button>
-            <button className={viewMode === "2d" ? "on" : ""} onClick={() => setViewMode("2d")}>2D</button>
-            <button className={viewMode === "bt" ? "on bt" : "bt"} onClick={() => setViewMode("bt")}>BT</button>
+          <div className="mono-view-toggle" role="group" aria-label={t("auto.page.view")}>
+            <button className={viewMode === "3d" ? "on" : ""} onClick={() => setViewMode("3d")}>{t("auto.page.3d")}</button>
+            <button className={viewMode === "2d" ? "on" : ""} onClick={() => setViewMode("2d")}>{t("auto.page.2d")}</button>
+            <button className={viewMode === "bt" ? "on bt" : "bt"} onClick={() => setViewMode("bt")}>{t("auto.page.bt")}</button>
           </div>
-          <select className="mono-bg-select" value={bgTheme} onChange={(e) => setBgTheme(e.target.value)} title="Background">
+          <select className="mono-bg-select" value={bgTheme} onChange={(e) => setBgTheme(e.target.value)} title={t("auto.page.background")}>
             {BG_THEMES.map((b) => <option key={b} value={b}>{b}</option>)}
           </select>
-          <a className="mono-exit" href="/board-editor" title="Board editor" style={{ textDecoration: "none" }}>✎</a>
-          <a className="mono-exit" href="/" title="Exit" style={{ textDecoration: "none" }}>✕</a>
+          <a className="mono-exit" href="/board-editor" title={t("auto.page.board_editor")} style={{ textDecoration: "none" }}>✎</a>
+          <a className="mono-exit" href="/" title={t("auto.page.exit")} style={{ textDecoration: "none" }}>✕</a>
         </div>
       </header>
 
       <div className="sbx-tools">
         <div className="sbx-group">
-          <button className={tool === "house" ? "on" : ""} onClick={() => setTool("house")}>🏠 Add house/hotel</button>
-          <button className={tool === "owner" ? "on" : ""} onClick={() => setTool("owner")}>👤 Set owner</button>
-          <button className={tool === "clear" ? "on" : ""} onClick={() => setTool("clear")}>🧹 Clear</button>
+          <button className={tool === "house" ? "on" : ""} onClick={() => setTool("house")}>{t("auto.page._add_house_hotel")}</button>
+          <button className={tool === "owner" ? "on" : ""} onClick={() => setTool("owner")}>{t("auto.page._set_owner")}</button>
+          <button className={tool === "clear" ? "on" : ""} onClick={() => setTool("clear")}>{t("auto.page._clear")}</button>
         </div>
         <div className="sbx-owners">
           {DEMO.map((d, i) => (
             <button key={d.id} className={`sbx-swatch ${ownerIdx === i ? "on" : ""}`} style={{ background: d.color }} onClick={() => setOwnerIdx(i)} title={d.name} />
           ))}
         </div>
-        <button className="sbx-btn" onClick={populate}>Populate all</button>
-        <button className="sbx-btn" onClick={() => setOverrides({})}>Reset</button>
+        <button className="sbx-btn" onClick={populate}>{t("auto.page.populate_all")}</button>
+        <button className="sbx-btn" onClick={() => setOverrides({})}>{t("auto.page.reset")}</button>
         <span className="sbx-hint">
-          Click a property to {tool === "house" ? "add a house (5 = hotel)" : tool === "owner" ? "set its owner colour" : "clear it"}.
+          {t("auto.page.click_a_property_to")} {tool === "house" ? "add a house (5 = hotel)" : tool === "owner" ? "set its owner colour" : "clear it"}.
         </span>
       </div>
 
@@ -156,7 +159,7 @@ function SandboxClient() {
           lastRoll={null}
           onDiceSettled={() => {}}
         />
-        <div className="mono-board3d-hint">🖱 {viewMode === "2d" ? "Drag to pan" : viewMode === "bt" ? "Fixed display" : "Drag to orbit"} · scroll to zoom · click a property to edit it</div>
+        <div className="mono-board3d-hint">🖱 {viewMode === "2d" ? "Drag to pan" : viewMode === "bt" ? "Fixed display" : "Drag to orbit"} {t("auto.page._scroll_to_zoom_click_a_proper")}</div>
       </div>
     </div>
   );

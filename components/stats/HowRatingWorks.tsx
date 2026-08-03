@@ -74,7 +74,7 @@ export default function HowRatingWorks() {
             {t("stats.howRatingWorks.ratingSum1")}
             <span className="num">1.00</span>{t("stats.howRatingWorks.ratingSum2")}
             <span className="num">1.00</span> {t("stats.howRatingWorks.ratingSum3")}
-            <span className="num">0.00&ndash;5.00</span>{t("stats.howRatingWorks.ratingSum4")}
+            <span className="num">{t("auto.howratingworks.0_00_ndash_5_00")}</span>{t("stats.howRatingWorks.ratingSum4")}
           </p>
 
           <h4>{t("stats.howRatingWorks.averageHeading")}</h4>
@@ -127,7 +127,7 @@ change   = K × (won − expected) × performanceFactor`}
           </p>
           <p className="muted">
             {t("stats.howRatingWorks.eloBounds1")}
-            <span className="num">0&ndash;35,000</span> {t("stats.howRatingWorks.eloBounds2")}
+            <span className="num">{t("auto.howratingworks.0_ndash_35_000")}</span> {t("stats.howRatingWorks.eloBounds2")}
             <span className="num">5,000</span>{t("stats.howRatingWorks.eloBounds3")}
           </p>
 

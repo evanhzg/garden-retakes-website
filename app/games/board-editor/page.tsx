@@ -13,6 +13,7 @@ import {
   updateTile, coerceTileForType, defToGameState, validateBoardClient, cornersOf,
 } from "@/components/games/monopoly3d/boardSchema";
 import { listBoards, saveBoard, deleteBoard, downloadBoard, exportJson, importJson } from "@/components/games/editor/boardStore";
+import { useI18n } from '@/components/I18nProvider';
 import "@/components/games/editor/editor.css";
 
 const Board3D = dynamic(() => import("@/components/games/monopoly3d/Board3D"), { ssr: false });
@@ -43,6 +44,8 @@ export default function BoardEditorPage() {
 }
 
 function EditorClient() {
+    const { t } = useI18n();
+
   const { socket } = useSocket();
   const [templates, setTemplates] = useState<BoardDef[]>([]);
   const [saved, setSaved] = useState<BoardDef[]>([]);
@@ -131,36 +134,36 @@ function EditorClient() {
     <div className="ed-root">
       {/* toolbar */}
       <div className="ed-toolbar">
-        <div className="ed-brand">BOARD <span>EDITOR</span></div>
-        <input className="ed-name-input" value={def.name} onChange={(e) => patchBoard({ name: e.target.value })} placeholder="Board name" />
+        <div className="ed-brand">{t("auto.page.board")} <span>{t("auto.page.editor")}</span></div>
+        <input className="ed-name-input" value={def.name} onChange={(e) => patchBoard({ name: e.target.value })} placeholder={t("auto.page.board_name")} />
 
         <select className="ed-select" value="" onChange={(e) => {
           if (e.target.value === "blank") startFrom(null);
           else { const t = templates.find((x) => x.id === e.target.value); if (t) startFrom(t); }
         }}>
-          <option value="">New from…</option>
-          <option value="blank">Blank</option>
+          <option value="">{t("auto.page.new_from")}</option>
+          <option value="blank">{t("auto.page.blank")}</option>
           {templates.map((t) => <option key={t.id} value={t.id}>{t.name}</option>)}
         </select>
 
-        <button className="ed-btn" onClick={doSave}>💾 Save</button>
+        <button className="ed-btn" onClick={doSave}>{t("auto.page._save")}</button>
         <select className="ed-select" value="" onChange={(e) => { if (e.target.value) loadSaved(e.target.value); }}>
-          <option value="">Load saved…</option>
+          <option value="">{t("auto.page.load_saved")}</option>
           {saved.map((b) => <option key={b.id} value={b.id}>{b.name}</option>)}
         </select>
 
-        <button className="ed-btn" onClick={copyJson}>Copy JSON</button>
-        <button className="ed-btn" onClick={() => downloadBoard(def)}>Download</button>
-        <button className="ed-btn" onClick={() => fileRef.current?.click()}>Import</button>
+        <button className="ed-btn" onClick={copyJson}>{t("auto.page.copy_json")}</button>
+        <button className="ed-btn" onClick={() => downloadBoard(def)}>{t("auto.page.download")}</button>
+        <button className="ed-btn" onClick={() => fileRef.current?.click()}>{t("auto.page.import")}</button>
         <input ref={fileRef} type="file" accept="application/json" style={{ display: "none" }}
           onChange={(e) => { const f = e.target.files?.[0]; if (f) doImport(f); e.currentTarget.value = ""; }} />
-        <button className="ed-btn danger" onClick={doDelete}>Delete</button>
+        <button className="ed-btn danger" onClick={doDelete}>{t("auto.page.delete")}</button>
 
         <div className="ed-spacer" />
         <span className={`ed-status ${validity.ok ? "ok" : "bad"}`}>{validity.ok ? "✓ valid" : "✕ " + validity.error}</span>
-        <button className="ed-btn primary" onClick={saveAndPlay}>Save &amp; Play →</button>
-        <a className="ed-btn" href="/sandbox" style={{ textDecoration: "none" }}>🧪 Sandbox</a>
-        <button className="ed-btn" onClick={() => (window.location.href = "/")}>Exit</button>
+        <button className="ed-btn primary" onClick={saveAndPlay}>{t("auto.page.save_amp_play")}</button>
+        <a className="ed-btn" href="/sandbox" style={{ textDecoration: "none" }}>{t("auto.page._sandbox")}</a>
+        <button className="ed-btn" onClick={() => (window.location.href = "/")}>{t("auto.page.exit")}</button>
       </div>
 
       {/* body */}
@@ -200,7 +203,7 @@ function EditorClient() {
             lastRoll={null}
             onDiceSettled={() => {}}
           />
-          <div className="ed-hint">🖱 Click a tile to edit · drag it to reorder · drag off the board to delete · drag empty space to orbit</div>
+          <div className="ed-hint">{t("auto.page._click_a_tile_to_edit_drag_it")}</div>
         </div>
       </div>
 

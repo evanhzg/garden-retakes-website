@@ -11,6 +11,7 @@ import React, { useCallback, useEffect, useMemo, useState } from "react";
 import { createPortal } from "react-dom";
 import { motion, AnimatePresence } from "framer-motion";
 import { useSocket } from "@/components/games/SocketProvider";
+import { useI18n } from '@/components/I18nProvider';
 import { usePlayerNames, displayNameFor, useGameEvents, useGameChrome, type GameEvent } from "@/components/games/hooks";
 import { useGameLang, translator, LangToggle, QUIZ } from "@/components/games/i18n";
 import SoundControls from "@/components/games/sound/SoundControls";
@@ -248,6 +249,8 @@ export default function QuizRaceScreen({ theme }: { theme: QuizTheme }) {
 function RivalCard({ name, score, target, asked, done, mine }: {
   name: string; score: number; target: number; asked: number; done?: boolean; mine?: boolean;
 }) {
+    const { t } = useI18n();
+
   return (
     <div className={`quiz-rival ${mine ? "me" : ""} ${done ? "done" : ""}`}>
       <div className="quiz-rival-top">
@@ -257,7 +260,7 @@ function RivalCard({ name, score, target, asked, done, mine }: {
       <div className="quiz-rival-bar">
         <motion.span animate={{ scaleX: Math.max(0.02, score / Math.max(1, target)) }} transition={{ type: "spring", stiffness: 260, damping: 26 }} />
       </div>
-      <span className="quiz-rival-sub">{asked} answered</span>
+      <span className="quiz-rival-sub">{asked} {t("auto.quizracescreen.answered")}</span>
     </div>
   );
 }

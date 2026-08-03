@@ -1,9 +1,12 @@
 "use client";
 
 import Link from "next/link";
+import { useI18n } from '@/components/I18nProvider';
 import { motion } from "framer-motion";
 
 export default function PracticeVitrine() {
+    const { t } = useI18n();
+
   return (
     <div style={{ backgroundColor: '#020617', color: '#f8fafc', minHeight: '100vh', width: '100%', overflowX: 'hidden' }}>
       
@@ -12,12 +15,12 @@ export default function PracticeVitrine() {
         style={{ position: 'sticky', top: '76px', zIndex: 50, background: 'rgba(2, 6, 23, 0.7)', backdropFilter: 'blur(20px)', padding: '16px 48px', display: 'flex', justifyContent: 'space-between', alignItems: 'center', borderBottom: '1px solid rgba(255,255,255,0.05)' }}
       >
         <div style={{ display: 'flex', alignItems: 'center', gap: '20px' }}>
-          <img src="/images/modes/practice.jpg" alt="Practice" style={{ width: '40px', height: '40px', borderRadius: '12px' }} />
-          <h2 style={{ fontSize: '1.2rem', fontWeight: 600, margin: 0, letterSpacing: '1px' }}>Practice</h2>
+          <img src="/images/modes/practice.jpg" alt={t("auto.page.practice")} style={{ width: '40px', height: '40px', borderRadius: '12px' }} />
+          <h2 style={{ fontSize: '1.2rem', fontWeight: 600, margin: 0, letterSpacing: '1px' }}>{t("auto.page.practice")}</h2>
         </div>
         <Link href="/docs" style={{ color: '#10b981', textDecoration: 'none', fontWeight: 500, background: 'rgba(16, 185, 129, 0.1)', padding: '8px 16px', borderRadius: '999px', transition: 'background 0.2s' }}>
-          Overview
-        </Link>
+          {t("auto.page.overview")}
+                          </Link>
       </motion.div>
 
       {/* Hero Section */}
@@ -31,15 +34,15 @@ export default function PracticeVitrine() {
           initial={{ opacity: 0, y: 30 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 1, delay: 0.2 }}
           style={{ fontSize: '7vw', fontWeight: 900, margin: '0 0 24px', zIndex: 1, letterSpacing: '-0.02em', background: 'linear-gradient(to right, #34d399, #10b981)', WebkitBackgroundClip: 'text', WebkitTextFillColor: 'transparent' }}
         >
-          Perfect your craft.
-        </motion.h1>
+          {t("auto.page.perfect_your_craft")}
+                          </motion.h1>
         
         <motion.p 
           initial={{ opacity: 0 }} animate={{ opacity: 1 }} transition={{ duration: 1, delay: 0.4 }}
           style={{ fontSize: '1.4rem', color: '#cbd5e1', maxWidth: '700px', zIndex: 1, lineHeight: 1.7 }}
         >
-          The ultimate multiplayer sandbox. Train your crosshair placement, rehearse pixel-perfect nade lineups, and coordinate with your team.
-        </motion.p>
+          {t("auto.page.the_ultimate_multiplayer_sandb")}
+                          </motion.p>
       </div>
 
       {/* Tools Section */}
@@ -48,8 +51,8 @@ export default function PracticeVitrine() {
           initial={{ opacity: 0, y: 30 }} whileInView={{ opacity: 1, y: 0 }} viewport={{ once: true }} transition={{ duration: 0.8 }}
           style={{ fontSize: '3.5rem', fontWeight: 800, marginBottom: '60px', textAlign: 'center' }}
         >
-          Built for champions.
-        </motion.h2>
+          {t("auto.page.built_for_champions")}
+                          </motion.h2>
 
         <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(300px, 1fr))', gap: '40px' }}>
           {[

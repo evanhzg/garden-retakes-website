@@ -1,8 +1,11 @@
 import { getActiveSeason, prisma } from "@/lib/db";
+import { getT } from '@/lib/serverI18n';
 
 export const revalidate = 30;
 
 export default async function TeamsPage() {
+    const t = getT();
+
   const season = await getActiveSeason();
 
   const teams = season
@@ -25,29 +28,29 @@ export default async function TeamsPage() {
     <>
       <section className="hero hero-compact">
         <div className="hero-inner">
-          <span className="eyebrow">Competitive Retakes</span>
+          <span className="eyebrow">{t("auto.page.competitive_retakes")}</span>
           <h1>
-            The <span className="grad">2v2 / 3v3</span> ladder.
-          </h1>
-          <p className="muted">Team ELO, records and recent matches for {season?.Name ?? "the current season"}.</p>
+            {t("auto.page.the")} <span className="grad">{t("auto.page.2v2_3v3")}</span> {t("auto.page.ladder")}
+                                </h1>
+          <p className="muted">{t("auto.page.team_elo_records_and_recent_ma")} {season?.Name ?? "the current season"}.</p>
         </div>
       </section>
 
       <section className="panel">
-        <h2>Teams — {season?.Name ?? "no season"}</h2>
+        <h2>{t("auto.page.teams")} {season?.Name ?? "no season"}</h2>
         {teams.length === 0 ? (
-          <p className="muted">No CR matches yet. Get a 2v2 or 3v3 going and type /cr!</p>
+          <p className="muted">{t("auto.page.no_cr_matches_yet_get_a_2v2_or")}</p>
         ) : (
           <table>
             <thead>
               <tr>
                 <th>#</th>
-                <th>Team</th>
-                <th>Size</th>
-                <th>ELO</th>
-                <th>Peak</th>
-                <th>W-D-L</th>
-                <th>Rounds</th>
+                <th>{t("auto.page.team")}</th>
+                <th>{t("auto.page.size")}</th>
+                <th>{t("auto.page.elo")}</th>
+                <th>{t("auto.page.peak")}</th>
+                <th>{t("auto.page.w_d_l")}</th>
+                <th>{t("auto.page.rounds")}</th>
               </tr>
             </thead>
             <tbody>
@@ -73,18 +76,18 @@ export default async function TeamsPage() {
       </section>
 
       <section className="panel">
-        <h2>Recent matches</h2>
+        <h2>{t("auto.page.recent_matches")}</h2>
         {matches.length === 0 ? (
-          <p className="muted">Nothing played yet.</p>
+          <p className="muted">{t("auto.page.nothing_played_yet")}</p>
         ) : (
           <table>
             <thead>
               <tr>
-                <th>Map</th>
-                <th>Match</th>
-                <th>Score</th>
-                <th>Result</th>
-                <th>ELO</th>
+                <th>{t("auto.page.map")}</th>
+                <th>{t("auto.page.match")}</th>
+                <th>{t("auto.page.score")}</th>
+                <th>{t("auto.page.result")}</th>
+                <th>{t("auto.page.elo")}</th>
               </tr>
             </thead>
             <tbody>
@@ -92,7 +95,7 @@ export default async function TeamsPage() {
                 <tr key={match.Id.toString()}>
                   <td>{match.Map}</td>
                   <td>
-                    {match.TeamAName} <span className="muted">vs</span> {match.TeamBName}
+                    {match.TeamAName} <span className="muted">{t("auto.page.vs")}</span> {match.TeamBName}
                   </td>
                   <td>
                     {match.ScoreA}-{match.ScoreB}

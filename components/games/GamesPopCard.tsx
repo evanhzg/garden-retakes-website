@@ -2,6 +2,7 @@
 
 import { useEffect, useState } from "react";
 import GardenPop, { defaultPopConfig, type GardenPopConfig } from "@/components/GardenPop";
+import { useI18n } from '@/components/I18nProvider';
 import GardenPopEditor from "@/components/GardenPopEditor";
 
 // The Garden-Pop avatar, relocated here from the CS2 profile hero.
@@ -29,6 +30,8 @@ function parseConfig(raw: string | null): GardenPopConfig {
 }
 
 export default function GamesPopCard({ initialPopConfig }: { initialPopConfig: string | null }) {
+    const { t } = useI18n();
+
   const [config, setConfig] = useState<GardenPopConfig>(() => parseConfig(initialPopConfig));
   const [editing, setEditing] = useState(false);
   const [mounted, setMounted] = useState(false);
@@ -64,12 +67,12 @@ export default function GamesPopCard({ initialPopConfig }: { initialPopConfig: s
         {mounted ? (
           <GardenPop config={config} cameraDistance={17} enableZoom={false} />
         ) : (
-          <div className="gprofile-pop-loading">Loading…</div>
+          <div className="gprofile-pop-loading">{t("auto.gamespopcard.loading")}</div>
         )}
       </div>
       <button type="button" className="gprofile-ghost" onClick={() => setEditing(true)}>
-        Customise your Pop
-      </button>
+        {t("auto.gamespopcard.customise_your_pop")}
+                    </button>
       {error && (
         <p role="alert" className="gprofile-pop-error">
           {error}

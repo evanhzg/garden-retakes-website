@@ -1,4 +1,5 @@
 "use client";
+import { useI18n } from '@/components/I18nProvider';
 
 import { useCallback, useEffect, useRef, useState } from "react";
 
@@ -41,6 +42,8 @@ export default function SkinManager({
   adminKey?: string;
   canUpload: boolean;
 }) {
+    const { t } = useI18n();
+
   const [skins, setSkins] = useState<Skin[]>([]);
   const [remoteDir, setRemoteDir] = useState("");
   const [serverConfigured, setServerConfigured] = useState(true);
@@ -154,23 +157,21 @@ export default function SkinManager({
   return (
     <>
       <section className="panel">
-        <h2>Upload a skin VPK</h2>
+        <h2>{t("auto.skinmanager.upload_a_skin_vpk")}</h2>
 
         {!serverConfigured && (
           <p className="skin-note skin-note-warn">
             <span>
-              <strong>No game server configured.</strong> GAMESERVER_FTP_HOST is unset, so uploads are stored
-              and hosted for download but not pushed to the server.
-            </span>
+              <strong>{t("auto.skinmanager.no_game_server_configured")}</strong> {t("auto.skinmanager.gameserver_ftp_host_is_unset_s")}
+                                      </span>
           </p>
         )}
 
         {!canUpload ? (
           <p className="skin-note skin-note-warn">
             <span>
-              <strong>Read-only.</strong> Uploading writes into the game server&rsquo;s content directory, so it
-              needs the Admin role. You can see what is installed below.
-            </span>
+              <strong>{t("auto.skinmanager.read_only")}</strong> {t("auto.skinmanager.uploading_writes_into_the_game")}
+                                      </span>
           </p>
         ) : (
           <form onSubmit={upload}>
@@ -205,12 +206,12 @@ export default function SkinManager({
             </label>
 
             <div className="field" style={{ marginTop: "var(--space-4)", maxWidth: 420 }}>
-              <label htmlFor="skin-label">Display name</label>
+              <label htmlFor="skin-label">{t("auto.skinmanager.display_name")}</label>
               <input
                 id="skin-label"
                 className="input"
                 value={label}
-                placeholder="AK-47 | Garden"
+                placeholder={t("auto.skinmanager.ak_47_garden")}
                 onChange={(e) => setLabel(e.target.value)}
               />
             </div>
@@ -228,13 +229,13 @@ export default function SkinManager({
                     if (inputRef.current) inputRef.current.value = "";
                   }}
                 >
-                  Clear
-                </button>
+                  {t("auto.skinmanager.clear")}
+                                                      </button>
               )}
               {remoteDir && (
                 <span className="skin-drop-hint">
-                  Target: <code>{remoteDir}/</code> on the game server
-                </span>
+                  {t("auto.skinmanager.target")} <code>{remoteDir}/</code> {t("auto.skinmanager.on_the_game_server")}
+                                                      </span>
               )}
             </div>
           </form>
@@ -246,7 +247,7 @@ export default function SkinManager({
           {error && (
             <p className="skin-note skin-note-error" style={{ marginTop: "var(--space-4)" }}>
               <span>
-                <strong>Failed.</strong> {error}
+                <strong>{t("auto.skinmanager.failed")}</strong> {error}
               </span>
             </p>
           )}
@@ -258,20 +259,20 @@ export default function SkinManager({
       </section>
 
       <section className="panel">
-        <h2>Installed skins</h2>
+        <h2>{t("auto.skinmanager.installed_skins")}</h2>
         {loading ? (
-          <p className="muted">Loading…</p>
+          <p className="muted">{t("auto.skinmanager.loading")}</p>
         ) : skins.length === 0 ? (
           <div className="empty-hint">
-            <p style={{ margin: 0 }}>Nothing uploaded yet.</p>
+            <p style={{ margin: 0 }}>{t("auto.skinmanager.nothing_uploaded_yet")}</p>
           </div>
         ) : (
           <ul className="skin-list" style={{ listStyle: "none", margin: 0, padding: 0 }}>
             {skins.map((s) => (
               <li key={s.file} className="skin-item">
                 <span className="skin-vpk-placeholder" aria-hidden>
-                  VPK
-                </span>
+                  {t("auto.skinmanager.vpk")}
+                                        </span>
 
                 <div style={{ minWidth: 0 }}>
                   <div className="skin-item-name">{s.label}</div>
@@ -279,15 +280,15 @@ export default function SkinManager({
                     <span>{s.file}</span>
                     <span>{fmtBytes(s.bytes)}</span>
                     <span>{fmtDate(s.uploadedAt)}</span>
-                    <span>by {s.uploadedBy.name}</span>
+                    <span>{t("auto.skinmanager.by")} {s.uploadedBy.name}</span>
                   </div>
 
                   <p style={{ margin: "var(--space-2) 0 0", fontSize: 13 }}>
                     {s.server?.deployedAt ? (
-                      <span className="tag tag-accent">On the server — {s.server.path}</span>
+                      <span className="tag tag-accent">{t("auto.skinmanager.on_the_server")} {s.server.path}</span>
                     ) : (
                       <span className="tag tag-neutral">
-                        Not on the server{s.server?.error ? ` — ${s.server.error}` : ""}
+                        {t("auto.skinmanager.not_on_the_server")}{s.server?.error ? ` — ${s.server.error}` : ""}
                       </span>
                     )}
                   </p>
@@ -306,16 +307,16 @@ export default function SkinManager({
                       className="btn btn-secondary"
                       onClick={() => copy(s.analysis.primaryMaterial as string)}
                     >
-                      Copy path
-                    </button>
+                      {t("auto.skinmanager.copy_path")}
+                                                    </button>
                   )}
                   <a className="btn btn-secondary" href={s.downloadUrl} download>
-                    Download
-                  </a>
+                    {t("auto.skinmanager.download")}
+                                              </a>
                   {canUpload && (
                     <button type="button" className="btn btn-secondary" disabled={busy} onClick={() => remove(s)}>
-                      Remove
-                    </button>
+                      {t("auto.skinmanager.remove")}
+                                                    </button>
                   )}
                 </div>
               </li>
@@ -337,6 +338,8 @@ function UploadResult({
   skin: Skin;
   onCopy: (text: string) => void;
 }) {
+    const { t } = useI18n();
+
   const a = skin.analysis;
   const deployed = Boolean(skin.server?.deployedAt);
 
@@ -349,23 +352,23 @@ function UploadResult({
       </p>
 
       <dl className="skin-kv" style={{ marginTop: "var(--space-4)" }}>
-        <dt>Format</dt>
+        <dt>{t("auto.skinmanager.format")}</dt>
         <dd>
-          VPK v{a.version} · {a.entryCount} {a.entryCount === 1 ? "entry" : "entries"} · {fmtBytes(skin.bytes)}
+          {t("auto.skinmanager.vpk_v")}{a.version} · {a.entryCount} {a.entryCount === 1 ? "entry" : "entries"} · {fmtBytes(skin.bytes)}
         </dd>
 
-        <dt>Root folders</dt>
+        <dt>{t("auto.skinmanager.root_folders")}</dt>
         <dd>{a.roots.length ? a.roots.join(", ") : "—"}</dd>
 
-        <dt>Materials</dt>
+        <dt>{t("auto.skinmanager.materials")}</dt>
         <dd>
-          {a.materials.length} · {a.textures.length} texture{a.textures.length === 1 ? "" : "s"} ·{" "}
-          {a.models.length} model{a.models.length === 1 ? "" : "s"}
+          {a.materials.length} · {a.textures.length} {t("auto.skinmanager.texture")}{a.textures.length === 1 ? "" : "s"} ·{" "}
+          {a.models.length} {t("auto.skinmanager.model")}{a.models.length === 1 ? "" : "s"}
         </dd>
 
         {a.primaryMaterial && (
           <>
-            <dt>Paint material</dt>
+            <dt>{t("auto.skinmanager.paint_material")}</dt>
             <dd>
               <code className="skin-path">{a.primaryMaterial}</code>
               <button
@@ -374,13 +377,13 @@ function UploadResult({
                 style={{ marginTop: 4 }}
                 onClick={() => onCopy(a.primaryMaterial as string)}
               >
-                Copy path
-              </button>
+                {t("auto.skinmanager.copy_path")}
+                                            </button>
             </dd>
           </>
         )}
 
-        <dt>SHA-256</dt>
+        <dt>{t("auto.skinmanager.sha_256")}</dt>
         <dd>
           <code className="skin-path">{skin.sha256}</code>
         </dd>
@@ -391,7 +394,7 @@ function UploadResult({
           {a.warnings.map((w) => (
             <p key={w} className="skin-note skin-note-warn">
               <span>
-                <strong>Check:</strong> {w}
+                <strong>{t("auto.skinmanager.check")}</strong> {w}
               </span>
             </p>
           ))}

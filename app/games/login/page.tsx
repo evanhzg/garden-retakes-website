@@ -3,6 +3,7 @@
 import React from "react";
 import Link from "next/link";
 import { useSearchParams } from "next/navigation";
+import { useI18n } from '@/components/I18nProvider';
 import "./login.css";
 
 // Steam is first and visually dominant: it is the only provider that carries a
@@ -45,6 +46,8 @@ const PROVIDERS = [
 ];
 
 export default function GamesLoginPage() {
+    const { t } = useI18n();
+
   const searchParams = useSearchParams();
   const raw = searchParams?.get("returnTo") || "/games";
   // Only same-site paths — an absolute URL here would be an open redirect.
@@ -54,14 +57,14 @@ export default function GamesLoginPage() {
     <div className="glogin">
       <div className="glogin-card">
         <Link href="/games" className="glogin-back">
-          ← Games hub
-        </Link>
+          {t("auto.page._games_hub")}
+                          </Link>
 
-        <span className="glogin-kicker hand">one account, every game</span>
-        <h1 className="glogin-title">Sign in to play</h1>
+        <span className="glogin-kicker hand">{t("auto.page.one_account_every_game")}</span>
+        <h1 className="glogin-title">{t("auto.page.sign_in_to_play")}</h1>
         <p className="glogin-sub">
-          Your lobbies, ELO and daily streaks follow you across every game in the hub.
-        </p>
+          {t("auto.page.your_lobbies_elo_and_daily_str")}
+                          </p>
 
         <div className="glogin-providers">
           {PROVIDERS.map((p) => (
@@ -72,7 +75,7 @@ export default function GamesLoginPage() {
             >
               <span className="glogin-btn-mark">{p.mark}</span>
               <span className="glogin-btn-text">
-                <b>Continue with {p.name}</b>
+                <b>{t("auto.page.continue_with")} {p.name}</b>
                 <small>{p.note}</small>
               </span>
               <span className="glogin-btn-go" aria-hidden>→</span>
@@ -81,9 +84,8 @@ export default function GamesLoginPage() {
         </div>
 
         <p className="glogin-foot">
-          Not ready yet? <Link href="/games">Browse the games</Link> — the daily
-          puzzles are playable without an account.
-        </p>
+          {t("auto.page.not_ready_yet")} <Link href="/games">{t("auto.page.browse_the_games")}</Link> {t("auto.page._the_daily_puzzles_are_playabl")}
+                          </p>
       </div>
     </div>
   );

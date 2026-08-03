@@ -1,4 +1,5 @@
 import { ImageResponse } from "next/og";
+import { getT } from '@/lib/serverI18n';
 
 export const runtime = "edge";
 
@@ -46,6 +47,8 @@ function statChip(label: string, value: string, big = false) {
 }
 
 function frame(children: React.ReactNode, origin: string) {
+    const t = getT();
+
   return (
     <div
       style={{
@@ -88,14 +91,16 @@ function frame(children: React.ReactNode, origin: string) {
         }}
       >
         <div style={{ display: "flex", fontSize: 24, fontWeight: 600, color: "rgba(255,255,255,0.45)" }}>
-          retakes.fr
-        </div>
+          {t("auto.route.retakes_fr")}
+                          </div>
       </div>
     </div>
   );
 }
 
 export async function GET(req: Request) {
+    const t = getT();
+
   const origin = process.env.NEXT_PUBLIC_SITE_URL || new URL(req.url).origin;
   const p = new URL(req.url).searchParams;
   const type = p.get("type") ?? "site";
@@ -174,8 +179,8 @@ export async function GET(req: Request) {
       frame(
         <div style={{ display: "flex", flexDirection: "column", flex: 1, justifyContent: "center" }}>
           <div style={{ display: "flex", fontSize: 30, fontWeight: 700, color: PINK, letterSpacing: 3 }}>
-            🎮 GAMES HUB — YOU'RE INVITED
-          </div>
+            {t("auto.route._games_hub_you_re_invited")}
+                            </div>
           <div style={{ display: "flex", fontSize: 78, fontWeight: 900, color: "#fff", marginTop: 12, lineHeight: 1.05 }}>
             {name.slice(0, 28)}
           </div>
@@ -187,13 +192,13 @@ export async function GET(req: Request) {
             )}
             {host && (
               <div style={{ display: "flex", fontSize: 30, fontWeight: 600, color: "rgba(255,255,255,0.75)", padding: "12px 28px", borderRadius: 999, background: "rgba(255,255,255,0.08)", border: "1px solid rgba(255,255,255,0.16)" }}>
-                hosted by {host.slice(0, 20)}
+                {t("auto.route.hosted_by")} {host.slice(0, 20)}
               </div>
             )}
           </div>
           <div style={{ display: "flex", fontSize: 26, color: "rgba(255,255,255,0.5)", marginTop: 28 }}>
-            OUNO · MONOPO7Y · FREE-DRAW
-          </div>
+            {t("auto.route.ouno_monopo7y_free_draw")}
+                            </div>
         </div>,
         origin
       ),

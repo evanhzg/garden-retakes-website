@@ -1,6 +1,7 @@
 import fs from "node:fs";
 import path from "node:path";
 import RoadmapClient, { RoadmapSection } from "./RoadmapClient";
+import { getT } from '@/lib/serverI18n';
 
 export const metadata = {
   title: "Roadmap — Garden Retakes",
@@ -53,21 +54,22 @@ function loadRoadmap() {
 }
 
 export default function RoadmapPage() {
+    const t = getT();
+
   const { intro, sections } = loadRoadmap();
 
   return (
     <>
       <section className="hero hero-compact">
         <div className="hero-inner">
-          <span className="eyebrow">Roadmap</span>
+          <span className="eyebrow">{t("auto.page.roadmap")}</span>
           <h1>
-            What&apos;s <span className="grad">done</span> &amp; what&apos;s{" "}
-            <span className="grad">coming</span>.
+            {t("auto.page.what_apos_s")} <span className="grad">{t("auto.page.done")}</span> {t("auto.page._amp_what_apos_s")}{" "}
+            <span className="grad">{t("auto.page.coming")}</span>.
           </h1>
           <p className="muted">
-            The live development roadmap of the whole Garden ecosystem — plugin, website,
-            Discord bot. Checked boxes are already on the server.
-          </p>
+            {t("auto.page.the_live_development_roadmap_o")}
+                                </p>
         </div>
       </section>
 

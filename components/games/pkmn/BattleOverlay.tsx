@@ -4,6 +4,7 @@ import PartyMenu from './PartyMenu';
 import BagMenu, { BagItem } from './BagMenu';
 import { frontSprite, backSprite, staticSprite, playCry } from './sprites';
 import './pkmn.css';
+import { getT } from '@/lib/serverI18n';
 
 type BattleMon = { species: string; level?: number; moves?: string[]; nickname?: string | null };
 
@@ -11,6 +12,8 @@ const prettyMove = (m: string) =>
   m.replace(/([a-z])([A-Z])/g, "$1 $2").replace(/^./, (c) => c.toUpperCase());
 
 export default function BattleOverlay({ onBattleEnd }: { onBattleEnd: () => void }) {
+    const t = getT();
+
   const { socket } = useSocket();
   const [logs, setLogs] = useState<string[]>([]);
   const [wildPokemon, setWildPokemon] = useState<BattleMon | null>(null);
@@ -192,10 +195,10 @@ export default function BattleOverlay({ onBattleEnd }: { onBattleEnd: () => void
         <div className="pkb-infobox pkb-enemy-box">
           <div className="pkb-info-name">
             <span>{(wildPokemon?.species || '…').toUpperCase()}</span>
-            <span className="pkb-level">Lv{wildPokemon?.level ?? '?'}</span>
+            <span className="pkb-level">{t("auto.battleoverlay.lv")}{wildPokemon?.level ?? '?'}</span>
           </div>
           <div className="pkb-hp-row">
-            <span className="pkb-hp-tag">HP</span>
+            <span className="pkb-hp-tag">{t("auto.battleoverlay.hp")}</span>
             <div className="pkb-hp-track">
               <div className={`pkb-hp-fill ${hpClass(enemyHp, enemyMaxHp)}`} style={{ width: `${(enemyHp / Math.max(1, enemyMaxHp)) * 100}%` }} />
             </div>
@@ -232,10 +235,10 @@ export default function BattleOverlay({ onBattleEnd }: { onBattleEnd: () => void
         <div className="pkb-infobox pkb-player-box">
           <div className="pkb-info-name">
             <span>{(playerMon?.nickname || playerMon?.species || 'YOUR PKMN').toUpperCase()}</span>
-            <span className="pkb-level">Lv{playerMon?.level ?? '?'}</span>
+            <span className="pkb-level">{t("auto.battleoverlay.lv")}{playerMon?.level ?? '?'}</span>
           </div>
           <div className="pkb-hp-row">
-            <span className="pkb-hp-tag">HP</span>
+            <span className="pkb-hp-tag">{t("auto.battleoverlay.hp")}</span>
             <div className="pkb-hp-track">
               <div className={`pkb-hp-fill ${hpClass(playerHp, playerMaxHp)}`} style={{ width: `${(playerHp / Math.max(1, playerMaxHp)) * 100}%` }} />
             </div>
@@ -261,14 +264,14 @@ export default function BattleOverlay({ onBattleEnd }: { onBattleEnd: () => void
             {Array.from({ length: Math.max(0, 4 - moves.length) }).map((_, i) => (
               <div key={i} className="pkb-btn pkb-empty">—</div>
             ))}
-            <button className="pkb-btn pkb-cancel" onClick={() => setShowMoves(false)}>◀ BACK</button>
+            <button className="pkb-btn pkb-cancel" onClick={() => setShowMoves(false)}>{t("auto.battleoverlay._back")}</button>
           </div>
         ) : (
           <div className="pkb-actions">
-            <button disabled={!canAct} className="pkb-btn pkb-fight" onClick={() => (moves.length ? setShowMoves(true) : act({ type: 'move', move: 1 }))}>FIGHT</button>
-            <button disabled={!canAct} className="pkb-btn pkb-ball" onClick={() => { socket?.emit('pkmn_get_bag'); setShowBag(true); }}>BAG</button>
-            <button disabled={!canAct} className="pkb-btn pkb-pkmn" onClick={() => setShowParty(true)}>PKMN</button>
-            <button disabled={!canAct} className="pkb-btn pkb-run" onClick={() => act({ type: 'run' })}>RUN</button>
+            <button disabled={!canAct} className="pkb-btn pkb-fight" onClick={() => (moves.length ? setShowMoves(true) : act({ type: 'move', move: 1 }))}>{t("auto.battleoverlay.fight")}</button>
+            <button disabled={!canAct} className="pkb-btn pkb-ball" onClick={() => { socket?.emit('pkmn_get_bag'); setShowBag(true); }}>{t("auto.battleoverlay.bag")}</button>
+            <button disabled={!canAct} className="pkb-btn pkb-pkmn" onClick={() => setShowParty(true)}>{t("auto.battleoverlay.pkmn")}</button>
+            <button disabled={!canAct} className="pkb-btn pkb-run" onClick={() => act({ type: 'run' })}>{t("auto.battleoverlay.run")}</button>
           </div>
         )}
       </div>

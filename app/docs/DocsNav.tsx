@@ -4,9 +4,12 @@ import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { motion, AnimatePresence } from "framer-motion";
 import { useState } from "react";
+import { useI18n } from '@/components/I18nProvider';
 import "./docs.css";
 
 export default function DocsNav({ navStructure, apiSections }: { navStructure: Record<string, string[]>, apiSections: any[] }) {
+    const { t } = useI18n();
+
   const pathname = usePathname();
   const [openCategories, setOpenCategories] = useState<Record<string, boolean>>({
     Plugins: true,
@@ -24,15 +27,15 @@ export default function DocsNav({ navStructure, apiSections }: { navStructure: R
       <Link href="/docs" className="docs-logo" style={{ marginBottom: '32px' }}>
         <motion.span whileHover={{ scale: 1.1 }} className="docs-logo-mark">🌱</motion.span>
         <span>
-          <strong>Garden Docs</strong>
-          <small>docs.retakes.fr</small>
+          <strong>{t("auto.docsnav.garden_docs")}</strong>
+          <small>{t("auto.docsnav.docs_retakes_fr")}</small>
         </span>
       </Link>
 
       <nav className="docs-nav">
         <Link href="/docs" className="docs-nav-link" style={{ color: pathname === '/docs' ? 'var(--accent)' : 'var(--muted)' }}>
-          Overview
-        </Link>
+          {t("auto.docsnav.overview")}
+                          </Link>
 
         {Object.entries(navStructure).map(([category, items]) => {
           if (items.length === 0) return null;
@@ -79,8 +82,8 @@ export default function DocsNav({ navStructure, apiSections }: { navStructure: R
             onClick={() => toggleCategory('API')}
             style={{ background: 'transparent', border: 'none', color: 'var(--text)', fontWeight: 700, fontSize: '0.8rem', textTransform: 'uppercase', letterSpacing: '1px', display: 'flex', justifyContent: 'space-between', alignItems: 'center', cursor: 'pointer', padding: '8px 12px' }}
           >
-            API Reference
-            <motion.span animate={{ rotate: openCategories['API'] ? 90 : 0 }} style={{ color: 'var(--muted)', fontSize: '10px' }}>▶</motion.span>
+            {t("auto.docsnav.api_reference")}
+                                  <motion.span animate={{ rotate: openCategories['API'] ? 90 : 0 }} style={{ color: 'var(--muted)', fontSize: '10px' }}>▶</motion.span>
           </button>
           <AnimatePresence initial={false}>
             {openCategories['API'] && (
@@ -111,7 +114,7 @@ export default function DocsNav({ navStructure, apiSections }: { navStructure: R
       </nav>
 
       <div className="docs-sidebar-footer" style={{ marginTop: 'auto' }}>
-        <Link href="/">← Back to main site</Link>
+        <Link href="/">{t("auto.docsnav._back_to_main_site")}</Link>
       </div>
     </aside>
   );

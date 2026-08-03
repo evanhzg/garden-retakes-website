@@ -2,6 +2,7 @@
 
 import Link from "next/link";
 import React, { useState } from "react";
+import { useI18n } from '@/components/I18nProvider';
 import IntegrationStatus from "@/components/IntegrationStatus";
 
 // This page was written in Tailwind utility classes, and the project has no
@@ -12,6 +13,8 @@ import IntegrationStatus from "@/components/IntegrationStatus";
 // directory from an endpoint with no authorization on it.
 
 export default function SkinRequestPage() {
+    const { t } = useI18n();
+
   const [workshopUrl, setWorkshopUrl] = useState("");
   const [previewImages, setPreviewImages] = useState<string[]>([]);
   const [jobId, setJobId] = useState<number | null>(null);
@@ -64,26 +67,25 @@ export default function SkinRequestPage() {
   return (
     <>
       <section className="panel">
-        <span className="kicker">Skins</span>
-        <h2 style={{ marginTop: "var(--space-2)" }}>Request a custom skin</h2>
+        <span className="kicker">{t("auto.page.skins")}</span>
+        <h2 style={{ marginTop: "var(--space-2)" }}>{t("auto.page.request_a_custom_skin")}</h2>
         <p className="muted" style={{ maxWidth: "68ch", marginBottom: 0 }}>
-          Paste a Steam Workshop URL to start the baking and compilation pipeline. The page pulls the images off
-          the workshop listing so you can pick the raw texture map to bake.
-        </p>
+          {t("auto.page.paste_a_steam_workshop_url_to")}
+                          </p>
       </section>
 
       <section className="panel">
-        <h2>Workshop item</h2>
+        <h2>{t("auto.page.workshop_item")}</h2>
         <form onSubmit={handleScrape}>
           <div className="field" style={{ maxWidth: 640 }}>
-            <label htmlFor="workshop-url">Steam Workshop URL</label>
+            <label htmlFor="workshop-url">{t("auto.page.steam_workshop_url")}</label>
             <input
               id="workshop-url"
               className="input"
               type="url"
               value={workshopUrl}
               onChange={(e) => setWorkshopUrl(e.target.value)}
-              placeholder="https://steamcommunity.com/sharedfiles/filedetails/?id=…"
+              placeholder={t("auto.page.https_steamcommunity_com_share")}
               required
             />
           </div>
@@ -96,7 +98,7 @@ export default function SkinRequestPage() {
           {error && (
             <p className="skin-note skin-note-error" style={{ marginTop: "var(--space-4)" }}>
               <span>
-                <strong>Failed.</strong> {error}
+                <strong>{t("auto.page.failed")}</strong> {error}
               </span>
             </p>
           )}
@@ -105,11 +107,10 @@ export default function SkinRequestPage() {
 
       {previewImages.length > 0 && !jobId && (
         <section className="panel">
-          <h2>Select the texture map</h2>
+          <h2>{t("auto.page.select_the_texture_map")}</h2>
           <p className="muted" style={{ maxWidth: "68ch" }}>
-            These are the images on the workshop page. Pick the raw texture map you want to bake — not the
-            rendered preview shot.
-          </p>
+            {t("auto.page.these_are_the_images_on_the_wo")}
+                                </p>
 
           <div className="card-grid">
             {previewImages.map((url, i) => (
@@ -123,8 +124,8 @@ export default function SkinRequestPage() {
                   disabled={loading}
                   onClick={() => handleSubmitJob(url)}
                 >
-                  Process this image
-                </button>
+                  {t("auto.page.process_this_image")}
+                                        </button>
               </figure>
             ))}
           </div>
@@ -133,23 +134,20 @@ export default function SkinRequestPage() {
 
       {jobId && (
         <section className="panel">
-          <h2>Pipeline</h2>
+          <h2>{t("auto.page.pipeline")}</h2>
           <IntegrationStatus jobId={jobId} />
         </section>
       )}
 
       <section className="panel">
-        <h2>Already have a packed VPK?</h2>
+        <h2>{t("auto.page.already_have_a_packed_vpk")}</h2>
         <p style={{ maxWidth: "70ch", fontSize: 14 }}>
-          A finish authored locally — Substance plus the CS2 Workshop Tools — skips this pipeline entirely.
-          Pack it into a VPK and upload it on{" "}
-          <Link href="/admin/skins">the custom skins admin page</Link>, which validates the archive, shows you
-          what is inside it, and pushes it to the game server. That page also carries the reference for exactly
-          what the VPK has to contain.
-        </p>
+          {t("auto.page.a_finish_authored_locally_subs")}{" "}
+          <Link href="/admin/skins">{t("auto.page.the_custom_skins_admin_page")}</Link>{t("auto.page._which_validates_the_archive_s")}
+                          </p>
         <Link className="btn btn-secondary" href="/admin/skins">
-          Upload a VPK
-        </Link>
+          {t("auto.page.upload_a_vpk")}
+                          </Link>
       </section>
     </>
   );

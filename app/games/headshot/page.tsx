@@ -12,6 +12,7 @@ import { compare, pickDaily, todayKey, msUntilNextDay, seededShuffle, searchPlay
 import { useHeadshotPool } from "@/components/games/headshot/useHeadshotPool";
 import { HEADSHOT_COLUMNS, playerHead, playerOption, flagOf, countryName, rolesLabel } from "@/components/games/headshot/columns";
 import { SearchBox, GuessGrid, Legend, shareSquares, ColumnToggles, type GuessRow } from "@/components/games/guess/GuessBoard";
+import { useI18n } from '@/components/I18nProvider';
 import { useGameLang, translator, LangToggle, HEADSHOT } from "@/components/games/i18n";
 import { sound } from "@/components/games/sound/SoundManager";
 import SoundControls from "@/components/games/sound/SoundControls";
@@ -65,6 +66,8 @@ const save = (s: Saved) => {
 };
 
 export default function HeadshotPage() {
+    const { t } = useI18n();
+
   const { pool, error, retry } = useHeadshotPool();
   const [lang, setLang] = useGameLang(null);
   const t = translator(HEADSHOT, lang);
@@ -220,7 +223,7 @@ export default function HeadshotPage() {
 
       <header className="hs-topbar">
         <div className="hs-brand-block">
-          <Link href="/games" className="hs-back" aria-label="Back to games">←</Link>
+          <Link href="/games" className="hs-back" aria-label={t("auto.page.back_to_games")}>←</Link>
           <div>
             <h1 className="hs-brand">{t("brand")}</h1>
             <p className="hs-tagline">{t("tagline")}</p>

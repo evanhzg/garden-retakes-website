@@ -18,8 +18,8 @@ export default async function StatsPage() {
   if (!season) {
     return (
       <section className="panel">
-        <h2>Global Stats</h2>
-        <p className="muted">No active season found.</p>
+        <h2>{t("auto.page.global_stats")}</h2>
+        <p className="muted">{t("auto.page.no_active_season_found")}</p>
       </section>
     );
   }
@@ -167,24 +167,24 @@ export default async function StatsPage() {
     <>
       <section className="panel" style={{ marginTop: 16 }}>
         <div className="stats-ladder-head">
-          <h3 style={{ margin: 0 }}>Ladder — {season.Name ?? `Season ${season.Id}`}</h3>
-          <span className="muted" style={{ fontSize: 12 }}>Hover a row for the readout</span>
+          <h3 style={{ margin: 0 }}>{t("auto.page.ladder")} {season.Name ?? `Season ${season.Id}`}</h3>
+          <span className="muted" style={{ fontSize: 12 }}>{t("auto.page.hover_a_row_for_the_readout")}</span>
         </div>
         <LadderRows rows={ladder} />
       </section>
 
       {/* ---------- Season totals ---------- */}
       <section className="panel" style={{ marginTop: 16 }}>
-        <h3 style={{ marginBottom: 14 }}>{season.Name} — server totals (ranked)</h3>
+        <h3 style={{ marginBottom: 14 }}>{season.Name} {t("auto.page._server_totals_ranked")}</h3>
         <div className="stat-tiles">
-          <div className="stat-tile accent"><strong>{totals.rounds.toLocaleString()}</strong><span>Rounds</span></div>
-          <div className="stat-tile"><strong>{totals.players}</strong><span>Players</span></div>
-          <div className="stat-tile"><strong>{totals.kills.toLocaleString()}</strong><span>Kills</span></div>
-          <div className="stat-tile"><strong>{Math.round(totals.damage / 1000).toLocaleString()}k</strong><span>Damage</span></div>
-          <div className="stat-tile"><strong>{totals.clutches}</strong><span>Clutches</span></div>
-          <div className="stat-tile"><strong>{totals.plants}</strong><span>Plants</span></div>
-          <div className="stat-tile"><strong>{totals.defuses}</strong><span>Defuses</span></div>
-          <div className="stat-tile accent"><strong>{totals.aces}</strong><span>4k+ Rounds</span></div>
+          <div className="stat-tile accent"><strong>{totals.rounds.toLocaleString()}</strong><span>{t("auto.page.rounds")}</span></div>
+          <div className="stat-tile"><strong>{totals.players}</strong><span>{t("auto.page.players")}</span></div>
+          <div className="stat-tile"><strong>{totals.kills.toLocaleString()}</strong><span>{t("auto.page.kills")}</span></div>
+          <div className="stat-tile"><strong>{Math.round(totals.damage / 1000).toLocaleString()}k</strong><span>{t("auto.page.damage")}</span></div>
+          <div className="stat-tile"><strong>{totals.clutches}</strong><span>{t("auto.page.clutches")}</span></div>
+          <div className="stat-tile"><strong>{totals.plants}</strong><span>{t("auto.page.plants")}</span></div>
+          <div className="stat-tile"><strong>{totals.defuses}</strong><span>{t("auto.page.defuses")}</span></div>
+          <div className="stat-tile accent"><strong>{totals.aces}</strong><span>{t("auto.page.4k_rounds")}</span></div>
         </div>
       </section>
 
@@ -193,14 +193,14 @@ export default async function StatsPage() {
       {/* ---------- Activity + rating distribution ---------- */}
       <div className="chart-grid-2" style={{ marginTop: 16 }}>
         <section className="panel">
-          <h3 style={{ marginBottom: 10 }}>Rounds per day — last 14 days</h3>
+          <h3 style={{ marginBottom: 10 }}>{t("auto.page.rounds_per_day_last_14_days")}</h3>
           <Columns data={activity} color="var(--chart-a)" />
         </section>
         <section className="panel">
-          <h3 style={{ marginBottom: 10 }}>Player rating distribution</h3>
+          <h3 style={{ marginBottom: 10 }}>{t("auto.page.player_rating_distribution")}</h3>
           <p className="muted" style={{ fontSize: "0.78rem", margin: "0 0 8px" }}>
-            Average HLTV-style rating of every player with 10+ ranked rounds.
-          </p>
+            {t("auto.page.average_hltv_style_rating_of_e")}
+                                </p>
           <Histogram buckets={ratingBuckets} color="var(--chart-a)" />
         </section>
       </div>
@@ -208,22 +208,22 @@ export default async function StatsPage() {
       {/* ---------- Map stats ---------- */}
       <div className="chart-grid-2" style={{ marginTop: 16 }}>
         <section className="panel">
-          <h3 style={{ marginBottom: 12 }}>Most played maps</h3>
+          <h3 style={{ marginBottom: 12 }}>{t("auto.page.most_played_maps")}</h3>
           <HBars rows={mapShare} color="var(--chart-a)" formatValue={v => `${v.toLocaleString()} rds`} />
         </section>
         <section className="panel">
-          <h3 style={{ marginBottom: 12 }}>Side balance per map</h3>
+          <h3 style={{ marginBottom: 12 }}>{t("auto.page.side_balance_per_map")}</h3>
           <SideSplitBars rows={mapBalance} t={t} />
-          {mapBalance.length === 0 && <p className="muted">Not enough rounds per map yet.</p>}
+          {mapBalance.length === 0 && <p className="muted">{t("auto.page.not_enough_rounds_per_map_yet")}</p>}
         </section>
       </div>
 
       {/* ---------- Leaderboards ---------- */}
       <section className="panel" style={{ marginTop: 16 }}>
-        <h3 style={{ marginBottom: 4 }}>Season leaders</h3>
+        <h3 style={{ marginBottom: 4 }}>{t("auto.page.season_leaders")}</h3>
         <p className="muted" style={{ fontSize: "0.78rem", margin: "0 0 14px" }}>
-          Minimum 10 ranked rounds to qualify.
-        </p>
+          {t("auto.page.minimum_10_ranked_rounds_to_qu")}
+                          </p>
         <LeaderboardTabs
           boards={boards.map(b => ({
             title: b.title,

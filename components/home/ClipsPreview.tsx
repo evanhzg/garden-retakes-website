@@ -33,9 +33,8 @@ export default async function ClipsPreview() {
       </header>
 
       <p className="home-block-lead">
-        Type <code>/clip</code> in game and the last fifteen seconds are recorded, rendered and
-        posted here. Upload a demo and every ace, 4K and 3K in it is found and cut for you.
-      </p>
+        {t("auto.clipspreview.type")} <code>{t("auto.clipspreview._clip")}</code> {t("auto.clipspreview.in_game_and_the_last_fifteen_s")}
+                    </p>
 
       <div className="home-clips">
         {clips.map((c) => (

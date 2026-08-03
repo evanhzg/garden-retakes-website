@@ -6,9 +6,12 @@ import { usePlayerNames, displayNameFor } from "@/components/games/hooks";
 import BattleOverlay from "@/components/games/pkmn/BattleOverlay";
 import PartyMenu from "@/components/games/pkmn/PartyMenu";
 import StarterPick from "@/components/games/pkmn/StarterPick";
+import { useI18n } from '@/components/I18nProvider';
 import BagMenu, { BagItem } from "@/components/games/pkmn/BagMenu";
 
 export default function PhaserGame() {
+    const { t } = useI18n();
+
   const gameContainerRef = useRef<HTMLDivElement>(null);
   const { socket, isAuthed, steamId } = useSocket();
   const [mapState, setMapState] = useState<any>(null);
@@ -543,7 +546,7 @@ export default function PhaserGame() {
 
   return (
     <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', height: '100vh', background: '#1a1a1a', color: 'white' }}>
-      <h1 style={{ margin: '16px 0 8px' }}>Garden PKMN: MMO Overworld</h1>
+      <h1 style={{ margin: '16px 0 8px' }}>{t("auto.phasergame.garden_pkmn_mmo_overworld")}</h1>
       
       {isAuthed ? (
         mapState ? (
@@ -571,10 +574,10 @@ export default function PhaserGame() {
                   type="text" 
                   value={chatMessage} 
                   onChange={e => setChatMessage(e.target.value)}
-                  placeholder="Say something or /heal..."
+                  placeholder={t("auto.phasergame.say_something_or_heal")}
                   style={{ padding: '8px 12px', borderRadius: 4, border: 'none', outline: 'none', color: '#000' }}
                 />
-                <button type="submit" style={{ padding: '8px 16px', background: '#3b82f6', color: '#fff', border: 'none', borderRadius: 4, cursor: 'pointer' }}>Send</button>
+                <button type="submit" style={{ padding: '8px 16px', background: '#3b82f6', color: '#fff', border: 'none', borderRadius: 4, cursor: 'pointer' }}>{t("auto.phasergame.send")}</button>
               </form>
             </div>
 
@@ -607,11 +610,11 @@ export default function PhaserGame() {
               <button
                 onClick={() => { setShowBag(v => !v); socket?.emit("pkmn_get_bag"); socket?.emit("pkmn_get_party"); }}
                 style={{ padding: '6px 14px', background: '#f0c030', color: '#222', border: '2px solid #2b2b2b', borderRadius: 6, fontWeight: 800, cursor: 'pointer' }}
-              >🎒 Bag</button>
+              >{t("auto.phasergame._bag")}</button>
               <button
                 onClick={() => { setShowParty(v => !v); socket?.emit("pkmn_get_party"); }}
                 style={{ padding: '6px 14px', background: '#58c85a', color: '#fff', border: '2px solid #2b2b2b', borderRadius: 6, fontWeight: 800, cursor: 'pointer' }}
-              >Party</button>
+              >{t("auto.phasergame.party")}</button>
             </div>
 
             {/* Virtual D-Pad Overlay (bottom right) */}
@@ -641,8 +644,8 @@ export default function PhaserGame() {
               <div />
             </div>
           </div>
-        ) : <p>Loading Map...</p>
-      ) : <p>Connecting to World Server...</p>}
+        ) : <p>{t("auto.phasergame.loading_map")}</p>
+      ) : <p>{t("auto.phasergame.connecting_to_world_server")}</p>}
     </div>
   );
 }

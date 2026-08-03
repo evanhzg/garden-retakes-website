@@ -9,6 +9,7 @@ import { useGameLang, translator, LangToggle, SKRIBBL } from "@/components/games
 import SoundControls from "@/components/games/sound/SoundControls";
 import { sound } from "@/components/games/sound/SoundManager";
 import "./shared.css";
+import { useI18n } from '@/components/I18nProvider';
 import "./skribbl.css";
 
 const COLORS = [
@@ -24,6 +25,8 @@ const CANVAS_H = 560;
 type Stroke = { type: string; x1?: number; y1?: number; x2?: number; y2?: number; color?: string; size?: number; stroke?: number };
 
 export default function SkribblGame() {
+    const { t } = useI18n();
+
   const { socket, steamId } = useSocket();
   const mySteamId = steamId ?? "";
 
@@ -233,7 +236,7 @@ export default function SkribblGame() {
       <header className="skr-topbar">
         <div className="skr-round-block">
           <span className="skr-round">
-            <b className="skr-brand">FREE-DRAW</b>
+            <b className="skr-brand">{t("auto.skribblgame.free_draw")}</b>
             {t("round", { n: (gameState.round ?? 0) + 1, m: gameState.maxRounds })}
           </span>
           <span className="skr-drawer">
@@ -510,7 +513,7 @@ export default function SkribblGame() {
                 maxLength={60}
                 autoFocus
               />
-              <button type="submit" aria-label="send">➤</button>
+              <button type="submit" aria-label={t("auto.skribblgame.send")}>➤</button>
             </form>
           ) : (
             <div className="skr-chat-locked">

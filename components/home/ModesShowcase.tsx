@@ -1,4 +1,5 @@
 import { GAME_MODES, type GameModeId } from "@/lib/gameModes";
+import { getT } from '@/lib/serverI18n';
 
 // What the plugin can turn the server into, on the homepage.
 //
@@ -79,6 +80,8 @@ const rankOf = (id: GameModeId) => {
 };
 
 export default function ModesShowcase() {
+    const t = getT();
+
   // Driven by GAME_MODES, not by ORDER, so a mode added to the plugin appears
   // here the moment it is added to the shared list — before anyone has written
   // marketing copy for it, with its hint doing both jobs in the meantime.
@@ -99,14 +102,13 @@ export default function ModesShowcase() {
   return (
     <section className="modes-section" aria-labelledby="modes-heading">
       <div className="modes-head">
-        <span className="kicker">Game modes</span>
+        <span className="kicker">{t("auto.modesshowcase.game_modes")}</span>
         <h2 className="modes-title" id="modes-heading">
-          Ways to play
-        </h2>
+          {t("auto.modesshowcase.ways_to_play")}
+                          </h2>
         <p className="modes-intro">
-          All {GAME_MODES.length} modes the plugin ships, switched in-game by an admin on the same
-          server you already play on.
-        </p>
+          {t("auto.modesshowcase.all")} {GAME_MODES.length} {t("auto.modesshowcase.modes_the_plugin_ships_switche")}
+                          </p>
       </div>
 
       <div className="modes-grid">

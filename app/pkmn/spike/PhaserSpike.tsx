@@ -1,8 +1,11 @@
 "use client";
+import { useI18n } from '@/components/I18nProvider';
 
 import React, { useEffect, useRef } from "react";
 
 export default function PhaserSpike() {
+    const { t } = useI18n();
+
   const gameRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
@@ -109,8 +112,8 @@ export default function PhaserSpike() {
 
   return (
     <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', height: '100vh', background: '#1a1a1a', color: 'white' }}>
-      <h1>Garden PKMN: Overworld Spike</h1>
-      <p>Use Arrow Keys to move the red square (Grid-based 32px movement).</p>
+      <h1>{t("auto.phaserspike.garden_pkmn_overworld_spike")}</h1>
+      <p>{t("auto.phaserspike.use_arrow_keys_to_move_the_red")}</p>
       <div ref={gameRef} style={{ border: '4px solid #fff', borderRadius: '8px', overflow: 'hidden' }} />
     </div>
   );

@@ -1,6 +1,7 @@
 "use client";
 
 import React from "react";
+import { useI18n } from '@/components/I18nProvider';
 import { type Tile, type TileType, type Theme, GROUP_KEYS, TILE_TYPES } from "@/components/games/monopoly3d/boardSchema";
 
 type Props = {
@@ -17,11 +18,13 @@ const num = (v: string, fallback = 0) => {
 };
 
 export default function TilePanel({ tile, theme, onPatch, onChangeType, onMove }: Props) {
+    const { t } = useI18n();
+
   if (!tile) {
     return (
       <div className="ed-panel right">
-        <div className="ed-section-title">Tile</div>
-        <div className="ed-empty">Click a tile on the 3D board to personalize it.</div>
+        <div className="ed-section-title">{t("auto.tilepanel.tile")}</div>
+        <div className="ed-empty">{t("auto.tilepanel.click_a_tile_on_the_3d_board_t")}</div>
       </div>
     );
   }
@@ -29,22 +32,22 @@ export default function TilePanel({ tile, theme, onPatch, onChangeType, onMove }
 
   return (
     <div className="ed-panel right">
-      <div className="ed-section-title">Tile #{tile.id}{isCorner ? " · corner" : ""}</div>
+      <div className="ed-section-title">{t("auto.tilepanel.tile")}{tile.id}{isCorner ? " · corner" : ""}</div>
 
       <div className="ed-field">
-        <label>Name</label>
+        <label>{t("auto.tilepanel.name")}</label>
         <input type="text" value={tile.name || ""} onChange={(e) => onPatch({ name: e.target.value })} />
       </div>
 
       <div className="ed-field">
-        <label>Icon / emoji (optional)</label>
-        <input type="text" value={tile.icon || ""} maxLength={4} placeholder="e.g. 🏠 ✈ ★"
+        <label>{t("auto.tilepanel.icon_emoji_optional")}</label>
+        <input type="text" value={tile.icon || ""} maxLength={4} placeholder={t("auto.tilepanel.e_g")}
           onChange={(e) => onPatch({ icon: e.target.value || undefined })} />
       </div>
 
       {!isCorner && (
         <div className="ed-field">
-          <label>Type</label>
+          <label>{t("auto.tilepanel.type")}</label>
           <select value={tile.type} onChange={(e) => onChangeType(e.target.value as TileType)}>
             {TILE_TYPES.map((t) => <option key={t} value={t}>{t}</option>)}
           </select>
@@ -54,7 +57,7 @@ export default function TilePanel({ tile, theme, onPatch, onChangeType, onMove }
       {tile.type === "property" && (
         <>
           <div className="ed-field">
-            <label>Colour group</label>
+            <label>{t("auto.tilepanel.colour_group")}</label>
             <select value={tile.group || "brown"} onChange={(e) => onPatch({ group: e.target.value })}>
               {GROUP_KEYS.map((g) => <option key={g} value={g}>{g}</option>)}
             </select>
@@ -71,13 +74,13 @@ export default function TilePanel({ tile, theme, onPatch, onChangeType, onMove }
             </div>
           </div>
           <div className="ed-row">
-            <div className="ed-field"><label>Price</label>
+            <div className="ed-field"><label>{t("auto.tilepanel.price")}</label>
               <input type="number" value={tile.price ?? 0} onChange={(e) => onPatch({ price: num(e.target.value) })} /></div>
-            <div className="ed-field"><label>House cost</label>
+            <div className="ed-field"><label>{t("auto.tilepanel.house_cost")}</label>
               <input type="number" value={tile.houseCost ?? 0} onChange={(e) => onPatch({ houseCost: num(e.target.value) })} /></div>
           </div>
           <div className="ed-field">
-            <label>Rents (base · 1–4 houses · hotel)</label>
+            <label>{t("auto.tilepanel.rents_base_1_4_houses_hotel")}</label>
             <div className="ed-rents">
               {[0, 1, 2, 3, 4, 5].map((i) => (
                 <input key={i} type="number" value={tile.rent?.[i] ?? 0}
@@ -93,23 +96,23 @@ export default function TilePanel({ tile, theme, onPatch, onChangeType, onMove }
       )}
 
       {(tile.type === "rail" || tile.type === "util") && (
-        <div className="ed-field"><label>Price</label>
+        <div className="ed-field"><label>{t("auto.tilepanel.price")}</label>
           <input type="number" value={tile.price ?? 0} onChange={(e) => onPatch({ price: num(e.target.value) })} /></div>
       )}
 
       {tile.type === "tax" && (
-        <div className="ed-field"><label>Tax amount</label>
+        <div className="ed-field"><label>{t("auto.tilepanel.tax_amount")}</label>
           <input type="number" value={tile.amount ?? 0} onChange={(e) => onPatch({ amount: num(e.target.value) })} /></div>
       )}
 
       {(tile.type === "chance" || tile.type === "chest") && (
-        <div className="ed-empty" style={{ padding: "8px 4px" }}>Draw-card tile — no extra settings.</div>
+        <div className="ed-empty" style={{ padding: "8px 4px" }}>{t("auto.tilepanel.draw_card_tile_no_extra_settin")}</div>
       )}
 
       {!isCorner && (
         <div className="ed-move-row">
-          <button className="ed-btn" onClick={() => onMove(-1)}>◀ Move</button>
-          <button className="ed-btn" onClick={() => onMove(1)}>Move ▶</button>
+          <button className="ed-btn" onClick={() => onMove(-1)}>{t("auto.tilepanel._move")}</button>
+          <button className="ed-btn" onClick={() => onMove(1)}>{t("auto.tilepanel.move")}</button>
         </div>
       )}
     </div>

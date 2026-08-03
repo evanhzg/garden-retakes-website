@@ -1,4 +1,5 @@
 "use client";
+import { useI18n } from '@/components/I18nProvider';
 
 import { useEffect, useRef, useState } from "react";
 
@@ -30,6 +31,8 @@ export default function ShareMenu({
   title: string;
   compact?: boolean;
 }) {
+    const { t } = useI18n();
+
   const [open, setOpen] = useState(false);
   const [copied, setCopied] = useState<string | null>(null);
   const wrapRef = useRef<HTMLDivElement>(null);
@@ -95,7 +98,7 @@ export default function ShareMenu({
         className={`btn ${compact ? "btn-ghost clip-share-btn" : "btn-secondary"}`}
         aria-haspopup="menu"
         aria-expanded={open}
-        title="Share this clip"
+        title={t("auto.sharemenu.share_this_clip")}
         onClick={async () => {
           if (await nativeShare()) return;
           setOpen((v) => !v);
@@ -113,7 +116,7 @@ export default function ShareMenu({
             </button>
           ))}
           <div className="share-link">
-            <input className="input" readOnly value={link} onFocus={(e) => e.currentTarget.select()} aria-label="Clip link" />
+            <input className="input" readOnly value={link} onFocus={(e) => e.currentTarget.select()} aria-label={t("auto.sharemenu.clip_link")} />
           </div>
         </div>
       )}

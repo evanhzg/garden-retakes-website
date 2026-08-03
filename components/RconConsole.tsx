@@ -1,4 +1,5 @@
 "use client";
+import { useI18n } from '@/components/I18nProvider';
 
 import { useRef, useState } from "react";
 
@@ -7,6 +8,8 @@ type Line = { cmd: string; out: string; error: boolean };
 const QUICK = ["status", "css_gamemode", "bot_quota 0", "mp_restartgame 1"];
 
 export default function RconConsole({ adminKey }: { adminKey?: string }) {
+    const { t } = useI18n();
+
   const [command, setCommand] = useState("");
   const [lines, setLines] = useState<Line[]>([]);
   const [busy, setBusy] = useState(false);
@@ -50,11 +53,11 @@ export default function RconConsole({ adminKey }: { adminKey?: string }) {
 
       <div className="rcon-log" ref={logRef}>
         {lines.length === 0 ? (
-          <div className="rcon-empty">Commands and their output show up here.</div>
+          <div className="rcon-empty">{t("auto.rconconsole.commands_and_their_output_show")}</div>
         ) : (
           lines.map((l, i) => (
             <div key={i} className="rcon-entry">
-              <div className="rcon-cmd">&gt; {l.cmd}</div>
+              <div className="rcon-cmd">{t("auto.rconconsole._gt")} {l.cmd}</div>
               <pre className={`rcon-out ${l.error ? "error" : ""}`}>{l.out}</pre>
             </div>
           ))
@@ -71,7 +74,7 @@ export default function RconConsole({ adminKey }: { adminKey?: string }) {
         <input
           className="input rcon-input"
           value={command}
-          placeholder="Type an RCON command…"
+          placeholder={t("auto.rconconsole.type_an_rcon_command")}
           spellCheck={false}
           autoComplete="off"
           onChange={(e) => setCommand(e.target.value)}

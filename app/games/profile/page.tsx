@@ -5,6 +5,7 @@ import { prisma } from "@/lib/db";
 import AvatarImage from "@/components/AvatarImage";
 import GamesPopCard from "@/components/games/GamesPopCard";
 import "./profile.css";
+import { getT } from '@/lib/serverI18n';
 
 export const dynamic = "force-dynamic";
 
@@ -26,27 +27,30 @@ const GAME_LABELS: Record<string, string> = {
 const label = (id: string) => GAME_LABELS[id] ?? id.toUpperCase();
 
 function SignedOut() {
+    const t = getT();
+
   return (
     <div className="gprofile-empty">
-      <span className="gprofile-kicker hand">your record, in one place</span>
-      <h1>Games profile</h1>
+      <span className="gprofile-kicker hand">{t("auto.page.your_record_in_one_place")}</span>
+      <h1>{t("auto.page.games_profile")}</h1>
       <p>
-        Sign in to keep your ELO, win rate and daily streaks across every game in
-        the hub.
-      </p>
+        {t("auto.page.sign_in_to_keep_your_elo_win_r")}
+                    </p>
       <div className="gprofile-empty-actions">
         <Link href="/games/login?returnTo=/games/profile" className="gprofile-cta">
-          Sign in →
-        </Link>
+          {t("auto.page.sign_in")}
+                          </Link>
         <Link href="/games" className="gprofile-ghost">
-          Back to the hub
-        </Link>
+          {t("auto.page.back_to_the_hub")}
+                          </Link>
       </div>
     </div>
   );
 }
 
 export default async function GamesProfilePage() {
+    const t = getT();
+
   const session = getSession();
   if (!session) return <SignedOut />;
 
@@ -92,34 +96,34 @@ export default async function GamesProfilePage() {
             <AvatarImage steamId={session.steamId} src={session.avatar} />
           </div>
           <div>
-            <span className="gprofile-kicker hand">games profile</span>
+            <span className="gprofile-kicker hand">{t("auto.page.games_profile")}</span>
             <h1>{displayName}</h1>
             <Link href="/games" className="gprofile-back">
-              ← Games hub
-            </Link>
+              {t("auto.page._games_hub")}
+                                      </Link>
           </div>
         </div>
 
         <GamesPopCard initialPopConfig={webProfile?.PopConfig ?? null} />
 
         <dl className="gprofile-stats">
-          <div><dt>Games played</dt><dd>{played}</dd></div>
-          <div><dt>Win rate</dt><dd>{played ? `${winRate}%` : "—"}</dd></div>
-          <div><dt>Best ELO</dt><dd>{bestElo || "—"}</dd></div>
-          <div><dt>Titles tracked</dt><dd>{rows.length}</dd></div>
+          <div><dt>{t("auto.page.games_played")}</dt><dd>{played}</dd></div>
+          <div><dt>{t("auto.page.win_rate")}</dt><dd>{played ? `${winRate}%` : "—"}</dd></div>
+          <div><dt>{t("auto.page.best_elo")}</dt><dd>{bestElo || "—"}</dd></div>
+          <div><dt>{t("auto.page.titles_tracked")}</dt><dd>{rows.length}</dd></div>
         </dl>
       </header>
 
       <section className="gprofile-section">
         <div className="gprofile-section-head">
-          <h2>Per-game standing</h2>
-          <Link href="/games/ladder">Full ladder →</Link>
+          <h2>{t("auto.page.per_game_standing")}</h2>
+          <Link href="/games/ladder">{t("auto.page.full_ladder")}</Link>
         </div>
 
         {rows.length === 0 ? (
           <div className="gprofile-none">
-            <p>No ranked games yet.</p>
-            <Link href="/games" className="gprofile-cta">Pick a game →</Link>
+            <p>{t("auto.page.no_ranked_games_yet")}</p>
+            <Link href="/games" className="gprofile-cta">{t("auto.page.pick_a_game")}</Link>
           </div>
         ) : (
           <ul className="gprofile-games">
@@ -135,13 +139,13 @@ export default async function GamesProfilePage() {
                   </div>
                   <div className="gprofile-game-elo">
                     {r.Elo}
-                    <small>ELO</small>
+                    <small>{t("auto.page.elo")}</small>
                   </div>
                   <div className="gprofile-bar" role="img" aria-label={`${rate}% win rate`}>
                     <span style={{ width: `${rate}%` }} />
                   </div>
                   <div className="gprofile-game-meta">
-                    {r.MatchesWon}W / {r.MatchesPlayed - r.MatchesWon}L · {rate}%
+                    {r.MatchesWon}{t("auto.page.w")} {r.MatchesPlayed - r.MatchesWon}{t("auto.page.l")} {rate}%
                   </div>
                 </li>
               );

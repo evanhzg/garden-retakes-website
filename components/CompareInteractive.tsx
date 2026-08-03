@@ -119,7 +119,7 @@ export default function CompareInteractive({
                 </div>
                 <div className="crc-info">
                   <div className="crc-name">{p.name}</div>
-                  <div className="crc-elo">{p.elo} CSR</div>
+                  <div className="crc-elo">{p.elo} {t("auto.compareinteractive.csr")}</div>
                 </div>
                 {isPickedA && <div className="crc-badge badge-a">A</div>}
                 {isPickedB && <div className="crc-badge badge-b">B</div>}
@@ -307,14 +307,14 @@ export default function CompareInteractive({
                   <div className="mcc-title">{map}</div>
                   <div className="mcc-body">
                     <div className="mcc-col left">
-                      <div><strong>{rA}</strong> Rating</div>
-                      <div className="muted">{winA} win</div>
-                      <div className="muted">{mA?.rounds || 0} rds</div>
+                      <div><strong>{rA}</strong> {t("auto.compareinteractive.rating")}</div>
+                      <div className="muted">{winA} {t("auto.compareinteractive.win")}</div>
+                      <div className="muted">{mA?.rounds || 0} {t("auto.compareinteractive.rds")}</div>
                     </div>
                     <div className="mcc-col right">
-                      <div><strong>{rB}</strong> Rating</div>
-                      <div className="muted">{winB} win</div>
-                      <div className="muted">{mB?.rounds || 0} rds</div>
+                      <div><strong>{rB}</strong> {t("auto.compareinteractive.rating")}</div>
+                      <div className="muted">{winB} {t("auto.compareinteractive.win")}</div>
+                      <div className="muted">{mB?.rounds || 0} {t("auto.compareinteractive.rds")}</div>
                     </div>
                   </div>
                 </div>

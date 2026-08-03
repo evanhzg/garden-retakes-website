@@ -3,6 +3,7 @@
 // Shared chrome for the lobby's per-game setup.
 //
 // Options used to sit in a tall column on the lobby page, which meant scrolling
+import { useI18n } from '@/components/I18nProvider';
 // past three screens of switches to find the one you wanted. They now live in a
 // modal with tabs, and the lobby itself only shows a row of chips summarising
 // what is currently selected — so the table can read the ruleset at a glance
@@ -38,6 +39,8 @@ export function SetupModal({ open, title, subtitle, icon, onClose, children }: {
   onClose: () => void;
   children: React.ReactNode;
 }) {
+    const { t } = useI18n();
+
   const [mounted, setMounted] = useState(false);
   useEffect(() => setMounted(true), []);
 
@@ -77,7 +80,7 @@ export function SetupModal({ open, title, subtitle, icon, onClose, children }: {
                 <h2>{title}</h2>
                 {subtitle && <span>{subtitle}</span>}
               </div>
-              <button className="setup-modal-close" onClick={onClose} aria-label="Close">✕</button>
+              <button className="setup-modal-close" onClick={onClose} aria-label={t("auto.setupui.close")}>✕</button>
             </header>
             <div className="setup-modal-body">{children}</div>
           </motion.div>

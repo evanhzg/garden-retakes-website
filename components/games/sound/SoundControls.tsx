@@ -1,10 +1,13 @@
 "use client";
 
 import React, { useEffect, useState } from "react";
+import { useI18n } from '@/components/I18nProvider';
 import { sound } from "./SoundManager";
 
 // Speaker button + volume slider, synced to the shared SoundManager singleton.
 export default function SoundControls() {
+    const { t } = useI18n();
+
   const [{ volume, muted }, setState] = useState(() => sound.getState());
   const [open, setOpen] = useState(false);
 
@@ -38,7 +41,7 @@ export default function SoundControls() {
             sound.setVolume(v);
           }}
           onMouseUp={() => sound.play("click")}
-          aria-label="Volume"
+          aria-label={t("auto.soundcontrols.volume")}
         />
       </div>
     </div>

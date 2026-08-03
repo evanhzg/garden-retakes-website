@@ -3,6 +3,7 @@
 import { useEffect, useRef, useState } from "react";
 import { createPortal } from "react-dom";
 import { youtubeId } from "@/lib/feedShared";
+import { useI18n } from '@/components/I18nProvider';
 import DemoUpload from "@/components/feed/DemoUpload";
 
 // Posting a clip: drop a file or paste a YouTube link, in one dialog.
@@ -21,6 +22,8 @@ export default function UploadClipModal({
   onClose: () => void;
   onPosted: () => void;
 }) {
+    const { t } = useI18n();
+
   // Two ways in: a finished clip, or a demo for the pipeline to cut.
   const [mode, setMode] = useState<"clip" | "demo">("clip");
   const [title, setTitle] = useState("");
@@ -108,24 +111,23 @@ export default function UploadClipModal({
       <div className="pro-modal-card" onClick={(e) => e.stopPropagation()}>
         <div className="pro-modal-head">
           <h2 id="post-clip">{mode === "clip" ? "Post a clip" : "Upload a demo"}</h2>
-          <button className="btn btn-secondary" onClick={onClose} disabled={busy}>Close</button>
+          <button className="btn btn-secondary" onClick={onClose} disabled={busy}>{t("auto.uploadclipmodal.close")}</button>
         </div>
 
-        <div className="pro-tabs" role="tablist" aria-label="What are you posting">
+        <div className="pro-tabs" role="tablist" aria-label={t("auto.uploadclipmodal.what_are_you_posting")}>
           <button role="tab" aria-selected={mode === "clip"} className={`pro-tab ${mode === "clip" ? "active" : ""}`} onClick={() => setMode("clip")}>
-            A clip
-          </button>
+            {t("auto.uploadclipmodal.a_clip")}
+                                </button>
           <button role="tab" aria-selected={mode === "demo"} className={`pro-tab ${mode === "demo" ? "active" : ""}`} onClick={() => setMode("demo")}>
-            A demo
-          </button>
+            {t("auto.uploadclipmodal.a_demo")}
+                                </button>
         </div>
 
         {mode === "demo" ? (
           <div className="pro-panel">
             <p className="muted" style={{ fontSize: 13, marginTop: 0 }}>
-              Upload a match demo and the highlight pipeline cuts it for you - every ace, 4K and 3K,
-              recorded in game and published here. Name specific rounds or a player to narrow it down.
-            </p>
+              {t("auto.uploadclipmodal.upload_a_match_demo_and_the_hi")}
+                                      </p>
             <DemoUpload onPosted={onPosted} />
           </div>
         ) : (
@@ -156,15 +158,15 @@ export default function UploadClipModal({
             <video className="clip-preview" src={preview} controls preload="metadata" playsInline />
           )}
 
-          <div className="clip-or"><span>or</span></div>
+          <div className="clip-or"><span>{t("auto.uploadclipmodal.or")}</span></div>
 
           <div className="field">
-            <label htmlFor="clip-yt">YouTube link</label>
+            <label htmlFor="clip-yt">{t("auto.uploadclipmodal.youtube_link")}</label>
             <input
               id="clip-yt"
               className="input"
               value={youtube}
-              placeholder="https://youtube.com/watch?v=… or a Shorts link"
+              placeholder={t("auto.uploadclipmodal.https_youtube_com_watch_v_or_a")}
               onChange={(e) => {
                 setYoutube(e.target.value);
                 if (e.target.value.trim()) { setFile(null); setPreview(null); }
@@ -178,12 +180,12 @@ export default function UploadClipModal({
           </div>
 
           <div className="field">
-            <label htmlFor="clip-title">Title</label>
+            <label htmlFor="clip-title">{t("auto.uploadclipmodal.title")}</label>
             <input id="clip-title" className="input" value={title} maxLength={140} onChange={(e) => setTitle(e.target.value)} />
           </div>
 
           <div className="field">
-            <label htmlFor="clip-desc">Description <span className="muted">(optional)</span></label>
+            <label htmlFor="clip-desc">{t("auto.uploadclipmodal.description")} <span className="muted">{t("auto.uploadclipmodal._optional")}</span></label>
             <textarea id="clip-desc" className="input" rows={2} maxLength={500} value={description} onChange={(e) => setDescription(e.target.value)} />
           </div>
 
@@ -194,39 +196,31 @@ export default function UploadClipModal({
           </div>
 
           <details className="clip-help">
-            <summary>Where do clips come from?</summary>
+            <summary>{t("auto.uploadclipmodal.where_do_clips_come_from")}</summary>
             <div className="clip-help-body">
               <p>
-                <strong>Three ways, all end up here.</strong>
+                <strong>{t("auto.uploadclipmodal.three_ways_all_end_up_here")}</strong>
               </p>
               <ol>
                 <li>
-                  <strong>Drop a video above.</strong> MP4, WebM or MOV up to {MAX_MB} MB. Anything you
-                  already have — Steam recordings, NVIDIA/AMD captures, a phone clip of the scoreboard.
-                </li>
+                  <strong>{t("auto.uploadclipmodal.drop_a_video_above")}</strong> {t("auto.uploadclipmodal.mp4_webm_or_mov_up_to")} {MAX_MB} {t("auto.uploadclipmodal.mb_anything_you_already_have_s")}
+                                                          </li>
                 <li>
-                  <strong>Paste a YouTube link.</strong> Full links, <code>youtu.be</code> short links and
-                  Shorts all work. Use this for anything longer than a highlight; it costs us no storage
-                  and YouTube handles the streaming.
-                </li>
+                  <strong>{t("auto.uploadclipmodal.paste_a_youtube_link")}</strong> {t("auto.uploadclipmodal.full_links")} <code>{t("auto.uploadclipmodal.youtu_be")}</code> {t("auto.uploadclipmodal.short_links_and_shorts_all_wor")}
+                                                          </li>
                 <li>
-                  <strong>Automatic, from a demo.</strong> Run the <code>garden-highlights</code> pipeline
-                  on your machine: drop demos into <code>demos/in</code>, run one script, and every
-                  ace / 4K / 3K in them is detected, recorded with HLAE, encoded to three qualities
-                  and posted here with a title. They can stay compressed &mdash; <code>.dem.gz</code>
-                  straight from FACEIT, <code>.bz2</code>, <code>.zst</code> or a plain zip are all
-                  unpacked for you. Ask an admin for the zip.
-                </li>
+                  <strong>{t("auto.uploadclipmodal.automatic_from_a_demo")}</strong> {t("auto.uploadclipmodal.run_the")} <code>{t("auto.uploadclipmodal.garden_highlights")}</code> {t("auto.uploadclipmodal.pipeline_on_your_machine_drop")} <code>{t("auto.uploadclipmodal.demos_in")}</code>{t("auto.uploadclipmodal._run_one_script_and_every_ace")} <code>{t("auto.uploadclipmodal._dem_gz")}</code>
+                  {t("auto.uploadclipmodal.straight_from_faceit")} <code>{t("auto.uploadclipmodal._bz2")}</code>, <code>{t("auto.uploadclipmodal._zst")}</code> {t("auto.uploadclipmodal.or_a_plain_zip_are_all_unpacke")}
+                                                          </li>
               </ol>
               <p className="clip-help-note">
-                Uploaded and pipeline clips play in our own player — quality switcher, scrubber and
-                fullscreen. Click any clip in the feed to open it large.
-              </p>
+                {t("auto.uploadclipmodal.uploaded_and_pipeline_clips_pl")}
+                                                    </p>
             </div>
           </details>
 
           <div className="clip-form-actions">
-            <button type="button" className="btn btn-secondary" onClick={onClose} disabled={busy}>Cancel</button>
+            <button type="button" className="btn btn-secondary" onClick={onClose} disabled={busy}>{t("auto.uploadclipmodal.cancel")}</button>
             <button type="submit" className="btn btn-primary" disabled={!canPost || busy}>
               {busy ? "Posting…" : "Post clip"}
             </button>

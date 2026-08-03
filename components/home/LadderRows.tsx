@@ -3,6 +3,7 @@
 import Link from "next/link";
 import { useState } from "react";
 import AvatarImage from "@/components/AvatarImage";
+import { useI18n } from '@/components/I18nProvider';
 import Reveal from "./Reveal";
 
 export type LadderRow = {
@@ -24,6 +25,8 @@ export type LadderRow = {
  * Touch has no hover, so a tap toggles the same readout.
  */
 export default function LadderRows({ rows }: { rows: LadderRow[] }) {
+    const { t } = useI18n();
+
   const [active, setActive] = useState<string | null>(null);
 
   return (
@@ -91,8 +94,8 @@ export default function LadderRows({ rows }: { rows: LadderRow[] }) {
                 </Link>
                 {row.isYou && (
                   <span className="tag tag-outline" style={{ marginLeft: 10, verticalAlign: "middle" }}>
-                    you
-                  </span>
+                    {t("auto.ladderrows.you")}
+                                                  </span>
                 )}
               </div>
 
@@ -127,9 +130,9 @@ export default function LadderRows({ rows }: { rows: LadderRow[] }) {
               >
                 {/* Each figure follows the one before it, so the readout reads
                     as it opens instead of all three landing at once. */}
-                <Stat label="K/D" value={row.kd?.toFixed(2)} open={open} index={0} />
-                <Stat label="ADR" value={row.adr != null ? Math.round(row.adr) : undefined} open={open} index={1} />
-                <Stat label="Win" value={row.winPct != null ? `${Math.round(row.winPct)}%` : undefined} open={open} index={2} />
+                <Stat label={t("auto.ladderrows.k_d")} value={row.kd?.toFixed(2)} open={open} index={0} />
+                <Stat label={t("auto.ladderrows.adr")} value={row.adr != null ? Math.round(row.adr) : undefined} open={open} index={1} />
+                <Stat label={t("auto.ladderrows.win")} value={row.winPct != null ? `${Math.round(row.winPct)}%` : undefined} open={open} index={2} />
               </div>
             </div>
           </Reveal>

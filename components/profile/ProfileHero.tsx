@@ -9,6 +9,7 @@ import { ConnectionsBar } from "@/components/profile/Connections";
 import MedalCase from "@/components/profile/MedalCase";
 import { M4A1S, M4A4, SIGNATURE_SLOTS, normaliseStore } from "@/lib/inventory";
 import type { InventoryItem, InventoryStore, Loadout, Side } from "@/lib/inventory";
+import { useI18n } from '@/components/I18nProvider';
 import type { ProfileHeroStats } from "@/app/profile/page";
 
 // Replaces ProfileShowcase, which framed the profile around a 3D Garden-Pop on
@@ -56,6 +57,8 @@ export default function ProfileHero({
    */
   owner?: boolean;
 }) {
+    const { t } = useI18n();
+
   const [publicLoadout, setPublicLoadout] = useState<PublicLoadout | null>(null);
   const [store, setStore] = useState<InventoryStore | null>(null);
   const [baseImages, setBaseImages] = useState<Map<number, string>>(new Map());
@@ -193,7 +196,7 @@ export default function ProfileHero({
           <span className="kicker">{owner ? "Your profile" : "Player"}</span>
           {owner && editing ? (
             <div className="pro-name-edit">
-              <label className="sr-only" htmlFor="pro-name">Display name</label>
+              <label className="sr-only" htmlFor="pro-name">{t("auto.profilehero.display_name")}</label>
               <input
                 id="pro-name"
                 className="input"
@@ -209,7 +212,7 @@ export default function ProfileHero({
               <button className="btn btn-primary" onClick={saveName} disabled={saving}>
                 {saving ? "Saving…" : "Save"}
               </button>
-              <button className="btn btn-secondary" onClick={() => setEditing(false)}>Cancel</button>
+              <button className="btn btn-secondary" onClick={() => setEditing(false)}>{t("auto.profilehero.cancel")}</button>
             </div>
           ) : (
             <h1 className="pro-name">
@@ -222,8 +225,8 @@ export default function ProfileHero({
                     setEditing(true);
                   }}
                 >
-                  Edit
-                </button>
+                  {t("auto.profilehero.edit")}
+                                                      </button>
               )}
             </h1>
           )}
@@ -247,12 +250,12 @@ export default function ProfileHero({
             <>
               {/* Settings used to live in a panel at the very bottom of the page. */}
               <button className="btn btn-primary" onClick={() => setSettingsOpen(true)}>
-                Settings
-              </button>
-              <Link className="btn btn-secondary" href="/inventory">Loadouts</Link>
+                {t("auto.profilehero.settings")}
+                                            </button>
+              <Link className="btn btn-secondary" href="/inventory">{t("auto.profilehero.loadouts")}</Link>
             </>
           )}
-          <Link className="btn btn-secondary" href={`/compare?a=${steamId}`}>Compare</Link>
+          <Link className="btn btn-secondary" href={`/compare?a=${steamId}`}>{t("auto.profilehero.compare")}</Link>
         </div>
       </div>
 
@@ -283,15 +286,15 @@ export default function ProfileHero({
 
         <div className="pro-loadout">
         <div className="pro-loadout-head is-bare">
-          <h2>Equipped{owner ? (loadout ? ` — ${loadout.name}` : "") : publicLoadout ? ` — ${publicLoadout.name}` : ""}</h2>
-          <div className="pro-sides" role="group" aria-label="Side">
+          <h2>{t("auto.profilehero.equipped")}{owner ? (loadout ? ` — ${loadout.name}` : "") : publicLoadout ? ` — ${publicLoadout.name}` : ""}</h2>
+          <div className="pro-sides" role="group" aria-label={t("auto.profilehero.side")}>
             {SIDES.map((s) => (
               <button key={s} className={`pro-sidebtn ${side === s ? "active" : ""}`} onClick={() => setSide(s)}>
                 {s.toUpperCase()}
               </button>
             ))}
           </div>
-          {owner && <Link className="btn btn-ghost" href="/inventory">Edit →</Link>}
+          {owner && <Link className="btn btn-ghost" href="/inventory">{t("auto.profilehero.edit")}</Link>}
         </div>
         <div className="pro-guns">
           {slots.map((slot, i) => (

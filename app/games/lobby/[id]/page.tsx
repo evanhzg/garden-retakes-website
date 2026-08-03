@@ -28,6 +28,7 @@ import QuizOptionsPanel, { summarizeQuiz } from "@/components/games/quiz/QuizOpt
 import { SetupModal, SummaryChips, type Chip } from "@/components/games/setup/SetupUI";
 import { useGameLang, HEADSHOT, PENTAKILL, BUILDPATH, BUYMENU } from "@/components/games/i18n";
 import GameIcon from "@/components/games/GameIcon";
+import { useI18n } from '@/components/I18nProvider';
 import { listBoards } from "@/components/games/editor/boardStore";
 
 import "./lobby.css";
@@ -84,6 +85,8 @@ export default function UniversalLobbyWrapper() {
 }
 
 function LobbyClient({ lobbyId, mySteamId }: { lobbyId: string; mySteamId: string }) {
+    const { t } = useI18n();
+
   const { socket, isConnected, isAuthed } = useSocket();
   const router = useRouter();
 
@@ -253,18 +256,18 @@ function LobbyClient({ lobbyId, mySteamId }: { lobbyId: string; mySteamId: strin
       <div className="lobby-container flex-center">
         <form className="lobby-modal glass-panel" onSubmit={handleJoinWithPassword}>
           <div className="lobby-modal-icon">🔒</div>
-          <h2>Private Lobby</h2>
-          <p>Enter the password to join.</p>
+          <h2>{t("auto.page.private_lobby")}</h2>
+          <p>{t("auto.page.enter_the_password_to_join")}</p>
           <input
             type="password"
             value={passwordInput}
             onChange={e => setPasswordInput(e.target.value)}
-            placeholder="Password"
+            placeholder={t("auto.page.password")}
             className="lobby-input"
             autoFocus
           />
-          <button type="submit" className="btn-primary">Join</button>
-          <button type="button" onClick={() => router.push("/games")} className="btn-ghost">Back to Games</button>
+          <button type="submit" className="btn-primary">{t("auto.page.join")}</button>
+          <button type="button" onClick={() => router.push("/games")} className="btn-ghost">{t("auto.page.back_to_games")}</button>
         </form>
       </div>
     );
@@ -275,9 +278,9 @@ function LobbyClient({ lobbyId, mySteamId }: { lobbyId: string; mySteamId: strin
       <div className="lobby-container flex-center">
         <div className="lobby-modal glass-panel">
           <div className="lobby-modal-icon">😵</div>
-          <h2>Oops</h2>
+          <h2>{t("auto.page.oops")}</h2>
           <p>{error}</p>
-          <button onClick={() => router.push("/games")} className="btn-primary">Return to Games</button>
+          <button onClick={() => router.push("/games")} className="btn-primary">{t("auto.page.return_to_games")}</button>
         </div>
       </div>
     );
@@ -287,7 +290,7 @@ function LobbyClient({ lobbyId, mySteamId }: { lobbyId: string; mySteamId: strin
     return (
       <div className="lobby-container flex-center">
         <div className="loader"></div>
-        {!isConnected && <p className="lobby-connecting">Connecting…</p>}
+        {!isConnected && <p className="lobby-connecting">{t("auto.page.connecting")}</p>}
       </div>
     );
   }
@@ -346,7 +349,7 @@ function LobbyClient({ lobbyId, mySteamId }: { lobbyId: string; mySteamId: strin
     if (baseGame === "pentakill") return <>{rpcData}<PentakillGameWrapper /></>;
     if (baseGame === "buildpath") return <>{rpcData}<BuildPathGameWrapper /></>;
     if (baseGame === "buymenu") return <>{rpcData}<BuyMenuGameWrapper /></>;
-    return <div className="lobby-container flex-center">{rpcData}Game started, but component not found.</div>;
+    return <div className="lobby-container flex-center">{rpcData}{t("auto.page.game_started_but_component_not")}</div>;
   }
 
   const setGame = (id: string) => handleChangeGame(`${id}_${lang}`);
@@ -451,7 +454,7 @@ function LobbyClient({ lobbyId, mySteamId }: { lobbyId: string; mySteamId: strin
           </motion.div>
         )}
       </AnimatePresence>
-      {!isConnected && <div className="lobby-reconnect-banner">Reconnecting…</div>}
+      {!isConnected && <div className="lobby-reconnect-banner">{t("auto.page.reconnecting")}</div>}
 
       {/* ---------------------------------------------------------- hero */}
       <header className="lobby-hero">
@@ -496,16 +499,16 @@ function LobbyClient({ lobbyId, mySteamId }: { lobbyId: string; mySteamId: strin
                   onChange={(e) => setPrivInput(e.target.value)}
                   onKeyDown={(e) => { if (e.key === "Enter") { setPrivacy(true, privInput); setShowPrivacy(false); } }}
                   onBlur={() => setPrivacy(true, privInput)}
-                  placeholder="Password (optional)"
+                  placeholder={t("auto.page.password_optional")}
                   maxLength={64}
                 />
               )}
             </div>
           )}
-          <button className="btn-invite" onClick={handleCopyInvite} title="Copy invite link">
+          <button className="btn-invite" onClick={handleCopyInvite} title={t("auto.page.copy_invite_link")}>
             {copied ? "✓ Copied!" : "🔗 Invite"}
           </button>
-          <button className="btn-hero-leave" onClick={() => router.push("/games")} title="Leave lobby">✕</button>
+          <button className="btn-hero-leave" onClick={() => router.push("/games")} title={t("auto.page.leave_lobby")}>✕</button>
         </div>
       </header>
 
@@ -516,18 +519,18 @@ function LobbyClient({ lobbyId, mySteamId }: { lobbyId: string; mySteamId: strin
           {/* game picker */}
           <section className="lobby-section glass-panel">
             <div className="picker-header">
-              <h3>🎮 Choose your game</h3>
+              <h3>{t("auto.page._choose_your_game")}</h3>
               {isHost ? (
                 <div className="lang-toggle small">
                   <button className={lang === "en" ? "active" : ""} onClick={() => setLang("en")}>
-                    <img src="https://flagcdn.com/w40/gb.png" alt="EN" style={{ display: "inline-block", width: "1.2em", height: "auto", borderRadius: "2px", verticalAlign: "middle", marginRight: "4px" }} /> EN
-                  </button>
+                    <img src="https://flagcdn.com/w40/gb.png" alt={t("auto.page.en")} style={{ display: "inline-block", width: "1.2em", height: "auto", borderRadius: "2px", verticalAlign: "middle", marginRight: "4px" }} /> {t("auto.page.en")}
+                                                        </button>
                   <button className={lang === "fr" ? "active" : ""} onClick={() => setLang("fr")}>
-                    <img src="https://flagcdn.com/w40/fr.png" alt="FR" style={{ display: "inline-block", width: "1.2em", height: "auto", borderRadius: "2px", verticalAlign: "middle", marginRight: "4px" }} /> FR
-                  </button>
+                    <img src="https://flagcdn.com/w40/fr.png" alt={t("auto.page.fr")} style={{ display: "inline-block", width: "1.2em", height: "auto", borderRadius: "2px", verticalAlign: "middle", marginRight: "4px" }} /> {t("auto.page.fr")}
+                                                        </button>
                 </div>
               ) : (
-                <span className="picker-hint">Only the host picks the game</span>
+                <span className="picker-hint">{t("auto.page.only_the_host_picks_the_game")}</span>
               )}
             </div>
             <div className="game-picker-grid">
@@ -554,7 +557,7 @@ function LobbyClient({ lobbyId, mySteamId }: { lobbyId: string; mySteamId: strin
                     <span className="game-pick-icon"><GameIcon id={game.id} size={26} /></span>
                     <span className="game-pick-name">{game.name}</span>
                     <span className="game-pick-players">{game.min}–{game.max}P</span>
-                    {!game.ready && <span className="game-pick-soon-badge">SOON</span>}
+                    {!game.ready && <span className="game-pick-soon-badge">{t("auto.page.soon")}</span>}
                     {game.ready && incompatible && (
                       <span className="game-pick-limit-badge">{tooMany ? `≤${game.max}` : `≥${game.min}`}</span>
                     )}
@@ -580,13 +583,13 @@ function LobbyClient({ lobbyId, mySteamId }: { lobbyId: string; mySteamId: strin
           {baseGame !== "none" && hasOptions && (
             <section className="lobby-section glass-panel lobby-setup-strip">
               <div className="setup-strip-head">
-                <h3>⚙ {currentGameConfig?.name} setup</h3>
+                <h3>⚙ {currentGameConfig?.name} {t("auto.page.setup")}</h3>
                 <button className="setup-open-btn" onClick={() => setSetupOpen(true)}>
                   {isHost ? "Configure" : "View setup"} ▸
                 </button>
               </div>
               <SummaryChips chips={summaryChips} empty="Nothing selected yet" />
-              {!isHost && <span className="picker-hint">Only the host changes the setup</span>}
+              {!isHost && <span className="picker-hint">{t("auto.page.only_the_host_changes_the_setu")}</span>}
             </section>
           )}
 
@@ -594,10 +597,10 @@ function LobbyClient({ lobbyId, mySteamId }: { lobbyId: string; mySteamId: strin
           {cnMode && (
             <section className="lobby-section glass-panel">
               <div className="picker-header">
-                <h3>🕵️ Teams</h3>
+                <h3>{t("auto.page._teams")}</h3>
                 {isHost
-                  ? <button className="setup-preset" onClick={handleShuffleCnTeams}>🎲 Shuffle teams</button>
-                  : <span className="picker-hint">Tap a colour to pick your side</span>}
+                  ? <button className="setup-preset" onClick={handleShuffleCnTeams}>{t("auto.page._shuffle_teams")}</button>
+                  : <span className="picker-hint">{t("auto.page.tap_a_colour_to_pick_your_side")}</span>}
               </div>
               <div className="cn-lobby-teams">
                 {(["red", "blue"] as const).map((team) => {
@@ -609,7 +612,7 @@ function LobbyClient({ lobbyId, mySteamId }: { lobbyId: string; mySteamId: strin
                         <span className="cn-lobby-count">{members.length}</span>
                       </div>
                       <div className="cn-lobby-list">
-                        {members.length === 0 && <span className="cn-lobby-empty">No one yet</span>}
+                        {members.length === 0 && <span className="cn-lobby-empty">{t("auto.page.no_one_yet")}</span>}
                         {members.map((p: any) => (
                           <button
                             key={p.steamId}
@@ -635,12 +638,12 @@ function LobbyClient({ lobbyId, mySteamId }: { lobbyId: string; mySteamId: strin
                 })}
               </div>
               {cnUnseated > 0 && (
-                <span className="picker-hint">{cnUnseated} player{cnUnseated !== 1 ? "s" : ""} unseated — they'll be placed automatically at launch</span>
+                <span className="picker-hint">{cnUnseated} {t("auto.page.player")}{cnUnseated !== 1 ? "s" : ""} {t("auto.page.unseated_they_ll_be_placed_aut")}</span>
               )}
               {cnLopsided && (
                 <div className="lobby-warning">
                   <span className="warning-icon">⚠️</span>
-                  <span>Each colour needs at least 2 players — one to give clues and one to guess</span>
+                  <span>{t("auto.page.each_colour_needs_at_least_2_p")}</span>
                 </div>
               )}
             </section>
@@ -649,7 +652,7 @@ function LobbyClient({ lobbyId, mySteamId }: { lobbyId: string; mySteamId: strin
           {/* roster */}
           <section className="lobby-section glass-panel">
             <div className="players-header">
-              <h3>🪑 Players <span className="players-count">{playerCount}/{maxPlayers}</span></h3>
+              <h3>{t("auto.page._players")} <span className="players-count">{playerCount}/{maxPlayers}</span></h3>
               <div className="ready-track">
                 <div className="ready-track-bar"><span style={{ width: `${others.length ? (readyCount / others.length) * 100 : 100}%` }} /></div>
                 <span className="ready-track-label">{others.length === 0 ? "no guests yet" : `${readyCount}/${others.length} ready`}</span>
@@ -682,15 +685,15 @@ function LobbyClient({ lobbyId, mySteamId }: { lobbyId: string; mySteamId: strin
               </AnimatePresence>
 
               {playerCount < maxPlayers && isHost && (
-                <button className="seat seat-add" onClick={handleAddBot} title="Add a bot">
+                <button className="seat seat-add" onClick={handleAddBot} title={t("auto.page.add_a_bot")}>
                   <span className="seat-add-plus">🤖</span>
-                  <span className="seat-add-label">Add bot</span>
+                  <span className="seat-add-label">{t("auto.page.add_bot")}</span>
                 </button>
               )}
               {Array.from({ length: Math.max(0, maxPlayers - playerCount - (isHost ? 1 : 0)) }).map((_, index) => (
                 <div key={`empty-${index}`} className="seat seat-empty">
                   <span className="seat-empty-dot" />
-                  <span className="seat-empty-label">Open slot</span>
+                  <span className="seat-empty-label">{t("auto.page.open_slot")}</span>
                 </div>
               ))}
             </div>
@@ -700,14 +703,14 @@ function LobbyClient({ lobbyId, mySteamId }: { lobbyId: string; mySteamId: strin
         {/* side: chat + actions */}
         <aside className="lobby-side">
           <div className="lobby-chat glass-panel">
-            <h3 className="chat-title">💬 Lobby Chat</h3>
+            <h3 className="chat-title">{t("auto.page._lobby_chat")}</h3>
             <div className="chat-messages">
-              {chatMessages.length === 0 && <div className="chat-message system">Say hi 👋</div>}
+              {chatMessages.length === 0 && <div className="chat-message system">{t("auto.page.say_hi")}</div>}
               {chatMessages.map(renderChatMessage)}
               <div ref={chatEndRef} />
             </div>
             <form onSubmit={sendChatMessage} className="chat-input-area">
-              <input type="text" value={chatInput} onChange={e => setChatInput(e.target.value)} placeholder="Type a message…" maxLength={300} />
+              <input type="text" value={chatInput} onChange={e => setChatInput(e.target.value)} placeholder={t("auto.page.type_a_message")} maxLength={300} />
               <button type="submit" disabled={!chatInput.trim()}>➤</button>
             </form>
           </div>
@@ -739,7 +742,7 @@ function LobbyClient({ lobbyId, mySteamId }: { lobbyId: string; mySteamId: strin
               </motion.button>
             )}
 
-            <button onClick={() => router.push("/games")} className="btn-leave">LEAVE LOBBY</button>
+            <button onClick={() => router.push("/games")} className="btn-leave">{t("auto.page.leave_lobby")}</button>
           </div>
         </aside>
       </div>
@@ -768,6 +771,8 @@ function PlayerSeat({ player, names, isHostPlayer, isMe, canKick, onKick, teamMo
   canSetTeam?: boolean;
   onSetTeam?: (team: number) => void;
 }) {
+    const { t } = useI18n();
+
   const name = displayNameFor(player.steamId, names, player);
   const avatar = names[player.steamId]?.avatar || null;
   const disconnected = player.connected === false;
@@ -790,8 +795,8 @@ function PlayerSeat({ player, names, isHostPlayer, isMe, canKick, onKick, teamMo
       {teamMode === "2v2" && (
         canSetTeam ? (
           <div className="team-switch">
-            <button className={`team-btn t0 ${team === 0 ? "on" : ""}`} onClick={() => onSetTeam?.(0)} title="Team A">A</button>
-            <button className={`team-btn t1 ${team === 1 ? "on" : ""}`} onClick={() => onSetTeam?.(1)} title="Team B">B</button>
+            <button className={`team-btn t0 ${team === 0 ? "on" : ""}`} onClick={() => onSetTeam?.(0)} title={t("auto.page.team_a")}>A</button>
+            <button className={`team-btn t1 ${team === 1 ? "on" : ""}`} onClick={() => onSetTeam?.(1)} title={t("auto.page.team_b")}>B</button>
           </div>
         ) : (
           teamLetter && <span className={`team-badge t${team}`}>{teamLetter}</span>

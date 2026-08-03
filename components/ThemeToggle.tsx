@@ -1,9 +1,12 @@
 "use client";
 
 import { useTheme } from "next-themes";
+import { useI18n } from '@/components/I18nProvider';
 import { useEffect, useState } from "react";
 
 export function ThemeToggle() {
+    const { t } = useI18n();
+
   const { theme, setTheme } = useTheme();
   const [mounted, setMounted] = useState(false);
 
@@ -22,8 +25,8 @@ export function ThemeToggle() {
     <button
       onClick={() => setTheme(isDark ? "light" : "dark")}
       className="theme-toggle"
-      aria-label="Toggle Dark Mode"
-      title="Toggle Dark Mode"
+      aria-label={t("auto.themetoggle.toggle_dark_mode")}
+      title={t("auto.themetoggle.toggle_dark_mode")}
     >
       <svg
         width="20"

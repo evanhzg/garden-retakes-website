@@ -8,6 +8,7 @@ import ClipEditor from "@/components/feed/ClipEditor";
 import ShareMenu from "@/components/feed/ShareMenu";
 import CommentBox, { CommentBody } from "@/components/feed/CommentBox";
 import { tagColour, tagLabel } from "@/lib/feedShared";
+import { useI18n } from '@/components/I18nProvider';
 import type { Variant } from "@/components/feed/VideoPlayer";
 
 export type Clip = {
@@ -81,6 +82,8 @@ const ago = (iso: string) => {
 
 /** Author line: a link for site members, plain dimmed text for everyone else. */
 function Author({ clip }: { clip: Clip }) {
+    const { t } = useI18n();
+
   const inner = (
     <>
       <AvatarImage steamId={clip.steamId} src={clip.avatar} alt={clip.author} className="avatar avatar-sm" />
@@ -88,7 +91,7 @@ function Author({ clip }: { clip: Clip }) {
     </>
   );
   return clip.authorIsUser === false ? (
-    <span className="clip-author is-guest" title="No profile on this site yet">{inner}</span>
+    <span className="clip-author is-guest" title={t("auto.clipcard.no_profile_on_this_site_yet")}>{inner}</span>
   ) : (
     <Link href={`/players/${clip.steamId}`} className="clip-author">{inner}</Link>
   );
@@ -108,6 +111,8 @@ export default function ClipCard({
   /** Arrived here from a notification pointing at this clip. */
   autoOpen?: boolean;
 }) {
+    const { t } = useI18n();
+
   const [clip, setClip] = useState(initial);
   const [editing, setEditing] = useState(false);
   const [likes, setLikes] = useState(clip.likes);
@@ -221,9 +226,9 @@ export default function ClipCard({
         <Author clip={clip} />
         <span className="clip-head-right">
           {(clip.canEdit || isAdmin) && (
-            <button className="btn btn-ghost clip-edit-btn" onClick={() => setEditing(true)} title="Edit this clip">
-              Edit
-            </button>
+            <button className="btn btn-ghost clip-edit-btn" onClick={() => setEditing(true)} title={t("auto.clipcard.edit_this_clip")}>
+              {t("auto.clipcard.edit")}
+                                      </button>
           )}
           <span className="clip-time" title={new Date(clip.createdAt).toLocaleString()}>{ago(clip.createdAt)}</span>
         </span>
@@ -245,7 +250,7 @@ export default function ClipCard({
               {/* eslint-disable-next-line @next/next/no-img-element */}
               {clip.thumb && <img src={clip.thumb} alt="" loading="lazy" />}
               <span className="clip-play" aria-hidden>▶</span>
-              <span className="clip-badge">YouTube</span>
+              <span className="clip-badge">{t("auto.clipcard.youtube")}</span>
             </button>
           )
         ) : (
@@ -272,8 +277,8 @@ export default function ClipCard({
       <div className="clip-body">
         {clip.unlisted && (
           <p className="clip-unlisted">
-            Only you can see this. Give it a name to put it on the feed.
-            <button className="btn btn-primary" onClick={() => setEditing(true)}>Name &amp; publish</button>
+            {t("auto.clipcard.only_you_can_see_this_give_it")}
+                                  <button className="btn btn-primary" onClick={() => setEditing(true)}>{t("auto.clipcard.name_amp_publish")}</button>
           </p>
         )}
         <h3 className="clip-title">{clip.title}</h3>
@@ -311,7 +316,7 @@ export default function ClipCard({
             className="btn btn-ghost clip-download"
             href={downloadUrl}
             download={`${clip.title.replace(/[^\w -]+/g, "").trim() || "clip"}.mp4`}
-            title="Download this clip"
+            title={t("auto.clipcard.download_this_clip")}
           >
             ↓
           </a>
@@ -321,9 +326,9 @@ export default function ClipCard({
       {showComments && (
         <div className="clip-comments">
           {comments === null ? (
-            <p className="muted" style={{ fontSize: 13 }}>Loading…</p>
+            <p className="muted" style={{ fontSize: 13 }}>{t("auto.clipcard.loading")}</p>
           ) : comments.length === 0 ? (
-            <p className="muted" style={{ fontSize: 13 }}>No comments yet.</p>
+            <p className="muted" style={{ fontSize: 13 }}>{t("auto.clipcard.no_comments_yet")}</p>
           ) : (
             <ul>
               {comments.map((c) => (
@@ -345,8 +350,8 @@ export default function ClipCard({
                       </button>
                       {c.mine && (
                         <button className="clip-comment-del" onClick={() => removeComment(c.id)}>
-                          Delete
-                        </button>
+                          {t("auto.clipcard.delete")}
+                                                              </button>
                       )}
                     </div>
                   </div>
@@ -359,8 +364,8 @@ export default function ClipCard({
             <CommentBox id={`c-${clip.id}`} posting={posting} onSubmit={(body) => postComment(body)} />
           ) : (
             <p className="muted" style={{ fontSize: 13 }}>
-              <a href="/api/auth/steam/login">Sign in</a> to comment.
-            </p>
+              <a href="/api/auth/steam/login">{t("auto.clipcard.sign_in")}</a> {t("auto.clipcard.to_comment")}
+                                          </p>
           )}
         </div>
       )}

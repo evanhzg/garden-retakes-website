@@ -1,4 +1,5 @@
 "use client";
+import { useI18n } from '@/components/I18nProvider';
 
 import { useCallback, useEffect, useRef, useState } from "react";
 
@@ -38,6 +39,8 @@ export default function VideoPlayer({
   autoPlay?: boolean;
   className?: string;
 }) {
+    const { t } = useI18n();
+
   const videoRef = useRef<HTMLVideoElement>(null);
   const wrapRef = useRef<HTMLDivElement>(null);
   const hideTimer = useRef<number | null>(null);
@@ -186,7 +189,7 @@ export default function VideoPlayer({
       {waiting && <div className="vp-spinner" aria-hidden />}
 
       {!playing && (
-        <button className="vp-bigplay" onClick={togglePlay} aria-label="Play">
+        <button className="vp-bigplay" onClick={togglePlay} aria-label={t("auto.videoplayer.play")}>
           <span aria-hidden>▶</span>
         </button>
       )}
@@ -211,7 +214,7 @@ export default function VideoPlayer({
             >
               {muted || volume === 0 ? "🔇" : "🔊"}
             </button>
-            <label className="sr-only" htmlFor="vp-vol">Volume</label>
+            <label className="sr-only" htmlFor="vp-vol">{t("auto.videoplayer.volume")}</label>
             <input
               id="vp-vol"
               className="vp-vol-slider"
@@ -242,7 +245,7 @@ export default function VideoPlayer({
                 {active.name}
               </button>
               {qualityOpen && (
-                <ul className="vp-quality-menu" role="listbox" aria-label="Quality">
+                <ul className="vp-quality-menu" role="listbox" aria-label={t("auto.videoplayer.quality")}>
                   {variants.map((v, i) => (
                     <li key={v.name}>
                       <button
@@ -281,6 +284,8 @@ function Scrubber({
   duration: number;
   onSeek: (fraction: number) => void;
 }) {
+    const { t } = useI18n();
+
   const ref = useRef<HTMLDivElement>(null);
   const dragging = useRef(false);
 
@@ -297,7 +302,7 @@ function Scrubber({
       className="vp-scrub"
       role="slider"
       tabIndex={0}
-      aria-label="Seek"
+      aria-label={t("auto.videoplayer.seek")}
       aria-valuemin={0}
       aria-valuemax={Math.round(duration) || 0}
       aria-valuenow={Math.round(progress * duration) || 0}

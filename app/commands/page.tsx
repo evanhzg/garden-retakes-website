@@ -1,6 +1,7 @@
 import fs from "node:fs";
 import path from "node:path";
 import CommandsClient, { CommandCategory, CommandItem } from "./CommandsClient";
+import { getT } from '@/lib/serverI18n';
 
 export const metadata = {
   title: "Commands — Garden Retakes",
@@ -85,20 +86,21 @@ function loadCommands() {
 }
 
 export default function CommandsPage() {
+    const t = getT();
+
   const { intro, categories } = loadCommands();
 
   return (
     <>
       <section className="hero hero-compact">
         <div className="hero-inner">
-          <span className="eyebrow">Commands</span>
+          <span className="eyebrow">{t("auto.page.commands")}</span>
           <h1>
-            Every <span className="grad">command</span> on the server.
-          </h1>
+            {t("auto.page.every")} <span className="grad">{t("auto.page.command")}</span> {t("auto.page.on_the_server")}
+                                </h1>
           <p className="muted">
-            Chat commands work with <code>!</code> or <code>/</code>; each also exists in
-            console as <code>css_*</code>. Mirrored from the plugin&apos;s COMMANDS.md.
-          </p>
+            {t("auto.page.chat_commands_work_with")} <code>!</code> {t("auto.page.or")} <code>/</code>{t("auto.page._each_also_exists_in_console_a")} <code>{t("auto.page.css")}</code>{t("auto.page._mirrored_from_the_plugin_apos")}
+                                </p>
         </div>
       </section>
 

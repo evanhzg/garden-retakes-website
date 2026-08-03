@@ -9,6 +9,7 @@ import AvatarImage from "@/components/AvatarImage";
 import ProfileActivity from "@/components/ProfileActivity";
 import ProfileStats from "@/components/profile/ProfileStats";
 import ProfileHero from "@/components/profile/ProfileHero";
+import { getT } from '@/lib/serverI18n';
 
 export const dynamic = "force-dynamic";
 export const revalidate = 30;
@@ -81,6 +82,8 @@ export default async function PlayerPage({
   params: { steamId: string };
   searchParams: { season?: string; ranked?: string };
 }) {
+    const t = getT();
+
   const steamId = BigInt(params.steamId);
   const activeSeason = await getActiveSeason();
   const seasonId = searchParams.season ? Number(searchParams.season) : activeSeason?.Id ?? 0;
@@ -170,8 +173,8 @@ export default async function PlayerPage({
             className={`chip ${rankedOnly ? "active" : ""}`}
             href={`?season=${seasonId}${rankedOnly ? "" : "&ranked=1"}`}
           >
-            Ranked only
-          </a>
+            {t("auto.page.ranked_only")}
+                                </a>
         </div>
       </section>
 
@@ -181,33 +184,33 @@ export default async function PlayerPage({
             them here was the third copy on one page. Playtime was the only
             figure this block alone carried, so it sits with the meters. */}
         <p className="muted" style={{ margin: "0 0 4px", fontSize: 13 }}>
-          {formatPlaytime(profile?.TimeSpentSeconds ?? 0)} played · {byMap.length} maps
-        </p>
+          {formatPlaytime(profile?.TimeSpentSeconds ?? 0)} {t("auto.page.played")} {byMap.length} {t("auto.page.maps")}
+                          </p>
 
         <div style={{ marginTop: 18 }}>
           <div className="meter">
-            <span className="cap">Round win %</span>
+            <span className="cap">{t("auto.page.round_win")}</span>
             <div className="track">
               <div className="fill" style={{ width: `${Math.min(100, total.winPct)}%` }} />
             </div>
             <span className="val">{total.winPct.toFixed(0)}%</span>
           </div>
           <div className="meter">
-            <span className="cap">KAST</span>
+            <span className="cap">{t("auto.page.kast")}</span>
             <div className="track">
               <div className="fill" style={{ width: `${Math.min(100, total.kast)}%` }} />
             </div>
             <span className="val">{total.kast.toFixed(0)}%</span>
           </div>
           <div className="meter">
-            <span className="cap">Headshots</span>
+            <span className="cap">{t("auto.page.headshots")}</span>
             <div className="track">
               <div className="fill" style={{ width: `${Math.min(100, total.hs)}%` }} />
             </div>
             <span className="val">{total.hs.toFixed(0)}%</span>
           </div>
           <div className="meter">
-            <span className="cap">ADR</span>
+            <span className="cap">{t("auto.page.adr")}</span>
             <div className="track">
               <div className="fill" style={{ width: `${Math.min(100, (total.adr / 150) * 100)}%` }} />
             </div>
@@ -218,8 +221,8 @@ export default async function PlayerPage({
         {recentRatings.length > 1 && (
           <div style={{ marginTop: 16 }}>
             <div className="cap muted" style={{ fontSize: "0.78rem", fontWeight: 700, marginBottom: 6 }}>
-              LAST {recentRatings.length} ROUNDS — RATING
-            </div>
+              {t("auto.page.last")} {recentRatings.length} {t("auto.page.rounds_rating")}
+                                      </div>
             <div className="sparkline">
               {recentRatings.map((r, i) => (
                 <span
@@ -240,7 +243,7 @@ export default async function PlayerPage({
       {/* ---------- Web Game Stats ---------- */}
       {gameStats && gameStats.length > 0 && (
         <section className="panel">
-          <h2>Minigames & Dailies</h2>
+          <h2>{t("auto.page.minigames_dailies")}</h2>
           <div className="split-cards">
             {gameStats.map((gs) => (
               <div key={gs.GameId} className="side-card">
@@ -248,15 +251,15 @@ export default async function PlayerPage({
                 <div className="stat-grid">
                   <div className="stat-card">
                     <div className="value">{gs.Elo}</div>
-                    <div className="label">ELO</div>
+                    <div className="label">{t("auto.page.elo")}</div>
                   </div>
                   <div className="stat-card">
                     <div className="value">{gs.MatchesWon} <span style={{fontSize: 12, color: 'rgba(255,255,255,0.4)'}}>/ {gs.MatchesPlayed}</span></div>
-                    <div className="label">Wins</div>
+                    <div className="label">{t("auto.page.wins")}</div>
                   </div>
                   <div className="stat-card">
                     <div className="value">{gs.TotalScore}</div>
-                    <div className="label">Total Score</div>
+                    <div className="label">{t("auto.page.total_score")}</div>
                   </div>
                 </div>
               </div>

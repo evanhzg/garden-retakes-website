@@ -1,4 +1,5 @@
 "use client";
+import { useI18n } from '@/components/I18nProvider';
 
 import { useEffect, useState } from "react";
 
@@ -36,6 +37,8 @@ const OPTIONS: { id: MotionPref; label: string; title: string }[] = [
 ];
 
 export default function MotionToggle() {
+    const { t } = useI18n();
+
   const [pref, setPref] = useState<MotionPref>("system");
   const [systemReduced, setSystemReduced] = useState(false);
 
@@ -62,8 +65,8 @@ export default function MotionToggle() {
 
   return (
     <div className="motion-toggle">
-      <span className="motion-toggle-k">Motion</span>
-      <div className="seg" role="group" aria-label="Motion preference">
+      <span className="motion-toggle-k">{t("auto.motiontoggle.motion")}</span>
+      <div className="seg" role="group" aria-label={t("auto.motiontoggle.motion_preference")}>
         {OPTIONS.map((o) => (
           <label key={o.id} className="seg-opt" title={o.title}>
             <input
@@ -78,8 +81,8 @@ export default function MotionToggle() {
       </div>
       {pref === "system" && systemReduced && (
         <p className="motion-toggle-hint">
-          Your system asks for reduced motion, so animations are off. Choose <strong>On</strong> to override it.
-        </p>
+          {t("auto.motiontoggle.your_system_asks_for_reduced_m")} <strong>{t("auto.motiontoggle.on")}</strong> {t("auto.motiontoggle.to_override_it")}
+                          </p>
       )}
     </div>
   );

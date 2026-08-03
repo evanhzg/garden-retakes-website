@@ -1,6 +1,7 @@
 "use client";
 
 import Link from "next/link";
+import { useI18n } from '@/components/I18nProvider';
 import { useEffect, useState } from "react";
 
 // Fake commands data
@@ -17,6 +18,8 @@ const COMMANDS_DATA = [
 ];
 
 export default function CommandsPage() {
+    const { t } = useI18n();
+
   const [search, setSearch] = useState("");
   const [activeGroup, setActiveGroup] = useState("All");
 
@@ -30,15 +33,15 @@ export default function CommandsPage() {
 
   return (
     <div style={{ background: '#0a0a0c', color: '#fff', minHeight: '100vh', padding: '60px', fontFamily: 'monospace' }}>
-      <Link href="/docs" style={{ color: '#00ffcc', textDecoration: 'none', fontSize: '1.2rem' }}>&lt; Return</Link>
-      <h1 style={{ fontSize: '4rem', color: '#00ffcc', marginTop: '40px', borderBottom: '2px solid #333', paddingBottom: '20px' }}>// COMMAND_DIRECTORY</h1>
+      <Link href="/docs" style={{ color: '#00ffcc', textDecoration: 'none', fontSize: '1.2rem' }}>{t("auto.page._lt_return")}</Link>
+      <h1 style={{ fontSize: '4rem', color: '#00ffcc', marginTop: '40px', borderBottom: '2px solid #333', paddingBottom: '20px' }}>{t("auto.page._command_directory")}</h1>
       
       <div style={{ display: 'flex', gap: '40px', marginTop: '40px' }}>
         {/* Scrollspy / Filter sidebar */}
         <div style={{ width: '250px', flexShrink: 0, position: 'sticky', top: '100px', height: 'fit-content' }}>
           <input 
             type="text" 
-            placeholder="Search commands..." 
+            placeholder={t("auto.page.search_commands")} 
             value={search}
             onChange={(e) => setSearch(e.target.value)}
             style={{ width: '100%', padding: '12px', background: '#111', border: '1px solid #333', color: '#fff', marginBottom: '20px' }}
@@ -70,7 +73,7 @@ export default function CommandsPage() {
               <p style={{ color: '#aaa', fontSize: '1.1rem' }}>{cmd.desc}</p>
             </div>
           ))}
-          {filtered.length === 0 && <p style={{ color: '#888' }}>No commands found.</p>}
+          {filtered.length === 0 && <p style={{ color: '#888' }}>{t("auto.page.no_commands_found")}</p>}
         </div>
       </div>
     </div>

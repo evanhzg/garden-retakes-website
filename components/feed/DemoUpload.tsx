@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useRef, useState } from "react";
+import { useI18n } from '@/components/I18nProvider';
 import { DEMO_EXTENSIONS, isDemoFile } from "@/lib/feedShared";
 
 // Upload a demo for the highlight pipeline to cut.
@@ -38,6 +39,8 @@ const STATUS_LABEL: Record<string, string> = {
 const mb = (b: number | null) => (b ? `${(b / 1024 / 1024).toFixed(0)} MB` : "");
 
 export default function DemoUpload({ onPosted }: { onPosted?: () => void }) {
+    const { t } = useI18n();
+
   const [file, setFile] = useState<File | null>(null);
   const [rounds, setRounds] = useState("");
   const [focus, setFocus] = useState("");
@@ -153,27 +156,27 @@ export default function DemoUpload({ onPosted }: { onPosted?: () => void }) {
 
         <div className="demo-fields">
           <div className="field">
-            <label htmlFor="demo-rounds">Rounds <span className="muted">(optional)</span></label>
+            <label htmlFor="demo-rounds">{t("auto.demoupload.rounds")} <span className="muted">{t("auto.demoupload._optional")}</span></label>
             <input
               id="demo-rounds"
               className="input"
               value={rounds}
-              placeholder="e.g. 5, 12, 19"
+              placeholder={t("auto.demoupload.e_g_5_12_19")}
               onChange={(e) => setRounds(e.target.value)}
             />
-            <p className="pro-settings-hint">Only these rounds get cut. Leave blank for the whole match.</p>
+            <p className="pro-settings-hint">{t("auto.demoupload.only_these_rounds_get_cut_leav")}</p>
           </div>
 
           <div className="field">
-            <label htmlFor="demo-focus">Player <span className="muted">(optional)</span></label>
+            <label htmlFor="demo-focus">{t("auto.demoupload.player")} <span className="muted">{t("auto.demoupload._optional")}</span></label>
             <input
               id="demo-focus"
               className="input"
               value={focus}
-              placeholder="SteamID64"
+              placeholder={t("auto.demoupload.steamid64")}
               onChange={(e) => setFocus(e.target.value)}
             />
-            <p className="pro-settings-hint">Only their plays get cut. Leave blank for yours, or everyone&rsquo;s if you are not in the demo.</p>
+            <p className="pro-settings-hint">{t("auto.demoupload.only_their_plays_get_cut_leave")}</p>
           </div>
         </div>
 
@@ -202,7 +205,7 @@ export default function DemoUpload({ onPosted }: { onPosted?: () => void }) {
 
       {mine && mine.length > 0 && (
         <div className="demo-mine">
-          <h3 className="fc-sub">Your demos</h3>
+          <h3 className="fc-sub">{t("auto.demoupload.your_demos")}</h3>
           <ul>
             {mine.map((d) => (
               <li key={d.id}>

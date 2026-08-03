@@ -2,6 +2,7 @@
 
 import React, { useEffect, useState } from "react";
 import Link from "next/link";
+import { useI18n } from '@/components/I18nProvider';
 import "./ladder.css";
 
 type Stat = {
@@ -15,6 +16,8 @@ type Stat = {
 };
 
 export default function GamesLadderPage() {
+    const { t } = useI18n();
+
   const [stats, setStats] = useState<Stat[]>([]);
   const [loading, setLoading] = useState(true);
   const [filter, setFilter] = useState("all");
@@ -34,37 +37,37 @@ export default function GamesLadderPage() {
   return (
     <div className="ladder-page">
       <header className="ladder-header">
-        <Link href="/games" className="back-link">← Back to Hub</Link>
-        <h1>Games Ladder</h1>
-        <p>Top players across all web games</p>
+        <Link href="/games" className="back-link">{t("auto.page._back_to_hub")}</Link>
+        <h1>{t("auto.page.games_ladder")}</h1>
+        <p>{t("auto.page.top_players_across_all_web_gam")}</p>
       </header>
       
       <div className="ladder-filters">
-        <button className={filter === "all" ? "active" : ""} onClick={() => setFilter("all")}>All Games</button>
-        <button className={filter === "monopoly" ? "active" : ""} onClick={() => setFilter("monopoly")}>Monopoly</button>
-        <button className={filter === "uno" ? "active" : ""} onClick={() => setFilter("uno")}>Ouno</button>
-        <button className={filter === "skribbl" ? "active" : ""} onClick={() => setFilter("skribbl")}>Free-Draw</button>
-        <button className={filter === "meme" ? "active" : ""} onClick={() => setFilter("meme")}>Meme</button>
-        <button className={filter === "codenames" ? "active" : ""} onClick={() => setFilter("codenames")}>Codenames</button>
-        <button className={filter === "cah" ? "active" : ""} onClick={() => setFilter("cah")}>Pile Of...</button>
-        <button className={filter === "headshot" ? "active" : ""} onClick={() => setFilter("headshot")}>Headshot</button>
+        <button className={filter === "all" ? "active" : ""} onClick={() => setFilter("all")}>{t("auto.page.all_games")}</button>
+        <button className={filter === "monopoly" ? "active" : ""} onClick={() => setFilter("monopoly")}>{t("auto.page.monopoly")}</button>
+        <button className={filter === "uno" ? "active" : ""} onClick={() => setFilter("uno")}>{t("auto.page.ouno")}</button>
+        <button className={filter === "skribbl" ? "active" : ""} onClick={() => setFilter("skribbl")}>{t("auto.page.free_draw")}</button>
+        <button className={filter === "meme" ? "active" : ""} onClick={() => setFilter("meme")}>{t("auto.page.meme")}</button>
+        <button className={filter === "codenames" ? "active" : ""} onClick={() => setFilter("codenames")}>{t("auto.page.codenames")}</button>
+        <button className={filter === "cah" ? "active" : ""} onClick={() => setFilter("cah")}>{t("auto.page.pile_of")}</button>
+        <button className={filter === "headshot" ? "active" : ""} onClick={() => setFilter("headshot")}>{t("auto.page.headshot")}</button>
       </div>
 
       <div className="ladder-table-container glass-panel">
         {loading ? (
           <div className="ladder-loading"><div className="loader" /></div>
         ) : stats.length === 0 ? (
-          <div className="ladder-empty">No stats available yet. Go play some games!</div>
+          <div className="ladder-empty">{t("auto.page.no_stats_available_yet_go_play")}</div>
         ) : (
           <table className="ladder-table">
             <thead>
               <tr>
-                <th>Rank</th>
-                <th>Player</th>
-                {filter === "all" && <th>Game</th>}
-                <th>Elo</th>
-                <th>Win Rate</th>
-                <th>Matches</th>
+                <th>{t("auto.page.rank")}</th>
+                <th>{t("auto.page.player")}</th>
+                {filter === "all" && <th>{t("auto.page.game")}</th>}
+                <th>{t("auto.page.elo")}</th>
+                <th>{t("auto.page.win_rate")}</th>
+                <th>{t("auto.page.matches")}</th>
               </tr>
             </thead>
             <tbody>

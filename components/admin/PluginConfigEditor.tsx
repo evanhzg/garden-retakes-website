@@ -269,7 +269,7 @@ export default function PluginConfigEditor({ adminKey }: { adminKey?: string }) 
             <p className="skin-note skin-note-warn">
               <span>
                 <strong>{t("admin.pluginConfig.effectNote.title")}</strong> {t("admin.pluginConfig.effectNote.desc1")}
-                <code>/restart</code> {t("admin.pluginConfig.effectNote.desc2")}
+                <code>{t("auto.pluginconfigeditor._restart")}</code> {t("admin.pluginConfig.effectNote.desc2")}
               </span>
             </p>
 

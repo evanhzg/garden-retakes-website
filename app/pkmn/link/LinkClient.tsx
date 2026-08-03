@@ -1,4 +1,5 @@
 "use client";
+import { useI18n } from '@/components/I18nProvider';
 
 import { useState } from "react";
 
@@ -9,6 +10,8 @@ export default function LinkClient({
   steamId: string | null;
   initialCode: string;
 }) {
+    const { t } = useI18n();
+
   const [code, setCode] = useState(initialCode.toUpperCase());
   const [status, setStatus] = useState<"idle" | "loading" | "done" | "error">("idle");
   const [message, setMessage] = useState<string | null>(null);
@@ -37,10 +40,10 @@ export default function LinkClient({
   if (!steamId) {
     return (
       <div style={{ textAlign: "center", maxWidth: 380 }}>
-        <h1 style={{ marginBottom: 8 }}>Link Garden PKMN</h1>
+        <h1 style={{ marginBottom: 8 }}>{t("auto.linkclient.link_garden_pkmn")}</h1>
         <p style={{ color: "#aaa", marginBottom: 20 }}>
-          Sign in with Steam first to link your game client to your account.
-        </p>
+          {t("auto.linkclient.sign_in_with_steam_first_to_li")}
+                        </p>
         <a
           href="/api/auth/steam/login"
           style={{
@@ -53,8 +56,8 @@ export default function LinkClient({
             display: "inline-block",
           }}
         >
-          Sign in through Steam
-        </a>
+          {t("auto.linkclient.sign_in_through_steam")}
+                        </a>
       </div>
     );
   }
@@ -62,7 +65,7 @@ export default function LinkClient({
   if (status === "done") {
     return (
       <div style={{ textAlign: "center", maxWidth: 380 }}>
-        <h1 style={{ marginBottom: 8 }}>✓ Linked</h1>
+        <h1 style={{ marginBottom: 8 }}>{t("auto.linkclient._linked")}</h1>
         <p style={{ color: "#aaa" }}>{message}</p>
       </div>
     );
@@ -70,14 +73,14 @@ export default function LinkClient({
 
   return (
     <div style={{ textAlign: "center", maxWidth: 380 }}>
-      <h1 style={{ marginBottom: 8 }}>Link Garden PKMN</h1>
+      <h1 style={{ marginBottom: 8 }}>{t("auto.linkclient.link_garden_pkmn")}</h1>
       <p style={{ color: "#aaa", marginBottom: 20 }}>
-        Enter the code shown in the game to link it to your account.
-      </p>
+        {t("auto.linkclient.enter_the_code_shown_in_the_ga")}
+                    </p>
       <input
         value={code}
         onChange={(e) => setCode(e.target.value.toUpperCase())}
-        placeholder="ABCD-1234"
+        placeholder={t("auto.linkclient.abcd_1234")}
         maxLength={9}
         style={{
           padding: "10px 14px",

@@ -3,10 +3,13 @@
 import { useState } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import Link from "next/link";
+import { useI18n } from '@/components/I18nProvider';
 import { useRouter } from "next/navigation";
 
 // Pass the API sections as a prop if needed, or just list them here.
 export default function DocsOverview({ apiSections }: { apiSections: any[] }) {
+    const { t } = useI18n();
+
   const [activeTab, setActiveTab] = useState("General");
   const router = useRouter();
 
@@ -23,10 +26,10 @@ export default function DocsOverview({ apiSections }: { apiSections: any[] }) {
     <div style={{ width: '100%', maxWidth: '1400px', margin: '0 auto', padding: '0 24px 64px' }}>
       {/* Header */}
       <div style={{ textAlign: 'center', marginBottom: '48px' }}>
-        <h1 style={{ fontSize: '3.5rem', fontWeight: 900, color: 'var(--text)', marginBottom: '16px', letterSpacing: '-1px' }}>REEEETAKES Docs</h1>
+        <h1 style={{ fontSize: '3.5rem', fontWeight: 900, color: 'var(--text)', marginBottom: '16px', letterSpacing: '-1px' }}>{t("auto.docsoverviewclient.reeeetakes_docs")}</h1>
         <p style={{ fontSize: '1.25rem', color: 'var(--muted)', maxWidth: '800px', margin: '0 auto', lineHeight: 1.6 }}>
-          The central hub for all technical documentation, website guides, and CS2 plugin references.
-        </p>
+          {t("auto.docsoverviewclient.the_central_hub_for_all_techni")}
+                          </p>
       </div>
 
       {/* Main Tabs */}
@@ -70,10 +73,10 @@ export default function DocsOverview({ apiSections }: { apiSections: any[] }) {
           >
             {activeTab === "General" && (
               <div>
-                <h2 style={{ fontSize: '2rem', fontWeight: 800, marginBottom: '24px', color: 'var(--text)' }}>Game Modes & Plugins</h2>
+                <h2 style={{ fontSize: '2rem', fontWeight: 800, marginBottom: '24px', color: 'var(--text)' }}>{t("auto.docsoverviewclient.game_modes_plugins")}</h2>
                 <p style={{ color: 'var(--muted)', fontSize: '1.1rem', marginBottom: '32px' }}>
-                  Explore the dedicated vitrine pages for our custom CS2 plugins and game modes.
-                </p>
+                  {t("auto.docsoverviewclient.explore_the_dedicated_vitrine")}
+                                                  </p>
                 <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(320px, 1fr))', gap: '24px' }}>
                   {gameModes.map(mode => (
                     <Link href={`/docs/plugins/${mode.id}`} key={mode.id} style={{ textDecoration: 'none' }}>
@@ -104,13 +107,13 @@ export default function DocsOverview({ apiSections }: { apiSections: any[] }) {
 
             {activeTab === "Website" && (
               <div>
-                <h2 style={{ fontSize: '2rem', fontWeight: 800, marginBottom: '24px', color: 'var(--text)' }}>Website Architecture</h2>
+                <h2 style={{ fontSize: '2rem', fontWeight: 800, marginBottom: '24px', color: 'var(--text)' }}>{t("auto.docsoverviewclient.website_architecture")}</h2>
                 <div style={{ color: 'var(--text)', fontSize: '1.1rem', lineHeight: 1.7 }}>
-                  <p style={{ marginBottom: '16px' }}>The REEEETAKES website is a Next.js application that integrates real-time server data, player statistics, and custom mini-games into a single unified platform.</p>
+                  <p style={{ marginBottom: '16px' }}>{t("auto.docsoverviewclient.the_reeeetakes_website_is_a_ne")}</p>
                   <ul style={{ listStyleType: 'disc', paddingLeft: '24px', display: 'flex', flexDirection: 'column', gap: '12px', color: 'var(--muted)' }}>
-                    <li><strong style={{ color: 'var(--text)' }}>Real-time CS2 Sync:</strong> Live matches broadcast events to the website via WebSockets, instantly updating ladders and live scoreboards.</li>
-                    <li><strong style={{ color: 'var(--text)' }}>Framer Motion UI:</strong> Extensive use of smooth, hardware-accelerated animations for a premium user experience.</li>
-                    <li><strong style={{ color: 'var(--text)' }}>Games Hub:</strong> Houses isolated, full-screen interactive experiences that bypass the standard site layout (e.g., Pokémon, CS2 Board Editor).</li>
+                    <li><strong style={{ color: 'var(--text)' }}>{t("auto.docsoverviewclient.real_time_cs2_sync")}</strong> {t("auto.docsoverviewclient.live_matches_broadcast_events")}</li>
+                    <li><strong style={{ color: 'var(--text)' }}>{t("auto.docsoverviewclient.framer_motion_ui")}</strong> {t("auto.docsoverviewclient.extensive_use_of_smooth_hardwa")}</li>
+                    <li><strong style={{ color: 'var(--text)' }}>{t("auto.docsoverviewclient.games_hub")}</strong> {t("auto.docsoverviewclient.houses_isolated_full_screen_in")}</li>
                   </ul>
                 </div>
               </div>
@@ -118,7 +121,7 @@ export default function DocsOverview({ apiSections }: { apiSections: any[] }) {
 
             {activeTab === "API" && (
               <div>
-                <h2 style={{ fontSize: '2rem', fontWeight: 800, marginBottom: '24px', color: 'var(--text)' }}>API Reference</h2>
+                <h2 style={{ fontSize: '2rem', fontWeight: 800, marginBottom: '24px', color: 'var(--text)' }}>{t("auto.docsoverviewclient.api_reference")}</h2>
                 <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(300px, 1fr))', gap: '16px' }}>
                   {apiSections?.map((s) => (
                     <Link key={s.slug} href={`/docs/${s.slug}`} style={{ textDecoration: 'none' }}>

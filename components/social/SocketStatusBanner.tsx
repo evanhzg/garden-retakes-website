@@ -3,9 +3,12 @@
 import React, { useEffect, useState, useRef } from "react";
 import { useSocket } from "../games/SocketProvider";
 import { motion, AnimatePresence } from "framer-motion";
+import { useI18n } from '@/components/I18nProvider';
 import { Wifi, Loader2 } from "lucide-react";
 
 export default function SocketStatusBanner() {
+    const { t } = useI18n();
+
   const { isConnected } = useSocket();
   const [status, setStatus] = useState<"connecting" | "connected" | "hidden">("hidden");
   const [cooldown, setCooldown] = useState(60);
@@ -58,12 +61,12 @@ export default function SocketStatusBanner() {
           {status === "connecting" ? (
             <>
               <Loader2 className="w-4 h-4 animate-spin text-amber-400" />
-              <span className="text-sm">Waking up game server... ({cooldown}s)</span>
+              <span className="text-sm">{t("auto.socketstatusbanner.waking_up_game_server")}{cooldown}{t("auto.socketstatusbanner.s")}</span>
             </>
           ) : (
             <>
               <Wifi className="w-4 h-4 text-emerald-400" />
-              <span className="text-sm">Sockets up! Server is online.</span>
+              <span className="text-sm">{t("auto.socketstatusbanner.sockets_up_server_is_online")}</span>
             </>
           )}
         </motion.div>

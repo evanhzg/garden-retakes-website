@@ -1,6 +1,7 @@
 "use client";
 
 import { useCallback, useEffect, useMemo, useState } from "react";
+import { useI18n } from '@/components/I18nProvider';
 import {
   CLICK_LABEL,
   MAPS,
@@ -29,6 +30,8 @@ const UTIL_COLOUR: Record<string, string> = {
 };
 
 export default function UtilityPage({ signedIn }: { signedIn: boolean }) {
+    const { t } = useI18n();
+
   const maps = useMemo(() => playableMaps(), []);
   const [map, setMap] = useState("de_mirage");
   const [pool, setPool] = useState<string>("active");
@@ -110,14 +113,13 @@ export default function UtilityPage({ signedIn }: { signedIn: boolean }) {
   return (
     <>
       <section className="pro-hero">
-        <span className="kicker">Utility</span>
+        <span className="kicker">{t("auto.utilityclient.utility")}</span>
         <h1 style={{ fontSize: "clamp(28px, 4.2vw, 48px)", letterSpacing: "-0.025em", margin: "10px 0 6px" }}>
-          Lineups.
-        </h1>
+          {t("auto.utilityclient.lineups")}
+                          </h1>
         <p className="muted" style={{ maxWidth: "60ch", margin: 0 }}>
-          Every saved smoke, flash, molly and HE, on a radar drawn from the game&rsquo;s own
-          coordinates. Pick one and the server sets it up for you.
-        </p>
+          {t("auto.utilityclient.every_saved_smoke_flash_molly")}
+                          </p>
       </section>
 
       <section className="pro-section">
@@ -148,7 +150,7 @@ export default function UtilityPage({ signedIn }: { signedIn: boolean }) {
         <div className="util-layout">
           <div className="util-mapwrap">
             {levels && (
-              <div className="util-levels" role="group" aria-label="Level">
+              <div className="util-levels" role="group" aria-label={t("auto.utilityclient.level")}>
                 {levels.map((l) => (
                   <button key={l.name} className={`chip ${level === l.name ? "active" : ""}`} onClick={() => setLevel(l.name)}>
                     {l.name === "default" ? "Upper" : "Lower"}
@@ -213,14 +215,14 @@ export default function UtilityPage({ signedIn }: { signedIn: boolean }) {
           <aside className="util-side">
             {selected ? (
               <div className="util-detail">
-                <button className="btn btn-ghost util-back" onClick={() => setSelected(null)}>← All lineups</button>
+                <button className="btn btn-ghost util-back" onClick={() => setSelected(null)}>{t("auto.utilityclient._all_lineups")}</button>
 
                 <h2>{selected.name}</h2>
                 <p className="util-tags">
                   <span className="tag tag-accent">{selected.utility}</span>
                   {selected.area && <span className="tag tag-neutral">{selected.area}</span>}
                   {selected.team && <span className="tag tag-neutral">{selected.team}</span>}
-                  {!selected.verified && <span className="tag util-warn">unverified</span>}
+                  {!selected.verified && <span className="tag util-warn">{t("auto.utilityclient.unverified")}</span>}
                 </p>
 
                 {/* Clips land here once the capture script exists; until then the
@@ -230,12 +232,12 @@ export default function UtilityPage({ signedIn }: { signedIn: boolean }) {
                 )}
 
                 <dl className="util-facts">
-                  <div><dt>Stance</dt><dd>{THROW_LABEL[selected.throwType] ?? selected.throwType}</dd></div>
-                  <div><dt>Button</dt><dd>{CLICK_LABEL[selected.clickType] ?? selected.clickType}</dd></div>
-                  <div><dt>Stand at</dt><dd className="num">{selected.stand.x.toFixed(1)} {selected.stand.y.toFixed(1)} {selected.stand.z.toFixed(1)}</dd></div>
-                  <div><dt>Look</dt><dd className="num">pitch {selected.view.pitch.toFixed(3)} · yaw {selected.view.yaw.toFixed(3)}</dd></div>
+                  <div><dt>{t("auto.utilityclient.stance")}</dt><dd>{THROW_LABEL[selected.throwType] ?? selected.throwType}</dd></div>
+                  <div><dt>{t("auto.utilityclient.button")}</dt><dd>{CLICK_LABEL[selected.clickType] ?? selected.clickType}</dd></div>
+                  <div><dt>{t("auto.utilityclient.stand_at")}</dt><dd className="num">{selected.stand.x.toFixed(1)} {selected.stand.y.toFixed(1)} {selected.stand.z.toFixed(1)}</dd></div>
+                  <div><dt>{t("auto.utilityclient.look")}</dt><dd className="num">{t("auto.utilityclient.pitch")} {selected.view.pitch.toFixed(3)} {t("auto.utilityclient._yaw")} {selected.view.yaw.toFixed(3)}</dd></div>
                   {selected.land && (
-                    <div><dt>Lands at</dt><dd className="num">{selected.land.x.toFixed(1)} {selected.land.y.toFixed(1)}</dd></div>
+                    <div><dt>{t("auto.utilityclient.lands_at")}</dt><dd className="num">{selected.land.x.toFixed(1)} {selected.land.y.toFixed(1)}</dd></div>
                   )}
                 </dl>
 
@@ -244,9 +246,8 @@ export default function UtilityPage({ signedIn }: { signedIn: boolean }) {
                 {!selected.verified && (
                   <p className="skin-note skin-note-error">
                     <span>
-                      This position does not sit on the map. It came from an import rather than
-                      being recorded in game, so treat the coordinates as a rough idea.
-                    </span>
+                      {t("auto.utilityclient.this_position_does_not_sit_on")}
+                                                              </span>
                   </p>
                 )}
 
@@ -256,7 +257,7 @@ export default function UtilityPage({ signedIn }: { signedIn: boolean }) {
                       {testing ? "Setting up…" : "Test in game"}
                     </button>
                   ) : (
-                    <a className="btn btn-secondary" href="/api/auth/steam/login">Sign in to test</a>
+                    <a className="btn btn-secondary" href="/api/auth/steam/login">{t("auto.utilityclient.sign_in_to_test")}</a>
                   )}
                   <button
                     className="btn btn-secondary"
@@ -269,8 +270,8 @@ export default function UtilityPage({ signedIn }: { signedIn: boolean }) {
                         .catch(() => {});
                     }}
                   >
-                    Copy setpos
-                  </button>
+                    {t("auto.utilityclient.copy_setpos")}
+                                                        </button>
                 </div>
 
                 <div aria-live="polite">
@@ -291,15 +292,15 @@ export default function UtilityPage({ signedIn }: { signedIn: boolean }) {
                 {unverifiedCount > 0 && (
                   <label className="util-toggle">
                     <input type="checkbox" checked={showUnverified} onChange={(e) => setShowUnverified(e.target.checked)} />
-                    Show {unverifiedCount} unverified
-                  </label>
+                    {t("auto.utilityclient.show")} {unverifiedCount} {t("auto.utilityclient.unverified")}
+                                                            </label>
                 )}
 
                 {areas.length > 1 && (
                   <div className="util-areas">
                     <button className={`chip ${areaFilter === "" ? "active" : ""}`} onClick={() => setAreaFilter("")}>
-                      All
-                    </button>
+                      {t("auto.utilityclient.all")}
+                                                                  </button>
                     {areas.map(([a, n]) => (
                       <button
                         key={a}
@@ -313,10 +314,10 @@ export default function UtilityPage({ signedIn }: { signedIn: boolean }) {
                 )}
 
                 {lineups === null ? (
-                  <p className="muted">Loading…</p>
+                  <p className="muted">{t("auto.utilityclient.loading")}</p>
                 ) : visible.length === 0 ? (
                   <p className="empty-hint">
-                    Nothing saved here yet. Record one in game with <code>!prac nade</code>.
+                    {t("auto.utilityclient.nothing_saved_here_yet_record")} <code>{t("auto.utilityclient._prac_nade")}</code>.
                   </p>
                 ) : (
                   <ul>
@@ -331,7 +332,7 @@ export default function UtilityPage({ signedIn }: { signedIn: boolean }) {
                           <span className="util-row-dot" style={{ background: UTIL_COLOUR[l.utility] }} />
                           <span className="util-row-name">
                             {l.name}
-                            {!l.verified && <span className="util-row-flag" title="Position not on the map">?</span>}
+                            {!l.verified && <span className="util-row-flag" title={t("auto.utilityclient.position_not_on_the_map")}>?</span>}
                           </span>
                           <span className="util-row-throw">{l.throwType === "standing" ? "" : THROW_LABEL[l.throwType]}</span>
                         </button>

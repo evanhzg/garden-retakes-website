@@ -1,4 +1,5 @@
 "use client";
+import { useI18n } from '@/components/I18nProvider';
 
 import { useCallback, useEffect, useState } from "react";
 
@@ -23,6 +24,8 @@ type PendingDemo = {
 const mb = (b: number | null) => (b ? `${(b / 1024 / 1024).toFixed(0)} MB` : "—");
 
 export default function PendingDemos({ adminKey }: { adminKey?: string }) {
+    const { t } = useI18n();
+
   const [demos, setDemos] = useState<PendingDemo[] | null>(null);
   const [error, setError] = useState<string | null>(null);
 
@@ -53,36 +56,36 @@ export default function PendingDemos({ adminKey }: { adminKey?: string }) {
   if (error) {
     return (
       <p className="skin-note skin-note-warn" role="alert">
-        <span><strong>Queue unavailable.</strong> {error}</span>
+        <span><strong>{t("auto.pendingdemos.queue_unavailable")}</strong> {error}</span>
       </p>
     );
   }
-  if (demos === null) return <p className="muted">Loading…</p>;
+  if (demos === null) return <p className="muted">{t("auto.pendingdemos.loading")}</p>;
 
   return (
     <>
       <div className="pro-section-head" style={{ marginBottom: "var(--space-4)" }}>
-        <h2 style={{ fontSize: 15 }}>Demos waiting for the pipeline</h2>
-        <button className="btn btn-secondary" onClick={load}>Refresh</button>
+        <h2 style={{ fontSize: 15 }}>{t("auto.pendingdemos.demos_waiting_for_the_pipeline")}</h2>
+        <button className="btn btn-secondary" onClick={load}>{t("auto.pendingdemos.refresh")}</button>
       </div>
 
       {demos.length === 0 ? (
         <div className="empty-hint">
-          <p style={{ margin: 0 }}>Nothing queued.</p>
+          <p style={{ margin: 0 }}>{t("auto.pendingdemos.nothing_queued")}</p>
           <p className="muted" style={{ fontSize: 13 }}>
-            Demos uploaded on the feed appear here until the pipeline collects them.
-          </p>
+            {t("auto.pendingdemos.demos_uploaded_on_the_feed_app")}
+                                </p>
         </div>
       ) : (
         <div className="pro-tablewrap">
           <table className="table">
             <thead>
               <tr>
-                <th scope="col">Demo</th>
-                <th scope="col">Uploader</th>
-                <th scope="col">Wanted</th>
-                <th scope="col" className="r">Size</th>
-                <th scope="col">Status</th>
+                <th scope="col">{t("auto.pendingdemos.demo")}</th>
+                <th scope="col">{t("auto.pendingdemos.uploader")}</th>
+                <th scope="col">{t("auto.pendingdemos.wanted")}</th>
+                <th scope="col" className="r">{t("auto.pendingdemos.size")}</th>
+                <th scope="col">{t("auto.pendingdemos.status")}</th>
               </tr>
             </thead>
             <tbody>
@@ -115,9 +118,8 @@ export default function PendingDemos({ adminKey }: { adminKey?: string }) {
       )}
 
       <p className="pro-section-note" style={{ marginTop: "var(--space-4)" }}>
-        Run <code>.\run.cmd</code> on the machine with CS2 to collect and cut these. Demos are deleted
-        from storage once their clips are published.
-      </p>
+        {t("auto.pendingdemos.run")} <code>{t("auto.pendingdemos._run_cmd")}</code> {t("auto.pendingdemos.on_the_machine_with_cs2_to_col")}
+                    </p>
     </>
   );
 }

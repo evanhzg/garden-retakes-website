@@ -1,5 +1,6 @@
 import { notFound } from "next/navigation";
 import { DOC_SECTIONS, getDocSection } from "@/lib/apiDocs";
+import { getT } from '@/lib/serverI18n';
 
 export function generateStaticParams() {
   return DOC_SECTIONS.map((s) => ({ section: s.slug }));
@@ -11,6 +12,8 @@ export function generateMetadata({ params }: { params: { section: string } }) {
 }
 
 export default function DocsSectionPage({ params }: { params: { section: string } }) {
+    const t = getT();
+
   const section = getDocSection(params.section);
   if (!section) notFound();
 
@@ -27,16 +30,16 @@ export default function DocsSectionPage({ params }: { params: { section: string 
           </div>
           <p className="endpoint-summary">{ep.summary}</p>
           <div className="endpoint-auth">
-            <span className="auth-label">Auth</span> {ep.auth}
+            <span className="auth-label">{t("auto.page.auth")}</span> {ep.auth}
           </div>
 
           {ep.params && ep.params.length > 0 && (
             <div className="endpoint-block">
-              <h4>Parameters</h4>
+              <h4>{t("auto.page.parameters")}</h4>
               <div className="param-table-wrap">
                 <table className="param-table">
                   <thead>
-                    <tr><th>Name</th><th>In</th><th>Type</th><th>Description</th></tr>
+                    <tr><th>{t("auto.page.name")}</th><th>{t("auto.page.in")}</th><th>{t("auto.page.type")}</th><th>{t("auto.page.description")}</th></tr>
                   </thead>
                   <tbody>
                     {ep.params.map((p) => (
@@ -55,14 +58,14 @@ export default function DocsSectionPage({ params }: { params: { section: string 
 
           {ep.requestExample && (
             <div className="endpoint-block">
-              <h4>Request</h4>
+              <h4>{t("auto.page.request")}</h4>
               <pre className="docs-code"><code>{ep.requestExample}</code></pre>
             </div>
           )}
 
           {ep.responseExample && (
             <div className="endpoint-block">
-              <h4>Response</h4>
+              <h4>{t("auto.page.response")}</h4>
               <pre className="docs-code"><code>{ep.responseExample}</code></pre>
             </div>
           )}
@@ -79,7 +82,7 @@ export default function DocsSectionPage({ params }: { params: { section: string 
         <div className="param-table-wrap">
           <table className="param-table socket-table">
             <thead>
-              <tr><th>Direction</th><th>Event</th><th>Payload</th><th>Description</th></tr>
+              <tr><th>{t("auto.page.direction")}</th><th>{t("auto.page.event")}</th><th>{t("auto.page.payload")}</th><th>{t("auto.page.description")}</th></tr>
             </thead>
             <tbody>
               {section.socketEvents.map((ev) => (

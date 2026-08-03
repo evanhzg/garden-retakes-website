@@ -4,6 +4,7 @@ import { useCallback, useEffect, useRef, useState } from "react";
 import { createPortal } from "react-dom";
 import MotionToggle from "@/components/MotionToggle";
 import ConnectionsEditor from "@/components/profile/Connections";
+import { useI18n } from '@/components/I18nProvider';
 import AppearanceSettings from "@/components/profile/AppearanceSettings";
 
 // Profile settings, moved out of a panel at the very bottom of the page into a
@@ -30,6 +31,8 @@ const BIO_MAX = 280;
 const AVATAR_SIZE = 256;
 
 export default function ProfileSettingsModal({ onClose }: { onClose: () => void }) {
+    const { t } = useI18n();
+
   const [data, setData] = useState<ProfileData | null>(null);
   const [name, setName] = useState("");
   const [bio, setBio] = useState("");
@@ -147,12 +150,12 @@ export default function ProfileSettingsModal({ onClose }: { onClose: () => void 
     <div className="pro-modal" role="dialog" aria-modal="true" aria-labelledby="pro-settings-title" onClick={onClose}>
       <div className="pro-modal-card" ref={cardRef} tabIndex={-1} onClick={(e) => e.stopPropagation()}>
         <div className="pro-modal-head">
-          <h2 id="pro-settings-title">Profile settings</h2>
-          <button className="btn btn-secondary" onClick={onClose} aria-label="Close settings">Close</button>
+          <h2 id="pro-settings-title">{t("auto.profilesettingsmodal.profile_settings")}</h2>
+          <button className="btn btn-secondary" onClick={onClose} aria-label={t("auto.profilesettingsmodal.close_settings")}>{t("auto.profilesettingsmodal.close")}</button>
         </div>
 
         {!data ? (
-          <p className="muted">Loading your profile…</p>
+          <p className="muted">{t("auto.profilesettingsmodal.loading_your_profile")}</p>
         ) : (
           <>
           <form className="pro-settings" onSubmit={onSubmit}>
@@ -160,14 +163,14 @@ export default function ProfileSettingsModal({ onClose }: { onClose: () => void 
               <div className="pro-settings-avatar-frame">
                 {avatarPreview ? (
                   // eslint-disable-next-line @next/next/no-img-element
-                  <img src={avatarPreview} alt="Your avatar" />
+                  <img src={avatarPreview} alt={t("auto.profilesettingsmodal.your_avatar")} />
                 ) : (
                   <span className="pro-settings-avatar-none" aria-hidden />
                 )}
               </div>
               <label className="btn btn-secondary pro-settings-file">
-                Import image
-                <input
+                {t("auto.profilesettingsmodal.import_image")}
+                                                      <input
                   type="file"
                   accept="image/*"
                   className="sr-only"
@@ -179,15 +182,15 @@ export default function ProfileSettingsModal({ onClose }: { onClose: () => void 
               </label>
               {data.avatarUrl && (
                 <button type="button" className="btn btn-ghost" onClick={removeAvatar}>
-                  Use my Steam avatar
-                </button>
+                  {t("auto.profilesettingsmodal.use_my_steam_avatar")}
+                                                          </button>
               )}
-              <p className="pro-settings-hint">Cropped to a square, {AVATAR_SIZE}×{AVATAR_SIZE}.</p>
+              <p className="pro-settings-hint">{t("auto.profilesettingsmodal.cropped_to_a_square")} {AVATAR_SIZE}×{AVATAR_SIZE}.</p>
             </div>
 
             <div className="pro-settings-fields">
               <div className="field">
-                <label htmlFor="set-name">Display name</label>
+                <label htmlFor="set-name">{t("auto.profilesettingsmodal.display_name")}</label>
                 <input
                   id="set-name"
                   className="input"
@@ -197,25 +200,25 @@ export default function ProfileSettingsModal({ onClose }: { onClose: () => void 
                   onChange={(e) => setName(e.target.value)}
                 />
                 <p className="pro-settings-hint">
-                  Shown in-game and on the ladder. Leave blank to use your Steam name.
-                </p>
+                  {t("auto.profilesettingsmodal.shown_in_game_and_on_the_ladde")}
+                                                          </p>
               </div>
 
               <div className="field">
-                <label htmlFor="set-country">Country</label>
+                <label htmlFor="set-country">{t("auto.profilesettingsmodal.country")}</label>
                 <input
                   id="set-country"
                   className="input"
                   value={country}
                   maxLength={2}
-                  placeholder="FR"
+                  placeholder={t("auto.profilesettingsmodal.fr")}
                   style={{ maxWidth: 100, textTransform: "uppercase" }}
                   onChange={(e) => setCountry(e.target.value.toUpperCase())}
                 />
               </div>
 
               <div className="field">
-                <label htmlFor="set-bio">Bio</label>
+                <label htmlFor="set-bio">{t("auto.profilesettingsmodal.bio")}</label>
                 <textarea
                   id="set-bio"
                   className="input"
@@ -237,8 +240,8 @@ export default function ProfileSettingsModal({ onClose }: { onClose: () => void 
                 </button>
                 {data.nameOverride && (
                   <button type="button" className="btn btn-secondary" onClick={revertName}>
-                    Reset name
-                  </button>
+                    {t("auto.profilesettingsmodal.reset_name")}
+                                                                </button>
                 )}
               </div>
 
@@ -258,7 +261,7 @@ export default function ProfileSettingsModal({ onClose }: { onClose: () => void 
           <AppearanceSettings />
 
           <section className="pro-settings-conn">
-            <h3>Connections</h3>
+            <h3>{t("auto.profilesettingsmodal.connections")}</h3>
             <ConnectionsEditor />
           </section>
           </>
@@ -294,6 +297,8 @@ function AvatarCropper({
   onCancel: () => void;
   onDone: (blob: Blob) => void;
 }) {
+    const { t } = useI18n();
+
   const [img, setImg] = useState<HTMLImageElement | null>(null);
   const [zoom, setZoom] = useState(1);
   const [offset, setOffset] = useState({ x: 0, y: 0 });
@@ -342,10 +347,10 @@ function AvatarCropper({
   };
 
   return (
-    <div className="pro-modal pro-modal-over" role="dialog" aria-modal="true" aria-label="Crop your avatar" onClick={onCancel}>
+    <div className="pro-modal pro-modal-over" role="dialog" aria-modal="true" aria-label={t("auto.profilesettingsmodal.crop_your_avatar")} onClick={onCancel}>
       <div className="pro-modal-card pro-crop-card" onClick={(e) => e.stopPropagation()}>
-        <h2>Crop your avatar</h2>
-        <p className="muted" style={{ fontSize: 13, marginTop: 0 }}>Drag to reposition, slide to zoom.</p>
+        <h2>{t("auto.profilesettingsmodal.crop_your_avatar")}</h2>
+        <p className="muted" style={{ fontSize: 13, marginTop: 0 }}>{t("auto.profilesettingsmodal.drag_to_reposition_slide_to_zo")}</p>
 
         <div
           className="pro-crop-stage"
@@ -365,15 +370,15 @@ function AvatarCropper({
         </div>
 
         <label className="pro-crop-zoom">
-          Zoom
-          <input type="range" min={1} max={3} step={0.01} value={zoom} onChange={(e) => setZoom(Number(e.target.value))} />
+          {t("auto.profilesettingsmodal.zoom")}
+                            <input type="range" min={1} max={3} step={0.01} value={zoom} onChange={(e) => setZoom(Number(e.target.value))} />
         </label>
 
         <div className="pro-crop-actions">
-          <button className="btn btn-secondary" type="button" onClick={onCancel}>Cancel</button>
+          <button className="btn btn-secondary" type="button" onClick={onCancel}>{t("auto.profilesettingsmodal.cancel")}</button>
           <button className="btn btn-primary" type="button" onClick={commit} disabled={!img}>
-            Use this
-          </button>
+            {t("auto.profilesettingsmodal.use_this")}
+                                </button>
         </div>
       </div>
     </div>

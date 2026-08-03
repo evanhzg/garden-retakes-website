@@ -2,6 +2,7 @@
 
 import { useEffect, useState } from "react";
 import AvatarImage from "@/components/AvatarImage";
+import { useI18n } from '@/components/I18nProvider';
 import type { PublicLoadout, PublicLoadoutSlot } from "@/app/api/inventory/[steamId]/route";
 
 // The read-only twin of ProfileHero, shown on /players/[steamId] and
@@ -43,6 +44,8 @@ export default function CharacterHero({
   /** Kept for call-site compatibility; the character PNG is no longer used. */
   characterSrc?: string | null;
 }) {
+    const { t } = useI18n();
+
   const [loadout, setLoadout] = useState<PublicLoadout | null>(null);
   const [side, setSide] = useState<"t" | "ct">("t");
 
@@ -63,7 +66,7 @@ export default function CharacterHero({
       <div className="pro-id">
         <AvatarImage steamId={steamId} alt={playerName} className="grayscale avatar avatar-xl" />
         <div style={{ minWidth: 0 }}>
-          <span className="kicker">Player</span>
+          <span className="kicker">{t("auto.characterhero.player")}</span>
           <h1 className="pro-name">{playerName}</h1>
           <div className="pro-sub num">{steamId}</div>
         </div>
@@ -83,8 +86,8 @@ export default function CharacterHero({
       {hasLoadout && (
         <div className="pro-loadout">
           <div className="pro-loadout-head">
-            <h2>Equipped</h2>
-            <div className="pro-sides" role="group" aria-label="Side">
+            <h2>{t("auto.characterhero.equipped")}</h2>
+            <div className="pro-sides" role="group" aria-label={t("auto.characterhero.side")}>
               {(["t", "ct"] as const).map((s) => (
                 <button
                   key={s}
@@ -100,8 +103,8 @@ export default function CharacterHero({
             {(slots ?? []).map((slot, i) => (
               <GunCard key={`${side}-${i}`} slot={slot} />
             ))}
-            {knife && <GunCard slot={knife} label="Knife" />}
-            {gloves && <GunCard slot={gloves} label="Gloves" />}
+            {knife && <GunCard slot={knife} label={t("auto.characterhero.knife")} />}
+            {gloves && <GunCard slot={gloves} label={t("auto.characterhero.gloves")} />}
           </div>
         </div>
       )}

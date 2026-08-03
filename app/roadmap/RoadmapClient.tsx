@@ -2,6 +2,7 @@
 
 import { useState } from "react";
 import ReactMarkdown from "react-markdown";
+import { useI18n } from '@/components/I18nProvider';
 import remarkGfm from "remark-gfm";
 
 export interface RoadmapSection {
@@ -16,6 +17,8 @@ interface Props {
 }
 
 export default function RoadmapClient({ intro, sections }: Props) {
+    const { t } = useI18n();
+
   const [activeTab, setActiveTab] = useState(0);
   const [searchQuery, setSearchQuery] = useState("");
 
@@ -34,7 +37,7 @@ export default function RoadmapClient({ intro, sections }: Props) {
           <input
             type="text"
             className="input"
-            placeholder="Search roadmap..."
+            placeholder={t("auto.roadmapclient.search_roadmap")}
             value={searchQuery}
             onChange={(e) => setSearchQuery(e.target.value)}
           />
@@ -72,7 +75,7 @@ export default function RoadmapClient({ intro, sections }: Props) {
           })}
 
           {searchQuery !== "" && filteredSections.length === 0 && (
-            <div className="empty-hint">No matches found for "{searchQuery}".</div>
+            <div className="empty-hint">{t("auto.roadmapclient.no_matches_found_for")}{searchQuery}".</div>
           )}
         </div>
       </div>

@@ -1,6 +1,7 @@
 "use client";
 
 import { useState } from "react";
+import { useI18n } from "@/components/I18nProvider";
 import FaceitPanel from "@/components/profile/FaceitPanel";
 import ClipsPanel from "@/components/profile/ClipsPanel";
 
@@ -41,13 +42,13 @@ export type DayEntry = {
 
 type Tab = "form" | "maps" | "sessions" | "clips" | "faceit" | "details";
 
-const TABS: { id: Tab; label: string }[] = [
-  { id: "form", label: "Form" },
-  { id: "maps", label: "Maps" },
-  { id: "sessions", label: "Sessions" },
-  { id: "clips", label: "Clips" },
-  { id: "faceit", label: "FACEIT" },
-  { id: "details", label: "Details" },
+const TABS: { id: Tab }[] = [
+  { id: "form" },
+  { id: "maps" },
+  { id: "sessions" },
+  { id: "clips" },
+  { id: "faceit" },
+  { id: "details" },
 ];
 
 const ratingClass = (r: number) => (r >= 1.1 ? "rating-good" : r < 0.9 ? "rating-bad" : "rating-neutral");
@@ -77,6 +78,7 @@ export default function ProfileStats({
   byDay: DayEntry[];
   recentRatings: number[];
 }) {
+  const { t } = useI18n();
   const [tab, setTab] = useState<Tab>("form");
   const [openDay, setOpenDay] = useState<string | null>(null);
 
@@ -84,19 +86,19 @@ export default function ProfileStats({
 
   return (
     <section className="pro-section">
-      <div className="pro-tabs" role="tablist" aria-label="Profile statistics">
-        {TABS.map((t) => (
+      <div className="pro-tabs" role="tablist" aria-label={t("profile.stats.ariaLabel")}>
+        {TABS.map((tItem) => (
           <button
-            key={t.id}
+            key={tItem.id}
             role="tab"
-            id={`pro-tab-${t.id}`}
-            aria-selected={tab === t.id}
-            aria-controls={`pro-panel-${t.id}`}
-            className={`pro-tab ${tab === t.id ? "active" : ""}`}
-            onClick={() => setTab(t.id)}
+            id={`pro-tab-${tItem.id}`}
+            aria-selected={tab === tItem.id}
+            aria-controls={`pro-panel-${tItem.id}`}
+            className={`pro-tab ${tab === tItem.id ? "active" : ""}`}
+            onClick={() => setTab(tItem.id)}
           >
-            {t.label}
-            {t.id === "sessions" && byDay.length > 0 && <span className="pro-tab-count">{byDay.length}</span>}
+            {t(`profile.stats.tabs.${tItem.id}`)}
+            {tItem.id === "sessions" && byDay.length > 0 && <span className="pro-tab-count">{byDay.length}</span>}
           </button>
         ))}
       </div>
@@ -124,11 +126,12 @@ function FormPanel({
   recentRatings: number[];
   maxRecent: number;
 }) {
+  const { t } = useI18n();
   const meters = [
-    { label: "Round win", display: `${total.winPct.toFixed(0)}%`, pct: total.winPct },
-    { label: "KAST", display: `${total.kast.toFixed(0)}%`, pct: total.kast },
-    { label: "Headshots", display: `${total.hs.toFixed(0)}%`, pct: total.hs },
-    { label: "ADR", display: total.adr.toFixed(0), pct: (total.adr / 150) * 100 },
+    { label: t("profile.stats.meters.roundWin"), display: `${total.winPct.toFixed(0)}%`, pct: total.winPct },
+    { label: t("profile.stats.meters.kast"), display: `${total.kast.toFixed(0)}%`, pct: total.kast },
+    { label: t("profile.stats.meters.headshots"), display: `${total.hs.toFixed(0)}%`, pct: total.hs },
+    { label: t("profile.stats.meters.adr"), display: total.adr.toFixed(0), pct: (total.adr / 150) * 100 },
   ];
 
   return (
@@ -147,7 +150,7 @@ function FormPanel({
 
       {recentRatings.length > 1 && (
         <div className="pro-spark-wrap">
-          <span className="pro-section-note">Last {recentRatings.length} rounds — rating</span>
+          <span className="pro-section-note">{t("profile.stats.form.lastRounds", { count: recentRatings.length })}</span>
           <div className="pro-spark">
             {recentRatings.map((r, i) => (
               <span key={i} title={r.toFixed(2)} className={r >= 1 ? "up" : "down"} style={{ height: `${Math.max(6, (r / maxRecent) * 100)}%` }} />
@@ -162,14 +165,14 @@ function FormPanel({
             <div key={side} className="pro-sidecard">
               <h3>
                 <span className={`side-tag ${side === "T" ? "side-t" : "side-ct"}`}>{side}</span>
-                {side === "T" ? "Terrorist — defense" : "Counter-Terrorist — retake"}
+                {side === "T" ? t("profile.stats.form.sideT") : t("profile.stats.form.sideCt")}
               </h3>
               <div className="pro-sidecard-stats">
                 {[
-                  { k: "Rating", v: summary.rating.toFixed(2), cls: ratingClass(summary.rating) },
-                  { k: "K/D", v: summary.kd.toFixed(2) },
-                  { k: "ADR", v: summary.adr.toFixed(0) },
-                  { k: "Win %", v: `${summary.winPct.toFixed(0)}%`, sub: `${summary.rounds} rds` },
+                  { k: t("profile.stats.table.rating"), v: summary.rating.toFixed(2), cls: ratingClass(summary.rating) },
+                  { k: t("profile.stats.table.kd"), v: summary.kd.toFixed(2) },
+                  { k: t("profile.stats.table.adr"), v: summary.adr.toFixed(0) },
+                  { k: t("profile.stats.table.winPct"), v: `${summary.winPct.toFixed(0)}%`, sub: `${summary.rounds} ${t("profile.stats.sessions.rds")}` },
                 ].map((c) => (
                   <div key={c.k}>
                     <span className={`num pro-stat-v ${c.cls ?? ""}`}>{c.v}</span>
@@ -187,19 +190,20 @@ function FormPanel({
 }
 
 function MapsPanel({ byMap }: { byMap: { map: string; summary: Summary }[] }) {
-  if (byMap.length === 0) return <p className="empty-hint">Nothing yet.</p>;
+  const { t } = useI18n();
+  if (byMap.length === 0) return <p className="empty-hint">{t("profile.stats.empty")}</p>;
   return (
     <div className="pro-tablewrap">
       <table className="table num">
         <thead>
           <tr>
-            <th scope="col">Map</th>
-            <th scope="col" className="r">Rounds</th>
-            <th scope="col" className="r">Win %</th>
-            <th scope="col" className="r">K — D</th>
-            <th scope="col" className="r">ADR</th>
-            <th scope="col" className="r">KAST</th>
-            <th scope="col" className="r">Rating</th>
+            <th scope="col">{t("profile.stats.table.map")}</th>
+            <th scope="col" className="r">{t("profile.stats.table.rounds")}</th>
+            <th scope="col" className="r">{t("profile.stats.table.winPct")}</th>
+            <th scope="col" className="r">{t("profile.stats.table.kd")}</th>
+            <th scope="col" className="r">{t("profile.stats.table.adr")}</th>
+            <th scope="col" className="r">{t("profile.stats.table.kast")}</th>
+            <th scope="col" className="r">{t("profile.stats.table.rating")}</th>
           </tr>
         </thead>
         <tbody>
@@ -230,7 +234,8 @@ function SessionsPanel({
   openDay: string | null;
   setOpenDay: (d: string | null) => void;
 }) {
-  if (byDay.length === 0) return <p className="empty-hint">Nothing yet.</p>;
+  const { t } = useI18n();
+  if (byDay.length === 0) return <p className="empty-hint">{t("profile.stats.empty")}</p>;
 
   return (
     <ul className="pro-sessions">
@@ -246,10 +251,10 @@ function SessionsPanel({
             >
               <span className="pro-session-date">{fmtDay(entry.day)}</span>
               <span className="pro-session-glance">
-                <span className="num">{s.rounds}</span> rds
+                <span className="num">{s.rounds}</span> {t("profile.stats.sessions.rds")}
               </span>
               <span className="pro-session-glance">
-                <span className="num">{s.winPct.toFixed(0)}%</span> won
+                <span className="num">{s.winPct.toFixed(0)}%</span> {t("profile.stats.sessions.won")}
               </span>
               <span className="pro-session-glance">
                 <span className="num">{s.kills}–{s.deaths}</span>
@@ -262,18 +267,18 @@ function SessionsPanel({
               <div className="pro-session-body">
                 <div className="pro-session-grid">
                   {[
-                    { k: "ADR", v: s.adr.toFixed(0) },
-                    { k: "KAST", v: `${s.kast.toFixed(0)}%` },
-                    { k: "HS %", v: `${s.hs.toFixed(0)}%` },
-                    { k: "K/D", v: s.kd.toFixed(2) },
-                    { k: "Kills / round", v: s.kpr.toFixed(2) },
-                    { k: "Clutches", v: s.clutches },
-                    { k: "Opening kills", v: s.openingKills, sub: `${s.openingDeaths} deaths` },
-                    { k: "Multi-kills", v: s.multiKills },
-                    { k: "Trade kills", v: s.tradeKills },
-                    { k: "Util / round", v: s.utilPerRound.toFixed(1) },
-                    { k: "Flashed", v: s.enemiesFlashed },
-                    { k: "Plants / defuses", v: `${s.plants} / ${s.defuses}` },
+                    { k: t("profile.stats.table.adr"), v: s.adr.toFixed(0) },
+                    { k: t("profile.stats.table.kast"), v: `${s.kast.toFixed(0)}%` },
+                    { k: t("profile.stats.sessions.hs"), v: `${s.hs.toFixed(0)}%` },
+                    { k: t("profile.stats.table.kd"), v: s.kd.toFixed(2) },
+                    { k: t("profile.stats.sessions.kpr"), v: s.kpr.toFixed(2) },
+                    { k: t("profile.stats.sessions.clutches"), v: s.clutches },
+                    { k: t("profile.stats.sessions.openingKills"), v: s.openingKills, sub: `${s.openingDeaths} ${t("profile.stats.sessions.deaths")}` },
+                    { k: t("profile.stats.sessions.multiKills"), v: s.multiKills },
+                    { k: t("profile.stats.sessions.tradeKills"), v: s.tradeKills },
+                    { k: t("profile.stats.sessions.utilPerRound"), v: s.utilPerRound.toFixed(1) },
+                    { k: t("profile.stats.sessions.flashed"), v: s.enemiesFlashed },
+                    { k: t("profile.stats.sessions.plantsDefuses"), v: `${s.plants} / ${s.defuses}` },
                   ].map((c) => (
                     <div key={c.k} className="pro-stat">
                       <span className="num pro-stat-v small">{c.v}</span>
@@ -285,17 +290,17 @@ function SessionsPanel({
 
                 {entry.maps.length > 0 && (
                   <div className="pro-session-maps">
-                    <span className="pro-section-note">Maps that day</span>
+                    <span className="pro-section-note">{t("profile.stats.sessions.mapsThatDay")}</span>
                     <div className="pro-tablewrap">
                       <table className="table num">
                         <thead>
                           <tr>
-                            <th scope="col">Map</th>
-                            <th scope="col" className="r">Rounds</th>
-                            <th scope="col" className="r">Win %</th>
-                            <th scope="col" className="r">K — D</th>
-                            <th scope="col" className="r">ADR</th>
-                            <th scope="col" className="r">Rating</th>
+                            <th scope="col">{t("profile.stats.table.map")}</th>
+                            <th scope="col" className="r">{t("profile.stats.table.rounds")}</th>
+                            <th scope="col" className="r">{t("profile.stats.table.winPct")}</th>
+                            <th scope="col" className="r">{t("profile.stats.table.kd")}</th>
+                            <th scope="col" className="r">{t("profile.stats.table.adr")}</th>
+                            <th scope="col" className="r">{t("profile.stats.table.rating")}</th>
                           </tr>
                         </thead>
                         <tbody>
@@ -326,17 +331,18 @@ function SessionsPanel({
 }
 
 function DetailsPanel({ total }: { total: Summary }) {
+  const { t } = useI18n();
   const details = [
-    { v: total.openingKills, k: "Opening kills", sub: `${total.openingDeaths} opening deaths` },
-    { v: total.clutches, k: "Clutches won" },
-    { v: total.multiKills, k: "Multi-kill rounds" },
-    { v: total.tradeKills, k: "Trade kills" },
-    { v: total.utilPerRound.toFixed(1), k: "Util dmg / round" },
-    { v: total.enemiesFlashed, k: "Enemies flashed" },
-    { v: total.defuses, k: "Defuses", sub: `${total.plants} plants` },
-    { v: total.kpr.toFixed(2), k: "Kills / round" },
-    { v: total.assists, k: "Assists" },
-    { v: total.wins, k: "Rounds won", sub: `of ${total.rounds}` },
+    { v: total.openingKills, k: t("profile.stats.details.openingKills"), sub: `${total.openingDeaths} ${t("profile.stats.details.openingDeaths")}` },
+    { v: total.clutches, k: t("profile.stats.details.clutchesWon") },
+    { v: total.multiKills, k: t("profile.stats.details.multiKillRounds") },
+    { v: total.tradeKills, k: t("profile.stats.sessions.tradeKills") },
+    { v: total.utilPerRound.toFixed(1), k: t("profile.stats.details.utilDmg") },
+    { v: total.enemiesFlashed, k: t("profile.stats.details.enemiesFlashed") },
+    { v: total.defuses, k: t("profile.stats.details.defuses"), sub: `${total.plants} ${t("profile.stats.details.plants")}` },
+    { v: total.kpr.toFixed(2), k: t("profile.stats.sessions.kpr") },
+    { v: total.assists, k: t("profile.stats.details.assists") },
+    { v: total.wins, k: t("profile.stats.details.roundsWon"), sub: t("profile.stats.details.ofRounds", { count: total.rounds }) },
   ];
   return (
     <div className="pro-details">

@@ -3,6 +3,7 @@
 import { useCallback, useEffect, useRef, useState } from "react";
 import ClipCard, { type Clip } from "@/components/feed/ClipCard";
 import UploadClipModal from "@/components/feed/UploadClipModal";
+import { useI18n } from '@/components/I18nProvider';
 import { CLIP_TAGS } from "@/lib/feedShared";
 
 // The feed: community clips, plus CS2's own update stream.
@@ -32,6 +33,8 @@ const KINDS: { id: Kind; label: string }[] = [
 ];
 
 export default function FeedClient({ signedIn, isAdmin = false }: { signedIn: boolean; isAdmin?: boolean }) {
+    const { t } = useI18n();
+
   const [tab, setTab] = useState<Tab>("clips");
   const [range, setRange] = useState<Range>("week");
   const [sort, setSort] = useState<Sort>("new");
@@ -199,24 +202,24 @@ export default function FeedClient({ signedIn, isAdmin = false }: { signedIn: bo
       <section className="pro-hero">
         <div className="feed-head">
           <div>
-            <span className="kicker">Feed</span>
+            <span className="kicker">{t("auto.feedclient.feed")}</span>
             <h1 style={{ fontSize: "clamp(30px, 4.6vw, 54px)", letterSpacing: "-0.025em", margin: "10px 0 6px" }}>
-              Clips &amp; updates.
-            </h1>
+              {t("auto.feedclient.clips_amp_updates")}
+                                      </h1>
             <p className="muted" style={{ maxWidth: "54ch", margin: 0 }}>
-              Community highlights from the server, and every CS2 patch as Valve ships it.
-            </p>
+              {t("auto.feedclient.community_highlights_from_the")}
+                                      </p>
           </div>
           {signedIn ? (
-            <button className="btn btn-primary" onClick={() => setUploading(true)}>Post a clip</button>
+            <button className="btn btn-primary" onClick={() => setUploading(true)}>{t("auto.feedclient.post_a_clip")}</button>
           ) : (
-            <a className="btn btn-secondary" href="/api/auth/steam/login">Sign in to post</a>
+            <a className="btn btn-secondary" href="/api/auth/steam/login">{t("auto.feedclient.sign_in_to_post")}</a>
           )}
         </div>
       </section>
 
       <section className="pro-section">
-        <div className="pro-tabs" role="tablist" aria-label="Feed">
+        <div className="pro-tabs" role="tablist" aria-label={t("auto.feedclient.feed")}>
           {([
             { id: "clips" as Tab, label: "Clips" },
             { id: "updates" as Tab, label: "CS2 updates" },
@@ -237,23 +240,23 @@ export default function FeedClient({ signedIn, isAdmin = false }: { signedIn: bo
           {tab === "clips" ? (
             <>
               <div className="feed-search">
-                <label className="sr-only" htmlFor="feed-q">Search clips</label>
+                <label className="sr-only" htmlFor="feed-q">{t("auto.feedclient.search_clips")}</label>
                 <input
                   id="feed-q"
                   className="input"
                   type="search"
                   value={query}
-                  placeholder="Search a player, a title, a map…"
+                  placeholder={t("auto.feedclient.search_a_player_a_title_a_map")}
                   onChange={(e) => setQuery(e.target.value)}
                 />
                 {query && (
-                  <button className="btn btn-ghost" onClick={() => setQuery("")}>Clear</button>
+                  <button className="btn btn-ghost" onClick={() => setQuery("")}>{t("auto.feedclient.clear")}</button>
                 )}
                 <button
                   className="btn btn-secondary feed-refresh"
                   onClick={refresh}
                   disabled={refreshing}
-                  title="Reload the clips without reloading the page"
+                  title={t("auto.feedclient.reload_the_clips_without_reloa")}
                 >
                   <span aria-hidden className={refreshing ? "spin" : ""}>⟳</span> {refreshing ? "Refreshing…" : "Refresh"}
                 </button>
@@ -261,26 +264,26 @@ export default function FeedClient({ signedIn, isAdmin = false }: { signedIn: bo
 
               {pending > 0 && (
                 <button className="feed-new-pill" onClick={refresh}>
-                  {pending} new clip{pending === 1 ? "" : "s"} — show
-                </button>
+                  {pending} {t("auto.feedclient.new_clip")}{pending === 1 ? "" : "s"} {t("auto.feedclient._show")}
+                                                  </button>
               )}
 
               <div className="feed-filters">
-                <div className="feed-filter-group" role="group" aria-label="Time range">
+                <div className="feed-filter-group" role="group" aria-label={t("auto.feedclient.time_range")}>
                   {RANGES.map((r) => (
                     <button key={r.id} className={`chip ${range === r.id ? "active" : ""}`} onClick={() => setRange(r.id)}>
                       {r.label}
                     </button>
                   ))}
                 </div>
-                <div className="feed-filter-group" role="group" aria-label="Source">
+                <div className="feed-filter-group" role="group" aria-label={t("auto.feedclient.source")}>
                   {KINDS.map((k) => (
                     <button key={k.id} className={`chip ${kind === k.id ? "active" : ""}`} onClick={() => setKind(k.id)}>
                       {k.label}
                     </button>
                   ))}
                 </div>
-                <div className="feed-filter-group feed-tagfilter" role="group" aria-label="Tag">
+                <div className="feed-filter-group feed-tagfilter" role="group" aria-label={t("auto.feedclient.tag")}>
                   {CLIP_TAGS.map((t) => (
                     <button
                       key={t.id}
@@ -293,16 +296,16 @@ export default function FeedClient({ signedIn, isAdmin = false }: { signedIn: bo
                     </button>
                   ))}
                 </div>
-                <div className="feed-filter-group" role="group" aria-label="Sort">
-                  <button className={`chip ${sort === "new" ? "active" : ""}`} onClick={() => setSort("new")}>Newest</button>
-                  <button className={`chip ${sort === "likes" ? "active" : ""}`} onClick={() => setSort("likes")}>Most liked</button>
-                  <button className={`chip ${sort === "comments" ? "active" : ""}`} onClick={() => setSort("comments" as Sort)}>Most discussed</button>
+                <div className="feed-filter-group" role="group" aria-label={t("auto.feedclient.sort")}>
+                  <button className={`chip ${sort === "new" ? "active" : ""}`} onClick={() => setSort("new")}>{t("auto.feedclient.newest")}</button>
+                  <button className={`chip ${sort === "likes" ? "active" : ""}`} onClick={() => setSort("likes")}>{t("auto.feedclient.most_liked")}</button>
+                  <button className={`chip ${sort === "comments" ? "active" : ""}`} onClick={() => setSort("comments" as Sort)}>{t("auto.feedclient.most_discussed")}</button>
                 </div>
               </div>
 
               {error && (
                 <p className="skin-note skin-note-error" role="alert">
-                  <span><strong>Feed unavailable.</strong> {error}</span>
+                  <span><strong>{t("auto.feedclient.feed_unavailable")}</strong> {error}</span>
                 </p>
               )}
 
@@ -334,8 +337,8 @@ export default function FeedClient({ signedIn, isAdmin = false }: { signedIn: bo
                   </p>
                   {range !== "all" && (
                     <button className="btn btn-secondary" style={{ marginTop: 12 }} onClick={() => setRange("all")}>
-                      Show all time
-                    </button>
+                      {t("auto.feedclient.show_all_time")}
+                                                                  </button>
                   )}
                 </div>
               ) : (
@@ -354,9 +357,9 @@ export default function FeedClient({ signedIn, isAdmin = false }: { signedIn: bo
               )}
             </>
           ) : updates === null ? (
-            <p className="muted">Loading updates…</p>
+            <p className="muted">{t("auto.feedclient.loading_updates")}</p>
           ) : updates.length === 0 ? (
-            <p className="empty-hint">Steam&rsquo;s news feed is not answering right now.</p>
+            <p className="empty-hint">{t("auto.feedclient.steam_rsquo_s_news_feed_is_not")}</p>
           ) : (
             <ul className="feed-updates">
               {updates.map((u) => (

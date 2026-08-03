@@ -2,6 +2,7 @@
 
 import { useEffect, useState } from "react";
 import Link from "next/link";
+import { useI18n } from '@/components/I18nProvider';
 import AvatarImage from "@/components/AvatarImage";
 
 // The live-match view was written in Tailwind classes; the project has no
@@ -54,6 +55,8 @@ const COMMON_MAPS = [
 ];
 
 export default function LiveMatchPage() {
+    const { t } = useI18n();
+
   const [match, setMatch] = useState<LiveMatchData | null>(null);
   const [isLive, setIsLive] = useState<boolean>(true);
   const [isAdmin, setIsAdmin] = useState<boolean>(false);
@@ -137,8 +140,8 @@ export default function LiveMatchPage() {
           <div>
             <span className="kicker" style={{ display: "flex", alignItems: "center", gap: 8 }}>
               <span className="live-dot" />
-              Live
-            </span>
+              {t("auto.page.live")}
+                                      </span>
             <h1 style={{ fontSize: "clamp(30px, 4.2vw, 52px)", letterSpacing: "-0.02em", margin: "10px 0 0" }}>
               {match.Map}
             </h1>
@@ -169,11 +172,11 @@ export default function LiveMatchPage() {
               }}
             >
               <span className="kicker" style={{ fontSize: 11 }}>
-                Mod
-              </span>
+                {t("auto.page.mod")}
+                                            </span>
               <label className="sr-only" htmlFor="live-map-select">
-                Change map
-              </label>
+                {t("auto.page.change_map")}
+                                            </label>
               <select
                 id="live-map-select"
                 className="input"
@@ -187,8 +190,8 @@ export default function LiveMatchPage() {
                 defaultValue=""
               >
                 <option value="" disabled>
-                  Change map…
-                </option>
+                  {t("auto.page.change_map")}
+                                                  </option>
                 {COMMON_MAPS.map((m) => (
                   <option key={m} value={m}>
                     {m}
@@ -196,14 +199,14 @@ export default function LiveMatchPage() {
                 ))}
               </select>
               <label className="sr-only" htmlFor="live-map-custom">
-                Custom map name
-              </label>
+                {t("auto.page.custom_map_name")}
+                                            </label>
               <input
                 id="live-map-custom"
                 className="input"
                 style={{ width: 150 }}
                 type="text"
-                placeholder="Custom map…"
+                placeholder={t("auto.page.custom_map")}
                 value={customMap}
                 onChange={(e) => setCustomMap(e.target.value)}
               />
@@ -214,8 +217,8 @@ export default function LiveMatchPage() {
                   if (customMap) handleAdminAction(`css_gmap ${customMap}`);
                 }}
               >
-                Go
-              </button>
+                {t("auto.page.go")}
+                                            </button>
             </div>
           )}
         </div>
@@ -252,8 +255,8 @@ export default function LiveMatchPage() {
           <section style={{ marginTop: "clamp(40px, 6vw, 64px)" }}>
             <div style={{ display: "flex", alignItems: "center", gap: 14, marginBottom: 20 }}>
               <h2 style={{ fontSize: 13, letterSpacing: "0.08em", textTransform: "uppercase", margin: 0 }}>
-                Head to head
-              </h2>
+                {t("auto.page.head_to_head")}
+                                            </h2>
               <span className="rule-draw" style={{ flex: 1, height: 2, background: "var(--color-divider)" }} />
             </div>
             <div
@@ -281,8 +284,8 @@ export default function LiveMatchPage() {
                     {h2h.KillerName}
                   </span>
                   <span className="num" style={{ fontWeight: 700, color: "var(--color-accent)", flex: "none" }}>
-                    {h2h.Kills}&ndash;0
-                  </span>
+                    {h2h.Kills}{t("auto.page._ndash_0")}
+                                            </span>
                   <span
                     style={{
                       minWidth: 0,
@@ -320,6 +323,8 @@ function Scoreboard({
   predictionA: string;
   predictionB: string;
 }) {
+    const { t } = useI18n();
+
   const side = (name: string, prediction: string, color: string, align: "right" | "left") => {
     const [win, loss] = prediction.split("/");
     return (
@@ -336,7 +341,7 @@ function Scoreboard({
             marginTop: 6,
           }}
         >
-          Win <span className="num" style={{ color: "var(--color-text)" }}>{win}</span> · Loss{" "}
+          {t("auto.page.win")} <span className="num" style={{ color: "var(--color-text)" }}>{win}</span> {t("auto.page._loss")}{" "}
           <span className="num" style={{ color: "var(--color-text)" }}>{loss}</span>
         </div>
       </div>
@@ -371,7 +376,7 @@ function Scoreboard({
         }}
       >
         <span style={{ color: scoreA > scoreB ? TEAM_COLOR.a : "inherit" }}>{scoreA}</span>
-        <span style={{ color: "var(--color-divider)", fontWeight: 400 }}>&ndash;</span>
+        <span style={{ color: "var(--color-divider)", fontWeight: 400 }}>{t("auto.page._ndash")}</span>
         <span style={{ color: scoreB > scoreA ? TEAM_COLOR.b : "inherit" }}>{scoreB}</span>
       </div>
 
@@ -395,6 +400,8 @@ function PlayerTable({
   isAdmin: boolean;
   onAdminAction: (cmd: string) => void;
 }) {
+    const { t } = useI18n();
+
   const numeric: React.CSSProperties = { textAlign: "right" };
   // `players` is state owned by the page — sorting in place would mutate it and
   // reorder the other team's table as a side effect on the next render.
@@ -420,16 +427,16 @@ function PlayerTable({
         <table className="table num" style={{ minWidth: 460 }}>
           <thead>
             <tr>
-              <th scope="col">Player</th>
+              <th scope="col">{t("auto.page.player")}</th>
               <th scope="col" style={numeric}>K</th>
               <th scope="col" style={numeric}>A</th>
               <th scope="col" style={numeric}>D</th>
-              <th scope="col" style={numeric}>DMG</th>
-              <th scope="col" style={numeric}>Rating</th>
+              <th scope="col" style={numeric}>{t("auto.page.dmg")}</th>
+              <th scope="col" style={numeric}>{t("auto.page.rating")}</th>
               {isAdmin && (
                 <th scope="col" style={numeric}>
-                  Mod
-                </th>
+                  {t("auto.page.mod")}
+                                                  </th>
               )}
             </tr>
           </thead>
@@ -471,7 +478,7 @@ function PlayerTable({
                               color: "color-mix(in srgb, var(--color-text) 55%, transparent)",
                             }}
                           >
-                            Elo <span style={{ color: "var(--color-accent)", fontWeight: 700 }}>{p.Elo}</span>
+                            {t("auto.page.elo")} <span style={{ color: "var(--color-accent)", fontWeight: 700 }}>{p.Elo}</span>
                           </span>
                         )}
                       </div>
@@ -519,8 +526,8 @@ function PlayerTable({
             {ordered.length === 0 && (
               <tr>
                 <td colSpan={isAdmin ? 7 : 6} className="muted" style={{ textAlign: "center", padding: 24 }}>
-                  No players currently assigned.
-                </td>
+                  {t("auto.page.no_players_currently_assigned")}
+                                                  </td>
               </tr>
             )}
           </tbody>
@@ -540,6 +547,8 @@ function PlayerTable({
    broken.
    ───────────────────────────────────────────────────────────────────── */
 function LiveIdle({ loading }: { loading: boolean }) {
+    const { t } = useI18n();
+
   const serverAddress = process.env.NEXT_PUBLIC_SERVER_ADDRESS ?? "";
   const [copied, setCopied] = useState(false);
 
@@ -606,25 +615,25 @@ function LiveIdle({ loading }: { loading: boolean }) {
           {serverAddress && (
             <>
               <a className="btn btn-primary" href={`steam://connect/${serverAddress}`}>
-                Join the server
-              </a>
+                {t("auto.page.join_the_server")}
+                                            </a>
               <button type="button" className="btn btn-secondary" onClick={copy}>
                 {copied ? "Copied" : `Copy connect ${serverAddress}`}
               </button>
             </>
           )}
           <Link className="btn btn-secondary" href="/">
-            Ladder
-          </Link>
+            {t("auto.page.ladder")}
+                                </Link>
           <Link className="btn btn-secondary" href="/stats">
-            Season stats
-          </Link>
+            {t("auto.page.season_stats")}
+                                </Link>
         </div>
 
         <div style={{ borderTop: "2px solid var(--color-divider)", paddingTop: 28 }}>
           <h2 style={{ fontSize: 13, letterSpacing: "0.08em", textTransform: "uppercase", marginBottom: 20 }}>
-            What appears here during a match
-          </h2>
+            {t("auto.page.what_appears_here_during_a_mat")}
+                                </h2>
           <div
             style={{
               display: "grid",

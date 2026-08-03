@@ -36,8 +36,8 @@ export default async function HomePage() {
       <>
         <Hero serverAddress={serverAddress} activePlayers={null} season={null} />
         <section style={{ padding: `0 ${PAD} 80px` }}>
-          <h2>Ladder</h2>
-          <p className="text-muted">No season yet. Start one in-game to open the ladder.</p>
+          <h2>{t("auto.page.ladder")}</h2>
+          <p className="text-muted">{t("auto.page.no_season_yet_start_one_in_gam")}</p>
         </section>
       </>
     );
@@ -189,6 +189,8 @@ function Hero({
   activePlayers: number | null;
   season: string | null;
 }) {
+    const t = getT();
+
   return (
     <section style={{ position: "relative", padding: `clamp(48px, 9vw, 108px) ${PAD} 0`, overflow: "hidden" }}>
       <div
@@ -201,8 +203,8 @@ function Hero({
       >
         <div style={{ gridColumn: 1, position: "relative", zIndex: 2 }}>
           <span className="kicker" style={{ marginBottom: 18 }}>
-            Garden Retakes · CS2
-          </span>
+            {t("auto.page.garden_retakes_cs2")}
+                                </span>
           <h1
             style={{
               fontSize: "clamp(46px, 6.8vw, 96px)",
@@ -213,11 +215,11 @@ function Hero({
             }}
           >
             <Reveal as="span" variant="line" delay={0.05}>
-              Retakes with a
-            </Reveal>
+              {t("auto.page.retakes_with_a")}
+                                      </Reveal>
             <Reveal as="span" variant="line" delay={0.2} style={{ color: "var(--color-accent)" }}>
-              real economy.
-            </Reveal>
+              {t("auto.page.real_economy")}
+                                      </Reveal>
           </h1>
           <p
             style={{
@@ -228,9 +230,8 @@ function Hero({
               margin: "0 0 32px",
             }}
           >
-            Ranked sessions, Competitive 2v2/3v3, clutch rounds — and a skin loadout that follows you
-            in-game. Jump on the server and climb the ladder.
-          </p>
+            {t("auto.page.ranked_sessions_competitive_2v")}
+                                </p>
           {/* No connect button here — the CTA band at the foot of the page owns
               that action, so the hero stays a statement rather than a form. */}
           <div style={{ display: "flex", gap: 24, alignItems: "center", flexWrap: "wrap" }}>
@@ -239,15 +240,15 @@ function Hero({
               className="link-underline"
               style={{ fontSize: 13, letterSpacing: "0.06em", textTransform: "uppercase" }}
             >
-              See the ladder ↓
-            </Link>
+              {t("auto.page.see_the_ladder")}
+                                      </Link>
             <Link
               href="/stats"
               className="link-underline"
               style={{ fontSize: 13, letterSpacing: "0.06em", textTransform: "uppercase" }}
             >
-              Season stats
-            </Link>
+              {t("auto.page.season_stats")}
+                                      </Link>
           </div>
         </div>
 
@@ -292,8 +293,8 @@ function Hero({
                 marginTop: 4,
               }}
             >
-              players seen in the last 15 minutes
-            </div>
+              {t("auto.page.players_seen_in_the_last_15_mi")}
+                                      </div>
           </div>
         </div>
       </div>
@@ -348,6 +349,8 @@ function Standout(p: {
   winPct: number;
   rounds: number;
 }) {
+    const t = getT();
+
   const stats = [
     { label: "K/D", value: p.kd, decimals: 2 },
     { label: "ADR", value: p.adr, decimals: 0 },
@@ -371,8 +374,8 @@ function Standout(p: {
               fontWeight: 600,
             }}
           >
-            ★ Standout — Today
-          </span>
+            {t("auto.page._standout_today")}
+                                </span>
           <span className="rule-draw" style={{ flex: 1, height: 2, background: "var(--color-divider)" }} />
         </div>
 
@@ -397,7 +400,7 @@ function Standout(p: {
               marginBottom: 28,
             }}
           >
-            {p.elo != null ? `${p.elo} CS Rating · ` : ""}rated {p.rating.toFixed(2)}
+            {p.elo != null ? `${p.elo} CS Rating · ` : ""}{t("auto.page.rated")} {p.rating.toFixed(2)}
           </div>
           <div
             style={{

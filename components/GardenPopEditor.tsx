@@ -1,6 +1,7 @@
 "use client";
 
 import React, { useState } from "react";
+import { useI18n } from '@/components/I18nProvider';
 import GardenPop, { GardenPopConfig, defaultPopConfig } from "./GardenPop";
 
 export default function GardenPopEditor({
@@ -12,6 +13,8 @@ export default function GardenPopEditor({
   onSave: (config: GardenPopConfig) => Promise<void>;
   onCancel: () => void;
 }) {
+    const { t } = useI18n();
+
   const [config, setConfig] = useState<GardenPopConfig>(initialConfig || defaultPopConfig);
   const [saving, setSaving] = useState(false);
   const [activeTab, setActiveTab] = useState<"hair" | "stache" | "color" | "hairColor">("hair");
@@ -41,16 +44,16 @@ export default function GardenPopEditor({
         
         {/* Left Side: Live 3D Preview */}
         <div style={{ flex: 1, display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center" }}>
-          <h2 style={{ marginBottom: "20px", color: "#fff" }}>3D Preview</h2>
+          <h2 style={{ marginBottom: "20px", color: "#fff" }}>{t("auto.gardenpopeditor.3d_preview")}</h2>
           <div style={{ width: "100%", height: "300px", background: "rgba(255,255,255,0.02)", borderRadius: "20px", padding: "10px", overflow: "hidden" }}>
             <GardenPop config={config} cameraDistance={15} enableZoom={true} />
           </div>
-          <p style={{ marginTop: "10px", opacity: 0.5, fontSize: "12px" }}>Drag to rotate · Scroll to zoom</p>
+          <p style={{ marginTop: "10px", opacity: 0.5, fontSize: "12px" }}>{t("auto.gardenpopeditor.drag_to_rotate_scroll_to_zoom")}</p>
         </div>
 
         {/* Right Side: Editor Controls */}
         <div style={{ flex: 1, display: "flex", flexDirection: "column" }}>
-          <h2 style={{ marginBottom: "20px", color: "#fff" }}>Customize</h2>
+          <h2 style={{ marginBottom: "20px", color: "#fff" }}>{t("auto.gardenpopeditor.customize")}</h2>
           
           <div style={{ 
             display: "flex", 
@@ -173,8 +176,8 @@ export default function GardenPopEditor({
               {saving ? "Saving..." : "Save Avatar"}
             </button>
             <button className="btn secondary" style={{ flex: 1 }} onClick={onCancel} disabled={saving}>
-              Cancel
-            </button>
+              {t("auto.gardenpopeditor.cancel")}
+                                      </button>
           </div>
         </div>
 

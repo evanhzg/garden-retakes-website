@@ -7,6 +7,7 @@ import AvatarImage from "@/components/AvatarImage";
 import ShareMenu from "@/components/feed/ShareMenu";
 import ClipSocial from "@/components/feed/ClipSocial";
 import VideoPlayer, { type Variant } from "@/components/feed/VideoPlayer";
+import { useI18n } from '@/components/I18nProvider';
 import type { Clip } from "@/components/feed/ClipCard";
 
 // Expanded view. Clicking a card opens the clip large, with the title, author
@@ -24,6 +25,8 @@ export default function ClipModal({
   signedIn?: boolean;
   onClose: () => void;
 }) {
+    const { t } = useI18n();
+
   // Portalled to <body>. Rendered in place it sat inside the clip card, and an
   // ancestor with a transform in its animation keyframes becomes the containing
   // block for position:fixed — so once the feed was long enough to scroll, the
@@ -56,7 +59,7 @@ export default function ClipModal({
   return createPortal(
     <div className="clip-modal" role="dialog" aria-modal="true" aria-label={clip.title} onClick={onClose}>
       <div className="clip-modal-card" onClick={(e) => e.stopPropagation()}>
-        <button className="clip-modal-close" onClick={onClose} aria-label="Close">×</button>
+        <button className="clip-modal-close" onClick={onClose} aria-label={t("auto.clipmodal.close")}>×</button>
 
         <div className="clip-modal-stage">
           {clip.kind === "youtube" ? (
@@ -78,7 +81,7 @@ export default function ClipModal({
           </div>
           {/* Same rule as the card: only link players who have a profile here. */}
           {clip.authorIsUser === false ? (
-            <span className="clip-author is-guest" title="No profile on this site yet">
+            <span className="clip-author is-guest" title={t("auto.clipmodal.no_profile_on_this_site_yet")}>
               <AvatarImage steamId={clip.steamId} src={clip.avatar} alt={clip.author} className="avatar avatar-sm" />
               {clip.author}
             </span>

@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useState } from "react";
+import { useI18n } from '@/components/I18nProvider';
 import { formatDate } from "@/lib/stats";
 
 function formatMapName(map: string) {
@@ -10,6 +11,8 @@ function formatMapName(map: string) {
 }
 
 export default function ProfileActivity({ steamId, lastConnectedUtc }: { steamId: string, lastConnectedUtc?: Date | null }) {
+    const { t } = useI18n();
+
   const [liveData, setLiveData] = useState<{ players: { steamId: string, team: string }[], map: string, mode: string } | null>(null);
 
   useEffect(() => {
@@ -46,14 +49,14 @@ export default function ProfileActivity({ steamId, lastConnectedUtc }: { steamId
       return (
         <div className="activity-indicator">
           <span className="dot idle"></span>
-          Idle (Spectating)
-        </div>
+          {t("auto.profileactivity.idle_spectating")}
+                      </div>
       );
     } else {
       return (
         <div className="activity-indicator">
           <span className="dot online"></span>
-          Playing {liveData.mode} on {formatMapName(liveData.map)}
+          {t("auto.profileactivity.playing")} {liveData.mode} {t("auto.profileactivity.on")} {formatMapName(liveData.map)}
         </div>
       );
     }

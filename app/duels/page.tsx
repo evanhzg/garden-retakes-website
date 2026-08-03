@@ -74,7 +74,7 @@ export default async function DuelsPage() {
         <div className="hero-inner">
           <span className="eyebrow">{t("duels.page.eyebrow")}</span>
           <h1>
-            {t("duels.page.title_prefix")} <span className="grad">1v1</span> {t("duels.page.title_suffix")}
+            {t("duels.page.title_prefix")} <span className="grad">{t("auto.page.1v1")}</span> {t("duels.page.title_suffix")}
           </h1>
           <p className="muted">
             {t("duels.page.description_prefix")}{season ? ` ${t("duels.page.during")} ${season.Name}` : ""} {t("duels.page.description_suffix")}

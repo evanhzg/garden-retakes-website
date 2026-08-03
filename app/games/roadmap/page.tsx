@@ -1,7 +1,10 @@
 import React from "react";
 import "../games.css";
+import { getT } from '@/lib/serverI18n';
 
 export default function GamesRoadmap() {
+    const t = getT();
+
   const games = [
     {
       name: "OUNO",
@@ -121,10 +124,10 @@ export default function GamesRoadmap() {
   return (
     <div className="roadmap-container">
       <div className="roadmap-header">
-        <h1>GARDEN GAMES ROADMAP</h1>
+        <h1>{t("auto.page.garden_games_roadmap")}</h1>
         <p>
-          The future of Retakes.fr is more than just CS2. We're building a real-time multiplayer hub for our favorite games, optimized for fast-paced play, smooth animations, and ultimate fun.
-        </p>
+          {t("auto.page.the_future_of_retakes_fr_is_mo")}
+                          </p>
       </div>
 
       <div className="roadmap-grid">
@@ -139,7 +142,7 @@ export default function GamesRoadmap() {
             <p className="roadmap-desc">{game.description}</p>
             
             <div className="roadmap-features">
-              <h4>Planned Features:</h4>
+              <h4>{t("auto.page.planned_features")}</h4>
               <ul>
                 {game.features.map((feat, idx) => (
                   <li key={idx}><span>✓</span> {feat}</li>

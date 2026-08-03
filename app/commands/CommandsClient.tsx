@@ -1,6 +1,7 @@
 "use client";
 
 import { useState } from "react";
+import { useI18n } from '@/components/I18nProvider';
 import ReactMarkdown from "react-markdown";
 
 export interface CommandItem {
@@ -21,6 +22,8 @@ interface Props {
 }
 
 export default function CommandsClient({ intro, categories }: Props) {
+    const { t } = useI18n();
+
   const [activeTab, setActiveTab] = useState(0);
   const [searchQuery, setSearchQuery] = useState("");
   const [toastMessage, setToastMessage] = useState<string | null>(null);
@@ -56,7 +59,7 @@ export default function CommandsClient({ intro, categories }: Props) {
           <input 
             type="text" 
             className="input" 
-            placeholder="Search commands..." 
+            placeholder={t("auto.commandsclient.search_commands")} 
             value={searchQuery}
             onChange={(e) => setSearchQuery(e.target.value)}
           />
@@ -94,10 +97,10 @@ export default function CommandsClient({ intro, categories }: Props) {
                     <table>
                       <thead>
                         <tr>
-                          <th>Command</th>
-                          {cat.commands.some(c => c.level) && <th>Level</th>}
-                          <th>Description</th>
-                          <th style={{ width: "80px", textAlign: "right" }}>Action</th>
+                          <th>{t("auto.commandsclient.command")}</th>
+                          {cat.commands.some(c => c.level) && <th>{t("auto.commandsclient.level")}</th>}
+                          <th>{t("auto.commandsclient.description")}</th>
+                          <th style={{ width: "80px", textAlign: "right" }}>{t("auto.commandsclient.action")}</th>
                         </tr>
                       </thead>
                       <tbody>
@@ -120,8 +123,8 @@ export default function CommandsClient({ intro, categories }: Props) {
                                 onClick={() => copyToClipboard(cmd.command)}
                                 style={{ padding: "4px 10px", fontSize: "0.75rem" }}
                               >
-                                Copy
-                              </button>
+                                {t("auto.commandsclient.copy")}
+                                                                      </button>
                             </td>
                           </tr>
                         ))}
@@ -129,14 +132,14 @@ export default function CommandsClient({ intro, categories }: Props) {
                     </table>
                   </div>
                 ) : (
-                  <div className="empty-hint">No commands listed here.</div>
+                  <div className="empty-hint">{t("auto.commandsclient.no_commands_listed_here")}</div>
                 )}
               </div>
             );
           })}
           
           {searchQuery !== "" && filteredCategories.length === 0 && (
-            <div className="empty-hint">No commands found for "{searchQuery}".</div>
+            <div className="empty-hint">{t("auto.commandsclient.no_commands_found_for")}{searchQuery}".</div>
           )}
         </div>
       </div>

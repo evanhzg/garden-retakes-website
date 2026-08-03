@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useRef, useState } from "react";
+import { useI18n } from '@/components/I18nProvider';
 import Image from "next/image";
 
 type MapData = {
@@ -18,6 +19,8 @@ const MAPS: MapData[] = [
 ];
 
 export default function HeatmapClient({ users }: { users: any[] }) {
+    const { t } = useI18n();
+
   const canvasRef = useRef<HTMLCanvasElement>(null);
   const [map, setMap] = useState<MapData>(MAPS[0]);
   const [steamId, setSteamId] = useState<string>("default");
@@ -67,10 +70,10 @@ export default function HeatmapClient({ users }: { users: any[] }) {
     <div style={{ display: 'flex', flexWrap: 'wrap', gap: '32px', alignItems: 'flex-start' }}>
       <div style={{ flex: '1 1 300px', display: 'flex', flexDirection: 'column', gap: '24px', minWidth: '300px', maxWidth: '400px' }}>
         <div className="panel" style={{ display: 'flex', flexDirection: 'column', gap: '16px' }}>
-          <h3 style={{ borderBottom: '1px solid var(--border)', paddingBottom: '8px' }}>Analysis Controls</h3>
+          <h3 style={{ borderBottom: '1px solid var(--border)', paddingBottom: '8px' }}>{t("auto.heatmapclient.analysis_controls")}</h3>
           
           <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
-            <label style={{ fontSize: '0.875rem', fontWeight: 600, color: '#a1a1aa', textTransform: 'uppercase', letterSpacing: '0.05em' }}>Map</label>
+            <label style={{ fontSize: '0.875rem', fontWeight: 600, color: '#a1a1aa', textTransform: 'uppercase', letterSpacing: '0.05em' }}>{t("auto.heatmapclient.map")}</label>
             <select 
               className="input"
               style={{ width: '100%' }}
@@ -82,16 +85,16 @@ export default function HeatmapClient({ users }: { users: any[] }) {
           </div>
           
           <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
-            <label style={{ fontSize: '0.875rem', fontWeight: 600, color: '#a1a1aa', textTransform: 'uppercase', letterSpacing: '0.05em' }}>Player Focus</label>
+            <label style={{ fontSize: '0.875rem', fontWeight: 600, color: '#a1a1aa', textTransform: 'uppercase', letterSpacing: '0.05em' }}>{t("auto.heatmapclient.player_focus")}</label>
             <select 
               className="input"
               style={{ width: '100%' }}
               value={steamId}
               onChange={e => setSteamId(e.target.value)}
             >
-              <option value="default">Server Default (Top Spots)</option>
-              <option value="ZywOo">ZywOo (Demo Data)</option>
-              <optgroup label="Players">
+              <option value="default">{t("auto.heatmapclient.server_default_top_spots")}</option>
+              <option value="ZywOo">{t("auto.heatmapclient.zywoo_demo_data")}</option>
+              <optgroup label={t("auto.heatmapclient.players")}>
                 {users.map(u => (
                   <option key={u.SteamId.toString()} value={u.SteamId.toString()}>
                     {u.Name}
@@ -103,16 +106,16 @@ export default function HeatmapClient({ users }: { users: any[] }) {
         </div>
 
         <div className="panel" style={{ display: 'flex', flexDirection: 'column', gap: '16px' }}>
-          <h3 style={{ borderBottom: '1px solid var(--border)', paddingBottom: '8px' }}>Legend</h3>
+          <h3 style={{ borderBottom: '1px solid var(--border)', paddingBottom: '8px' }}>{t("auto.heatmapclient.legend")}</h3>
           <div style={{ display: 'flex', flexDirection: 'column', gap: '12px', fontSize: '0.875rem', fontWeight: 600, color: '#d4d4d8' }}>
             <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
               <div style={{ width: '16px', height: '16px', borderRadius: '50%', backgroundColor: '#34d399', border: '1px solid rgba(0,0,0,0.5)', boxShadow: '0 0 8px rgba(52,211,153,0.4)' }} />
-              Kill Position
-            </div>
+              {t("auto.heatmapclient.kill_position")}
+                                      </div>
             <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
               <div style={{ width: '16px', height: '16px', borderRadius: '50%', backgroundColor: '#f87171', border: '1px solid rgba(0,0,0,0.5)', boxShadow: '0 0 8px rgba(248,113,113,0.4)' }} />
-              Death Position
-            </div>
+              {t("auto.heatmapclient.death_position")}
+                                      </div>
           </div>
         </div>
       </div>
@@ -133,8 +136,8 @@ export default function HeatmapClient({ users }: { users: any[] }) {
           {loading && (
             <div style={{ position: 'absolute', inset: 0, zIndex: 20, display: 'flex', alignItems: 'center', justifyContent: 'center', backgroundColor: 'rgba(0,0,0,0.5)', backdropFilter: 'blur(4px)' }}>
               <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '16px', color: 'var(--accent)', fontWeight: 'bold' }}>
-                Computing Densities...
-              </div>
+                {t("auto.heatmapclient.computing_densities")}
+                                            </div>
             </div>
           )}
           <div style={{ position: 'absolute', inset: 0, zIndex: 0 }}>

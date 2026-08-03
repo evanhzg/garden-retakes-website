@@ -1,6 +1,7 @@
 import React, { useState } from 'react';
 import { staticSprite } from './sprites';
 import './pkmn.css';
+import { getT } from '@/lib/serverI18n';
 
 export type BagItem = { id: string; name: string; kind: 'ball' | 'heal'; desc: string; count: number };
 
@@ -24,6 +25,8 @@ export default function BagMenu({
   onThrowBall?: (itemId: string) => void;
   onClose: () => void;
 }) {
+    const t = getT();
+
   const [pickTargetFor, setPickTargetFor] = useState<BagItem | null>(null);
 
   const clickItem = (it: BagItem) => {
@@ -42,11 +45,11 @@ export default function BagMenu({
   return (
     <div className="pkg-overlay">
       <div className="pkg-head">
-        <h2>BAG</h2>
-        <button className="pkp-close" onClick={onClose}>CLOSE</button>
+        <h2>{t("auto.bagmenu.bag")}</h2>
+        <button className="pkp-close" onClick={onClose}>{t("auto.bagmenu.close")}</button>
       </div>
 
-      {items.length === 0 && <p className="pkg-empty">Your bag is empty.</p>}
+      {items.length === 0 && <p className="pkg-empty">{t("auto.bagmenu.your_bag_is_empty")}</p>}
 
       {!pickTargetFor && (
         <div className="pkg-list">
@@ -75,8 +78,8 @@ export default function BagMenu({
       {pickTargetFor && (
         <div className="pkg-targets">
           <div className="pkg-target-head">
-            Use {pickTargetFor.name} on…
-            <button className="pkp-close" onClick={() => setPickTargetFor(null)}>◀ BACK</button>
+            {t("auto.bagmenu.use")} {pickTargetFor.name} {t("auto.bagmenu.on")}
+                                  <button className="pkp-close" onClick={() => setPickTargetFor(null)}>{t("auto.bagmenu._back")}</button>
           </div>
           {party.map((mon) => {
             const max = mon.MaxHp || 20;
@@ -90,9 +93,9 @@ export default function BagMenu({
               >
                 <img src={staticSprite(mon.Species)} alt={mon.Species} />
                 <span className="pkg-target-info">
-                  <span>{(mon.Nickname || mon.Species).toUpperCase()} <small>Lv{mon.Level}</small></span>
+                  <span>{(mon.Nickname || mon.Species).toUpperCase()} <small>{t("auto.bagmenu.lv")}{mon.Level}</small></span>
                   <span className="pkb-hp-row">
-                    <span className="pkb-hp-tag">HP</span>
+                    <span className="pkb-hp-tag">{t("auto.bagmenu.hp")}</span>
                     <span className="pkb-hp-track">
                       <span
                         className={`pkb-hp-fill ${(mon.Hp / max) > 0.5 ? 'hp-green' : (mon.Hp / max) > 0.2 ? 'hp-yellow' : 'hp-red'}`}

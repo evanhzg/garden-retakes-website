@@ -3,6 +3,7 @@
 import { useEffect, useState } from "react";
 import { createPortal } from "react-dom";
 import type { Clip } from "@/components/feed/ClipCard";
+import { useI18n } from '@/components/I18nProvider';
 import { CLIP_TAGS } from "@/lib/feedShared";
 
 // Edit or remove a clip.
@@ -24,6 +25,8 @@ export default function ClipEditor({
   onSaved: (patch: Partial<Clip>) => void;
   onDeleted: () => void;
 }) {
+    const { t } = useI18n();
+
   const [title, setTitle] = useState(clip.title);
   const [description, setDescription] = useState(clip.description ?? "");
   const [steamId, setSteamId] = useState(clip.steamId);
@@ -105,38 +108,38 @@ export default function ClipEditor({
       <div className="pro-modal-card" style={{ width: "min(560px, 100%)" }} onClick={(e) => e.stopPropagation()}>
         <div className="pro-modal-head">
           <h2 id="clip-edit">{clip.unlisted ? "Name your clip" : "Edit clip"}</h2>
-          <button className="btn btn-secondary" onClick={onClose} disabled={busy}>Close</button>
+          <button className="btn btn-secondary" onClick={onClose} disabled={busy}>{t("auto.clipeditor.close")}</button>
         </div>
 
         <form className="clip-form" onSubmit={save}>
           <div className="field">
-            <label htmlFor="edit-title">Title</label>
+            <label htmlFor="edit-title">{t("auto.clipeditor.title")}</label>
             <input id="edit-title" className="input" value={title} maxLength={140} onChange={(e) => setTitle(e.target.value)} />
           </div>
 
           <div className="field">
-            <label htmlFor="edit-desc">Description</label>
+            <label htmlFor="edit-desc">{t("auto.clipeditor.description")}</label>
             <textarea id="edit-desc" className="input" rows={2} maxLength={500} value={description} onChange={(e) => setDescription(e.target.value)} />
           </div>
 
           <div className="field">
-            <label htmlFor="edit-player">Player name</label>
+            <label htmlFor="edit-player">{t("auto.clipeditor.player_name")}</label>
             <input
               id="edit-player"
               className="input"
               value={playerName}
               maxLength={64}
-              placeholder="in-game name"
+              placeholder={t("auto.clipeditor.in_game_name")}
               onChange={(e) => setPlayerName(e.target.value)}
             />
             <p className="pro-settings-hint">
-              Shown when this player has no profile here. A site member&rsquo;s own name always wins.
-            </p>
+              {t("auto.clipeditor.shown_when_this_player_has_no")}
+                                      </p>
           </div>
 
           {isAdmin && (
             <div className="field">
-              <label htmlFor="edit-steamid">SteamID64 <span className="muted">(moderator)</span></label>
+              <label htmlFor="edit-steamid">{t("auto.clipeditor.steamid64")} <span className="muted">{t("auto.clipeditor._moderator")}</span></label>
               <input
                 id="edit-steamid"
                 className="input num"
@@ -144,12 +147,12 @@ export default function ClipEditor({
                 maxLength={17}
                 onChange={(e) => setSteamId(e.target.value)}
               />
-              <p className="pro-settings-hint">Whose play this is. Changing it moves the clip to their profile.</p>
+              <p className="pro-settings-hint">{t("auto.clipeditor.whose_play_this_is_changing_it")}</p>
             </div>
           )}
 
           <div className="field">
-            <span className="clip-tagpick-label">Tags</span>
+            <span className="clip-tagpick-label">{t("auto.clipeditor.tags")}</span>
             <div className="clip-tagpick">
               {CLIP_TAGS.map((t) => {
                 const on = tags.includes(t.id);
@@ -172,8 +175,8 @@ export default function ClipEditor({
           {clip.unlisted && (
             <label className="util-toggle">
               <input type="checkbox" checked={publish} onChange={(e) => setPublish(e.target.checked)} />
-              Put it on the feed when I save
-            </label>
+              {t("auto.clipeditor.put_it_on_the_feed_when_i_save")}
+                                      </label>
           )}
 
           <div aria-live="assertive" role="alert">
@@ -183,8 +186,8 @@ export default function ClipEditor({
           <div className="clip-edit-actions">
             {confirmDelete ? (
               <>
-                <span className="muted" style={{ fontSize: 13, marginRight: "auto" }}>Remove this clip for good?</span>
-                <button type="button" className="btn btn-secondary" onClick={() => setConfirmDelete(false)} disabled={busy}>Cancel</button>
+                <span className="muted" style={{ fontSize: 13, marginRight: "auto" }}>{t("auto.clipeditor.remove_this_clip_for_good")}</span>
+                <button type="button" className="btn btn-secondary" onClick={() => setConfirmDelete(false)} disabled={busy}>{t("auto.clipeditor.cancel")}</button>
                 <button type="button" className="btn btn-primary" onClick={remove} disabled={busy}>
                   {busy ? "Removing…" : "Yes, remove"}
                 </button>
@@ -192,9 +195,9 @@ export default function ClipEditor({
             ) : (
               <>
                 <button type="button" className="btn btn-ghost clip-delete" onClick={() => setConfirmDelete(true)} disabled={busy}>
-                  Remove clip
-                </button>
-                <button type="button" className="btn btn-secondary" onClick={onClose} disabled={busy}>Cancel</button>
+                  {t("auto.clipeditor.remove_clip")}
+                                                      </button>
+                <button type="button" className="btn btn-secondary" onClick={onClose} disabled={busy}>{t("auto.clipeditor.cancel")}</button>
                 <button type="submit" className="btn btn-primary" disabled={busy}>
                   {busy ? "Saving…" : "Save"}
                 </button>

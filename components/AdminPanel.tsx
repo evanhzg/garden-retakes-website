@@ -6,6 +6,7 @@ import SkinManager from "@/components/admin/SkinManager";
 import PluginConfigEditor from "@/components/admin/PluginConfigEditor";
 import PendingDemos from "@/components/admin/PendingDemos";
 import AdminOverview from "@/components/admin/AdminOverview";
+import { useI18n } from '@/components/I18nProvider';
 import { GAME_MODES, RETAKE_FLAVOURS } from "@/lib/gameModes";
 
 // The panel was three stacked sections with the player table — the tallest of
@@ -112,6 +113,8 @@ export default function AdminPanel({
   viewerLevel: number;
   adminKey?: string;
 }) {
+    const { t } = useI18n();
+
   const [tab, setTab] = useState<TabId>("overview");
   const [players, setPlayers] = useState<Player[]>([]);
   const [q, setQ] = useState("");
@@ -223,7 +226,7 @@ export default function AdminPanel({
       {toast && <div className={`admin-toast ${toast.ok ? "ok" : "error"}`}>{toast.text}</div>}
 
       <div className="adm-shell">
-      <nav className="adm-nav" aria-label="Admin sections">
+      <nav className="adm-nav" aria-label={t("auto.adminpanel.admin_sections")}>
         {visible.map((sec) => (
           <div key={sec.group} className="adm-nav-group">
             <span className="adm-nav-title">{sec.group}</span>
@@ -269,27 +272,27 @@ export default function AdminPanel({
                 load(q);
               }}
             >
-              <label className="sr-only" htmlFor="adm-search">Search players</label>
+              <label className="sr-only" htmlFor="adm-search">{t("auto.adminpanel.search_players")}</label>
               <input
                 id="adm-search"
                 className="input"
                 value={q}
-                placeholder="Search by name or SteamID64…"
+                placeholder={t("auto.adminpanel.search_by_name_or_steamid64")}
                 onChange={(e) => setQ(e.target.value)}
                 style={{ maxWidth: 340 }}
               />
-              <button className="btn btn-secondary" type="submit">Search</button>
-              {loading && <span className="muted">Loading…</span>}
+              <button className="btn btn-secondary" type="submit">{t("auto.adminpanel.search")}</button>
+              {loading && <span className="muted">{t("auto.adminpanel.loading")}</span>}
             </form>
 
             <div className="adm-scroll">
               <table className="table adm-players">
                 <thead>
                   <tr>
-                    <th scope="col">Player</th>
-                    <th scope="col">Role</th>
-                    <th scope="col">Status</th>
-                    <th scope="col" className="adm-actions-col">Actions</th>
+                    <th scope="col">{t("auto.adminpanel.player")}</th>
+                    <th scope="col">{t("auto.adminpanel.role")}</th>
+                    <th scope="col">{t("auto.adminpanel.status")}</th>
+                    <th scope="col" className="adm-actions-col">{t("auto.adminpanel.actions")}</th>
                   </tr>
                 </thead>
                 <tbody>
@@ -304,30 +307,30 @@ export default function AdminPanel({
                       <tr key={p.steamId} className={p.banned ? "row-banned" : ""}>
                         <td>
                           <a href={`/players/${p.steamId}`} className="adm-pname">{p.name}</a>
-                          {p.hasOverride && <span className="mini-badge">override</span>}
+                          {p.hasOverride && <span className="mini-badge">{t("auto.adminpanel.override")}</span>}
                           <div className="adm-steamid num">{p.steamId}</div>
                         </td>
                         <td>{p.role > 0 ? <span className="role-badge sm">{ROLE_LABEL[p.role]}</span> : "—"}</td>
                         <td>
                           {p.banned ? (
                             <span className="mini-badge danger" title={p.banReason ?? ""}>
-                              banned{p.banExpires ? "" : " ∞"}
+                              {t("auto.adminpanel.banned")}{p.banExpires ? "" : " ∞"}
                             </span>
                           ) : (
-                            <span className="muted">ok</span>
+                            <span className="muted">{t("auto.adminpanel.ok")}</span>
                           )}
                         </td>
                         <td className="adm-actions-col">
                           <div className="adm-actions">
-                            {canMod && <button className="btn btn-secondary" onClick={() => doAction({ type: "kick", name: p.steamName })}>Kick</button>}
-                            {canAdmin && <button className="btn btn-secondary" onClick={() => doAction({ type: "slay", name: p.steamName })}>Slay</button>}
-                            {canAdmin && !p.banned && <button className="btn btn-secondary" onClick={() => onBan(p)}>Ban</button>}
-                            {canAdmin && p.banned && <button className="btn btn-secondary" onClick={() => doAction({ type: "unban", steamId: p.steamId })}>Unban</button>}
-                            {canAdmin && <button className="btn btn-ghost" onClick={() => onRename(p)}>Rename</button>}
-                            {canAdmin && p.hasOverride && <button className="btn btn-ghost" onClick={() => doAction({ type: "clearName", steamId: p.steamId })}>Reset</button>}
+                            {canMod && <button className="btn btn-secondary" onClick={() => doAction({ type: "kick", name: p.steamName })}>{t("auto.adminpanel.kick")}</button>}
+                            {canAdmin && <button className="btn btn-secondary" onClick={() => doAction({ type: "slay", name: p.steamName })}>{t("auto.adminpanel.slay")}</button>}
+                            {canAdmin && !p.banned && <button className="btn btn-secondary" onClick={() => onBan(p)}>{t("auto.adminpanel.ban")}</button>}
+                            {canAdmin && p.banned && <button className="btn btn-secondary" onClick={() => doAction({ type: "unban", steamId: p.steamId })}>{t("auto.adminpanel.unban")}</button>}
+                            {canAdmin && <button className="btn btn-ghost" onClick={() => onRename(p)}>{t("auto.adminpanel.rename")}</button>}
+                            {canAdmin && p.hasOverride && <button className="btn btn-ghost" onClick={() => doAction({ type: "clearName", steamId: p.steamId })}>{t("auto.adminpanel.reset")}</button>}
                             {canOwner && (
                               <>
-                                <label className="sr-only" htmlFor={`role-${p.steamId}`}>Role for {p.name}</label>
+                                <label className="sr-only" htmlFor={`role-${p.steamId}`}>{t("auto.adminpanel.role_for")} {p.name}</label>
                                 <select
                                   id={`role-${p.steamId}`}
                                   className="input adm-role"
@@ -338,10 +341,10 @@ export default function AdminPanel({
                                     else doAction({ type: "setRole", steamId: p.steamId, level });
                                   }}
                                 >
-                                  <option value={0}>No role</option>
-                                  <option value={1}>Moderator</option>
-                                  <option value={2}>Admin</option>
-                                  <option value={3}>Owner</option>
+                                  <option value={0}>{t("auto.adminpanel.no_role")}</option>
+                                  <option value={1}>{t("auto.adminpanel.moderator")}</option>
+                                  <option value={2}>{t("auto.adminpanel.admin")}</option>
+                                  <option value={3}>{t("auto.adminpanel.owner")}</option>
                                 </select>
                               </>
                             )}
@@ -359,16 +362,16 @@ export default function AdminPanel({
         {tab === "server" && canMod && (
           <div className="adm-server">
             <section>
-              <h3>Game mode</h3>
+              <h3>{t("auto.adminpanel.game_mode")}</h3>
               <p className="muted" style={{ fontSize: 13, marginTop: 0 }}>
-                Switches the plugin's active mode. Takes effect on the next round or map change.
-              </p>
+                {t("auto.adminpanel.switches_the_plugin_s_active_m")}
+                                                </p>
               {/* Retakes is one mode to the plugin but three different nights
                   to the people playing, so the three share a control: picking
                   between them is one decision. Ranked and competitive need
                   bodies on the server, so they are disabled rather than
                   failing somewhere the admin cannot see. */}
-              <div className="adm-flavours" role="group" aria-label="Retakes">
+              <div className="adm-flavours" role="group" aria-label={t("auto.adminpanel.retakes")}>
                 {RETAKE_FLAVOURS.map((f) => {
                   const short = live.players !== null && live.players < f.minPlayers;
                   const odd = f.evenTeams && live.players !== null && live.players % 2 !== 0;
@@ -409,11 +412,10 @@ export default function AdminPanel({
             </section>
 
             <section>
-              <h3>Map</h3>
+              <h3>{t("auto.adminpanel.map")}</h3>
               <p className="muted" style={{ fontSize: 13, marginTop: 0 }}>
-                All of these ship with CS2 — Train included, since it returned to the base game — so none of
-                them needs a workshop addon mounted.
-              </p>
+                {t("auto.adminpanel.all_of_these_ship_with_cs2_tra")}
+                                                </p>
               {/* Same control as the game modes beside them: these do the same
                   kind of thing and looked like two different features. */}
               <div className="adm-modes">
@@ -438,16 +440,16 @@ export default function AdminPanel({
                   if (mapInput.trim()) doAction({ type: "map", map: mapInput });
                 }}
               >
-                <label className="sr-only" htmlFor="adm-map">Workshop or custom map</label>
+                <label className="sr-only" htmlFor="adm-map">{t("auto.adminpanel.workshop_or_custom_map")}</label>
                 <input
                   id="adm-map"
                   className="input"
                   value={mapInput}
-                  placeholder="workshop or custom map name"
+                  placeholder={t("auto.adminpanel.workshop_or_custom_map_name")}
                   onChange={(e) => setMapInput(e.target.value)}
                   style={{ maxWidth: 280 }}
                 />
-                <button className="btn btn-secondary" type="submit">Change map</button>
+                <button className="btn btn-secondary" type="submit">{t("auto.adminpanel.change_map")}</button>
               </form>
             </section>
           </div>
@@ -464,18 +466,18 @@ export default function AdminPanel({
         {tab === "log" && (
           <div className="adm-scroll">
             {log === null ? (
-              <p className="muted">Loading…</p>
+              <p className="muted">{t("auto.adminpanel.loading")}</p>
             ) : log.length === 0 ? (
-              <p className="empty-hint">No admin actions logged yet.</p>
+              <p className="empty-hint">{t("auto.adminpanel.no_admin_actions_logged_yet")}</p>
             ) : (
               <table className="table">
                 <thead>
                   <tr>
-                    <th scope="col">When (UTC)</th>
-                    <th scope="col">Actor</th>
-                    <th scope="col">Action</th>
-                    <th scope="col">Target</th>
-                    <th scope="col">Detail</th>
+                    <th scope="col">{t("auto.adminpanel.when_utc")}</th>
+                    <th scope="col">{t("auto.adminpanel.actor")}</th>
+                    <th scope="col">{t("auto.adminpanel.action")}</th>
+                    <th scope="col">{t("auto.adminpanel.target")}</th>
+                    <th scope="col">{t("auto.adminpanel.detail")}</th>
                   </tr>
                 </thead>
                 <tbody>

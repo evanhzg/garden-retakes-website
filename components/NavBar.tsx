@@ -195,8 +195,8 @@ export default function NavBar({
         type="button"
         className="header-peek"
         onClick={() => setHidden(false)}
-        aria-label="Show header"
-        title="Show header"
+        aria-label={t("auto.navbar.show_header")}
+        title={t("auto.navbar.show_header")}
         style={{ zIndex: 9999 }}
       >
         <svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" strokeWidth="2.4" strokeLinecap="round" strokeLinejoin="round">
@@ -236,9 +236,9 @@ export default function NavBar({
     >
       {/* Wordmark. At rest it reads RETAKES; the accent E stretch it out to
           REEEEETAKES on hover, one letter at a time. */}
-      <Link href={getHref("/")} className="wordmark" aria-label="REEEEETAKES">
-        RE
-        <span className="wordmark-ee" aria-hidden>
+      <Link href={getHref("/")} className="wordmark" aria-label={t("auto.navbar.reeeeetakes")}>
+        {t("auto.navbar.re")}
+                      <span className="wordmark-ee" aria-hidden>
           {[0, 1, 2, 3].map((i) => (
             <span
               key={i}
@@ -249,8 +249,8 @@ export default function NavBar({
             </span>
           ))}
         </span>
-        TAKES
-      </Link>
+        {t("auto.navbar.takes")}
+                    </Link>
 
       <nav style={{ display: "flex", alignItems: "center", gap: "clamp(14px, 2.4vw, 36px)" }}>
         {primary.map((l) => {
@@ -386,8 +386,8 @@ export default function NavBar({
               </Link>
             )}
             <a className="btn btn-secondary" href="/api/auth/logout" style={{ fontSize: 12 }}>
-              Log out
-            </a>
+              {t("auto.navbar.log_out")}
+                                      </a>
           </div>
         ) : (
           // The CS2 side signs in with Steam and comes back where you were.
@@ -411,7 +411,7 @@ export default function NavBar({
           <button
             type="button"
             onClick={() => setHidden(true)}
-            title="Hide header for a distraction-free game"
+            title={t("auto.navbar.hide_header_for_a_distraction")}
             className="btn btn-icon btn-secondary"
           >
             <svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" strokeWidth="2.4" strokeLinecap="round" strokeLinejoin="round">

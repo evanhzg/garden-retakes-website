@@ -6,6 +6,7 @@ import { resolveNames, nameFrom } from "@/lib/names";
 import { resolveAvatars } from "@/lib/avatars";
 import AvatarImage from "@/components/AvatarImage";
 import { seasonTotals } from "@/lib/seasons";
+import { getT } from '@/lib/serverI18n';
 
 export const revalidate = 60;
 
@@ -18,6 +19,8 @@ export async function generateMetadata({ params }: { params: { id: string } }) {
 }
 
 export default async function SeasonPage({ params }: { params: { id: string } }) {
+    const t = getT();
+
   const id = Number(params.id);
   if (!Number.isFinite(id)) notFound();
 
@@ -101,7 +104,7 @@ export default async function SeasonPage({ params }: { params: { id: string } })
     <>
       <section className="pro-hero">
         <span className="kicker">
-          <Link href="/stats/seasons" style={{ color: "inherit" }}>Seasons</Link> · {season.IsActive ? "Live" : "Archived"}
+          <Link href="/stats/seasons" style={{ color: "inherit" }}>{t("auto.page.seasons")}</Link> · {season.IsActive ? "Live" : "Archived"}
         </span>
         <h1 style={{ fontSize: "clamp(32px, 5vw, 60px)", letterSpacing: "-0.025em", margin: "10px 0 6px" }}>
           {season.Name}
@@ -134,8 +137,8 @@ export default async function SeasonPage({ params }: { params: { id: string } })
       {leaders.length > 0 && (
         <section className="pro-section">
           <div className="pro-section-head">
-            <h2>Leaders</h2>
-            <span className="pro-section-note">min {MIN_ROUNDS} ranked rounds</span>
+            <h2>{t("auto.page.leaders")}</h2>
+            <span className="pro-section-note">{t("auto.page.min")} {MIN_ROUNDS} {t("auto.page.ranked_rounds")}</span>
           </div>
           <div className="season-leaders">
             {leaders.map((l) => (
@@ -152,24 +155,24 @@ export default async function SeasonPage({ params }: { params: { id: string } })
 
       <section className="pro-section">
         <div className="pro-section-head">
-          <h2>Final ladder</h2>
-          <span className="pro-section-note">{players.length} shown</span>
+          <h2>{t("auto.page.final_ladder")}</h2>
+          <span className="pro-section-note">{players.length} {t("auto.page.shown")}</span>
         </div>
         {players.length === 0 ? (
-          <p className="empty-hint">No ranked rounds were recorded in this season.</p>
+          <p className="empty-hint">{t("auto.page.no_ranked_rounds_were_recorded")}</p>
         ) : (
           <div className="pro-tablewrap">
             <table className="table num">
               <thead>
                 <tr>
                   <th scope="col" className="r">#</th>
-                  <th scope="col">Player</th>
-                  <th scope="col" className="r">ELO</th>
-                  <th scope="col" className="r">Peak</th>
-                  <th scope="col" className="r">Rounds</th>
-                  <th scope="col" className="r">Win %</th>
-                  <th scope="col" className="r">K/D</th>
-                  <th scope="col" className="r">ADR</th>
+                  <th scope="col">{t("auto.page.player")}</th>
+                  <th scope="col" className="r">{t("auto.page.elo")}</th>
+                  <th scope="col" className="r">{t("auto.page.peak")}</th>
+                  <th scope="col" className="r">{t("auto.page.rounds")}</th>
+                  <th scope="col" className="r">{t("auto.page.win")}</th>
+                  <th scope="col" className="r">{t("auto.page.k_d")}</th>
+                  <th scope="col" className="r">{t("auto.page.adr")}</th>
                 </tr>
               </thead>
               <tbody>
@@ -199,8 +202,8 @@ export default async function SeasonPage({ params }: { params: { id: string } })
       {maps.length > 0 && (
         <section className="pro-section">
           <div className="pro-section-head">
-            <h2>Maps</h2>
-            <span className="pro-section-note">{mapTotal.toLocaleString()} rounds</span>
+            <h2>{t("auto.page.maps")}</h2>
+            <span className="pro-section-note">{mapTotal.toLocaleString()} {t("auto.page.rounds")}</span>
           </div>
           <div className="season-maps">
             {maps.map((m) => {
@@ -212,7 +215,7 @@ export default async function SeasonPage({ params }: { params: { id: string } })
                     <div className="pro-meter-fill" style={{ width: `${pct}%` }} />
                   </div>
                   <span className="num season-map-v">{pct.toFixed(0)}%</span>
-                  <span className="season-figure-k">{m._count._all.toLocaleString()} rds</span>
+                  <span className="season-figure-k">{m._count._all.toLocaleString()} {t("auto.page.rds")}</span>
                 </div>
               );
             })}

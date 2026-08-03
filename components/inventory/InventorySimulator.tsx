@@ -27,6 +27,7 @@ import {
   saveStore,
   skinKey,
 } from "@/lib/inventory";
+import { useI18n } from '@/components/I18nProvider';
 import { importSnapshot, type LoadoutSnapshot } from "@/lib/share";
 
 type WeaponEntry = {
@@ -79,6 +80,8 @@ function kindOfCategory(category: string): ItemKind {
 }
 
 export default function InventorySimulator() {
+    const { t } = useI18n();
+
   const [store, setStore] = useState<InventoryStore>(defaultStore());
   const [hydrated, setHydrated] = useState(false);
   const [session, setSession] = useState<Session>({ authenticated: false });
@@ -807,7 +810,7 @@ export default function InventorySimulator() {
     <div className="inv4">
       {/* ===== Header: which loadout, how full, and what to do with it ===== */}
       <header className="inv4-bar">
-        <div className="inv4-loadouts" role="tablist" aria-label="Loadouts">
+        <div className="inv4-loadouts" role="tablist" aria-label={t("auto.inventorysimulator.loadouts")}>
           {store.loadouts.map((l, idx) => (
             <button
               key={l.id}
@@ -832,9 +835,9 @@ export default function InventorySimulator() {
               <span className="inv4-lo-count">{loadoutSize(l)}</span>
             </button>
           ))}
-          <button className="btn btn-secondary inv4-lo-new" onClick={addLoadout} title="New loadout">
-            + New
-          </button>
+          <button className="btn btn-secondary inv4-lo-new" onClick={addLoadout} title={t("auto.inventorysimulator.new_loadout")}>
+            {t("auto.inventorysimulator._new")}
+                                </button>
         </div>
 
         <div className="inv4-bar-right">
@@ -843,22 +846,22 @@ export default function InventorySimulator() {
               <div className="inv4-progress-fill" style={{ width: `${completeness.pct}%` }} />
             </div>
             <span className="inv4-progress-label num">
-              {completeness.filled}/{completeness.total} dressed
-            </span>
+              {completeness.filled}/{completeness.total} {t("auto.inventorysimulator.dressed")}
+                                      </span>
           </div>
 
           <button
             className={`btn ${previewMode ? "btn-primary" : "btn-secondary"}`}
             onClick={togglePreview}
-            title="See the whole loadout at once, by weapon type"
+            title={t("auto.inventorysimulator.see_the_whole_loadout_at_once")}
             aria-pressed={previewMode}
           >
-            Preview
-          </button>
+            {t("auto.inventorysimulator.preview")}
+                                </button>
 
           <button className="btn btn-secondary" disabled={shareBusy || !activeLoadout} onClick={() => activeLoadout && shareLoadout(activeLoadout)}>
-            Share
-          </button>
+            {t("auto.inventorysimulator.share")}
+                                </button>
 
           <form
             className="inv4-borrow"
@@ -867,19 +870,19 @@ export default function InventorySimulator() {
               importByKey(importKey);
             }}
           >
-            <label className="sr-only" htmlFor="inv-borrow">Borrow key</label>
+            <label className="sr-only" htmlFor="inv-borrow">{t("auto.inventorysimulator.borrow_key")}</label>
             <input
               id="inv-borrow"
               className="input"
-              placeholder="borrow key…"
+              placeholder={t("auto.inventorysimulator.borrow_key")}
               value={importKey}
               maxLength={16}
               spellCheck={false}
               onChange={(e) => setImportKey(e.target.value)}
             />
             <button className="btn btn-secondary" type="submit" disabled={shareBusy || !importKey.trim()}>
-              Get
-            </button>
+              {t("auto.inventorysimulator.get")}
+                                      </button>
           </form>
         </div>
       </header>
@@ -894,10 +897,10 @@ export default function InventorySimulator() {
                 <strong>{activeLoadout.name}</strong>
               </div>
               <div className="inv4-board-actions">
-                <button className="btn btn-ghost" title="Rename" onClick={() => renameLoadout(activeLoadout)}>Rename</button>
-                <button className="btn btn-ghost" title="Duplicate" onClick={() => duplicateLoadout(activeLoadout)}>Duplicate</button>
+                <button className="btn btn-ghost" title={t("auto.inventorysimulator.rename")} onClick={() => renameLoadout(activeLoadout)}>{t("auto.inventorysimulator.rename")}</button>
+                <button className="btn btn-ghost" title={t("auto.inventorysimulator.duplicate")} onClick={() => duplicateLoadout(activeLoadout)}>{t("auto.inventorysimulator.duplicate")}</button>
                 {store.loadouts.length > 1 && (
-                  <button className="btn btn-ghost" title="Delete" onClick={() => deleteLoadout(activeLoadout)}>Delete</button>
+                  <button className="btn btn-ghost" title={t("auto.inventorysimulator.delete")} onClick={() => deleteLoadout(activeLoadout)}>{t("auto.inventorysimulator.delete")}</button>
                 )}
               </div>
               <div className="inv4-colors">
@@ -984,7 +987,7 @@ export default function InventorySimulator() {
         {/* ===== RIGHT: browse and choose ===== */}
         <section className="inv4-browse">
           <div className="inv4-topbar">
-            <div className="inv4-sides" role="group" aria-label="Side">
+            <div className="inv4-sides" role="group" aria-label={t("auto.inventorysimulator.side")}>
               {SIDES.map((s) => (
                 <button key={s} className={`inv4-sidebtn side-${s} ${side === s ? "active" : ""}`} onClick={() => chooseSide(s)}>
                   {s.toUpperCase()}
@@ -1002,7 +1005,7 @@ export default function InventorySimulator() {
 
           {previewMode ? (
             !catalog ? (
-              <p className="empty-hint">Loading…</p>
+              <p className="empty-hint">{t("auto.inventorysimulator.loading")}</p>
             ) : (
               // Every weapon of every type, skinned or not, grouped under a
               // small heading. This is the "what does my loadout actually look
@@ -1040,7 +1043,7 @@ export default function InventorySimulator() {
             )
           ) : !weapon ? (
             !catalog ? (
-              <p className="empty-hint">Loading…</p>
+              <p className="empty-hint">{t("auto.inventorysimulator.loading")}</p>
             ) : (
               <div className="inv4-weapons">
                 {weapons.map((w) => {
@@ -1068,11 +1071,11 @@ export default function InventorySimulator() {
               <div className="inv4-chooser-head">
                 <button className="btn btn-secondary" onClick={closeChooser}>← {category}</button>
                 <strong>{weapon.name}</strong>
-                <span className="muted">{side.toUpperCase()} slot</span>
+                <span className="muted">{side.toUpperCase()} {t("auto.inventorysimulator.slot")}</span>
                 <div className="inv4-chooser-head-right">
-                  <button className="btn btn-secondary" onClick={surpriseMe} disabled={skinsLoading} title="Roll a random skin from the current filters">
-                    🎲 Surprise me
-                  </button>
+                  <button className="btn btn-secondary" onClick={surpriseMe} disabled={skinsLoading} title={t("auto.inventorysimulator.roll_a_random_skin_from_the_cu")}>
+                    {t("auto.inventorysimulator._surprise_me")}
+                                                                </button>
                   {slotItemForChooser(weapon.def, builderKind, side) && (
                     <button
                       className="btn btn-secondary"
@@ -1081,49 +1084,49 @@ export default function InventorySimulator() {
                         closeChooser();
                       }}
                     >
-                      Remove skin
-                    </button>
+                      {t("auto.inventorysimulator.remove_skin")}
+                                                                      </button>
                   )}
                 </div>
               </div>
 
               <div className="inv4-filters">
-                <label className="sr-only" htmlFor="inv-skin-search">Search skins</label>
-                <input id="inv-skin-search" className="input" placeholder="Search skins…" value={skinSearch} onChange={(e) => setSkinSearch(e.target.value)} />
-                <label className="sr-only" htmlFor="inv-skin-sort">Sort skins</label>
+                <label className="sr-only" htmlFor="inv-skin-search">{t("auto.inventorysimulator.search_skins")}</label>
+                <input id="inv-skin-search" className="input" placeholder={t("auto.inventorysimulator.search_skins")} value={skinSearch} onChange={(e) => setSkinSearch(e.target.value)} />
+                <label className="sr-only" htmlFor="inv-skin-sort">{t("auto.inventorysimulator.sort_skins")}</label>
                 <select id="inv-skin-sort" className="input" value={skinSort} onChange={(e) => setSkinSort(e.target.value as SkinSort)}>
-                  <option value="quality">Quality</option>
-                  <option value="name">Name A–Z</option>
-                  <option value="newest">Newest</option>
-                  <option value="fav">Favorites first</option>
+                  <option value="quality">{t("auto.inventorysimulator.quality")}</option>
+                  <option value="name">{t("auto.inventorysimulator.name_a_z")}</option>
+                  <option value="newest">{t("auto.inventorysimulator.newest")}</option>
+                  <option value="fav">{t("auto.inventorysimulator.favorites_first")}</option>
                 </select>
-                <label className="sr-only" htmlFor="inv-skin-collection">Collection</label>
+                <label className="sr-only" htmlFor="inv-skin-collection">{t("auto.inventorysimulator.collection")}</label>
                 <select id="inv-skin-collection" className="input" value={collectionFilter} onChange={(e) => setCollectionFilter(e.target.value)}>
-                  <option value="">All collections</option>
+                  <option value="">{t("auto.inventorysimulator.all_collections")}</option>
                   {collections.map((c) => (
                     <option key={c} value={c}>{c}</option>
                   ))}
                 </select>
-                <button className={`chip ${favOnly ? "active" : ""}`} onClick={() => setFavOnly((v) => !v)}>♥ Favorites</button>
+                <button className={`chip ${favOnly ? "active" : ""}`} onClick={() => setFavOnly((v) => !v)}>{t("auto.inventorysimulator._favorites")}</button>
               </div>
 
               <div className="inv4-config">
                 <label>
-                  Wear <strong>{wear.toFixed(3)}</strong> <em>{wearLabel(wear)}</em>
+                  {t("auto.inventorysimulator.wear")} <strong>{wear.toFixed(3)}</strong> <em>{wearLabel(wear)}</em>
                   <input type="range" min={0} max={1} step={0.001} value={wear} onChange={(e) => setWear(Number(e.target.value))} />
                 </label>
                 <label>
-                  Seed
-                  <input className="input" type="number" min={0} max={1000} value={seed} onChange={(e) => setSeed(Math.max(0, Math.min(1000, Number(e.target.value) || 0)))} />
+                  {t("auto.inventorysimulator.seed")}
+                                                            <input className="input" type="number" min={0} max={1000} value={seed} onChange={(e) => setSeed(Math.max(0, Math.min(1000, Number(e.target.value) || 0)))} />
                 </label>
                 <label>
-                  Name tag
-                  <input className="input" maxLength={20} value={nameTag} placeholder="none" onChange={(e) => setNameTag(e.target.value)} />
+                  {t("auto.inventorysimulator.name_tag")}
+                                                            <input className="input" maxLength={20} value={nameTag} placeholder={t("auto.inventorysimulator.none")} onChange={(e) => setNameTag(e.target.value)} />
                 </label>
                 {supportsStatTrak && (
                   <label className="inv4-cfg-toggle">
-                    <input type="checkbox" checked={statTrak} onChange={(e) => setStatTrak(e.target.checked)} /> StatTrak™
-                  </label>
+                    <input type="checkbox" checked={statTrak} onChange={(e) => setStatTrak(e.target.checked)} /> {t("auto.inventorysimulator.stattrak")}
+                                                                </label>
                 )}
                 {supportsStickers && (
                   <button className="btn btn-secondary" onClick={() => setShowStickers((v) => !v)}>
@@ -1150,10 +1153,10 @@ export default function InventorySimulator() {
                     )}
                   </div>
                   <div className="sticker-picker">
-                    <label className="sr-only" htmlFor="inv-sticker-search">Search stickers</label>
-                    <input id="inv-sticker-search" className="input" placeholder="Search stickers…" value={stickerQuery} onChange={(e) => setStickerQuery(e.target.value)} />
+                    <label className="sr-only" htmlFor="inv-sticker-search">{t("auto.inventorysimulator.search_stickers")}</label>
+                    <input id="inv-sticker-search" className="input" placeholder={t("auto.inventorysimulator.search_stickers")} value={stickerQuery} onChange={(e) => setStickerQuery(e.target.value)} />
                     {stickersLoading ? (
-                      <p className="empty-hint">Searching…</p>
+                      <p className="empty-hint">{t("auto.inventorysimulator.searching")}</p>
                     ) : (
                       <div className="results">
                         {stickerResults.map((s) => (
@@ -1165,12 +1168,12 @@ export default function InventorySimulator() {
                       </div>
                     )}
                   </div>
-                  <p className="muted" style={{ fontSize: "0.78rem" }}>Stickers apply when you pick a skin below.</p>
+                  <p className="muted" style={{ fontSize: "0.78rem" }}>{t("auto.inventorysimulator.stickers_apply_when_you_pick_a")}</p>
                 </div>
               )}
 
               {skinsLoading ? (
-                <p className="empty-hint">Loading skins…</p>
+                <p className="empty-hint">{t("auto.inventorysimulator.loading_skins")}</p>
               ) : (
                 <div className="inv4-skins">
                   {shownSkins.map((s) => {
@@ -1182,7 +1185,7 @@ export default function InventorySimulator() {
                           <img src={s.image} alt={s.name} loading="lazy" />
                           <span className="inv4-skin-name">{skinLabel(s.name)}</span>
                           <span className="inv4-skin-rarity">{rarityName(s.rarity)}</span>
-                          <span className="inv4-skin-equip">Equip</span>
+                          <span className="inv4-skin-equip">{t("auto.inventorysimulator.equip")}</span>
                         </button>
                         <button
                           className={`inv4-heart ${fav ? "on" : ""}`}
@@ -1206,24 +1209,24 @@ export default function InventorySimulator() {
       {share && (
         <div className="inv4-modal" role="dialog" aria-modal="true" aria-labelledby="inv-share-title" onClick={() => setShare(null)}>
           <div className="inv4-modal-card" onClick={(e) => e.stopPropagation()}>
-            <h2 id="inv-share-title">Share “{share.name}”</h2>
+            <h2 id="inv-share-title">{t("auto.inventorysimulator.share")}{share.name}”</h2>
             <p className="muted" style={{ fontSize: 13 }}>
-              Anyone with this key can borrow a copy. Their own loadouts are untouched.
-            </p>
+              {t("auto.inventorysimulator.anyone_with_this_key_can_borro")}
+                                      </p>
 
             <div className="inv4-share-key num">{share.key}</div>
 
             <div className="inv4-share-rows">
               <div className="inv4-share-row">
-                <span className="inv4-share-label">Link</span>
+                <span className="inv4-share-label">{t("auto.inventorysimulator.link")}</span>
                 <code className="skin-path">{borrowUrl}</code>
                 <button className="btn btn-secondary" onClick={() => copy(borrowUrl, "link")}>
                   {copied === "link" ? "Copied" : "Copy"}
                 </button>
               </div>
               <div className="inv4-share-row">
-                <span className="inv4-share-label">In game</span>
-                <code className="skin-path">/borrow {share.key}</code>
+                <span className="inv4-share-label">{t("auto.inventorysimulator.in_game")}</span>
+                <code className="skin-path">{t("auto.inventorysimulator._borrow")} {share.key}</code>
                 <button className="btn btn-secondary" onClick={() => copy(`/borrow ${share.key}`, "cmd")}>
                   {copied === "cmd" ? "Copied" : "Copy"}
                 </button>
@@ -1231,7 +1234,7 @@ export default function InventorySimulator() {
             </div>
 
             <div style={{ display: "flex", justifyContent: "flex-end", marginTop: "var(--space-4)" }}>
-              <button className="btn btn-primary" onClick={() => setShare(null)}>Done</button>
+              <button className="btn btn-primary" onClick={() => setShare(null)}>{t("auto.inventorysimulator.done")}</button>
             </div>
           </div>
         </div>
@@ -1239,8 +1242,8 @@ export default function InventorySimulator() {
 
       {hydrated && !session.authenticated && (
         <div className="inv4-guest">
-          Guest — saved on this device. <a href="/api/auth/steam/login">Sign in</a> to sync in-game.
-        </div>
+          {t("auto.inventorysimulator.guest_saved_on_this_device")} <a href="/api/auth/steam/login">{t("auto.inventorysimulator.sign_in")}</a> {t("auto.inventorysimulator.to_sync_in_game")}
+                          </div>
       )}
 
       {toast && <div className="toast">{toast}</div>}

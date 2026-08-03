@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useState } from "react";
+import { useI18n } from '@/components/I18nProvider';
 import AvatarImage from "@/components/AvatarImage";
 
 // The season-end vote, beside the hero.
@@ -45,6 +46,8 @@ function useCountdown(iso: string | undefined) {
 }
 
 export default function SeasonVote() {
+    const { t } = useI18n();
+
   const [data, setData] = useState<Payload | null>(null);
   const [busy, setBusy] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
@@ -91,8 +94,8 @@ export default function SeasonVote() {
     return (
       <aside className="vote-panel">
         <header className="vote-head">
-          <span className="kicker">Season {data.poll.seasonId}</span>
-          <h3>The votes are in</h3>
+          <span className="kicker">{t("auto.seasonvote.season")} {data.poll.seasonId}</span>
+          <h3>{t("auto.seasonvote.the_votes_are_in")}</h3>
         </header>
         <ul className="vote-results">
           {(data.results ?? []).map((r) => {
@@ -107,7 +110,7 @@ export default function SeasonVote() {
                     <span className="num">{win.count}</span>
                   </span>
                 ) : (
-                  <span className="muted">no votes</span>
+                  <span className="muted">{t("auto.seasonvote.no_votes")}</span>
                 )}
               </li>
             );
@@ -124,18 +127,18 @@ export default function SeasonVote() {
   return (
     <aside className="vote-panel">
       <header className="vote-head">
-        <span className="kicker">Season {data.poll.seasonId} awards</span>
-        <h3>Vote</h3>
+        <span className="kicker">{t("auto.seasonvote.season")} {data.poll.seasonId} {t("auto.seasonvote.awards")}</span>
+        <h3>{t("auto.seasonvote.vote")}</h3>
         <span className="vote-left num">{left}</span>
       </header>
 
       {!data.signedIn ? (
         <p className="vote-signin">
-          <a className="btn btn-primary" href="/api/auth/steam/login">Sign in with Steam to vote</a>
+          <a className="btn btn-primary" href="/api/auth/steam/login">{t("auto.seasonvote.sign_in_with_steam_to_vote")}</a>
         </p>
       ) : (
         <>
-          <p className="vote-progress num">{done}/{(data.categories ?? []).length} cast</p>
+          <p className="vote-progress num">{done}/{(data.categories ?? []).length} {t("auto.seasonvote.cast")}</p>
           <ul className="vote-cats">
             {(data.categories ?? []).map((c) => {
               const chosen = mine[c.slug];
@@ -170,7 +173,7 @@ export default function SeasonVote() {
               );
             })}
           </ul>
-          <p className="vote-note">One vote per category. You can change it until voting closes.</p>
+          <p className="vote-note">{t("auto.seasonvote.one_vote_per_category_you_can")}</p>
         </>
       )}
 
