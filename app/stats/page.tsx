@@ -6,6 +6,8 @@ import AvatarImage from "@/components/AvatarImage";
 import { Columns, HBars, SideSplitBars, Histogram } from "@/components/stats/charts";
 import LeaderboardTabs from "@/components/stats/LeaderboardTabs";
 import HowRatingWorks from "@/components/stats/HowRatingWorks";
+import LadderRows from "@/components/home/LadderRows";
+import { ladderRows } from "@/lib/ladder";
 
 export const dynamic = "force-dynamic";
 export const revalidate = 60;
@@ -153,8 +155,20 @@ export default async function StatsPage() {
   const idsToResolve = Array.from(new Set(boards.flatMap(b => b.rows.map(r => BigInt(r.steamId)))));
   const names = await resolveNames(idsToResolve);
 
+  // The ladder used to be the homepage's centrepiece. It belongs with the rest
+  // of the numbers; the homepage keeps a three-row peek.
+  const ladder = await ladderRows(season.Id, 20);
+
   return (
     <>
+      <section className="panel" style={{ marginTop: 16 }}>
+        <div className="stats-ladder-head">
+          <h3 style={{ margin: 0 }}>Ladder — {season.Name ?? `Season ${season.Id}`}</h3>
+          <span className="muted" style={{ fontSize: 12 }}>Hover a row for the readout</span>
+        </div>
+        <LadderRows rows={ladder} />
+      </section>
+
       {/* ---------- Season totals ---------- */}
       <section className="panel" style={{ marginTop: 16 }}>
         <h3 style={{ marginBottom: 14 }}>{season.Name} — server totals (ranked)</h3>

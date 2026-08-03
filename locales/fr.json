@@ -17,7 +17,6 @@
   "nav.signIn": "Se connecter",
   "nav.signOut": "Se déconnecter",
   "nav.profile": "Profil",
-
   "common.save": "Enregistrer",
   "common.cancel": "Annuler",
   "common.close": "Fermer",
@@ -30,7 +29,6 @@
   "common.settings": "Paramètres",
   "common.saved": "Enregistré.",
   "common.networkError": "Erreur réseau.",
-
   "settings.title": "Paramètres du profil",
   "settings.appearance": "Apparence",
   "settings.theme": "Thème",
@@ -41,7 +39,6 @@
   "settings.languageHint": "S'applique partout sur le site.",
   "settings.connections": "Connexions",
   "settings.connectionsHint": "Rien ici n'est affiché tant que vous ne le publiez pas — y compris Steam, Discord et FACEIT.",
-
   "notif.title": "Notifications",
   "notif.empty": "Rien pour l'instant.",
   "notif.like": "J'aime",
@@ -49,7 +46,6 @@
   "notif.mention": "Mention",
   "notif.newClip": "Nouveau clip",
   "notif.cs2Update": "Mise à jour CS2",
-
   "feed.postClip": "Publier un clip",
   "feed.signInToPost": "Connectez-vous pour publier",
   "feed.searchPlaceholder": "Rechercher un joueur, un titre, une map…",
@@ -58,22 +54,39 @@
   "feed.comment.post": "Publier",
   "feed.comment.none": "Aucun commentaire pour le moment.",
   "feed.signInToComment": "Connectez-vous pour aimer et commenter.",
-
   "profile.yours": "Votre profil",
   "profile.player": "Joueur",
   "profile.topClip": "Meilleur clip",
   "profile.equipped": "Équipé",
   "profile.compare": "Comparer",
   "profile.loadouts": "Loadouts",
-
   "utility.title": "Lineups.",
   "utility.testInGame": "Tester en jeu",
   "utility.copySetpos": "Copier le setpos",
   "utility.signInToTest": "Connectez-vous pour tester",
-
   "admin.dashboard": "Tableau de bord",
   "admin.players": "Joueurs",
   "admin.server": "Serveur",
   "admin.console": "Console",
-  "admin.log": "Journal d'audit"
+  "admin.log": "Journal d'audit",
+  "home.podium.kicker": "En tête du classement",
+  "home.podium.full": "Classement complet →",
+  "home.clips.kicker": "Fil",
+  "home.clips.title": "Chaque ace, découpé automatiquement",
+  "home.clips.lead": "Tapez /clip en jeu et les quinze dernières secondes sont enregistrées, rendues et publiées ici. Envoyez une démo et chaque ace, 4K et 3K y est trouvé et découpé pour vous.",
+  "home.clips.cta": "Ouvrir le fil →",
+  "home.stats.kicker": "Statistiques",
+  "home.stats.title": "Chaque round, compté",
+  "home.stats.lead": "Rating, CS Rating, K/D, ADR, KAST, duels d'ouverture, clutchs et utilitaires, par round et par saison. La formule est publiée, pas devinée.",
+  "home.stats.cta": "Voir les statistiques",
+  "home.stats.how": "Comment le rating est calculé",
+  "home.stats.rounds": "Rounds suivis",
+  "home.stats.players": "Joueurs",
+  "home.stats.kills": "Frags",
+  "home.stats.clips": "Clips",
+  "home.profile.more": "Inventaire, médailles, clips et historique de sessions →",
+  "home.final.title": "Rejoindre une partie",
+  "home.final.lead": "Aucune inscription nécessaire pour jouer — connectez-vous et vos rounds commencent à compter. Connectez-vous avec Steam quand vous voulez le profil, les inventaires et les clips à votre nom.",
+  "home.final.signIn": "Se connecter avec Steam",
+  "home.final.lineups": "Parcourir les lineups"
 }

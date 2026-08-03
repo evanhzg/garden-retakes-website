@@ -18,6 +18,7 @@ const score = (c: Clip) => c.likes * 3 + c.comments;
 
 export default function FeaturedClip({ steamId }: { steamId: string }) {
   const [clip, setClip] = useState<Clip | null>(null);
+  const [loaded, setLoaded] = useState(false);
   const [open, setOpen] = useState(false);
 
   useEffect(() => {
@@ -32,13 +33,40 @@ export default function FeaturedClip({ steamId }: { steamId: string }) {
       })
       .catch(() => {
         /* the hero is fine without it */
-      });
+      })
+      .finally(() => !cancelled && setLoaded(true));
     return () => {
       cancelled = true;
     };
   }, [steamId]);
 
-  if (!clip) return null;
+  // The card used to appear once the fetch landed, shoving the loadout beside
+  // it down the page a moment after it had been read. The space is reserved
+  // from the start and says which of the two states it is in.
+  if (!loaded) {
+    return (
+      <div className="pro-feature is-skeleton" aria-busy="true">
+        <span className="pro-feature-media" />
+        <span className="pro-feature-meta">
+          <span className="kicker">Top clip</span>
+          <span className="pro-feature-title muted">Looking for one…</span>
+        </span>
+      </div>
+    );
+  }
+
+  if (!clip) {
+    return (
+      <div className="pro-feature is-empty">
+        <span className="pro-feature-media" />
+        <span className="pro-feature-meta">
+          <span className="kicker">Top clip</span>
+          <span className="pro-feature-title muted">No clips yet</span>
+          <span className="pro-feature-counts">Post one on the feed, or type /clip in game.</span>
+        </span>
+      </div>
+    );
+  }
 
   const variants: Variant[] = (() => {
     if (clip.variants) {

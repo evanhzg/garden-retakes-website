@@ -282,7 +282,7 @@ export default function ProfileHero({
         <FeaturedClip steamId={steamId} />
 
         <div className="pro-loadout">
-        <div className="pro-loadout-head">
+        <div className="pro-loadout-head is-bare">
           <h2>Equipped{owner ? (loadout ? ` — ${loadout.name}` : "") : publicLoadout ? ` — ${publicLoadout.name}` : ""}</h2>
           <div className="pro-sides" role="group" aria-label="Side">
             {SIDES.map((s) => (

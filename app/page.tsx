@@ -11,6 +11,12 @@ import LadderRows, { type LadderRow } from "@/components/home/LadderRows";
 import SeasonVote from "@/components/home/SeasonVote";
 import LiveCard from "@/components/home/LiveCard";
 import CountUp from "@/components/home/CountUp";
+import SkinsBanner from "@/components/home/SkinsBanner";
+import ModesShowcase from "@/components/home/ModesShowcase";
+import StatsPreview from "@/components/home/StatsPreview";
+import ClipsPreview from "@/components/home/ClipsPreview";
+import Podium from "@/components/home/Podium";
+import { getT } from "@/lib/serverI18n";
 
 export const dynamic = "force-dynamic";
 export const revalidate = 30;
@@ -20,6 +26,7 @@ export const revalidate = 30;
 const PAD = "0px";
 
 export default async function HomePage() {
+  const t = getT();
   const serverAddress = process.env.NEXT_PUBLIC_SERVER_ADDRESS ?? "127.0.0.1:27015";
   const season = await getActiveSeason();
   const session = getSession();
@@ -101,6 +108,19 @@ export default async function HomePage() {
     .count({ where: { LastSeenAtUtc: { gt: new Date(Date.now() - 15 * 60 * 1000) } } })
     .catch(() => 0);
 
+  // Real figures for the showcase — a landing page claiming numbers it does
+  // not have is the one thing worse than not claiming them.
+  const [roundCount, playerCount, killSum, clipCount] = await Promise.all([
+    prisma.playerRoundRecord.count({ where: { SeasonId: season.Id, IsRanked: true } }).catch(() => 0),
+    prisma.playerProfile.count().catch(() => 0),
+    prisma.playerRoundRecord
+      .aggregate({ where: { SeasonId: season.Id, IsRanked: true }, _sum: { Kills: true } })
+      .then((a) => a._sum.Kills ?? 0)
+      .catch(() => 0),
+    prisma.feedClip.count({ where: { Unlisted: false } }).catch(() => 0),
+  ]);
+  const siteTotals = { rounds: roundCount, players: playerCount, kills: killSum, clips: clipCount };
+
   const marquee = rows.slice(0, 10).map((r) => `${r.name} · ${r.elo}`);
 
   return (
@@ -129,40 +149,30 @@ export default async function HomePage() {
         />
       )}
 
-      <section id="ladder" style={{ padding: `0 ${PAD} clamp(64px, 9vw, 120px)` }}>
-        <div
-          style={{
-            display: "flex",
-            alignItems: "baseline",
-            justifyContent: "space-between",
-            borderBottom: "2px solid var(--color-divider)",
-            paddingBottom: 20,
-            marginBottom: 8,
-            flexWrap: "wrap",
-            gap: 12,
-          }}
-        >
-          <h2 style={{ fontSize: "clamp(28px, 3.2vw, 42px)", letterSpacing: "-0.02em", margin: 0 }}>
-            Ladder — {season.Name ?? `Season ${season.Id}`}
-          </h2>
-          <span
-            style={{
-              fontSize: 13,
-              letterSpacing: "0.06em",
-              textTransform: "uppercase",
-              color: "color-mix(in srgb, var(--color-text) 65%, transparent)",
-            }}
-          >
-            Hover a row for the readout
-          </span>
-        </div>
+      <Podium rows={rows} seasonName={season.Name ?? `Season ${season.Id}`} />
 
-        <LadderRows rows={rows} />
+      <ClipsPreview />
 
-        <div style={{ marginTop: 28 }}>
-          <Link href="/stats" className="btn btn-secondary">
-            Full stats →
-          </Link>
+      <StatsPreview
+        totals={siteTotals}
+        example={rows.find((r) => r.avatar) ?? rows[0] ?? null}
+      />
+
+      <ModesShowcase />
+
+      <SkinsBanner />
+
+      <section className="home-block home-final">
+        <h2>{t("home.final.title")}</h2>
+        <p className="home-block-lead">
+{t("home.final.lead")}
+        </p>
+        <div className="home-cta-row">
+          <ConnectButton serverAddress={serverAddress} />
+          {!session && (
+            <a className="btn btn-secondary" href="/api/auth/steam/login">{t("home.final.signIn")}</a>
+          )}
+          <Link href="/utility" className="btn btn-secondary">{t("home.final.lineups")}</Link>
         </div>
       </section>
 

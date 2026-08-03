@@ -17,7 +17,6 @@
   "nav.signIn": "Sign in",
   "nav.signOut": "Log out",
   "nav.profile": "Profile",
-
   "common.save": "Save",
   "common.cancel": "Cancel",
   "common.close": "Close",
@@ -30,7 +29,6 @@
   "common.settings": "Settings",
   "common.saved": "Saved.",
   "common.networkError": "Network error.",
-
   "settings.title": "Profile settings",
   "settings.appearance": "Appearance",
   "settings.theme": "Theme",
@@ -41,7 +39,6 @@
   "settings.languageHint": "Applies everywhere on the site.",
   "settings.connections": "Connections",
   "settings.connectionsHint": "Nothing here is shown until you publish it — including Steam, Discord and FACEIT.",
-
   "notif.title": "Notifications",
   "notif.empty": "Nothing yet.",
   "notif.like": "Like",
@@ -49,7 +46,6 @@
   "notif.mention": "Mention",
   "notif.newClip": "New clip",
   "notif.cs2Update": "CS2 update",
-
   "feed.postClip": "Post a clip",
   "feed.signInToPost": "Sign in to post",
   "feed.searchPlaceholder": "Search a player, a title, a map…",
@@ -58,22 +54,39 @@
   "feed.comment.post": "Post",
   "feed.comment.none": "No comments yet.",
   "feed.signInToComment": "Sign in to like and comment.",
-
   "profile.yours": "Your profile",
   "profile.player": "Player",
   "profile.topClip": "Top clip",
   "profile.equipped": "Equipped",
   "profile.compare": "Compare",
   "profile.loadouts": "Loadouts",
-
   "utility.title": "Lineups.",
   "utility.testInGame": "Test in game",
   "utility.copySetpos": "Copy setpos",
   "utility.signInToTest": "Sign in to test",
-
   "admin.dashboard": "Dashboard",
   "admin.players": "Players",
   "admin.server": "Server",
   "admin.console": "Console",
-  "admin.log": "Audit log"
+  "admin.log": "Audit log",
+  "home.podium.kicker": "Top of the ladder",
+  "home.podium.full": "Full ladder →",
+  "home.clips.kicker": "Feed",
+  "home.clips.title": "Every ace, cut automatically",
+  "home.clips.lead": "Type /clip in game and the last fifteen seconds are recorded, rendered and posted here. Upload a demo and every ace, 4K and 3K in it is found and cut for you.",
+  "home.clips.cta": "Open the feed →",
+  "home.stats.kicker": "Stats",
+  "home.stats.title": "Every round, counted",
+  "home.stats.lead": "Rating, CS Rating, K/D, ADR, KAST, opening duels, clutches and utility, per round and per season. The formula is published, not guessed at.",
+  "home.stats.cta": "See the stats",
+  "home.stats.how": "How rating works",
+  "home.stats.rounds": "Rounds tracked",
+  "home.stats.players": "Players",
+  "home.stats.kills": "Kills",
+  "home.stats.clips": "Clips",
+  "home.profile.more": "Loadout, medals, clips and session history →",
+  "home.final.title": "Join a round",
+  "home.final.lead": "No sign-up needed to play — connect and your rounds start counting. Sign in with Steam when you want the profile, the loadouts and the clips attached to your name.",
+  "home.final.signIn": "Sign in with Steam",
+  "home.final.lineups": "Browse lineups"
 }

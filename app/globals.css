@@ -8371,9 +8371,20 @@ header a > .avatar { display: block; }
   flex-direction: column;
 }
 @media (min-width: 900px) {
-  .clip-modal-card { overflow: hidden; }
+  /* The card must keep scrolling — hiding its overflow here was what blocked
+     the scroll entirely on desktop, which is the width most people use. The
+     meta column simply gets its own scroll as well. */
   .clip-modal-meta { overflow-y: auto; max-height: 92vh; }
 }
+
+/* The scrollbars are noise inside a video dialog; the content still scrolls by
+   wheel, drag and keyboard. */
+.clip-modal-card,
+.clip-modal-meta,
+.clip-social-scroll { scrollbar-width: none; }
+.clip-modal-card::-webkit-scrollbar,
+.clip-modal-meta::-webkit-scrollbar,
+.clip-social-scroll::-webkit-scrollbar { width: 0; height: 0; }
 
 .clip-social-jump {
   background: none; border: 0; padding: 0;
@@ -8442,3 +8453,450 @@ header a > .avatar { display: block; }
 .toast-item.ok { border-color: color-mix(in srgb, var(--color-accent) 55%, transparent); }
 .toast-item.error { border-color: #d8564a; color: #d8564a; }
 @keyframes toast-in { from { opacity: 0; transform: translateY(8px); } to { opacity: 1; transform: none; } }
+
+.stats-ladder-head {
+  display: flex; align-items: baseline; justify-content: space-between;
+  gap: 12px; flex-wrap: wrap; margin-bottom: 14px;
+}
+
+/* ---------------------------------------------------------------------------
+   Homepage as a showcase.
+
+   The page used to be a hero and then the ladder — a leaderboard is a fine
+   thing to have but a poor answer to "what is this site". Each block below
+   shows one capability using real data, and the layouts alternate so the page
+   has a rhythm instead of being a column of equal cards.
+   --------------------------------------------------------------------------- */
+
+.home-block { margin-top: clamp(48px, 7vw, 96px); }
+
+.home-block-head {
+  display: flex; align-items: baseline; gap: 14px; flex-wrap: wrap;
+  margin-bottom: 12px;
+}
+.home-block-head h2 {
+  margin: 0; flex: 1 1 auto;
+  font-size: clamp(24px, 3.4vw, 40px); letter-spacing: -0.025em;
+}
+.home-block-lead { margin: 0 0 20px; max-width: 62ch; color: var(--muted); font-size: 15px; line-height: 1.6; }
+.home-cta-row { display: flex; gap: 10px; flex-wrap: wrap; margin-top: 18px; }
+
+/* ---- podium ---- */
+.podium {
+  list-style: none; margin: 0; padding: 0;
+  display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 10px;
+}
+@media (max-width: 640px) { .podium { grid-template-columns: 1fr; } }
+.podium-slot {
+  display: grid; justify-items: center; gap: 4px;
+  padding: 20px 14px;
+  background: var(--color-bg);
+  border: 1px solid var(--color-divider);
+  border-top: 3px solid color-mix(in srgb, var(--color-accent) 20%, transparent);
+}
+/* First place is raised and fully accented; the others step down, the same
+   language the ladder itself uses. */
+.podium-slot[data-rank="1"] { border-top-color: var(--color-accent); transform: translateY(-8px); }
+.podium-slot[data-rank="2"] { border-top-color: color-mix(in srgb, var(--color-accent) 40%, transparent); }
+@media (max-width: 640px) { .podium-slot[data-rank="1"] { transform: none; } }
+.podium-rank { font-size: 11px; color: var(--muted); font-weight: 800; }
+.podium-name { font-weight: 700; font-size: 15px; color: inherit; text-decoration: none; }
+.podium-name:hover { color: var(--color-accent); }
+.podium-elo { font-size: 26px; font-weight: 800; line-height: 1.1; }
+.podium-sub { font-size: 11px; color: var(--muted); }
+
+/* ---- clips ---- */
+.home-clips { display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 10px; }
+.home-clip {
+  position: relative; display: block; aspect-ratio: 16 / 10; overflow: hidden;
+  border: 1px solid var(--color-divider); background: #000;
+  text-decoration: none; color: #fff;
+}
+.home-clip img { width: 100%; height: 100%; object-fit: cover; transition: transform 0.4s cubic-bezier(.16,1,.3,1); }
+.home-clip:hover img { transform: scale(1.06); }
+.home-clip-play {
+  position: absolute; inset: 0; display: grid; place-items: center;
+  font-size: 26px; text-shadow: 0 2px 14px rgb(0 0 0 / 0.7);
+  opacity: 0.85;
+}
+.home-clip-meta {
+  position: absolute; left: 0; right: 0; bottom: 0;
+  display: grid; gap: 1px; padding: 24px 10px 9px;
+  background: linear-gradient(to top, rgb(0 0 0 / 0.85), transparent);
+  font-size: 12px;
+}
+.home-clip-meta strong { font-size: 12.5px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.home-clip-meta span { opacity: 0.75; font-size: 11px; }
+
+/* ---- stats split ---- */
+.home-split { display: grid; grid-template-columns: minmax(0, 1.2fr) minmax(0, 0.8fr); gap: clamp(20px, 3vw, 44px); align-items: start; }
+@media (max-width: 860px) { .home-split { grid-template-columns: 1fr; } }
+
+.home-figures { display: grid; grid-template-columns: repeat(auto-fit, minmax(120px, 1fr)); gap: 12px; margin: 0; }
+.home-figures dt { font-size: 11px; text-transform: uppercase; letter-spacing: 0.06em; color: var(--muted); }
+.home-figures dd { margin: 2px 0 0; font-size: 22px; font-weight: 800; }
+
+.home-profile-card {
+  display: grid; gap: 14px; padding: 18px;
+  background: var(--color-bg); border: 1px solid var(--color-divider);
+  text-decoration: none; color: inherit;
+  transition: border-color 0.16s ease, transform 0.16s ease;
+}
+.home-profile-card:hover { border-color: var(--color-accent); transform: translateY(-2px); }
+.home-profile-top { display: flex; align-items: center; gap: 14px; }
+.home-profile-name { display: block; font-size: 20px; letter-spacing: -0.02em; }
+.home-profile-figures { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 10px; }
+.home-profile-figures > span { display: grid; font-size: 11px; color: var(--muted); text-transform: uppercase; letter-spacing: 0.05em; }
+.home-profile-figures em { font-style: normal; font-size: 20px; font-weight: 800; color: var(--color-text); }
+.home-profile-foot { font-size: 12px; color: var(--color-accent); font-weight: 600; }
+
+/* ---------------------------------------------------------------------------
+   Homepage — the game-modes showcase.
+
+   Ten modes in ten identical cards is a spec sheet, and a spec sheet reads as
+   ten equal choices when in practice two of them are what the server is on for
+   most of the week. So the grid is deliberately uneven: one tile takes a
+   quarter of the block, three take a half-row each, and the rest sit at the
+   base size. The hierarchy does the sorting that a uniform grid leaves to the
+   reader.
+
+   Everything here is a token, and the only chrome is one hairline and a 10px
+   corner — the section has to sit under the modernist hero without competing
+   with it, so the variety comes from area rather than from colour or shadow.
+   --------------------------------------------------------------------------- */
+
+.modes-section {
+  padding: clamp(56px, 8vw, 104px) 0;
+}
+
+.modes-head {
+  margin-bottom: clamp(28px, 4vw, 44px);
+}
+
+.modes-title {
+  font-size: clamp(28px, 3.2vw, 42px);
+  letter-spacing: -0.02em;
+  margin: 14px 0 0;
+}
+
+/* A measure rather than a percentage: the intro is one sentence and should
+   break on the same word whatever the viewport does around it. */
+.modes-intro {
+  margin: 12px 0 0;
+  max-width: 58ch;
+  font-size: 16px;
+  line-height: 1.6;
+  color: var(--muted);
+}
+
+/* Four columns, because the spans in ModesShowcase (one 2x2, three 2x1, six
+   1x1) fill exactly sixteen cells in that order and leave no gap in the last
+   row. Changing the column count without revisiting those spans will open
+   holes. minmax(0, 1fr) rather than 1fr so a long unbroken word cannot push a
+   track wider than its share. */
+.modes-grid {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  grid-auto-rows: minmax(136px, auto);
+  gap: 12px;
+}
+
+.modes-tile {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  min-width: 0;
+  padding: 18px;
+  border: 1px solid var(--color-divider);
+  border-radius: 10px;
+  background: var(--color-surface);
+  transition: border-color 0.18s ease, background 0.18s ease;
+}
+
+/* The tiles are not links, so the hover is a hairline warming rather than a
+   lift: enough to confirm the cursor is over one thing and not the gap, not so
+   much that it promises a click that never comes. */
+.modes-tile:hover {
+  border-color: color-mix(in srgb, var(--color-accent) 45%, var(--color-divider));
+  background: color-mix(in srgb, var(--color-accent) 4%, var(--color-surface));
+}
+
+.modes-tile-wide {
+  grid-column: span 2;
+}
+
+.modes-tile-feature {
+  grid-column: span 2;
+  grid-row: span 2;
+  padding: 24px;
+}
+
+.modes-glyph {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 32px;
+  height: 32px;
+  border-radius: 8px;
+  font-size: 16px;
+  line-height: 1;
+  color: var(--color-accent);
+  background: color-mix(in srgb, var(--color-accent) 14%, transparent);
+}
+
+/* The feature tile is the one place the accent runs at full strength. Ten solid
+   accent marks would flatten the section back into ten equal cards, which is
+   the thing the uneven grid exists to avoid. */
+.modes-tile-feature .modes-glyph {
+  width: 40px;
+  height: 40px;
+  font-size: 20px;
+  color: var(--btn-primary-ink);
+  background: var(--btn-primary-bg);
+}
+
+.modes-label {
+  margin: 14px 0 0;
+  font-size: 17px;
+  letter-spacing: -0.01em;
+  color: var(--color-text);
+}
+
+.modes-tile-feature .modes-label {
+  margin-top: 18px;
+  font-size: clamp(22px, 2.4vw, 30px);
+  letter-spacing: -0.02em;
+}
+
+.modes-line {
+  margin: 8px 0 0;
+  font-size: 14px;
+  line-height: 1.5;
+  color: color-mix(in srgb, var(--color-text) 78%, transparent);
+}
+
+.modes-tile-feature .modes-line {
+  font-size: 16px;
+  max-width: 34ch;
+}
+
+/* margin-top: auto pushes the hint to the floor of the tile, so hints line up
+   across a row whatever the prose above them does. The rule and the uppercase
+   scale make it read as a caption rather than as a second paragraph; the 12px
+   of padding is the minimum gap, since auto collapses to nothing once a tile is
+   full. */
+.modes-hint {
+  margin: 14px 0 0;
+  margin-top: auto;
+  padding-top: 12px;
+  border-top: 1px solid color-mix(in srgb, var(--color-divider) 55%, transparent);
+  width: 100%;
+  font-size: 12px;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+  color: var(--muted);
+}
+
+/* Below this width the tiles are too narrow for a size hierarchy to register —
+   a "wide" tile and a small one differ by a few pixels of prose. So the spans
+   collapse and the emphasis moves entirely to the glyph fill and type scale,
+   which also lets ten single tiles pair off into five clean rows. */
+@media (max-width: 900px) {
+  .modes-grid {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+  .modes-tile-feature,
+  .modes-tile-wide {
+    grid-column: auto;
+    grid-row: auto;
+  }
+  .modes-tile-feature {
+    padding: 18px;
+  }
+}
+
+@media (max-width: 560px) {
+  .modes-grid {
+    grid-template-columns: minmax(0, 1fr);
+  }
+}
+
+/* ═══════════════════════════════════════════════════════════════════════════
+   Skins banner (components/home/SkinsBanner.tsx).
+
+   A full-bleed band on the homepage advertising the inventory simulator: copy
+   and a link on top, a slow rail of real catalog skins underneath. It borrows
+   the marquee trick already used for the ladder ticker — a doubled list moved
+   by -50% — but pays for the seam properly (see .skinsb-item) because these
+   are images, where a jump is far more visible than it is on text.
+
+   The component decides in JS whether to animate at all; the two rules at the
+   bottom are the belt to that braces, so a visitor who asked for no motion
+   never sees a frame of drift while the script boots.
+   ═══════════════════════════════════════════════════════════════════════ */
+.skinsb {
+  margin-block: clamp(40px, 6vw, 72px);
+  border-top: 2px solid var(--color-divider);
+  border-bottom: 2px solid var(--color-divider);
+  background: var(--color-surface);
+  color: var(--color-text);
+  overflow: hidden;
+}
+
+.skinsb-copy {
+  display: flex;
+  align-items: flex-end;
+  justify-content: space-between;
+  flex-wrap: wrap;
+  gap: 20px 32px;
+  padding-block: clamp(24px, 4vw, 40px);
+}
+
+.skinsb-text { max-width: 54ch; }
+
+.skinsb-title {
+  margin: 0;
+  font-size: clamp(26px, 3.2vw, 42px);
+  line-height: 1.05;
+  letter-spacing: -0.02em;
+}
+
+.skinsb-sub {
+  margin: 10px 0 0;
+  font-size: 15px;
+  line-height: 1.55;
+  color: var(--muted);
+}
+
+/* Its own button rather than .btn: the shared button is a gradient pill, and
+   this band already carries the accent on its own terms. */
+.skinsb-cta {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  padding: 12px 22px;
+  border: 2px solid transparent;
+  background: var(--btn-primary-bg);
+  color: var(--btn-primary-ink);
+  font-weight: 700;
+  font-size: 14px;
+  text-decoration: none;
+  white-space: nowrap;
+  transition: background 0.16s ease, color 0.16s ease, border-color 0.16s ease;
+}
+
+.skinsb-cta:hover {
+  background: var(--color-bg);
+  color: var(--color-text);
+  border-color: var(--color-accent);
+}
+
+.skinsb-rail {
+  overflow: hidden;
+  padding-block: 18px;
+  border-top: 2px solid var(--color-divider);
+  background: var(--color-bg);
+  /* Fades both ends so skins arrive and leave rather than being clipped mid-gun
+     against the viewport edge. */
+  -webkit-mask-image: linear-gradient(90deg, transparent, #000 7%, #000 93%, transparent);
+  mask-image: linear-gradient(90deg, transparent, #000 7%, #000 93%, transparent);
+}
+
+.skinsb-track {
+  display: flex;
+  align-items: center;
+  width: max-content;
+}
+
+.skinsb-drifting {
+  /* Duration comes from the component so the rail moves at a constant speed
+     whatever number of skins the catalog actually returned. */
+  animation: skinsb-drift var(--skinsb-duration, 90s) linear infinite;
+}
+
+/* Pausing on hover is what makes the rail readable — a name you want to look
+   at is otherwise gone before you have read it. */
+.skinsb-rail:hover .skinsb-drifting { animation-play-state: paused; }
+
+/* The spacing is margin, not the track's `gap`, on purpose: with `gap` the
+   doubled list is one gap short of twice one copy, so -50% lands half a gap
+   off and the loop visibly jumps. As a trailing margin every item is the same
+   width including its space, and the seam is exact. */
+.skinsb-item {
+  flex: none;
+  display: grid;
+  justify-items: center;
+  gap: 6px;
+  margin: 0 clamp(24px, 4vw, 56px) 0 0;
+}
+
+.skinsb-img {
+  display: block;
+  height: clamp(52px, 7vw, 84px);
+  width: auto;
+  max-width: none;
+  object-fit: contain;
+}
+
+.skinsb-name {
+  font-size: 11px;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  color: var(--muted);
+  white-space: nowrap;
+}
+
+@keyframes skinsb-drift {
+  from { transform: translateX(0); }
+  to { transform: translateX(-50%); }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  html:not([data-motion="full"]) .skinsb-drifting { animation: none !important; }
+  html:not([data-motion="full"]) .skinsb-cta { transition: none; }
+}
+
+html[data-motion="off"] .skinsb-drifting { animation: none !important; }
+html[data-motion="off"] .skinsb-cta { transition: none; }
+
+/* The footer band had no inner gutter, so its text ran to the viewport edge. */
+.site-footer-band { padding-inline: var(--page-pad, clamp(16px, 4vw, 48px)); }
+.site-footer-inner { padding-block: clamp(4px, 1vw, 12px); }
+
+/* The featured clip reserves its space, so the loadout beside it does not jump
+   once the fetch lands. */
+.pro-feature.is-skeleton,
+.pro-feature.is-empty { cursor: default; }
+.pro-feature.is-skeleton:hover,
+.pro-feature.is-empty:hover { border-color: var(--color-divider); transform: none; }
+.pro-feature.is-skeleton .pro-feature-media { background: var(--color-surface); }
+.pro-feature.is-skeleton .pro-feature-media::after {
+  content: "";
+  position: absolute; inset: 0;
+  background: linear-gradient(90deg, transparent, color-mix(in srgb, var(--color-text) 8%, transparent), transparent);
+  animation: pro-shimmer 1.4s ease-in-out infinite;
+}
+@keyframes pro-shimmer { from { transform: translateX(-100%); } to { transform: translateX(100%); } }
+.pro-feature.is-empty .pro-feature-media {
+  background: repeating-linear-gradient(45deg,
+    var(--color-surface) 0 10px, color-mix(in srgb, var(--color-text) 4%, var(--color-surface)) 10px 20px);
+}
+.pro-feature.is-empty .pro-feature-counts { font-size: 11px; }
+
+/* The bar above the loadout was a rule and a heading doing no work; the side
+   switch is the only control that belonged there. */
+.pro-loadout-head.is-bare {
+  border: 0;
+  padding: 0;
+  margin-bottom: 8px;
+  background: none;
+}
+.pro-loadout-head.is-bare h2 { font-size: 13px; text-transform: uppercase; letter-spacing: 0.06em; color: var(--muted); font-weight: 700; }
+
+/* T and CT were sized by their label, so "CT" was wider than "T". */
+.pro-sidebtn,
+.inv4-sidebtn {
+  min-width: 46px;
+  text-align: center;
+  justify-content: center;
+}

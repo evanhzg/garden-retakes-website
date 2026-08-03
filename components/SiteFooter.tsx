@@ -20,6 +20,8 @@ export default function SiteFooter({ serverAddress }: { serverAddress: string })
         <div>
           <h3 className="site-footer-title">
             Climb the ladder.
+            <br />
+            Season 1 is up.
           </h3>
           <p className="site-footer-sub">Jump on the server — no sign-up, points count from your first round.</p>
         </div>
