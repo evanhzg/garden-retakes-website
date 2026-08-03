@@ -184,35 +184,65 @@ async function withClient<T>(fn: (client: Client) => Promise<T>): Promise<T> {
   }
 }
 
-/** A path we were never given is a configuration problem, not an FTP one. */
-function remotePath(target: ConfigTarget): string {
-  const remote = CONFIG_TARGETS[target]?.path?.trim();
-  if (!remote) {
-    throw new Error(
-      `No path configured for the ${target} config. Set GAMESERVER_${target.toUpperCase()}_CONFIG.`
-    );
+/**
+ * Where a config lives, and where it lives if that is wrong.
+ *
+ * The env override exists so a differently-laid-out server can be pointed at,
+ * but a stale override is indistinguishable from a broken FTP server from the
+ * outside: both come back as a failed read. So the shipped default is kept as
+ * a second candidate and tried after it — and the error, if both fail, names
+ * every path tried rather than just the last.
+ */
+function remoteCandidates(target: ConfigTarget): string[] {
+  const t = CONFIG_TARGETS[target];
+  const configured = t?.path?.trim();
+  const fallback = DEFAULT_PATHS[target];
+  const list = [configured, fallback].filter((p): p is string => Boolean(p));
+  if (list.length === 0) {
+    throw new Error(`No path configured for the ${target} config.`);
   }
-  return remote;
+  return Array.from(new Set(list));
 }
+
+/** Where each config sits in a stock install. */
+const DEFAULT_PATHS: Record<ConfigTarget, string> = {
+  plugin: "/addons/counterstrikesharp/configs/plugins/R5e-games/R5e-games.json",
+  rankings: "/addons/counterstrikesharp/plugins/R5e-games/config/rankings.json",
+  allocator: "/addons/counterstrikesharp/plugins/R5e-games/config/config.json",
+};
+
+/** The path a read actually succeeded on, so a write goes back to the same file. */
+const resolved = new Map<ConfigTarget, string>();
 
 /** Read the live config file as text. */
 export async function readConfigText(target: ConfigTarget = "plugin"): Promise<string> {
-  const remote = remotePath(target);
+  const candidates = remoteCandidates(target);
   return withClient(async (client) => {
-    const chunks: Buffer[] = [];
-    const sink = new Writable({
-      write(chunk, _enc, cb) {
-        chunks.push(Buffer.from(chunk));
-        cb();
-      },
-    });
-    await client.downloadTo(sink, remote);
-    return Buffer.concat(chunks).toString("utf8");
+    const failures: string[] = [];
+    for (const remote of candidates) {
+      const chunks: Buffer[] = [];
+      const sink = new Writable({
+        write(chunk, _enc, cb) {
+          chunks.push(Buffer.from(chunk));
+          cb();
+        },
+      });
+      try {
+        await client.downloadTo(sink, remote);
+        resolved.set(target, remote);
+        return Buffer.concat(chunks).toString("utf8");
+      } catch (e) {
+        failures.push(`${remote} — ${e instanceof Error ? e.message : String(e)}`);
+      }
+    }
+    throw new Error(failures.join("; "));
   });
 }
 
 export async function writeConfigText(text: string, target: ConfigTarget = "plugin"): Promise<void> {
-  const remote = remotePath(target);
+  // Whatever the last successful read used, so an edit cannot land in a
+  // different file from the one that was shown.
+  const remote = resolved.get(target) ?? remoteCandidates(target)[0];
   await withClient(async (client) => {
     await client.uploadFrom(Readable.from([text]), remote);
   });

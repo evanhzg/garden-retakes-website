@@ -83,9 +83,24 @@ const ROLE_LABEL = ["—", "Moderator", "Admin", "Owner"];
  * Train came back into the base game, so it is a stock map again rather than a
  * workshop id — everything here ships with CS2 and needs no addon mounted.
  */
-const STOCK_MAPS = [
-  "de_mirage", "de_inferno", "de_nuke", "de_ancient",
-  "de_dust2", "de_anubis", "de_overpass", "de_vertigo", "de_train",
+/**
+ * Maps, with the names people actually say.
+ *
+ * The buttons showed raw file names — "de_dust2" — which is what the command
+ * needs, not what anyone calls it. The id goes to the server, the label goes on
+ * the button.
+ */
+const STOCK_MAPS: { id: string; label: string }[] = [
+  { id: "de_mirage", label: "Mirage" },
+  { id: "de_inferno", label: "Inferno" },
+  { id: "de_nuke", label: "Nuke" },
+  { id: "de_ancient", label: "Ancient" },
+  { id: "de_dust2", label: "Dust II" },
+  { id: "de_anubis", label: "Anubis" },
+  { id: "de_cache", label: "Cache" },
+  { id: "de_overpass", label: "Overpass" },
+  { id: "de_vertigo", label: "Vertigo" },
+  { id: "de_train", label: "Train" },
 ];
 
 export default function AdminPanel({
@@ -357,10 +372,18 @@ export default function AdminPanel({
                 All of these ship with CS2 — Train included, since it returned to the base game — so none of
                 them needs a workshop addon mounted.
               </p>
-              <div className="adm-maps">
+              {/* Same control as the game modes beside them: these do the same
+                  kind of thing and looked like two different features. */}
+              <div className="adm-modes">
                 {STOCK_MAPS.map((m) => (
-                  <button key={m} className="chip" onClick={() => doAction({ type: "map", map: m })}>
-                    {m}
+                  <button
+                    key={m.id}
+                    className="adm-mode"
+                    title={m.id}
+                    onClick={() => doAction({ type: "map", map: m.id })}
+                  >
+                    <span className="adm-mode-name">{m.label}</span>
+                    <span className="adm-mode-hint num">{m.id}</span>
                   </button>
                 ))}
               </div>

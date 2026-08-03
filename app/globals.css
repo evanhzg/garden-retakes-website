@@ -8047,3 +8047,51 @@ header .avatar-sm { width: 34px; height: 34px; }
 .inv4-browse { min-height: 0; display: flex; flex-direction: column; }
 .inv4-weapons, .inv4-preview, .inv4-chooser { min-height: 0; }
 .inv4-chooser { display: flex; flex-direction: column; overflow: hidden; }
+
+/* ---------------------------------------------------------------------------
+   Surfaces use the page ground, not the raised one.
+
+   --color-surface sits one step off the background, which read as a card
+   stacked on a card once whole sections were given it. --color-bg with a
+   hairline gives the content a floor without implying another layer.
+   --------------------------------------------------------------------------- */
+
+.ins-section,
+#ladder,
+.home-hero-row > section,
+.home-surface,
+.adm-panel,
+.adm-nav,
+.vote-panel,
+.util-side,
+.inv4-board,
+.inv4-browse,
+.inv4-boardside,
+.inv4-bar,
+.gr-row {
+  background: var(--color-bg);
+}
+
+/* Content was reaching the border on anything that had never had a border
+   before — the hero, the store, the marquee. */
+.home-hero-row > section,
+.home-surface { padding: clamp(18px, 2.4vw, 32px); }
+
+#ladder { padding: clamp(20px, 3vw, 40px) clamp(16px, 2.4vw, 32px); }
+
+.inv4-browse { padding: clamp(12px, 1.6vw, 18px); }
+.inv4-boardside { padding: 10px; }
+
+.pro-hero,
+.pro-section { padding: clamp(16px, 2.2vw, 28px); }
+
+/* The avatar's link was a block as tall as the line box around it, so the
+   circle sat inside a taller invisible box and looked off-centre. */
+.site-header a:has(> .avatar),
+header a:has(> .avatar) {
+  display: inline-flex;
+  align-items: center;
+  line-height: 0;
+}
+.site-header a > .avatar,
+header a > .avatar { display: block; }
