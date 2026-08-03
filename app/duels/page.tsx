@@ -1,4 +1,5 @@
 import { prisma } from "@/lib/db";
+import { getT } from "@/lib/serverI18n";
 
 export const metadata = {
   title: "Duels — Garden Retakes",
@@ -56,6 +57,7 @@ async function buildLadder(seasonId: number): Promise<LadderRow[]> {
 }
 
 export default async function DuelsPage() {
+  const t = getT();
   const season = await prisma.season.findFirst({ where: { IsActive: true } });
   const ladder = season ? await buildLadder(season.Id) : [];
   const recent = season
@@ -70,28 +72,27 @@ export default async function DuelsPage() {
     <>
       <section className="hero hero-compact">
         <div className="hero-inner">
-          <span className="eyebrow">Duels</span>
+          <span className="eyebrow">{t("duels.page.eyebrow")}</span>
           <h1>
-            The <span className="grad">1v1</span> ladder.
+            {t("duels.page.title_prefix")} <span className="grad">1v1</span> {t("duels.page.title_suffix")}
           </h1>
           <p className="muted">
-            Every duel played in Duels mode{season ? ` during ${season.Name}` : ""} — rotation
-            wins and private challenges alike.
+            {t("duels.page.description_prefix")}{season ? ` ${t("duels.page.during")} ${season.Name}` : ""} {t("duels.page.description_suffix")}
           </p>
         </div>
       </section>
 
       <div className="panel">
-        <h2>Ladder</h2>
+        <h2>{t("duels.page.ladder")}</h2>
         <table>
           <thead>
             <tr>
               <th>#</th>
-              <th>Player</th>
-              <th>Wins</th>
-              <th>Losses</th>
-              <th>Winrate</th>
-              <th>Challenges won</th>
+              <th>{t("duels.page.player")}</th>
+              <th>{t("duels.page.wins")}</th>
+              <th>{t("duels.page.losses")}</th>
+              <th>{t("duels.page.winrate")}</th>
+              <th>{t("duels.page.challenges_won")}</th>
             </tr>
           </thead>
           <tbody>
@@ -110,7 +111,7 @@ export default async function DuelsPage() {
             {ladder.length === 0 && (
               <tr>
                 <td colSpan={6} className="muted">
-                  No duels played yet — switch the server to Duels mode with !gamemode duels.
+                  {t("duels.page.no_duels")}
                 </td>
               </tr>
             )}
@@ -119,16 +120,16 @@ export default async function DuelsPage() {
       </div>
 
       <div className="panel">
-        <h2>Recent duels</h2>
+        <h2>{t("duels.page.recent_duels")}</h2>
         <table>
           <thead>
             <tr>
-              <th>When (UTC)</th>
-              <th>Winner</th>
-              <th>Loser</th>
-              <th>Arena</th>
-              <th>Map</th>
-              <th>Type</th>
+              <th>{t("duels.page.when_utc")}</th>
+              <th>{t("duels.page.winner")}</th>
+              <th>{t("duels.page.loser")}</th>
+              <th>{t("duels.page.arena")}</th>
+              <th>{t("duels.page.map")}</th>
+              <th>{t("duels.page.type")}</th>
             </tr>
           </thead>
           <tbody>
@@ -143,8 +144,8 @@ export default async function DuelsPage() {
                 <td className="muted">{duel.Map}</td>
                 <td>
                   {duel.IsChallenge
-                    ? `Challenge${duel.ChallengeScore ? ` (${duel.ChallengeScore})` : ""}`
-                    : "Rotation"}
+                    ? `${t("duels.page.challenge")}${duel.ChallengeScore ? ` (${duel.ChallengeScore})` : ""}`
+                    : t("duels.page.rotation")}
                 </td>
               </tr>
             ))}

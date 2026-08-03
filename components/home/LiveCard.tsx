@@ -2,6 +2,7 @@
 
 import { useEffect, useState } from "react";
 import { GAME_MODES } from "@/lib/gameModes";
+import { useI18n } from "@/locales/client";
 
 // What the server is playing, on the homepage.
 //
@@ -33,6 +34,7 @@ type Live = {
 };
 
 export default function LiveCard() {
+  const t = useI18n();
   const [live, setLive] = useState<Live | null>(null);
 
   useEffect(() => {
@@ -52,12 +54,12 @@ export default function LiveCard() {
   const mode = GAME_MODES.find((m) => m.id === live.mode);
 
   // Competitive outranks ranked: both count, but only one is a real match.
-  const banner = live.competitive ? "Competitive retakes" : live.ranked ? "Ranked" : null;
+  const banner = live.competitive ? t('home.liveCard.competitive') : live.ranked ? t('home.liveCard.ranked') : null;
 
   return (
     <div className="live-card">
       <span className="live-card-dot" aria-hidden />
-      <span className="live-card-players num">{live.players ?? 0} online</span>
+      <span className="live-card-players num">{live.players ?? 0} {t('home.liveCard.online')}</span>
 
       {map && (
         <span className="live-card-map" style={{ ["--map" as string]: map.colour }}>

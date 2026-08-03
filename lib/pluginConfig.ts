@@ -170,6 +170,12 @@ export const gameServerConfigured = () => Boolean(process.env.GAMESERVER_FTP_HOS
 async function withClient<T>(fn: (client: Client) => Promise<T>): Promise<T> {
   const cfg = ftpConfig();
   if (!cfg.host) throw new Error("No game server configured (GAMESERVER_FTP_HOST).");
+  // Checked here rather than left to the server, because an empty username is
+  // sent as a bare `USER` and comes back as "501 Syntax error: command needs
+  // an argument" — an error about FTP grammar that says nothing about the
+  // missing setting that caused it, against a path that is perfectly valid.
+  if (!cfg.user) throw new Error("GAMESERVER_FTP_USER is not set on this deployment.");
+  if (!cfg.password) throw new Error("GAMESERVER_FTP_PASSWORD is not set on this deployment.");
   const client = new Client(30000);
   // Force IPv4 for the data channel. On a dual-stack host the client offers
   // EPSV and some servers answer it in a way basic-ftp then turns into a bare

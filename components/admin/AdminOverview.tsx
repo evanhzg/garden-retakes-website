@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useState } from "react";
+import { useI18n } from '@/components/I18nProvider';
 
 // The overview board.
 //
@@ -40,6 +41,7 @@ export default function AdminOverview({
   adminKey: string;
   onGo: (tab: string) => void;
 }) {
+  const { t } = useI18n();
   const [data, setData] = useState<Overview | null>(null);
   const [error, setError] = useState<string | null>(null);
 
@@ -47,34 +49,34 @@ export default function AdminOverview({
     fetch(`/api/admin/overview${adminKey ? `?key=${encodeURIComponent(adminKey)}` : ""}`, { cache: "no-store" })
       .then(async (r) => {
         const j = await r.json();
-        if (!r.ok) return setError(j.error ?? "Could not load the overview.");
+        if (!r.ok) return setError(j.error ?? t("admin.overview.error_loading"));
         setData(j);
       })
-      .catch(() => setError("Could not reach the server."));
-  }, [adminKey]);
+      .catch(() => setError(t("admin.overview.error_server")));
+  }, [adminKey, t]);
 
   if (error) {
     return <p className="skin-note skin-note-error"><span>{error}</span></p>;
   }
-  if (!data) return <p className="muted">Loading…</p>;
+  if (!data) return <p className="muted">{t("admin.overview.loading")}</p>;
 
   const c = data.counts;
   const tiles: Tile[] = [
-    { label: "Demos waiting", value: c.pendingDemos, hint: "Uploaded, not yet cut", attention: c.pendingDemos > 0, go: "demos" },
-    { label: "Clip marks", value: c.clipRequests, hint: "/clip, waiting for the pipeline", attention: c.clipRequests > 0, go: "demos" },
-    { label: "Unnamed clips", value: c.unlistedClips, hint: "Unlisted until their owner names them" },
-    { label: "Active bans", value: c.activeBans, hint: "Currently in force", go: "players" },
-    { label: "Players known", value: c.players.toLocaleString(), hint: "Profiles on record", go: "players" },
-    { label: "Clips posted", value: c.clips, hint: "On the feed" },
-    { label: "Lineups saved", value: c.lineups, hint: "On the utility page" },
-    { label: "Admin actions", value: c.recentActions, hint: "In the last 24 hours", go: "log" },
+    { label: t("admin.overview.demos_waiting"), value: c.pendingDemos, hint: t("admin.overview.demos_waiting_hint"), attention: c.pendingDemos > 0, go: "demos" },
+    { label: t("admin.overview.clip_marks"), value: c.clipRequests, hint: t("admin.overview.clip_marks_hint"), attention: c.clipRequests > 0, go: "demos" },
+    { label: t("admin.overview.unnamed_clips"), value: c.unlistedClips, hint: t("admin.overview.unnamed_clips_hint") },
+    { label: t("admin.overview.active_bans"), value: c.activeBans, hint: t("admin.overview.active_bans_hint"), go: "players" },
+    { label: t("admin.overview.players_known"), value: c.players.toLocaleString(), hint: t("admin.overview.players_known_hint"), go: "players" },
+    { label: t("admin.overview.clips_posted"), value: c.clips, hint: t("admin.overview.clips_posted_hint") },
+    { label: t("admin.overview.lineups_saved"), value: c.lineups, hint: t("admin.overview.lineups_saved_hint") },
+    { label: t("admin.overview.admin_actions"), value: c.recentActions, hint: t("admin.overview.admin_actions_hint"), go: "log" },
   ];
 
   const pollLabel = data.poll
     ? data.poll.open
-      ? `Open until ${new Date(data.poll.closesAt).toLocaleString()}`
-      : `Closed ${new Date(data.poll.closesAt).toLocaleDateString()}`
-    : "No vote has run yet";
+      ? t("admin.overview.poll_open", { date: new Date(data.poll.closesAt).toLocaleString() })
+      : t("admin.overview.poll_closed", { date: new Date(data.poll.closesAt).toLocaleDateString() })
+    : t("admin.overview.poll_none");
 
   return (
     <div className="adm-overview">
@@ -95,13 +97,13 @@ export default function AdminOverview({
 
       <div className="adm-strip">
         <div>
-          <span className="adm-strip-k">Season</span>
+          <span className="adm-strip-k">{t("admin.overview.season")}</span>
           <span className="adm-strip-v">
-            {data.season ? `${data.season.name ?? `Season ${data.season.id}`} · ${data.season.players} ranked players` : "None active"}
+            {data.season ? t("admin.overview.season_info", { name: data.season.name ?? t("admin.overview.season_id", { id: data.season.id }), players: data.season.players }) : t("admin.overview.season_none")}
           </span>
         </div>
         <div>
-          <span className="adm-strip-k">Season vote</span>
+          <span className="adm-strip-k">{t("admin.overview.season_vote")}</span>
           <span className="adm-strip-v">{pollLabel}</span>
         </div>
       </div>

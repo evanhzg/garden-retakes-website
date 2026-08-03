@@ -390,12 +390,20 @@ export default function NavBar({
             </a>
           </div>
         ) : (
+          // The CS2 side signs in with Steam and comes back where you were.
+          // This button pointed at /games/login regardless of which side of the
+          // site you were on, so it crossed to the games subdomain and landed
+          // on its default page instead of the one you left.
           <a
             className="btn btn-secondary"
-            href={`/games/login?returnTo=${encodeURIComponent(pathname)}`}
+            href={
+              isGamesSection
+                ? `/games/login?returnTo=${encodeURIComponent(pathname)}`
+                : `/api/auth/steam/login?returnTo=${encodeURIComponent(pathname)}`
+            }
             style={{ fontSize: 12 }}
           >
-            Sign in
+            {t("nav.signIn")}
           </a>
         )}
 

@@ -6,7 +6,6 @@ import { dayKey, fetchRows, groupBy, sideName, summarize } from "@/lib/stats";
 import { resolveName } from "@/lib/names";
 import ProfileHero from "@/components/profile/ProfileHero";
 import ProfileStats from "@/components/profile/ProfileStats";
-import DiscordConnect from "@/components/DiscordConnect";
 
 export const dynamic = "force-dynamic";
 
@@ -154,7 +153,6 @@ export default async function ProfilePage({
         <div className="pro-section-head">
           <h2>{t("profile.connections.title")}</h2>
         </div>
-        <DiscordConnect />
       </section>
 
     </>
