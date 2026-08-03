@@ -1,0 +1,186 @@
+{
+  "$comment": [
+    "World->radar calibration, read out of the game's own resource/overviews/<map>.txt",
+    "in pak01_dir.vpk, so these are exact rather than eyeballed.",
+    "px = (world.x - posX) / scale ; py = (posY - world.y) / scale, on a 1024x1024 radar.",
+    "Community wingman maps are workshop content and are not in the base VPK - their",
+    "calibration has to come from the workshop map's own files, so they are listed",
+    "without one until then."
+  ],
+  "radarSize": 1024,
+  "maps": {
+    "de_dust2": {
+      "label": "Dust II",
+      "posX": -2476.0,
+      "posY": 3239.0,
+      "scale": 4.4,
+      "rotate": 1.0,
+      "pools": [
+        "active"
+      ]
+    },
+    "de_mirage": {
+      "label": "Mirage",
+      "posX": -3230.0,
+      "posY": 1713.0,
+      "scale": 5.0,
+      "rotate": 0,
+      "pools": [
+        "active"
+      ]
+    },
+    "de_cache": {
+      "label": "Cache",
+      "posX": -2000.0,
+      "posY": 3250.0,
+      "scale": 5.5,
+      "rotate": 0,
+      "pools": [
+        "active"
+      ]
+    },
+    "de_inferno": {
+      "label": "Inferno",
+      "posX": -2087.0,
+      "posY": 3870.0,
+      "scale": 4.9,
+      "rotate": 0,
+      "pools": [
+        "active",
+        "wingman"
+      ]
+    },
+    "de_nuke": {
+      "label": "Nuke",
+      "posX": -3453.0,
+      "posY": 2887.0,
+      "scale": 7.0,
+      "rotate": 0,
+      "pools": [
+        "active",
+        "wingman"
+      ],
+      "levels": [
+        {
+          "name": "default",
+          "altitudeMax": 10000,
+          "altitudeMin": -495
+        },
+        {
+          "name": "lower",
+          "altitudeMax": -495,
+          "altitudeMin": -10000
+        }
+      ]
+    },
+    "de_ancient": {
+      "label": "Ancient",
+      "posX": -2953.0,
+      "posY": 2164.0,
+      "scale": 5.0,
+      "rotate": 0,
+      "pools": [
+        "active"
+      ]
+    },
+    "de_anubis": {
+      "label": "Anubis",
+      "posX": -2796.0,
+      "posY": 3328.0,
+      "scale": 5.22,
+      "rotate": 0,
+      "pools": [
+        "active"
+      ]
+    },
+    "de_train": {
+      "label": "Train",
+      "posX": -2308.0,
+      "posY": 2078.0,
+      "scale": 4.082077,
+      "rotate": 0,
+      "pools": [
+        "reserve"
+      ],
+      "levels": [
+        {
+          "name": "default",
+          "altitudeMax": 20000,
+          "altitudeMin": -50
+        },
+        {
+          "name": "lower",
+          "altitudeMax": -50,
+          "altitudeMin": -5000
+        }
+      ]
+    },
+    "de_overpass": {
+      "label": "Overpass",
+      "posX": -4831.0,
+      "posY": 1781.0,
+      "scale": 5.2,
+      "rotate": 0,
+      "pools": [
+        "reserve",
+        "wingman"
+      ]
+    },
+    "de_vertigo": {
+      "label": "Vertigo",
+      "posX": -3168.0,
+      "posY": 1762.0,
+      "scale": 4.0,
+      "rotate": 0,
+      "pools": [
+        "reserve",
+        "wingman"
+      ],
+      "levels": [
+        {
+          "name": "default",
+          "altitudeMax": 20000,
+          "altitudeMin": 11700
+        },
+        {
+          "name": "lower",
+          "altitudeMax": 11700,
+          "altitudeMin": -10000
+        }
+      ]
+    },
+    "de_poseidon": {
+      "label": "Poseidon",
+      "posX": null,
+      "posY": null,
+      "scale": null,
+      "rotate": 0,
+      "pools": [
+        "wingman",
+        "community"
+      ]
+    },
+    "de_dorado": {
+      "label": "El Dorado",
+      "posX": null,
+      "posY": null,
+      "scale": null,
+      "rotate": 0,
+      "pools": [
+        "wingman",
+        "community"
+      ]
+    },
+    "de_debris": {
+      "label": "Debris",
+      "posX": null,
+      "posY": null,
+      "scale": null,
+      "rotate": 0,
+      "pools": [
+        "wingman",
+        "community"
+      ]
+    }
+  }
+}
