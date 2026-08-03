@@ -2,28 +2,30 @@
 
 import Link from "next/link";
 import { usePathname } from "next/navigation";
+import { useI18n } from "@/components/I18nProvider";
 
 export default function StatsLayout({ children }: { children: React.ReactNode }) {
   const pathname = usePathname();
+  const { t } = useI18n();
 
   return (
     <>
       <section className="panel">
-        <h2>Global Stats Dashboard</h2>
+        <h2>{t("stats.layout.title")}</h2>
         <div className="chip-row">
           <Link href="/stats" className={`chip ${pathname === "/stats" ? "active" : ""}`}>
-            Overview
+            {t("stats.layout.overview")}
           </Link>
           {/* Greyed out pending a rebuild — a tab that opens something known to
               be wrong is worse than a tab that says it is coming. */}
-          <span className="chip is-disabled" aria-disabled="true" title="Being rebuilt">
-            Map Heatmaps
+          <span className="chip is-disabled" aria-disabled="true" title={t("stats.layout.beingRebuilt")}>
+            {t("stats.layout.mapHeatmaps")}
           </span>
           <Link href="/stats/seasons" className={`chip ${pathname === "/stats/seasons" ? "active" : ""}`}>
-            Seasons History
+            {t("stats.layout.seasonsHistory")}
           </Link>
           <Link href="/stats/compare" className={`chip ${pathname === "/stats/compare" ? "active" : ""}`}>
-            Compare Players
+            {t("stats.layout.comparePlayers")}
           </Link>
         </div>
       </section>

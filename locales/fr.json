@@ -283,5 +283,7 @@
   "profile.stats.details.enemiesFlashed": "Ennemis flashés",
   "profile.stats.details.defuses": "Désamorçages",
   "profile.stats.details.assists": "Assistances",
-  "profile.stats.details.roundsWon": "Rounds gagnés"
+  "profile.stats.details.roundsWon": "Rounds gagnés",
+  "stats.charts.tWins": "Victoires T",
+  "stats.charts.ctWins": "Victoires CT"
 }

@@ -4,9 +4,12 @@ import { useEffect, useState } from "react";
 
 type Status = { signedIn: boolean; configured: boolean; linked: boolean; name?: string | null; avatar?: string | null };
 
+import { useI18n } from '@/components/I18nProvider';
+
 // Profile "Connections" card: link / unlink a Google account. The OAuth flow
 // lives in /api/auth/google/*; this just reflects and toggles the link.
 export default function GoogleConnect() {
+  const { t } = useI18n();
   const [status, setStatus] = useState<Status | null>(null);
   const [busy, setBusy] = useState(false);
 
@@ -24,11 +27,11 @@ export default function GoogleConnect() {
     const q = new URLSearchParams(window.location.search).get("google");
     if (!q) return;
     const msg: Record<string, string> = {
-      linked: "Google connected ✓",
-      failed: "Google link failed — try again.",
-      error: "Couldn't save the link. Is the DB reachable?",
-      unconfigured: "Google isn't configured on the server yet.",
-      signin: "Sign in with Steam first.",
+      linked: t("google.notice.linked"),
+      failed: t("google.notice.failed"),
+      error: t("google.notice.error"),
+      unconfigured: t("google.notice.unconfigured"),
+      signin: t("google.notice.signin"),
     };
     setNotice(msg[q] ?? null);
     const url = new URL(window.location.href);
@@ -53,9 +56,9 @@ export default function GoogleConnect() {
           </svg>
         </span>
         <div>
-          <h3>Google</h3>
+          <h3>{t("google.title")}</h3>
           <p>
-            {status.linked ? "Connected — used for game invites." : "Link your Google to join games from your server."}
+            {status.linked ? t("google.description.linked") : t("google.description.unlinked")}
           </p>
         </div>
       </div>
@@ -69,7 +72,7 @@ export default function GoogleConnect() {
             <span className="google-user-name">{status.name}</span>
           </div>
           <button className="google-btn ghost" onClick={unlink} disabled={busy}>
-            {busy ? "…" : "Unlink"}
+            {busy ? t("google.action.busy") : t("google.action.unlink")}
           </button>
         </div>
       ) : (
@@ -78,9 +81,9 @@ export default function GoogleConnect() {
           href={status.configured ? "/api/auth/google/login" : undefined}
           aria-disabled={!status.configured}
           onClick={(e) => { if (!status.configured) e.preventDefault(); }}
-          title={status.configured ? "Link Google" : "Google isn't configured on the server yet"}
+          title={status.configured ? t("google.action.link_title") : t("google.notice.unconfigured")}
         >
-          Connect Google
+          {t("google.action.connect")}
         </a>
       )}
     </div>

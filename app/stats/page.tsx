@@ -8,6 +8,7 @@ import LeaderboardTabs from "@/components/stats/LeaderboardTabs";
 import HowRatingWorks from "@/components/stats/HowRatingWorks";
 import LadderRows from "@/components/home/LadderRows";
 import { ladderRows } from "@/lib/ladder";
+import { getT } from "@/lib/serverI18n";
 
 export const dynamic = "force-dynamic";
 export const revalidate = 60;
@@ -158,6 +159,9 @@ export default async function StatsPage() {
   // The ladder used to be the homepage's centrepiece. It belongs with the rest
   // of the numbers; the homepage keeps a three-row peek.
   const ladder = await ladderRows(season.Id, 20);
+  // charts.tsx takes its legend strings as a prop: it is a client component and
+  // cannot reach the server dictionary itself.
+  const t = getT();
 
   return (
     <>
@@ -209,7 +213,7 @@ export default async function StatsPage() {
         </section>
         <section className="panel">
           <h3 style={{ marginBottom: 12 }}>Side balance per map</h3>
-          <SideSplitBars rows={mapBalance} />
+          <SideSplitBars rows={mapBalance} t={t} />
           {mapBalance.length === 0 && <p className="muted">Not enough rounds per map yet.</p>}
         </section>
       </div>

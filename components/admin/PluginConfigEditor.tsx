@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useMemo, useState } from "react";
+import { useI18n } from '@/components/I18nProvider';
 
 // Editor for the game plugin's live config.
 //
@@ -35,6 +36,7 @@ type ConfigSection = {
 type Change = { path: string; before: unknown; after: unknown };
 
 export default function PluginConfigEditor({ adminKey }: { adminKey?: string }) {
+  const { t } = useI18n();
   const [sections, setSections] = useState<ConfigSection[] | null>(null);
   const [targets, setTargets] = useState<Target[]>([]);
   const [target, setTarget] = useState<string>("plugin");
@@ -56,15 +58,18 @@ export default function PluginConfigEditor({ adminKey }: { adminKey?: string }) 
   };
   const currentUrl = () => url(target);
 
-  const load = async (t = target) => {
+  // The parameter used to be called `t`, which shadowed the translator inside
+  // this function — so t("…") resolved to the target string and was not
+  // callable.
+  const load = async (which = target) => {
     setError(null);
     try {
-      const res = await fetch(url(t), { cache: "no-store" });
+      const res = await fetch(url(which), { cache: "no-store" });
       const json = await res.json();
       if (json.targets) setTargets(json.targets);
       if (!res.ok) {
         setSections(null);
-        setError(json.error ?? "Could not load the config.");
+        setError(json.error ?? t("admin.pluginConfig.error.loadConfig"));
         return;
       }
       setSections(json.sections);
@@ -73,7 +78,7 @@ export default function PluginConfigEditor({ adminKey }: { adminKey?: string }) 
       setActive(json.sections[0]?.key ?? "");
       setDraft({});
     } catch {
-      setError("Could not reach the server.");
+      setError(t("admin.pluginConfig.error.network"));
     }
   };
 
@@ -119,31 +124,31 @@ export default function PluginConfigEditor({ adminKey }: { adminKey?: string }) 
       });
       const json = await res.json();
       if (!res.ok) {
-        setError(json.error ?? "Save failed.");
+        setError(json.error ?? t("admin.pluginConfig.error.saveFailed"));
         return;
       }
-      setResult({ applied: json.applied ?? [], detail: json.apply?.detail ?? json.message ?? "Saved." });
+      setResult({ applied: json.applied ?? [], detail: json.apply?.detail ?? json.message ?? t("admin.pluginConfig.saved") });
       setConfirming(false);
       await load();
     } catch {
-      setError("Network error — nothing was written.");
+      setError(t("admin.pluginConfig.error.networkWrite"));
     } finally {
       setBusy(false);
     }
   };
 
   const targetTabs = targets.length > 0 && (
-    <div className="cfg-targets" role="tablist" aria-label="Config file">
-      {targets.map((t) => (
+    <div className="cfg-targets" role="tablist" aria-label={t("admin.pluginConfig.aria.configFile")}>
+      {targets.map((t_target) => (
         <button
-          key={t.id}
+          key={t_target.id}
           role="tab"
-          aria-selected={target === t.id}
-          className={`cfg-target ${target === t.id ? "active" : ""}`}
-          title={t.hint}
-          onClick={() => setTarget(t.id)}
+          aria-selected={target === t_target.id}
+          className={`cfg-target ${target === t_target.id ? "active" : ""}`}
+          title={t_target.hint}
+          onClick={() => setTarget(t_target.id)}
         >
-          {t.label}
+          {t_target.label}
         </button>
       ))}
     </div>
@@ -155,7 +160,7 @@ export default function PluginConfigEditor({ adminKey }: { adminKey?: string }) 
         {targetTabs}
         <p className="skin-note skin-note-error" role="alert">
           <span>
-            <strong>Unavailable.</strong> {error}
+            <strong>{t("admin.pluginConfig.status.unavailable")}</strong> {error}
           </span>
         </p>
       </div>
@@ -166,7 +171,7 @@ export default function PluginConfigEditor({ adminKey }: { adminKey?: string }) 
     return (
       <div className="cfg">
         {targetTabs}
-        <p className="muted">Reading the server config…</p>
+        <p className="muted">{t("admin.pluginConfig.status.readingConfig")}</p>
       </div>
     );
   }
@@ -176,18 +181,18 @@ export default function PluginConfigEditor({ adminKey }: { adminKey?: string }) 
       {targetTabs}
       <div className="cfg-head">
         <div>
-          <span className="pro-section-note">Live plugin config</span>
+          <span className="pro-section-note">{t("admin.pluginConfig.liveConfigNote")}</span>
           <code className="skin-path">{path}</code>
         </div>
         <div className="cfg-head-actions">
-          <button className="btn btn-secondary" onClick={() => load()} disabled={busy}>Reload</button>
+          <button className="btn btn-secondary" onClick={() => load()} disabled={busy}>{t("admin.pluginConfig.btn.reload")}</button>
           {canWrite && (
             <button
               className="btn btn-primary"
               disabled={busy || pending.length === 0}
               onClick={() => setConfirming(true)}
             >
-              {pending.length === 0 ? "No changes" : `Review ${pending.length} change${pending.length === 1 ? "" : "s"}`}
+              {pending.length === 0 ? t("admin.pluginConfig.btn.noChanges") : t("admin.pluginConfig.btn.reviewChanges", { count: pending.length })}
             </button>
           )}
         </div>
@@ -196,7 +201,7 @@ export default function PluginConfigEditor({ adminKey }: { adminKey?: string }) 
       {!canWrite && (
         <p className="skin-note skin-note-warn">
           <span>
-            <strong>Read-only.</strong> Editing the plugin config needs the Owner role.
+            <strong>{t("admin.pluginConfig.status.readOnly")}</strong> {t("admin.pluginConfig.readOnlyNote")}
           </span>
         </p>
       )}
@@ -204,7 +209,7 @@ export default function PluginConfigEditor({ adminKey }: { adminKey?: string }) 
       <div aria-live="assertive" role="alert">
         {error && (
           <p className="skin-note skin-note-error">
-            <span><strong>Failed.</strong> {error}</span>
+            <span><strong>{t("admin.pluginConfig.status.failed")}</strong> {error}</span>
           </p>
         )}
       </div>
@@ -213,7 +218,7 @@ export default function PluginConfigEditor({ adminKey }: { adminKey?: string }) 
         {result && (
           <p className="skin-note skin-note-ok">
             <span>
-              <strong>Saved {result.applied.length} change{result.applied.length === 1 ? "" : "s"}.</strong>{" "}
+              <strong>{t("admin.pluginConfig.savedChanges", { count: result.applied.length })}</strong>{" "}
               {result.detail}
             </span>
           </p>
@@ -221,7 +226,7 @@ export default function PluginConfigEditor({ adminKey }: { adminKey?: string }) 
       </div>
 
       <div className="cfg-body">
-        <nav className="cfg-nav" aria-label="Config sections">
+        <nav className="cfg-nav" aria-label={t("admin.pluginConfig.aria.configSections")}>
           {sections.map((s) => {
             const dirty = pending.some((c) => c.path.startsWith(`${s.key}.`));
             return (
@@ -231,7 +236,7 @@ export default function PluginConfigEditor({ adminKey }: { adminKey?: string }) 
                 onClick={() => setActive(s.key)}
               >
                 {s.label}
-                {dirty && <span className="cfg-dot" aria-label="unsaved changes" />}
+                {dirty && <span className="cfg-dot" aria-label={t("admin.pluginConfig.aria.unsavedChanges")} />}
               </button>
             );
           })}
@@ -245,9 +250,9 @@ export default function PluginConfigEditor({ adminKey }: { adminKey?: string }) 
       {confirming && (
         <div className="pro-modal" role="dialog" aria-modal="true" aria-labelledby="cfg-confirm" onClick={() => setConfirming(false)}>
           <div className="pro-modal-card" onClick={(e) => e.stopPropagation()}>
-            <h2 id="cfg-confirm">Apply {pending.length} change{pending.length === 1 ? "" : "s"}?</h2>
+            <h2 id="cfg-confirm">{t("admin.pluginConfig.applyChanges", { count: pending.length })}</h2>
             <p className="muted" style={{ fontSize: 13, marginTop: 0 }}>
-              This writes to the running server&rsquo;s config file.
+              {t("admin.pluginConfig.applyWarning")}
             </p>
 
             <ul className="cfg-diff">
@@ -263,20 +268,19 @@ export default function PluginConfigEditor({ adminKey }: { adminKey?: string }) 
 
             <p className="skin-note skin-note-warn">
               <span>
-                <strong>When it takes effect.</strong> On an empty server, immediately. With players on, the
-                server announces it in chat and applies it at the end of the map — any admin can type{" "}
-                <code>/restart</code> to apply it straight away.
+                <strong>{t("admin.pluginConfig.effectNote.title")}</strong> {t("admin.pluginConfig.effectNote.desc1")}
+                <code>/restart</code> {t("admin.pluginConfig.effectNote.desc2")}
               </span>
             </p>
 
             <div className="cfg-confirm-actions">
-              <button className="btn btn-secondary" onClick={() => setConfirming(false)} disabled={busy}>Cancel</button>
-              <button className="btn btn-secondary" onClick={() => save("none")} disabled={busy}>Save only</button>
+              <button className="btn btn-secondary" onClick={() => setConfirming(false)} disabled={busy}>{t("admin.pluginConfig.btn.cancel")}</button>
+              <button className="btn btn-secondary" onClick={() => save("none")} disabled={busy}>{t("admin.pluginConfig.btn.saveOnly")}</button>
               <button className="btn btn-secondary" onClick={() => save("now")} disabled={busy}>
-                Save &amp; apply now
+                {t("admin.pluginConfig.btn.saveApplyNow")}
               </button>
               <button className="btn btn-primary" onClick={() => save("auto")} disabled={busy}>
-                {busy ? "Saving…" : "Save & apply"}
+                {busy ? t("admin.pluginConfig.btn.saving") : t("admin.pluginConfig.btn.saveApply")}
               </button>
             </div>
           </div>
@@ -299,6 +303,7 @@ function SectionFields({
   disabled: boolean;
   depth: number;
 }) {
+  const { t } = useI18n();
   return (
     <>
       {depth > 0 && <h4 className="cfg-group-title">{section.label}</h4>}
@@ -313,7 +318,7 @@ function SectionFields({
         <SectionFields key={g.key} section={g} valueOf={valueOf} set={set} disabled={disabled} depth={depth + 1} />
       ))}
       {section.fields.length === 0 && section.groups.length === 0 && (
-        <p className="muted" style={{ fontSize: 13 }}>Nothing editable in this section.</p>
+        <p className="muted" style={{ fontSize: 13 }}>{t("admin.pluginConfig.emptySection")}</p>
       )}
     </>
   );
@@ -330,6 +335,7 @@ function Field({
   set: (path: string, value: unknown) => void;
   disabled: boolean;
 }) {
+  const { t } = useI18n();
   const id = `cfg-${field.path.replace(/\./g, "-")}`;
   const dirty = JSON.stringify(value) !== JSON.stringify(field.value);
 
@@ -337,7 +343,7 @@ function Field({
     <div className={`cfg-field tone-${field.tone} ${dirty ? "dirty" : ""}`}>
       <label htmlFor={id}>
         {field.label}
-        {dirty && <span className="cfg-dot" aria-label="changed" />}
+        {dirty && <span className="cfg-dot" aria-label={t("admin.pluginConfig.aria.changed")} />}
       </label>
 
       {field.kind === "bool" ? (
@@ -349,7 +355,7 @@ function Field({
             disabled={disabled}
             onChange={(e) => set(field.path, e.target.checked)}
           />
-          <span>{value ? "On" : "Off"}</span>
+          <span>{value ? t("admin.pluginConfig.on") : t("admin.pluginConfig.off")}</span>
         </label>
       ) : field.kind === "enum" ? (
         <select

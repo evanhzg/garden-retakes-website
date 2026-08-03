@@ -12,7 +12,10 @@ const NOTE_CLASS: Record<string, string> = {
   failed: "skin-note skin-note-error",
 };
 
+import { useI18n } from '@/components/I18nProvider';
+
 export default function IntegrationStatus({ jobId }: { jobId: number | string | null }) {
+  const { t } = useI18n();
   const [status, setStatus] = useState<Status>("pending");
   const [error, setError] = useState<string | null>(null);
 
@@ -46,7 +49,7 @@ export default function IntegrationStatus({ jobId }: { jobId: number | string | 
     return (
       <p className="skin-note skin-note-error" role="alert">
         <span>
-          <strong>Failed.</strong> Could not check the job status: {error}
+          <strong>{t("integration.status.failed_prefix")}</strong> {t("integration.status.failed_message", { error })}
         </span>
       </p>
     );
@@ -57,11 +60,11 @@ export default function IntegrationStatus({ jobId }: { jobId: number | string | 
   return (
     <div aria-live="polite">
       <dl className="skin-kv">
-        <dt>Job</dt>
+        <dt>{t("integration.label.job")}</dt>
         <dd>
-          <code className="skin-path">{jobId ?? "none"}</code>
+          <code className="skin-path">{jobId ?? t("integration.status.none")}</code>
         </dd>
-        <dt>Status</dt>
+        <dt>{t("integration.label.status")}</dt>
         <dd>
           <span className={`tag ${status === "failed" ? "tag-outline" : "tag-accent"}`}>{status}</span>
           {running && <span className="live-dot" style={{ marginLeft: 8 }} aria-hidden />}
@@ -71,7 +74,7 @@ export default function IntegrationStatus({ jobId }: { jobId: number | string | 
       {status === "completed" && (
         <p className={NOTE_CLASS.completed} style={{ marginTop: "var(--space-4)" }}>
           <span>
-            <strong>Done.</strong> Assets compiled and uploaded to the repository.
+            <strong>{t("integration.status.done_prefix")}</strong> {t("integration.status.done_message")}
           </span>
         </p>
       )}
@@ -79,7 +82,7 @@ export default function IntegrationStatus({ jobId }: { jobId: number | string | 
       {status === "failed" && (
         <p className={NOTE_CLASS.failed} style={{ marginTop: "var(--space-4)" }}>
           <span>
-            <strong>Pipeline failed.</strong> The worker could not process this item — check the worker logs.
+            <strong>{t("integration.status.pipeline_failed_prefix")}</strong> {t("integration.status.pipeline_failed_message")}
           </span>
         </p>
       )}

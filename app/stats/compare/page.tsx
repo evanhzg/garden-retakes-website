@@ -2,6 +2,7 @@ import fs from "fs";
 import path from "path";
 import { getActiveSeason, prisma } from "@/lib/db";
 import { fetchRows, ratingClass, summarize, dayKey, StatSummary, RoundRow } from "@/lib/stats";
+import { getT } from "@/lib/serverI18n";
 
 export const revalidate = 30;
 
@@ -14,25 +15,29 @@ type Metric = {
 
 import CompareInteractive from "@/components/CompareInteractive";
 
-const METRICS = [
-  { label: "Rating", key: "rating", format: "fixed2" },
-  { label: "K/D", key: "kd", format: "fixed2" },
-  { label: "ADR", key: "adr", format: "fixed0" },
-  { label: "KAST %", key: "kast", format: "pct" },
-  { label: "HS %", key: "hs", format: "pct" },
-  { label: "Round win %", key: "winPct", format: "pct" },
-  { label: "Kills / round", key: "kpr", format: "fixed2" },
-  { label: "Assists", key: "assists", format: "raw" },
-  { label: "Opening kills", key: "openingKills", format: "raw" },
-  { label: "Opening deaths", key: "openingDeaths", format: "raw", lowerIsBetter: true },
-  { label: "Clutches won", key: "clutches", format: "raw" },
-  { label: "Multi-kill rounds", key: "multiKills", format: "raw" },
-  { label: "Trade kills", key: "tradeKills", format: "raw" },
-  { label: "Enemies flashed", key: "enemiesFlashed", format: "raw" },
-  { label: "Bomb plants", key: "plants", format: "raw" },
-  { label: "Bomb defuses", key: "defuses", format: "raw" },
-  { label: "Util dmg / round", key: "utilPerRound", format: "fixed1" },
-  { label: "Rounds played", key: "rounds", format: "raw" },
+// Note: METRICS labels need to be translated at runtime if they are passed down.
+// Since CompareInteractive is a client component, maybe we should pass translated labels 
+// from here, or translate them here.
+
+const getMetrics = (t: any) => [
+  { label: t("stats.compare.rating"), key: "rating", format: "fixed2" },
+  { label: t("stats.compare.kd"), key: "kd", format: "fixed2" },
+  { label: t("stats.compare.adr"), key: "adr", format: "fixed0" },
+  { label: t("stats.compare.kast"), key: "kast", format: "pct" },
+  { label: t("stats.compare.hs"), key: "hs", format: "pct" },
+  { label: t("stats.compare.winPct"), key: "winPct", format: "pct" },
+  { label: t("stats.compare.kpr"), key: "kpr", format: "fixed2" },
+  { label: t("stats.compare.assists"), key: "assists", format: "raw" },
+  { label: t("stats.compare.openingKills"), key: "openingKills", format: "raw" },
+  { label: t("stats.compare.openingDeaths"), key: "openingDeaths", format: "raw", lowerIsBetter: true },
+  { label: t("stats.compare.clutches"), key: "clutches", format: "raw" },
+  { label: t("stats.compare.multiKills"), key: "multiKills", format: "raw" },
+  { label: t("stats.compare.tradeKills"), key: "tradeKills", format: "raw" },
+  { label: t("stats.compare.enemiesFlashed"), key: "enemiesFlashed", format: "raw" },
+  { label: t("stats.compare.plants"), key: "plants", format: "raw" },
+  { label: t("stats.compare.defuses"), key: "defuses", format: "raw" },
+  { label: t("stats.compare.utilPerRound"), key: "utilPerRound", format: "fixed1" },
+  { label: t("stats.compare.roundsPlayed"), key: "rounds", format: "raw" },
 ];
 
 export default async function ComparePage({
@@ -40,6 +45,7 @@ export default async function ComparePage({
 }: {
   searchParams: { a?: string; b?: string; ranked?: string };
 }) {
+  const t = await getT();
   const season = await getActiveSeason();
   const seasonId = season?.Id ?? 0;
   const rankedOnly = searchParams.ranked === "1";
@@ -150,7 +156,7 @@ export default async function ComparePage({
   return (
     <CompareInteractive
       ladder={ladder}
-      seasonName={season?.Name ?? "no season"}
+      seasonName={season?.Name ?? t("stats.compare.noSeason")}
       statsA={statsA}
       statsB={statsB}
       mapStatsA={mapStatsA}
@@ -162,7 +168,7 @@ export default async function ComparePage({
       nameB={nameB ?? null}
       playerAInfo={playerAInfo}
       playerBInfo={playerBInfo}
-      metrics={METRICS}
+      metrics={getMetrics(t)}
       rankedOnly={rankedOnly}
     />
   );

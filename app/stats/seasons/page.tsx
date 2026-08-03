@@ -3,6 +3,7 @@ import { prisma } from "@/lib/db";
 import { formatDate } from "@/lib/stats";
 import { resolveNames, nameFrom } from "@/lib/names";
 import { seasonTotals } from "@/lib/seasons";
+import { getT } from "@/lib/serverI18n";
 
 export const revalidate = 60;
 
@@ -11,6 +12,7 @@ export const revalidate = 60;
 // to another, and the whole row links to that season's own page.
 
 export default async function SeasonsPage() {
+  const t = await getT();
   const seasons = await prisma.season.findMany({ orderBy: { Id: "desc" } });
 
   const rows = await Promise.all(
@@ -31,19 +33,19 @@ export default async function SeasonsPage() {
   return (
     <>
       <section className="pro-hero">
-        <span className="kicker">History</span>
+        <span className="kicker">{t("seasons.history")}</span>
         <h1 style={{ fontSize: "clamp(32px, 5vw, 60px)", letterSpacing: "-0.025em", margin: "10px 0 8px" }}>
-          Every season.
+          {t("seasons.everySeason")}
         </h1>
         <p className="muted" style={{ maxWidth: "60ch" }}>
-          Champions, records and the shape of each season across the lifetime of the server.
+          {t("seasons.description")}
         </p>
       </section>
 
       <section className="pro-section">
         <div className="pro-section-head">
-          <h2>Seasons</h2>
-          <span className="pro-section-note">{rows.length} recorded</span>
+          <h2>{t("seasons.title")}</h2>
+          <span className="pro-section-note">{t("seasons.recorded", { count: rows.length })}</span>
         </div>
 
         <div className="season-list">
@@ -56,18 +58,18 @@ export default async function SeasonsPage() {
                 </span>
                 <span className="season-row-dates">
                   {formatDate(season.StartedAtUtc.toISOString().slice(0, 10))} →{" "}
-                  {season.EndedAtUtc ? formatDate(season.EndedAtUtc.toISOString().slice(0, 10)) : "ongoing"}
-                  {totals.days ? ` · ${totals.days}d` : ""}
+                  {season.EndedAtUtc ? formatDate(season.EndedAtUtc.toISOString().slice(0, 10)) : t("seasons.ongoing")}
+                  {totals.days ? ` · ${t("seasons.days", { days: totals.days })}` : ""}
                 </span>
               </div>
 
               <div className="season-row-figures">
                 {[
-                  { k: "Players", v: totals.players || "—" },
-                  { k: "Ranked rounds", v: totals.rankedRounds ? totals.rankedRounds.toLocaleString() : "—" },
-                  { k: "Avg ELO", v: totals.avgElo ? Math.round(totals.avgElo) : "—" },
-                  { k: "Avg ADR", v: totals.avgAdr ? totals.avgAdr.toFixed(0) : "—" },
-                  { k: "Avg K/D", v: totals.avgKd ? totals.avgKd.toFixed(2) : "—" },
+                  { k: t("seasons.players"), v: totals.players || "—" },
+                  { k: t("seasons.rankedRounds"), v: totals.rankedRounds ? totals.rankedRounds.toLocaleString() : "—" },
+                  { k: t("seasons.avgElo"), v: totals.avgElo ? Math.round(totals.avgElo) : "—" },
+                  { k: t("seasons.avgAdr"), v: totals.avgAdr ? totals.avgAdr.toFixed(0) : "—" },
+                  { k: t("seasons.avgKd"), v: totals.avgKd ? totals.avgKd.toFixed(2) : "—" },
                 ].map((f) => (
                   <span key={f.k} className="season-figure">
                     <span className="num season-figure-v">{f.v}</span>
@@ -77,9 +79,9 @@ export default async function SeasonsPage() {
               </div>
 
               <div className="season-row-champ">
-                <span className="season-figure-k">Champion</span>
+                <span className="season-figure-k">{t("seasons.champion")}</span>
                 <span className="season-row-champ-name">{best ? nameFrom(names, best.SteamId) : "—"}</span>
-                {best && <span className="num season-row-champ-elo">{best.PeakElo} peak</span>}
+                {best && <span className="num season-row-champ-elo">{t("seasons.peakElo", { elo: best.PeakElo })}</span>}
               </div>
             </Link>
           ))}

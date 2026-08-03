@@ -123,13 +123,15 @@ export function SideSplitBars({
         <span className="legend-item"><i style={{ background: "var(--chart-ct)" }} /> {t("stats.charts.ctWins")}</span>
       </div>
       {rows.map((r) => {
-        const t = Math.round(r.tWinPct);
-        const ct = 100 - t;
+        // Named tPct, not t: the local percentage shadowed the translator, so
+        // t("…") resolved to a number and stopped being callable.
+        const tPct = Math.round(r.tWinPct);
+        const ct = 100 - tPct;
         return (
-          <div key={r.label} className="hbar-row" title={t("stats.charts.splitHint", { label: r.label, t, ct, rounds: r.rounds })}>
+          <div key={r.label} className="hbar-row" title={t("stats.charts.splitHint", { label: r.label, t: tPct, ct, rounds: r.rounds })}>
             <span className="hbar-label">{r.label}</span>
             <span className="split-track">
-              <span className="split-t" style={{ width: `${t}%` }}>{t >= 14 ? `${t}%` : ""}</span>
+              <span className="split-t" style={{ width: `${tPct}%` }}>{tPct >= 14 ? `${tPct}%` : ""}</span>
               <span className="split-ct" style={{ width: `${ct}%` }}>{ct >= 14 ? `${ct}%` : ""}</span>
             </span>
             <span className="hbar-value muted-value">{t("stats.charts.rounds", { count: r.rounds })}</span>

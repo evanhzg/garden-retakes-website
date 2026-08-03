@@ -4,9 +4,12 @@ import { useEffect, useState } from "react";
 
 type Status = { signedIn: boolean; configured: boolean; linked: boolean; name?: string | null; avatar?: string | null };
 
+import { useI18n } from '@/components/I18nProvider';
+
 // Profile "Connections" card: link / unlink a Discord account. The OAuth flow
 // lives in /api/auth/discord/*; this just reflects and toggles the link.
 export default function DiscordConnect() {
+  const { t } = useI18n();
   const [status, setStatus] = useState<Status | null>(null);
   const [busy, setBusy] = useState(false);
 
@@ -24,11 +27,11 @@ export default function DiscordConnect() {
     const q = new URLSearchParams(window.location.search).get("discord");
     if (!q) return;
     const msg: Record<string, string> = {
-      linked: "Discord connected ✓",
-      failed: "Discord link failed — try again.",
-      error: "Couldn't save the link. Is the DB reachable?",
-      unconfigured: "Discord isn't configured on the server yet.",
-      signin: "Sign in with Steam first.",
+      linked: t("discord.notice.linked"),
+      failed: t("discord.notice.failed"),
+      error: t("discord.notice.error"),
+      unconfigured: t("discord.notice.unconfigured"),
+      signin: t("discord.notice.signin"),
     };
     setNotice(msg[q] ?? null);
     const url = new URL(window.location.href);
@@ -53,9 +56,9 @@ export default function DiscordConnect() {
           </svg>
         </span>
         <div>
-          <h3>Discord</h3>
+          <h3>{t("discord.title")}</h3>
           <p>
-            {status.linked ? "Connected — used for game invites." : "Link your Discord to join games from your server."}
+            {status.linked ? t("discord.description.linked") : t("discord.description.unlinked")}
           </p>
         </div>
       </div>
@@ -69,7 +72,7 @@ export default function DiscordConnect() {
             <span className="discord-user-name">{status.name}</span>
           </div>
           <button className="discord-btn ghost" onClick={unlink} disabled={busy}>
-            {busy ? "…" : "Unlink"}
+            {busy ? t("discord.action.busy") : t("discord.action.unlink")}
           </button>
         </div>
       ) : (
@@ -78,9 +81,9 @@ export default function DiscordConnect() {
           href={status.configured ? "/api/auth/discord/login" : undefined}
           aria-disabled={!status.configured}
           onClick={(e) => { if (!status.configured) e.preventDefault(); }}
-          title={status.configured ? "Link Discord" : "Discord isn't configured on the server yet"}
+          title={status.configured ? t("discord.action.link_title") : t("discord.notice.unconfigured")}
         >
-          Connect Discord
+          {t("discord.action.connect")}
         </a>
       )}
     </div>

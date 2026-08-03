@@ -283,5 +283,7 @@
   "profile.stats.details.enemiesFlashed": "Enemies flashed",
   "profile.stats.details.defuses": "Defuses",
   "profile.stats.details.assists": "Assists",
-  "profile.stats.details.roundsWon": "Rounds won"
+  "profile.stats.details.roundsWon": "Rounds won",
+  "stats.charts.tWins": "T wins",
+  "stats.charts.ctWins": "CT wins"
 }

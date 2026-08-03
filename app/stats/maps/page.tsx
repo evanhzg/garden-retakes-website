@@ -3,17 +3,19 @@ import { getActiveSeason, prisma } from "@/lib/db";
 import { summarize, ratingClass } from "@/lib/stats";
 import { resolveNames, nameFrom } from "@/lib/names";
 import AvatarImage from "@/components/AvatarImage";
+import { getT } from "@/lib/serverI18n";
 
 export const dynamic = "force-dynamic";
 export const revalidate = 60;
 
 export default async function MapHeatmapsPage() {
+  const t = await getT();
   const season = await getActiveSeason();
   if (!season) {
     return (
       <section className="panel">
-        <h2>Global Stats</h2>
-        <p className="muted">No active season found.</p>
+        <h2>{t("stats.maps.globalStats")}</h2>
+        <p className="muted">{t("stats.maps.noSeason")}</p>
       </section>
     );
   }
@@ -56,25 +58,25 @@ export default async function MapHeatmapsPage() {
   return (
     <>
       <section className="panel">
-        <h2>Global Stats — {season.Name}</h2>
+        <h2>{t("stats.maps.globalStatsSeason", { season: season.Name })}</h2>
         <div className="chip-row">
-          <Link href="/stats" className="chip">Overview</Link>
-          <Link href="/stats/maps" className="chip active">Map Heatmaps</Link>
+          <Link href="/stats" className="chip">{t("stats.maps.overview")}</Link>
+          <Link href="/stats/maps" className="chip active">{t("stats.maps.mapHeatmaps")}</Link>
         </div>
       </section>
 
       <section className="panel" style={{ marginTop: 16 }}>
-        <h2>Map Rating Heatmap</h2>
+        <h2>{t("stats.maps.heatmapTitle")}</h2>
         <p className="muted" style={{ marginBottom: 16 }}>
-          Shows the average rating per map for the top {topPlayers.length} most active players this season.
+          {t("stats.maps.heatmapDesc", { count: topPlayers.length })}
         </p>
 
         <div style={{ overflowX: "auto" }}>
           <table className="ladder-table" style={{ minWidth: 800 }}>
             <thead>
               <tr>
-                <th style={{ width: 150 }}>Map</th>
-                <th>Server Avg</th>
+                <th style={{ width: 150 }}>{t("stats.maps.map")}</th>
+                <th>{t("stats.maps.serverAvg")}</th>
                 {topPlayers.map(p => (
                   <th key={p.steamId.toString()} style={{ textAlign: "center", padding: "8px 4px" }}>
                     <div style={{ display: "flex", flexDirection: "column", alignItems: "center", gap: 6 }}>
@@ -109,7 +111,7 @@ export default async function MapHeatmapsPage() {
                           key={p.steamId.toString()} 
                           className={ratingClass(playerSummary.rating)} 
                           style={{ fontWeight: 800, textAlign: "center" }}
-                          title={`${playerSummary.rounds} rounds on ${map}`}
+                          title={t("stats.maps.roundsOnMap", { rounds: playerSummary.rounds, map })}
                         >
                           {playerSummary.rating.toFixed(2)}
                         </td>
