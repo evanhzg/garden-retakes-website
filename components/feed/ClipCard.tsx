@@ -259,15 +259,16 @@ export default function ClipCard({
         <p className={`clip-desc ${clip.description ? "" : "is-placeholder"}`}>
           {clip.description || describeFallback(clip)}
         </p>
-        {clip.tags && clip.tags.length > 0 && (
-          <p className="clip-tags">
-            {clip.tags.map((t) => (
-              <span key={t} className="clip-tag" style={{ ["--tint" as string]: tagColour(t) }}>
-                {tagLabel(t)}
-              </span>
-            ))}
-          </p>
-        )}
+        {/* Always rendered, empty when there are none: cards sit in a grid, and
+            an optional row in the middle makes one tagged clip taller than its
+            neighbours for the whole row. */}
+        <p className="clip-tags" aria-hidden={!clip.tags?.length}>
+          {(clip.tags ?? []).map((t) => (
+            <span key={t} className="clip-tag" style={{ ["--tint" as string]: tagColour(t) }}>
+              {tagLabel(t)}
+            </span>
+          ))}
+        </p>
       </div>
 
       <footer className="clip-actions">

@@ -4,6 +4,7 @@ import Link from "next/link";
 import { useEffect, useMemo, useState } from "react";
 import AvatarImage from "@/components/AvatarImage";
 import ProfileSettingsModal from "@/components/profile/ProfileSettingsModal";
+import FeaturedClip from "@/components/profile/FeaturedClip";
 import { M4A1S, M4A4, SIGNATURE_SLOTS, normaliseStore } from "@/lib/inventory";
 import type { InventoryItem, InventoryStore, Loadout, Side } from "@/lib/inventory";
 import type { ProfileHeroStats } from "@/app/profile/page";
@@ -121,13 +122,21 @@ export default function ProfileHero({
     }
   };
 
+  // Four headline figures, not six. Six equal tiles is a wall with no shape —
+  // nothing is emphasised, so nothing is read. The rest stay one line below in
+  // smaller type, which is where they belong: context, not headline.
   const headline = [
     { label: "Rating", value: stats.rating.toFixed(2) },
     { label: "CS Rating", value: stats.elo ?? "—", sub: stats.peakElo ? `peak ${stats.peakElo}` : undefined },
     { label: "K/D", value: stats.kd.toFixed(2) },
     { label: "ADR", value: stats.adr.toFixed(0) },
-    { label: "Win rate", value: `${stats.winPct.toFixed(0)}%`, sub: `${stats.rounds} rounds` },
-    { label: "Clutches", value: stats.clutches, sub: `${stats.openingKills} opening` },
+  ];
+
+  const secondary = [
+    { label: "Win rate", value: `${stats.winPct.toFixed(0)}%` },
+    { label: "Rounds", value: stats.rounds },
+    { label: "Clutches", value: stats.clutches },
+    { label: "Opening kills", value: stats.openingKills },
   ];
 
   return (
@@ -201,7 +210,22 @@ export default function ProfileHero({
         ))}
       </div>
 
-      <div className="pro-loadout">
+      <dl className="pro-secondary">
+        {secondary.map((sx) => (
+          <div key={sx.label}>
+            <dt>{sx.label}</dt>
+            <dd className="num">{sx.value}</dd>
+          </div>
+        ))}
+      </dl>
+
+      {/* Best clip and loadout share a band. Both are "what this player looks
+          like" rather than numbers, and side by side the hero stops being one
+          long column of unrelated blocks. */}
+      <div className="pro-showcase">
+        <FeaturedClip steamId={steamId} />
+
+        <div className="pro-loadout">
         <div className="pro-loadout-head">
           <h2>Equipped{loadout ? ` — ${loadout.name}` : ""}</h2>
           <div className="pro-sides" role="group" aria-label="Side">
@@ -214,10 +238,12 @@ export default function ProfileHero({
           <Link className="btn btn-ghost" href="/inventory">Edit →</Link>
         </div>
         <div className="pro-guns">
-          {slots.map((slot) => (
+          {slots.map((slot, i) => (
             <div
               key={slot.key}
-              className={`pro-gun ${slot.skin ? "has" : ""}`}
+              /* The rifle and pistol lead: they are what you look at all game,
+                 and a flat grid of eight equal tiles said otherwise. */
+              className={`pro-gun ${slot.skin ? "has" : ""} ${i < 2 ? "lead" : ""}`}
               style={slot.rarity ? ({ "--rarity": slot.rarity } as React.CSSProperties) : undefined}
             >
               {slot.image ? (
@@ -231,6 +257,8 @@ export default function ProfileHero({
             </div>
           ))}
         </div>
+      </div>
+
       </div>
 
       {settingsOpen && <ProfileSettingsModal onClose={() => setSettingsOpen(false)} />}

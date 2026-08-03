@@ -28,7 +28,7 @@ export default function DynamicGridBackground() {
 
     // Config
     const GRID_SIZE = 20;
-    const LENS_RADIUS = 300;
+    const LENS_RADIUS = 150;
     const MAGNIFICATION = 0.8; // Strength of the bulge/zoom
     // Drawn at full strength; the canvas element carries the 0.3 (see below),
     // so the composited grid lands at exactly 0.3 rather than 0.3 × 0.3.
@@ -59,7 +59,56 @@ export default function DynamicGridBackground() {
     let targetMouseX = -1000;
     let targetMouseY = -1000;
 
+    /**
+     * The lens only follows the cursor over bare background.
+     *
+     * The grid sits behind the whole page, so the effect used to keep bending
+     * under cards, panels and the nav — visible around their edges, pulling the
+     * eye to something the cursor was not pointing at.
+     *
+     * "Over something" is decided by what is actually painted, not by tag or
+     * class: most of the page is transparent wrappers, and an allow-list of
+     * those would either miss a real panel or kill the effect everywhere. So
+     * walk up from the hit element and look for a background anyone can see.
+     */
+    const isOpaque = (el: Element): boolean => {
+      const cs = getComputedStyle(el);
+      if (cs.backgroundImage && cs.backgroundImage !== "none") return true;
+      const m = /rgba?\(([^)]+)\)/.exec(cs.backgroundColor || "");
+      if (!m) return false;
+      const parts = m[1].split(",").map((n) => Number(n.trim()));
+      return (parts.length > 3 ? parts[3] : 1) > 0.02;
+    };
+
+    // getComputedStyle on every mousemove would be wasteful, and the answer only
+    // changes when the pointer crosses into a different element.
+    let lastHit: Element | null = null;
+    let lastAnswer = true;
+
+    const overBackground = (e: MouseEvent): boolean => {
+      const hit = document.elementFromPoint(e.clientX, e.clientY);
+      if (hit === lastHit) return lastAnswer;
+      lastHit = hit;
+
+      let el: Element | null = hit;
+      lastAnswer = true;
+      while (el && el !== document.body && el !== document.documentElement) {
+        if (el !== canvas && isOpaque(el)) {
+          lastAnswer = false;
+          break;
+        }
+        el = el.parentElement;
+      }
+      return lastAnswer;
+    };
+
     const handleMouseMove = (e: MouseEvent) => {
+      if (!overBackground(e)) {
+        // Retreat rather than freeze, so it eases out instead of stopping dead.
+        targetMouseX = -1000;
+        targetMouseY = -1000;
+        return;
+      }
       targetMouseX = e.clientX;
       targetMouseY = e.clientY;
     };

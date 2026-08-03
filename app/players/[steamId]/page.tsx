@@ -9,6 +9,7 @@ import CharacterHero from "@/components/CharacterHero";
 import AvatarImage from "@/components/AvatarImage";
 import ProfileActivity from "@/components/ProfileActivity";
 import ProfileStats from "@/components/profile/ProfileStats";
+import FeaturedClip from "@/components/profile/FeaturedClip";
 
 export const dynamic = "force-dynamic";
 export const revalidate = 30;
@@ -162,6 +163,11 @@ export default async function PlayerPage({
             </div>
             <ProfileActivity steamId={params.steamId} lastConnectedUtc={profile?.LastSeenAtUtc} />
             {webProfile?.Bio && <p className="player-bio">{webProfile.Bio}</p>}
+          </div>
+          {/* Their best clip, right in the hero — a profile should open on the
+              thing worth watching. Renders nothing when they have none. */}
+          <div className="player-hero-feature">
+            <FeaturedClip steamId={params.steamId} />
           </div>
           <div className="player-hero-actions">
             {isOwnPage && (

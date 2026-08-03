@@ -7426,3 +7426,115 @@ html[data-motion="off"] .main-content { scroll-behavior: auto; }
   color: color-mix(in srgb, var(--color-text) 70%, transparent);
 }
 .feed-tagfilter { flex-wrap: wrap; }
+
+/* ---------------------------------------------------------------------------
+   Layout and card-grid regularity.
+   --------------------------------------------------------------------------- */
+
+/* The last card or table used to sit flush against the bottom of the scroll
+   area, which reads as content cut off rather than content ending. */
+.main-content > main {
+  padding-bottom: clamp(48px, 7vh, 96px);
+}
+
+.nav-more-item {
+  border-radius: 8px;
+  transition: background 0.14s ease, color 0.14s ease;
+}
+.nav-more-item:hover {
+  background: color-mix(in srgb, var(--color-accent) 12%, transparent);
+  color: var(--color-accent) !important;
+}
+
+/* Cards in the feed grid are the same height whether or not a clip has tags.
+   The tag row is optional content in the middle of a fixed layout, so the row
+   is always reserved and simply empty — otherwise one tagged clip makes its
+   whole row taller than its neighbours. */
+/* Cards stretch to the tallest in their row (align-items was `start`, which is
+   what let a tagged clip stand shorter or taller than its neighbours), and the
+   body absorbs the slack so every footer lines up. */
+.feed-grid { align-items: stretch; }
+.feed-grid > .clip {
+  grid-template-rows: auto auto 1fr auto;
+}
+.clip-body { display: flex; flex-direction: column; }
+.clip-tags {
+  min-height: 20px;
+  align-items: flex-start;
+}
+/* Pushes the tag row to the bottom of the body so footers line up across a row
+   regardless of how long the title and description ran. */
+.clip-body > .clip-tags { margin-top: auto; }
+
+/* ---------------------------------------------------------------------------
+   Profile hero: fewer, larger things.
+
+   It used to be one column of equal-weight blocks — identity, six stat tiles,
+   then eight identical gun tiles — so nothing was emphasised and the whole
+   thing read as dense. Four headline figures lead, the rest drop to a quiet
+   line, and the two "what this player looks like" blocks share a band.
+   --------------------------------------------------------------------------- */
+
+.pro-secondary {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px 22px;
+  margin: 10px 0 0;
+  padding: 10px 0 0;
+  border-top: 1px solid var(--color-divider);
+}
+.pro-secondary > div { display: flex; align-items: baseline; gap: 7px; }
+.pro-secondary dt { font-size: 11px; text-transform: uppercase; letter-spacing: 0.05em; color: var(--muted); }
+.pro-secondary dd { margin: 0; font-size: 14px; font-weight: 700; }
+
+.pro-showcase {
+  display: grid;
+  grid-template-columns: minmax(0, 320px) minmax(0, 1fr);
+  gap: 16px;
+  margin-top: 18px;
+  align-items: start;
+}
+/* Below this the two blocks stop being comparable and just stack. */
+@media (max-width: 820px) { .pro-showcase { grid-template-columns: 1fr; } }
+.pro-showcase > .pro-loadout { margin-top: 0; }
+
+.pro-feature {
+  display: flex;
+  flex-direction: column;
+  gap: 0;
+  padding: 0;
+  border: 1.5px solid var(--line, var(--border));
+  border-radius: 14px;
+  overflow: hidden;
+  background: var(--panel);
+  cursor: pointer;
+  text-align: left;
+  font: inherit;
+  color: inherit;
+  transition: border-color 0.16s ease, transform 0.16s ease;
+}
+.pro-feature:hover { border-color: var(--color-accent); transform: translateY(-2px); }
+
+.pro-feature-media { position: relative; display: block; aspect-ratio: 16 / 9; background: #000; }
+.pro-feature-media > img { width: 100%; height: 100%; object-fit: cover; display: block; }
+.pro-feature-ph { position: absolute; inset: 0; background: var(--color-neutral-200); }
+.pro-feature-media > .clip-play {
+  position: absolute; inset: 0; display: grid; place-items: center;
+  font-size: 30px; color: #fff; text-shadow: 0 2px 12px rgb(0 0 0 / 0.6);
+}
+
+.pro-feature-meta { display: grid; gap: 3px; padding: 10px 12px 12px; }
+.pro-feature-title {
+  font-weight: 700; font-size: 14px; line-height: 1.3;
+  display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden;
+}
+.pro-feature-counts { font-size: 12px; color: var(--muted); }
+
+/* The two guns you actually hold get the space; the rest stay reference. */
+.pro-gun.lead { grid-column: span 2; }
+.pro-gun.lead img { max-height: 76px; }
+@media (max-width: 620px) { .pro-gun.lead { grid-column: span 1; } }
+
+/* The featured clip sits alongside the identity block on a public profile. */
+.player-hero-feature { width: min(300px, 100%); flex: 0 0 auto; }
+@media (max-width: 760px) { .player-hero-feature { width: 100%; } }

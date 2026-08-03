@@ -71,8 +71,29 @@ export default function NavBar({
   const [menuOpen, setMenuOpen] = useState(false);
   
   const headerRef = useRef<HTMLElement>(null);
+  const moreRef = useRef<HTMLDivElement>(null);
   const [inGame, setInGame] = useState(false);
   const [headerHidden, setHeaderHidden] = useState(false);
+
+  // The More menu had no way out but clicking More again — every other menu on
+  // the site closes on an outside click, and this one stayed open while you
+  // went off to use something else.
+  useEffect(() => {
+    if (!menuOpen) return;
+    const onPointerDown = (e: PointerEvent) => {
+      if (!moreRef.current?.contains(e.target as Node)) setMenuOpen(false);
+    };
+    const onKey = (e: KeyboardEvent) => {
+      if (e.key === "Escape") setMenuOpen(false);
+    };
+    // Capture, so a menu item's own click still runs before this closes it.
+    document.addEventListener("pointerdown", onPointerDown, true);
+    window.addEventListener("keydown", onKey);
+    return () => {
+      document.removeEventListener("pointerdown", onPointerDown, true);
+      window.removeEventListener("keydown", onKey);
+    };
+  }, [menuOpen]);
 
   useEffect(() => {
     const sync = () => setInGame(document.body.classList.contains("in-game"));
@@ -245,11 +266,12 @@ export default function NavBar({
         })}
 
         {overflow.length > 0 && (
-          <div style={{ position: "relative" }}>
+          <div ref={moreRef} style={{ position: "relative" }}>
             <button
               type="button"
               onClick={() => setMenuOpen((v) => !v)}
               aria-expanded={menuOpen}
+              aria-haspopup="menu"
               style={{
                 ...linkStyle(false),
                 background: "none",
@@ -285,11 +307,16 @@ export default function NavBar({
             <AnimatePresence>
               {menuOpen && (
                 <motion.div
-                  initial={{ opacity: 0, y: -6 }}
-                  animate={{ opacity: 1, y: 0 }}
-                  exit={{ opacity: 0, y: -6 }}
-                  transition={{ duration: 0.18, ease: [0.16, 1, 0.3, 1] }}
+                  role="menu"
+                  // Grows out of the button it belongs to rather than sliding in
+                  // from nowhere: the corner it scales from is the corner the
+                  // button is in.
+                  initial={{ opacity: 0, scaleY: 0.86, y: -8 }}
+                  animate={{ opacity: 1, scaleY: 1, y: 0 }}
+                  exit={{ opacity: 0, scaleY: 0.9, y: -6, transition: { duration: 0.12 } }}
+                  transition={{ duration: 0.24, ease: [0.16, 1, 0.3, 1] }}
                   style={{
+                    transformOrigin: "top right",
                     position: "absolute",
                     top: "calc(100% + 14px)",
                     right: 0,
@@ -303,14 +330,22 @@ export default function NavBar({
                     zIndex: 40,
                   }}
                 >
-                  {overflow.map((l) => {
+                  {overflow.map((l, i) => {
                     const active = pathname.startsWith(l.href);
                     return (
-                      <Link
+                      <motion.div
                         key={l.href}
+                        initial={{ opacity: 0, x: 8 }}
+                        animate={{ opacity: 1, x: 0 }}
+                        transition={{ duration: 0.2, delay: 0.03 + i * 0.022, ease: [0.16, 1, 0.3, 1] }}
+                        style={{ display: "flex" }}
+                      >
+                      <Link
                         href={getHref(l.href)}
                         onClick={() => setMenuOpen(false)}
+                        className="nav-more-item"
                         style={{
+                          flex: 1,
                           padding: "9px 12px",
                           fontSize: 13,
                           textDecoration: "none",
@@ -322,6 +357,7 @@ export default function NavBar({
                       >
                         {l.label}
                       </Link>
+                      </motion.div>
                     );
                   })}
                 </motion.div>
