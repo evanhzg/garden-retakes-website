@@ -7759,3 +7759,77 @@ header .avatar-sm { width: 34px; height: 34px; }
 }
 .inv4-skin-pick:hover .inv4-skin-equip,
 .inv4-skin-pick:focus-visible .inv4-skin-equip { opacity: 1; }
+
+/* ---------------------------------------------------------------------------
+   Season vote, beside the hero.
+   --------------------------------------------------------------------------- */
+
+.home-hero-row { display: grid; grid-template-columns: minmax(0, 1fr) auto; gap: clamp(16px, 2.5vw, 32px); align-items: start; }
+/* Below this the ballot stops being a sidebar and becomes the next thing down. */
+@media (max-width: 1080px) { .home-hero-row { grid-template-columns: minmax(0, 1fr); } }
+
+.vote-panel {
+  width: min(340px, 100%);
+  background: var(--color-surface);
+  border: 1.5px solid var(--color-divider);
+  border-radius: 14px;
+  padding: 14px;
+  align-self: start;
+}
+@media (max-width: 1080px) { .vote-panel { width: 100%; } }
+
+.vote-head { display: grid; gap: 2px; margin-bottom: 10px; }
+.vote-head h3 { margin: 0; font-size: 22px; letter-spacing: -0.02em; }
+.vote-left { font-size: 12px; color: var(--color-accent); font-weight: 700; }
+.vote-progress { font-size: 12px; color: var(--muted); margin: 0 0 8px; }
+
+.vote-cats { list-style: none; margin: 0; padding: 0; display: grid; gap: 4px; }
+.vote-cat {
+  display: flex; align-items: baseline; justify-content: space-between; gap: 10px;
+  width: 100%; padding: 8px 10px;
+  background: var(--color-bg); border: 1px solid var(--color-divider); border-radius: 9px;
+  font: inherit; color: inherit; cursor: pointer; text-align: left;
+}
+.vote-cat:hover { border-color: var(--color-accent); }
+.vote-cats li.open .vote-cat { border-color: var(--color-accent); border-radius: 9px 9px 0 0; }
+.vote-cat-name { font-size: 13px; font-weight: 700; }
+.vote-cat-pick { font-size: 11px; color: var(--muted); }
+.vote-cat-desc {
+  margin: 0; padding: 8px 10px 4px; font-size: 12px; color: var(--muted);
+  background: var(--color-bg); border-inline: 1px solid var(--color-accent);
+}
+.vote-choices {
+  display: grid; gap: 2px; padding: 0 8px 8px;
+  background: var(--color-bg);
+  border: 1px solid var(--color-accent); border-top: 0; border-radius: 0 0 9px 9px;
+}
+.vote-choice {
+  display: flex; align-items: center; gap: 8px;
+  padding: 5px 7px; border-radius: 7px;
+  background: none; border: 0; font: inherit; font-size: 12.5px; color: inherit;
+  cursor: pointer; text-align: left;
+}
+.vote-choice:hover { background: color-mix(in srgb, var(--color-accent) 12%, transparent); }
+.vote-choice.on { background: var(--btn-primary-bg); color: var(--btn-primary-ink); font-weight: 700; }
+
+.vote-note { font-size: 11px; color: var(--muted); margin: 10px 0 0; }
+.vote-signin { margin: 0; }
+
+.vote-results { list-style: none; margin: 0; padding: 0; display: grid; gap: 8px; }
+.vote-results li { display: grid; gap: 3px; }
+.vote-res-cat { font-size: 11px; text-transform: uppercase; letter-spacing: 0.05em; color: var(--muted); }
+.vote-res-win { display: flex; align-items: center; gap: 8px; font-size: 14px; }
+.vote-res-win .num { margin-left: auto; color: var(--muted); font-size: 12px; }
+
+/* Medals under the name. */
+.medal-case { display: flex; flex-wrap: wrap; gap: 6px; margin-top: 10px; }
+.medal {
+  display: inline-flex; align-items: center; gap: 6px;
+  padding: 3px 10px 3px 6px; border-radius: 999px;
+  font-size: 12px; font-weight: 700;
+  background: color-mix(in srgb, var(--tint) 16%, transparent);
+  border: 1px solid color-mix(in srgb, var(--tint) 50%, transparent);
+  cursor: default;
+}
+.medal-icon { font-size: 14px; line-height: 1; }
+.medal-name { color: var(--color-text); }

@@ -733,3 +733,85 @@ model GardenProfileLink {
   @@id([SteamId, Provider])
   @@map("GardenProfileLinks")
 }
+
+/// A medal that can be held. Definitions, not awards.
+model GardenMedal {
+  Id          Int    @id @default(autoincrement())
+  Slug        String @unique @db.VarChar(48)
+  Name        String @db.VarChar(64)
+  Description String @db.VarChar(240)
+  /// Emoji, so a medal needs no asset pipeline to exist.
+  Icon        String @default("🏅") @db.VarChar(8)
+  Colour      String @default("#e8b53a") @db.VarChar(9)
+  /// season (placement) | vote (community) | special (given by hand)
+  Kind        String @default("vote") @db.VarChar(16)
+  /// Order in the case, low first.
+  Sort        Int    @default(100)
+
+  CreatedAt DateTime @default(now()) @db.DateTime(6)
+
+  @@map("GardenMedals")
+}
+
+/// Somebody holding a medal, for a season.
+model GardenPlayerMedal {
+  Id        Int      @id @default(autoincrement())
+  SteamId   BigInt   @db.UnsignedBigInt
+  MedalSlug String   @db.VarChar(48)
+  SeasonId  Int
+  /// Free text — "1st, 412 votes", "Season 1".
+  Note      String?  @db.VarChar(120)
+  AwardedAt DateTime @default(now()) @db.DateTime(6)
+
+  /// One of each medal per player per season.
+  @@unique([SteamId, MedalSlug, SeasonId])
+  @@index([SteamId])
+  @@map("GardenPlayerMedals")
+}
+
+/// A community vote. One per season end, open for a fixed window.
+model GardenVotePoll {
+  Id         Int      @id @default(autoincrement())
+  SeasonId   Int
+  OpensAt    DateTime @db.DateTime(6)
+  ClosesAt   DateTime @db.DateTime(6)
+  /// Snapshot of who was eligible when it opened, so the ballot cannot change
+  /// under voters if the ladder moves.
+  Candidates String   @db.Text
+  CreatedAt  DateTime @default(now()) @db.DateTime(6)
+
+  @@index([SeasonId])
+  @@map("GardenVotePolls")
+}
+
+/// One question on the ballot.
+model GardenVoteCategory {
+  Id          Int    @id @default(autoincrement())
+  PollId      Int
+  Slug        String @db.VarChar(48)
+  Name        String @db.VarChar(64)
+  Description String @db.VarChar(240)
+  /// The medal the winner receives.
+  MedalSlug   String @db.VarChar(48)
+  Sort        Int    @default(100)
+
+  @@unique([PollId, Slug])
+  @@map("GardenVoteCategories")
+}
+
+/// A ballot line.
+///
+/// The unique key is what makes "one vote per person per category" true rather
+/// than merely intended — the UI could be bypassed, the database cannot.
+model GardenVote {
+  Id            Int      @id @default(autoincrement())
+  CategoryId    Int
+  VoterSteamId  BigInt   @db.UnsignedBigInt
+  TargetSteamId BigInt   @db.UnsignedBigInt
+  CreatedAt     DateTime @default(now()) @db.DateTime(6)
+  UpdatedAt     DateTime @updatedAt @db.DateTime(6)
+
+  @@unique([CategoryId, VoterSteamId])
+  @@index([CategoryId])
+  @@map("GardenVotes")
+}

@@ -1,0 +1,60 @@
+CREATE TABLE IF NOT EXISTS `GardenMedals` (
+  `Id` INT NOT NULL AUTO_INCREMENT,
+  `Slug` VARCHAR(48) NOT NULL,
+  `Name` VARCHAR(64) NOT NULL,
+  `Description` VARCHAR(240) NOT NULL,
+  `Icon` VARCHAR(8) NOT NULL DEFAULT '🏅',
+  `Colour` VARCHAR(9) NOT NULL DEFAULT '#e8b53a',
+  `Kind` VARCHAR(16) NOT NULL DEFAULT 'vote',
+  `Sort` INT NOT NULL DEFAULT 100,
+  `CreatedAt` DATETIME(6) NOT NULL DEFAULT CURRENT_TIMESTAMP(6),
+  PRIMARY KEY (`Id`),
+  UNIQUE KEY `UX_GardenMedals_Slug` (`Slug`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
+
+CREATE TABLE IF NOT EXISTS `GardenPlayerMedals` (
+  `Id` INT NOT NULL AUTO_INCREMENT,
+  `SteamId` BIGINT UNSIGNED NOT NULL,
+  `MedalSlug` VARCHAR(48) NOT NULL,
+  `SeasonId` INT NOT NULL,
+  `Note` VARCHAR(120) NULL,
+  `AwardedAt` DATETIME(6) NOT NULL DEFAULT CURRENT_TIMESTAMP(6),
+  PRIMARY KEY (`Id`),
+  UNIQUE KEY `UX_GardenPlayerMedals` (`SteamId`,`MedalSlug`,`SeasonId`),
+  KEY `IX_GardenPlayerMedals_SteamId` (`SteamId`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
+
+CREATE TABLE IF NOT EXISTS `GardenVotePolls` (
+  `Id` INT NOT NULL AUTO_INCREMENT,
+  `SeasonId` INT NOT NULL,
+  `OpensAt` DATETIME(6) NOT NULL,
+  `ClosesAt` DATETIME(6) NOT NULL,
+  `Candidates` TEXT NOT NULL,
+  `CreatedAt` DATETIME(6) NOT NULL DEFAULT CURRENT_TIMESTAMP(6),
+  PRIMARY KEY (`Id`),
+  KEY `IX_GardenVotePolls_SeasonId` (`SeasonId`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
+
+CREATE TABLE IF NOT EXISTS `GardenVoteCategories` (
+  `Id` INT NOT NULL AUTO_INCREMENT,
+  `PollId` INT NOT NULL,
+  `Slug` VARCHAR(48) NOT NULL,
+  `Name` VARCHAR(64) NOT NULL,
+  `Description` VARCHAR(240) NOT NULL,
+  `MedalSlug` VARCHAR(48) NOT NULL,
+  `Sort` INT NOT NULL DEFAULT 100,
+  PRIMARY KEY (`Id`),
+  UNIQUE KEY `UX_GardenVoteCategories` (`PollId`,`Slug`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
+
+CREATE TABLE IF NOT EXISTS `GardenVotes` (
+  `Id` INT NOT NULL AUTO_INCREMENT,
+  `CategoryId` INT NOT NULL,
+  `VoterSteamId` BIGINT UNSIGNED NOT NULL,
+  `TargetSteamId` BIGINT UNSIGNED NOT NULL,
+  `CreatedAt` DATETIME(6) NOT NULL DEFAULT CURRENT_TIMESTAMP(6),
+  `UpdatedAt` DATETIME(6) NOT NULL DEFAULT CURRENT_TIMESTAMP(6),
+  PRIMARY KEY (`Id`),
+  UNIQUE KEY `UX_GardenVotes_OnePerCategory` (`CategoryId`,`VoterSteamId`),
+  KEY `IX_GardenVotes_CategoryId` (`CategoryId`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;

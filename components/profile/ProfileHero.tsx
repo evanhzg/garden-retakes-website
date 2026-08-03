@@ -6,6 +6,7 @@ import AvatarImage from "@/components/AvatarImage";
 import ProfileSettingsModal from "@/components/profile/ProfileSettingsModal";
 import FeaturedClip from "@/components/profile/FeaturedClip";
 import { ConnectionsBar } from "@/components/profile/Connections";
+import MedalCase from "@/components/profile/MedalCase";
 import { M4A1S, M4A4, SIGNATURE_SLOTS, normaliseStore } from "@/lib/inventory";
 import type { InventoryItem, InventoryStore, Loadout, Side } from "@/lib/inventory";
 import type { ProfileHeroStats } from "@/app/profile/page";
@@ -233,6 +234,7 @@ export default function ProfileHero({
           {bio && <p className="pro-bio">{bio}</p>}
           {/* Who they are elsewhere, right under the name — it used to be a lone
               Discord button near the bottom of the page. */}
+          <MedalCase steamId={steamId} />
           <ConnectionsBar steamId={steamId} />
           {error && (
             <p className="skin-note skin-note-error" role="alert" style={{ marginTop: "var(--space-2)" }}>

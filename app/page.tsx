@@ -8,6 +8,7 @@ import { resolveAvatars } from "@/lib/avatars";
 import { getLastSessionStandout } from "@/lib/hero";
 import Reveal from "@/components/home/Reveal";
 import LadderRows, { type LadderRow } from "@/components/home/LadderRows";
+import SeasonVote from "@/components/home/SeasonVote";
 import CountUp from "@/components/home/CountUp";
 
 export const dynamic = "force-dynamic";
@@ -103,7 +104,13 @@ export default async function HomePage() {
 
   return (
     <>
-      <Hero serverAddress={serverAddress} activePlayers={activePlayers} season={season.Name ?? `Season ${season.Id}`} />
+      {/* The ballot sits beside the hero and disappears entirely when no vote
+          is running — the homepage should not carry an empty box for eleven
+          months of the year. */}
+      <div className="home-hero-row">
+        <Hero serverAddress={serverAddress} activePlayers={activePlayers} season={season.Name ?? `Season ${season.Id}`} />
+        <SeasonVote />
+      </div>
 
       <Marquee items={marquee.length ? marquee : ["Garden Retakes", "Ranked sessions", "Season live"]} />
 
