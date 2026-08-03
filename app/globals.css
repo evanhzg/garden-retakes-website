@@ -9300,7 +9300,7 @@ body.inv-fullscreen .main-content > main.container { flex: none; }
 
   /* Tables keep their columns and scroll inside themselves. Hiding columns
      would decide for the reader which numbers matter. */
-  .table-wrap, .adm-scroll, .pro-table-wrap {
+  .table-wrap, .adm-scroll, .pro-tablewrap {
     overflow-x: auto;
     -webkit-overflow-scrolling: touch;
   }
@@ -10157,4 +10157,233 @@ body.inv-fullscreen .main-content > main.container { flex: none; }
      against the 360px floor, where the tile padding eats the track minimum. */
   .season2-grid { grid-template-columns: 1fr; }
   .season2-item { padding: 12px; }
+}
+
+/* ---------------------------------------------------------------------------
+   The season freeze — while the season-end vote runs.
+
+   Appended as one self-contained block rather than merged into the admin
+   section above, because it is one feature spanning three screens: the admin
+   dashboard, the admin Server section, and the homepage ballot. Kept together it
+   can be read, changed or withdrawn in one place; split across the file by
+   which screen each rule happens to serve, it could not.
+
+   Colour comes only from the shared tokens, so the block follows the theme
+   without knowing which theme it is in.
+   --------------------------------------------------------------------------- */
+
+/* A statement, not a warning. Nothing has gone wrong — the season ended — so it
+   borrows the accent as an edge rather than filling with it, the way an aside
+   does. Grid rather than a paragraph because the three lines are a title, a
+   reason and a date: each wants its own line at any width, and letting them run
+   together would bury the date, which is the line people came for. */
+.adm-freeze {
+  display: grid;
+  gap: 4px;
+  max-width: 100%;
+  margin: 0 0 16px;
+  padding: 12px 14px;
+  border: 1px solid var(--color-divider);
+  border-left: 3px solid var(--color-accent);
+  background: var(--color-surface);
+  color: var(--muted);
+  font-size: 13px;
+  line-height: 1.55;
+  /* A formatted date is short, but a translated one can be a single long token
+     on a narrow screen, and that is the shape that breaks a 360px viewport. */
+  overflow-wrap: anywhere;
+}
+
+.adm-freeze strong {
+  font-size: 14px;
+  color: var(--color-text);
+}
+
+/* The one line an admin is looking for gets the accent, so the block can be
+   skimmed for "when" without reading the reason again on every visit. */
+.adm-freeze-when {
+  font-weight: 700;
+  color: var(--color-accent);
+}
+
+/* The paused flavours already dim through :disabled; the hint underneath is the
+   part that changes meaning, and at three tracks across a phone it has roughly
+   ninety pixels to say so. Breaking mid-word is ugly and still better than a
+   control that pushes past the pane. */
+.adm-flavour.is-paused .adm-flavour-hint {
+  overflow-wrap: anywhere;
+}
+
+/* The season control sits at the end of the season line it acts on, which on a
+   phone is a second row rather than a squeezed corner: the strip already wraps,
+   so the button takes the full width it needs instead of the leftovers. */
+.adm-strip > .adm-season-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  align-items: center;
+  margin-left: auto;
+}
+
+/* The public half. Quieter than the admin banner — a player is being told why
+   ranked is missing, not asked to do anything about it — so it sits on the page
+   background inside the panel rather than raising another surface. */
+.vote-frozen {
+  max-width: 100%;
+  margin: 10px 0 0;
+  padding: 8px 10px;
+  border-left: 2px solid var(--color-accent);
+  background: var(--color-bg);
+  color: var(--muted);
+  font-size: 12px;
+  line-height: 1.5;
+  overflow-wrap: anywhere;
+}
+
+@media (max-width: 720px) {
+  .adm-freeze {
+    padding: 10px 12px;
+    font-size: 12px;
+  }
+
+  /* margin-left: auto only right-aligns while there is spare room on the row.
+     Once the strip has wrapped there is none, and the button reads as a stray
+     third column unless it claims the row it is already on. */
+  .adm-strip > .adm-season-actions {
+    width: 100%;
+    margin-left: 0;
+  }
+  .adm-strip > .adm-season-actions .btn {
+    flex: 1 1 auto;
+    min-width: 0;
+  }
+}
+
+/* ═══════════════════════════════════════════════════════════════════════════
+   /admin on a phone — the pane and the rail that were still leaving the screen.
+
+   An earlier phone pass gave this panel a horizontal nav rail, unstacked the
+   plugin-config editor and raised the tap targets, and all of that is correct
+   as far as it goes. What it did not do is fix the reason the panel was wider
+   than the screen in the first place, so every one of those rules was being
+   applied to a layout that had already overflowed.
+
+   The chain is the grid sibling of the `min-height: 0` flex bug. `.adm-shell`
+   is declared on a desktop as `232px minmax(0, 1fr)` — the `minmax(0, …)` there
+   is deliberate, because it is what stops a wide child from setting the width
+   of the content column. Both phone overrides of that line, the one at 860px
+   beside the original rule and the one in the site-wide 720px safeguards, drop
+   back to a bare `1fr`. A bare `1fr` is `minmax(auto, 1fr)`, and a track whose
+   min sizing function is `auto` gives its items a content-based automatic
+   minimum size: the track cannot become narrower than the widest thing inside
+   it, however narrow the viewport is.
+
+   Inside `.adm-panel` there is always something wide. `table.table` carries a
+   `min-width: 520px` from the 720px safeguards, and `.adm-scroll` around it is
+   a plain block, so that 520px floor walks straight up into the panel's
+   min-content width. With the panel's own 16px padding and hairline that is
+   554px of automatic minimum on a viewport that offers 312px. The single grid
+   track is therefore laid out at 554px, `.adm-panel` and `.adm-nav` both
+   stretch to it, and roughly 240px of each — the right-hand end of the nav rail
+   and the right-hand end of every tab's content — sits outside the viewport,
+   silently cropped because `.main-content` hides overflow-x rather than
+   scrolling. That is one cause producing both reported symptoms at once, which
+   is why fixing the rail alone never made any difference.
+
+   Everything here is inside a max-width query and none of it edits a rule
+   above; each block wins by coming last in the file. Geometry only, tokens
+   only, so both themes and every desktop width are untouched.
+   ═══════════════════════════════════════════════════════════════════════ */
+
+@media (max-width: 860px) {
+  /* The floor comes off the track, which is the whole fix for the cropping.
+     Stated as `minmax(0, 1fr)` rather than `1fr` for exactly the reason the
+     desktop rule already does: a zero min sizing function also zeroes the
+     automatic minimum size of the items in the track, so a wide table or a
+     long config path can no longer decide how wide the panel is. */
+  .adm-shell {
+    grid-template-columns: minmax(0, 1fr);
+  }
+
+  /* And stated again on the two items themselves, so the fix survives another
+     stacking rule being written for `.adm-shell` later. An explicit zero
+     min-width is a definite minimum contribution, which holds the track down
+     independently of what its sizing function happens to be that week. Neither
+     box shrinks as a result — both are block-level grid items and still stretch
+     to fill the track. */
+  .adm-nav,
+  .adm-panel {
+    min-width: 0;
+  }
+
+  /* The plugin config editor's header is a flex row whose first item holds the
+     absolute path of the file being edited, in `.skin-path` — which is
+     `white-space: pre` by design, because a path has to stay copyable verbatim.
+     Pre-formatted text has no break opportunity at all, so that item's
+     automatic minimum size is the entire path laid end to end, and a flex
+     item's automatic minimum is its content unless it is told otherwise. The
+     header row was therefore several hundred pixels wide on its own account,
+     independently of the table above. Zeroing the minimum lets the item take
+     the width it is given; `.skin-path` already sets `overflow-x: auto`, so the
+     path scrolls inside its own box, which is where it should have been
+     scrolling all along. */
+  .cfg-head > * {
+    min-width: 0;
+  }
+
+  /* ── one scroller per table, not two nested ones ──────────────────────────
+     `table { display: block; overflow-x: auto }` from the 640px block makes
+     every table its own horizontal scroller, and `.adm-scroll` and
+     `.pro-tablewrap` are horizontal scrollers around them. That is two scroll
+     boxes on the same axis: the outer one scrolls from the pane's width to the
+     table's 520px min-width, the inner one from 520px to the table's real
+     content width, and reaching the last column means finding and finishing
+     both drags with no edge drawn to say where one ends. Handing the scrolling
+     to the wrapper and letting the table be exactly as wide as its content
+     leaves a single gesture that reaches every column.
+
+     Scoped through the admin wrappers so the profile and stats tables, which
+     are a different page's problem, keep the behaviour they have. */
+  .adm-scroll > table.table,
+  .adm-panel .pro-tablewrap > table.table {
+    min-width: max-content;
+    overflow-x: visible;
+  }
+
+  /* ── fields you have to hit with a thumb ─────────────────────────────────
+     The site-wide 720px block raises `.btn`, `.chip` and a handful of bespoke
+     controls to 40px, but it never reaches `.input`, which is 36px from its own
+     declaration. Every text box, number stepper and select in this panel — the
+     player search, the map field, the RCON prompt and every field the plugin
+     config editor generates — is one of those. Height only, and the element
+     selector keeps `textarea.input` out of it so the list fields keep the 90px
+     that makes them multi-line. */
+  .adm-panel input.input,
+  .adm-panel select.input {
+    min-height: 40px;
+  }
+
+  /* The RCON prompt is `flex: 1` beside a Send button, and an `<input>` with no
+     explicit floor reports a content-based minimum of roughly twenty characters
+     — about 180px — which together with the button and the gap comes to within
+     a few pixels of the whole pane. It has been fitting by luck. Allowed to
+     shrink and to wrap, the field takes the line it has and the button drops
+     under it when it genuinely cannot. */
+  .rcon-input-row {
+    flex-wrap: wrap;
+  }
+  .rcon-input {
+    flex: 1 1 160px;
+    min-width: 0;
+  }
+
+  /* The custom-skins tab renders its own `.panel` sections inside `.adm-panel`,
+     so a phone was paying for two frames: 24px of panel padding inside 16px of
+     pane padding inside the page's own 24px gutter, which leaves about 228px
+     for a skin row. The inner frame gives up what it can spare — it is nested
+     inside a surface that already separates it from the page, so its padding is
+     decoration rather than structure here. */
+  .adm-panel .panel {
+    padding: var(--space-3);
+  }
 }
