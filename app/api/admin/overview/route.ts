@@ -1,6 +1,7 @@
 import { NextResponse } from "next/server";
 import { prisma, getActiveSeason } from "@/lib/db";
 import { AdminLevel, getAdminContext } from "@/lib/adminAuth";
+import { rconExec } from "@/lib/rcon";
 
 export const dynamic = "force-dynamic";
 export const runtime = "nodejs";
@@ -46,8 +47,31 @@ export async function GET(req: Request) {
       : Promise.resolve(0),
   ]);
 
+  // What is actually running, so the panel can show which button is already the
+  // answer instead of making an admin remember.
+  let live: { map: string | null; mode: string | null; players: number | null } = {
+    map: null,
+    mode: null,
+    players: null,
+  };
+  try {
+    const status = await rconExec("status");
+    const map = /^\s*(?:map|Map)\s*[:=]\s*(\S+)/m.exec(status)?.[1]?.split("/").pop()?.trim() ?? null;
+    const players = Number(/players\s*:\s*(\d+)/i.exec(status)?.[1] ?? NaN);
+    const mode = await rconExec("css_gamemode").catch(() => "");
+    live = {
+      map,
+      // The plugin answers with the current mode name somewhere in its reply.
+      mode: /\b(retakes|executes|practice|duels|faststrat|wingman|defender|hideandseek|spelltakers|edit)\b/i.exec(mode)?.[1]?.toLowerCase() ?? null,
+      players: Number.isFinite(players) ? players : null,
+    };
+  } catch {
+    // Server unreachable — the board still works, it just cannot highlight.
+  }
+
   const now = new Date();
   return NextResponse.json({
+    live,
     season: season ? { id: season.Id, name: season.Name, players: seasonPlayers } : null,
     counts: {
       players,

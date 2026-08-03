@@ -6,7 +6,7 @@ import SkinManager from "@/components/admin/SkinManager";
 import PluginConfigEditor from "@/components/admin/PluginConfigEditor";
 import PendingDemos from "@/components/admin/PendingDemos";
 import AdminOverview from "@/components/admin/AdminOverview";
-import { GAME_MODES } from "@/lib/gameModes";
+import { GAME_MODES, RETAKE_FLAVOURS } from "@/lib/gameModes";
 
 // The panel was three stacked sections with the player table — the tallest of
 // them — dominating the page, and the admin log and custom skins living on
@@ -119,6 +119,10 @@ export default function AdminPanel({
   const [toast, setToast] = useState<{ ok: boolean; text: string } | null>(null);
   const [mapInput, setMapInput] = useState("");
   const [log, setLog] = useState<LogEntry[] | null>(null);
+  /** What is actually running, so the panel can mark the current answer. */
+  const [live, setLive] = useState<{ map: string | null; mode: string | null; players: number | null }>({
+    map: null, mode: null, players: null,
+  });
 
   const canMod = viewerLevel >= 1;
   const canAdmin = viewerLevel >= 2;
@@ -167,6 +171,13 @@ export default function AdminPanel({
   useEffect(() => {
     load("");
   }, [load]);
+
+  useEffect(() => {
+    fetch(`/api/admin/overview${adminKey ? `?key=${encodeURIComponent(adminKey)}` : ""}`, { cache: "no-store" })
+      .then((r) => r.json())
+      .then((j) => j.live && setLive(j.live))
+      .catch(() => {});
+  }, [adminKey, toast]);
 
   // The log is only fetched when its tab is first opened.
   useEffect(() => {
@@ -352,11 +363,38 @@ export default function AdminPanel({
               <p className="muted" style={{ fontSize: 13, marginTop: 0 }}>
                 Switches the plugin's active mode. Takes effect on the next round or map change.
               </p>
+              {/* Retakes is one mode to the plugin but three different nights
+                  to the people playing, so the three share a control: picking
+                  between them is one decision. Ranked and competitive need
+                  bodies on the server, so they are disabled rather than
+                  failing somewhere the admin cannot see. */}
+              <div className="adm-flavours" role="group" aria-label="Retakes">
+                {RETAKE_FLAVOURS.map((f) => {
+                  const short = live.players !== null && live.players < f.minPlayers;
+                  return (
+                    <button
+                      key={f.id}
+                      className={`adm-flavour ${live.mode === "retakes" && f.id === "retakes" ? "live" : ""}`}
+                      disabled={!canAdmin || short}
+                      title={
+                        !canAdmin ? "Admin role required"
+                        : short ? `Needs ${f.minPlayers} players — ${live.players} on the server`
+                        : f.hint
+                      }
+                      onClick={() => doAction({ type: "gamemode", mode: f.id })}
+                    >
+                      <span className="adm-flavour-name">{f.label}</span>
+                      <span className="adm-flavour-hint">{short ? `needs ${f.minPlayers}` : f.hint}</span>
+                    </button>
+                  );
+                })}
+              </div>
+
               <div className="adm-modes">
-                {GAME_MODES.map((m) => (
+                {GAME_MODES.filter((m) => m.id !== "retakes").map((m) => (
                   <button
                     key={m.id}
-                    className="adm-mode"
+                    className={`adm-mode ${live.mode === m.id ? "live" : ""}`}
                     disabled={!canAdmin}
                     title={canAdmin ? m.hint : "Admin role required"}
                     onClick={() => doAction({ type: "gamemode", mode: m.id })}
@@ -380,8 +418,8 @@ export default function AdminPanel({
                 {STOCK_MAPS.map((m) => (
                   <button
                     key={m.id}
-                    className="adm-mode adm-map"
-                    title={m.id}
+                    className={`adm-mode adm-map ${live.map === m.id ? "live" : ""}`}
+                    title={live.map === m.id ? `${m.label} — running now` : m.id}
                     style={{ ["--map" as string]: m.colour }}
                     onClick={() => doAction({ type: "map", map: m.id })}
                   >

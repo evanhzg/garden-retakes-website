@@ -8199,3 +8199,43 @@ header a > .avatar { display: block; }
 /* Map buttons carry the map's own colour on the edge. */
 .adm-map { border-left: 3px solid var(--map, var(--color-divider)); }
 .adm-map:hover { border-left-color: var(--map, var(--color-accent)); background: color-mix(in srgb, var(--map) 14%, transparent); }
+
+/* ---------------------------------------------------------------------------
+   Admin: what is running, and the three flavours of retakes.
+   --------------------------------------------------------------------------- */
+
+/* The current map and mode are marked, so the panel says what the answer
+   already is rather than making an admin remember. */
+.adm-mode.live,
+.adm-map.live {
+  background: var(--btn-primary-bg);
+  color: var(--btn-primary-ink);
+  border-color: transparent;
+}
+.adm-mode.live .adm-mode-hint,
+.adm-map.live .adm-mode-hint { color: inherit; opacity: 0.8; }
+
+/* One control, three parts — the seams are internal, so it reads as a single
+   choice with three answers rather than three buttons that happen to be near
+   each other. */
+.adm-flavours {
+  display: inline-flex;
+  margin-bottom: var(--space-3);
+  border: 1.5px solid var(--btn-secondary-border);
+  border-radius: 9px;
+  overflow: hidden;
+}
+.adm-flavour {
+  display: grid; gap: 1px;
+  padding: 7px 14px;
+  background: var(--btn-secondary-bg);
+  border: 0;
+  border-right: 1px solid var(--btn-secondary-border);
+  font: inherit; color: var(--color-text); text-align: left; cursor: pointer;
+}
+.adm-flavour:last-child { border-right: 0; }
+.adm-flavour:hover:not(:disabled) { background: color-mix(in srgb, var(--color-accent) 12%, var(--btn-secondary-bg)); }
+.adm-flavour.live { background: var(--btn-primary-bg); color: var(--btn-primary-ink); }
+.adm-flavour:disabled { opacity: 0.45; cursor: not-allowed; }
+.adm-flavour-name { font-size: 13px; font-weight: 700; }
+.adm-flavour-hint { font-size: 10px; opacity: 0.7; }
