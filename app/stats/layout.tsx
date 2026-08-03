@@ -12,7 +12,10 @@ export default function StatsLayout({ children }: { children: React.ReactNode })
     <>
       <section className="panel">
         <h2>{t("stats.layout.title")}</h2>
-        <div className="chip-row">
+        {/* stats-nav is a hook, not a look: .chip-row is shared with /commands
+            and /roadmap, so the phone-sized tap targets for this sub-nav need a
+            name only the stats pages answer to. */}
+        <div className="chip-row stats-nav">
           <Link href="/stats" className={`chip ${pathname === "/stats" ? "active" : ""}`}>
             {t("stats.layout.overview")}
           </Link>

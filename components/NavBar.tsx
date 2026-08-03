@@ -407,7 +407,7 @@ export default function NavBar({
         <NotificationCenter />
 
         {session.authenticated ? (
-          <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
+          <div className="nav-identity" style={{ display: "flex", alignItems: "center", gap: 10 }}>
             {session.steamId && (
               <Link href={getHref("/profile")} title={session.name ?? "Profile"}>
                 <AvatarImage
@@ -428,7 +428,7 @@ export default function NavBar({
           // site you were on, so it crossed to the games subdomain and landed
           // on its default page instead of the one you left.
           <a
-            className="btn btn-secondary"
+            className="btn btn-secondary nav-identity"
             href={
               isGamesSection
                 ? `/games/login?returnTo=${encodeURIComponent(pathname)}`
@@ -462,6 +462,25 @@ export default function NavBar({
       )}
       <div id="nav-drawer" className={`nav-drawer ${drawerOpen ? "open" : ""}`} role="dialog" aria-modal="true" aria-label={t("nav.more")}>
         <div className="nav-drawer-inner">
+          {session.authenticated && session.steamId && (
+            <Link
+              href={getHref("/profile")}
+              className="nav-drawer-me"
+              onClick={() => setDrawerOpen(false)}
+            >
+              <AvatarImage
+                steamId={session.steamId}
+                src={session.avatar}
+                alt=""
+                className="avatar avatar-lg"
+              />
+              <span className="nav-drawer-me-text">
+                <span className="nav-drawer-me-name">{session.name ?? t("nav.profile")}</span>
+                <span className="nav-drawer-me-sub">{t("nav.profile")}</span>
+              </span>
+            </Link>
+          )}
+
           {links.map((l) => {
             const active = l.href === "/" ? pathname === "/" : pathname.startsWith(l.href);
             return (

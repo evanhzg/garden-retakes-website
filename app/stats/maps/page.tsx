@@ -59,7 +59,7 @@ export default async function MapHeatmapsPage() {
     <>
       <section className="panel">
         <h2>{t("stats.maps.globalStatsSeason", { season: season.Name })}</h2>
-        <div className="chip-row">
+        <div className="chip-row stats-nav">
           <Link href="/stats" className="chip">{t("stats.maps.overview")}</Link>
           <Link href="/stats/maps" className="chip active">{t("stats.maps.mapHeatmaps")}</Link>
         </div>
@@ -71,7 +71,7 @@ export default async function MapHeatmapsPage() {
           {t("stats.maps.heatmapDesc", { count: topPlayers.length })}
         </p>
 
-        <div style={{ overflowX: "auto" }}>
+        <div className="stats-scroll" style={{ overflowX: "auto" }}>
           <table className="ladder-table" style={{ minWidth: 800 }}>
             <thead>
               <tr>

@@ -26,6 +26,11 @@ export default function LeaderboardTabs({ boards }: { boards: Board[] }) {
     <div>
       <div
         role="tablist"
+        /* The desktop look is still the inline styles below. lb-tabs exists so
+           the phone rules in globals.css can reach ten tabs that otherwise have
+           no name — a 12px label with 10px of padding is under the 40px a thumb
+           needs, and ten of them wrap to four rows on a 360px screen. */
+        className="lb-tabs"
         aria-label={t("stats.leaderboardTabs.ariaLabel")}
         style={{
           display: "flex",

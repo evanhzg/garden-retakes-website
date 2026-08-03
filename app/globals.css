@@ -9346,3 +9346,609 @@ body.inv-fullscreen .main-content > main.container { flex: none; }
 @media (max-width: 720px) {
   .gr-marquee, .full-bleed { max-width: 100vw; overflow-x: clip; }
 }
+
+/* ═══════════════════════════════════════════════════════════════════════════
+   /inventory and /utility on a phone.
+
+   Both pages were drawn as wide workspaces — the inventory as a loadout rail
+   beside a store, the utility page as a radar beside a lineup panel — and both
+   already had a breakpoint that dropped them to one column. Stacking is not the
+   same as being usable. What the stack left behind was the actual problem: the
+   controls kept their desktop heights, a handful of children still asked for
+   more width than a 360px viewport has (the chooser's collection select, the
+   detail panel's label column), the side panel kept an inner scroller it no
+   longer had any reason to own, and the two overlays — the share dialog and the
+   guest banner — were positioned as though the viewport were always taller and
+   wider than their contents.
+
+   Every rule below sits inside a max-width query, so none of it reaches a
+   desktop, and none of it introduces a colour: this is geometry only, which is
+   why both themes come through untouched. Three lines, each chosen for a reason
+   rather than for a device:
+
+     900px — where .util-layout already drops to one column. The rules here
+             repair what that drop leaves behind, not the drop itself.
+     720px — the same line the site-wide phone safeguards above use, so hit
+             areas and overflow guards land together rather than at two widths.
+             Column counts are still fine here; only sizes change.
+     480px — narrower than any phone held in portrait. This is where control
+             rows that are still rows collapse, and where the tile grids are
+             re-densified for a ~290px column.
+
+   The site-wide block above already raises .btn, .chip, .util-map and
+   .inv4-sidebtn to 40px, so none of those are restated here — only the bespoke
+   elements it cannot reach.
+   ═══════════════════════════════════════════════════════════════════════ */
+
+@media (max-width: 900px) {
+  /* The desktop track is minmax(0, 1fr) precisely so that the radar image
+     cannot decide the column's width, but every stacking override written
+     since has used a bare 1fr, whose automatic minimum is the item's
+     min-content. .util-mapwrap is a plain block with no overflow of its own,
+     so that minimum walks straight down into the <img> and can resolve to the
+     source radar's own pixel width — a column several times wider than the
+     page, cropped in silence because .main-content hides overflow-x. Putting
+     the floor back costs nothing when the content is already narrow.
+
+     Written one level deeper than the rules it corrects so that it wins on
+     specificity rather than on position: there are several .util-layout
+     stacking rules in this file now, and a later one should not be able to
+     undo this by accident. */
+  .pro-section .util-layout { grid-template-columns: minmax(0, 1fr); }
+
+  /* A square as wide as the page is taller than the page whenever the viewport
+     is wider than it is tall — a phone held sideways, a tablet in landscape —
+     so the bottom of the map sat below the fold and the lineup list under it
+     took two screens of scrolling to reach. Capping the side against the
+     viewport height keeps the whole map in view at once, which is the only
+     reason to show a map. In portrait, where the width is already the smaller
+     of the two, the cap never binds and the radar is exactly as it was. */
+  .util-radar { max-width: min(100%, 80vh); margin-inline: auto; }
+
+  /* Beside the radar this panel was a column with a scroll of its own, and the
+     height it was capped at is the height of the space beside a radar. Below
+     the radar it is simply the next thing on the page, and an inner scroller
+     there is a second scroll surface nested inside the page's: on touch the two
+     compete for the same drag, and the list can only be moved by starting the
+     gesture inside a box whose edges are not drawn. It scrolls with the page
+     instead, which is what a stacked panel should do. */
+  .util-side { max-height: none; overflow: visible; }
+}
+
+@media (max-width: 720px) {
+  /* ── /inventory: the controls the site-wide .btn/.chip rule cannot reach ──
+     These are bespoke elements rather than buttons wearing .btn or .chip, so
+     they kept their desktop heights — 31px to 34px, which is a coin flip under
+     a thumb. The padding goes up with the height so the label stays centred in
+     the taller box rather than floating in a band of dead space. The loadout
+     tab is also capped at the header's width: its text is whatever its owner
+     typed at the rename prompt, so a long name is cropped inside its own button
+     rather than being allowed to widen the page. */
+  .inv4-lo {
+    min-height: 40px;
+    padding: 8px 14px;
+    max-width: 100%;
+    overflow: hidden;
+  }
+  .inv4-type { min-height: 40px; padding: 8px 14px; }
+  .inv4-slot { padding: 10px 8px; }
+  .inv4 .input,
+  .inv4 select.input { min-height: 40px; }
+  .inv4-config input[type="range"] { min-height: 40px; }
+
+  /* The loadout colour was an 18px dot — a target roughly a quarter the area of
+     a fingertip — and there are eight of them in a row. At 40px they wrap onto
+     two rows inside the loadout header, which is a fair price for being able to
+     land on the one you meant. */
+  .inv4-color { width: 40px; height: 40px; }
+
+  /* The same for the favourite toggle, which has the added problem of sitting
+     in a tile corner directly over a button that equips the skin: at 24px the
+     two were effectively one target with two outcomes. The glyph grows with the
+     box so the control still reads as a heart rather than a heart adrift in a
+     square. */
+  .inv4-heart { width: 40px; height: 40px; font-size: 18px; }
+
+  /* The rail stopped scrolling on its own below 1000px, so the gutter it holds
+     for a scrollbar is dead space — worth reclaiming when the whole column is
+     under 300px wide. */
+  .inv4-board-scroll { padding-right: 0; }
+
+  /* The stacked layout hands its scrolling back to the page, and the store and
+     the skin grid were both released from their own overflow when that rule was
+     written. The whole-loadout preview arrived afterwards and was never added
+     to the pair, so it alone kept an inner scroll region inside a column that
+     no longer has a height to scroll within. */
+  .inv4-preview { overflow: visible; }
+
+  /* ── /inventory: the share dialog ────────────────────────────────────────
+     The card had no height limit whatsoever. Centred inside a fixed grid, a
+     card taller than the viewport is clipped at both ends with nothing to
+     scroll, which put Done — the only way out other than guessing that the
+     scrim is clickable — off the bottom of the screen. Same idiom as the
+     profile and clip dialogs above, so all three behave alike. */
+  .inv4-modal { padding: var(--space-3); }
+  .inv4-modal-card {
+    max-height: calc(100dvh - 24px);
+    overflow-y: auto;
+    padding: var(--space-4);
+  }
+  /* A share key is random alphanumerics: no spaces means no break opportunity,
+     so nothing stops it being wider than the box drawn around it. */
+  .inv4-share-key { overflow-wrap: anywhere; }
+
+  /* ── /inventory: the two things pinned to the bottom of the screen ────────
+     Both were centred with left:50% and a −50% translate, which guarantees the
+     centre stays on screen and says nothing at all about the edges: the moment
+     the content is wider than the viewport it leaves on both sides at once, and
+     the guest banner is a full sentence whose length is one translation away
+     from changing. Pinning both edges instead makes the width the viewport's
+     problem rather than the content's, and the text centres inside whatever
+     that leaves. The toast is lifted clear of the banner because a signed-out
+     visitor is exactly who is most likely to see the two at the same moment. */
+  .inv4-guest {
+    left: 8px;
+    right: 8px;
+    transform: none;
+    text-align: center;
+  }
+  .inv4 > .toast {
+    left: 8px;
+    right: 8px;
+    bottom: 64px;
+    transform: none;
+    text-align: center;
+  }
+
+  /* ── /utility: the rows and the marks you have to hit ───────────────────── */
+  .util-row { min-height: 44px; padding: 10px 9px; }
+  .util-legend-item { min-height: 40px; padding: 6px 10px; }
+  .util-toggle { min-height: 40px; }
+  .util-toggle input[type="checkbox"] { width: 20px; height: 20px; }
+
+  /* The pins are the one deliberate exception to the 40px floor. Growing a pin
+     is free visually — the dot inside it is 11px and the direction wedge is
+     placed and rotated from the pin's centre, so the box can change size
+     without anything moving on screen — but on a 280px radar carrying fifty
+     lineups, 40px boxes overlap enough that whichever pin paints last makes its
+     neighbours unreachable, which is a worse failure than a small target. 34px
+     takes most of the gain without that, and the list under the map stays the
+     exhaustive way to reach any lineup. */
+  .util-pin { width: 34px; height: 34px; }
+}
+
+@media (max-width: 480px) {
+  /* ── /inventory: the header stops pretending to be a bar ──────────────────
+     .inv4-bar-right goes full width and space-between below 1000px, which on a
+     phone means each control lands on a line of its own with all the free space
+     heaped between two of them. Packed to the start instead, the meter and the
+     borrow form each take a line and the two buttons share one. The meter's
+     track and the borrow field give up their fixed widths so they use the line
+     they are on rather than leaving a ragged tail. */
+  .inv4-bar-right { justify-content: flex-start; }
+  .inv4-progress { flex: 1 1 100%; }
+  .inv4-progress-track { width: auto; flex: 1 1 auto; min-width: 72px; }
+  .inv4-progress-label { white-space: normal; }
+  .inv4-borrow { flex: 1 1 100%; }
+  .inv4-borrow .input { width: auto; flex: 1 1 auto; min-width: 0; }
+
+  /* ── /inventory: the rail's slots and the store's tiles ───────────────────
+     Both grids are laid out on desktop tile widths, and at this width they want
+     opposite things. A slot is artwork beside two lines of text, so it wants
+     the whole column — 130px is not enough for that shape and auto-fill would
+     eventually try. A weapon or skin tile is a picture over a caption, so two
+     of them per row turns eight guns from a full screen of scrolling into half
+     of one. Both are stated rather than left to auto-fill, so the count cannot
+     drift when a locale ships wider labels. */
+  .inv4-board-scroll > .inv4-slots { grid-template-columns: minmax(0, 1fr); }
+  .inv4-weapons { grid-template-columns: repeat(auto-fill, minmax(118px, 1fr)); }
+  .inv4-skins { grid-template-columns: repeat(auto-fill, minmax(126px, 1fr)); }
+  .inv4-preview-row { grid-template-columns: repeat(auto-fill, minmax(102px, 1fr)); }
+
+  /* ── /inventory: the chooser's own controls ───────────────────────────────
+     A <select> is as wide as its widest option, and a collection name such as
+     "The Anubis Collection" is wider than this whole column — so the sort and
+     collection pickers ran past the edge of the chooser, which clips, taking
+     their own dropdown arrows with them. Stacked and floored at zero width they
+     are as wide as the column and the browser elides the label instead. The
+     favourites chip opts back out of the stretch: it is a toggle, not a field,
+     and a full-width one reads as a third select. */
+  .inv4-filters { flex-direction: column; align-items: stretch; }
+  .inv4-filters .input { width: 100%; min-width: 0; }
+  .inv4-filters .chip { align-self: flex-start; }
+
+  /* Wear, seed and name tag were a wrapping row of fixed-width fields, which at
+     this width is already a column — just one with ragged edges and a stray
+     field sharing a line. Made into one honestly. */
+  .inv4-config { flex-direction: column; align-items: stretch; }
+  .inv4-config .input { width: 100%; }
+
+  /* margin-left:auto pushed this group to the far edge, which is right when it
+     shares a line with the weapon name and wrong once it has wrapped onto a
+     line of its own: it sat against the right border with the gap where the
+     name used to be. */
+  .inv4-chooser-head-right { margin-left: 0; width: 100%; }
+
+  /* ── /utility: the lineup detail panel ────────────────────────────────────
+     A 78px label column left roughly 150px for values that are three signed
+     world coordinates, so every one of them wrapped anyway — under a label that
+     could have had the full width to itself. The label goes above its value
+     instead, which is the shape the content already had. */
+  .util-facts > div { grid-template-columns: minmax(0, 1fr); gap: 2px; }
+
+  /* Lineup names are typed by whoever recorded the throw and are not guaranteed
+     to contain a space. */
+  .util-detail h2 { overflow-wrap: anywhere; }
+
+  /* Two actions side by side at this width are two half-width buttons with
+     their labels cut in half; stacked, they are two buttons. */
+  .util-actions { display: grid; grid-template-columns: minmax(0, 1fr); }
+}
+
+/* ---------------------------------------------------------------------------
+   The phone header's identity cluster.
+
+   The avatar and the log-out button both duplicated what the drawer already
+   holds, and on a narrow header they were the two things pushing the burger
+   toward the edge. They come out below the breakpoint; the drawer opens with a
+   profile card instead — picture and name inside one target, rather than a
+   bare avatar that happens to be tappable.
+   --------------------------------------------------------------------------- */
+
+@media (max-width: 900px) {
+  .nav-identity { display: none !important; }
+}
+
+.nav-drawer-me {
+  display: flex; align-items: center; gap: 12px;
+  padding: 10px 12px; margin-bottom: 10px;
+  border: 1px solid var(--color-divider);
+  border-radius: 12px;
+  background: var(--color-surface);
+  text-decoration: none; color: var(--color-text);
+  min-height: 64px;
+}
+.nav-drawer-me:hover { border-color: var(--color-accent); }
+.nav-drawer-me .avatar { flex: none; }
+.nav-drawer-me-text { display: grid; gap: 1px; min-width: 0; }
+.nav-drawer-me-name {
+  font-size: 15px; font-weight: 700;
+  overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
+}
+.nav-drawer-me-sub {
+  font-size: 11px; text-transform: uppercase; letter-spacing: 0.06em;
+  color: var(--muted);
+}
+
+/* ═══════════════════════════════════════════════════════════════════════════
+   Phones: /stats, the profiles, and the admin panel.
+
+   These three areas were built at desk widths and never revisited at 360px.
+   They share the same three failures: a two-column shell that keeps its rail
+   long after the rail has stopped fitting, tables sized for a mouse pointer,
+   and controls whose tap target is the height of their type. Everything below
+   is inside a max-width query, so nothing here reaches a desktop; and nothing
+   here edits a rule above, so the desktop cascade is untouched — each block
+   overrides by coming last, which is the only reason it is at the end of the
+   file rather than beside the rules it corrects.
+
+   Two breakpoints, both chosen by an existing one rather than invented:
+
+     860px — where .adm-shell already drops its sidebar. The navigation has to
+             change shape at exactly the moment it stops being a sidebar,
+             otherwise it becomes a full-width stack of the same tall rows.
+     640px — the phone rules the rest of this file uses. .container is at 14px
+             gutters and .panel at 20px by here, which leaves about 270px of
+             usable width inside a panel at 360px. That figure is what most of
+             the decisions below are measured against.
+   ═══════════════════════════════════════════════════════════════════════ */
+
+@media (max-width: 860px) {
+  /* ── admin: the sidebar becomes a rail, not a stack ────────────────────
+     .adm-shell already collapses to one column here, which turned the eight
+     section buttons into a full-width vertical list. Each of them is two lines
+     tall because it carries a hint, so the content pane — the thing you opened
+     the panel for — started roughly a screen and a half down. Laid on its side
+     the same list costs one row and every section is still one gesture away.
+     A horizontal scroller rather than a wrapped grid: eight labels wrapped is
+     three rows again, and it grows every time a section is added. */
+  .adm-nav {
+    grid-auto-flow: column;
+    grid-auto-columns: max-content;
+    gap: 4px;
+    padding: 6px;
+    overflow-x: auto;
+    -webkit-overflow-scrolling: touch;
+    overscroll-behavior-x: contain;
+  }
+  .adm-nav-group {
+    grid-auto-flow: column;
+    gap: 4px;
+  }
+  /* The group heading and the one-line hint are what made the stack tall, and
+     neither survives the rotation: a heading above a horizontal run of buttons
+     no longer says which of them it heads, and the hints are the reason a row
+     is two lines. The labels alone still name every section. */
+  .adm-nav-title,
+  .adm-nav-hint {
+    display: none;
+  }
+  .adm-nav-item {
+    align-items: center;
+    min-height: 44px;
+    padding: 8px 12px;
+    white-space: nowrap;
+  }
+
+  /* Same shape one level in. The plugin config editor keeps its own 150–200px
+     section rail inside a pane that has already given up its sidebar, so the
+     fields themselves were left about a hundred pixels wide — narrower than a
+     single number input. The rail gets the same treatment as the one above. */
+  .cfg-body {
+    grid-template-columns: minmax(0, 1fr);
+    gap: var(--space-4);
+  }
+  .cfg-nav {
+    grid-auto-flow: column;
+    grid-auto-columns: max-content;
+    overflow-x: auto;
+    -webkit-overflow-scrolling: touch;
+    overscroll-behavior-x: contain;
+  }
+  .cfg-nav-item {
+    min-height: 40px;
+    white-space: nowrap;
+  }
+}
+
+@media (max-width: 640px) {
+  /* ── wide tables scroll inside their own box ───────────────────────────
+     `table { display: block; overflow-x: auto }` earlier in this file already
+     makes every table its own scroller, so a wide one never widens the page.
+     What it does not do is give the wrappers around those tables the momentum
+     scrolling a thumb expects, or stop a flick that runs off the end of a
+     table from dragging the page with it. */
+  .pro-tablewrap,
+  .stats-scroll,
+  .adm-scroll {
+    -webkit-overflow-scrolling: touch;
+    overscroll-behavior-x: contain;
+  }
+
+  /* A scroll region inside a scrolling page means a drag does one of two
+     different things depending on where the thumb landed, and there is no way
+     to tell which before you try. On a phone the page is the scroller: these
+     two lists give up their own height cap and simply run on. */
+  .adm-scroll {
+    max-height: none;
+    overflow-y: visible;
+  }
+  .cfg-fields {
+    max-height: none;
+    overflow-y: visible;
+    padding-right: 0;
+  }
+
+  /* ── the one table that hides a column instead of scrolling ────────────
+     The profile's Maps tab is seven numeric columns, and six of them are the
+     reason the tab was opened. KAST is the exception: it is the only figure in
+     that row the profile already states as a headline meter on the Form tab,
+     so it is the column to drop rather than the one to make someone scroll
+     for. Every other wide table here — the season ladder, the per-map rating
+     matrix, the admin audit log, the admin player list — is either all
+     identity or all irreducible figures, so those scroll instead.
+
+     Scoped to the Maps tab by its parent: the per-session table nested inside
+     an open session row is a six-column cut of the same data with no duplicate
+     to drop, and hiding its sixth column would take the rating. */
+  .pro-panel > .pro-tablewrap .table th:nth-child(6),
+  .pro-panel > .pro-tablewrap .table td:nth-child(6) {
+    display: none;
+  }
+
+  /* ── charts stay inside the panel they were drawn in ───────────────────
+     The column chart's peak figure is an HTML label, not SVG text — it has to
+     be, because the chart stretches with preserveAspectRatio="none" and SVG
+     text came out smeared. It is positioned by percentage across the chart and
+     centred on itself, so when the peak is the first or last bar half the
+     label sits outside the chart. The SVGs themselves are drawn to a 0–100
+     viewBox and never paint past it, so clipping the wrap costs nothing. */
+  .chart-wrap {
+    overflow: hidden;
+  }
+  /* 92px of label and 58px of value beside a bar leaves the bar itself about
+     a hundred pixels at this width, which is not enough of a bar to compare
+     anything with. The two fixed tracks give up what they can spare. */
+  .hbar-row {
+    grid-template-columns: 64px minmax(0, 1fr) 54px;
+    gap: 8px;
+  }
+
+  /* ── /stats: the ladder's tap-to-open readout ──────────────────────────
+     Each row is rank, avatar, name, ELO and then a 300px readout that opens on
+     hover — or on tap, since touch has no hover. There is nowhere near 300px
+     left after the four fixed parts, so tapping a row collapsed the name to
+     nothing and showed a sliced-off third of the readout. Hiding it leaves a
+     clean rank/name/ELO row whose tap target is the link to the full profile,
+     which is where those same figures live in full.
+
+     Scoped through the stats page's own heading so the homepage ladder — the
+     same component, at a width where the readout does fit — keeps it. */
+  .stats-ladder-head + div .gr-preview {
+    display: none;
+  }
+
+  /* ── profile hero ──────────────────────────────────────────────────────
+     The band and the loadout inside it already reflow — .pro-showcase to one
+     column at 820px, its gun tiles to two across at 560px — so what is left is
+     the identity block above them and the head over the tiles. */
+
+  /* The action row floats right of the name on a desk. With nothing to float
+     to it sat under the name at whatever width its buttons happened to be, in
+     the middle of the block. Full width, sharing it equally, reads as a row of
+     actions and gives each one a thumb-sized target at the same time. */
+  .pro-id-actions {
+    width: 100%;
+  }
+  .pro-id-actions > .btn {
+    flex: 1 1 auto;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    min-height: 44px;
+  }
+  /* Steam names are frequently one token with no space to break at. */
+  .pro-name {
+    overflow-wrap: anywhere;
+  }
+
+  /* Pinned to two rather than left to auto-fit. Four headline figures in a
+     single column push the showcase band and every tab under it off the fold,
+     which costs more than the extra width per figure buys; and auto-fit would
+     take three columns just above this breakpoint, at which point a
+     clamp(26px) number no longer fits its own tile. Two holds all four in one
+     glance and holds the season page's eight in four tidy rows. */
+  .pro-headline {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: var(--space-4);
+  }
+
+  /* The title, the T/CT switch and the edit link were one line with a
+     margin-left:auto between them, so at this width the switch and the link
+     ended up shoulder to shoulder against the right edge. The title takes its
+     own row and the two controls get the next one. */
+  .pro-loadout-head h2 {
+    flex: 1 0 100%;
+  }
+  .pro-sidebtn {
+    min-height: 40px;
+    padding: 8px 18px;
+  }
+
+  /* The clips tab asks for 340px columns, which is wider than the panel it
+     sits in — the cards were being cut off on the right rather than filling
+     the width. Scoped to the profile's panel; the feed's own grid is a
+     different page's problem. */
+  .pro-panel > .feed-grid {
+    grid-template-columns: minmax(0, 1fr);
+  }
+
+  /* ── dialogs fit the screen they open on ───────────────────────────────
+     .pro-modal is the site's dialog shell: profile settings, the avatar
+     cropper, and the admin config editor's confirm-the-diff step all use it.
+     It centred its card in a grid with 16px of padding a side and the card
+     then took up to 40px more of its own, so a 360px screen was showing a
+     ~264px form. Centring is also the wrong anchor once the card is taller
+     than the viewport: the overflow goes off both ends and the top of the
+     dialog — where its heading and close button are — is the half you lose. */
+  .pro-modal {
+    padding: var(--space-2);
+    place-items: start center;
+  }
+  .pro-modal-card {
+    width: 100%;
+    /* dvh second so it wins where it is understood: the card must fit what the
+       browser is actually showing, not the taller viewport it reports before
+       the address bar collapses. */
+    max-height: calc(100vh - var(--space-4));
+    max-height: calc(100dvh - var(--space-4));
+    padding: var(--space-4) var(--space-3);
+    -webkit-overflow-scrolling: touch;
+    overscroll-behavior-y: contain;
+  }
+  .pro-modal-head {
+    margin-bottom: var(--space-4);
+  }
+  /* The cropper's stage stays at its intrinsic 300px for the reason given
+     where it is defined — the canvas coordinate space and the pointer deltas
+     that pan it are both CSS pixels, so scaling the element desynchronises the
+     drag from the crop. The card around it gives up its padding instead, which
+     is enough: 300px plus 16px of card and 16px of shell is 332 of 360. */
+  .pro-crop-card {
+    padding: var(--space-3) var(--space-2);
+  }
+
+  /* ── admin: the panel's own controls ───────────────────────────────────
+     Three retake flavours at their natural width come to about 324px inside a
+     pane that has 278px, so "Competitive" was clipped off the end of a control
+     whose whole point is that you can see the three choices at once. It keeps
+     its single-object look and shares the width it actually has. */
+  .adm-flavours {
+    display: flex;
+    width: 100%;
+  }
+  .adm-flavour {
+    flex: 1 1 0;
+    min-width: 0;
+    min-height: 44px;
+    padding: 8px 10px;
+    text-align: center;
+    justify-items: center;
+  }
+
+  /* The custom-skin rows are an 84px preview, the name, and a right-aligned
+     button cluster on one line — three tracks that together need more than the
+     pane has, so the middle one was crushed. Stacked, each part gets the full
+     width and the buttons read left to right like everything else. */
+  .skin-item {
+    grid-template-columns: minmax(0, 1fr);
+    gap: var(--space-3);
+  }
+  .skin-item-actions {
+    justify-content: flex-start;
+  }
+
+  /* The compare page's per-map cards ask for 280px columns inside a panel with
+     270px, so the last few pixels of every card were being cut. */
+  .map-breakdown-list {
+    grid-template-columns: minmax(0, 1fr);
+  }
+
+  /* ── tap targets ───────────────────────────────────────────────────────
+     Nothing you are meant to touch is under 40px tall. Most of these were
+     sized to their type: the admin row actions are 11px text with 3px of
+     padding, which is a 23px target, and the profile's side switch and the
+     stats sub-nav chips are not much better. Height only — the widths are
+     already fine, and growing them would rewrap rows that currently fit. */
+  .stats-nav .chip,
+  .pro-section > .chip-row .chip,
+  .pro-filters .chip {
+    display: inline-flex;
+    align-items: center;
+    min-height: 40px;
+  }
+  .pro-section > .pro-tabs > .pro-tab {
+    min-height: 44px;
+  }
+  .adm-actions .btn {
+    min-height: 40px;
+    padding: 6px 12px;
+    font-size: 12px;
+  }
+  .adm-role {
+    min-height: 40px;
+    padding: 6px 10px;
+    font-size: 12px;
+  }
+  .cfg-target,
+  .cfg-switch,
+  .pref-choice {
+    min-height: 40px;
+  }
+  .cfg-switch input {
+    width: 20px;
+    height: 20px;
+  }
+
+  /* The ten season-leader tabs are inline-styled, so !important is the only
+     way in for the padding; the height is free because nothing sets it.
+     They stay wrapped rather than becoming a horizontal scroller: each tab
+     hangs its 2px underline 2px below the strip to meet the rule beneath it,
+     and a scroll container clips to its own padding box, which would cut that
+     underline off the active tab. Tighter sides fit four to a row, so the
+     table below still starts within the first screen. */
+  .lb-tabs button {
+    min-height: 44px;
+    padding: 0 10px !important;
+  }
+}
