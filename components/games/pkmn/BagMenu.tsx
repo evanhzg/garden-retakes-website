@@ -1,7 +1,9 @@
+'use client';
+
 import React, { useState } from 'react';
 import { staticSprite } from './sprites';
 import './pkmn.css';
-import { getT } from '@/lib/serverI18n';
+import { useI18n } from '@/locales/client';
 
 export type BagItem = { id: string; name: string; kind: 'ball' | 'heal'; desc: string; count: number };
 
@@ -25,7 +27,7 @@ export default function BagMenu({
   onThrowBall?: (itemId: string) => void;
   onClose: () => void;
 }) {
-    const t = getT();
+    const t = useI18n();
 
   const [pickTargetFor, setPickTargetFor] = useState<BagItem | null>(null);
 

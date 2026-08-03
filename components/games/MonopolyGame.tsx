@@ -15,7 +15,7 @@ import SoundControls from "@/components/games/sound/SoundControls";
 import { sound, type SoundName } from "@/components/games/sound/SoundManager";
 import { GROUP_COLORS } from "./monopoly3d/theme";
 import "./shared.css";
-import { useI18n } from '@/components/I18nProvider';
+import { useI18n } from '@/locales/client';
 import "./monopoly.css";
 
 // The 3D board (react-three-fiber) is client-only.
@@ -82,7 +82,7 @@ function tileEdge(id: number): "top" | "right" | "bottom" | "left" | "corner" {
 }
 
 export default function MonopolyGame() {
-    const { t } = useI18n();
+  const tAuto = useI18n();
 
   const { socket, steamId } = useSocket();
   const mySteamId = steamId ?? DUMMY_STEAM_ID;
@@ -282,7 +282,7 @@ export default function MonopolyGame() {
       {/* ================= TOP BAR ================= */}
       <header className="mono-topbar">
         <div className="mono-brand">
-          <span className="mono-brand-dot" /> {t("auto.monopolygame.monopo7y")}
+          <span className="mono-brand-dot" /> {tAuto("auto.monopolygame.monopo7y")}
                             <span className="mono-brand-lang">{lang.toUpperCase()}</span>
         </div>
         <div className="mono-topbar-right">
@@ -296,10 +296,10 @@ export default function MonopolyGame() {
               t("turnOf", lang, { name: nameOf(gameState.currentTurn) })
             )}
           </div>
-          <div className="mono-view-toggle" role="group" aria-label={t("auto.monopolygame.view")}>
-            <button className={viewMode === "3d" ? "on" : ""} onClick={() => chooseView("3d")}>{t("auto.monopolygame.3d")}</button>
-            <button className={viewMode === "2d" ? "on" : ""} onClick={() => chooseView("2d")}>{t("auto.monopolygame.2d")}</button>
-            <button className={viewMode === "bt" ? "on bt" : "bt"} onClick={() => chooseView("bt")} title={t("auto.monopolygame.business_tour_style")}>{t("auto.monopolygame.bt")}</button>
+          <div className="mono-view-toggle" role="group" aria-label={tAuto("auto.monopolygame.view")}>
+            <button className={viewMode === "3d" ? "on" : ""} onClick={() => chooseView("3d")}>{tAuto("auto.monopolygame.3d")}</button>
+            <button className={viewMode === "2d" ? "on" : ""} onClick={() => chooseView("2d")}>{tAuto("auto.monopolygame.2d")}</button>
+            <button className={viewMode === "bt" ? "on bt" : "bt"} onClick={() => chooseView("bt")} title={tAuto("auto.monopolygame.business_tour_style")}>{tAuto("auto.monopolygame.bt")}</button>
           </div>
           <select className="mono-bg-select" value={bgTheme} onChange={(e) => chooseBg(e.target.value)} title={lang === "fr" ? "Thème de fond" : "Background theme"}>
             {BG_THEMES.map((b) => <option key={b} value={b}>{BG_LABELS[b]}</option>)}
@@ -346,8 +346,8 @@ export default function MonopolyGame() {
                     <SetPips stats={groupStats(pid)} colorOf={groupColorOf} />
                     <span className="mono-pcard-counts">
                       <span title={t("properties", lang)}>🏠 {propertyCount(pid)}</span>
-                      {rails > 0 && <span title={t("auto.monopolygame.rail")}>🚂 {rails}</span>}
-                      {utils > 0 && <span title={t("auto.monopolygame.utility")}>💡 {utils}</span>}
+                      {rails > 0 && <span title={tAuto("auto.monopolygame.rail")}>🚂 {rails}</span>}
+                      {utils > 0 && <span title={tAuto("auto.monopolygame.utility")}>💡 {utils}</span>}
                     </span>
                   </div>
                   <div className="mono-pcard-meta">
@@ -438,8 +438,8 @@ export default function MonopolyGame() {
                 <SetPips stats={groupStats(mySteamId)} colorOf={groupColorOf} />
                 <span className="mono-pcard-counts">
                   <span title={t("properties", lang)}>🏠 {propertyCount(mySteamId)}</span>
-                  {typeCount(mySteamId, "rail") > 0 && <span title={t("auto.monopolygame.rail")}>🚂 {typeCount(mySteamId, "rail")}</span>}
-                  {typeCount(mySteamId, "util") > 0 && <span title={t("auto.monopolygame.utility")}>💡 {typeCount(mySteamId, "util")}</span>}
+                  {typeCount(mySteamId, "rail") > 0 && <span title={tAuto("auto.monopolygame.rail")}>🚂 {typeCount(mySteamId, "rail")}</span>}
+                  {typeCount(mySteamId, "util") > 0 && <span title={tAuto("auto.monopolygame.utility")}>💡 {typeCount(mySteamId, "util")}</span>}
                 </span>
               </div>
             </div>

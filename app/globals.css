@@ -8940,3 +8940,244 @@ html[data-motion="off"] .skinsb-cta { transition: none; }
 :root[data-motion="off"] .clip-skel-avatar::after,
 :root[data-motion="off"] .clip-skel-media::after,
 :root[data-motion="off"] .clip-skel-line::after { animation: none; }
+
+/* ---------------------------------------------------------------------------
+   Dismissable rows: demo submissions and notifications.
+
+   Both lists are readouts of things that already happened, so a row you have
+   read is only in the way. Neither control touches what the row is about — the
+   demo card is hidden for this browser alone, and a notification only ever
+   removes its own row.
+
+   The collapse is a `grid-template-rows: 1fr -> 0fr` transition rather than a
+   max-height one. max-height has to be guessed at a value larger than any real
+   row, and the transition then spends its first half shrinking empty space,
+   which lands as a snap at the end instead of a collapse. The fr pair only
+   works if the row's child can be squeezed under its content height, hence the
+   `min-height: 0` below.
+   --------------------------------------------------------------------------- */
+
+/* The spacing between demo cards moves from the grid gap onto the cards
+   themselves so it can shrink with them: a gap belongs to the track, and would
+   hold an 8px hole open until React unmounted the card. */
+.demo-mine ul { gap: 0; }
+.demo-mine li {
+  grid-template-rows: 1fr;
+  margin-block-end: var(--space-2);
+  overflow: hidden;
+  transition: grid-template-rows 180ms ease, opacity 180ms ease, margin 180ms ease,
+              padding 180ms ease, border-width 180ms ease;
+}
+.demo-mine li:last-child { margin-block-end: 0; }
+.demo-mine li.is-leaving {
+  grid-template-rows: 0fr;
+  opacity: 0;
+  margin-block-end: 0;
+  padding-block: 0;
+  border-block-width: 0;
+  /* Nothing in a row that is on its way out is worth clicking, and a second
+     click on the × would only start a collapse that is already running. */
+  pointer-events: none;
+}
+
+/* The card's own layout sits on a wrapper so the <li> is free to be nothing but
+   the collapsing box. */
+.demo-mine-card {
+  grid-column: 1 / -1;
+  min-height: 0;
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) max-content max-content;
+  gap: 4px var(--space-3);
+  align-items: center;
+}
+
+/* The × is a sibling of the link, so the row itself carries the two columns and
+   the link keeps the three it already had. */
+.notif-list li {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) max-content;
+  grid-template-rows: 1fr;
+  align-items: center;
+  overflow: hidden;
+  transition: grid-template-rows 180ms ease, opacity 180ms ease;
+}
+.notif-list li > * { min-height: 0; }
+.notif-list li.is-leaving { grid-template-rows: 0fr; opacity: 0; pointer-events: none; }
+
+.demo-mine .demo-mine-x,
+.notif-list li > .notif-x {
+  display: inline-grid;
+  place-items: center;
+  /* Stated because both parents style every child of a row, and this one is not
+     one of the rows they were written for. */
+  grid-template-columns: none;
+  width: 22px;
+  height: 22px;
+  padding: 0;
+  background: none;
+  border: 0;
+  border-radius: 6px;
+  color: var(--muted);
+  font-size: 15px;
+  line-height: 1;
+  cursor: pointer;
+}
+.notif-list li > .notif-x { margin-inline-end: 5px; }
+/* The unread marker belongs to the row, and the × is not part of the row's
+   content — a second accent bar beside it reads as a second notification. */
+.notif-list li.unread > .notif-x { box-shadow: none; }
+.demo-mine .demo-mine-x:hover,
+.notif-list li > .notif-x:hover {
+  background: color-mix(in srgb, var(--color-text) 10%, transparent);
+  color: var(--color-text);
+}
+.demo-mine .demo-mine-x:focus-visible,
+.notif-list li > .notif-x:focus-visible { outline: 2px solid var(--color-accent); outline-offset: 1px; }
+
+/* Vanishing instantly is fine; sliding while someone asked for no motion is
+   not. The script removes the element on the same schedule either way, so
+   nothing is left half-collapsed. */
+@media (prefers-reduced-motion: reduce) {
+  html:not([data-motion="full"]) .demo-mine li,
+  html:not([data-motion="full"]) .notif-list li { transition: none; }
+}
+html[data-motion="off"] .demo-mine li,
+html[data-motion="off"] .notif-list li { transition: none; }
+
+/* ---------------------------------------------------------------------------
+   Demo upload: the two optional fields.
+
+   "Rounds" and "Player" carry a label and a hint of their own lengths, and as
+   two independent grids each sized its own rows — so the hint that wrapped to
+   two lines pushed nothing, but a label that wrapped dropped its input a line
+   below its neighbour. Subgrid hands both fields the same three rows (label,
+   input, hint) so the inputs share a line however far the text runs.
+
+   The columns are stated rather than auto-fit because a track count that can
+   fall to one would put both fields in the same three rows, on top of each
+   other. Below the phone breakpoint they go back to ordinary stacked blocks,
+   where there is no line to share.
+   --------------------------------------------------------------------------- */
+.demo-fields {
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  grid-template-rows: auto auto auto;
+  column-gap: var(--space-4);
+  /* The rows are the fields' own rows now, so they take the fields' spacing;
+     the parent's larger gap would show up between a label and its input. */
+  row-gap: 6px;
+}
+.demo-fields > .field {
+  grid-row: span 3;
+  grid-template-rows: subgrid;
+}
+@media (max-width: 560px) {
+  .demo-fields {
+    grid-template-columns: 1fr;
+    grid-template-rows: none;
+    row-gap: var(--space-4);
+  }
+  .demo-fields > .field { grid-row: auto; grid-template-rows: none; }
+}
+
+/* ═══════════════════════════════════════════════════════════════════════════
+   The footer's gutter, the inventory workspace's own height, the comment
+   thread's ground, and the mention menu's rows.
+   ═══════════════════════════════════════════════════════════════════════ */
+
+/* ── the footer band's inner gutter ──────────────────────────────────────
+   .full-bleed is written for a child of main.container: its negative margin
+   cancels that element's --page-pad, and .full-bleed-inset then puts the same
+   figure back as padding so the band spans the column while its text keeps the
+   page's gutter. The footer is not a child of main.container — the layout
+   renders it as a sibling, directly inside .main-content — and .main-content
+   has no inline padding at all. So the negative margin had nothing to cancel
+   and pushed the band a full --page-pad past the scroll container on each
+   side, invisibly, because .main-content clips overflow-x; the padding that
+   was meant to be the gutter only brought the text back to the viewport edge.
+
+   The band already spans its parent, so it must not break out of it. Doing
+   this here rather than by dropping .full-bleed in SiteFooter.tsx keeps the
+   correction with the rule that caused it, and holds if the class comes back. */
+.main-content > .site-footer-band {
+  margin-inline: 0;
+  /* And the band is exactly as tall as its content on every route. As an
+     ordinary flex item it could be shrunk by whatever shares the column with
+     it, which is how it ended up fighting the inventory workspace below. */
+  flex: none;
+}
+
+/* ── /inventory: the workspace keeps the viewport, the band follows it ───
+   body.inv-fullscreen gives main.container height:100% so the workspace fills
+   the screen exactly. That was true when the footer was hidden on this route,
+   but it is a sibling in the same flex column now, so the two of them asked
+   for about 130% of the space there is. Flex settled it by shrinking
+   main.container: the workspace quietly gave up ~300px to the band, which is
+   why the footer read as enormous here and only here, and why the store below
+   it had almost no room left to scroll in.
+
+   Pinning main.container's size and giving the column its scroll back puts the
+   band after a full-height workspace, reached by scrolling, instead of letting
+   it take a third of one. overflow-y alone: overflow-x stays hidden from the
+   shorthand this overrides, so the page still cannot drift sideways. */
+body.inv-fullscreen .main-content { overflow-y: auto; }
+body.inv-fullscreen .main-content > main.container { flex: none; }
+
+/* ── /inventory: the store scrolls, without a bar ────────────────────────
+   The browse column is a scroll region only while every ancestor between it
+   and the workspace is allowed to be shorter than its own content — one
+   flex or grid item still floored at min-content anywhere up that chain and
+   the overflow never engages. The links from .inv4-body down were already
+   floored at 0 further up this file; the one that was still broken was
+   main.container, which had a height but was handing it to the footer, fixed
+   directly above. These restate the chain in one place so a later change to
+   any single rule cannot half-break it again.
+
+   .inv4-stickers is the exception rather than a restatement: it is a flex
+   child of the chooser with no flex of its own, so it was shrinking along with
+   everything else instead of the skin grid taking the pressure. */
+.inv4-body,
+.inv4-browse,
+.inv4-chooser,
+.inv4-weapons,
+.inv4-skins,
+.inv4-preview { min-height: 0; }
+.inv4-stickers { flex: none; }
+
+/* A scrollbar down the middle of a wall of skin tiles is noise, and this
+   column is already framed by its own surface — the edge says where it ends.
+   Wheel, drag, touch and keyboard all still scroll it; only the bar goes. */
+.inv4-weapons,
+.inv4-skins,
+.inv4-preview { scrollbar-width: none; }
+.inv4-weapons::-webkit-scrollbar,
+.inv4-skins::-webkit-scrollbar,
+.inv4-preview::-webkit-scrollbar { width: 0; height: 0; }
+
+/* ── the comment thread under the expanded clip ──────────────────────────
+   The thread ran straight on from the title and description with nothing
+   between them, so a long clip description and the first comment read as one
+   block of text. It gets a ground of its own to sit on.
+
+   A wash of the ink token rather than a darker fill: the modal card is
+   transparent over a 0.86 black scrim in both themes, so there is no room
+   underneath it to go darker — a low-alpha tint of --color-text is the same
+   device the comment actions a few rules up use, and it is the only one that
+   separates the region without laying an opaque light panel under white type. */
+.clip-social-scroll {
+  padding: 10px;
+  border-radius: 10px;
+  background: color-mix(in srgb, var(--color-text) 10%, transparent);
+}
+
+/* ── the @-mention menu's rows ───────────────────────────────────────────
+   The menu was a 4px-inset box of 7px-rounded rows, so each suggestion read as
+   its own pill with air around it — six buttons rather than one list of six
+   people. The rows lose the inset and the corner and keep only their own
+   padding, so they sit flush and the accent wash runs the full width of the
+   menu. The menu's 10px corner still shapes the first and last rows: it
+   scrolls, and a scroll container clips to its own rounded padding box. */
+.mention-menu { padding: 0; }
+.mention-menu button {
+  border-radius: 0;
+  padding: 7px 10px;
+}

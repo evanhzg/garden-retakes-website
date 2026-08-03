@@ -1,6 +1,7 @@
 "use client";
 
 import React, { useState, useEffect, useRef, useReducer, useCallback } from "react";
+import { useI18n } from '@/locales/client';
 import { createPortal } from "react-dom";
 import { useSocket } from "@/components/games/SocketProvider";
 import { usePlayerNames, displayNameFor, useGameEvents, useGameChrome, type GameEvent } from "@/components/games/hooks";
@@ -9,7 +10,6 @@ import { useGameLang, translator, LangToggle, OUNO } from "@/components/games/i1
 import SoundControls from "@/components/games/sound/SoundControls";
 import { sound } from "@/components/games/sound/SoundManager";
 import "./shared.css";
-import { useI18n } from '@/components/I18nProvider';
 import "./uno.css";
 
 type Pt = { x: number; y: number };
@@ -56,7 +56,6 @@ const centerOf = (el: Element | null | undefined): Pt | null => {
 };
 
 export default function UnoGame() {
-    const { t } = useI18n();
 
   const { socket, steamId } = useSocket();
   const mySteamId = steamId ?? "";
@@ -74,6 +73,7 @@ export default function UnoGame() {
   const [, retick] = useReducer((x: number) => x + 1, 0);
 
   const [lang, setLang] = useGameLang(gameState?.lang);
+  const tAuto = useI18n();
   const t = translator(OUNO, lang);
 
   // Measured anchors, in viewport coordinates.
@@ -491,7 +491,7 @@ export default function UnoGame() {
 
         {/* ---------------------------------------------------------- topbar */}
         <div className="uno-topbar">
-          <span className="uno-brand">{t("auto.unogame.ouno")}</span>
+          <span className="uno-brand">{tAuto("auto.unogame.ouno")}</span>
           <div className="uno-rule-chips">
             {rules.stacking && <span className="uno-chip">{t("ruleStacking")}</span>}
             {rules.jumpIn && <span className="uno-chip">{t("ruleJumpIn")}</span>}
@@ -536,7 +536,7 @@ export default function UnoGame() {
                   {count === 1 ? t("oneCard") : t("cards", { n: count })}
                 </span>
 
-                {data.calledUno && <span className="uno-flag">{t("auto.unogame.ouno")}</span>}
+                {data.calledUno && <span className="uno-flag">{tAuto("auto.unogame.ouno")}</span>}
 
                 <AnimatePresence>
                   {catchable && !data.calledUno && (
@@ -618,7 +618,7 @@ export default function UnoGame() {
           >
             {[0, 1, 2].map((i) => (
               <div key={i} className="deck-stack-card" style={{ transform: `translate(${-i * 3}px, ${-i * 3}px)` }}>
-                {i === 2 && <div className="card-back-face"><span className="logo">{t("auto.unogame.ouno")}</span></div>}
+                {i === 2 && <div className="card-back-face"><span className="logo">{tAuto("auto.unogame.ouno")}</span></div>}
               </div>
             ))}
             <span className="deck-count">{t("deckLeft", { n: gameState.deckCount ?? 0 })}</span>
@@ -899,11 +899,11 @@ function UnoCard({ card, state = "", t }: {
 }
 
 function UnoCardBack() {
-    const { t } = useI18n();
+  const tAuto = useI18n();
 
   return (
     <div className="uno-card back">
-      <div className="card-back-face"><span className="logo">{t("auto.unogame.ouno")}</span></div>
+      <div className="card-back-face"><span className="logo">{tAuto("auto.unogame.ouno")}</span></div>
     </div>
   );
 }

@@ -1,10 +1,12 @@
+'use client';
+
 import React, { useEffect, useState, useRef } from 'react';
 import { useSocket } from "@/components/games/SocketProvider";
 import PartyMenu from './PartyMenu';
 import BagMenu, { BagItem } from './BagMenu';
 import { frontSprite, backSprite, staticSprite, playCry } from './sprites';
 import './pkmn.css';
-import { getT } from '@/lib/serverI18n';
+import { useI18n } from '@/locales/client';
 
 type BattleMon = { species: string; level?: number; moves?: string[]; nickname?: string | null };
 
@@ -12,7 +14,7 @@ const prettyMove = (m: string) =>
   m.replace(/([a-z])([A-Z])/g, "$1 $2").replace(/^./, (c) => c.toUpperCase());
 
 export default function BattleOverlay({ onBattleEnd }: { onBattleEnd: () => void }) {
-    const t = getT();
+    const t = useI18n();
 
   const { socket } = useSocket();
   const [logs, setLogs] = useState<string[]>([]);

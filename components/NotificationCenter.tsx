@@ -20,6 +20,38 @@ type Item = {
   read: boolean;
 };
 
+const DISMISSED_KEY = "garden_dismissed_notifs";
+
+/** Matches the collapse in globals.css; the row has to still be on screen while
+ *  it plays, so the two numbers have to agree. */
+const LEAVE_MS = 180;
+
+/** Global events fall out of the window after a fortnight and stop being sent,
+ *  so nothing here would ever remove their ids again. Capped rather than left
+ *  to grow for the life of the browser profile. */
+const DISMISSED_MAX = 200;
+
+/** Mirrors the CSS: the footer toggle wins, and the OS setting decides when it
+ *  is on "system". Without this the row would sit there for 180ms doing nothing
+ *  at all for someone who asked for less motion. */
+const motionOk = () => {
+  const pref = document.documentElement.getAttribute("data-motion");
+  if (pref === "off") return false;
+  if (pref === "full") return true;
+  return !window.matchMedia("(prefers-reduced-motion: reduce)").matches;
+};
+
+const readDismissed = (): string[] => {
+  try {
+    const raw: unknown = JSON.parse(localStorage.getItem(DISMISSED_KEY) ?? "[]");
+    return Array.isArray(raw) ? raw.filter((v): v is string => typeof v === "string") : [];
+  } catch {
+    // Unparseable or unavailable storage means nothing was ever hidden, which
+    // is the safe reading: it shows a row too many, never one too few.
+    return [];
+  }
+};
+
 const ago = (iso: string, t: any) => {
   const s = Math.max(1, (Date.now() - new Date(iso).getTime()) / 1000);
   if (s < 60) return `${Math.floor(s)}${t('time.secondsShort')}`;
@@ -31,8 +63,11 @@ const ago = (iso: string, t: any) => {
 export default function NotificationCenter() {
   const { t } = useI18n();
   const [items, setItems] = useState<Item[] | null>(null);
-  const [unread, setUnread] = useState(0);
   const [open, setOpen] = useState(false);
+  const [dismissed, setDismissed] = useState<string[]>([]);
+  const [leaving, setLeaving] = useState<string[]>([]);
+  const [restored, setRestored] = useState(false);
+  const timers = useRef<number[]>([]);
   const wrapRef = useRef<HTMLDivElement>(null);
 
   const load = useCallback(async () => {
@@ -41,7 +76,6 @@ export default function NotificationCenter() {
       const j = await res.json();
       if (!j.signedIn) return setItems(null);
       setItems(j.items ?? []);
-      setUnread(j.unread ?? 0);
     } catch {
       /* the bell is not worth an error state */
     }
@@ -68,16 +102,73 @@ export default function NotificationCenter() {
     };
   }, [open]);
 
+  // Read on mount rather than in the initial state: the header renders on the
+  // server too, and a first paint that already knew what was hidden would not
+  // match the one React makes here.
+  useEffect(() => {
+    setDismissed(readDismissed());
+    setRestored(true);
+    const pending = timers.current;
+    return () => pending.forEach((id) => window.clearTimeout(id));
+  }, []);
+
+  useEffect(() => {
+    // Guarded on the restore so the empty state this starts in is never written
+    // over what a previous visit stored.
+    if (!restored) return;
+    try {
+      localStorage.setItem(DISMISSED_KEY, JSON.stringify(dismissed));
+    } catch {
+      // Private mode — the rows simply come back on the next poll.
+    }
+  }, [dismissed, restored]);
+
   if (items === null) return null;
+
+  // A row on its way out is still on screen, so it stays in this list until its
+  // collapse has finished. The badge counts what the panel would actually show:
+  // a number that outlives the row it stands for is worse than no number.
+  const visible = items.filter((n) => !dismissed.includes(n.id));
+  const unread = visible.filter((n) => !n.read).length;
 
   const toggle = async () => {
     const next = !open;
     setOpen(next);
     if (next && unread > 0) {
-      setUnread(0);
       setItems((cur) => (cur ?? []).map((i) => ({ ...i, read: true })));
       await fetch("/api/notifications", { method: "POST" }).catch(() => {});
     }
+  };
+
+  /** Removes the notification, not the thing it announced. A targeted one is a
+   *  row of its own and the route deletes it; a global event is derived from a
+   *  clip or a Valve post that is nobody's here to delete, so those are only
+   *  ever hidden — which is why the id decides and the caller does not have to. */
+  const remove = (id: string) => {
+    if (leaving.includes(id)) return;
+    setLeaving((cur) => [...cur, id]);
+
+    // Sent before the animation rather than after it: the collapse is for the
+    // eye, and closing the panel mid-transition should still have deleted it.
+    fetch("/api/notifications", {
+      method: "DELETE",
+      headers: { "content-type": "application/json" },
+      body: JSON.stringify({ id }),
+    }).catch(() => {
+      /* it reappears on the next poll, which is the honest outcome */
+    });
+
+    timers.current.push(
+      window.setTimeout(() => {
+        setItems((cur) => (cur ?? []).filter((i) => i.id !== id));
+        // A derived event has no row, so this list is the only record that it
+        // was ever dismissed.
+        if (!id.startsWith("n")) {
+          setDismissed((cur) => (cur.includes(id) ? cur : [...cur, id].slice(-DISMISSED_MAX)));
+        }
+        setLeaving((cur) => cur.filter((v) => v !== id));
+      }, motionOk() ? LEAVE_MS : 0)
+    );
   };
 
   return (
@@ -105,11 +196,11 @@ export default function NotificationCenter() {
             <Link href="/feed" className="btn btn-ghost" onClick={() => setOpen(false)}>{t('nav.feed')}</Link>
           </div>
 
-          {items.length === 0 ? (
+          {visible.length === 0 ? (
             <p className="notif-empty">{t('notif.empty')}</p>
           ) : (
             <ul className="notif-list">
-              {items.map((n) => {
+              {visible.map((n) => {
                 const inner = (
                   <>
                     <span className="notif-icon" aria-hidden>{n.icon}</span>
@@ -118,7 +209,7 @@ export default function NotificationCenter() {
                   </>
                 );
                 return (
-                  <li key={n.id} className={n.read ? "" : "unread"}>
+                  <li key={n.id} className={[n.read ? "" : "unread", leaving.includes(n.id) ? "is-leaving" : ""].join(" ").trim()}>
                     {n.url ? (
                       n.url.startsWith("http") ? (
                         <a href={n.url} target="_blank" rel="noreferrer noopener" onClick={() => setOpen(false)}>{inner}</a>
@@ -128,6 +219,17 @@ export default function NotificationCenter() {
                     ) : (
                       <span>{inner}</span>
                     )}
+                    {/* Beside the link rather than inside it: a button nested in
+                        an anchor is neither valid nor reliably clickable. */}
+                    <button
+                      type="button"
+                      className="notif-x"
+                      onClick={() => remove(n.id)}
+                      title={t('common.delete')}
+                      aria-label={t('common.delete')}
+                    >
+                      ×
+                    </button>
                   </li>
                 );
               })}

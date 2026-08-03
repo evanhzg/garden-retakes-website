@@ -7,8 +7,9 @@ import { cs2Updates } from "@/lib/feed";
 export const dynamic = "force-dynamic";
 export const runtime = "nodejs";
 
-// GET  — your notifications, targeted and global merged.
-// POST — mark everything read.
+// GET    — your notifications, targeted and global merged.
+// POST   — mark everything read.
+// DELETE — remove one of them.
 
 type Item = {
   id: string;
@@ -117,6 +118,45 @@ export async function POST() {
       update: { NotifSeenAtUtc: now },
     }),
   ]);
+
+  return NextResponse.json({ ok: true });
+}
+
+export async function DELETE(req: Request) {
+  const session = getSession();
+  if (!session) return NextResponse.json({ error: "not signed in" }, { status: 401 });
+
+  let body: { id?: unknown };
+  try {
+    body = await req.json();
+  } catch {
+    return NextResponse.json({ error: "invalid body" }, { status: 400 });
+  }
+
+  const id = typeof body.id === "string" ? body.id.trim() : "";
+  if (!id) return NextResponse.json({ error: "bad id" }, { status: 400 });
+
+  // Only the "n" ids are rows. A "clip…" or "cs2…" id is a global event derived
+  // at read time from something that belongs to everyone, so there is nothing
+  // here to delete and deleting the clip or the update itself would be a wildly
+  // different act than the one the × asked for — the browser remembers those.
+  // It still answers ok: which kind of id it is holding is this route's
+  // business, not the caller's, and a 404 would read as a failure.
+  if (!id.startsWith("n")) return NextResponse.json({ ok: true });
+
+  const rowId = Number(id.slice(1));
+  if (!Number.isInteger(rowId) || rowId <= 0) return NextResponse.json({ error: "bad id" }, { status: 400 });
+
+  // Ownership is part of the delete rather than a lookup before it: two
+  // statements would leave a window between the check and the write, and this
+  // way a row belonging to someone else simply matches nothing.
+  const { count } = await prisma.webNotification.deleteMany({
+    where: { Id: rowId, SteamId: BigInt(session.steamId) },
+  });
+
+  // Gone and never yours are the same answer on purpose — telling them apart
+  // would confirm that a given id exists to whoever asks.
+  if (count === 0) return NextResponse.json({ error: "No such notification." }, { status: 404 });
 
   return NextResponse.json({ ok: true });
 }

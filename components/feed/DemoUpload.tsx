@@ -38,6 +38,38 @@ const STATUS_LABEL: Record<string, string> = {
 
 const mb = (b: number | null) => (b ? `${(b / 1024 / 1024).toFixed(0)} MB` : "");
 
+const DISMISSED_KEY = "garden_dismissed_demos";
+
+/** Matches the collapse in globals.css; the card has to still be on screen
+ *  while it plays, so the two numbers have to agree. */
+const LEAVE_MS = 180;
+
+/** The list is only ever this person's own uploads, but nothing prunes it when
+ *  a demo ages out of the API, so it is capped rather than left to grow for the
+ *  life of the browser profile. */
+const DISMISSED_MAX = 200;
+
+/** Mirrors the CSS: the footer toggle wins, and the OS setting decides when it
+ *  is on "system". Without this the card would sit there for 180ms doing
+ *  nothing at all for someone who asked for less motion. */
+const motionOk = () => {
+  const pref = document.documentElement.getAttribute("data-motion");
+  if (pref === "off") return false;
+  if (pref === "full") return true;
+  return !window.matchMedia("(prefers-reduced-motion: reduce)").matches;
+};
+
+const readDismissed = (): number[] => {
+  try {
+    const raw: unknown = JSON.parse(localStorage.getItem(DISMISSED_KEY) ?? "[]");
+    return Array.isArray(raw) ? raw.filter((v): v is number => typeof v === "number") : [];
+  } catch {
+    // Unparseable or unavailable storage means nothing was ever hidden, which
+    // is the safe reading: it shows a card too many, never one too few.
+    return [];
+  }
+};
+
 export default function DemoUpload({ onPosted }: { onPosted?: () => void }) {
     const { t } = useI18n();
 
@@ -49,6 +81,10 @@ export default function DemoUpload({ onPosted }: { onPosted?: () => void }) {
   const [error, setError] = useState<string | null>(null);
   const [ok, setOk] = useState<string | null>(null);
   const [mine, setMine] = useState<Submission[] | null>(null);
+  const [dismissed, setDismissed] = useState<number[]>([]);
+  const [leaving, setLeaving] = useState<number[]>([]);
+  const [restored, setRestored] = useState(false);
+  const timers = useRef<number[]>([]);
   const inputRef = useRef<HTMLInputElement>(null);
 
   const loadMine = async () => {
@@ -63,6 +99,44 @@ export default function DemoUpload({ onPosted }: { onPosted?: () => void }) {
   useEffect(() => {
     loadMine();
   }, []);
+
+  // Read on mount rather than in the initial state: this component is rendered
+  // on the server too, and a first paint that already knew what was hidden
+  // would not match the one React makes here.
+  useEffect(() => {
+    setDismissed(readDismissed());
+    setRestored(true);
+    const pending = timers.current;
+    return () => pending.forEach((id) => window.clearTimeout(id));
+  }, []);
+
+  useEffect(() => {
+    // Guarded on the restore so the empty state this starts in is never written
+    // over what a previous visit stored.
+    if (!restored) return;
+    try {
+      localStorage.setItem(DISMISSED_KEY, JSON.stringify(dismissed));
+    } catch {
+      // Private mode — the cards simply come back on the next reload.
+    }
+  }, [dismissed, restored]);
+
+  /** Takes the card off this list and nothing else. The demo, its clips and its
+   *  row are untouched: the list is a progress readout, and once it has been
+   *  read there is nothing left for the card to say. */
+  const dismiss = (id: number) => {
+    if (leaving.includes(id)) return;
+    setLeaving((cur) => [...cur, id]);
+    const commit = () => {
+      setDismissed((cur) => (cur.includes(id) ? cur : [...cur, id].slice(-DISMISSED_MAX)));
+      setLeaving((cur) => cur.filter((v) => v !== id));
+    };
+    timers.current.push(window.setTimeout(commit, motionOk() ? LEAVE_MS : 0));
+  };
+
+  // A card on its way out is still on screen, so it stays in this list until
+  // its collapse has finished.
+  const visible = (mine ?? []).filter((d) => !dismissed.includes(d.id));
 
   const choose = (f: File | null) => {
     if (!f) return;
@@ -203,22 +277,33 @@ export default function DemoUpload({ onPosted }: { onPosted?: () => void }) {
         </div>
       </form>
 
-      {mine && mine.length > 0 && (
+      {visible.length > 0 && (
         <div className="demo-mine">
           <h3 className="fc-sub">{t("auto.demoupload.your_demos")}</h3>
           <ul>
-            {mine.map((d) => (
-              <li key={d.id}>
-                <span className="demo-mine-name">{d.fileName}</span>
-                <span className={`tag ${d.status === "done" ? "tag-accent" : "tag-neutral"}`}>
-                  {STATUS_LABEL[d.status] ?? d.status}
-                </span>
-                <span className="demo-mine-meta">
-                  {mb(d.bytes)}
-                  {d.rounds ? ` · rounds ${d.rounds}` : ""}
-                  {d.status === "done" ? ` · ${d.clipCount} clip${d.clipCount === 1 ? "" : "s"}` : ""}
-                  {d.note ? ` · ${d.note}` : ""}
-                </span>
+            {visible.map((d) => (
+              <li key={d.id} className={leaving.includes(d.id) ? "is-leaving" : undefined}>
+                <div className="demo-mine-card">
+                  <span className="demo-mine-name">{d.fileName}</span>
+                  <span className={`tag ${d.status === "done" ? "tag-accent" : "tag-neutral"}`}>
+                    {STATUS_LABEL[d.status] ?? d.status}
+                  </span>
+                  <button
+                    type="button"
+                    className="demo-mine-x"
+                    onClick={() => dismiss(d.id)}
+                    title="Hide from this list"
+                    aria-label={`Hide ${d.fileName} from this list`}
+                  >
+                    ×
+                  </button>
+                  <span className="demo-mine-meta">
+                    {mb(d.bytes)}
+                    {d.rounds ? ` · rounds ${d.rounds}` : ""}
+                    {d.status === "done" ? ` · ${d.clipCount} clip${d.clipCount === 1 ? "" : "s"}` : ""}
+                    {d.note ? ` · ${d.note}` : ""}
+                  </span>
+                </div>
               </li>
             ))}
           </ul>

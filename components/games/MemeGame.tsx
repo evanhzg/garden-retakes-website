@@ -1,6 +1,7 @@
 "use client";
 
 import React, { useState, useEffect, useMemo, useRef, useCallback } from "react";
+import { useI18n } from '@/locales/client';
 import { createPortal } from "react-dom";
 import { useSocket } from "@/components/games/SocketProvider";
 import { usePlayerNames, displayNameFor, useGameEvents, useGameChrome, type GameEvent } from "@/components/games/hooks";
@@ -9,7 +10,6 @@ import { useGameLang, translator, LangToggle, MEME } from "@/components/games/i1
 import SoundControls from "@/components/games/sound/SoundControls";
 import { sound } from "@/components/games/sound/SoundManager";
 import "./shared.css";
-import { useI18n } from '@/components/I18nProvider';
 import "./meme.css";
 
 type Slot = { x: number; y: number; w: number; dark?: boolean };
@@ -55,7 +55,6 @@ const GIF_LIBRARY: { id: string; tags: string; url: string }[] = [
 ];
 
 export default function MemeGame() {
-    const { t } = useI18n();
 
   const { socket, steamId } = useSocket();
   const mySteamId = steamId ?? "";
@@ -69,6 +68,7 @@ export default function MemeGame() {
   const scoreLenRef = useRef(0);
 
   const [lang, setLang] = useGameLang(gameState?.lang);
+  const tAuto = useI18n();
   const t = translator(MEME, lang);
 
   useEffect(() => {
@@ -179,7 +179,7 @@ export default function MemeGame() {
       {/* --------------------------------------------------------- top bar */}
       <header className="meme-topbar">
         <div className="meme-brand-block">
-          <span className="meme-brand">{t("auto.memegame.hasameme")}</span>
+          <span className="meme-brand">{tAuto("auto.memegame.hasameme")}</span>
           <span className="meme-round">{t("round", { n: gameState.round, m: gameState.maxRounds })}</span>
         </div>
         <div className="meme-phase-pill">{phaseLabel}</div>
@@ -302,11 +302,11 @@ export default function MemeGame() {
                                  setCaptions(n);
                                }}
                             >
-                               <option value="Impact">{t("auto.memegame.impact")}</option>
-                               <option value="Arial">{t("auto.memegame.arial")}</option>
-                               <option value="Courier New">{t("auto.memegame.courier")}</option>
-                               <option value="Comic Sans MS">{t("auto.memegame.comic_sans")}</option>
-                               <option value="Times New Roman">{t("auto.memegame.serif")}</option>
+                               <option value="Impact">{tAuto("auto.memegame.impact")}</option>
+                               <option value="Arial">{tAuto("auto.memegame.arial")}</option>
+                               <option value="Courier New">{tAuto("auto.memegame.courier")}</option>
+                               <option value="Comic Sans MS">{tAuto("auto.memegame.comic_sans")}</option>
+                               <option value="Times New Roman">{tAuto("auto.memegame.serif")}</option>
                             </select>
                             <select 
                                className="meme-select" 
@@ -317,11 +317,11 @@ export default function MemeGame() {
                                  setCaptions(n);
                                }}
                             >
-                               <option value={0}>{t("auto.memegame.no_border")}</option>
-                               <option value={1}>{t("auto.memegame.thin_border")}</option>
-                               <option value={2}>{t("auto.memegame.normal_border")}</option>
-                               <option value={4}>{t("auto.memegame.thick_border")}</option>
-                               <option value={8}>{t("auto.memegame.huge_border")}</option>
+                               <option value={0}>{tAuto("auto.memegame.no_border")}</option>
+                               <option value={1}>{tAuto("auto.memegame.thin_border")}</option>
+                               <option value={2}>{tAuto("auto.memegame.normal_border")}</option>
+                               <option value={4}>{tAuto("auto.memegame.thick_border")}</option>
+                               <option value={8}>{tAuto("auto.memegame.huge_border")}</option>
                             </select>
                             <select 
                                className="meme-select" 
@@ -332,8 +332,8 @@ export default function MemeGame() {
                                  setCaptions(n);
                                }}
                             >
-                               <option value="white">{t("auto.memegame.white")}</option>
-                               <option value="yellow">{t("auto.memegame.yellow")}</option>
+                               <option value="white">{tAuto("auto.memegame.white")}</option>
+                               <option value="yellow">{tAuto("auto.memegame.yellow")}</option>
                             </select>
                           </div>
                         </div>
@@ -493,7 +493,7 @@ function MemeCard({ template, captions, showGuides = false, activeIndex = -1, gu
   guides?: string[];
   onUpdateCaption?: (index: number, updates: any) => void;
 }) {
-    const { t } = useI18n();
+  const tAuto = useI18n();
 
   const containerRef = useRef<HTMLDivElement>(null);
 
@@ -600,7 +600,7 @@ function MemeCard({ template, captions, showGuides = false, activeIndex = -1, gu
                <div 
                  className="meme-resize-handle" 
                  onPointerDown={(e) => startResize(e, i, cap)}
-                 title={t("auto.memegame.drag_to_resize")}
+                 title={tAuto("auto.memegame.drag_to_resize")}
                />
             )}
           </div>

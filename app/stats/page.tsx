@@ -14,6 +14,10 @@ export const dynamic = "force-dynamic";
 export const revalidate = 60;
 
 export default async function StatsPage() {
+  // Declared first: the no-season early return below also translates, and
+  // charts.tsx takes its legend strings as a prop because it is a client
+  // component and cannot reach the server dictionary itself.
+  const t = getT();
   const season = await getActiveSeason();
   if (!season) {
     return (
@@ -159,9 +163,6 @@ export default async function StatsPage() {
   // The ladder used to be the homepage's centrepiece. It belongs with the rest
   // of the numbers; the homepage keeps a three-row peek.
   const ladder = await ladderRows(season.Id, 20);
-  // charts.tsx takes its legend strings as a prop: it is a client component and
-  // cannot reach the server dictionary itself.
-  const t = getT();
 
   return (
     <>

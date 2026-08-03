@@ -1,7 +1,9 @@
+'use client';
+
 import React from 'react';
 import { staticSprite } from './sprites';
 import './pkmn.css';
-import { getT } from '@/lib/serverI18n';
+import { useI18n } from '@/locales/client';
 
 export default function PartyMenu({
   party,
@@ -14,7 +16,7 @@ export default function PartyMenu({
   isBattleMode?: boolean,
   onSwitch?: (index: number) => void
 }) {
-    const t = getT();
+    const t = useI18n();
 
   return (
     <div className="pkp-overlay">

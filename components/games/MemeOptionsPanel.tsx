@@ -2,10 +2,10 @@
 
 // Host-facing HASAMEME setup for the lobby: answer mode, timers, template packs
 // and a custom-meme importer. Everything is pushed to the server so the whole
-import { useI18n } from '@/components/I18nProvider';
 // table sees the setup they're readying up for.
 
 import React, { useState } from "react";
+import { useI18n } from '@/locales/client';
 import { translator, MEME, type Lang } from "@/components/games/i18n";
 import { SetupTabs, SetupSection, Stepper, ChoiceRow, PackGrid, type Chip, type Tab } from "@/components/games/setup/SetupUI";
 
@@ -29,6 +29,7 @@ const PACKS: { key: string; label: string; glyph: string }[] = [
 const isImageUrl = (u: string) => /^(https?:\/\/|data:image\/)/i.test(u.trim());
 
 export function summarizeMeme(options: Partial<MemeOptions> = {}, customs: CustomTemplate[] = [], lang: Lang): Chip[] {
+  const tAuto = useI18n();
   const t = translator(MEME, lang);
   const chips: Chip[] = [
     { label: options.mode === "gif" ? `🎞 ${t("modeGif")}` : `✍ ${t("modeCaption")}`, tone: "on" },
@@ -50,7 +51,7 @@ export default function MemeOptionsPanel({ options, customTemplates, isHost, lan
   lang: Lang;
   onChange: (payload: { options?: Partial<MemeOptions>; customTemplates?: CustomTemplate[] }) => void;
 }) {
-    const { t } = useI18n();
+  const tAuto = useI18n();
 
   const t = translator(MEME, lang);
   const [importUrl, setImportUrl] = useState("");
@@ -125,14 +126,14 @@ export default function MemeOptionsPanel({ options, customTemplates, isHost, lan
                   className="meme-import-input url"
                   value={importUrl}
                   onChange={(e) => { setImportUrl(e.target.value); setErr(null); }}
-                  placeholder={t("auto.memeoptionspanel.https_data_image")}
+                  placeholder={tAuto("auto.memeoptionspanel.https_data_image")}
                   onKeyDown={(e) => { if (e.key === "Enter") addCustom(); }}
                 />
                 <input
                   className="meme-import-input name"
                   value={importName}
                   onChange={(e) => setImportName(e.target.value)}
-                  placeholder={t("auto.memeoptionspanel.name")}
+                  placeholder={tAuto("auto.memeoptionspanel.name")}
                   maxLength={40}
                 />
                 <button type="button" className="setup-preset" onClick={addCustom} disabled={!importUrl.trim()}>

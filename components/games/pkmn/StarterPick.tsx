@@ -1,7 +1,9 @@
+'use client';
+
 import React from "react";
 import { frontSprite, staticSprite, playCry } from "./sprites";
 import "./pkmn.css";
-import { getT } from '@/lib/serverI18n';
+import { useI18n } from '@/locales/client';
 
 const STARTERS = [
   { species: "Bulbasaur", type: "GRASS", cls: "pks-grass", blurb: "The reliable one" },
@@ -10,7 +12,7 @@ const STARTERS = [
 ];
 
 export default function StarterPick({ onPick }: { onPick: (species: string) => void }) {
-    const t = getT();
+    const t = useI18n();
 
   return (
     <div className="pks-overlay">

@@ -8,10 +8,10 @@
 // choice and renders the next question the server sends back.
 
 import React, { useCallback, useEffect, useMemo, useState } from "react";
+import { useI18n } from '@/locales/client';
 import { createPortal } from "react-dom";
 import { motion, AnimatePresence } from "framer-motion";
 import { useSocket } from "@/components/games/SocketProvider";
-import { useI18n } from '@/components/I18nProvider';
 import { usePlayerNames, displayNameFor, useGameEvents, useGameChrome, type GameEvent } from "@/components/games/hooks";
 import { useGameLang, translator, LangToggle, QUIZ } from "@/components/games/i18n";
 import SoundControls from "@/components/games/sound/SoundControls";
@@ -29,6 +29,7 @@ export default function QuizRaceScreen({ theme }: { theme: QuizTheme }) {
   const [gameState, setGameState] = useState<any>(null);
   const [pending, setPending] = useState<string | null>(null);
   const [lang, setLang] = useGameLang(gameState?.lang);
+  const tAuto = useI18n();
   const t = translator(QUIZ, lang);
   const g = translator(theme.dict, lang);
 
@@ -249,7 +250,7 @@ export default function QuizRaceScreen({ theme }: { theme: QuizTheme }) {
 function RivalCard({ name, score, target, asked, done, mine }: {
   name: string; score: number; target: number; asked: number; done?: boolean; mine?: boolean;
 }) {
-    const { t } = useI18n();
+  const tAuto = useI18n();
 
   return (
     <div className={`quiz-rival ${mine ? "me" : ""} ${done ? "done" : ""}`}>
@@ -260,7 +261,7 @@ function RivalCard({ name, score, target, asked, done, mine }: {
       <div className="quiz-rival-bar">
         <motion.span animate={{ scaleX: Math.max(0.02, score / Math.max(1, target)) }} transition={{ type: "spring", stiffness: 260, damping: 26 }} />
       </div>
-      <span className="quiz-rival-sub">{asked} {t("auto.quizracescreen.answered")}</span>
+      <span className="quiz-rival-sub">{asked} {tAuto("auto.quizracescreen.answered")}</span>
     </div>
   );
 }

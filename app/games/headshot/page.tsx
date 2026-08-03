@@ -6,13 +6,13 @@
 // different countries are chasing the same player.
 
 import React, { useCallback, useEffect, useMemo, useState } from "react";
+import { useI18n } from '@/locales/client';
 import Link from "next/link";
 import { motion, AnimatePresence } from "framer-motion";
 import { compare, pickDaily, todayKey, msUntilNextDay, seededShuffle, searchPlayers, type HeadshotPlayer } from "@/scripts/headshotRules";
 import { useHeadshotPool } from "@/components/games/headshot/useHeadshotPool";
 import { HEADSHOT_COLUMNS, playerHead, playerOption, flagOf, countryName, rolesLabel } from "@/components/games/headshot/columns";
 import { SearchBox, GuessGrid, Legend, shareSquares, ColumnToggles, type GuessRow } from "@/components/games/guess/GuessBoard";
-import { useI18n } from '@/components/I18nProvider';
 import { useGameLang, translator, LangToggle, HEADSHOT } from "@/components/games/i18n";
 import { sound } from "@/components/games/sound/SoundManager";
 import SoundControls from "@/components/games/sound/SoundControls";
@@ -66,10 +66,10 @@ const save = (s: Saved) => {
 };
 
 export default function HeadshotPage() {
-    const { t } = useI18n();
 
   const { pool, error, retry } = useHeadshotPool();
   const [lang, setLang] = useGameLang(null);
+  const tAuto = useI18n();
   const t = translator(HEADSHOT, lang);
 
   const [mode, setMode] = useState<Mode>("daily");
@@ -223,7 +223,7 @@ export default function HeadshotPage() {
 
       <header className="hs-topbar">
         <div className="hs-brand-block">
-          <Link href="/games" className="hs-back" aria-label={t("auto.page.back_to_games")}>←</Link>
+          <Link href="/games" className="hs-back" aria-label={tAuto("auto.page.back_to_games")}>←</Link>
           <div>
             <h1 className="hs-brand">{t("brand")}</h1>
             <p className="hs-tagline">{t("tagline")}</p>

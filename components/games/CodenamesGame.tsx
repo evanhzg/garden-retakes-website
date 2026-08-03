@@ -1,6 +1,7 @@
 "use client";
 
 import React, { useState, useEffect, useMemo, useCallback, useRef } from "react";
+import { useI18n } from '@/locales/client';
 import { createPortal } from "react-dom";
 import { motion, AnimatePresence } from "framer-motion";
 import { useSocket } from "@/components/games/SocketProvider";
@@ -9,7 +10,6 @@ import { useGameLang, translator, LangToggle, CODENAMES } from "@/components/gam
 import SoundControls from "@/components/games/sound/SoundControls";
 import { sound } from "@/components/games/sound/SoundManager";
 import "./shared.css";
-import { useI18n } from '@/components/I18nProvider';
 import "./codenames.css";
 
 type Team = "red" | "blue";
@@ -18,7 +18,6 @@ type Card = { id: number; word: string; type: CardKind; revealedBy: Team | null 
 type Seat = { steamId: string; team: Team | null; spymaster: boolean; isBot: boolean; botName?: string | null };
 
 export default function CodenamesGame() {
-    const { t } = useI18n();
 
   const { socket, steamId } = useSocket();
   const mySteamId = steamId ?? "";
@@ -30,6 +29,7 @@ export default function CodenamesGame() {
   const [confirming, setConfirming] = useState<number | null>(null);
 
   const [lang, setLang] = useGameLang(gameState?.lang);
+  const tAuto = useI18n();
   const t = translator(CODENAMES, lang);
   const feedRef = useRef<HTMLDivElement | null>(null);
 
@@ -155,7 +155,7 @@ export default function CodenamesGame() {
 
         <div className="cn-scoreline">
           <ScorePill team="red" n={gameState.remaining.red} active={current === "red"} mine={myTeam === "red"} label={t("red")} />
-          <span className="cn-score-vs">{t("auto.codenamesgame.vs")}</span>
+          <span className="cn-score-vs">{tAuto("auto.codenamesgame.vs")}</span>
           <ScorePill team="blue" n={gameState.remaining.blue} active={current === "blue"} mine={myTeam === "blue"} label={t("blue")} />
         </div>
 
