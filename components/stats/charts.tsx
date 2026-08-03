@@ -110,27 +110,29 @@ export function HBars({
 /* ---------- T vs CT split bars (two-segment share) ---------- */
 export function SideSplitBars({
   rows,
+  t,
 }: {
   rows: { label: string; tWinPct: number; ctWinPct: number; rounds: number }[];
+  t: any;
 }) {
   if (rows.length === 0) return null;
   return (
     <div className="split-bars">
       <div className="chart-legend">
-        <span className="legend-item"><i style={{ background: "var(--chart-t)" }} /> T round wins</span>
-        <span className="legend-item"><i style={{ background: "var(--chart-ct)" }} /> CT round wins</span>
+        <span className="legend-item"><i style={{ background: "var(--chart-t)" }} /> {t("stats.charts.tWins")}</span>
+        <span className="legend-item"><i style={{ background: "var(--chart-ct)" }} /> {t("stats.charts.ctWins")}</span>
       </div>
       {rows.map((r) => {
         const t = Math.round(r.tWinPct);
         const ct = 100 - t;
         return (
-          <div key={r.label} className="hbar-row" title={`${r.label}: T wins ${t}% · CT wins ${ct}% · ${r.rounds} rounds`}>
+          <div key={r.label} className="hbar-row" title={t("stats.charts.splitHint", { label: r.label, t, ct, rounds: r.rounds })}>
             <span className="hbar-label">{r.label}</span>
             <span className="split-track">
               <span className="split-t" style={{ width: `${t}%` }}>{t >= 14 ? `${t}%` : ""}</span>
               <span className="split-ct" style={{ width: `${ct}%` }}>{ct >= 14 ? `${ct}%` : ""}</span>
             </span>
-            <span className="hbar-value muted-value">{r.rounds} rds</span>
+            <span className="hbar-value muted-value">{t("stats.charts.rounds", { count: r.rounds })}</span>
           </div>
         );
       })}

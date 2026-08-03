@@ -13,47 +13,52 @@ import { useState } from "react";
 
 const W = { kill: 0.3, damage: 0.2, survival: 0.15, kast: 0.15, impact: 0.2 };
 
-const EXPECTED = [
-  { term: "Kills", value: "0.65", note: "per round, against five enemies" },
-  { term: "Damage", value: "85", note: "per round" },
-  { term: "Survival", value: "45%", note: "of rounds" },
-  { term: "KAST", value: "70%", note: "of rounds" },
-  { term: "Impact", value: "0.35", note: "per round" },
-];
 
-const IMPACT = [
-  { term: "Opening kill", value: "+0.40" },
-  { term: "Opening death", value: "−0.15" },
-  { term: "2K / 3K / 4K / ace", value: "+0.10 / +0.35 / +0.70 / +1.20" },
-  { term: "Clutch won", value: "+0.30, and +0.15 per extra enemy" },
-  { term: "Trade kill", value: "+0.08 each" },
-  { term: "Flash assist", value: "+0.07 each" },
-  { term: "Utility damage", value: "+0.15 per 100" },
-  { term: "Team kill, round live", value: "−0.30" },
-  { term: "Team kill, round decided", value: "+0.05" },
-  { term: "Bomb plant / defuse", value: "0.00 — see below" },
-];
+
+import { useI18n } from "@/components/I18nProvider";
 
 export default function HowRatingWorks() {
+  const { t } = useI18n();
   const [open, setOpen] = useState(false);
+
+  const EXPECTED = [
+    { term: t("stats.howRatingWorks.expected.kills"), value: "0.65", note: t("stats.howRatingWorks.expected.killsNote") },
+    { term: t("stats.howRatingWorks.expected.damage"), value: "85", note: t("stats.howRatingWorks.expected.damageNote") },
+    { term: t("stats.howRatingWorks.expected.survival"), value: "45%", note: t("stats.howRatingWorks.expected.survivalNote") },
+    { term: t("stats.howRatingWorks.expected.kast"), value: "70%", note: t("stats.howRatingWorks.expected.kastNote") },
+    { term: t("stats.howRatingWorks.expected.impact"), value: "0.35", note: t("stats.howRatingWorks.expected.impactNote") },
+  ];
+
+  const IMPACT = [
+    { term: t("stats.howRatingWorks.impact.openingKill"), value: "+0.40" },
+    { term: t("stats.howRatingWorks.impact.openingDeath"), value: "−0.15" },
+    { term: t("stats.howRatingWorks.impact.multikill"), value: "+0.10 / +0.35 / +0.70 / +1.20" },
+    { term: t("stats.howRatingWorks.impact.clutchWon"), value: t("stats.howRatingWorks.impact.clutchWonValue") },
+    { term: t("stats.howRatingWorks.impact.tradeKill"), value: t("stats.howRatingWorks.impact.tradeKillValue") },
+    { term: t("stats.howRatingWorks.impact.flashAssist"), value: t("stats.howRatingWorks.impact.flashAssistValue") },
+    { term: t("stats.howRatingWorks.impact.utilityDamage"), value: t("stats.howRatingWorks.impact.utilityDamageValue") },
+    { term: t("stats.howRatingWorks.impact.teamKillLive"), value: "−0.30" },
+    { term: t("stats.howRatingWorks.impact.teamKillDecided"), value: "+0.05" },
+    { term: t("stats.howRatingWorks.impact.bombPlantDefuse"), value: t("stats.howRatingWorks.impact.bombPlantDefuseValue") },
+  ];
 
   return (
     <section className="panel rating-doc">
       <button className="rating-doc-toggle" onClick={() => setOpen((v) => !v)} aria-expanded={open}>
         <span>
-          <strong>How rating and CS Rating are calculated</strong>
-          <span className="muted"> — every term, every default</span>
+          <strong>{t("stats.howRatingWorks.title")}</strong>
+          <span className="muted"> {t("stats.howRatingWorks.subtitle")}</span>
         </span>
         <span aria-hidden>{open ? "−" : "+"}</span>
       </button>
 
       {open && (
         <div className="rating-doc-body">
-          <h3>Rating</h3>
+          <h3>{t("stats.howRatingWorks.ratingHeading")}</h3>
           <p>
-            A round is scored against what an average round looks like here. Each of the five parts is
-            your value divided by the expected value, so <span className="num">1.00</span> is average
-            and <span className="num">2.00</span> is twice it. The parts are then weighted and added:
+            {t("stats.howRatingWorks.ratingDesc1")}
+            <span className="num">1.00</span> {t("stats.howRatingWorks.ratingDesc2")}
+            <span className="num">2.00</span> {t("stats.howRatingWorks.ratingDesc3")}
           </p>
 
           <pre className="rating-formula num">
@@ -66,13 +71,13 @@ export default function HowRatingWorks() {
           </pre>
 
           <p>
-            The weights sum to <span className="num">1.00</span>, which is what keeps an average round
-            at <span className="num">1.00</span> rather than some arbitrary number. A season&rsquo;s
-            rating is the mean of its rounds, clamped to{" "}
-            <span className="num">0.00&ndash;5.00</span>.
+            {t("stats.howRatingWorks.ratingSum1")}
+            <span className="num">1.00</span>{t("stats.howRatingWorks.ratingSum2")}
+            <span className="num">1.00</span> {t("stats.howRatingWorks.ratingSum3")}
+            <span className="num">0.00&ndash;5.00</span>{t("stats.howRatingWorks.ratingSum4")}
           </p>
 
-          <h4>What counts as average</h4>
+          <h4>{t("stats.howRatingWorks.averageHeading")}</h4>
           <dl className="rating-defs">
             {EXPECTED.map((e) => (
               <div key={e.term}>
@@ -82,13 +87,11 @@ export default function HowRatingWorks() {
             ))}
           </dl>
           <p className="muted">
-            Kills and damage expectations scale with how many enemies are actually alive, so a 3v3
-            is not judged against 5v5 numbers. Round type shifts them too: pistol rounds expect
-            slightly less, full buys slightly more.
+            {t("stats.howRatingWorks.averageDesc")}
           </p>
 
-          <h4>Impact</h4>
-          <p>Impact is the part that is not visible in a scoreboard. It is a sum of events:</p>
+          <h4>{t("stats.howRatingWorks.impactHeading")}</h4>
+          <p>{t("stats.howRatingWorks.impactDesc")}</p>
           <dl className="rating-defs">
             {IMPACT.map((i) => (
               <div key={i.term}>
@@ -98,50 +101,39 @@ export default function HowRatingWorks() {
             ))}
           </dl>
 
-          <h4>Why planting and defusing are worth nothing</h4>
+          <h4>{t("stats.howRatingWorks.plantingHeading")}</h4>
           <p>
-            This is a retake server. The bomb is <em>already planted</em> when the round starts, and
-            the CTs have to defuse it to win — so both were paying you for doing the thing the round
-            is about. Everyone who played competently collected them every round, which made them a
-            measure of attendance rather than contribution. They are set to zero rather than removed,
-            so an older season&rsquo;s numbers still reproduce exactly.
+            {t("stats.howRatingWorks.plantingDesc1")}
+            <em>{t("stats.howRatingWorks.alreadyPlanted")}</em>
+            {t("stats.howRatingWorks.plantingDesc2")}
           </p>
 
-          <h4>Why a team kill can be worth a little</h4>
+          <h4>{t("stats.howRatingWorks.tkHeading")}</h4>
           <p>
-            Killing a teammate while the round is live costs your team the round, and is penalised.
-            Once every enemy is dead or the bomb is already defused, nothing is at stake — so it is a
-            joke rather than a throw. It pays a small amount: enough to be worth something, never
-            enough to be worth farming.
+            {t("stats.howRatingWorks.tkDesc")}
           </p>
 
-          <h3>CS Rating</h3>
+          <h3>{t("stats.howRatingWorks.csRatingHeading")}</h3>
           <p>
-            Elo moves on whether your team won the round, adjusted by how likely that was and by how
-            well you personally played. The expectation comes from the two teams&rsquo; average
-            ratings:
+            {t("stats.howRatingWorks.csRatingDesc")}
           </p>
           <pre className="rating-formula num">
 {`expected = 1 ÷ (1 + 10^((theirElo − yourElo) ÷ 400))
 change   = K × (won − expected) × performanceFactor`}
           </pre>
           <p>
-            <span className="num">K</span> sets how fast ratings move; the divisor of{" "}
-            <span className="num">400</span> is the standard Elo scale, meaning a 400-point gap makes
-            you roughly ten times more likely to win. The performance factor is your round rating, so
-            winning while playing badly gains less than winning while carrying, and losing while
-            playing well costs less.
+            <span className="num">K</span> {t("stats.howRatingWorks.eloDesc1")}
+            <span className="num">400</span> {t("stats.howRatingWorks.eloDesc2")}
           </p>
           <p className="muted">
-            Elo is bounded to <span className="num">0&ndash;35,000</span> and starts at{" "}
-            <span className="num">5,000</span>. Rounds you were AFK for are excluded entirely.
+            {t("stats.howRatingWorks.eloBounds1")}
+            <span className="num">0&ndash;35,000</span> {t("stats.howRatingWorks.eloBounds2")}
+            <span className="num">5,000</span>{t("stats.howRatingWorks.eloBounds3")}
           </p>
 
-          <h4>Season boundaries</h4>
+          <h4>{t("stats.howRatingWorks.seasonHeading")}</h4>
           <p>
-            These values are fixed per season. A change made for a coming season is written against
-            that season and does nothing until it starts — so no round is ever re-priced after it was
-            played, and the rating you were shown at the time stays the rating you earned.
+            {t("stats.howRatingWorks.seasonDesc")}
           </p>
         </div>
       )}

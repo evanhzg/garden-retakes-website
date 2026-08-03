@@ -3,6 +3,7 @@
 import { useState } from "react";
 import AvatarImage from "@/components/AvatarImage";
 import PlayerBubble from "@/components/social/PlayerBubble";
+import { useI18n } from "@/components/I18nProvider";
 
 export type BoardRow = { steamId: string; name: string; value: string };
 export type Board = { title: string; unit: string; rows: BoardRow[] };
@@ -15,6 +16,7 @@ export type Board = { title: string; unit: string; rows: BoardRow[] };
  * ten times. One table, one set of tabs, same data.
  */
 export default function LeaderboardTabs({ boards }: { boards: Board[] }) {
+  const { t } = useI18n();
   const [active, setActive] = useState(0);
   const board = boards[active] ?? boards[0];
 
@@ -24,7 +26,7 @@ export default function LeaderboardTabs({ boards }: { boards: Board[] }) {
     <div>
       <div
         role="tablist"
-        aria-label="Season leaders"
+        aria-label={t("stats.leaderboardTabs.ariaLabel")}
         style={{
           display: "flex",
           flexWrap: "wrap",
@@ -69,7 +71,7 @@ export default function LeaderboardTabs({ boards }: { boards: Board[] }) {
         <thead>
           <tr>
             <th style={{ width: 48 }}>#</th>
-            <th>Player</th>
+            <th>{t("stats.leaderboardTabs.player")}</th>
             <th style={{ textAlign: "right" }}>{board.unit}</th>
           </tr>
         </thead>
@@ -103,7 +105,7 @@ export default function LeaderboardTabs({ boards }: { boards: Board[] }) {
           {board.rows.length === 0 && (
             <tr>
               <td className="text-muted" colSpan={3}>
-                Not enough data yet.
+                {t("stats.leaderboardTabs.noData")}
               </td>
             </tr>
           )}

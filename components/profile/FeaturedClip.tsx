@@ -4,6 +4,7 @@ import { useEffect, useState } from "react";
 import ClipModal from "@/components/feed/ClipModal";
 import type { Clip } from "@/components/feed/ClipCard";
 import type { Variant } from "@/components/feed/VideoPlayer";
+import { useI18n } from '@/components/I18nProvider';
 
 // The player's best clip, on their profile hero.
 //
@@ -17,6 +18,7 @@ import type { Variant } from "@/components/feed/VideoPlayer";
 const score = (c: Clip) => c.likes * 3 + c.comments;
 
 export default function FeaturedClip({ steamId }: { steamId: string }) {
+  const { t } = useI18n();
   const [clip, setClip] = useState<Clip | null>(null);
   const [loaded, setLoaded] = useState(false);
   const [open, setOpen] = useState(false);
@@ -48,8 +50,8 @@ export default function FeaturedClip({ steamId }: { steamId: string }) {
       <div className="pro-feature is-skeleton" aria-busy="true">
         <span className="pro-feature-media" />
         <span className="pro-feature-meta">
-          <span className="kicker">Top clip</span>
-          <span className="pro-feature-title muted">Looking for one…</span>
+          <span className="kicker">{t("profile.featuredClip.kicker")}</span>
+          <span className="pro-feature-title muted">{t("profile.featuredClip.loading")}</span>
         </span>
       </div>
     );
@@ -60,9 +62,9 @@ export default function FeaturedClip({ steamId }: { steamId: string }) {
       <div className="pro-feature is-empty">
         <span className="pro-feature-media" />
         <span className="pro-feature-meta">
-          <span className="kicker">Top clip</span>
-          <span className="pro-feature-title muted">No clips yet</span>
-          <span className="pro-feature-counts">Post one on the feed, or type /clip in game.</span>
+          <span className="kicker">{t("profile.featuredClip.kicker")}</span>
+          <span className="pro-feature-title muted">{t("profile.featuredClip.empty")}</span>
+          <span className="pro-feature-counts">{t("profile.featuredClip.emptyHint")}</span>
         </span>
       </div>
     );
@@ -77,14 +79,14 @@ export default function FeaturedClip({ steamId }: { steamId: string }) {
         /* fall through */
       }
     }
-    if (clip.kind === "upload") return [{ name: "Source", height: 0, url: `/api/feed/video/${encodeURIComponent(clip.source)}` }];
-    if (clip.kind === "r2") return [{ name: "Source", height: 0, url: clip.source }];
+    if (clip.kind === "upload") return [{ name: t("profile.featuredClip.source"), height: 0, url: `/api/feed/video/${encodeURIComponent(clip.source)}` }];
+    if (clip.kind === "r2") return [{ name: t("profile.featuredClip.source"), height: 0, url: clip.source }];
     return [];
   })();
 
   return (
     <>
-      <button className="pro-feature" onClick={() => setOpen(true)} aria-label={`Play ${clip.title}`}>
+      <button className="pro-feature" onClick={() => setOpen(true)} aria-label={t("profile.featuredClip.playAria", { title: clip.title })}>
         <span className="pro-feature-media">
           {clip.thumb ? (
             // eslint-disable-next-line @next/next/no-img-element
@@ -95,7 +97,7 @@ export default function FeaturedClip({ steamId }: { steamId: string }) {
           <span className="clip-play" aria-hidden>▶</span>
         </span>
         <span className="pro-feature-meta">
-          <span className="kicker">Top clip</span>
+          <span className="kicker">{t("profile.featuredClip.kicker")}</span>
           <span className="pro-feature-title">{clip.title}</span>
           <span className="pro-feature-counts num">
             ♥ {clip.likes} · 💬 {clip.comments}

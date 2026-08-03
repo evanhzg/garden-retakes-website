@@ -8900,3 +8900,43 @@ html[data-motion="off"] .skinsb-cta { transition: none; }
   text-align: center;
   justify-content: center;
 }
+
+/* ---------------------------------------------------------------------------
+   Feed skeletons.
+
+   A single "Loading…" line collapsed the grid to one row, so the page jumped
+   twice: once when the text appeared and again when the cards replaced it.
+   These hold the grid's shape from the first paint.
+   --------------------------------------------------------------------------- */
+
+.clip-skeleton { pointer-events: none; }
+.clip-skel-head { display: flex; align-items: center; gap: 8px; padding: var(--space-3); }
+.clip-skel-avatar { width: 24px; height: 24px; border-radius: 50%; }
+.clip-skel-media { aspect-ratio: 16 / 9; }
+.clip-skel-body { display: grid; gap: 8px; padding: var(--space-3); }
+.clip-skel-line { height: 10px; border-radius: 4px; }
+
+.clip-skel-avatar,
+.clip-skel-media,
+.clip-skel-line {
+  position: relative;
+  overflow: hidden;
+  background: color-mix(in srgb, var(--color-text) 8%, transparent);
+}
+.clip-skel-avatar::after,
+.clip-skel-media::after,
+.clip-skel-line::after {
+  content: "";
+  position: absolute; inset: 0;
+  background: linear-gradient(90deg, transparent, color-mix(in srgb, var(--color-text) 9%, transparent), transparent);
+  animation: pro-shimmer 1.4s ease-in-out infinite;
+}
+/* A shimmer nobody asked for is exactly the kind of motion that should stop. */
+@media (prefers-reduced-motion: reduce) {
+  .clip-skel-avatar::after,
+  .clip-skel-media::after,
+  .clip-skel-line::after { animation: none; }
+}
+:root[data-motion="off"] .clip-skel-avatar::after,
+:root[data-motion="off"] .clip-skel-media::after,
+:root[data-motion="off"] .clip-skel-line::after { animation: none; }

@@ -3,6 +3,7 @@
 import { useEffect, useState } from "react";
 import { PROVIDERS, PROVIDER_PATHS, providerById, type Connection, type ProviderId } from "@/lib/connections";
 import { useToast } from "@/components/Toast";
+import { useI18n } from '@/components/I18nProvider';
 
 // Connections, at the top of a profile where "who is this person elsewhere"
 // belongs — it used to be a Discord button alone, near the bottom.
@@ -71,6 +72,7 @@ export function ConnectionsBar({ steamId }: { steamId: string }) {
 
 /** The editor, on your own profile. */
 export default function ConnectionsEditor() {
+  const { t } = useI18n();
   const [links, setLinks] = useState<Record<string, { handle: string; public: boolean }>>({});
   const [loaded, setLoaded] = useState(false);
   const [saving, setSaving] = useState(false);
@@ -107,20 +109,20 @@ export default function ConnectionsEditor() {
           })),
         }),
       });
-      toast(res.ok ? "Saved." : "Could not save.", res.ok ? "ok" : "error");
+      toast(res.ok ? t("profile.connections.saved") : t("profile.connections.saveError"), res.ok ? "ok" : "error");
     } catch {
-      toast("Network error.", "error");
+      toast(t("profile.connections.networkError"), "error");
     } finally {
       setSaving(false);
     }
   };
 
-  if (!loaded) return <p className="muted">Loading connections…</p>;
+  if (!loaded) return <p className="muted">{t("profile.connections.loading")}</p>;
 
   return (
     <div className="conn-editor">
       <p className="pro-settings-hint" style={{ marginTop: 0 }}>
-        Nothing here is shown until you publish it — including Steam, Discord and FACEIT.
+        {t("profile.connections.hint")}
       </p>
 
       <ul>
@@ -132,12 +134,12 @@ export default function ConnectionsEditor() {
               <span className="conn-editor-label">{p.label}</span>
 
               {p.derived && p.id !== "faceit" ? (
-                <span className="conn-editor-known">{row.handle || "linked"}</span>
+                <span className="conn-editor-known">{row.handle || t("profile.connections.linked")}</span>
               ) : (
                 <input
                   className="input"
                   value={row.handle}
-                  placeholder={p.placeholder ?? (p.id === "faceit" ? "FACEIT nickname" : "")}
+                  placeholder={p.placeholder ?? (p.id === "faceit" ? t("profile.connections.faceitPlaceholder") : "")}
                   maxLength={160}
                   onChange={(e) => set(p.id, { handle: e.target.value })}
                 />
@@ -145,7 +147,7 @@ export default function ConnectionsEditor() {
 
               <label className="conn-editor-toggle">
                 <input type="checkbox" checked={row.public} onChange={(e) => set(p.id, { public: e.target.checked })} />
-                Public
+                {t("profile.connections.public")}
               </label>
             </li>
           );
@@ -154,7 +156,7 @@ export default function ConnectionsEditor() {
 
       <div className="clip-form-actions">
         <button className="btn btn-primary" onClick={save} disabled={saving}>
-          {saving ? "Saving…" : "Save connections"}
+          {saving ? t("profile.connections.saving") : t("profile.connections.saveButton")}
         </button>
       </div>
     </div>

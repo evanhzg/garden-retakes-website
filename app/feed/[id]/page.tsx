@@ -3,6 +3,7 @@ import Link from "next/link";
 import { notFound } from "next/navigation";
 import { getSharedClip, absolute, siteOrigin } from "@/lib/feedClip";
 import { youtubeEmbed } from "@/lib/feedShared";
+import { getT } from "@/lib/serverI18n";
 import ClipStage from "@/components/feed/ClipStage";
 import ShareMenu from "@/components/feed/ShareMenu";
 import AvatarImage from "@/components/AvatarImage";
@@ -83,6 +84,7 @@ export async function generateMetadata({ params }: { params: { id: string } }): 
 }
 
 export default async function ClipPage({ params }: { params: { id: string } }) {
+  const t = getT();
   const clip = await getSharedClip(Number(params.id));
   if (!clip) notFound();
 
@@ -91,7 +93,7 @@ export default async function ClipPage({ params }: { params: { id: string } }) {
   return (
     <section className="pro-section clip-page">
       <nav className="clip-page-back">
-        <Link href="/feed" className="btn btn-ghost">← Back to the feed</Link>
+        <Link href="/feed" className="btn btn-ghost">{t("feed.backToFeed")}</Link>
       </nav>
 
       <ClipStage clip={clip} />
@@ -106,7 +108,7 @@ export default async function ClipPage({ params }: { params: { id: string } }) {
                 {clip.author}
               </Link>
             ) : (
-              <span className="clip-author is-guest" title="No profile on this site yet">
+              <span className="clip-author is-guest" title={t("feed.noProfileTooltip")}>
                 <AvatarImage steamId={clip.steamId} src={clip.avatar} alt={clip.author} className="avatar avatar-sm" />
                 {clip.author}
               </span>

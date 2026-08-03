@@ -4,6 +4,7 @@ import { useState } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 import { ratingClass } from "@/lib/stats";
 import { RadarCompare, TrendCompare } from "@/components/stats/charts";
+import { useI18n } from '@/components/I18nProvider';
 
 type PlayerSummary = {
   steamId: string;
@@ -49,6 +50,7 @@ export default function CompareInteractive({
   metrics: { label: string, key: string, format: string, lowerIsBetter?: boolean }[];
   rankedOnly: boolean;
 }) {
+  const { t } = useI18n();
   const router = useRouter();
   const searchParams = useSearchParams();
   
@@ -81,9 +83,9 @@ export default function CompareInteractive({
     return (
       <section className="panel">
         <div style={{ textAlign: "center", marginBottom: 24 }}>
-          <h2>Player comparison — {seasonName}</h2>
+          <h2>{t('compare.heading', { seasonName })}</h2>
           <p className="muted">
-            {!pickA ? "Select Player A to begin." : "Select Player B to compare."}
+            {!pickA ? t('compare.selectPlayerA') : t('compare.selectPlayerB')}
           </p>
           <div style={{ marginTop: 12 }}>
             <label className="muted" style={{ display: "inline-flex", alignItems: "center", gap: 6, cursor: "pointer" }}>
@@ -94,7 +96,7 @@ export default function CompareInteractive({
                   router.push(`/stats/compare?${e.target.checked ? "ranked=1" : ""}`);
                 }}
               />
-              Ranked only
+              {t('compare.rankedOnly')}
             </label>
           </div>
         </div>
@@ -145,8 +147,8 @@ export default function CompareInteractive({
     <>
       <section className="panel cmp-header-panel">
         <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 20 }}>
-          <h2>Head-to-Head</h2>
-          <button className="btn secondary small" onClick={reset}>Pick different players</button>
+          <h2>{t('compare.headToHead')}</h2>
+          <button className="btn secondary small" onClick={reset}>{t('compare.pickDifferent')}</button>
         </div>
 
         <div className="cmp-header">
@@ -158,8 +160,8 @@ export default function CompareInteractive({
             <div className="chp-details">
               <div className="chp-name">{nameA}</div>
               <div className="chp-badges">
-                <span className="mini-badge">Rank {playerAInfo?.rank || "-"}</span>
-                <span className="mini-badge">Peak {playerAInfo?.peakElo || "-"}</span>
+                <span className="mini-badge">{playerAInfo?.rank ? t('compare.rankBadge', { rank: playerAInfo.rank }) : "-"}</span>
+                <span className="mini-badge">{playerAInfo?.peakElo ? t('compare.peakBadge', { peakElo: playerAInfo.peakElo }) : "-"}</span>
               </div>
             </div>
             <div className={`chp-rating ${ratingClass(statsA.rating)}`}>
@@ -167,7 +169,7 @@ export default function CompareInteractive({
             </div>
           </div>
 
-          <div className="cmp-vs">VS</div>
+          <div className="cmp-vs">{t('compare.vs')}</div>
 
           {/* Player B Header */}
           <div className="cmp-hero-player right">
@@ -177,8 +179,8 @@ export default function CompareInteractive({
             <div className="chp-details">
               <div className="chp-name">{nameB}</div>
               <div className="chp-badges">
-                <span className="mini-badge">Rank {playerBInfo?.rank || "-"}</span>
-                <span className="mini-badge">Peak {playerBInfo?.peakElo || "-"}</span>
+                <span className="mini-badge">{playerBInfo?.rank ? t('compare.rankBadge', { rank: playerBInfo.rank }) : "-"}</span>
+                <span className="mini-badge">{playerBInfo?.peakElo ? t('compare.peakBadge', { peakElo: playerBInfo.peakElo }) : "-"}</span>
               </div>
             </div>
             <div className="chp-avatar">
@@ -191,9 +193,9 @@ export default function CompareInteractive({
       {/* Profile shape + form charts */}
       <div className="chart-grid-2">
         <section className="panel">
-          <h3 style={{ marginBottom: 8, textAlign: "center" }}>Profile shape</h3>
+          <h3 style={{ marginBottom: 8, textAlign: "center" }}>{t('compare.profileShape')}</h3>
           <p className="muted" style={{ fontSize: "0.75rem", textAlign: "center", margin: "0 0 6px" }}>
-            Each axis scaled to the better of the two players.
+            {t('compare.profileShapeSub')}
           </p>
           <RadarCompare
             nameA={nameA || "A"}
@@ -214,11 +216,11 @@ export default function CompareInteractive({
           />
         </section>
         <section className="panel">
-          <h3 style={{ marginBottom: 8, textAlign: "center" }}>Form — daily rating</h3>
+          <h3 style={{ marginBottom: 8, textAlign: "center" }}>{t('compare.formHeading')}</h3>
           {trendPoints && trendPoints.length >= 2 ? (
             <TrendCompare points={trendPoints} nameA={nameA || "A"} nameB={nameB || "B"} />
           ) : (
-            <p className="muted" style={{ textAlign: "center" }}>Not enough shared play days yet.</p>
+            <p className="muted" style={{ textAlign: "center" }}>{t('compare.notEnoughDays')}</p>
           )}
         </section>
       </div>
@@ -226,14 +228,14 @@ export default function CompareInteractive({
       {/* T/CT side split */}
       {sidesA && sidesB && (
         <section className="panel">
-          <h3 style={{ marginBottom: 16, textAlign: "center" }}>By side</h3>
+          <h3 style={{ marginBottom: 16, textAlign: "center" }}>{t('compare.bySide')}</h3>
           <div className="side-compare-grid">
             {(["t", "ct"] as const).map((side) => {
               const sA = sidesA[side];
               const sB = sidesB[side];
               return (
                 <div key={side} className="side-compare-card">
-                  <div className={`side-compare-title side-${side}`}>{side === "t" ? "T side" : "CT side"}</div>
+                  <div className={`side-compare-title side-${side}`}>{side === "t" ? t('compare.tSide') : t('compare.ctSide')}</div>
                   {[
                     { label: "Rating", a: sA.rating, b: sB.rating, fmt: (v: number) => v.toFixed(2) },
                     { label: "ADR", a: sA.adr, b: sB.adr, fmt: (v: number) => v.toFixed(0) },
@@ -254,7 +256,7 @@ export default function CompareInteractive({
       )}
 
       <section className="panel">
-        <h3 style={{ marginBottom: 24, textAlign: "center" }}>Overall Stats</h3>
+        <h3 style={{ marginBottom: 24, textAlign: "center" }}>{t('compare.overallStats')}</h3>
         {metrics.map((metric) => {
           const a = statsA[metric.key];
           const b = statsB[metric.key];
@@ -288,7 +290,7 @@ export default function CompareInteractive({
 
       {allMaps.length > 0 && (
         <section className="panel">
-          <h3 style={{ marginBottom: 24, textAlign: "center" }}>Per Map Breakdown</h3>
+          <h3 style={{ marginBottom: 24, textAlign: "center" }}>{t('compare.perMapBreakdown')}</h3>
           <div className="map-breakdown-list">
             {allMaps.map(map => {
               const mA = mapStatsA[map];

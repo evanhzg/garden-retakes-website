@@ -1,4 +1,5 @@
 import Link from "next/link";
+import { getT } from "@/lib/serverI18n";
 import { getSession } from "@/lib/auth";
 import { getActiveSeason, prisma } from "@/lib/db";
 import { dayKey, fetchRows, groupBy, sideName, summarize } from "@/lib/stats";
@@ -28,16 +29,17 @@ export default async function ProfilePage({
 }: {
   searchParams: { season?: string; ranked?: string };
 }) {
+  const t = getT();
   const session = getSession();
 
   if (!session) {
     return (
       <section className="pro-section">
-        <h2>Your profile</h2>
+        <h2>{t("profile.title")}</h2>
         <div className="empty-hint" style={{ display: "grid", gap: 14, justifyItems: "center" }}>
-          <p style={{ margin: 0 }}>Sign in with Steam to see your profile, stats and loadouts.</p>
+          <p style={{ margin: 0 }}>{t("profile.signInPrompt")}</p>
           <a className="btn btn-primary" href="/api/auth/steam/login">
-            Sign in with Steam
+            {t("profile.signInButton")}
           </a>
         </div>
       </section>
@@ -115,8 +117,8 @@ export default async function ProfilePage({
       {/* ---------- Season / filter ---------- */}
       <section className="pro-section">
         <div className="pro-section-head">
-          <h2>Season</h2>
-          <span className="pro-section-note">{rankedOnly ? "Ranked rounds only" : "All rounds"}</span>
+          <h2>{t("profile.season.title")}</h2>
+          <span className="pro-section-note">{rankedOnly ? t("profile.season.rankedOnlyNote") : t("profile.season.allRoundsNote")}</span>
         </div>
         <div className="pro-filters">
           {seasons.map((s) => (
@@ -132,7 +134,7 @@ export default async function ProfilePage({
             className={`chip ${rankedOnly ? "active" : ""}`}
             href={`?season=${seasonId}${rankedOnly ? "" : "&ranked=1"}`}
           >
-            Ranked only
+            {t("profile.season.rankedOnly")}
           </Link>
         </div>
       </section>
@@ -150,7 +152,7 @@ export default async function ProfilePage({
       {/* ---------- Connections + settings ---------- */}
       <section className="pro-section">
         <div className="pro-section-head">
-          <h2>Connections</h2>
+          <h2>{t("profile.connections.title")}</h2>
         </div>
         <DiscordConnect />
       </section>

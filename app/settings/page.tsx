@@ -1,3 +1,4 @@
+import { getT } from "@/lib/serverI18n";
 import { getSession } from "@/lib/auth";
 import DiscordConnect from "@/components/DiscordConnect";
 import GoogleConnect from "@/components/GoogleConnect";
@@ -8,16 +9,17 @@ import { resolveName } from "@/lib/names";
 export const dynamic = "force-dynamic";
 
 export default async function SettingsPage() {
+  const t = getT();
   const session = getSession();
 
   if (!session) {
     return (
       <section className="panel">
-        <h2>Settings</h2>
+        <h2>{t("settings.title")}</h2>
         <div className="empty-hint" style={{ display: "grid", gap: 14, justifyItems: "start" }}>
-          <p style={{ margin: 0 }}>Sign in to manage your settings.</p>
+          <p style={{ margin: 0 }}>{t("settings.signInPrompt")}</p>
           <a className="btn" href="/api/auth/steam/login">
-            Sign in with Steam
+            {t("settings.signInButton")}
           </a>
         </div>
       </section>
@@ -38,21 +40,21 @@ export default async function SettingsPage() {
               {name}
             </h1>
             <div className="hero-sub">
-              SteamID64 {session.steamId}
+              {t("settings.steamIdPrefix")} {session.steamId}
             </div>
           </div>
           <div className="player-hero-actions">
             <Link className="btn small secondary" href="/profile">
-              ✎ Edit profile
+              {t("settings.editProfile")}
             </Link>
           </div>
         </div>
       </section>
       
       <section className="panel">
-        <h2>Linked Accounts</h2>
+        <h2>{t("settings.linkedAccounts.title")}</h2>
         <p className="muted" style={{ marginBottom: 16 }}>
-          Link multiple platforms to your account so you can log in from anywhere and retain your stats.
+          {t("settings.linkedAccounts.description")}
         </p>
         <div className="split-cards">
           <div className="side-card">

@@ -4,9 +4,11 @@ import React, { useState, useEffect } from "react";
 import { useSocket } from "@/components/games/SocketProvider";
 import { useRouter } from "next/navigation";
 import PlayerBubble from "./PlayerBubble";
+import { useI18n } from "@/components/I18nProvider";
 import "./social.css";
 
 export default function FriendsSidebar() {
+  const { t } = useI18n();
   const { socket, steamId, isConnected } = useSocket();
   const router = useRouter();
   
@@ -80,11 +82,11 @@ export default function FriendsSidebar() {
           socket.emit("send_notification", { targetSteamId: addFriendInput, notification: data.notification });
         }
         setAddFriendInput("");
-        alert("Friend request sent!");
+        alert(t("social.friends.requestSent"));
         fetchFriends();
       } else {
         const err = await res.json();
-        alert(`Error: ${err.error}`);
+        alert(t("social.friends.error", { error: err.error }));
       }
     } catch (e) {
       console.error(e);
@@ -112,7 +114,7 @@ export default function FriendsSidebar() {
     // We assume the user is currently in a lobby if window.location points to one
     const match = window.location.pathname.match(/\/games\/lobby\/([a-zA-Z0-9]+)/);
     if (!match) {
-      alert("You are not currently in a lobby.");
+      alert(t("social.friends.notInLobby"));
       return;
     }
     const lobbyId = match[1];
@@ -127,7 +129,7 @@ export default function FriendsSidebar() {
         const data = await res.json();
         if (data.success) {
           socket.emit("send_notification", { targetSteamId: friendId, notification: data.notification });
-          alert("Invite sent!");
+          alert(t("social.friends.inviteSent"));
         }
       }
     } catch (e) {
@@ -140,27 +142,27 @@ export default function FriendsSidebar() {
   return (
     <>
       <button className="friends-toggle-btn" onClick={() => setIsOpen(!isOpen)}>
-        👥 Friends {pendingRequests.length > 0 && <span className="notification-badge">{pendingRequests.length}</span>}
+        👥 {t("social.friends.toggleBtn")} {pendingRequests.length > 0 && <span className="notification-badge">{pendingRequests.length}</span>}
       </button>
 
       <div className={`friends-sidebar ${isOpen ? "open" : ""}`}>
         <div className="friends-header">
-          <h2>Social</h2>
+          <h2>{t("social.friends.header")}</h2>
           <button className="close-btn" onClick={() => setIsOpen(false)}>✕</button>
         </div>
 
         <div className="friends-tabs">
-          <button className={activeTab === "FRIENDS" ? "active" : ""} onClick={() => setActiveTab("FRIENDS")}>Friends</button>
+          <button className={activeTab === "FRIENDS" ? "active" : ""} onClick={() => setActiveTab("FRIENDS")}>{t("social.friends.tabFriends")}</button>
           <button className={activeTab === "PENDING" ? "active" : ""} onClick={() => setActiveTab("PENDING")}>
-            Requests {pendingRequests.length > 0 && `(${pendingRequests.length})`}
+            {t("social.friends.tabRequests")} {pendingRequests.length > 0 && `(${pendingRequests.length})`}
           </button>
-          <button className={activeTab === "ADD" ? "active" : ""} onClick={() => setActiveTab("ADD")}>Add</button>
+          <button className={activeTab === "ADD" ? "active" : ""} onClick={() => setActiveTab("ADD")}>{t("social.friends.tabAdd")}</button>
         </div>
 
         <div className="friends-content">
           {activeTab === "FRIENDS" && (
             <div className="friends-list">
-              {friends.length === 0 ? <p className="muted-text">No friends added yet.</p> : null}
+              {friends.length === 0 ? <p className="muted-text">{t("social.friends.noFriends")}</p> : null}
               {friends.map(f => {
                 const isOnline = onlineUsers.includes(f.friendId);
                 return (
@@ -172,7 +174,7 @@ export default function FriendsSidebar() {
                       </PlayerBubble>
                     </div>
                     {isOnline && window.location.pathname.includes("/games/lobby/") && (
-                      <button className="btn-invite" onClick={() => inviteFriend(f.friendId)}>Invite</button>
+                      <button className="btn-invite" onClick={() => inviteFriend(f.friendId)}>{t("social.friends.inviteBtn")}</button>
                     )}
                   </div>
                 );
@@ -182,7 +184,7 @@ export default function FriendsSidebar() {
 
           {activeTab === "PENDING" && (
             <div className="pending-list">
-              {pendingRequests.length === 0 ? <p className="muted-text">No pending requests.</p> : null}
+              {pendingRequests.length === 0 ? <p className="muted-text">{t("social.friends.noPending")}</p> : null}
               {pendingRequests.map(r => (
                 <div key={r.id} className="pending-item">
                   <span>{r.name}</span>
@@ -199,11 +201,11 @@ export default function FriendsSidebar() {
             <form onSubmit={handleAddFriend} className="add-friend-form">
               <input 
                 type="text" 
-                placeholder="SteamID64" 
+                placeholder={t("social.friends.steamIdPlaceholder")} 
                 value={addFriendInput} 
                 onChange={e => setAddFriendInput(e.target.value)} 
               />
-              <button type="submit" className="btn-primary">Send Request</button>
+              <button type="submit" className="btn-primary">{t("social.friends.sendRequest")}</button>
             </form>
           )}
         </div>

@@ -2,12 +2,14 @@
 
 import Link from "next/link";
 import { useEffect, useState } from "react";
+import { useI18n } from '@/components/I18nProvider';
 import ClipCard, { type Clip } from "@/components/feed/ClipCard";
 
 // A player's own clips, on their profile. Same card as the feed so a clip looks
 // and behaves identically wherever it appears.
 
 export default function ClipsPanel({ steamId, signedIn }: { steamId: string; signedIn: boolean }) {
+  const { t } = useI18n();
   const [clips, setClips] = useState<Clip[] | null>(null);
   const [error, setError] = useState<string | null>(null);
 
@@ -17,10 +19,10 @@ export default function ClipsPanel({ steamId, signedIn }: { steamId: string; sig
       .then(async (r) => {
         const json = await r.json();
         if (cancelled) return;
-        if (!r.ok) return setError(json.error ?? "Could not load clips.");
+        if (!r.ok) return setError(json.error ?? t("profile.clips.error"));
         setClips(json.clips ?? []);
       })
-      .catch(() => !cancelled && setError("Could not load clips."));
+      .catch(() => !cancelled && setError(t("profile.clips.error")));
     return () => {
       cancelled = true;
     };
@@ -29,19 +31,19 @@ export default function ClipsPanel({ steamId, signedIn }: { steamId: string; sig
   if (error) {
     return (
       <p className="skin-note skin-note-warn">
-        <span><strong>Clips unavailable.</strong> {error}</span>
+        <span><strong>{t("profile.clips.unavailable")}</strong> {error}</span>
       </p>
     );
   }
 
-  if (clips === null) return <p className="muted">Loading clips…</p>;
+  if (clips === null) return <p className="muted">{t("profile.clips.loading")}</p>;
 
   if (clips.length === 0) {
     return (
       <div className="empty-hint">
-        <p style={{ margin: 0 }}>No clips posted yet.</p>
+        <p style={{ margin: 0 }}>{t("profile.clips.empty")}</p>
         <Link className="btn btn-secondary" href="/feed" style={{ marginTop: 12 }}>
-          Go to the feed
+          {t("profile.clips.goToFeed")}
         </Link>
       </div>
     );

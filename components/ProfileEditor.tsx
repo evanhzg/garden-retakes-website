@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useState } from "react";
+import { useI18n } from '@/components/I18nProvider';
 
 type ProfileData = {
   steamId: string;
@@ -15,6 +16,7 @@ type ProfileData = {
 type Status = { kind: "idle" | "saving" | "ok" | "error"; message?: string };
 
 export default function ProfileEditor() {
+  const { t } = useI18n();
   const [data, setData] = useState<ProfileData | null>(null);
   const [name, setName] = useState("");
   const [avatarUrl, setAvatarUrl] = useState("");
@@ -32,8 +34,8 @@ export default function ProfileEditor() {
         setBio(d.bio ?? "");
         setCountry(d.country ?? "");
       })
-      .catch(() => setStatus({ kind: "error", message: "Could not load your profile." }));
-  }, []);
+      .catch(() => setStatus({ kind: "error", message: t('profile.error.load') }));
+  }, [t]);
 
   const save = async (payload: Record<string, unknown>) => {
     setStatus({ kind: "saving" });
@@ -45,13 +47,13 @@ export default function ProfileEditor() {
       });
       const json = await res.json();
       if (!res.ok) {
-        setStatus({ kind: "error", message: json.error ?? "Save failed." });
+        setStatus({ kind: "error", message: json.error ?? t('profile.error.save') });
         return false;
       }
-      setStatus({ kind: "ok", message: "Saved." });
+      setStatus({ kind: "ok", message: t('profile.success.saved') });
       return true;
     } catch {
-      setStatus({ kind: "error", message: "Network error." });
+      setStatus({ kind: "error", message: t('common.networkError') });
       return false;
     }
   };
@@ -74,7 +76,7 @@ export default function ProfileEditor() {
   };
 
   if (!data) {
-    return <p className="muted">Loading your profile…</p>;
+    return <p className="muted">{t('profile.loading')}</p>;
   }
 
   const previewAvatar = avatarUrl.trim() || data.steamAvatar || "";
@@ -93,56 +95,56 @@ export default function ProfileEditor() {
         </div>
         <div>
           <div className="profile-preview-name">{shownName}</div>
-          <div className="hero-sub">SteamID64 {data.steamId}</div>
+          <div className="hero-sub">{t('profile.steamIdLabel')} {data.steamId}</div>
           {country.trim() && <div className="muted">{country.trim().toUpperCase()}</div>}
         </div>
       </div>
 
       <label className="field">
-        <span className="field-label">Display name</span>
+        <span className="field-label">{t('profile.displayName.label')}</span>
         <input
           className="input"
           value={name}
           maxLength={32}
-          placeholder={data.steamName ?? "Your name"}
+          placeholder={data.steamName ?? t('profile.displayName.placeholder')}
           onChange={(e) => setName(e.target.value)}
         />
         <span className="field-hint">
-          Overrides your Steam name everywhere — ladder, stats and in-game.{" "}
+          {t('profile.displayName.hint')}
           {data.nameOverride && (
             <button type="button" className="linklike" onClick={onRevertName}>
-              Revert to Steam name ({data.steamName ?? "Steam"})
+              {t('profile.displayName.revert', { steamName: data.steamName ?? "Steam" })}
             </button>
           )}
         </span>
       </label>
 
       <label className="field">
-        <span className="field-label">Avatar URL</span>
+        <span className="field-label">{t('profile.avatarUrl.label')}</span>
         <input
           className="input"
           value={avatarUrl}
-          placeholder="https://…"
+          placeholder={t('profile.avatarUrl.placeholder')}
           onChange={(e) => setAvatarUrl(e.target.value)}
         />
-        <span className="field-hint">An https:// image URL. Leave blank to use your Steam avatar.</span>
+        <span className="field-hint">{t('profile.avatarUrl.hint')}</span>
       </label>
 
       <label className="field">
-        <span className="field-label">Bio</span>
+        <span className="field-label">{t('profile.bio.label')}</span>
         <textarea
           className="input"
           value={bio}
           maxLength={280}
           rows={3}
-          placeholder="A line or two about you."
+          placeholder={t('profile.bio.placeholder')}
           onChange={(e) => setBio(e.target.value)}
         />
         <span className="field-hint">{bio.length}/280</span>
       </label>
 
       <label className="field">
-        <span className="field-label">Country</span>
+        <span className="field-label">{t('profile.country.label')}</span>
         <input
           className="input"
           value={country}
@@ -151,12 +153,12 @@ export default function ProfileEditor() {
           onChange={(e) => setCountry(e.target.value.toUpperCase())}
           style={{ maxWidth: 120 }}
         />
-        <span className="field-hint">Two-letter country code.</span>
+        <span className="field-hint">{t('profile.country.hint')}</span>
       </label>
 
       <div className="form-actions">
         <button className="btn" type="submit" disabled={status.kind === "saving"}>
-          {status.kind === "saving" ? "Saving…" : "Save profile"}
+          {status.kind === "saving" ? t('common.saving') : t('profile.saveButton')}
         </button>
         {status.kind === "ok" && <span className="form-msg ok">✓ {status.message}</span>}
         {status.kind === "error" && <span className="form-msg error">⚠ {status.message}</span>}

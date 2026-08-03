@@ -3,9 +3,11 @@
 import React, { useState, useEffect } from "react";
 import { useSocket } from "@/components/games/SocketProvider";
 import { useRouter } from "next/navigation";
+import { useI18n } from "@/components/I18nProvider";
 import "./social.css";
 
 export default function NotificationToast() {
+  const { t } = useI18n();
   const { socket, steamId, isConnected } = useSocket();
   const router = useRouter();
   const [notifications, setNotifications] = useState<any[]>([]);
@@ -46,9 +48,9 @@ export default function NotificationToast() {
           </div>
           <div className="notif-actions">
             {notif.ActionUrl && (
-              <button className="btn-accept" onClick={() => handleAction(notif)}>Accept</button>
+              <button className="btn-accept" onClick={() => handleAction(notif)}>{t("social.notifications.accept")}</button>
             )}
-            <button className="btn-reject" onClick={() => removeNotification(notif.Id)}>Dismiss</button>
+            <button className="btn-reject" onClick={() => removeNotification(notif.Id)}>{t("social.notifications.dismiss")}</button>
           </div>
         </div>
       ))}

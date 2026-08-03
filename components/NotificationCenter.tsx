@@ -2,6 +2,7 @@
 
 import { useCallback, useEffect, useRef, useState } from "react";
 import Link from "next/link";
+import { useI18n } from '@/components/I18nProvider';
 
 // The bell in the header.
 //
@@ -19,15 +20,16 @@ type Item = {
   read: boolean;
 };
 
-const ago = (iso: string) => {
+const ago = (iso: string, t: any) => {
   const s = Math.max(1, (Date.now() - new Date(iso).getTime()) / 1000);
-  if (s < 60) return `${Math.floor(s)}s`;
-  if (s < 3600) return `${Math.floor(s / 60)}m`;
-  if (s < 86400) return `${Math.floor(s / 3600)}h`;
-  return `${Math.floor(s / 86400)}d`;
+  if (s < 60) return `${Math.floor(s)}${t('time.secondsShort')}`;
+  if (s < 3600) return `${Math.floor(s / 60)}${t('time.minutesShort')}`;
+  if (s < 86400) return `${Math.floor(s / 3600)}${t('time.hoursShort')}`;
+  return `${Math.floor(s / 86400)}${t('time.daysShort')}`;
 };
 
 export default function NotificationCenter() {
+  const { t } = useI18n();
   const [items, setItems] = useState<Item[] | null>(null);
   const [unread, setUnread] = useState(0);
   const [open, setOpen] = useState(false);
@@ -84,7 +86,7 @@ export default function NotificationCenter() {
         className={`notif-bell ${unread > 0 ? "has-unread" : ""}`}
         onClick={toggle}
         aria-expanded={open}
-        aria-label={unread > 0 ? `${unread} unread notifications` : "Notifications"}
+        aria-label={unread > 0 ? t('notifications.unreadCount', { unread }) : t('notif.title')}
       >
         {/* A drawn bell rather than an emoji: the emoji renders differently on
             every platform and cannot take the accent colour when unread. */}
@@ -99,12 +101,12 @@ export default function NotificationCenter() {
       {open && (
         <div className="notif-panel" role="menu">
           <div className="notif-head">
-            <strong>Notifications</strong>
-            <Link href="/feed" className="btn btn-ghost" onClick={() => setOpen(false)}>Feed</Link>
+            <strong>{t('notif.title')}</strong>
+            <Link href="/feed" className="btn btn-ghost" onClick={() => setOpen(false)}>{t('nav.feed')}</Link>
           </div>
 
           {items.length === 0 ? (
-            <p className="notif-empty">Nothing yet.</p>
+            <p className="notif-empty">{t('notif.empty')}</p>
           ) : (
             <ul className="notif-list">
               {items.map((n) => {
@@ -112,7 +114,7 @@ export default function NotificationCenter() {
                   <>
                     <span className="notif-icon" aria-hidden>{n.icon}</span>
                     <span className="notif-text">{n.content}</span>
-                    <span className="notif-at num">{ago(n.at)}</span>
+                    <span className="notif-at num">{ago(n.at, t)}</span>
                   </>
                 );
                 return (

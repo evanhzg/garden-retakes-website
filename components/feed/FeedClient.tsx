@@ -307,7 +307,24 @@ export default function FeedClient({ signedIn, isAdmin = false }: { signedIn: bo
               )}
 
               {clips === null ? (
-                <p className="muted">Loading…</p>
+                /* Skeleton cards rather than a line of text: the grid keeps its
+                   shape while loading, so nothing jumps when the clips land and
+                   the page does not appear empty for a moment first. */
+                <div className="feed-grid" aria-busy="true">
+                  {Array.from({ length: 6 }).map((_, i) => (
+                    <article key={i} className="clip clip-skeleton">
+                      <div className="clip-skel-head">
+                        <span className="clip-skel-avatar" />
+                        <span className="clip-skel-line" style={{ width: "38%" }} />
+                      </div>
+                      <div className="clip-skel-media" />
+                      <div className="clip-skel-body">
+                        <span className="clip-skel-line" style={{ width: "76%" }} />
+                        <span className="clip-skel-line" style={{ width: "52%" }} />
+                      </div>
+                    </article>
+                  ))}
+                </div>
               ) : clips.length === 0 ? (
                 <div className="empty-hint">
                   <p style={{ margin: 0 }}>

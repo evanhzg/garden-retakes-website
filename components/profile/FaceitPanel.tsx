@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useState } from "react";
+import { useI18n } from '@/components/I18nProvider';
 
 // FACEIT standing on the profile.
 //
@@ -62,6 +63,7 @@ const frac = (v: number | null) => (v == null ? "—" : `${Math.round(v * 100)}%
 const dec = (v: number | null, places = 2) => (v == null ? "—" : v.toFixed(places));
 
 export default function FaceitPanel({ steamId }: { steamId: string }) {
+  const { t } = useI18n();
   const [state, setState] = useState<State>({ kind: "loading" });
 
   useEffect(() => {
@@ -70,22 +72,22 @@ export default function FaceitPanel({ steamId }: { steamId: string }) {
       .then(async (r) => {
         const json = await r.json();
         if (cancelled) return;
-        if (!r.ok) return setState({ kind: "error", message: json.error ?? "Could not reach FACEIT." });
+        if (!r.ok) return setState({ kind: "error", message: json.error ?? t("profile.faceit.error") });
         setState(json.linked ? { kind: "ready", profile: json.profile } : { kind: "unlinked" });
       })
-      .catch(() => !cancelled && setState({ kind: "error", message: "Could not reach FACEIT." }));
+      .catch(() => !cancelled && setState({ kind: "error", message: t("profile.faceit.error") }));
     return () => {
       cancelled = true;
     };
   }, [steamId]);
 
-  if (state.kind === "loading") return <p className="muted">Reading your FACEIT profile…</p>;
+  if (state.kind === "loading") return <p className="muted">{t("profile.faceit.loading")}</p>;
 
   if (state.kind === "error") {
     return (
       <p className="skin-note skin-note-warn">
         <span>
-          <strong>FACEIT unavailable.</strong> {state.message}
+          <strong>{t("profile.faceit.unavailable")}</strong> {state.message}
         </span>
       </p>
     );
@@ -94,9 +96,9 @@ export default function FaceitPanel({ steamId }: { steamId: string }) {
   if (state.kind === "unlinked") {
     return (
       <div className="empty-hint">
-        <p style={{ margin: 0 }}>No FACEIT account is registered to this Steam ID.</p>
+        <p style={{ margin: 0 }}>{t("profile.faceit.unlinked")}</p>
         <p className="muted" style={{ fontSize: 13 }}>
-          Play a match on FACEIT with this Steam account and it will appear here — there is nothing to link.
+          {t("profile.faceit.unlinkedHint")}
         </p>
       </div>
     );
@@ -110,7 +112,7 @@ export default function FaceitPanel({ steamId }: { steamId: string }) {
       <div className="fc-head">
         <span className="fc-level" style={{ borderColor: levelColor(profile.level) }}>
           <span className="num" style={{ color: levelColor(profile.level) }}>{profile.level ?? "—"}</span>
-          <span className="fc-level-k">Level</span>
+          <span className="fc-level-k">{t("profile.faceit.level")}</span>
         </span>
 
         <div className="fc-id">
@@ -125,14 +127,14 @@ export default function FaceitPanel({ steamId }: { steamId: string }) {
 
         <div className="fc-elo">
           <span className="num fc-elo-v">{profile.elo ?? "—"}</span>
-          <span className="pro-stat-k">FACEIT ELO</span>
+          <span className="pro-stat-k">{t("profile.faceit.elo")}</span>
         </div>
 
         {s && s.recentResults.length > 0 && (
-          <div className="fc-recent" aria-label="Recent results, newest first">
+          <div className="fc-recent" aria-label={t("profile.faceit.recentResults")}>
             {s.recentResults.map((won, i) => (
-              <span key={i} className={`fc-pip ${won ? "win" : "loss"}`} title={won ? "Win" : "Loss"}>
-                {won ? "W" : "L"}
+              <span key={i} className={`fc-pip ${won ? "win" : "loss"}`} title={won ? t("profile.faceit.win") : t("profile.faceit.loss")}>
+                {won ? t("profile.faceit.winShort") : t("profile.faceit.lossShort")}
               </span>
             ))}
           </div>
@@ -140,17 +142,17 @@ export default function FaceitPanel({ steamId }: { steamId: string }) {
       </div>
 
       {!s ? (
-        <p className="muted">FACEIT has no lifetime CS2 stats for this account yet.</p>
+        <p className="muted">{t("profile.faceit.noStats")}</p>
       ) : (
         <>
           <div className="pro-headline" style={{ borderTop: 0, paddingTop: 0 }}>
             {[
-              { k: "K/D", v: dec(s.kd) },
-              { k: "ADR", v: dec(s.adr, 1) },
-              { k: "Headshots", v: pct(s.hs) },
-              { k: "Win rate", v: pct(s.winRate), sub: s.matches ? `${s.matches} matches` : undefined },
-              { k: "K/R", v: dec(s.krRatio) },
-              { k: "Win streak", v: s.currentWinStreak ?? "—", sub: s.longestWinStreak ? `best ${s.longestWinStreak}` : undefined },
+              { k: t("profile.faceit.kd"), v: dec(s.kd) },
+              { k: t("profile.faceit.adr"), v: dec(s.adr, 1) },
+              { k: t("profile.faceit.headshots"), v: pct(s.hs) },
+              { k: t("profile.faceit.winRate"), v: pct(s.winRate), sub: s.matches ? t("profile.faceit.matchesCount", { count: s.matches }) : undefined },
+              { k: t("profile.faceit.kr"), v: dec(s.krRatio) },
+              { k: t("profile.faceit.winStreak"), v: s.currentWinStreak ?? "—", sub: s.longestWinStreak ? t("profile.faceit.bestStreak", { count: s.longestWinStreak }) : undefined },
             ].map((f) => (
               <div key={f.k} className="pro-stat">
                 <span className="num pro-stat-v">{f.v}</span>
@@ -160,13 +162,13 @@ export default function FaceitPanel({ steamId }: { steamId: string }) {
             ))}
           </div>
 
-          <h3 className="fc-sub">Openings and clutches</h3>
+          <h3 className="fc-sub">{t("profile.faceit.openingsClutches")}</h3>
           <div className="pro-meters">
             {[
-              { label: "Entry success", display: frac(s.entrySuccess), pct: (s.entrySuccess ?? 0) * 100 },
-              { label: "Entry rate", display: frac(s.entryRate), pct: (s.entryRate ?? 0) * 100 },
-              { label: "1v1 won", display: frac(s.clutch1v1), pct: (s.clutch1v1 ?? 0) * 100 },
-              { label: "1v2 won", display: frac(s.clutch1v2), pct: (s.clutch1v2 ?? 0) * 100 },
+              { label: t("profile.faceit.entrySuccess"), display: frac(s.entrySuccess), pct: (s.entrySuccess ?? 0) * 100 },
+              { label: t("profile.faceit.entryRate"), display: frac(s.entryRate), pct: (s.entryRate ?? 0) * 100 },
+              { label: t("profile.faceit.1v1Won"), display: frac(s.clutch1v1), pct: (s.clutch1v1 ?? 0) * 100 },
+              { label: t("profile.faceit.1v2Won"), display: frac(s.clutch1v2), pct: (s.clutch1v2 ?? 0) * 100 },
             ].map((m) => (
               <div key={m.label} className="pro-meter">
                 <span className="pro-meter-k">{m.label}</span>
@@ -178,13 +180,13 @@ export default function FaceitPanel({ steamId }: { steamId: string }) {
             ))}
           </div>
 
-          <h3 className="fc-sub">Utility</h3>
+          <h3 className="fc-sub">{t("profile.faceit.utility")}</h3>
           <div className="pro-details">
             {[
-              { k: "Util dmg / round", v: dec(s.utilityDamagePerRound, 2) },
-              { k: "Flashes / round", v: dec(s.flashesPerRound, 2) },
-              { k: "Matches won", v: s.wins ?? "—" },
-              { k: "Matches", v: s.matches ?? "—" },
+              { k: t("profile.faceit.utilDmgPerRound"), v: dec(s.utilityDamagePerRound, 2) },
+              { k: t("profile.faceit.flashesPerRound"), v: dec(s.flashesPerRound, 2) },
+              { k: t("profile.faceit.matchesWon"), v: s.wins ?? "—" },
+              { k: t("profile.faceit.matches"), v: s.matches ?? "—" },
             ].map((f) => (
               <div key={f.k} className="pro-stat">
                 <span className="num pro-stat-v">{f.v}</span>
@@ -194,7 +196,7 @@ export default function FaceitPanel({ steamId }: { steamId: string }) {
           </div>
 
           <p className="pro-section-note" style={{ marginTop: "var(--space-6)" }}>
-            Lifetime FACEIT figures · refreshed every 15 minutes
+            {t("profile.faceit.disclaimer")}
           </p>
         </>
       )}
