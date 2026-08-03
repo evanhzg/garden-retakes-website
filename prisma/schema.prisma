@@ -53,43 +53,49 @@ model PlayerSeasonStats {
 }
 
 model PlayerRoundRecord {
-  Id                 BigInt   @id @default(autoincrement())
-  RoundRecordId      BigInt
-  SeasonId           Int
-  Map                String
-  PlayedAtUtc        DateTime @db.DateTime(6)
-  IsRanked           Boolean
-  SteamId            BigInt
-  PlayerName         String
-  TeamNum            Int
-  WonRound           Boolean
-  Kills              Int
-  Headshots          Int
-  Assists            Int
-  FlashAssists       Int
-  Damage             Int
-  UtilityDamage      Int
-  EnemiesFlashed     Int
-  EnemyBlindDuration Float
-  Died               Boolean
-  DiedAtSeconds      Float?
-  WasTeamKilled      Boolean
-  KilledTeammate     Boolean
-  DiedEarly          Boolean
-  OpeningKill        Boolean
-  OpeningDeath       Boolean
-  TradeKills         Int
-  TradedDeath        Boolean
-  Kast               Boolean
-  MultiKillCount     Int
-  ClutchVersus       Int
-  ClutchWon          Boolean
-  BombPlanted        Boolean
-  BombDefused        Boolean
-  WasAfk             Boolean
-  Rating             Float
-  EloDelta           Int
-  EloAfter           Int
+  Id                         BigInt   @id @default(autoincrement())
+  RoundRecordId              BigInt
+  SeasonId                   Int
+  Map                        String
+  PlayedAtUtc                DateTime @db.DateTime(6)
+  IsRanked                   Boolean
+  SteamId                    BigInt
+  PlayerName                 String
+  TeamNum                    Int
+  WonRound                   Boolean
+  Kills                      Int
+  Headshots                  Int
+  Assists                    Int
+  FlashAssists               Int
+  Damage                     Int
+  UtilityDamage              Int
+  EnemiesFlashed             Int
+  EnemyBlindDuration         Float
+  Died                       Boolean
+  DiedAtSeconds              Float?
+  WasTeamKilled              Boolean
+  KilledTeammate             Boolean
+  DiedEarly                  Boolean
+  OpeningKill                Boolean
+  OpeningDeath               Boolean
+  TradeKills                 Int
+  TradedDeath                Boolean
+  Kast                       Boolean
+  MultiKillCount             Int
+  ClutchVersus               Int
+  ClutchWon                  Boolean
+  BombPlanted                Boolean
+  BombDefused                Boolean
+  WasAfk                     Boolean
+  Rating                     Float
+  EloDelta                   Int
+  EloAfter                   Int
+  /// A team kill after every enemy was dead or the bomb defused — scored the
+  /// opposite way to one thrown while the round was live.
+  KilledTeammateAfterDecided Boolean  @default(false)
+  /// Itemised impact breakdown as JSON: what happened, what it was worth, and
+  /// who else was involved. Written by the plugin alongside the rating.
+  ImpactBreakdown            String?  @db.Text
 
   @@index([SteamId, PlayedAtUtc])
   @@index([SeasonId, SteamId])
