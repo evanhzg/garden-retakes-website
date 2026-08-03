@@ -171,14 +171,18 @@ model GardenNameOverride {
 }
 
 model GardenWebProfile {
-  SteamId   BigInt   @id
-  AvatarUrl String?
-  Bio       String?
-  Country   String?
-  IsPro     Boolean  @default(false)
-  ProSlug   String?  @unique
-  PopConfig String?  @db.VarChar(512)
-  UpdatedAt DateTime @updatedAt
+  SteamId        BigInt    @id
+  /// When this player last opened their notifications. Global events — CS2
+  /// updates, new clips — are "unread" if they happened after this, which
+  /// avoids writing a row per player per event.
+  NotifSeenAtUtc DateTime? @db.DateTime(6)
+  AvatarUrl      String?
+  Bio            String?
+  Country        String?
+  IsPro          Boolean   @default(false)
+  ProSlug        String?   @unique
+  PopConfig      String?   @db.VarChar(512)
+  UpdatedAt      DateTime  @updatedAt
 
   @@map("GardenWebProfiles")
 }
@@ -820,4 +824,16 @@ model GardenVote {
   @@unique([CategoryId, VoterSteamId])
   @@index([CategoryId])
   @@map("GardenVotes")
+}
+
+/// A like on a comment.
+model FeedClipCommentLike {
+  Id        Int      @id @default(autoincrement())
+  CommentId Int
+  SteamId   BigInt   @db.UnsignedBigInt
+  CreatedAt DateTime @default(now()) @db.DateTime(6)
+
+  @@unique([CommentId, SteamId])
+  @@index([CommentId])
+  @@map("FeedClipCommentLikes")
 }

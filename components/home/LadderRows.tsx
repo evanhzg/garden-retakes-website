@@ -37,6 +37,10 @@ export default function LadderRows({ rows }: { rows: LadderRow[] }) {
           <Reveal key={row.steamId} delay={Math.min(i * 0.03, 0.3)}>
             <div
               className="gr-row"
+              /* Rank as data, not :nth-child — each row is wrapped in a Reveal,
+                 so every one of them is the first child of its own wrapper and
+                 an nth-child rule painted the whole ladder gold. */
+              data-rank={i + 1}
               onMouseEnter={() => setActive(row.steamId)}
               onMouseLeave={() => setActive((cur) => (cur === row.steamId ? null : cur))}
               onClick={() => setActive((cur) => (cur === row.steamId ? null : row.steamId))}

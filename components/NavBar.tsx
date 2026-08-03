@@ -6,6 +6,7 @@ import { useEffect, useState, useRef } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import { ThemeToggle } from "./ThemeToggle";
 import AvatarImage from "./AvatarImage";
+import NotificationCenter from "@/components/NotificationCenter";
 
 type NavLink = {
   href: string;
@@ -366,6 +367,7 @@ export default function NavBar({
           </div>
         )}
 
+        <NotificationCenter />
         <ThemeToggle />
 
         {session.authenticated ? (

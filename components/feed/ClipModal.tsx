@@ -5,6 +5,7 @@ import { createPortal } from "react-dom";
 import Link from "next/link";
 import AvatarImage from "@/components/AvatarImage";
 import ShareMenu from "@/components/feed/ShareMenu";
+import ClipSocial from "@/components/feed/ClipSocial";
 import VideoPlayer, { type Variant } from "@/components/feed/VideoPlayer";
 import type { Clip } from "@/components/feed/ClipCard";
 
@@ -15,10 +16,12 @@ import type { Clip } from "@/components/feed/ClipCard";
 export default function ClipModal({
   clip,
   variants,
+  signedIn = false,
   onClose,
 }: {
   clip: Clip;
   variants: Variant[];
+  signedIn?: boolean;
   onClose: () => void;
 }) {
   // Portalled to <body>. Rendered in place it sat inside the clip card, and an
@@ -86,6 +89,11 @@ export default function ClipModal({
             </Link>
           )}
           {clip.description && <p className="clip-desc">{clip.description}</p>}
+
+          {/* Likes and comments live here too. Watching something and then
+              having to close it to react to it is a round trip for no reason;
+              the panel scrolls so a long thread never pushes the video off. */}
+          <ClipSocial clip={clip} signedIn={signedIn} />
         </div>
       </div>
     </div>,

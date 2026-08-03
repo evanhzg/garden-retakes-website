@@ -1,6 +1,8 @@
 import { NextResponse } from "next/server";
 import { prisma } from "@/lib/db";
 import { getSession } from "@/lib/auth";
+import { notify } from "@/lib/notifications";
+import { resolveNames, nameFrom } from "@/lib/names";
 
 export const dynamic = "force-dynamic";
 
@@ -24,5 +26,21 @@ export async function POST(_req: Request, { params }: { params: { id: string } }
   }
 
   const likes = await prisma.feedClipLike.count({ where: { ClipId: clipId } });
+
+  // Only on the way up: un-liking and re-liking should not ping someone twice.
+  if (!existing) {
+    const clip = await prisma.feedClip.findUnique({ where: { Id: clipId }, select: { SteamId: true, Title: true } });
+    if (clip) {
+      const names = await resolveNames([steamId]);
+      await notify({
+        steamId: clip.SteamId,
+        actorSteamId: steamId,
+        type: "CLIP_LIKE",
+        content: `${nameFrom(names, steamId)} liked "${clip.Title}"`,
+        actionUrl: `/feed/${clipId}`,
+      });
+    }
+  }
+
   return NextResponse.json({ ok: true, liked: !existing, likes });
 }

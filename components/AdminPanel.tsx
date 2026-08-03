@@ -90,17 +90,19 @@ const ROLE_LABEL = ["—", "Moderator", "Admin", "Owner"];
  * needs, not what anyone calls it. The id goes to the server, the label goes on
  * the button.
  */
-const STOCK_MAPS: { id: string; label: string }[] = [
-  { id: "de_mirage", label: "Mirage" },
-  { id: "de_inferno", label: "Inferno" },
-  { id: "de_nuke", label: "Nuke" },
-  { id: "de_ancient", label: "Ancient" },
-  { id: "de_dust2", label: "Dust II" },
-  { id: "de_anubis", label: "Anubis" },
-  { id: "de_cache", label: "Cache" },
-  { id: "de_overpass", label: "Overpass" },
-  { id: "de_vertigo", label: "Vertigo" },
-  { id: "de_train", label: "Train" },
+const STOCK_MAPS: { id: string; label: string; colour: string }[] = [
+  // Each map's own palette rather than the site accent, so the row is scannable
+  // by colour before it is read.
+  { id: "de_mirage", label: "Mirage", colour: "#d9c39a" },
+  { id: "de_inferno", label: "Inferno", colour: "#c0392b" },
+  { id: "de_nuke", label: "Nuke", colour: "#2c3e6b" },
+  { id: "de_ancient", label: "Ancient", colour: "#4b8b3b" },
+  { id: "de_dust2", label: "Dust II", colour: "#e0b642" },
+  { id: "de_anubis", label: "Anubis", colour: "#d66a9c" },
+  { id: "de_cache", label: "Cache", colour: "#5a5a5a" },
+  { id: "de_overpass", label: "Overpass", colour: "#e08a3c" },
+  { id: "de_vertigo", label: "Vertigo", colour: "#7fb6d9" },
+  { id: "de_train", label: "Train", colour: "#b6b6b6" },
 ];
 
 export default function AdminPanel({
@@ -378,8 +380,9 @@ export default function AdminPanel({
                 {STOCK_MAPS.map((m) => (
                   <button
                     key={m.id}
-                    className="adm-mode"
+                    className="adm-mode adm-map"
                     title={m.id}
+                    style={{ ["--map" as string]: m.colour }}
                     onClick={() => doAction({ type: "map", map: m.id })}
                   >
                     <span className="adm-mode-name">{m.label}</span>

@@ -6,6 +6,7 @@ import AvatarImage from "@/components/AvatarImage";
 import ClipModal from "@/components/feed/ClipModal";
 import ClipEditor from "@/components/feed/ClipEditor";
 import ShareMenu from "@/components/feed/ShareMenu";
+import CommentBox, { CommentBody } from "@/components/feed/CommentBox";
 import { tagColour, tagLabel } from "@/lib/feedShared";
 import type { Variant } from "@/components/feed/VideoPlayer";
 
@@ -46,6 +47,8 @@ type Comment = {
   body: string;
   at: string;
   mine: boolean;
+  likes?: number;
+  likedByMe?: boolean;
 };
 
 /**
@@ -112,8 +115,8 @@ export default function ClipCard({
   const [open, setOpen] = useState(false);
   const [showComments, setShowComments] = useState(false);
   const [comments, setComments] = useState<Comment[] | null>(null);
+  const [mentionNames, setMentionNames] = useState<Record<string, string>>({});
   const [count, setCount] = useState(clip.comments);
-  const [draft, setDraft] = useState("");
   const [posting, setPosting] = useState(false);
 
   const variants: Variant[] = (() => {
@@ -161,12 +164,11 @@ export default function ClipCard({
       const res = await fetch(`/api/feed/clips/${clip.id}/comments`);
       const json = await res.json();
       setComments(json.comments ?? []);
+      setMentionNames(json.mentionNames ?? {});
     }
   };
 
-  const postComment = async (e: React.FormEvent) => {
-    e.preventDefault();
-    const body = draft.trim();
+  const postComment = async (body: string) => {
     if (!body || posting) return;
     setPosting(true);
     try {
@@ -176,13 +178,25 @@ export default function ClipCard({
         body: JSON.stringify({ body }),
       });
       if (res.ok) {
-        setDraft("");
         setCount((n) => n + 1);
         const fresh = await fetch(`/api/feed/clips/${clip.id}/comments`).then((r) => r.json());
         setComments(fresh.comments ?? []);
+        setMentionNames(fresh.mentionNames ?? {});
       }
     } finally {
       setPosting(false);
+    }
+  };
+
+  const likeComment = async (id: number) => {
+    if (!signedIn) return;
+    // Optimistic, then corrected by the server's count.
+    setComments((cs) => (cs ?? []).map((c) =>
+      c.id === id ? { ...c, likedByMe: !c.likedByMe, likes: (c.likes ?? 0) + (c.likedByMe ? -1 : 1) } : c));
+    const res = await fetch(`/api/feed/comments/${id}/like`, { method: "POST" });
+    if (res.ok) {
+      const j = await res.json();
+      setComments((cs) => (cs ?? []).map((c) => (c.id === id ? { ...c, likedByMe: j.liked, likes: j.likes } : c)));
     }
   };
 
@@ -311,33 +325,31 @@ export default function ClipCard({
                   <div>
                     <span className="clip-comment-author">{c.author}</span>
                     <span className="clip-time"> · {ago(c.at)}</span>
-                    <p>{c.body}</p>
+                    <p><CommentBody body={c.body} names={mentionNames} /></p>
+                    <div className="clip-comment-actions">
+                      <button
+                        className={`clip-comment-like ${c.likedByMe ? "on" : ""}`}
+                        onClick={() => likeComment(c.id)}
+                        disabled={!signedIn}
+                        aria-pressed={Boolean(c.likedByMe)}
+                        title={signedIn ? "Like this comment" : "Sign in to like"}
+                      >
+                        {c.likedByMe ? "♥" : "♡"} <span className="num">{c.likes ?? 0}</span>
+                      </button>
+                      {c.mine && (
+                        <button className="clip-comment-del" onClick={() => removeComment(c.id)}>
+                          Delete
+                        </button>
+                      )}
+                    </div>
                   </div>
-                  {c.mine && (
-                    <button className="btn btn-ghost" onClick={() => removeComment(c.id)} aria-label="Delete comment">
-                      ×
-                    </button>
-                  )}
                 </li>
               ))}
             </ul>
           )}
 
           {signedIn ? (
-            <form className="clip-comment-form" onSubmit={postComment}>
-              <label className="sr-only" htmlFor={`c-${clip.id}`}>Add a comment</label>
-              <input
-                id={`c-${clip.id}`}
-                className="input"
-                value={draft}
-                maxLength={500}
-                placeholder="Say something…"
-                onChange={(e) => setDraft(e.target.value)}
-              />
-              <button className="btn btn-primary" type="submit" disabled={posting || !draft.trim()}>
-                {posting ? "…" : "Post"}
-              </button>
-            </form>
+            <CommentBox id={`c-${clip.id}`} posting={posting} onSubmit={(body) => postComment(body)} />
           ) : (
             <p className="muted" style={{ fontSize: 13 }}>
               <a href="/api/auth/steam/login">Sign in</a> to comment.
@@ -346,7 +358,7 @@ export default function ClipCard({
         </div>
       )}
 
-      {open && <ClipModal clip={clip} variants={variants} onClose={() => setOpen(false)} />}
+      {open && <ClipModal clip={clip} variants={variants} signedIn={signedIn} onClose={() => setOpen(false)} />}
 
       {editing && (
         <ClipEditor
