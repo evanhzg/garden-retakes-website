@@ -7755,19 +7755,17 @@ header .avatar-sm { width: 34px; height: 34px; }
    Season vote, beside the hero.
    --------------------------------------------------------------------------- */
 
-.home-hero-row { display: grid; grid-template-columns: minmax(0, 1fr) auto; gap: clamp(16px, 2.5vw, 32px); align-items: start; }
-/* Below this the ballot stops being a sidebar and becomes the next thing down. */
-@media (max-width: 1080px) { .home-hero-row { grid-template-columns: minmax(0, 1fr); } }
+.home-hero-row { display: flex; flex-direction: column; gap: clamp(16px, 2.5vw, 32px); }
 
 .vote-panel {
-  width: min(340px, 100%);
+  width: calc(100% - var(--page-pad) * 2);
+  max-width: 1280px;
+  margin: 0 auto;
   background: var(--color-bg);
   border: 1.5px solid var(--color-divider);
-  border-radius: 14px;
-  padding: 14px;
-  align-self: start;
+  border-radius: 0;
+  padding: 24px;
 }
-@media (max-width: 1080px) { .vote-panel { width: 100%; } }
 
 .vote-head { display: grid; gap: 2px; margin-bottom: 10px; }
 .vote-head h3 { margin: 0; font-size: 22px; letter-spacing: -0.02em; }
@@ -7777,12 +7775,12 @@ header .avatar-sm { width: 34px; height: 34px; }
 .vote-cats { list-style: none; margin: 0; padding: 0; display: grid; gap: 4px; }
 .vote-cat {
   display: flex; align-items: baseline; justify-content: space-between; gap: 10px;
-  width: 100%; padding: 8px 10px;
-  background: var(--color-bg); border: 1px solid var(--color-divider); border-radius: 9px;
+  width: 100%; padding: 12px 14px;
+  background: var(--color-bg); border: 1px solid var(--color-divider); border-radius: 0;
   font: inherit; color: inherit; cursor: pointer; text-align: left;
 }
 .vote-cat:hover { border-color: var(--color-accent); }
-.vote-cats li.open .vote-cat { border-color: var(--color-accent); border-radius: 9px 9px 0 0; }
+.vote-cats li.open .vote-cat { border-color: var(--color-accent); border-radius: 0; }
 .vote-cat-name { font-size: 13px; font-weight: 700; }
 .vote-cat-pick { font-size: 11px; color: var(--muted); }
 .vote-cat-desc {
