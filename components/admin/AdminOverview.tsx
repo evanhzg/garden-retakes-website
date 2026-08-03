@@ -99,6 +99,29 @@ export default function AdminOverview({
     }
   };
 
+  const openVote = async () => {
+    if (!window.confirm(t("admin.season.open_vote_confirm"))) return;
+    setOpening(true);
+    setStartNote(null);
+    try {
+      const res = await fetch(`/api/admin/vote${adminKey ? `?key=${encodeURIComponent(adminKey)}` : ""}`, {
+        method: "POST",
+      });
+      const json = await res.json();
+      if (!res.ok) {
+        setStartNote({ ok: false, text: json.error ?? t("admin.season.open_vote_failed") });
+        return;
+      }
+      setStartNote({ ok: true, text: t("admin.season.open_vote_done") });
+      // Immediately reflect the vote being open locally.
+      setData((d) => (d && d.season ? { ...d, poll: { id: json.pollId, seasonId: d.season.id, closesAt: json.closesAt, open: true } } : d));
+    } catch {
+      setStartNote({ ok: false, text: t("admin.season.open_vote_failed") });
+    } finally {
+      setOpening(false);
+    }
+  };
+
   if (error) {
     return <p className="skin-note skin-note-error"><span>{error}</span></p>;
   }
@@ -179,6 +202,19 @@ export default function AdminOverview({
               title={t("admin.season.start_title")}
             >
               {starting ? t("admin.season.start_busy") : t("admin.season.start")}
+            </button>
+          </div>
+        )}
+        
+        {canStartSeason && !frozen && data.season && (
+          <div className="adm-strip-actions adm-season-actions">
+            <button
+              className="btn btn-danger"
+              onClick={openVote}
+              disabled={opening}
+              title={t("admin.season.open_vote_title")}
+            >
+              {opening ? t("admin.season.open_vote_busy") : t("admin.season.open_vote")}
             </button>
           </div>
         )}
