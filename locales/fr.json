@@ -1993,5 +1993,21 @@
   "home.modes.faststrat": "Une strat s'affiche et le chrono démarre. Lis-la, exécute-la.",
   "home.modes.defender": "Tu tiens le site pendant que le script arrive par trois angles.",
   "home.modes.hideandseek": "Un chasseur, et tous les autres planqués là où ils ne devraient pas tenir.",
-  "home.modes.edit": "Pas de bombe, pas de chrono, noclip actif. Pour construire spawns et lineups."
+  "home.modes.edit": "Pas de bombe, pas de chrono, noclip actif. Pour construire spawns et lineups.",
+  "season.freeze.left_now": "d'un instant à l'autre",
+  "season.freeze.left_days": "encore {d} j {h} h",
+  "season.freeze.left_hours": "encore {h} h {m} min",
+  "season.freeze.left_minutes": "encore {m} min",
+  "admin.freeze.title": "Saison terminée — le classement est gelé",
+  "admin.freeze.body": "Le vote de fin de saison est en cours, l'ELO n'évolue donc plus. Les retakes classés et compétitifs sont indisponibles jusqu'au début de la prochaine saison. Les retakes classiques ne sont pas concernés.",
+  "admin.freeze.when": "Le classé et le compétitif reviennent le {date} — {left}.",
+  "admin.freeze.flavour_hint": "saison finie",
+  "admin.freeze.flavour_title": "Saison terminée — l'ELO est gelé pendant le vote. Le classé et le compétitif reviennent le {date} ({left}).",
+  "admin.season.start": "Démarrer la saison maintenant",
+  "admin.season.start_busy": "Démarrage…",
+  "admin.season.start_title": "Ferme immédiatement le vote de saison, ce qui lève le gel de l'ELO",
+  "admin.season.start_confirm": "Démarrer la prochaine saison maintenant ?\n\nLe vote de saison se ferme immédiatement et plus aucun vote ne pourra être exprimé. L'ELO est dégelé et les retakes classés et compétitifs redeviennent disponibles. Cette action est irréversible.",
+  "admin.season.start_done": "Vote de saison fermé. L'ELO est dégelé — les retakes classés et compétitifs sont de nouveau disponibles. Attribuez les médailles quand vous le souhaitez.",
+  "admin.season.start_failed": "Impossible de démarrer la saison. Rien n'a été modifié.",
+  "home.seasonVote.frozen": "La saison est terminée : l'ELO est gelé et seuls les retakes classiques tournent. Le classé et le compétitif reviennent au début de la prochaine saison, dès la fermeture de ce vote."
 }

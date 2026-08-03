@@ -132,6 +132,13 @@ export default function SeasonVote() {
         <span className="vote-left num">{left}</span>
       </header>
 
+      {/* The freeze is the part of "the season is over" that players actually
+          feel: they queue for ranked, get classic, and assume something broke.
+          It belongs above the sign-in branch so a signed-out visitor reads it
+          too — the answer to "where did ranked go" should not require an
+          account. */}
+      <p className="vote-frozen">{t("home.seasonVote.frozen")}</p>
+
       {!data.signedIn ? (
         <p className="vote-signin">
           <a className="btn btn-primary" href="/api/auth/steam/login">{t("auto.seasonvote.sign_in_with_steam_to_vote")}</a>

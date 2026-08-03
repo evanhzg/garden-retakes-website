@@ -8,6 +8,7 @@ import PendingDemos from "@/components/admin/PendingDemos";
 import AdminOverview from "@/components/admin/AdminOverview";
 import { useI18n } from '@/components/I18nProvider';
 import { GAME_MODES, RETAKE_FLAVOURS } from "@/lib/gameModes";
+import { freezeDate, freezeLeft, isFrozen, type FreezePoll } from "@/lib/seasonFreeze";
 
 // The panel was three stacked sections with the player table — the tallest of
 // them — dominating the page, and the admin log and custom skins living on
@@ -113,7 +114,7 @@ export default function AdminPanel({
   viewerLevel: number;
   adminKey?: string;
 }) {
-    const { t } = useI18n();
+    const { t, locale } = useI18n();
 
   const [tab, setTab] = useState<TabId>("overview");
   const [players, setPlayers] = useState<Player[]>([]);
@@ -126,6 +127,14 @@ export default function AdminPanel({
   const [live, setLive] = useState<{ map: string | null; mode: string | null; players: number | null }>({
     map: null, mode: null, players: null,
   });
+  /**
+   * The season-end vote, which is the whole of what "the season is over" means
+   * here. It comes from the public /api/vote rather than from the server itself
+   * because the freeze is a website fact — the poll's own window — and asking
+   * the game server about it would cost an RCON round trip to learn something
+   * the database already knows.
+   */
+  const [poll, setPoll] = useState<FreezePoll>(null);
 
   const canMod = viewerLevel >= 1;
   const canAdmin = viewerLevel >= 2;
@@ -182,6 +191,17 @@ export default function AdminPanel({
       .catch(() => {});
   }, [adminKey, toast]);
 
+  // Re-read on every visit to the Server section rather than once on mount, so
+  // an owner who has just started the season from the dashboard does not come
+  // back to a control that is still greyed out by a freeze that has lifted.
+  useEffect(() => {
+    if (tab !== "server") return;
+    fetch("/api/vote", { cache: "no-store" })
+      .then((r) => r.json())
+      .then((j) => setPoll(j.poll ?? null))
+      .catch(() => setPoll(null));
+  }, [tab]);
+
   // The log is only fetched when its tab is first opened.
   useEffect(() => {
     if (tab !== "log" || log !== null) return;
@@ -220,6 +240,13 @@ export default function AdminPanel({
     if (name === null || name.trim() === "") return;
     doAction({ type: "setName", steamId: p.steamId, name });
   };
+
+  // Computed once for the whole Server section: the banner and each disabled
+  // flavour have to name the same moment, and formatting them separately is how
+  // two parts of one screen end up disagreeing by a minute.
+  const frozen = isFrozen(poll);
+  const freezeAt = poll?.closesAt ? freezeDate(poll.closesAt, locale) : "";
+  const freezeIn = poll?.closesAt ? freezeLeft(poll.closesAt, t) : "";
 
   return (
     <>
@@ -261,7 +288,9 @@ export default function AdminPanel({
           </header>
         )}
 
-        {tab === "overview" && <AdminOverview adminKey={adminKey ?? ""} onGo={go} />}
+        {/* The dashboard carries an Owner-only control, so it needs to know who
+            is looking rather than discovering it from a 403 after the click. */}
+        {tab === "overview" && <AdminOverview adminKey={adminKey ?? ""} onGo={go} viewerLevel={viewerLevel} />}
 
         {tab === "players" && (
           <>
@@ -361,6 +390,19 @@ export default function AdminPanel({
 
         {tab === "server" && canMod && (
           <div className="adm-server">
+            {frozen && (
+              // Stated above the control rather than only inside the disabled
+              // buttons' tooltips, because a tooltip is unreachable on a touch
+              // screen and a greyed-out button that cannot say why it is
+              // greyed-out reads as a bug. The date and the time remaining are
+              // both here: one answers "when", the other answers "how long".
+              <div className="adm-freeze" role="status">
+                <strong>{t("admin.freeze.title")}</strong>
+                <span>{t("admin.freeze.body")}</span>
+                <span className="adm-freeze-when">{t("admin.freeze.when", { date: freezeAt, left: freezeIn })}</span>
+              </div>
+            )}
+
             <section>
               <h3>{t("auto.adminpanel.game_mode")}</h3>
               <p className="muted" style={{ fontSize: 13, marginTop: 0 }}>
@@ -375,13 +417,23 @@ export default function AdminPanel({
                 {RETAKE_FLAVOURS.map((f) => {
                   const short = live.players !== null && live.players < f.minPlayers;
                   const odd = f.evenTeams && live.players !== null && live.players % 2 !== 0;
+                  // Classic is the flavour with points off, so it is the one
+                  // thing a frozen season does not stop. The other two exist to
+                  // move ELO, and ELO does not move until the next season
+                  // starts.
+                  const paused = frozen && f.id !== "retakes";
                   return (
                     <button
                       key={f.id}
-                      className={`adm-flavour ${live.mode === "retakes" && f.id === "retakes" ? "live" : ""}`}
-                      disabled={!canAdmin || short || odd}
+                      className={`adm-flavour ${live.mode === "retakes" && f.id === "retakes" ? "live" : ""} ${paused ? "is-paused" : ""}`}
+                      disabled={!canAdmin || paused || short || odd}
                       title={
                         !canAdmin ? "Admin role required"
+                        // The freeze is checked before the player counts because
+                        // it outranks them: filling the server does not bring
+                        // ranked back, and "needs 4 players" would send an admin
+                        // chasing the wrong fix.
+                        : paused ? t("admin.freeze.flavour_title", { date: freezeAt, left: freezeIn })
                         : short ? `Needs ${f.minPlayers} players — ${live.players} on the server`
                         : odd ? `Needs an even number of players — ${live.players} on the server`
                         : f.hint
@@ -389,7 +441,9 @@ export default function AdminPanel({
                       onClick={() => doAction({ type: "gamemode", mode: f.id })}
                     >
                       <span className="adm-flavour-name">{f.label}</span>
-                      <span className="adm-flavour-hint">{short ? `needs ${f.minPlayers}` : odd ? "needs even teams" : f.hint}</span>
+                      <span className="adm-flavour-hint">
+                        {paused ? t("admin.freeze.flavour_hint") : short ? `needs ${f.minPlayers}` : odd ? "needs even teams" : f.hint}
+                      </span>
                     </button>
                   );
                 })}
