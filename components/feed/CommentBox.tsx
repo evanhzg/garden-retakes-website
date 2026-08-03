@@ -136,9 +136,10 @@ export function CommentBody({ body, names }: { body: string; names: Record<strin
     if (m.index === undefined) continue;
     if (m.index > last) parts.push(body.slice(last, m.index));
     parts.push(
-      <span className="mention" key={`${m.index}-${m[1]}`}>
+      // A mention is a person, so it goes to them.
+      <a className="mention" key={`${m.index}-${m[1]}`} href={`/players/${m[1]}`}>
         {names[m[1]] ?? "someone"}
-      </span>
+      </a>
     );
     last = m.index + m[0].length;
   }

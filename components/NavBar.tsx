@@ -7,10 +7,13 @@ import { motion, AnimatePresence } from "framer-motion";
 import { ThemeToggle } from "./ThemeToggle";
 import AvatarImage from "./AvatarImage";
 import NotificationCenter from "@/components/NotificationCenter";
+import { useI18n } from "@/components/I18nProvider";
 
 type NavLink = {
   href: string;
   label: string;
+  /** Translation key; the label is the English fallback. */
+  key?: string;
   isSection?: boolean;
   isLive?: boolean;
   adminOnly?: boolean;
@@ -24,21 +27,21 @@ type NavLink = {
 // thin enough that surfacing them cost more attention than they returned. The
 // routes still exist and still resolve.
 const CS2_LINKS: NavLink[] = [
-  { href: "/", label: "Ladder", primary: true },
-  { href: "/insights", label: "Insights", primary: true },
-  { href: "/stats", label: "Stats", primary: true },
-  { href: "/inventory", label: "Inventory", primary: true },
-  { href: "/feed", label: "Feed", primary: true },
-  { href: "/utility", label: "Utility", primary: true },
-  { href: "/live", label: "Live", isLive: true, primary: true },
+  { href: "/", label: "Ladder", key: "nav.ladder", primary: true },
+  { href: "/insights", label: "Insights", key: "nav.insights", primary: true },
+  { href: "/stats", label: "Stats", key: "nav.stats", primary: true },
+  { href: "/inventory", label: "Inventory", key: "nav.inventory", primary: true },
+  { href: "/feed", label: "Feed", key: "nav.feed", primary: true },
+  { href: "/utility", label: "Utility", key: "nav.utility", primary: true },
+  { href: "/live", label: "Live", key: "nav.live", isLive: true, primary: true },
   { href: "/compare", label: "Compare" },
   { href: "/duels", label: "Duels" },
   { href: "/request-skin", label: "Request skin" },
   { href: "/docs", label: "Docs" },
   { href: "/commands", label: "Commands" },
   { href: "/roadmap", label: "Roadmap" },
-  { href: "/games", label: "Games", isSection: true },
-  { href: "/admin", label: "Admin", adminOnly: true },
+  { href: "/games", label: "Games", key: "nav.games", isSection: true },
+  { href: "/admin", label: "Admin", key: "nav.admin", adminOnly: true },
 ];
 
 const GAMES_LINKS: NavLink[] = [
@@ -69,6 +72,9 @@ export default function NavBar({
   const router = useRouter();
   const [session, setSession] = useState<Session>({ authenticated: false });
   const [isLiveServer, setIsLiveServer] = useState(false);
+  const { t } = useI18n();
+  /** A link's label in the current language, falling back to its English. */
+  const tr = (l: { label: string; key?: string }) => (l.key ? t(l.key) : l.label);
   const [menuOpen, setMenuOpen] = useState(false);
   
   const headerRef = useRef<HTMLElement>(null);
@@ -261,7 +267,7 @@ export default function NavBar({
               }}
             >
               {live && <span className="live-dot" />}
-              {l.label}
+              {tr(l)}
             </Link>
           );
         })}
@@ -288,7 +294,7 @@ export default function NavBar({
                 padding: 0,
               }}
             >
-              More
+              {t("nav.more")}
               <motion.svg
                 viewBox="0 0 24 24"
                 width="12"
@@ -354,7 +360,7 @@ export default function NavBar({
                           color: active ? "var(--color-accent)" : "var(--color-text)",
                         }}
                       >
-                        {l.label}
+                        {tr(l)}
                       </Link>
                       </motion.div>
                     );

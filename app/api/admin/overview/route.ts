@@ -49,22 +49,29 @@ export async function GET(req: Request) {
 
   // What is actually running, so the panel can show which button is already the
   // answer instead of making an admin remember.
-  let live: { map: string | null; mode: string | null; players: number | null } = {
-    map: null,
-    mode: null,
-    players: null,
-  };
+  let live: {
+    map: string | null;
+    mode: string | null;
+    players: number | null;
+    ranked?: boolean;
+    competitive?: boolean;
+  } = { map: null, mode: null, players: null };
   try {
-    const status = await rconExec("status");
-    const map = /^\s*(?:map|Map)\s*[:=]\s*(\S+)/m.exec(status)?.[1]?.split("/").pop()?.trim() ?? null;
-    const players = Number(/players\s*:\s*(\d+)/i.exec(status)?.[1] ?? NaN);
-    const mode = await rconExec("css_gamemode").catch(() => "");
-    live = {
-      map,
-      // The plugin answers with the current mode name somewhere in its reply.
-      mode: /\b(retakes|executes|practice|duels|faststrat|wingman|defender|hideandseek|spelltakers|edit)\b/i.exec(mode)?.[1]?.toLowerCase() ?? null,
-      players: Number.isFinite(players) ? players : null,
-    };
+    // css_gstatus answers in JSON. The old approach pattern-matched a localised
+    // sentence out of css_gamemode, so the answer vanished whenever the wording
+    // changed.
+    const raw = await rconExec("css_gstatus");
+    const json = /\{[^}]*\}/.exec(raw)?.[0];
+    if (json) {
+      const p = JSON.parse(json) as { map?: string; mode?: string; players?: number; ranked?: boolean; competitive?: boolean };
+      live = {
+        map: p.map ?? null,
+        mode: p.mode ?? null,
+        players: typeof p.players === "number" ? p.players : null,
+        ranked: Boolean(p.ranked),
+        competitive: Boolean(p.competitive),
+      };
+    }
   } catch {
     // Server unreachable — the board still works, it just cannot highlight.
   }

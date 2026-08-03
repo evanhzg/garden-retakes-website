@@ -9,6 +9,7 @@ import { getLastSessionStandout } from "@/lib/hero";
 import Reveal from "@/components/home/Reveal";
 import LadderRows, { type LadderRow } from "@/components/home/LadderRows";
 import SeasonVote from "@/components/home/SeasonVote";
+import LiveCard from "@/components/home/LiveCard";
 import CountUp from "@/components/home/CountUp";
 
 export const dynamic = "force-dynamic";
@@ -165,33 +166,6 @@ export default async function HomePage() {
         </div>
       </section>
 
-      {/* The accent band is meant to touch both edges of the viewport, so it
-          escapes the page gutter and re-applies it to its own contents. */}
-      <section
-        className="full-bleed full-bleed-inset"
-        style={{
-          background: "var(--color-accent)",
-          color: "var(--color-bg)",
-          paddingBlock: "clamp(56px, 8vw, 96px)",
-        }}
-      >
-        <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", gap: 24, flexWrap: "wrap" }}>
-          <h3
-            style={{
-              fontSize: "clamp(30px, 4vw, 50px)",
-              letterSpacing: "-0.02em",
-              margin: 0,
-              marginLeft: "-0.05em",
-              color: "var(--color-bg)",
-            }}
-          >
-            Climb the ladder.
-            <br />
-            {season.Name ?? `Season ${season.Id}`} is live.
-          </h3>
-          <ConnectButton serverAddress={serverAddress} />
-        </div>
-      </section>
     </>
   );
 }

@@ -9,6 +9,8 @@ import PageLoader from "@/components/PageLoader";
 import RouteLoader from "@/components/RouteLoader";
 import "./globals.css";
 import { I18nProvider } from "@/components/I18nProvider";
+import SiteFooter from "@/components/SiteFooter";
+import { ToastProvider } from "@/components/Toast";
 import { resolveLocale, LOCALE_COOKIE } from "@/lib/i18n";
 
 // Modernist: one grotesque carries headings and body, and a mono handles every
@@ -111,6 +113,7 @@ export default async function RootLayout({ children }: { children: React.ReactNo
         <PageLoader />
         <ThemeProvider attribute="class" defaultTheme="system" enableSystem>
         <I18nProvider initial={locale}>
+        <ToastProvider>
           {/* The three blurred orbs were the last of the old purple/pink wash
               (#ec4899 / #a855f7 / #d946ef) and fought the Modernist ground. */}
           <DynamicGridBackground />
@@ -119,8 +122,10 @@ export default async function RootLayout({ children }: { children: React.ReactNo
           <div className="layout-wrapper">
             <div className="main-content">
               <main className="container">{children}</main>
+              <SiteFooter serverAddress={process.env.NEXT_PUBLIC_SERVER_ADDRESS ?? "127.0.0.1:27015"} />
             </div>
           </div>
+        </ToastProvider>
         </I18nProvider>
         </ThemeProvider>
       </body>

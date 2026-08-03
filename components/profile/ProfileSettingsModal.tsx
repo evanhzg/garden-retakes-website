@@ -1,6 +1,7 @@
 "use client";
 
 import { useCallback, useEffect, useRef, useState } from "react";
+import { createPortal } from "react-dom";
 import MotionToggle from "@/components/MotionToggle";
 import ConnectionsEditor from "@/components/profile/Connections";
 import AppearanceSettings from "@/components/profile/AppearanceSettings";
@@ -52,6 +53,12 @@ export default function ProfileSettingsModal({ onClose }: { onClose: () => void 
 
   // Escape closes, and focus is parked inside the dialog on open.
   const cardRef = useRef<HTMLDivElement>(null);
+  // Portalled to <body>: rendered in place it sat inside an animated section,
+  // and an ancestor with a transform in its keyframes becomes the containing
+  // block for position:fixed — so the dialog anchored to the section instead
+  // of the viewport. Same fix the clip modal needed.
+  const [mounted, setMounted] = useState(false);
+  useEffect(() => setMounted(true), []);
   useEffect(() => {
     const onKey = (e: KeyboardEvent) => {
       if (e.key === "Escape" && !cropping) onClose();
@@ -134,7 +141,9 @@ export default function ProfileSettingsModal({ onClose }: { onClose: () => void 
     }
   };
 
-  return (
+  if (!mounted) return null;
+
+  return createPortal(
     <div className="pro-modal" role="dialog" aria-modal="true" aria-labelledby="pro-settings-title" onClick={onClose}>
       <div className="pro-modal-card" ref={cardRef} tabIndex={-1} onClick={(e) => e.stopPropagation()}>
         <div className="pro-modal-head">
@@ -266,7 +275,8 @@ export default function ProfileSettingsModal({ onClose }: { onClose: () => void 
           onDone={onCropped}
         />
       )}
-    </div>
+    </div>,
+    document.body
   );
 }
 

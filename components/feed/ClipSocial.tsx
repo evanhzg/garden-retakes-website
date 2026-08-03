@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import AvatarImage from "@/components/AvatarImage";
 import CommentBox, { CommentBody } from "@/components/feed/CommentBox";
 import type { Clip } from "@/components/feed/ClipCard";
@@ -38,6 +38,7 @@ export default function ClipSocial({ clip, signedIn }: { clip: Clip; signedIn: b
   const [likes, setLikes] = useState(clip.likes);
   const [liked, setLiked] = useState(clip.likedByMe);
   const [posting, setPosting] = useState(false);
+  const listRef = useRef<HTMLDivElement>(null);
 
   const load = () =>
     fetch(`/api/feed/clips/${clip.id}/comments`, { cache: "no-store" })
@@ -107,12 +108,16 @@ export default function ClipSocial({ clip, signedIn }: { clip: Clip; signedIn: b
         >
           {liked ? "♥" : "♡"} <span className="num">{likes}</span>
         </button>
-        <span className="muted" style={{ fontSize: 12 }}>
+        <button
+          className="clip-social-jump"
+          onClick={() => listRef.current?.scrollIntoView({ behavior: "smooth", block: "nearest" })}
+          disabled={!comments || comments.length === 0}
+        >
           {comments === null ? "" : `${comments.length} comment${comments.length === 1 ? "" : "s"}`}
-        </span>
+        </button>
       </div>
 
-      <div className="clip-social-scroll">
+      <div className="clip-social-scroll" ref={listRef}>
         {comments === null ? (
           <p className="muted" style={{ fontSize: 13 }}>Loading…</p>
         ) : comments.length === 0 ? (

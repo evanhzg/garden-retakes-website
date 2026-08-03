@@ -2,6 +2,7 @@
 
 import { useEffect, useState } from "react";
 import { PROVIDERS, PROVIDER_PATHS, providerById, type Connection, type ProviderId } from "@/lib/connections";
+import { useToast } from "@/components/Toast";
 
 // Connections, at the top of a profile where "who is this person elsewhere"
 // belongs — it used to be a Discord button alone, near the bottom.
@@ -73,7 +74,7 @@ export default function ConnectionsEditor() {
   const [links, setLinks] = useState<Record<string, { handle: string; public: boolean }>>({});
   const [loaded, setLoaded] = useState(false);
   const [saving, setSaving] = useState(false);
-  const [note, setNote] = useState<string | null>(null);
+  const toast = useToast();
 
   useEffect(() => {
     fetch("/api/profile/links", { cache: "no-store" })
@@ -94,7 +95,6 @@ export default function ConnectionsEditor() {
 
   const save = async () => {
     setSaving(true);
-    setNote(null);
     try {
       const res = await fetch("/api/profile/links", {
         method: "PUT",
@@ -107,9 +107,9 @@ export default function ConnectionsEditor() {
           })),
         }),
       });
-      setNote(res.ok ? "Saved." : "Could not save.");
+      toast(res.ok ? "Saved." : "Could not save.", res.ok ? "ok" : "error");
     } catch {
-      setNote("Network error.");
+      toast("Network error.", "error");
     } finally {
       setSaving(false);
     }
@@ -156,7 +156,6 @@ export default function ConnectionsEditor() {
         <button className="btn btn-primary" onClick={save} disabled={saving}>
           {saving ? "Saving…" : "Save connections"}
         </button>
-        <span aria-live="polite" className="muted" style={{ fontSize: 13 }}>{note}</span>
       </div>
     </div>
   );

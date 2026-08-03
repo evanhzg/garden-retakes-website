@@ -8351,3 +8351,94 @@ header a > .avatar { display: block; }
   cursor: not-allowed;
   pointer-events: none;
 }
+
+/* ---------------------------------------------------------------------------
+   The expanded player could not be scrolled.
+
+   The card was a fixed-height grid with the stage taking all of it, so the
+   meta column had nowhere to go and its overflow never engaged — the comments
+   existed but were unreachable. The card scrolls now, and on a wide screen the
+   meta column scrolls on its own beside the video.
+   --------------------------------------------------------------------------- */
+
+.clip-modal-card {
+  max-height: 92vh;
+  overflow-y: auto;
+}
+.clip-modal-meta {
+  min-height: 0;
+  display: flex;
+  flex-direction: column;
+}
+@media (min-width: 900px) {
+  .clip-modal-card { overflow: hidden; }
+  .clip-modal-meta { overflow-y: auto; max-height: 92vh; }
+}
+
+.clip-social-jump {
+  background: none; border: 0; padding: 0;
+  font: inherit; font-size: 12px; color: var(--muted); cursor: pointer;
+}
+.clip-social-jump:hover:not(:disabled) { color: var(--color-accent); text-decoration: underline; }
+.clip-social-jump:disabled { cursor: default; }
+
+/* Every sub-nav item is square, not only the sectioned one. */
+.nav-more-item { border-radius: 0; }
+
+/* The live card on the homepage. */
+.live-card {
+  display: inline-flex; align-items: center; gap: 10px; flex-wrap: wrap;
+  padding: 8px 12px; margin-bottom: 14px;
+  border: 1px solid color-mix(in srgb, var(--color-bg) 40%, transparent);
+  border-radius: 999px;
+  font-size: 13px;
+}
+.live-card-dot {
+  width: 8px; height: 8px; border-radius: 50%;
+  background: currentColor;
+  animation: gr-pulse 2s ease-in-out infinite;
+}
+@keyframes gr-pulse { 0%,100% { opacity: 1; } 50% { opacity: 0.35; } }
+.live-card-players { font-weight: 700; }
+.live-card-map {
+  display: inline-flex; align-items: center;
+  padding: 2px 9px; border-radius: 999px;
+  background: var(--map); color: #17130f; font-weight: 700; font-size: 12px;
+}
+.live-card-mode { opacity: 0.85; }
+.live-card-banner {
+  text-transform: uppercase; letter-spacing: 0.06em; font-size: 12px; font-weight: 800;
+  padding: 2px 9px; border-radius: 999px;
+  background: var(--color-bg); color: var(--color-accent);
+}
+
+/* Site footer. */
+.site-footer-inner {
+  display: flex; align-items: center; justify-content: space-between;
+  gap: 24px; flex-wrap: wrap;
+}
+.site-footer-title { font-size: clamp(24px, 3.2vw, 40px); letter-spacing: -0.02em; margin: 0; }
+.site-footer-sub { margin: 6px 0 0; opacity: 0.85; font-size: 14px; }
+.site-footer-actions { display: grid; gap: 12px; justify-items: start; }
+.site-footer-links { display: flex; gap: 16px; flex-wrap: wrap; font-size: 13px; }
+.site-footer-links a { color: inherit; text-decoration: none; opacity: 0.85; }
+.site-footer-links a:hover { opacity: 1; text-decoration: underline; }
+
+/* Transient confirmations, out of the layout's way. */
+.toast-stack {
+  position: fixed; right: 16px; bottom: 16px; z-index: 200;
+  display: grid; gap: 8px; justify-items: end;
+  pointer-events: none;
+}
+.toast-item {
+  padding: 10px 14px;
+  border-radius: 10px;
+  background: var(--color-bg);
+  border: 1.5px solid var(--color-divider);
+  box-shadow: 0 12px 30px rgb(0 0 0 / 0.25);
+  font-size: 13px; font-weight: 600;
+  animation: toast-in 0.22s cubic-bezier(.16,1,.3,1) both;
+}
+.toast-item.ok { border-color: color-mix(in srgb, var(--color-accent) 55%, transparent); }
+.toast-item.error { border-color: #d8564a; color: #d8564a; }
+@keyframes toast-in { from { opacity: 0; transform: translateY(8px); } to { opacity: 1; transform: none; } }

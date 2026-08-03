@@ -234,6 +234,27 @@ export async function readConfigText(target: ConfigTarget = "plugin"): Promise<s
       } catch (e) {
         failures.push(`${remote} — ${e instanceof Error ? e.message : String(e)}`);
       }
+
+      // Some servers answer an absolute path in RETR with "501 command needs
+      // an argument" and only accept a bare filename after a CWD. Same file,
+      // different dialect, so it is worth a second attempt before giving up.
+      try {
+        const dir = remote.slice(0, remote.lastIndexOf("/")) || "/";
+        const file = remote.slice(remote.lastIndexOf("/") + 1);
+        await client.cd(dir);
+        const chunks2: Buffer[] = [];
+        const sink2 = new Writable({
+          write(chunk, _enc, cb) {
+            chunks2.push(Buffer.from(chunk));
+            cb();
+          },
+        });
+        await client.downloadTo(sink2, file);
+        resolved.set(target, remote);
+        return Buffer.concat(chunks2).toString("utf8");
+      } catch (e) {
+        failures.push(`cd+get — ${e instanceof Error ? e.message : String(e)}`);
+      }
     }
     throw new Error(failures.join("; "));
   });
