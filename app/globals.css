@@ -7538,3 +7538,87 @@ html[data-motion="off"] .main-content { scroll-behavior: auto; }
 /* The featured clip sits alongside the identity block on a public profile. */
 .player-hero-feature { width: min(300px, 100%); flex: 0 0 auto; }
 @media (max-width: 760px) { .player-hero-feature { width: 100%; } }
+
+/* ---------------------------------------------------------------------------
+   Ladder rows on a surface.
+
+   Rows sat directly on the page with only a hairline between them, so with the
+   grid canvas showing through there was nothing separating a row from the
+   background — the eye had to find the row before it could read it. Each row
+   now sits on its own panel, and the hover state lifts rather than merely
+   tinting something that was already indistinct.
+   --------------------------------------------------------------------------- */
+
+.gr-row {
+  background: var(--color-surface);
+  border: 1px solid var(--color-divider);
+  border-radius: 12px;
+  margin-bottom: 6px;
+  /* Keeps the number column from touching the rounded edge. */
+  padding-inline: clamp(8px, 1.2vw, 16px);
+}
+.gr-row:hover {
+  background: color-mix(in srgb, var(--color-accent) 8%, var(--color-surface));
+  border-color: color-mix(in srgb, var(--color-accent) 45%, transparent);
+}
+
+/* The top three read as a podium rather than three more rows. */
+.gr-row:nth-child(1) { border-left: 3px solid #e8b53a; }
+.gr-row:nth-child(2) { border-left: 3px solid #b9c0c7; }
+.gr-row:nth-child(3) { border-left: 3px solid #c98b4b; }
+
+/* ---------------------------------------------------------------------------
+   Avatar scale.
+
+   The identity avatar was set once for the whole site and then placed next to
+   things that grew: a 32px circle beside a 40px button in the header, and a
+   72px one beside a name at clamp(30px, 4vw, 54px). Both read as an
+   afterthought. These are the two places where the avatar *is* the subject.
+   --------------------------------------------------------------------------- */
+
+/* Header: match the control row it sits in. */
+.site-header .avatar,
+header .avatar-sm { width: 34px; height: 34px; }
+
+/* Profile identity: scales with the name beside it. */
+.pro-id > .avatar-xl,
+.player-avatar img,
+.player-avatar {
+  width: clamp(84px, 8vw, 116px);
+  height: clamp(84px, 8vw, 116px);
+}
+
+/* ---------------------------------------------------------------------------
+   Inventory panels on surfaces.
+
+   The board, the browser and the side rail were separated by hairlines alone,
+   which left three regions of the same colour as the page behind them — with
+   the grid canvas showing through, the workspace had no edges. Giving each a
+   surface makes the three areas legible as three areas.
+   --------------------------------------------------------------------------- */
+
+.inv4-board,
+.inv4-browse,
+.inv4-boardside {
+  background: var(--color-surface);
+  border: 1px solid var(--color-divider);
+  border-radius: 12px;
+}
+/* The board already carries a divider against the browser; two lines side by
+   side read as a seam. */
+.inv4-board { border-right: 1px solid var(--color-divider); }
+
+.inv4-board-head,
+.inv4-boardside-head,
+.inv4-chooser-head {
+  background: color-mix(in srgb, var(--color-text) 4%, var(--color-surface));
+  border-bottom: 1px solid var(--color-divider);
+  border-radius: 12px 12px 0 0;
+}
+
+.inv4-bar {
+  background: var(--color-surface);
+  border: 1px solid var(--color-divider);
+  border-radius: 12px;
+  padding: 8px 12px;
+}
