@@ -87,6 +87,8 @@ export default function InventorySimulator() {
 
   const [catalog, setCatalog] = useState<Catalog | null>(null);
   const [category, setCategory] = useState("Rifles");
+  /** Whole-loadout view instead of the store. Closes any open type. */
+  const [previewMode, setPreviewMode] = useState(false);
   const [side, setSide] = useState<Side>("t");
   const [weapon, setWeapon] = useState<WeaponEntry | null>(null); // set = skin chooser open
   const [skins, setSkins] = useState<Skin[]>([]);
@@ -197,6 +199,7 @@ export default function InventorySimulator() {
       if (s === "t" || s === "ct") setSide(s);
       const c = q.get("cat");
       if (c && CATEGORY_ORDER.includes(c)) setCategory(c);
+      setPreviewMode(q.get("view") === "preview");
       const lo = q.get("lo");
       if (lo) setStore((cur) => (cur.loadouts.some((l) => l.id === lo) ? { ...cur, activeLoadoutId: lo } : cur));
 
@@ -231,8 +234,11 @@ export default function InventorySimulator() {
   const bootedUrl = useRef(false);
   useEffect(() => {
     if (!hydrated || bootedUrl.current) return;
-    bootedUrl.current = true;
+    // Side, category and loadout can be restored straight away, but ?w= needs
+    // the catalog to turn a def number back into a weapon. Waiting for it is
+    // what makes a refresh land where you were instead of on the default page.
     applyUrl(catalog);
+    if (catalog) bootedUrl.current = true;
   }, [hydrated, catalog, applyUrl]);
 
   useEffect(() => {
@@ -431,9 +437,35 @@ export default function InventorySimulator() {
     writeUrl({ side: s });
   };
   const chooseCategory = (c: string) => {
+    // Clicking the open type closes it; clicking another swaps to it. Two types
+    // open at once would put two skin lists on the page with no way to tell
+    // which one an equip belonged to.
+    if (c === category && weapon) {
+      setWeapon(null);
+      writeUrl({ w: null });
+      return;
+    }
     setCategory(c);
-    setWeapon(null);
-    writeUrl({ cat: c, w: null });
+    setPreviewMode(false);
+    const first = catalog?.[c]?.[0];
+    if (first) {
+      openWeapon(first, { push: false });
+      writeUrl({ cat: c, view: null });
+    } else {
+      setWeapon(null);
+      writeUrl({ cat: c, w: null, view: null });
+    }
+  };
+
+  const togglePreview = () => {
+    setPreviewMode((on) => {
+      const next = !on;
+      // Preview is the whole loadout at once, so an open type would be a second
+      // answer to the same question.
+      if (next) setWeapon(null);
+      writeUrl({ view: next ? "preview" : null, w: null });
+      return next;
+    });
   };
 
   // Escape backs out of the chooser; T / C flip sides. Skipped while a text
@@ -791,6 +823,15 @@ export default function InventorySimulator() {
             </span>
           </div>
 
+          <button
+            className={`btn ${previewMode ? "btn-primary" : "btn-secondary"}`}
+            onClick={togglePreview}
+            title="See the whole loadout at once, by weapon type"
+            aria-pressed={previewMode}
+          >
+            Preview
+          </button>
+
           <button className="btn btn-secondary" disabled={shareBusy || !activeLoadout} onClick={() => activeLoadout && shareLoadout(activeLoadout)}>
             Share
           </button>
@@ -948,7 +989,45 @@ export default function InventorySimulator() {
             </div>
           </div>
 
-          {!weapon ? (
+          {previewMode ? (
+            !catalog ? (
+              <p className="empty-hint">Loading…</p>
+            ) : (
+              // Every weapon of every type, skinned or not, grouped under a
+              // small heading. This is the "what does my loadout actually look
+              // like" view — the store answers a different question and shows
+              // one type at a time.
+              <div className="inv4-preview">
+                {CATEGORY_ORDER.filter((c) => catalog[c]?.length).map((c) => (
+                  <section key={c} className="inv4-preview-group">
+                    <h3 className="inv4-preview-title">{c}</h3>
+                    <div className="inv4-preview-row">
+                      {catalog[c].map((w) => {
+                        const item = slotItemFor(w.def, kindOfCategory(w.category), side);
+                        return (
+                          <button
+                            key={w.def}
+                            className={`inv4-preview-cell ${item ? "has-skin" : ""}`}
+                            style={item?.rarity ? ({ "--rarity": item.rarity } as React.CSSProperties) : undefined}
+                            onClick={() => {
+                              setPreviewMode(false);
+                              openWeapon(w);
+                            }}
+                            title={item ? item.skinName : `${w.name} — no skin`}
+                          >
+                            {/* eslint-disable-next-line @next/next/no-img-element */}
+                            <img src={item?.image ?? w.image} alt={w.name} loading="lazy" />
+                            <span className="inv4-preview-name">{w.name}</span>
+                            <span className="inv4-preview-skin">{item ? skinLabel(item.skinName) : "—"}</span>
+                          </button>
+                        );
+                      })}
+                    </div>
+                  </section>
+                ))}
+              </div>
+            )
+          ) : !weapon ? (
             !catalog ? (
               <p className="empty-hint">Loading…</p>
             ) : (
@@ -1092,6 +1171,7 @@ export default function InventorySimulator() {
                           <img src={s.image} alt={s.name} loading="lazy" />
                           <span className="inv4-skin-name">{skinLabel(s.name)}</span>
                           <span className="inv4-skin-rarity">{rarityName(s.rarity)}</span>
+                          <span className="inv4-skin-equip">Equip</span>
                         </button>
                         <button
                           className={`inv4-heart ${fav ? "on" : ""}`}
