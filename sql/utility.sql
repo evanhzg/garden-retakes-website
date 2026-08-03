@@ -1,0 +1,31 @@
+-- Saved grenade lineups, written by the game server and read by the utility page.
+-- Additive: no existing table is touched.
+CREATE TABLE IF NOT EXISTS `GardenNades` (
+  `Id`             INT NOT NULL AUTO_INCREMENT,
+  `Map`            VARCHAR(64)  NOT NULL,
+  `Name`           VARCHAR(120) NOT NULL,
+  `Area`           VARCHAR(64)  NOT NULL DEFAULT '',
+  `Utility`        VARCHAR(16)  NOT NULL DEFAULT 'smoke',
+  `Purpose`        VARCHAR(16)  NOT NULL DEFAULT 'default',
+  `Team`           VARCHAR(2)   NOT NULL DEFAULT '',
+  `ThrowType`      VARCHAR(16)  NOT NULL DEFAULT 'standing',
+  `ClickType`      VARCHAR(8)   NOT NULL DEFAULT 'left',
+  `StandX`         DOUBLE NOT NULL,
+  `StandY`         DOUBLE NOT NULL,
+  `StandZ`         DOUBLE NOT NULL,
+  `Pitch`          DOUBLE NOT NULL,
+  `Yaw`            DOUBLE NOT NULL,
+  `LandX`          DOUBLE NULL,
+  `LandY`          DOUBLE NULL,
+  `LandZ`          DOUBLE NULL,
+  `Notes`          VARCHAR(500) NULL,
+  `ClipUrl`        VARCHAR(500) NULL,
+  `Thumb`          VARCHAR(500) NULL,
+  `Verified`       TINYINT(1) NOT NULL DEFAULT 1,
+  `Source`         VARCHAR(16) NOT NULL DEFAULT 'ingame',
+  `AddedBySteamId` BIGINT UNSIGNED NULL,
+  `CreatedAt`      DATETIME(6) NOT NULL DEFAULT CURRENT_TIMESTAMP(6),
+  PRIMARY KEY (`Id`),
+  KEY `IX_GardenNades_Map` (`Map`),
+  KEY `IX_GardenNades_Map_Area` (`Map`,`Area`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;

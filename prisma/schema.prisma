@@ -27,11 +27,11 @@ model Season {
 }
 
 model PlayerProfile {
-  SteamId        BigInt   @id
-  LastKnownName  String
-  FirstSeenAtUtc DateTime @db.DateTime(6)
-  LastSeenAtUtc  DateTime @db.DateTime(6)
-  TimeSpentSeconds Int    @default(0)
+  SteamId          BigInt   @id
+  LastKnownName    String
+  FirstSeenAtUtc   DateTime @db.DateTime(6)
+  LastSeenAtUtc    DateTime @db.DateTime(6)
+  TimeSpentSeconds Int      @default(0)
 
   @@map("PlayerProfiles")
 }
@@ -191,12 +191,12 @@ model GardenDiscordLink {
 }
 
 model GardenGoogleLink {
-  SteamId       BigInt   @id
-  GoogleId      String   @db.VarChar(128)
-  GoogleEmail   String?  @db.VarChar(255)
-  GoogleName    String   @db.VarChar(64)
-  GoogleAvatar  String?  @db.VarChar(255)
-  LinkedAtUtc   DateTime @default(now()) @db.DateTime(6)
+  SteamId      BigInt   @id
+  GoogleId     String   @db.VarChar(128)
+  GoogleEmail  String?  @db.VarChar(255)
+  GoogleName   String   @db.VarChar(64)
+  GoogleAvatar String?  @db.VarChar(255)
+  LinkedAtUtc  DateTime @default(now()) @db.DateTime(6)
 
   @@map("GardenGoogleLinks")
 }
@@ -328,6 +328,7 @@ model UserSettings {
 
   @@map("UserSettings")
 }
+
 // ---------------- Web Games / Social Features ----------------
 
 model WebFriendship {
@@ -349,19 +350,19 @@ model WebGameLobby {
   Status       String   @default("WAITING") // WAITING, PLAYING, FINISHED
   MaxPlayers   Int      @default(4)
   CreatedAtUtc DateTime @default(now()) @db.DateTime(6)
-  
-  Players      WebLobbyPlayer[]
+
+  Players WebLobbyPlayer[]
 
   @@map("WebGameLobbies")
 }
 
 model WebLobbyPlayer {
-  Id           Int      @id @default(autoincrement())
-  LobbyId      String
-  SteamId      BigInt   @db.UnsignedBigInt
-  JoinedAtUtc  DateTime @default(now()) @db.DateTime(6)
+  Id          Int      @id @default(autoincrement())
+  LobbyId     String
+  SteamId     BigInt   @db.UnsignedBigInt
+  JoinedAtUtc DateTime @default(now()) @db.DateTime(6)
 
-  Lobby        WebGameLobby @relation(fields: [LobbyId], references: [Id], onDelete: Cascade)
+  Lobby WebGameLobby @relation(fields: [LobbyId], references: [Id], onDelete: Cascade)
 
   @@unique([LobbyId, SteamId])
   @@map("WebLobbyPlayers")
@@ -371,7 +372,7 @@ model WebMessage {
   Id               Int      @id @default(autoincrement())
   SenderSteamId    BigInt   @db.UnsignedBigInt
   RecipientSteamId BigInt?  @db.UnsignedBigInt // null if lobby message
-  LobbyId          String?  // null if direct message
+  LobbyId          String? // null if direct message
   Content          String   @db.Text
   CreatedAtUtc     DateTime @default(now()) @db.DateTime(6)
 
@@ -383,7 +384,7 @@ model WebMessage {
 model WebNotification {
   Id           Int      @id @default(autoincrement())
   SteamId      BigInt   @db.UnsignedBigInt
-  Type         String   // FRIEND_REQUEST, GAME_INVITE, SYSTEM
+  Type         String // FRIEND_REQUEST, GAME_INVITE, SYSTEM
   Content      String   @db.VarChar(256)
   IsRead       Boolean  @default(false)
   ActionUrl    String?  @db.VarChar(256)
@@ -392,6 +393,7 @@ model WebNotification {
   @@index([SteamId])
   @@map("WebNotifications")
 }
+
 model NemesisRecord {
   KillerSteamId BigInt @db.UnsignedBigInt
   VictimSteamId BigInt @db.UnsignedBigInt
@@ -404,18 +406,18 @@ model NemesisRecord {
 // ---------------- Garden PKMN ----------------
 
 model PkmnTrainer {
-  SteamId       BigInt    @id
-  Money         Int       @default(0)
-  CurrentMap    String    @default("pallet_town")
-  PosX          Int       @default(400)
-  PosY          Int       @default(300)
-  Facing        String    @default("down")
-  Inventory     String    @db.LongText // JSON
-  Badges        String    @db.LongText // JSON
+  SteamId    BigInt @id
+  Money      Int    @default(0)
+  CurrentMap String @default("pallet_town")
+  PosX       Int    @default(400)
+  PosY       Int    @default(300)
+  Facing     String @default("down")
+  Inventory  String @db.LongText // JSON
+  Badges     String @db.LongText // JSON
 
-  Party         PkmnMon[] @relation("TrainerParty")
-  Boxes         PkmnBox[]
-  ApiTokens     PkmnApiToken[]
+  Party     PkmnMon[]      @relation("TrainerParty")
+  Boxes     PkmnBox[]
+  ApiTokens PkmnApiToken[]
 
   @@map("PkmnTrainers")
 }
@@ -433,7 +435,7 @@ model PkmnApiToken {
   ExpiresAtUtc  DateTime
   RevokedAtUtc  DateTime?
 
-  Trainer       PkmnTrainer @relation(fields: [SteamId], references: [SteamId], onDelete: Cascade)
+  Trainer PkmnTrainer @relation(fields: [SteamId], references: [SteamId], onDelete: Cascade)
 
   @@index([SteamId])
   @@map("PkmnApiTokens")
@@ -456,36 +458,36 @@ model PkmnLinkCode {
 }
 
 model PkmnMon {
-  Id            String    @id @default(cuid())
-  OwnerId       BigInt    
-  Species       String
-  Nickname      String?
-  Level         Int
-  Exp           Int
-  Hp            Int
-  Status        String?
-  
-  Ability       String
-  Nature        String
-  
-  Moves         String    @db.LongText // JSON
-  Ivs           String    @db.LongText // JSON
-  Evs           String    @db.LongText // JSON
-  
-  Trainer       PkmnTrainer @relation("TrainerParty", fields: [OwnerId], references: [SteamId], onDelete: Cascade)
-  Box           PkmnBox?    @relation(fields: [BoxId], references: [Id], onDelete: SetNull)
-  BoxId         String?
+  Id       String  @id @default(cuid())
+  OwnerId  BigInt
+  Species  String
+  Nickname String?
+  Level    Int
+  Exp      Int
+  Hp       Int
+  Status   String?
+
+  Ability String
+  Nature  String
+
+  Moves String @db.LongText // JSON
+  Ivs   String @db.LongText // JSON
+  Evs   String @db.LongText // JSON
+
+  Trainer PkmnTrainer @relation("TrainerParty", fields: [OwnerId], references: [SteamId], onDelete: Cascade)
+  Box     PkmnBox?    @relation(fields: [BoxId], references: [Id], onDelete: SetNull)
+  BoxId   String?
 
   @@map("PkmnMons")
 }
 
 model PkmnBox {
-  Id            String    @id @default(cuid())
-  OwnerId       BigInt    
-  Name          String    @default("Box 1")
-  
-  Pokemon       PkmnMon[]
-  Trainer       PkmnTrainer @relation(fields: [OwnerId], references: [SteamId], onDelete: Cascade)
+  Id      String @id @default(cuid())
+  OwnerId BigInt
+  Name    String @default("Box 1")
+
+  Pokemon PkmnMon[]
+  Trainer PkmnTrainer @relation(fields: [OwnerId], references: [SteamId], onDelete: Cascade)
 
   @@map("PkmnBoxes")
 }
@@ -493,25 +495,25 @@ model PkmnBox {
 // ---------------- Web Games Stats ----------------
 
 model WebGameMatch {
-  Id           String   @id @default(uuid())
-  GameId       String   // e.g. "headshot", "ouno", "skribbl", "meme", "codenames"
-  PlayedAtUtc  DateTime @default(now()) @db.DateTime(6)
-  Players      String   @db.LongText // JSON array of SteamIds
-  WinnerId     BigInt?  @db.UnsignedBigInt
-  Scores       String   @db.LongText // JSON mapping SteamId -> score
-  DurationSec  Int      @default(0)
-  
+  Id          String   @id @default(uuid())
+  GameId      String // e.g. "headshot", "ouno", "skribbl", "meme", "codenames"
+  PlayedAtUtc DateTime @default(now()) @db.DateTime(6)
+  Players     String   @db.LongText // JSON array of SteamIds
+  WinnerId    BigInt?  @db.UnsignedBigInt
+  Scores      String   @db.LongText // JSON mapping SteamId -> score
+  DurationSec Int      @default(0)
+
   @@index([GameId])
   @@map("WebGameMatches")
 }
 
 model WebGameStats {
-  SteamId      BigInt   @db.UnsignedBigInt
-  GameId       String
-  MatchesPlayed Int     @default(0)
-  MatchesWon    Int     @default(0)
-  TotalScore    Int     @default(0)
-  Elo           Int     @default(1000)
+  SteamId       BigInt   @db.UnsignedBigInt
+  GameId        String
+  MatchesPlayed Int      @default(0)
+  MatchesWon    Int      @default(0)
+  TotalScore    Int      @default(0)
+  Elo           Int      @default(1000)
   UpdatedAtUtc  DateTime @default(now()) @db.DateTime(6)
 
   @@id([SteamId, GameId])
@@ -550,7 +552,7 @@ model FeedClip {
   /// JSON array of {name,height,url} for R2-hosted clips, newest quality first.
   Variants    String?  @db.Text
   /// Stable id from the highlight pipeline, so a re-publish updates in place.
-  ExternalId  String?  @db.VarChar(190) @unique
+  ExternalId  String?  @unique @db.VarChar(190)
   /// In-game name from the demo, for players who have no profile on the site.
   /// Shown instead of a bare SteamID64, but never linked.
   PlayerName  String?  @db.VarChar(64)
@@ -595,24 +597,78 @@ model FeedClipComment {
 /// with a presigned URL. The row tracks what was asked for and how far it got,
 /// and the object is deleted once clips exist so demos do not accumulate.
 model FeedDemo {
-  Id           Int      @id @default(autoincrement())
-  SteamId      BigInt   @db.UnsignedBigInt
-  FileName     String   @db.VarChar(255)
+  Id           Int       @id @default(autoincrement())
+  SteamId      BigInt    @db.UnsignedBigInt
+  FileName     String    @db.VarChar(255)
   /// Object key in the bucket; null once the demo has been wiped.
-  ObjectKey    String?  @db.VarChar(320)
-  Bytes        BigInt?  @db.UnsignedBigInt
+  ObjectKey    String?   @db.VarChar(320)
+  Bytes        BigInt?   @db.UnsignedBigInt
   /// Comma-separated round numbers to cut, or null for every highlight found.
-  Rounds       String?  @db.VarChar(120)
+  Rounds       String?   @db.VarChar(120)
   /// Whose plays to cut. Defaults to the uploader.
-  FocusSteamId BigInt?  @db.UnsignedBigInt
+  FocusSteamId BigInt?   @db.UnsignedBigInt
   /// uploading -> pending -> processing -> done | failed
-  Status       String   @default("uploading") @db.VarChar(16)
-  Note         String?  @db.VarChar(500)
-  ClipCount    Int      @default(0)
-  CreatedAt    DateTime @default(now()) @db.DateTime(6)
+  Status       String    @default("uploading") @db.VarChar(16)
+  Note         String?   @db.VarChar(500)
+  ClipCount    Int       @default(0)
+  CreatedAt    DateTime  @default(now()) @db.DateTime(6)
   ProcessedAt  DateTime? @db.DateTime(6)
 
   @@index([SteamId])
   @@index([Status])
   @@map("FeedDemos")
+}
+
+/// A saved grenade lineup, shared between the game server and the utility page.
+///
+/// The plugin writes these when someone records a lineup in practice mode, and
+/// the website reads them — the same route the heatmaps already take, rather
+/// than shipping JSON files off the game server over FTP.
+model GardenNade {
+  Id      Int    @id @default(autoincrement())
+  Map     String @db.VarChar(64)
+  Name    String @db.VarChar(120)
+  /// Callout the throw is *from*, so several Long lineups stay distinguishable.
+  Area    String @default("") @db.VarChar(64)
+  /// smoke | flash | molotov | he | decoy
+  Utility String @default("smoke") @db.VarChar(16)
+  /// default | execute | retake | postplant | trick
+  Purpose String @default("default") @db.VarChar(16)
+  /// T | CT | "" when it works for either side.
+  Team    String @default("") @db.VarChar(2)
+
+  /// standing | jump | step-jump | run | crouch
+  ThrowType String @default("standing") @db.VarChar(16)
+  /// left | right | both — left is a normal throw, right is the short lob.
+  ClickType String @default("left") @db.VarChar(8)
+
+  /// Where you stand, and where you look.
+  StandX Float
+  StandY Float
+  StandZ Float
+  Pitch  Float
+  Yaw    Float
+
+  /// Where it lands. Null when the lineup was recorded without one.
+  LandX Float?
+  LandY Float?
+  LandZ Float?
+
+  Notes   String? @db.VarChar(500)
+  /// Filled in later by the clip pipeline.
+  ClipUrl String? @db.VarChar(500)
+  Thumb   String? @db.VarChar(500)
+
+  /// False when the stand position does not sit on playable geometry — imported
+  /// lineups are checked against the radar, recorded ones are true by definition.
+  Verified Boolean @default(true)
+  /// ingame | import
+  Source   String  @default("ingame") @db.VarChar(16)
+
+  AddedBySteamId BigInt?  @db.UnsignedBigInt
+  CreatedAt      DateTime @default(now()) @db.DateTime(6)
+
+  @@index([Map])
+  @@index([Map, Area])
+  @@map("GardenNades")
 }
