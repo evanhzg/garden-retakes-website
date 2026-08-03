@@ -81,12 +81,15 @@ export async function POST(req: Request) {
     );
   }
 
-  // Whose plays to cut: an explicit SteamID64, else the uploader's own. The
-  // pipeline falls back again if that player does not appear in the demo.
+  // Whose plays to cut. Naming a player is a restriction the pipeline honours
+  // strictly — nobody else's highlights get cut, and an absent player yields
+  // nothing. Leaving it blank is a preference instead: the uploader's own plays
+  // if they are in the demo, otherwise everyone's. So the two cases have to stay
+  // distinguishable, which is why this is null rather than defaulted here.
   const focus =
     typeof body.focusSteamId === "string" && /^\d{17}$/.test(body.focusSteamId.trim())
       ? BigInt(body.focusSteamId.trim())
-      : BigInt(session.steamId);
+      : null;
 
   const row = await prisma.feedDemo.create({
     data: {

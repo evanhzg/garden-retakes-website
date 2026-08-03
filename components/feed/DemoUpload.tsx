@@ -158,7 +158,7 @@ export default function DemoUpload({ onPosted }: { onPosted?: () => void }) {
               placeholder="e.g. 5, 12, 19"
               onChange={(e) => setRounds(e.target.value)}
             />
-            <p className="pro-settings-hint">Leave blank to take every ace, 4K and 3K in the match.</p>
+            <p className="pro-settings-hint">Only these rounds get cut. Leave blank for the whole match.</p>
           </div>
 
           <div className="field">
@@ -170,7 +170,7 @@ export default function DemoUpload({ onPosted }: { onPosted?: () => void }) {
               placeholder="SteamID64"
               onChange={(e) => setFocus(e.target.value)}
             />
-            <p className="pro-settings-hint">Defaults to you. Only used if that player is in the demo.</p>
+            <p className="pro-settings-hint">Only their plays get cut. Leave blank for yours, or everyone&rsquo;s if you are not in the demo.</p>
           </div>
         </div>
 
