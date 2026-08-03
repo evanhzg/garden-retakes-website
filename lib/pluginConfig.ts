@@ -171,6 +171,11 @@ async function withClient<T>(fn: (client: Client) => Promise<T>): Promise<T> {
   const cfg = ftpConfig();
   if (!cfg.host) throw new Error("No game server configured (GAMESERVER_FTP_HOST).");
   const client = new Client(30000);
+  // Force IPv4 for the data channel. On a dual-stack host the client offers
+  // EPSV and some servers answer it in a way basic-ftp then turns into a bare
+  // command — which surfaces as "Command needs an argument" against a path
+  // that is perfectly valid. Reads of all three configs succeed over IPv4.
+  client.ftp.ipFamily = 4;
   try {
     await client.access(cfg);
     return await fn(client);
@@ -179,9 +184,20 @@ async function withClient<T>(fn: (client: Client) => Promise<T>): Promise<T> {
   }
 }
 
+/** A path we were never given is a configuration problem, not an FTP one. */
+function remotePath(target: ConfigTarget): string {
+  const remote = CONFIG_TARGETS[target]?.path?.trim();
+  if (!remote) {
+    throw new Error(
+      `No path configured for the ${target} config. Set GAMESERVER_${target.toUpperCase()}_CONFIG.`
+    );
+  }
+  return remote;
+}
+
 /** Read the live config file as text. */
 export async function readConfigText(target: ConfigTarget = "plugin"): Promise<string> {
-  const remote = CONFIG_TARGETS[target].path;
+  const remote = remotePath(target);
   return withClient(async (client) => {
     const chunks: Buffer[] = [];
     const sink = new Writable({
@@ -196,7 +212,7 @@ export async function readConfigText(target: ConfigTarget = "plugin"): Promise<s
 }
 
 export async function writeConfigText(text: string, target: ConfigTarget = "plugin"): Promise<void> {
-  const remote = CONFIG_TARGETS[target].path;
+  const remote = remotePath(target);
   await withClient(async (client) => {
     await client.uploadFrom(Readable.from([text]), remote);
   });

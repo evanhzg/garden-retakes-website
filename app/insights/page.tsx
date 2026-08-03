@@ -450,7 +450,7 @@ export default async function InsightsPage({
 
 function Section({ title, children }: { title: string; children: React.ReactNode }) {
   return (
-    <section style={{ marginTop: 40 }}>
+    <section className="ins-section">
       <div style={{ display: "flex", alignItems: "center", gap: 14, marginBottom: 18 }}>
         <h2 style={{ fontSize: 13, letterSpacing: "0.1em", textTransform: "uppercase", margin: 0 }}>{title}</h2>
         <span className="rule-draw" style={{ flex: 1, height: 2, background: "var(--color-divider)" }} />

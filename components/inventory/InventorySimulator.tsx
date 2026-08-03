@@ -89,6 +89,8 @@ export default function InventorySimulator() {
   const [category, setCategory] = useState("Rifles");
   /** Whole-loadout view instead of the store. Closes any open type. */
   const [previewMode, setPreviewMode] = useState(false);
+  /** Which weapon type the loadout rail has open. Null = all collapsed. */
+  const [openBoardType, setOpenBoardType] = useState<string | null>(null);
   const [side, setSide] = useState<Side>("t");
   const [weapon, setWeapon] = useState<WeaponEntry | null>(null); // set = skin chooser open
   const [skins, setSkins] = useState<Skin[]>([]);
@@ -431,6 +433,28 @@ export default function InventorySimulator() {
     const entry = Object.values(catalog ?? {}).flat().find((w) => w.def === slot.def);
     if (entry) openWeapon(entry);
   };
+
+  /**
+   * The rail's slots, grouped by weapon type, for the side currently selected.
+   * Knives and gloves are their own groups since they are not in any category.
+   */
+  const boardGroups = useMemo(() => {
+    const slots = side === "t" ? boardT : boardCT;
+    const categoryOf = (def: number) => {
+      if (!catalog) return "Other";
+      for (const [c, list] of Object.entries(catalog)) {
+        if (list.some((w) => w.def === def)) return c;
+      }
+      return "Other";
+    };
+    const groups = new Map<string, typeof slots>();
+    for (const slot of slots) {
+      const g = slot.kind === "knife" ? "Knives" : slot.kind === "gloves" ? "Gloves" : categoryOf(slot.def);
+      if (!groups.has(g)) groups.set(g, []);
+      groups.get(g)!.push(slot);
+    }
+    return Array.from(groups.entries());
+  }, [side, boardT, boardCT, catalog]);
 
   const chooseSide = (s: Side) => {
     setSide(s);
@@ -903,21 +927,36 @@ export default function InventorySimulator() {
 
           {/* Only this inner wrapper scrolls, so the loadout name, colours and
               rarity chips above stay put while the slot list moves. */}
+          {/* One row of types for the side you are on. Both sides at once was
+              two lists of the same eight slots, and the only place the
+              difference actually matters is Preview. Types stay closed until
+              you open one, so the rail is a rail and not a second store. */}
           <div className="inv4-board-scroll">
-          {SIDES.map((s) => (
-            <section key={s} className={`inv4-boardside ${side === s ? "focused" : ""}`}>
-              <h2 className="inv4-boardside-head">
-                <span className={`side-tag ${s === "t" ? "side-t" : "side-ct"}`}>{s.toUpperCase()}</span>
-                <span className="inv4-boardside-count">
-                  {(s === "t" ? boardT : boardCT).filter((x) => x.item).length} equipped
-                </span>
-              </h2>
+            <div className="inv4-types">
+              {boardGroups.map(([group, slots]) => {
+                const filled = slots.filter((x) => x.item).length;
+                const open = openBoardType === group;
+                return (
+                  <button
+                    key={group}
+                    className={`inv4-type ${open ? "open" : ""}`}
+                    onClick={() => setOpenBoardType(open ? null : group)}
+                    aria-expanded={open}
+                  >
+                    <span className="inv4-type-name">{group}</span>
+                    <span className="inv4-type-count num">{filled}/{slots.length}</span>
+                  </button>
+                );
+              })}
+            </div>
+
+            {openBoardType && (
               <ul className="inv4-slots">
-                {(s === "t" ? boardT : boardCT).map((slot) => (
+                {(boardGroups.find(([g]) => g === openBoardType)?.[1] ?? []).map((slot) => (
                   <li key={slot.key}>
                     <button
                       className={`inv4-slot ${slot.item ? "filled" : "empty"}`}
-                      onClick={() => openBoardSlot(slot, s)}
+                      onClick={() => openBoardSlot(slot, side)}
                       style={slot.item?.rarity ? ({ "--rarity": slot.item.rarity } as React.CSSProperties) : undefined}
                     >
                       <span className="inv4-slot-art">
@@ -931,42 +970,14 @@ export default function InventorySimulator() {
                       <span className="inv4-slot-text">
                         <span className="inv4-slot-weapon">{slot.label}</span>
                         <span className="inv4-slot-skin">
-                          {slot.item ? skinLabel(slot.item.skinName) : "Default — pick a skin"}
+                          {slot.item ? skinLabel(slot.item.skinName) : "Default"}
                         </span>
-                        {slot.item && (
-                          <span className="inv4-slot-meta">
-                            <span className="num">{wearShort(slot.item.wear)}</span>
-                            {slot.item.statTrak && <span className="inv4-tag-st">ST™</span>}
-                            {slot.item.stickers?.filter(Boolean).length > 0 && (
-                              <span>{slot.item.stickers.filter(Boolean).length} stickers</span>
-                            )}
-                            {slot.item.nameTag && <span>“{slot.item.nameTag}”</span>}
-                          </span>
-                        )}
                       </span>
                     </button>
                   </li>
                 ))}
               </ul>
-              {s === "ct" && (
-                <div className="inv4-m4">
-                  <span className="inv4-m4-label">CT rifle</span>
-                  {[
-                    { def: M4A4, label: "M4A4" },
-                    { def: M4A1S, label: "M4A1-S" },
-                  ].map((o) => (
-                    <button
-                      key={o.def}
-                      className={`chip ${(activeLoadout?.preferredM4 ?? M4A4) === o.def ? "active" : ""}`}
-                      onClick={() => setPreferredM4(o.def)}
-                    >
-                      {o.label}
-                    </button>
-                  ))}
-                </div>
-              )}
-            </section>
-          ))}
+            )}
           </div>
         </aside>
 
