@@ -53,3 +53,17 @@ export function youtubeId(input: string): string | null {
 
 export const youtubeThumb = (id: string) => `https://i.ytimg.com/vi/${id}/hqdefault.jpg`;
 export const youtubeEmbed = (id: string) => `https://www.youtube-nocookie.com/embed/${id}`;
+
+/**
+ * Demo files the pipeline can take.
+ *
+ * Compressed is not just tolerated but preferred: FACEIT hands out .dem.gz and
+ * a match packs to roughly 70% of its raw size, which is upload time for the
+ * player and storage in the bucket. The pipeline unpacks whatever it gets, so
+ * this only has to agree with what it knows how to read.
+ */
+export const DEMO_EXTENSIONS = [".dem", ".dem.gz", ".dem.bz2", ".dem.zst", ".dem.xz", ".zip", ".7z"];
+
+export const DEMO_FILE_RE = /\.dem$|\.dem\.(gz|bz2|zst|zstd|xz)$|\.(zip|7z)$/i;
+
+export const isDemoFile = (name: string) => DEMO_FILE_RE.test(name.trim());

@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useRef, useState } from "react";
+import { DEMO_EXTENSIONS, isDemoFile } from "@/lib/feedShared";
 
 // Upload a demo for the highlight pipeline to cut.
 //
@@ -62,7 +63,7 @@ export default function DemoUpload({ onPosted }: { onPosted?: () => void }) {
 
   const choose = (f: File | null) => {
     if (!f) return;
-    if (!/\.dem$/i.test(f.name)) return setError("That is not a .dem file.");
+    if (!isDemoFile(f.name)) return setError(`Not a demo file. Accepted: ${DEMO_EXTENSIONS.join(", ")}.`);
     if (f.size > MAX_MB * 1024 * 1024) {
       return setError(`${(f.size / 1024 / 1024).toFixed(0)} MB is over the ${MAX_MB} MB limit.`);
     }
@@ -136,15 +137,17 @@ export default function DemoUpload({ onPosted }: { onPosted?: () => void }) {
             ref={inputRef}
             className="sr-only"
             type="file"
-            accept=".dem"
+            accept={DEMO_EXTENSIONS.join(",")}
             onChange={(e) => {
               choose(e.target.files?.[0] ?? null);
               e.target.value = "";
             }}
           />
-          <span className="skin-drop-title">{file ? file.name : "Drop a .dem here, or choose a file"}</span>
+          <span className="skin-drop-title">{file ? file.name : "Drop a demo here, or choose a file"}</span>
           <span className="skin-drop-hint">
-            {file ? `${mb(file.size)} - ready` : `A match demo, up to ${MAX_MB} MB`}
+            {file
+              ? `${mb(file.size)} - ready`
+              : `.dem, or zipped / .gz / .bz2 / .zst - up to ${MAX_MB} MB. Compressed uploads faster.`}
           </span>
         </label>
 

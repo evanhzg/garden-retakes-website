@@ -2,6 +2,7 @@ import { NextResponse } from "next/server";
 import { prisma } from "@/lib/db";
 import { getSession } from "@/lib/auth";
 import { demoKey, presign, r2Configured } from "@/lib/r2";
+import { DEMO_EXTENSIONS, isDemoFile } from "@/lib/feedShared";
 
 export const dynamic = "force-dynamic";
 export const runtime = "nodejs";
@@ -67,8 +68,11 @@ export async function POST(req: Request) {
   }
 
   const fileName = String(body.fileName ?? "").trim();
-  if (!/\.dem$/i.test(fileName)) {
-    return NextResponse.json({ error: "That is not a .dem file." }, { status: 400 });
+  if (!isDemoFile(fileName)) {
+    return NextResponse.json(
+      { error: `Not a demo file. Accepted: ${DEMO_EXTENSIONS.join(", ")}.` },
+      { status: 400 }
+    );
   }
   const bytes = Number(body.bytes ?? 0);
   if (!Number.isFinite(bytes) || bytes <= 0) {

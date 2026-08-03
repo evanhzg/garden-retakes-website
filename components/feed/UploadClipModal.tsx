@@ -192,9 +192,11 @@ export default function UploadClipModal({
                 </li>
                 <li>
                   <strong>Automatic, from a demo.</strong> Run the <code>garden-highlights</code> pipeline
-                  on your machine: drop <code>.dem</code> files into <code>demos/in</code>, run one
-                  script, and every ace / 4K / 3K in them is detected, recorded with HLAE, encoded to
-                  three qualities and posted here with a title. Ask an admin for the zip.
+                  on your machine: drop demos into <code>demos/in</code>, run one script, and every
+                  ace / 4K / 3K in them is detected, recorded with HLAE, encoded to three qualities
+                  and posted here with a title. They can stay compressed &mdash; <code>.dem.gz</code>
+                  straight from FACEIT, <code>.bz2</code>, <code>.zst</code> or a plain zip are all
+                  unpacked for you. Ask an admin for the zip.
                 </li>
               </ol>
               <p className="clip-help-note">
