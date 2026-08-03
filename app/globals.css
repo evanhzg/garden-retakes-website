@@ -7352,7 +7352,7 @@ html[data-motion="off"] .main-content { scroll-behavior: auto; }
 .util-side {
   border: 1.5px solid var(--line, var(--border));
   border-radius: 14px;
-  background: var(--panel);
+  background: var(--color-bg);
   padding: 14px;
   max-height: calc(100vh - 180px);
   overflow-y: auto;
@@ -7506,7 +7506,7 @@ html[data-motion="off"] .main-content { scroll-behavior: auto; }
   border: 1.5px solid var(--line, var(--border));
   border-radius: 14px;
   overflow: hidden;
-  background: var(--panel);
+  background: var(--color-bg);
   cursor: pointer;
   text-align: left;
   font: inherit;
@@ -7607,7 +7607,7 @@ header .avatar-sm { width: 34px; height: 34px; }
 .inv4-board,
 .inv4-browse,
 .inv4-boardside {
-  background: var(--color-surface);
+  background: var(--color-bg);
   border: 1px solid var(--color-divider);
   border-radius: 12px;
 }
@@ -7624,7 +7624,7 @@ header .avatar-sm { width: 34px; height: 34px; }
 }
 
 .inv4-bar {
-  background: var(--color-surface);
+  background: var(--color-bg);
   border: 1px solid var(--color-divider);
   border-radius: 12px;
   padding: 8px 12px;
@@ -7761,7 +7761,7 @@ header .avatar-sm { width: 34px; height: 34px; }
 
 .vote-panel {
   width: min(340px, 100%);
-  background: var(--color-surface);
+  background: var(--color-bg);
   border: 1.5px solid var(--color-divider);
   border-radius: 14px;
   padding: 14px;
@@ -7888,7 +7888,7 @@ header .avatar-sm { width: 34px; height: 34px; }
   display: grid;
   gap: 14px;
   padding: 12px;
-  background: var(--color-surface);
+  background: var(--color-bg);
   border: 1px solid var(--color-divider);
   border-radius: 12px;
   position: sticky;
@@ -7969,20 +7969,20 @@ header .avatar-sm { width: 34px; height: 34px; }
 .ins-section {
   margin-top: 28px;
   padding: 20px clamp(14px, 2vw, 24px);
-  background: var(--color-surface);
+  background: var(--color-bg);
   border: 1px solid var(--color-divider);
 }
 
 /* Homepage: hero, marquee, standout and the ladder all get the same ground. */
 .home-hero-row > section,
 .home-surface {
-  background: var(--color-surface);
+  background: var(--color-bg);
   border: 1px solid var(--color-divider);
 }
 #ladder {
-  background: var(--color-surface);
+  background: var(--color-bg);
   border: 1px solid var(--color-divider);
-  padding-top: clamp(24px, 3vw, 40px);
+  padding: clamp(20px, 3vw, 40px) clamp(16px, 2.4vw, 32px);
 }
 
 /* The accent band at the bottom is the footer, so nothing may sit under it. */
@@ -7996,7 +7996,7 @@ header .avatar-sm { width: 34px; height: 34px; }
 
 /* Admin content pane: a surface, and never shorter than the nav beside it. */
 .adm-panel {
-  background: var(--color-surface);
+  background: var(--color-bg);
   border: 1px solid var(--color-divider);
   border-radius: 12px;
   padding: 16px;
@@ -8048,36 +8048,13 @@ header .avatar-sm { width: 34px; height: 34px; }
 .inv4-weapons, .inv4-preview, .inv4-chooser { min-height: 0; }
 .inv4-chooser { display: flex; flex-direction: column; overflow: hidden; }
 
-/* ---------------------------------------------------------------------------
-   Surfaces use the page ground, not the raised one.
 
-   --color-surface sits one step off the background, which read as a card
-   stacked on a card once whole sections were given it. --color-bg with a
-   hairline gives the content a floor without implying another layer.
-   --------------------------------------------------------------------------- */
-
-.ins-section,
-#ladder,
-.home-hero-row > section,
-.home-surface,
-.adm-panel,
-.adm-nav,
-.vote-panel,
-.util-side,
-.inv4-board,
-.inv4-browse,
-.inv4-boardside,
-.inv4-bar,
-.gr-row {
-  background: var(--color-bg);
-}
 
 /* Content was reaching the border on anything that had never had a border
    before — the hero, the store, the marquee. */
 .home-hero-row > section,
 .home-surface { padding: clamp(18px, 2.4vw, 32px); }
 
-#ladder { padding: clamp(20px, 3vw, 40px) clamp(16px, 2.4vw, 32px); }
 
 .inv4-browse { padding: clamp(12px, 1.6vw, 18px); }
 .inv4-boardside { padding: 10px; }
