@@ -7083,3 +7083,183 @@ html[data-motion="off"] .main-content { scroll-behavior: auto; }
 @media (max-width: 560px) {
   .feed-search .input { max-width: none; }
 }
+
+/* ---------------------------------------------------------------------------
+   Sharing, the clip page, and the feed refresh control.
+   --------------------------------------------------------------------------- */
+
+.share { position: relative; display: inline-flex; }
+
+.clip-share-btn { padding: 4px 8px; font-size: 13px; }
+
+.share-menu {
+  position: absolute;
+  right: 0;
+  top: calc(100% + 6px);
+  z-index: 40;
+  width: min(280px, 78vw);
+  padding: 6px;
+  background: var(--panel);
+  border: 1.5px solid var(--line, var(--border));
+  border-radius: 12px;
+  box-shadow: 0 18px 40px rgb(0 0 0 / 0.28);
+  display: grid;
+  gap: 2px;
+}
+
+/* Near the bottom of the viewport a menu below the button is cut off by the
+   card's own scroll container, so cards flip it upwards. */
+.clip-actions .share-menu { top: auto; bottom: calc(100% + 6px); }
+
+.share-item {
+  display: grid;
+  gap: 1px;
+  width: 100%;
+  padding: 8px 10px;
+  text-align: left;
+  background: none;
+  border: 0;
+  border-radius: 8px;
+  cursor: pointer;
+  color: inherit;
+  font: inherit;
+}
+.share-item:hover,
+.share-item:focus-visible { background: var(--accent-soft); }
+.share-item-label { font-weight: 600; font-size: 14px; }
+.share-item-hint { font-size: 12px; color: var(--muted); }
+
+.share-link { padding: 6px 4px 2px; }
+.share-link .input { width: 100%; font-size: 12px; }
+
+.feed-refresh { flex: 0 0 auto; display: inline-flex; align-items: center; gap: 6px; }
+.feed-refresh .spin { display: inline-block; animation: gr-spin 0.9s linear infinite; }
+@keyframes gr-spin { to { transform: rotate(360deg); } }
+
+.feed-new-pill {
+  display: block;
+  margin: 0 auto 14px;
+  padding: 8px 18px;
+  border: 0;
+  border-radius: 999px;
+  background: var(--accent);
+  color: var(--bg);
+  font: inherit;
+  font-weight: 700;
+  font-size: 13px;
+  cursor: pointer;
+  box-shadow: 0 8px 22px rgb(0 0 0 / 0.22);
+}
+.feed-new-pill:hover { filter: brightness(1.06); }
+
+/* ---- the clip's own page ---- */
+
+.clip-page { display: grid; gap: 16px; }
+.clip-page-back { margin-bottom: -4px; }
+
+.clip-page-stage {
+  position: relative;
+  aspect-ratio: 16 / 9;
+  width: 100%;
+  overflow: hidden;
+  border-radius: 14px;
+  background: #000;
+  border: 1.5px solid var(--line, var(--border));
+}
+.clip-page-stage > * { position: absolute; inset: 0; width: 100%; height: 100%; border: 0; }
+
+.clip-page-head {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 16px;
+  flex-wrap: wrap;
+}
+.clip-page-title { margin: 0 0 6px; font-size: clamp(22px, 3vw, 32px); letter-spacing: -0.02em; }
+.clip-page-meta { display: flex; align-items: center; gap: 12px; flex-wrap: wrap; margin: 0; }
+.clip-page-counts { font-size: 13px; color: var(--muted); }
+.clip-page-desc { margin: 0; max-width: 70ch; color: var(--muted); }
+
+.clip-modal-meta-head {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 12px;
+}
+.clip-modal-meta-head h2 { margin: 0; }
+
+/* ---------------------------------------------------------------------------
+   Button contrast.
+
+   Two measured problems, not a matter of taste:
+
+   1. A filled primary was the accent with --color-bg as its label. In dark mode
+      that is fine (5.2:1), but in light mode #ec3013 under #f3f2f2 measures
+      3.76:1 — under the 4.5:1 minimum, which is why the text on "Post a clip"
+      and every Save button was hard to read. The accent is mid-luminance, so
+      neither white nor black clears 4.5:1 against it; the fill has to move.
+      Light mode drops one step to accent-600 with white (4.74:1), which is a
+      shade the eye barely registers as different but the contrast does.
+
+   2. Secondary buttons were --color-surface on --color-bg: 1.10:1 in dark,
+      1.08:1 in light. That is not a subtle button, it is the page with a faint
+      outline, which is the "merges with the background" part. They now sit a
+      real step away from the page and carry a border you can actually see.
+   --------------------------------------------------------------------------- */
+
+:root {
+  --btn-primary-bg: var(--color-accent-600);
+  --btn-primary-bg-hover: var(--color-accent-700);
+  --btn-primary-ink: #ffffff;
+
+  --btn-secondary-bg: var(--color-neutral-300);
+  --btn-secondary-bg-hover: var(--color-neutral-400);
+  --btn-secondary-border: color-mix(in srgb, var(--color-text) 42%, transparent);
+}
+
+/* Theme comes from a .dark class on <html> (next-themes), which is also how the
+   token ramps above are written — a prefers-color-scheme block here would
+   override an explicit light choice made on a dark-set OS. */
+.dark {
+  /* Dark already passes on the brand accent, so it keeps it. */
+  --btn-primary-bg: var(--color-accent);
+  --btn-primary-bg-hover: var(--color-accent-600);
+  --btn-primary-ink: #171413;
+
+  --btn-secondary-bg: var(--color-neutral-200);
+  --btn-secondary-bg-hover: var(--color-neutral-300);
+}
+
+.btn-primary,
+.btn-primary:hover:not(:disabled) {
+  color: var(--btn-primary-ink);
+  border-color: transparent;
+}
+.btn-primary { background: var(--btn-primary-bg); }
+.btn-primary:hover:not(:disabled) { background: var(--btn-primary-bg-hover); }
+.btn-primary:active:not(:disabled) { background: var(--btn-primary-bg-hover); }
+
+.btn-secondary {
+  background: var(--btn-secondary-bg);
+  border: 1.5px solid var(--btn-secondary-border);
+  color: var(--color-text);
+}
+.btn-secondary:hover:not(:disabled) {
+  background: var(--btn-secondary-bg-hover);
+  border-color: var(--color-accent);
+}
+
+/* A disabled control must still be readable — it says what it would do. */
+.btn:disabled { opacity: 0.55; cursor: not-allowed; transform: none; }
+
+/* Chips are buttons too and had the same washed-out fill. */
+.chip {
+  background: var(--btn-secondary-bg);
+  border: 1.5px solid var(--btn-secondary-border);
+  color: var(--color-text);
+}
+.chip.active {
+  background: var(--btn-primary-bg);
+  border-color: transparent;
+  color: var(--btn-primary-ink);
+}
