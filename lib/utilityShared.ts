@@ -52,6 +52,26 @@ export function worldToPercent(cfg: MapOverview, x: number, y: number): { left: 
 }
 
 /**
+ * The other direction — a click on the radar back to world coordinates.
+ *
+ * Needed for destination-first browsing: people do not think "show me lineups
+ * from T spawn", they think "I need Window smoked". Clicking the place you
+ * want the smoke is the question they are actually asking.
+ */
+export function percentToWorld(cfg: MapOverview, left: number, top: number): { x: number; y: number } | null {
+  if (cfg.posX === null || cfg.posY === null || !cfg.scale) return null;
+  const px = (left / 100) * RADAR_SIZE;
+  const py = (top / 100) * RADAR_SIZE;
+  return { x: px * cfg.scale + cfg.posX, y: cfg.posY - py * cfg.scale };
+}
+
+/** Whether a world position falls on the radar image at all. */
+export function isOnRadar(cfg: MapOverview, x: number, y: number): boolean {
+  const p = worldToRadar(cfg, x, y);
+  return !!p && p.px >= 0 && p.px <= RADAR_SIZE && p.py >= 0 && p.py <= RADAR_SIZE;
+}
+
+/**
  * Which radar a lineup belongs on.
  *
  * Nuke, Train and Vertigo are stacked maps: the same X/Y means two different
@@ -68,30 +88,83 @@ export const radarUrl = (map: string, level: string): string =>
   `/radars/${map}${level === "default" ? "" : `_${level}`}.png`;
 
 export const UTILITIES = [
-  { id: "smoke", label: "Smoke", weapon: "weapon_smokegrenade" },
-  { id: "flash", label: "Flash", weapon: "weapon_flashbang" },
-  { id: "molotov", label: "Molotov", weapon: "weapon_molotov" },
-  { id: "he", label: "HE", weapon: "weapon_hegrenade" },
-  { id: "decoy", label: "Decoy", weapon: "weapon_decoy" },
+  { id: "smoke", label: "Smoke", weapon: "weapon_smokegrenade", colour: "#8bb8d8" },
+  { id: "flash", label: "Flash", weapon: "weapon_flashbang", colour: "#e8d24a" },
+  { id: "molotov", label: "Molotov", weapon: "weapon_molotov", colour: "#e8703a" },
+  { id: "he", label: "HE", weapon: "weapon_hegrenade", colour: "#7fbf5f" },
+  { id: "decoy", label: "Decoy", weapon: "weapon_decoy", colour: "#b58fd8" },
 ] as const;
+
+export const UTIL_COLOUR: Record<string, string> = Object.fromEntries(
+  UTILITIES.map((u) => [u.id, u.colour])
+);
 
 export const weaponFor = (utility: string): string =>
   UTILITIES.find((u) => u.id === utility)?.weapon ?? "weapon_smokegrenade";
 
-/** How to actually throw it, spelled out rather than jargon. */
+/**
+ * How to actually throw it, spelled out rather than jargon.
+ *
+ * The wording is the one every lineup site uses, because someone arriving from
+ * cs2util or csnades should not have to work out that our "step-jump" is their
+ * "run + jump throw".
+ */
 export const THROW_LABEL: Record<string, string> = {
-  standing: "Stand still and throw",
-  jump: "Jump-throw",
-  "step-jump": "Take a step, then jump-throw",
-  run: "Run and throw",
-  crouch: "Crouch and throw",
+  standing: "Standing throw",
+  crouch: "Crouch throw",
+  walk: "Walk throw",
+  run: "Run throw",
+  jump: "Jump throw",
+  "step-jump": "Run + jump throw",
+};
+
+/** The compact form, for a badge on a list row where there is no space. */
+export const THROW_SHORT: Record<string, string> = {
+  standing: "",
+  crouch: "Crouch",
+  walk: "Walk",
+  run: "Run",
+  jump: "Jump",
+  "step-jump": "Run+Jump",
 };
 
 export const CLICK_LABEL: Record<string, string> = {
   left: "Left click",
-  right: "Right click (short lob)",
-  both: "Both buttons (medium)",
+  right: "Right click",
+  both: "Left + right click",
 };
+
+/** What the button actually does to the throw, since the names do not say. */
+export const CLICK_HINT: Record<string, string> = {
+  left: "full strength — the long throw",
+  right: "gentle underhand toss — short range",
+  both: "medium strength — between the two",
+};
+
+export const PURPOSE_LABEL: Record<string, string> = {
+  default: "Default",
+  execute: "Execute",
+  retake: "Retake",
+  postplant: "Post-plant",
+  trick: "Trick",
+};
+
+export const TEAM_LABEL: Record<string, string> = {
+  T: "Terrorist",
+  CT: "Counter-Terrorist",
+  "": "Either side",
+};
+
+/**
+ * The console line every site publishes and every practice server accepts.
+ *
+ * Six decimal places because that is the format the ecosystem uses and what
+ * the console reads back unchanged — rounding here would make a lineup copied
+ * out of this page and pasted into a server land somewhere slightly else.
+ */
+export const setposFor = (l: Pick<Lineup, "stand" | "view">): string =>
+  `setpos ${l.stand.x.toFixed(6)} ${l.stand.y.toFixed(6)} ${l.stand.z.toFixed(6)};` +
+  `setang ${l.view.pitch.toFixed(6)} ${l.view.yaw.toFixed(6)} 0.000000`;
 
 export type Lineup = {
   id: number;
@@ -109,6 +182,42 @@ export type Lineup = {
   notes: string | null;
   clipUrl: string | null;
   thumb: string | null;
+  /** In-game stills: where you stand, what you aim at, where it landed. */
+  shots: { stand: string | null; aim: string | null; result: string | null };
   verified: boolean;
   source: string;
 };
+
+/** Does this lineup have any picture at all to show? */
+export const hasShots = (l: Lineup): boolean =>
+  Boolean(l.shots.stand || l.shots.aim || l.shots.result || l.thumb);
+
+/**
+ * Sort order for the list.
+ *
+ * Area first, then grenade, then name: it groups a map into the places you
+ * actually stand, which is how someone drilling an execute reads it. Lineups
+ * with pictures float to the top of their group because those are the ones
+ * that can be learned without loading the game.
+ */
+export function compareLineups(a: Lineup, b: Lineup): number {
+  const area = (a.area || "~").localeCompare(b.area || "~");
+  if (area) return area;
+  const shots = Number(hasShots(b)) - Number(hasShots(a));
+  if (shots) return shots;
+  const util = a.utility.localeCompare(b.utility);
+  if (util) return util;
+  return a.name.localeCompare(b.name);
+}
+
+/** Free-text search across the fields someone would actually type. */
+export function matchesQuery(l: Lineup, q: string): boolean {
+  if (!q) return true;
+  const needle = q.toLowerCase();
+  return (
+    l.name.toLowerCase().includes(needle) ||
+    l.area.toLowerCase().includes(needle) ||
+    l.utility.toLowerCase().includes(needle) ||
+    (l.notes ?? "").toLowerCase().includes(needle)
+  );
+}

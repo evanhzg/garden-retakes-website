@@ -677,6 +677,17 @@ model GardenNade {
   ClipUrl String? @db.VarChar(500)
   Thumb   String? @db.VarChar(500)
 
+  /// The three stills every lineup site publishes, captured in game by
+  /// tools/lineup-capture. Coordinates say where to stand; only a picture says
+  /// what to look at, which is the part people actually copy.
+  ///
+  /// ShotStand — where you stand, wide enough to recognise the spot.
+  /// ShotAim   — first person, crosshair on the aim point.
+  /// ShotResult— where the grenade ended up.
+  ShotStand  String? @db.VarChar(500)
+  ShotAim    String? @db.VarChar(500)
+  ShotResult String? @db.VarChar(500)
+
   /// False when the stand position does not sit on playable geometry — imported
   /// lineups are checked against the radar, recorded ones are true by definition.
   Verified Boolean @default(true)

@@ -40,6 +40,7 @@ export async function GET(req: Request) {
     notes: r.Notes,
     clipUrl: r.ClipUrl,
     thumb: r.Thumb,
+    shots: { stand: r.ShotStand, aim: r.ShotAim, result: r.ShotResult },
     verified: r.Verified,
     source: r.Source,
   }));

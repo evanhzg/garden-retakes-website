@@ -3,34 +3,23 @@
 import { useCallback, useEffect, useMemo, useState } from "react";
 import { useI18n } from '@/components/I18nProvider';
 import {
-  CLICK_LABEL,
   MAPS,
   POOLS,
-  THROW_LABEL,
   UTILITIES,
   levelFor,
   playableMaps,
   radarUrl,
-  worldToPercent,
+  UTIL_COLOUR,
+  compareLineups,
+  matchesQuery,
+  THROW_SHORT,
   type Lineup,
 } from "@/lib/utilityShared";
-
-// The utility page: a real radar, every lineup on it, and a way to try one.
-//
-// The map is the index. Picking a lineup out of a list of two hundred names is
-// hopeless; picking the smoke that lands on the corner you are looking at is
-// not, so the markers are the primary control and the side panel follows them.
-
-const UTIL_COLOUR: Record<string, string> = {
-  smoke: "#8bb8d8",
-  flash: "#e8d24a",
-  molotov: "#e8703a",
-  he: "#7fbf5f",
-  decoy: "#b58fd8",
-};
+import UtilityRadar from "./UtilityRadar";
+import UtilityDetail from "./UtilityDetail";
 
 export default function UtilityPage({ signedIn }: { signedIn: boolean }) {
-    const { t } = useI18n();
+  const { t } = useI18n();
 
   const maps = useMemo(() => playableMaps(), []);
   const [map, setMap] = useState("de_mirage");
@@ -39,11 +28,41 @@ export default function UtilityPage({ signedIn }: { signedIn: boolean }) {
   const [selected, setSelected] = useState<Lineup | null>(null);
   const [hovered, setHovered] = useState<number | null>(null);
   const [level, setLevel] = useState("default");
+  
+  const [search, setSearch] = useState("");
   const [utilFilter, setUtilFilter] = useState<string>("");
   const [areaFilter, setAreaFilter] = useState<string>("");
   const [showUnverified, setShowUnverified] = useState(false);
+  
+  const [findMode, setFindMode] = useState(false);
+  const [findAt, setFindAt] = useState<{ x: number; y: number } | null>(null);
+
   const [testing, setTesting] = useState(false);
+  const [favorites, setFavorites] = useState<number[]>([]);
   const [note, setNote] = useState<{ kind: "ok" | "err"; text: string } | null>(null);
+
+  useEffect(() => {
+    if (typeof window !== "undefined") {
+      const params = new URLSearchParams(window.location.search);
+      const m = params.get("map");
+      if (m && MAPS[m]) setMap(m);
+    }
+  }, []);
+
+  useEffect(() => {
+    try {
+      const saved = localStorage.getItem("favorites");
+      if (saved) setFavorites(JSON.parse(saved));
+    } catch {}
+  }, []);
+
+  const toggleFavorite = (id: number) => {
+    setFavorites(prev => {
+      const next = prev.includes(id) ? prev.filter(x => x !== id) : [...prev, id];
+      try { localStorage.setItem("favorites", JSON.stringify(next)); } catch {}
+      return next;
+    });
+  };
 
   const cfg = MAPS[map];
   const levels = cfg?.levels ?? null;
@@ -67,7 +86,20 @@ export default function UtilityPage({ signedIn }: { signedIn: boolean }) {
   useEffect(() => {
     setLevel("default");
     setAreaFilter("");
+    setFindAt(null);
+    setFindMode(false);
   }, [map]);
+  
+  useEffect(() => {
+    if (typeof window !== "undefined" && lineups) {
+      const params = new URLSearchParams(window.location.search);
+      const id = params.get("lineup");
+      if (id) {
+        const l = lineups.find((x) => x.id === Number(id));
+        if (l) setSelected(l);
+      }
+    }
+  }, [lineups]);
 
   const visible = useMemo(() => {
     if (!lineups || !cfg) return [];
@@ -75,11 +107,18 @@ export default function UtilityPage({ signedIn }: { signedIn: boolean }) {
       if (!showUnverified && !l.verified) return false;
       if (utilFilter && l.utility !== utilFilter) return false;
       if (areaFilter && l.area !== areaFilter) return false;
-      // A stacked map draws one level at a time or the markers overlap.
       if (levels && levelFor(cfg, l.stand.z) !== level) return false;
+      if (search && !matchesQuery(l, search)) return false;
+      if (findAt && l.land) {
+        const dx = l.land.x - findAt.x;
+        const dy = l.land.y - findAt.y;
+        if (Math.hypot(dx, dy) > 300) return false;
+      } else if (findAt && !l.land) {
+        return false;
+      }
       return true;
-    });
-  }, [lineups, cfg, showUnverified, utilFilter, areaFilter, levels, level]);
+    }).sort(compareLineups);
+  }, [lineups, cfg, showUnverified, utilFilter, areaFilter, levels, level, search, findAt]);
 
   const areas = useMemo(() => {
     const set = new Map<string, number>();
@@ -89,7 +128,7 @@ export default function UtilityPage({ signedIn }: { signedIn: boolean }) {
 
   const unverifiedCount = (lineups ?? []).filter((l) => !l.verified).length;
 
-  const test = async (lineup: Lineup) => {
+  const testLineup = async (lineup: Lineup) => {
     if (testing) return;
     setTesting(true);
     setNote(null);
@@ -108,6 +147,11 @@ export default function UtilityPage({ signedIn }: { signedIn: boolean }) {
     }
   };
 
+  const handleNote = (n: { kind: "ok" | "err"; text: string }) => {
+    setNote(n);
+    setTimeout(() => setNote(null), 3000);
+  };
+
   const shownMaps = maps.filter(([, c]) => c.pools.includes(pool));
 
   return (
@@ -116,10 +160,10 @@ export default function UtilityPage({ signedIn }: { signedIn: boolean }) {
         <span className="kicker">{t("auto.utilityclient.utility")}</span>
         <h1 style={{ fontSize: "clamp(28px, 4.2vw, 48px)", letterSpacing: "-0.025em", margin: "10px 0 6px" }}>
           {t("auto.utilityclient.lineups")}
-                          </h1>
+        </h1>
         <p className="muted" style={{ maxWidth: "60ch", margin: 0 }}>
           {t("auto.utilityclient.every_saved_smoke_flash_molly")}
-                          </p>
+        </p>
       </section>
 
       <section className="pro-section">
@@ -159,44 +203,21 @@ export default function UtilityPage({ signedIn }: { signedIn: boolean }) {
               </div>
             )}
 
-            <div className="util-radar">
-              {/* eslint-disable-next-line @next/next/no-img-element */}
-              <img src={radarUrl(map, level)} alt={`${cfg?.label} radar`} draggable={false} />
-
-              {visible.map((l) => {
-                const at = worldToPercent(cfg, l.stand.x, l.stand.y);
-                if (!at) return null;
-                const active = selected?.id === l.id || hovered === l.id;
-                return (
-                  <button
-                    key={l.id}
-                    className={`util-pin ${active ? "active" : ""} ${l.verified ? "" : "unverified"}`}
-                    style={{
-                      left: `${at.left}%`,
-                      top: `${at.top}%`,
-                      // The pin points the way you face, so the map shows the
-                      // lineup's direction without opening it.
-                      ["--yaw" as string]: `${-l.view.yaw}deg`,
-                      ["--tint" as string]: UTIL_COLOUR[l.utility] ?? "#ccc",
-                    }}
-                    title={`${l.name}${l.verified ? "" : " — unverified position"}`}
-                    onMouseEnter={() => setHovered(l.id)}
-                    onMouseLeave={() => setHovered(null)}
-                    onClick={() => setSelected(l)}
-                    aria-label={l.name}
-                  >
-                    <span className="util-pin-dot" />
-                    <span className="util-pin-dir" aria-hidden />
-                  </button>
-                );
-              })}
-
-              {/* Where it lands, drawn only for the open lineup. */}
-              {selected?.land && (() => {
-                const at = worldToPercent(cfg, selected.land.x, selected.land.y);
-                return at ? <span className="util-land" style={{ left: `${at.left}%`, top: `${at.top}%` }} /> : null;
-              })()}
-            </div>
+            {cfg && (
+              <UtilityRadar
+                cfg={cfg}
+                radar={radarUrl(map, level)}
+                lineups={visible}
+                selected={selected}
+                hovered={hovered}
+                findMode={findMode}
+                findAt={findAt}
+                onHover={setHovered}
+                onSelect={setSelected}
+                onFind={(pos) => { setFindAt(pos); setFindMode(false); }}
+                label={`${cfg.label} radar`}
+              />
+            )}
 
             <p className="util-legend">
               {UTILITIES.map((u) => (
@@ -213,75 +234,23 @@ export default function UtilityPage({ signedIn }: { signedIn: boolean }) {
           </div>
 
           <aside className="util-side">
-            {selected ? (
-              <div className="util-detail">
-                <button className="btn btn-ghost util-back" onClick={() => setSelected(null)}>{t("auto.utilityclient._all_lineups")}</button>
-
-                <h2>{selected.name}</h2>
-                <p className="util-tags">
-                  <span className="tag tag-accent">{selected.utility}</span>
-                  {selected.area && <span className="tag tag-neutral">{selected.area}</span>}
-                  {selected.team && <span className="tag tag-neutral">{selected.team}</span>}
-                  {!selected.verified && <span className="tag util-warn">{t("auto.utilityclient.unverified")}</span>}
-                </p>
-
-                {/* Clips land here once the capture script exists; until then the
-                    panel is the instructions, not an empty player. */}
-                {selected.clipUrl && (
-                  <video className="util-clip" src={selected.clipUrl} poster={selected.thumb ?? undefined} muted loop playsInline autoPlay />
-                )}
-
-                <dl className="util-facts">
-                  <div><dt>{t("auto.utilityclient.stance")}</dt><dd>{THROW_LABEL[selected.throwType] ?? selected.throwType}</dd></div>
-                  <div><dt>{t("auto.utilityclient.button")}</dt><dd>{CLICK_LABEL[selected.clickType] ?? selected.clickType}</dd></div>
-                  <div><dt>{t("auto.utilityclient.stand_at")}</dt><dd className="num">{selected.stand.x.toFixed(1)} {selected.stand.y.toFixed(1)} {selected.stand.z.toFixed(1)}</dd></div>
-                  <div><dt>{t("auto.utilityclient.look")}</dt><dd className="num">{t("auto.utilityclient.pitch")} {selected.view.pitch.toFixed(3)} {t("auto.utilityclient._yaw")} {selected.view.yaw.toFixed(3)}</dd></div>
-                  {selected.land && (
-                    <div><dt>{t("auto.utilityclient.lands_at")}</dt><dd className="num">{selected.land.x.toFixed(1)} {selected.land.y.toFixed(1)}</dd></div>
-                  )}
-                </dl>
-
-                {selected.notes && <p className="util-notes">{selected.notes}</p>}
-
-                {!selected.verified && (
-                  <p className="skin-note skin-note-error">
-                    <span>
-                      {t("auto.utilityclient.this_position_does_not_sit_on")}
-                                                              </span>
-                  </p>
-                )}
-
-                <div className="util-actions">
-                  {signedIn ? (
-                    <button className="btn btn-primary" onClick={() => test(selected)} disabled={testing}>
-                      {testing ? "Setting up…" : "Test in game"}
-                    </button>
-                  ) : (
-                    <a className="btn btn-secondary" href="/api/auth/steam/login">{t("auto.utilityclient.sign_in_to_test")}</a>
-                  )}
-                  <button
-                    className="btn btn-secondary"
-                    onClick={() => {
-                      navigator.clipboard
-                        ?.writeText(
-                          `setpos ${selected.stand.x} ${selected.stand.y} ${selected.stand.z}; setang ${selected.view.pitch} ${selected.view.yaw}`
-                        )
-                        .then(() => setNote({ kind: "ok", text: "setpos command copied." }))
-                        .catch(() => {});
-                    }}
-                  >
-                    {t("auto.utilityclient.copy_setpos")}
-                                                        </button>
-                </div>
-
-                <div aria-live="polite">
-                  {note && (
-                    <p className={`skin-note ${note.kind === "ok" ? "skin-note-ok" : "skin-note-error"}`}>
-                      <span>{note.text}</span>
-                    </p>
-                  )}
-                </div>
+            {note && (
+              <div className={`skin-note ${note.kind === "ok" ? "skin-note-ok" : "skin-note-error"}`} style={{ marginBottom: "1rem" }}>
+                <span>{note.text}</span>
               </div>
+            )}
+            
+            {selected ? (
+              <UtilityDetail
+                lineup={selected}
+                signedIn={signedIn}
+                favourite={favorites.includes(selected.id)}
+                testing={testing}
+                onBack={() => setSelected(null)}
+                onTest={testLineup}
+                onToggleFavourite={toggleFavorite}
+                onNote={handleNote}
+              />
             ) : (
               <div className="util-list">
                 <div className="util-list-head">
@@ -289,18 +258,48 @@ export default function UtilityPage({ signedIn }: { signedIn: boolean }) {
                   <span className="muted num">{visible.length}</span>
                 </div>
 
+                <div className="util-search" style={{ marginBottom: "1rem", display: "flex", gap: "0.5rem", flexDirection: "column" }}>
+                  <input
+                    type="text"
+                    placeholder="Search lineups..."
+                    value={search}
+                    onChange={(e) => setSearch(e.target.value)}
+                    className="input"
+                    style={{ width: "100%", padding: "0.5rem", background: "var(--bg-elevated)", border: "1px solid var(--border)", borderRadius: "6px", color: "var(--fg)" }}
+                  />
+                  <div style={{ display: "flex", gap: "0.5rem" }}>
+                    <button 
+                      className={`btn ${findMode ? "btn-primary" : "btn-secondary"}`}
+                      onClick={() => {
+                        if (findMode) {
+                          setFindMode(false);
+                        } else {
+                          setFindMode(true);
+                          setFindAt(null);
+                        }
+                      }}
+                      style={{ flex: 1 }}
+                    >
+                      {findMode ? "Click radar to find" : findAt ? "Target locked" : "Find by target"}
+                    </button>
+                    {findAt && (
+                      <button className="btn btn-ghost" onClick={() => setFindAt(null)}>Clear</button>
+                    )}
+                  </div>
+                </div>
+
                 {unverifiedCount > 0 && (
                   <label className="util-toggle">
                     <input type="checkbox" checked={showUnverified} onChange={(e) => setShowUnverified(e.target.checked)} />
                     {t("auto.utilityclient.show")} {unverifiedCount} {t("auto.utilityclient.unverified")}
-                                                            </label>
+                  </label>
                 )}
 
                 {areas.length > 1 && (
                   <div className="util-areas">
                     <button className={`chip ${areaFilter === "" ? "active" : ""}`} onClick={() => setAreaFilter("")}>
                       {t("auto.utilityclient.all")}
-                                                                  </button>
+                    </button>
                     {areas.map(([a, n]) => (
                       <button
                         key={a}
@@ -334,7 +333,7 @@ export default function UtilityPage({ signedIn }: { signedIn: boolean }) {
                             {l.name}
                             {!l.verified && <span className="util-row-flag" title={t("auto.utilityclient.position_not_on_the_map")}>?</span>}
                           </span>
-                          <span className="util-row-throw">{l.throwType === "standing" ? "" : THROW_LABEL[l.throwType]}</span>
+                          <span className="util-row-throw">{l.throwType === "standing" ? "" : THROW_SHORT[l.throwType] ?? l.throwType}</span>
                         </button>
                       </li>
                     ))}
@@ -348,3 +347,4 @@ export default function UtilityPage({ signedIn }: { signedIn: boolean }) {
     </>
   );
 }
+
