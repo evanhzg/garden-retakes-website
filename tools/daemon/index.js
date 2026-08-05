@@ -4,16 +4,17 @@ const fs = require("fs");
 const path = require("path");
 const FormData = require("form-data");
 const fetch = require("node-fetch");
+const screenshot = require("screenshot-desktop");
 
 const SERVER_URL = process.env.SERVER_URL || "https://node-sockets-reeeeetakes.onrender.com";
-const WEBSITE_URL = process.env.WEBSITE_URL || "https://retakes.fr";
+const WEBSITE_URL = process.env.WEBSITE_URL || "https://www.retakes.fr";
 
-// Make sure to set your SteamId in an env variable
+// Provide the same key used for INVSIM_API_KEY in your Vercel env
+const ADMIN_KEY = process.env.ADMIN_KEY || "9fWH9jh3FwkUywtSyhdLJ8sX";
+
 const steamId = process.env.STEAM_ID || "76561198154541270"; 
 
-// Paths for Windows
 const CS2_CFG_DIR = process.env.CS2_CFG_DIR ?? "D:\\Steam\\steamapps\\common\\Counter-Strike Global Offensive\\game\\csgo\\cfg";
-const CS2_SCREENSHOT_DIR = process.env.CS2_SCREENSHOT_DIR ?? "D:\\Steam\\userdata\\194275542\\760\\remote\\730\\screenshots";
 
 const socket = io(SERVER_URL);
 
@@ -68,41 +69,21 @@ ${utilitySlot}
     }
 
     if (process.platform === "win32") {
-      // Just copy it to clipboard so user can paste it
       execSync('echo exec garden_capture_daemon | clip', { stdio: "ignore" });
       console.log("Copied 'exec garden_capture_daemon' to your clipboard!");
     }
     
     console.log(">>> PLEASE GO IN-GAME, LOAD THE MAP, AND PASTE 'exec garden_capture_daemon' IN CONSOLE <<<");
-    console.log("Waiting for a new screenshot to appear in your Steam screenshots folder (Press F12 in-game!)...");
+    console.log("Taking screenshot automatically in 8 seconds. Switch to the game now!");
 
-    // Watch the directory for a new screenshot
-    if (!fs.existsSync(CS2_SCREENSHOT_DIR)) {
-      throw new Error(`Screenshot dir not found: ${CS2_SCREENSHOT_DIR}`);
-    }
+    // Wait 8 seconds to give the user time to execute the config and let the teleport finish
+    await new Promise(r => setTimeout(r, 8000));
 
-    const initialFiles = new Set(fs.readdirSync(CS2_SCREENSHOT_DIR));
-    
-    const shotPath = await new Promise((resolve, reject) => {
-      const watcher = fs.watch(CS2_SCREENSHOT_DIR, (eventType, filename) => {
-        if (filename && (filename.endsWith('.jpg') || filename.endsWith('.jpeg'))) {
-          if (!initialFiles.has(filename)) {
-            // Wait a brief moment to ensure file is fully written
-            setTimeout(() => {
-              watcher.close();
-              resolve(path.join(CS2_SCREENSHOT_DIR, filename));
-            }, 500);
-          }
-        }
-      });
-      // Timeout after 3 minutes
-      setTimeout(() => {
-        watcher.close();
-        reject(new Error("Timed out waiting for screenshot after 3 minutes"));
-      }, 180000);
-    });
+    console.log("Capturing screen...");
+    const shotPath = path.join(__dirname, `capture_${Date.now()}.jpg`);
+    await screenshot({ filename: shotPath, format: 'jpg' });
 
-    console.log(`Found new screenshot: ${shotPath}`);
+    console.log(`Saved screenshot to: ${shotPath}`);
 
     // 4. Upload to website
     console.log("Uploading to website...");
