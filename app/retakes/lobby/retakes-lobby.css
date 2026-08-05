@@ -401,3 +401,52 @@
 .rq-toast.error { border-color: color-mix(in srgb, #e0533a 60%, transparent); }
 .rq-toast.ok { border-color: color-mix(in srgb, var(--color-accent) 60%, transparent); }
 @keyframes rq-toast-in { from { opacity: 0; transform: translate(-50%, 10px); } to { opacity: 1; transform: translateX(-50%); } }
+
+/* --- recent form ---------------------------------------------------------- */
+
+/* The roster row becomes two lines: name, then the two numbers people judge on.
+   Everything else is a hover away — a roster is read at a glance while a timer
+   is running. */
+.rq-player { flex: 1; min-width: 0; display: grid; gap: 2px; }
+.rq-roster.right .rq-player { justify-items: end; }
+
+.pf-line { display: flex; align-items: center; gap: 7px; font-size: 11px; }
+.rq-roster.right .pf-line { flex-direction: row-reverse; }
+.pf-line.empty { color: var(--muted); font-style: italic; }
+
+.pf-rating { font-weight: 800; font-variant-numeric: tabular-nums; letter-spacing: -0.01em; }
+.pf-rating.good { color: #6fcf7f; }
+.pf-rating.mid { color: var(--muted); }
+.pf-rating.low { color: #e08a6a; }
+.pf-rating.big { font-size: 20px; }
+
+.pf-strip { display: inline-flex; gap: 2px; }
+.pf-pip { width: 6px; height: 12px; border-radius: 2px; background: color-mix(in srgb, var(--color-text) 20%, transparent); }
+.pf-pip.w { background: #6fcf7f; }
+.pf-pip.l { background: #d8624a; }
+
+.pf-card {
+  position: fixed; z-index: 1100;
+  padding: 14px 16px;
+  border-radius: 14px;
+  background: color-mix(in srgb, var(--color-text) 6%, var(--color-bg));
+  border: 1px solid color-mix(in srgb, var(--color-text) 16%, transparent);
+  box-shadow: 0 18px 50px rgb(0 0 0 / 0.5);
+  -webkit-backdrop-filter: blur(10px); backdrop-filter: blur(10px);
+}
+.pf-card-head { display: flex; align-items: baseline; justify-content: space-between; gap: 10px; }
+.pf-card-name { font-size: 15px; font-weight: 800; letter-spacing: -0.01em; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.pf-card-sub { margin: 2px 0 10px; font-size: 11.5px; color: var(--muted); }
+.pf-card-empty { margin: 8px 0 0; font-size: 12.5px; color: var(--muted); }
+.pf-card-map { margin: 10px 0 0; font-size: 11.5px; color: var(--muted); }
+
+.pf-card .pf-strip { margin-bottom: 12px; }
+.pf-card .pf-pip { width: 9px; height: 16px; border-radius: 3px; }
+
+.pf-stats { margin: 0; display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 8px 14px; }
+.pf-stats > div { display: flex; align-items: baseline; justify-content: space-between; gap: 8px; }
+.pf-stats dt { font-size: 10.5px; text-transform: uppercase; letter-spacing: 0.07em; color: var(--muted); }
+.pf-stats dd { margin: 0; font-size: 13.5px; font-weight: 700; font-variant-numeric: tabular-nums; }
+
+.rq-links { display: grid; gap: 8px; margin-top: 18px; }
+.rq-links .btn { text-align: center; font-size: 13px; padding: 9px 14px; }

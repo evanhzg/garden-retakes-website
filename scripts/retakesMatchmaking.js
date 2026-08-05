@@ -20,14 +20,16 @@
  * not it on a server this size.
  */
 
+// Both modes are retakes — the only thing that differs is how many people are
+// on a side. They were briefly labelled Wingman and Trios, which named two
+// different game modes we do not run and pointed 2v2 at the Wingman map pool.
 const MODES = {
-  "2v2": { id: "2v2", teamSize: 2, label: "Wingman", pool: "wingman" },
-  "3v3": { id: "3v3", teamSize: 3, label: "Trios", pool: "trios" },
+  "2v2": { id: "2v2", teamSize: 2, label: "Retakes", pool: "retakes" },
+  "3v3": { id: "3v3", teamSize: 3, label: "Retakes", pool: "retakes" },
 };
 
 const MAP_POOLS = {
-  wingman: ["de_inferno", "de_overpass", "de_nuke", "de_vertigo", "de_anubis", "de_ancient", "de_dust2"],
-  trios: ["de_mirage", "de_inferno", "de_nuke", "de_overpass", "de_vertigo", "de_ancient", "de_anubis"],
+  retakes: ["de_mirage", "de_inferno", "de_nuke", "de_overpass", "de_vertigo", "de_ancient", "de_anubis"],
 };
 
 const BOT_NAMES = [

@@ -3,6 +3,8 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { useSocket } from "@/components/games/SocketProvider";
 import { useI18n } from "@/components/I18nProvider";
+import { useOverlay } from "@/lib/useOverlay";
+import { FormCard, FormLine, useRosterForm, type RecentForm } from "./PlayerForm";
 import "@/app/retakes/lobby/retakes-lobby.css";
 
 // Competitive matchmaking: party, queue, accept, veto, connect.
@@ -106,6 +108,11 @@ export default function RetakesLobby({ signedIn }: { signedIn: boolean }) {
 
   const match = state?.match ?? null;
   const now = useNow(Boolean(state?.queue || match));
+
+  // Both takeovers cover the screen, so the friends launcher has to stand down
+  // — it is position:fixed and mounted app-wide, and was otherwise floating on
+  // top of the accept timer.
+  useOverlay(Boolean((match?.phase === "found" && match.accept) || state?.invite));
 
   // ------------------------------------------------------------------ socket
 
@@ -415,6 +422,15 @@ export default function RetakesLobby({ signedIn }: { signedIn: boolean }) {
               <span className="muted">{t("lobby.step4sub")}</span>
             </li>
           </ol>
+
+          <div className="rq-links">
+            <a className="btn btn-secondary" href="/retakes/loadout">
+              {t("lobby.yourloadout")}
+            </a>
+            <a className="btn btn-secondary" href="/stats/form">
+              {t("lobby.yourform")}
+            </a>
+          </div>
         </aside>
       </div>
 
@@ -468,6 +484,10 @@ function MatchRoom({
   onChat: (text: string) => void;
   t: (k: string, v?: Record<string, string | number>) => string;
 }) {
+  // One request for the whole roster: six calls fired the instant a match is
+  // found is exactly when the page has other things to do.
+  const forms = useRosterForm(match.teams.flatMap((tm) => tm.players.map((p) => p.steamId)));
+
   const veto = match.veto;
   const ready = match.phase === "ready";
   const left = secondsTo(veto?.turnDeadline, now);
@@ -507,7 +527,7 @@ function MatchRoom({
       </header>
 
       <div className="rq-room-body">
-        <Roster team={match.teams[0]} me={me} align="left" />
+        <Roster team={match.teams[0]} me={me} align="left" forms={forms} />
 
         <div className="rq-center">
           {ready && match.result ? (
@@ -595,7 +615,7 @@ function MatchRoom({
           )}
         </div>
 
-        <Roster team={match.teams[1]} me={me} align="right" />
+        <Roster team={match.teams[1]} me={me} align="right" forms={forms} />
       </div>
 
       <div className="rq-chat">
@@ -651,22 +671,47 @@ function Roster({
   team,
   me,
   align,
+  forms,
 }: {
   team: NonNullable<State["match"]>["teams"][number];
   me: string;
   align: "left" | "right";
+  forms: Record<string, RecentForm>;
 }) {
+  // Which row is showing its full card, and where that row is on screen. Kept
+  // here rather than per row so only one card can be open at a time.
+  const [open, setOpen] = useState<{ steamId: string; rect: DOMRect } | null>(null);
+
   return (
     <ul className={`rq-roster ${align}`}>
       {team.players.map((p) => (
-        <li key={p.steamId} className={`${p.steamId === me ? "me" : ""} ${p.bot ? "bot" : ""}`}>
+        <li
+          key={p.steamId}
+          className={`${p.steamId === me ? "me" : ""} ${p.bot ? "bot" : ""}`}
+          onMouseEnter={(e) => !p.bot && setOpen({ steamId: p.steamId, rect: e.currentTarget.getBoundingClientRect() })}
+          onMouseLeave={() => setOpen((o) => (o?.steamId === p.steamId ? null : o))}
+        >
           <span className="rq-avatar" aria-hidden>
             {(p.name ?? "?").slice(0, 1).toUpperCase()}
           </span>
-          <span className="rq-member-name">{p.name ?? "—"}</span>
-          {p.leader && <span className="rq-crown">★</span>}
+          <span className="rq-player">
+            <span className="rq-member-name">
+              {p.name ?? "—"}
+              {p.leader && <span className="rq-crown">★</span>}
+            </span>
+            {!p.bot && <FormLine form={forms[p.steamId]} />}
+          </span>
         </li>
       ))}
+
+      {open && (
+        <FormCard
+          form={forms[open.steamId]}
+          name={team.players.find((p) => p.steamId === open.steamId)?.name ?? "—"}
+          anchor={open.rect}
+          onClose={() => setOpen(null)}
+        />
+      )}
     </ul>
   );
 }

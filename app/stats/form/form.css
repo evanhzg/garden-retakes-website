@@ -1,0 +1,68 @@
+/* Recent form.
+ *
+ * A session list, not a chart. The question this page answers is "how have my
+ * last few evenings gone", and that is a thing you read row by row — a
+ * time-series of ten points would look like analysis and say less.
+ */
+
+.rf-head { display: flex; align-items: center; justify-content: space-between; gap: 20px; flex-wrap: wrap; }
+.rf-who { display: flex; align-items: center; gap: 14px; min-width: 0; }
+.rf-who h2 { margin: 0 0 2px; font-size: 22px; letter-spacing: -0.02em; }
+.rf-who p { margin: 0; font-size: 13px; }
+.rf-avatar { width: 56px; height: 56px; border-radius: 50%; overflow: hidden; flex: none; background: color-mix(in srgb, var(--color-text) 10%, transparent); }
+
+.rf-headline { display: grid; justify-items: end; gap: 2px; }
+.rf-big { font-size: 42px; font-weight: 800; line-height: 1; letter-spacing: -0.03em; font-variant-numeric: tabular-nums; }
+.rf-big.good { color: #6fcf7f; }
+.rf-big.mid { color: var(--color-text); }
+.rf-big.low { color: #e08a6a; }
+.rf-biglabel { font-size: 11px; text-transform: uppercase; letter-spacing: 0.1em; color: var(--muted); }
+.rf-delta { font-size: 12px; font-weight: 700; }
+.rf-delta.up { color: #6fcf7f; }
+.rf-delta.down { color: #e08a6a; }
+
+.rf-h3 { margin: 0 0 12px; font-size: 12px; font-weight: 700; letter-spacing: 0.12em; text-transform: uppercase; color: var(--muted); }
+.rf-note { font-size: 12.5px; margin: 12px 0 0; }
+
+.rf-tiles { display: grid; grid-template-columns: repeat(auto-fit, minmax(110px, 1fr)); gap: 10px; }
+.rf-tile {
+  display: grid; gap: 3px; justify-items: center;
+  padding: 14px 10px; border-radius: 12px;
+  background: color-mix(in srgb, var(--color-text) 4%, transparent);
+  border: 1px solid color-mix(in srgb, var(--color-text) 10%, transparent);
+}
+.rf-tile-value { font-size: 22px; font-weight: 800; letter-spacing: -0.02em; font-variant-numeric: tabular-nums; }
+.rf-tile-label { font-size: 10.5px; text-transform: uppercase; letter-spacing: 0.07em; color: var(--muted); text-align: center; }
+
+.rf-sessions { list-style: none; margin: 14px 0 0; padding: 0; display: grid; gap: 6px; }
+.rf-session {
+  display: grid;
+  grid-template-columns: 28px minmax(90px, 1fr) minmax(0, 1.4fr) auto auto 52px;
+  align-items: center; gap: 12px;
+  padding: 10px 12px; border-radius: 10px;
+  background: color-mix(in srgb, var(--color-text) 4%, transparent);
+  border-left: 3px solid transparent;
+  font-size: 13px;
+}
+.rf-session.won { border-left-color: #6fcf7f; }
+.rf-session.lost { border-left-color: #d8624a; }
+
+.rf-session-verdict { font-weight: 800; font-size: 15px; }
+.rf-session.won .rf-session-verdict { color: #6fcf7f; }
+.rf-session.lost .rf-session-verdict { color: #d8624a; }
+
+.rf-session-when { display: grid; gap: 1px; font-size: 12px; }
+.rf-session-maps { font-size: 12px; color: var(--muted); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.rf-session-score, .rf-session-kd { font-variant-numeric: tabular-nums; white-space: nowrap; }
+.rf-session-rating { font-weight: 800; text-align: right; font-variant-numeric: tabular-nums; }
+.rf-session-rating.good { color: #6fcf7f; }
+.rf-session-rating.mid { color: var(--muted); }
+.rf-session-rating.low { color: #e08a6a; }
+
+/* Below the fold on a phone the maps column is the first thing that can go. */
+@media (max-width: 720px) {
+  .rf-session { grid-template-columns: 24px minmax(80px, 1fr) auto auto 46px; gap: 8px; }
+  .rf-session-maps { display: none; }
+}
+
+.rf-links { display: flex; gap: 10px; flex-wrap: wrap; }

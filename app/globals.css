@@ -10656,3 +10656,34 @@ body.inv-fullscreen .main-content > main.container { flex: none; }
   .util-lightbox-tabs, .util-lightbox-tools { position: static; justify-content: center; margin: 8px 0 0; }
   .util-lightbox-frame { display: flex; flex-direction: column; }
 }
+
+/* ---------------------------------------------------------------------------
+   Fullscreen overlays vs. the app chrome.
+
+   The friends launcher and drawer are mounted once for the whole app at
+   z-index 1000/1001 and are position:fixed, so without this they float over
+   every takeover — a "FRIENDS" pill sitting on top of a match-accept timer.
+   Overlays set body.overlay-open (lib/useOverlay.ts) and the chrome steps
+   aside; the higher z-index is the belt to that pair of braces.
+   --------------------------------------------------------------------------- */
+
+body.overlay-open .friends-toggle-btn {
+  opacity: 0;
+  pointer-events: none;
+}
+/* Beats .friends-sidebar.open on specificity, so a drawer left open when a
+   takeover appears slides away rather than sitting beside it. */
+body.overlay-open .friends-sidebar {
+  right: -360px;
+  pointer-events: none;
+}
+body.overlay-open .notification-toast-stack,
+body.overlay-open .socket-status-banner {
+  opacity: 0;
+  pointer-events: none;
+}
+
+/* Above the drawer (1001), so nothing bleeds through if a page forgets to
+   declare itself. */
+.util-lightbox,
+.rq-takeover { z-index: 1200; }

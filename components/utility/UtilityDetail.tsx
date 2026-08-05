@@ -3,6 +3,7 @@
 import { useEffect, useMemo, useState, useRef } from "react";
 import { useI18n } from "@/components/I18nProvider";
 import { useSocket } from "@/components/games/SocketProvider";
+import { useOverlay } from "@/lib/useOverlay";
 import {
   CLICK_HINT,
   CLICK_LABEL,
@@ -107,14 +108,9 @@ export default function UtilityDetail({
     };
   }, [draggingHandle, crosshairInsets]); // need crosshairInsets in dep array for updateInset
 
-  // Lock body scroll when lightbox or capture preview is open
-  useEffect(() => {
-    if (lightbox || capturePreview) {
-      const originalStyle = window.getComputedStyle(document.body).overflow;  
-      document.body.style.overflow = "hidden";
-      return () => { document.body.style.overflow = originalStyle; };
-    }
-  }, [lightbox, capturePreview]);
+  // Locks scrolling and stands the friends launcher down, which was otherwise
+  // floating on top of the fullscreen preview.
+  useOverlay(Boolean(lightbox || capturePreview));
 
   const shots = useMemo<Shot[]>(() => {
     const out: Shot[] = [];

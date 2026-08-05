@@ -344,6 +344,25 @@ model UserSettings {
   @@map("UserSettings")
 }
 
+/// The half of a competitive retakes loadout the game does not read yet.
+///
+/// Weapons live in UserSettings above, because the allocator already reads that
+/// every buy round and a second copy here would be a settings page that does
+/// nothing. Role and utility preference have no in-game counterpart, so they
+/// are website-owned: your team can read them, the server cannot act on them.
+model GardenRetakeLoadout {
+  SteamId BigInt @id @db.UnsignedBigInt
+  /// One of lib/retakeLoadout ROLES, or "" for none chosen.
+  RoleT   String @default("") @db.VarChar(16)
+  RoleCt  String @default("") @db.VarChar(16)
+  /// { pistol: [...], half: [...], full: [...] } — ordered, first choice first.
+  UtilityPrefs String? @db.Text
+  Notes        String? @db.VarChar(300)
+  UpdatedAt    DateTime @default(now()) @updatedAt @db.DateTime(6)
+
+  @@map("GardenRetakeLoadouts")
+}
+
 // ---------------- Web Games / Social Features ----------------
 
 model WebFriendship {
