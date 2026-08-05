@@ -223,10 +223,10 @@ export default function UtilityDetail({
               ))}
             </div>
           )}
-          <button className="util-shotframe" onClick={() => setLightbox(true)} title={t("utility.enlarge")}>
+          <button className="util-shotframe" onClick={() => setLightbox(true)} title={t("utility.enlarge")} style={{ width: "100%", position: "relative", display: "block", padding: 0, border: "none", background: "transparent", cursor: "zoom-in" }}>
             {/* eslint-disable-next-line @next/next/no-img-element */}
-            <img src={shot.src} alt={`${lineup.name} — ${shot.label}`} loading="lazy" />
-            <span className="util-shotzoom" aria-hidden>⤢</span>
+            <img src={shot.src} alt={`${lineup.name} — ${shot.label}`} loading="lazy" style={{ width: "100%", display: "block", borderRadius: 8, border: "1px solid color-mix(in srgb, var(--color-text) 15%, transparent)" }} />
+            <span className="util-shotzoom" aria-hidden style={{ position: "absolute", bottom: 8, right: 8, background: "rgba(0,0,0,0.6)", padding: "4px 8px", borderRadius: 4 }}>⤢</span>
           </button>
         </figure>
       ) : (

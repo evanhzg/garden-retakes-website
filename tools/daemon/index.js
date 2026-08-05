@@ -69,28 +69,58 @@ ${utilitySlot}
     }
 
     if (process.platform === "win32") {
-      console.log(">>> PLEASE LEAVE YOUR CS2 CONSOLE OPEN! <<<");
-      console.log("The daemon will automatically focus CS2, type the command, and capture the screen in 3 seconds...");
+      console.log(">>> AUTOMATIC CAPTURE INITIATED <<<");
+      console.log("The daemon will automatically focus CS2, execute the command, and capture the screen in 3 seconds...");
       
       // Wait 3 seconds for safety
       await new Promise(r => setTimeout(r, 3000));
       
       console.log("Executing command in CS2...");
       try {
+        const consoleKey = process.env.CONSOLE_KEY || '{F10}';
         const psScript = `
+          Add-Type @"
+            using System;
+            using System.Runtime.InteropServices;
+            public class Win32 {
+              [DllImport("user32.dll")]
+              public static extern IntPtr GetForegroundWindow();
+              [DllImport("user32.dll")]
+              public static extern bool SetForegroundWindow(IntPtr hWnd);
+            }
+"@
+          $original = [Win32]::GetForegroundWindow();
           $wshell = New-Object -ComObject wscript.shell;
           $wshell.AppActivate('Counter-Strike 2');
           Start-Sleep -m 500;
+          $wshell.SendKeys('${consoleKey}');
+          Start-Sleep -m 500;
           $wshell.SendKeys('exec garden_capture_daemon{ENTER}');
+          Start-Sleep -m 500;
+          $wshell.SendKeys('${consoleKey}');
+          Start-Sleep -m 2500; # Wait 2.5s for teleport to finish and viewmodel to draw
+          # Trigger screenshot tool (this runs back in node)
+          Out-File -FilePath "$env:TEMP\\garden_capture_ready.txt" -InputObject "READY";
+          Start-Sleep -m 1500; # Give node time to take the screenshot
+          [Win32]::SetForegroundWindow($original);
         `;
-        execSync(`powershell -c "${psScript.replace(/\n/g, ' ')}"`);
+        
+        // We will run this powershell script asynchronously so Node can take the screenshot while powershell sleeps
+        const fs = require('fs');
+        const tmpFile = path.join(process.env.TEMP || 'C:\\Windows\\Temp', 'garden_capture_ready.txt');
+        if (fs.existsSync(tmpFile)) fs.unlinkSync(tmpFile);
+        
+        require('child_process').exec(`powershell -c "${psScript.replace(/\n/g, ' ')}"`);
+        
+        // Wait for the powershell script to signal readiness
+        console.log("Waiting for teleport...");
+        while (!fs.existsSync(tmpFile)) {
+          await new Promise(r => setTimeout(r, 100));
+        }
+        if (fs.existsSync(tmpFile)) fs.unlinkSync(tmpFile);
       } catch (e) {
         console.error("Failed to focus and type in CS2:", e);
       }
-      
-      // Wait for the game to process the teleport and draw the viewmodel
-      console.log("Waiting 2 seconds for teleport...");
-      await new Promise(r => setTimeout(r, 2000));
     } else {
       console.log(">>> PLEASE GO IN-GAME, LOAD THE MAP, AND PASTE 'exec garden_capture_daemon' IN CONSOLE <<<");
       console.log("Taking screenshot automatically in 8 seconds. Switch to the game now!");
@@ -102,13 +132,6 @@ ${utilitySlot}
     await screenshot({ filename: shotPath, format: 'jpg' });
 
     console.log(`Saved screenshot to: ${shotPath}`);
-
-    if (process.platform === "win32") {
-      try {
-        // Unfocus the game by focusing the node command prompt
-        execSync(`powershell -c "$wshell = New-Object -ComObject wscript.shell; $wshell.AppActivate('cmd'); $wshell.AppActivate('Windows PowerShell'); $wshell.AppActivate('node')"`);
-      } catch (e) {}
-    }
 
     // 4. Upload to website
     console.log("Uploading to website...");
