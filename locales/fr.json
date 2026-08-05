@@ -2072,5 +2072,11 @@
   "admin.captureSuggestions.setpos": "Setpos",
   "admin.captureSuggestions.notes": "Notes",
   "admin.approve": "Approuver",
-  "admin.reject": "Rejeter"
+  "admin.reject": "Rejeter",
+  "utility.precisionTool": "Outil de précision",
+  "utility.resetGuides": "Réinitialiser les repères",
+  "utility.guideLeft": "Déplacer l'extrémité gauche du repère horizontal",
+  "utility.guideRight": "Déplacer l'extrémité droite du repère horizontal",
+  "utility.guideTop": "Déplacer l'extrémité haute du repère vertical",
+  "utility.guideBottom": "Déplacer l'extrémité basse du repère vertical"
 }

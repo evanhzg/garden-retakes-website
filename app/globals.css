@@ -10515,3 +10515,144 @@ body.inv-fullscreen .main-content > main.container { flex: none; }
   --btn-primary-bg: #d97706;
   --btn-primary-bg-hover: #b45309;
 }
+
+/* ---------------------------------------------------------------------------
+   Utility lineup previews — thumbnail loupe and the fullscreen viewer.
+
+   The thumbnail lives in a narrow sidebar and the thing worth seeing in it is
+   a crosshair a few pixels across, so it magnifies under the pointer rather
+   than opening straight away. The fullscreen viewer is where the alignment
+   work actually happens, so its frame is sized to the picture and nothing else.
+   --------------------------------------------------------------------------- */
+
+.util-shots { margin: 0 0 14px; }
+
+.util-shottabs { display: flex; gap: 6px; margin-bottom: 8px; flex-wrap: wrap; }
+.util-shottab {
+  padding: 4px 11px; border-radius: 999px;
+  border: 1.5px solid var(--btn-secondary-border);
+  background: var(--btn-secondary-bg); color: var(--muted);
+  font: inherit; font-size: 12px; font-weight: 600; cursor: pointer;
+}
+.util-shottab.on { background: var(--btn-primary-bg); color: var(--btn-primary-ink); border-color: transparent; }
+
+.util-shotframe {
+  display: block; width: 100%; padding: 0;
+  border: 0; background: none; cursor: zoom-in;
+}
+/* The clip is the loupe's window; the image scales inside it. */
+.util-shotframe-clip {
+  position: relative; display: block; overflow: hidden;
+  border-radius: 10px;
+  border: 1px solid color-mix(in srgb, var(--color-text) 15%, transparent);
+  background: #0b0a0a;
+}
+.util-shotframe-clip > img {
+  display: block; width: 100%; height: auto;
+  /* contain, not cover: a cropped lineup shot can lose the very corner the
+     lineup is aimed at, and a screenshot that is not 16:9 got cropped every
+     time. The frame follows the picture instead of the other way round. */
+  object-fit: contain;
+  transition: transform 0.18s ease;
+  will-change: transform;
+  user-select: none;
+}
+.util-shotzoom {
+  position: absolute; right: 8px; bottom: 8px;
+  padding: 3px 8px; border-radius: 6px;
+  background: rgb(0 0 0 / 0.62); color: #fff;
+  font-size: 13px; line-height: 1; pointer-events: none;
+}
+
+.util-noshot { font-size: 13px; color: var(--muted); margin: 0 0 14px; }
+
+/* --- fullscreen ----------------------------------------------------------- */
+
+.util-lightbox {
+  position: fixed; inset: 0; z-index: 1000;
+  display: grid; place-items: center;
+  padding: clamp(12px, 3vw, 40px);
+  background: rgb(0 0 0 / 0.88);
+  animation: util-lightbox-in 0.16s ease;
+}
+@keyframes util-lightbox-in { from { opacity: 0; } to { opacity: 1; } }
+
+/* Shrink-wraps the image: line-height 0 kills the inline descender gap that
+   would otherwise make the frame a few pixels taller than the picture and put
+   every guide slightly off. */
+.util-lightbox-frame {
+  position: relative;
+  display: inline-block;
+  line-height: 0;
+  border-radius: 10px;
+  box-shadow: 0 24px 70px rgb(0 0 0 / 0.55);
+}
+.util-lightbox-img {
+  display: block;
+  max-width: min(94vw, 1600px);
+  max-height: 86vh;
+  width: auto; height: auto;
+  border-radius: 10px;
+  user-select: none;
+}
+
+/* Controls sit on the picture. Underneath, they take vertical space, and a
+   grid that centres frame-plus-buttons leaves the picture itself sitting high. */
+.util-lightbox-tabs,
+.util-lightbox-tools {
+  position: absolute; z-index: 12;
+  display: flex; gap: 6px; flex-wrap: wrap;
+  line-height: normal;
+}
+.util-lightbox-tabs { top: 12px; left: 12px; }
+.util-lightbox-tools { bottom: 12px; right: 12px; }
+
+.util-lightbox-pill {
+  padding: 7px 14px; border-radius: 999px;
+  border: 1px solid rgb(255 255 255 / 0.16);
+  background: rgb(18 16 15 / 0.78);
+  -webkit-backdrop-filter: blur(8px); backdrop-filter: blur(8px);
+  color: #fff; font: inherit; font-size: 13px; font-weight: 600;
+  cursor: pointer; transition: background 0.12s ease, color 0.12s ease;
+}
+.util-lightbox-pill:hover { background: rgb(38 34 32 / 0.9); }
+.util-lightbox-pill.on {
+  background: var(--color-accent); border-color: transparent;
+  color: #fff;
+}
+.util-lightbox-pill.close { padding-inline: 12px; }
+
+/* --- alignment guides ----------------------------------------------------- */
+
+.crosshair-container { position: absolute; inset: 0; pointer-events: none; }
+
+.crosshair-line {
+  position: absolute;
+  background: var(--color-accent);
+  /* A dark hairline underneath so the guide stays visible against a bright
+     skybox, which is where half of these lineups are aimed. */
+  box-shadow: 0 0 0 1px rgb(0 0 0 / 0.6);
+}
+.crosshair-line.h { top: 50%; height: 2px; transform: translateY(-50%); }
+.crosshair-line.v { left: 50%; width: 2px; transform: translateX(-50%); }
+
+.crosshair-handle {
+  position: absolute;
+  width: 18px; height: 18px; padding: 0;
+  border: 2px solid rgb(0 0 0 / 0.55);
+  border-radius: 50%;
+  background: var(--color-accent);
+  transform: translate(-50%, -50%);
+  cursor: grab;
+  opacity: 0.75;
+  transition: opacity 0.14s ease, transform 0.14s ease;
+  pointer-events: auto;
+  z-index: 13;
+}
+.crosshair-handle:hover { opacity: 1; transform: translate(-50%, -50%) scale(1.18); }
+.crosshair-handle.dragging { opacity: 1; cursor: grabbing; transform: translate(-50%, -50%) scale(1.25); }
+
+@media (max-width: 640px) {
+  .util-lightbox-tabs, .util-lightbox-tools { position: static; justify-content: center; margin: 8px 0 0; }
+  .util-lightbox-frame { display: flex; flex-direction: column; }
+}
