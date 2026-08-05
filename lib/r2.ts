@@ -125,6 +125,34 @@ export async function deleteObject(key: string): Promise<boolean> {
   }
 }
 
+/** Upload a buffer directly to R2. */
+export async function uploadBuffer(buffer: Buffer, key: string): Promise<boolean> {
+  const url = presign("PUT", key, 120);
+  if (!url) return false;
+  try {
+    const res = await fetch(url, {
+      method: "PUT",
+      body: new Uint8Array(buffer),
+    });
+    return res.ok;
+  } catch {
+    return false;
+  }
+}
+
+export function getPublicUrl(key: string): string {
+  const r2Url = process.env.R2_PUBLIC_URL;
+  if (r2Url) {
+    return `${r2Url}/${key}`;
+  }
+  const cfg = r2Config();
+  if (cfg) {
+    return `https://${cfg.accountId}.r2.cloudflarestorage.com/${cfg.bucket}/${key}`;
+  }
+  return key;
+}
+
 /** Where an uploaded demo lives in the bucket. */
 export const demoKey = (id: number, fileName: string) =>
   `demos/${id}-${fileName.replace(/[^A-Za-z0-9._-]/g, "_")}`.slice(0, 300);
+

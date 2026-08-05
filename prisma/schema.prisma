@@ -48,6 +48,7 @@ model PlayerSeasonStats {
   UnrankedRoundsPlayed Int
   LastRankedRoundAtUtc DateTime? @db.DateTime(6)
   UpdatedAtUtc         DateTime  @db.DateTime(6)
+  IsCalibrating        Boolean   @default(true)
 
   @@unique([SeasonId, SteamId])
   @@map("PlayerSeasonStats")
@@ -97,6 +98,9 @@ model PlayerRoundRecord {
   /// Itemised impact breakdown as JSON: what happened, what it was worth, and
   /// who else was involved. Written by the plugin alongside the rating.
   ImpactBreakdown            String?  @db.Text
+  
+  ConsistencyMultiplier      Float?   @db.Float
+  MapPerformancePoints       Float?   @db.Float
 
   @@index([SteamId, PlayedAtUtc])
   @@index([SeasonId, SteamId])
@@ -733,6 +737,20 @@ model GardenClipRequest {
   @@index([SessionId])
   @@index([SteamId])
   @@map("GardenClipRequests")
+}
+
+/// A user's suggestion to fix a lineup's setpos or details.
+model GardenCaptureSuggestion {
+  Id              Int      @id @default(autoincrement())
+  LineupId        Int
+  SuggestedSetpos String?  @db.VarChar(500)
+  Notes           String?  @db.VarChar(500)
+  Status          String   @default("pending") @db.VarChar(16) // pending, approved, rejected
+  SubmittedBy     BigInt   @db.UnsignedBigInt
+  CreatedAt       DateTime @default(now()) @db.DateTime(6)
+
+  @@index([Status])
+  @@map("GardenCaptureSuggestions")
 }
 
 /// A link on someone's profile, and whether anyone else may see it.

@@ -2,6 +2,7 @@
 
 import { useEffect, useMemo, useState } from "react";
 import { useI18n } from "@/components/I18nProvider";
+import { useSocket } from "@/components/games/SocketProvider";
 import {
   CLICK_HINT,
   CLICK_LABEL,
@@ -44,8 +45,16 @@ export default function UtilityDetail({
   onNote,
 }: Props) {
   const { t } = useI18n();
+  const { socket, isAuthed } = useSocket();
   const [shotKey, setShotKey] = useState<Shot["key"]>("aim");
   const [lightbox, setLightbox] = useState(false);
+  
+  const [capturing, setCapturing] = useState(false);
+  const [capturePreview, setCapturePreview] = useState<string | null>(null);
+  const [suggesting, setSuggesting] = useState(false);
+  const [suggestSetpos, setSuggestSetpos] = useState("");
+  const [suggestNotes, setSuggestNotes] = useState("");
+  const [submitting, setSubmitting] = useState(false);
 
   const shots = useMemo<Shot[]>(() => {
     const out: Shot[] = [];
@@ -69,6 +78,18 @@ export default function UtilityDetail({
     return () => window.removeEventListener("keydown", onKey);
   }, [lightbox]);
 
+  useEffect(() => {
+    if (!socket) return;
+    const onPreview = (data: { url: string }) => {
+      setCapturePreview(data.url);
+      setCapturing(false);
+    };
+    socket.on("capture_preview", onPreview);
+    return () => {
+      socket.off("capture_preview", onPreview);
+    };
+  }, [socket]);
+
   const shot = shots.find((s) => s.key === shotKey) ?? shots[0] ?? null;
   const setpos = setposFor(lineup);
 
@@ -77,6 +98,54 @@ export default function UtilityDetail({
       ?.writeText(text)
       .then(() => onNote({ kind: "ok", text: ok }))
       .catch(() => onNote({ kind: "err", text: t("utility.copyfailed") }));
+  };
+
+  const handleCaptureRequest = () => {
+    if (!socket || !isAuthed) return;
+    setCapturing(true);
+    socket.emit("capture_request", {
+      lineupId: lineup.id,
+      map: lineup.map,
+      setpos: `setpos ${lineup.stand.x} ${lineup.stand.y} ${lineup.stand.z}; setang ${lineup.view.pitch} ${lineup.view.yaw}`
+    });
+  };
+
+  const handleAcceptCapture = async () => {
+    setSubmitting(true);
+    try {
+      await fetch(`/api/lineups/${lineup.id}`, {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ shotType: shotKey, url: capturePreview })
+      });
+      onNote({ kind: "ok", text: t("common.saved") });
+    } catch {
+      onNote({ kind: "err", text: t("common.networkError") });
+    }
+    setSubmitting(false);
+    setCapturePreview(null);
+  };
+
+  const handleSubmitSuggestion = async (e: React.FormEvent) => {
+    e.preventDefault();
+    setSubmitting(true);
+    try {
+      await fetch(`/api/admin/capture-suggestions`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          lineupId: lineup.id,
+          setpos: suggestSetpos,
+          notes: suggestNotes
+        })
+      });
+      onNote({ kind: "ok", text: t("common.saved") });
+    } catch {
+      onNote({ kind: "err", text: t("common.networkError") });
+    }
+    setSubmitting(false);
+    setSuggesting(false);
+    setCapturePreview(null);
   };
 
   return (
@@ -203,6 +272,15 @@ export default function UtilityDetail({
         >
           {t("utility.copylink")}
         </button>
+        {signedIn && (
+          <button 
+            className="btn btn-secondary" 
+            onClick={handleCaptureRequest} 
+            disabled={capturing || !isAuthed}
+          >
+            {capturing ? t("utility.capturing") : t("utility.updateScreenshot")}
+          </button>
+        )}
       </div>
 
       <code className="util-setpos">{setpos}</code>
@@ -224,6 +302,39 @@ export default function UtilityDetail({
             <button className="util-shottab" onClick={() => setLightbox(false)}>
               {t("utility.close")}
             </button>
+          </div>
+        </div>
+      )}
+
+      {capturePreview && (
+        <div className="util-lightbox" role="dialog" aria-modal="true" onClick={() => setCapturePreview(null)}>
+          <div className="util-capture-modal" onClick={e => e.stopPropagation()} style={{ background: "var(--bg)", padding: 24, borderRadius: 8, maxWidth: 600, width: "100%", margin: "auto", position: "relative", zIndex: 10 }}>
+            <h3 style={{ marginTop: 0 }}>{t("utility.capturePreview")}</h3>
+            {!suggesting ? (
+              <>
+                <img src={capturePreview} alt="Preview" style={{ width: "100%", borderRadius: 4, marginBottom: 16 }} />
+                <div style={{ display: "flex", gap: 8, justifyContent: "flex-end" }}>
+                  <button className="btn btn-secondary" onClick={() => setSuggesting(true)}>{t("utility.suggestModifications")}</button>
+                  <button className="btn btn-primary" onClick={handleAcceptCapture} disabled={submitting}>{submitting ? t("common.saving") : t("utility.accept")}</button>
+                </div>
+              </>
+            ) : (
+              <form onSubmit={handleSubmitSuggestion}>
+                <div style={{ marginBottom: 16 }}>
+                  <label style={{ display: "block", marginBottom: 8 }}>{t("utility.newSetpos")}</label>
+                  <input type="text" className="input" style={{ width: "100%" }} value={suggestSetpos} onChange={e => setSuggestSetpos(e.target.value)} required />
+                </div>
+                <div style={{ marginBottom: 16 }}>
+                  <label style={{ display: "block", marginBottom: 8 }}>{t("utility.notes")}</label>
+                  <textarea className="input" style={{ width: "100%", minHeight: 80 }} value={suggestNotes} onChange={e => setSuggestNotes(e.target.value)} required />
+                </div>
+                <div style={{ display: "flex", gap: 8, justifyContent: "flex-end" }}>
+                  <button type="button" className="btn btn-ghost" onClick={() => setSuggesting(false)}>{t("common.cancel")}</button>
+                  <button type="submit" className="btn btn-primary" disabled={submitting}>{submitting ? t("utility.submitting") : t("utility.submitSuggestion")}</button>
+                </div>
+              </form>
+            )}
+            <button className="btn btn-ghost" style={{ position: "absolute", top: 16, right: 16 }} onClick={() => setCapturePreview(null)}>✕</button>
           </div>
         </div>
       )}

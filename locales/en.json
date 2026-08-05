@@ -2062,5 +2062,21 @@
   "season.break.banner.frozen": "Season 1 is on a break. Ranked and Competitive Retakes will return {date}. Cast your vote at {link}.",
   "season.break.banner.soon": "Season 2 starts soon — stay tuned.",
   "season.break.start_season": "Start season now",
-  "season.break.start_season_desc": "Run !season_start in game to open the season."
+  "season.break.start_season_desc": "Run !season_start in game to open the season.",
+  "utility.updateScreenshot": "Update Screenshot",
+  "utility.capturePreview": "Capture Preview",
+  "utility.accept": "Accept",
+  "utility.reject": "Reject",
+  "utility.suggestModifications": "Suggest Modifications",
+  "utility.newSetpos": "New Setpos",
+  "utility.notes": "Notes",
+  "utility.submitSuggestion": "Submit Suggestion",
+  "utility.submitting": "Submitting...",
+  "utility.capturing": "Waiting for capture...",
+  "admin.captureSuggestions.empty": "No capture suggestions waiting.",
+  "admin.captureSuggestions.lineup": "Lineup",
+  "admin.captureSuggestions.setpos": "Setpos",
+  "admin.captureSuggestions.notes": "Notes",
+  "admin.approve": "Approve",
+  "admin.reject": "Reject"
 }

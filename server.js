@@ -277,6 +277,21 @@ io.on("connection", (socket) => {
     }
   });
 
+  // Relay utility screenshot capture
+  socket.on("capture_request", (data) => {
+    // Website asking daemon to capture
+    io.emit("capture_job", { steamId: socket.steamId, ...data });
+  });
+
+  socket.on("capture_result", (data) => {
+    // Daemon giving preview URL to the user
+    if (!data.steamId) return;
+    const targetSocket = connectedUsers.get(data.steamId);
+    if (targetSocket) {
+      io.to(targetSocket).emit("capture_preview", data);
+    }
+  });
+
   // Game Lobby Logic
   socket.on("join_lobby", (data) => {
     const { lobbyId } = data;

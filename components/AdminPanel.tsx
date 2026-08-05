@@ -6,6 +6,7 @@ import SkinManager from "@/components/admin/SkinManager";
 import PluginConfigEditor from "@/components/admin/PluginConfigEditor";
 import PendingDemos from "@/components/admin/PendingDemos";
 import AdminOverview from "@/components/admin/AdminOverview";
+import CaptureSuggestions from "@/components/admin/CaptureSuggestions";
 import { useI18n } from '@/components/I18nProvider';
 import { GAME_MODES, RETAKE_FLAVOURS } from "@/lib/gameModes";
 import { freezeDate, freezeLeft, isFrozen, type FreezePoll } from "@/lib/seasonFreeze";
@@ -36,7 +37,7 @@ type LogEntry = {
   detail: string | null;
 };
 
-type TabId = "overview" | "players" | "server" | "config" | "console" | "skins" | "demos" | "log";
+type TabId = "overview" | "players" | "server" | "config" | "console" | "skins" | "demos" | "captures" | "log";
 
 /**
  * Sections, grouped.
@@ -61,6 +62,7 @@ const SECTIONS: {
       { id: "players", label: "Players", icon: "◉", hint: "Roles, names, bans", level: 0 },
       { id: "skins", label: "Custom skins", icon: "✦", hint: "VPKs served to clients", level: 0 },
       { id: "demos", label: "Queue", icon: "⏵", hint: "Demos and clip marks waiting", level: 2 },
+      { id: "captures", label: "Captures", icon: "📷", hint: "Capture suggestions", level: 1 },
     ],
   },
   {
@@ -535,6 +537,8 @@ export default function AdminPanel({
         {tab === "skins" && <SkinManager adminKey={adminKey} canUpload={canAdmin} />}
 
         {tab === "demos" && canAdmin && <PendingDemos adminKey={adminKey} />}
+
+        {tab === "captures" && canMod && <CaptureSuggestions adminKey={adminKey} />}
 
         {tab === "log" && (
           <div className="adm-scroll">

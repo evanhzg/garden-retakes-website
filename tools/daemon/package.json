@@ -1,0 +1,14 @@
+{
+  "name": "garden-capture-daemon",
+  "version": "1.0.0",
+  "description": "Local screenshot daemon for Garden",
+  "main": "index.js",
+  "scripts": {
+    "start": "node index.js"
+  },
+  "dependencies": {
+    "socket.io-client": "^4.8.3",
+    "form-data": "^4.0.0",
+    "node-fetch": "^2.6.7"
+  }
+}

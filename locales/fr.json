@@ -2056,5 +2056,21 @@
   "season.break.banner.frozen": "La saison 1 est en pause. Les retakes classés et compétitifs reviendront le {date}. Votez sur {link}.",
   "season.break.banner.soon": "La saison 2 commence bientôt — restez à l'écoute.",
   "season.break.start_season": "Démarrer la saison",
-  "season.break.start_season_desc": "Exécutez !season_start en jeu pour ouvrir la saison."
+  "season.break.start_season_desc": "Exécutez !season_start en jeu pour ouvrir la saison.",
+  "utility.updateScreenshot": "Mettre à jour la capture",
+  "utility.capturePreview": "Aperçu de la capture",
+  "utility.accept": "Accepter",
+  "utility.reject": "Rejeter",
+  "utility.suggestModifications": "Suggérer des modifications",
+  "utility.newSetpos": "Nouveau Setpos",
+  "utility.notes": "Notes",
+  "utility.submitSuggestion": "Soumettre la suggestion",
+  "utility.submitting": "Soumission...",
+  "utility.capturing": "En attente de la capture...",
+  "admin.captureSuggestions.empty": "Aucune suggestion de capture en attente.",
+  "admin.captureSuggestions.lineup": "Lineup",
+  "admin.captureSuggestions.setpos": "Setpos",
+  "admin.captureSuggestions.notes": "Notes",
+  "admin.approve": "Approuver",
+  "admin.reject": "Rejeter"
 }
