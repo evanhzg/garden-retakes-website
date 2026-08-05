@@ -49,6 +49,10 @@ export async function POST(req: Request, { params }: { params: { id: string } })
       Status: status,
       Note: typeof body.note === "string" ? body.note.slice(0, 500) : row.Note,
       ClipCount: Number.isInteger(body.clipCount) ? (body.clipCount as number) : row.ClipCount,
+      // Re-stamped on every claim, including a re-claim of a stalled demo, so
+      // "how long has this been running" is always measured from the attempt
+      // that is actually running.
+      ProcessingAt: status === "processing" ? new Date() : row.ProcessingAt,
       ProcessedAt: status === "processing" ? row.ProcessedAt : new Date(),
       // Clearing the key marks it wiped; a failed delete keeps it so the object
       // can be cleaned up later rather than being silently orphaned.

@@ -653,6 +653,13 @@ model FeedDemo {
   Note         String?   @db.VarChar(500)
   ClipCount    Int       @default(0)
   CreatedAt    DateTime  @default(now()) @db.DateTime(6)
+  /// When the pipeline last claimed this demo.
+  ///
+  /// Only `publish` ever clears `processing`, so a run that crashed, was
+  /// interrupted, or hit a machine reboot left the row claimed forever and the
+  /// site said "recording in progress" indefinitely. This is what makes a
+  /// stalled claim recognisable, so the queue can offer the demo again.
+  ProcessingAt DateTime? @db.DateTime(6)
   ProcessedAt  DateTime? @db.DateTime(6)
 
   @@index([SteamId])

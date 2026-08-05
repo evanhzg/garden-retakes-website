@@ -34,24 +34,45 @@ export async function GET(req: Request) {
     take: 25,
   });
 
+  // A claim only ends when publish reports back, so anything that kills the run
+  // in between — a crash, a Ctrl-C, a reboot mid-record — leaves the demo
+  // claimed by a process that no longer exists. Past this long, assume nobody
+  // is working on it and offer it again; the pipeline is idempotent, so the
+  // worst case of being wrong is one demo recorded twice.
+  //
+  // Generous, because recording genuinely is slow: CS2 has to launch, seek and
+  // render every highlight in real time.
+  const STALE_MS = 90 * 60_000;
+  const now = Date.now();
+  const stalledSince = (d: (typeof rows)[number]) =>
+    (d.ProcessingAt ?? d.ProcessedAt ?? d.CreatedAt).getTime();
+
   // Resolve uploader names so the admin list is readable rather than a column
   // of 17-digit numbers.
   const { resolveNames, nameFrom } = await import("@/lib/names");
   const names = await resolveNames(rows.map((r) => r.SteamId));
 
   return NextResponse.json({
-    demos: rows.map((d) => ({
-      id: d.Id,
-      fileName: d.FileName,
-      uploader: nameFrom(names, d.SteamId),
-      uploaderSteamId: d.SteamId.toString(),
-      focusSteamId: d.FocusSteamId?.toString() ?? null,
-      rounds: d.Rounds,
-      bytes: d.Bytes ? Number(d.Bytes) : null,
-      status: d.Status,
-      createdAt: d.CreatedAt.toISOString(),
-      // Only the pipeline gets a way to actually fetch the file.
-      downloadUrl: viaKey && d.ObjectKey ? presign("GET", d.ObjectKey, 6 * 3600) : undefined,
-    })),
+    demos: rows.map((d) => {
+      const stalled = d.Status === "processing" && now - stalledSince(d) > STALE_MS;
+      return {
+        id: d.Id,
+        fileName: d.FileName,
+        uploader: nameFrom(names, d.SteamId),
+        uploaderSteamId: d.SteamId.toString(),
+        focusSteamId: d.FocusSteamId?.toString() ?? null,
+        rounds: d.Rounds,
+        bytes: d.Bytes ? Number(d.Bytes) : null,
+        status: d.Status,
+        /** Claimed, but by a run that is not coming back. Free to pick up. */
+        stalled,
+        processingAt: d.ProcessingAt?.toISOString() ?? null,
+        createdAt: d.CreatedAt.toISOString(),
+        // Only the pipeline gets a way to actually fetch the file. A stalled
+        // demo needs one too, or re-offering it would be an empty gesture — its
+        // local copy went with whatever run died.
+        downloadUrl: viaKey && d.ObjectKey ? presign("GET", d.ObjectKey, 6 * 3600) : undefined,
+      };
+    }),
   });
 }
