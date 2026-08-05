@@ -141,15 +141,8 @@ export async function uploadBuffer(buffer: Buffer, key: string): Promise<boolean
 }
 
 export function getPublicUrl(key: string): string {
-  const r2Url = process.env.R2_PUBLIC_URL;
-  if (r2Url) {
-    return `${r2Url}/${key}`;
-  }
-  const cfg = r2Config();
-  if (cfg) {
-    return `https://${cfg.accountId}.r2.cloudflarestorage.com/${cfg.bucket}/${key}`;
-  }
-  return key;
+  const r2Url = process.env.R2_PUBLIC_URL || "https://pub-d4e54377a0e749049283720adc40934b.r2.dev";
+  return `${r2Url}/${key}`;
 }
 
 /** Where an uploaded demo lives in the bucket. */
