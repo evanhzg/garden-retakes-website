@@ -2084,11 +2084,14 @@ const syncPublicLobbies = () => {
 let nextReady = false;
 
 httpServer.on("request", (req, res) => {
+  // Socket.IO intercepts requests to /socket.io/ and handles them.
+  // We must not write headers or respond to those.
+  if (req.url && req.url.startsWith("/socket.io/")) return;
+
   // Everything that isn't the Discord bridge is a website request: hand it to
   // Next. This used to `return` bare, which was correct when Next ran as a
   // separate process — once Next was folded into this server it meant every
   // page request was accepted and then never answered, so the site just hung.
-  // (Socket.IO attaches its own upgrade/handler and is unaffected.)
   if (!req.url || !req.url.startsWith("/discord/")) {
     if (nextReady) return nextHandler(req, res);
     res.writeHead(404, { "Content-Type": "text/plain" });
