@@ -295,7 +295,7 @@ export default function UtilityDetail({
       )}
 
       {lineup.clipUrl && (
-        <video className="util-clip" src={lineup.clipUrl} poster={lineup.thumb ?? undefined} muted loop playsInline controls />
+        <video className="util-clip" src={lineup.clipUrl} poster={lineup.thumb ?? undefined} muted loop playsInline controls style={{ width: "100%", borderRadius: 8, display: "block" }} />
       )}
 
       <dl className="util-facts">
