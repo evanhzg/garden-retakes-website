@@ -89,6 +89,11 @@ const io = new Server(httpServer, {
 // SteamID -> Socket ID mapping for presence
 const connectedUsers = new Map();
 
+// Competitive retakes: parties, 2v2/3v3 queues, accept window and map veto.
+// Registers its own `rq:`-namespaced connection handler against the same io,
+// so it shares presence but cannot collide with the mini-game lobby events.
+const { attachRetakesMatchmaking } = require('./scripts/retakesMatchmaking');
+
 const UniversalLobby = require('./scripts/universalLobby');
 const universalLobbies = new Map(); // lobbyId -> UniversalLobby
 const lobbyCleanupTimers = new Map(); // lobbyId -> timeout handle for grace period deletion
@@ -209,6 +214,8 @@ const handlePkmnLeave = async (socket, io) => {
     socket.pkmnMap = null;
   }
 };
+
+attachRetakesMatchmaking(io, { connectedUsers });
 
 io.on("connection", (socket) => {
   console.log(`Socket connected: ${socket.id}`);

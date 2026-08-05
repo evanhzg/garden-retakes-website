@@ -1,0 +1,708 @@
+"use strict";
+
+/**
+ * Competitive retakes matchmaking: parties, queues, the accept window, and the
+ * map veto.
+ *
+ * Self-contained and namespaced under `rq:` so it cannot collide with the
+ * mini-game lobby events that already live on this socket server. It owns no
+ * database tables — a queue is a thing that exists for ninety seconds, and
+ * persisting it would only create rows that outlive their meaning.
+ *
+ * The one design decision worth stating: every server→client message is the
+ * whole of the state that player can see (`rq:state`), not a delta. Deltas are
+ * how a lobby ends up showing four players to one person and five to another,
+ * and there is no amount of state here worth optimising for — a party is at
+ * most three people and a match at most six.
+ *
+ * Bots fill empty slots after a grace period rather than never. A queue with
+ * one real person in it has to do something, and "wait for five strangers" is
+ * not it on a server this size.
+ */
+
+const MODES = {
+  "2v2": { id: "2v2", teamSize: 2, label: "Wingman", pool: "wingman" },
+  "3v3": { id: "3v3", teamSize: 3, label: "Trios", pool: "trios" },
+};
+
+const MAP_POOLS = {
+  wingman: ["de_inferno", "de_overpass", "de_nuke", "de_vertigo", "de_anubis", "de_ancient", "de_dust2"],
+  trios: ["de_mirage", "de_inferno", "de_nuke", "de_overpass", "de_vertigo", "de_ancient", "de_anubis"],
+};
+
+const BOT_NAMES = [
+  "f0rest", "GeT_RiGhT", "s1mple", "dev1ce", "ZywOo", "NiKo", "kennyS",
+  "coldzera", "olofmeister", "dupreeh", "electronic", "sh1ro", "m0NESY",
+];
+
+/** How long a solo queue waits for humans before bots are offered. */
+const BOT_FILL_MS = 15_000;
+/** How long everyone has to accept a found match. */
+const ACCEPT_MS = 20_000;
+/** How long one veto turn lasts before it is taken automatically. */
+const VETO_TURN_MS = 25_000;
+/** How long a completed match stays on screen before the lobby resets. */
+const READY_LINGER_MS = 15 * 60_000;
+
+const now = () => Date.now();
+const uid = (prefix) => `${prefix}_${Math.random().toString(36).slice(2, 10)}`;
+
+function attachRetakesMatchmaking(io, { connectedUsers, resolveNames }) {
+  /** partyId -> party */
+  const parties = new Map();
+  /** steamId -> partyId */
+  const partyOf = new Map();
+  /** steamId -> { partyId, from, at } */
+  const invites = new Map();
+  /** mode -> [partyId] in join order */
+  const queues = new Map(Object.keys(MODES).map((m) => [m, []]));
+  /** matchId -> match */
+  const matches = new Map();
+  /** steamId -> matchId */
+  const matchOf = new Map();
+  /** partyId -> timeout */
+  const botTimers = new Map();
+  /** matchId -> timeout */
+  const matchTimers = new Map();
+
+  // ------------------------------------------------------------------ helpers
+
+  const socketFor = (steamId) => connectedUsers.get(String(steamId));
+
+  const emitTo = (steamId, event, payload) => {
+    const sid = socketFor(steamId);
+    if (sid) io.to(sid).emit(event, payload);
+  };
+
+  const partyFor = (steamId) => {
+    const id = partyOf.get(String(steamId));
+    return id ? parties.get(id) ?? null : null;
+  };
+
+  function makeParty(steamId, name) {
+    const id = uid("p");
+    const party = {
+      id,
+      leader: String(steamId),
+      members: [{ steamId: String(steamId), name: name ?? null, ready: true }],
+      mode: "2v2",
+      queuedAt: null,
+      createdAt: now(),
+    };
+    parties.set(id, party);
+    partyOf.set(String(steamId), id);
+    return party;
+  }
+
+  const ensureParty = (steamId, name) => partyFor(steamId) ?? makeParty(steamId, name);
+
+  /** A party can never hold more people than a whole team. */
+  const partyCapacity = (party) => MODES[party.mode]?.teamSize ?? 2;
+
+  function leaveQueue(party, reason) {
+    if (!party?.queuedAt) return;
+    const q = queues.get(party.mode);
+    const i = q ? q.indexOf(party.id) : -1;
+    if (i >= 0) q.splice(i, 1);
+    party.queuedAt = null;
+    party.queueReason = reason ?? null;
+    const t = botTimers.get(party.id);
+    if (t) {
+      clearTimeout(t);
+      botTimers.delete(party.id);
+    }
+  }
+
+  function disbandParty(party) {
+    if (!party) return;
+    leaveQueue(party);
+    for (const m of party.members) partyOf.delete(m.steamId);
+    parties.delete(party.id);
+  }
+
+  // ------------------------------------------------------------------- state
+
+  /** Everything one player is allowed to know, in one object. */
+  function stateFor(steamId) {
+    const id = String(steamId);
+    const party = partyFor(id);
+    const matchId = matchOf.get(id);
+    const match = matchId ? matches.get(matchId) : null;
+    const invite = invites.get(id) ?? null;
+
+    return {
+      modes: Object.values(MODES).map((m) => ({ id: m.id, label: m.label, teamSize: m.teamSize })),
+      party: party && {
+        id: party.id,
+        leader: party.leader,
+        isLeader: party.leader === id,
+        mode: party.mode,
+        capacity: partyCapacity(party),
+        members: party.members,
+        queuedAt: party.queuedAt,
+        queueReason: party.queueReason ?? null,
+      },
+      invite: invite && { partyId: invite.partyId, from: invite.from, fromName: invite.fromName, at: invite.at },
+      queue: party?.queuedAt
+        ? {
+            mode: party.mode,
+            since: party.queuedAt,
+            searching: queuedPlayerCount(party.mode),
+            botFillAt: party.queuedAt + BOT_FILL_MS,
+          }
+        : null,
+      match: match ? publicMatch(match, id) : null,
+      online: connectedUsers.size,
+    };
+  }
+
+  function queuedPlayerCount(mode) {
+    const q = queues.get(mode) ?? [];
+    return q.reduce((n, pid) => n + (parties.get(pid)?.members.length ?? 0), 0);
+  }
+
+  function publicMatch(match, viewerId) {
+    const mine = match.teams.findIndex((t) => t.players.some((p) => p.steamId === viewerId));
+    return {
+      id: match.id,
+      mode: match.mode,
+      phase: match.phase,
+      yourTeam: mine < 0 ? null : mine,
+      teams: match.teams.map((t, i) => ({
+        index: i,
+        name: t.name,
+        side: t.side ?? null,
+        players: t.players.map((p) => ({
+          steamId: p.steamId,
+          name: p.name,
+          bot: !!p.bot,
+          accepted: !!p.accepted,
+          leader: !!p.leader,
+        })),
+      })),
+      accept: match.phase === "found" ? { deadline: match.acceptDeadline, total: match.humanCount, done: match.acceptedCount } : null,
+      veto: match.phase === "veto" || match.phase === "ready"
+        ? {
+            pool: match.pool,
+            actions: match.actions,
+            turn: match.turn,
+            turnDeadline: match.turnDeadline,
+            yourTurn: mine >= 0 && match.turn === mine && match.phase === "veto",
+            remaining: match.remaining,
+            step: match.stepIndex,
+            plan: match.plan,
+          }
+        : null,
+      result: match.phase === "ready" ? { map: match.map, connect: match.connect, sides: match.teams.map((t) => t.side) } : null,
+      chat: match.chat.slice(-40),
+    };
+  }
+
+  /** Push fresh state to everyone who can see it. */
+  function syncParty(party) {
+    if (!party) return;
+    for (const m of party.members) emitTo(m.steamId, "rq:state", stateFor(m.steamId));
+  }
+
+  function syncMatch(match) {
+    for (const t of match.teams) {
+      for (const p of t.players) {
+        if (!p.bot) emitTo(p.steamId, "rq:state", stateFor(p.steamId));
+      }
+    }
+  }
+
+  function syncQueue(mode) {
+    for (const pid of queues.get(mode) ?? []) syncParty(parties.get(pid));
+  }
+
+  // -------------------------------------------------------------- match-making
+
+  function tryMatch(mode) {
+    const cfg = MODES[mode];
+    const q = queues.get(mode);
+    if (!cfg || !q) return;
+    const needed = cfg.teamSize * 2;
+
+    // Greedy first-fit over parties in join order. Parties are small and never
+    // split, so the first combination that reaches the exact head-count is the
+    // one that has waited longest — which is the property that matters.
+    const chosen = [];
+    let total = 0;
+    for (const pid of q) {
+      const party = parties.get(pid);
+      if (!party) continue;
+      if (total + party.members.length > needed) continue;
+      chosen.push(party);
+      total += party.members.length;
+      if (total === needed) break;
+    }
+    if (total !== needed) return;
+
+    for (const p of chosen) leaveQueue(p, "matched");
+    startMatch(mode, chosen, []);
+    syncQueue(mode);
+  }
+
+  /** Bots exist so one person can still play. They accept instantly and ban randomly. */
+  function fillWithBots(party) {
+    if (!party?.queuedAt) return;
+    const cfg = MODES[party.mode];
+    const needed = cfg.teamSize * 2;
+    const humans = party.members.length;
+    const pool = BOT_NAMES.slice().sort(() => Math.random() - 0.5);
+    const bots = pool.slice(0, needed - humans).map((name) => ({
+      steamId: uid("bot"),
+      name,
+      bot: true,
+      accepted: true,
+    }));
+    leaveQueue(party, "bots");
+    startMatch(party.mode, [party], bots);
+    syncQueue(party.mode);
+  }
+
+  function startMatch(mode, partiesIn, bots) {
+    const cfg = MODES[mode];
+    const id = uid("m");
+
+    // Parties are placed whole — splitting a duo across both teams is the one
+    // thing a party is for.
+    const teams = [
+      { name: "Team A", players: [], side: null },
+      { name: "Team B", players: [], side: null },
+    ];
+    const sorted = [...partiesIn].sort((a, b) => b.members.length - a.members.length);
+    for (const party of sorted) {
+      const target = teams[0].players.length <= teams[1].players.length ? teams[0] : teams[1];
+      for (const m of party.members) {
+        target.players.push({
+          steamId: m.steamId,
+          name: m.name,
+          accepted: false,
+          leader: m.steamId === party.leader,
+        });
+      }
+    }
+    for (const bot of bots) {
+      const target = teams[0].players.length <= teams[1].players.length ? teams[0] : teams[1];
+      target.players.push(bot);
+    }
+    // Each team needs a captain to drive the veto; the party leader on that
+    // team, else the first human, else the first bot.
+    for (const t of teams) {
+      if (!t.players.some((p) => p.leader && !p.bot)) {
+        const human = t.players.find((p) => !p.bot);
+        if (human) human.leader = true;
+      }
+    }
+
+    const pool = MAP_POOLS[cfg.pool].slice();
+    const match = {
+      id,
+      mode,
+      phase: "found",
+      teams,
+      pool,
+      remaining: pool.slice(),
+      actions: [],
+      // A coin flip, stated as one: whoever wins bans first, and the other
+      // team picks sides at the end. Without it the first team listed always
+      // had the advantage of the first ban.
+      turn: Math.random() < 0.5 ? 0 : 1,
+      stepIndex: 0,
+      plan: vetoPlan(pool.length),
+      turnDeadline: null,
+      map: null,
+      connect: null,
+      chat: [],
+      humanCount: teams.flatMap((t) => t.players).filter((p) => !p.bot).length,
+      acceptedCount: 0,
+      acceptDeadline: now() + ACCEPT_MS,
+      partyIds: partiesIn.map((p) => p.id),
+    };
+
+    matches.set(id, match);
+    for (const t of teams) for (const p of t.players) if (!p.bot) matchOf.set(p.steamId, id);
+
+    matchTimers.set(
+      id,
+      setTimeout(() => expireAccept(id), ACCEPT_MS)
+    );
+    syncMatch(match);
+  }
+
+  /**
+   * Ban until one map is left, then the team that did not ban last picks a side.
+   *
+   * Seven maps means six bans, alternating. It is the format everyone already
+   * knows from Faceit, and for a pool this size it is also simply the only one
+   * that ends with a map nobody hated most.
+   */
+  function vetoPlan(poolSize) {
+    const steps = [];
+    for (let i = 0; i < poolSize - 1; i++) steps.push({ type: "ban" });
+    steps.push({ type: "side" });
+    return steps;
+  }
+
+  function expireAccept(matchId) {
+    const match = matches.get(matchId);
+    if (!match || match.phase !== "found") return;
+
+    const declined = match.teams
+      .flatMap((t) => t.players)
+      .filter((p) => !p.bot && !p.accepted)
+      .map((p) => p.steamId);
+
+    abandonMatch(match, { requeue: true, blame: declined, reason: "timeout" });
+  }
+
+  /** Put everyone who did their part back in the queue; drop everyone who did not. */
+  function abandonMatch(match, { requeue, blame, reason }) {
+    clearTimeout(matchTimers.get(match.id));
+    matchTimers.delete(match.id);
+    matches.delete(match.id);
+
+    const blamed = new Set(blame ?? []);
+    const affected = [];
+
+    for (const pid of match.partyIds) {
+      const party = parties.get(pid);
+      if (!party) continue;
+      const guilty = party.members.some((m) => blamed.has(m.steamId));
+      for (const m of party.members) matchOf.delete(m.steamId);
+      affected.push(party);
+      if (requeue && !guilty) {
+        enqueue(party);
+      } else {
+        party.queueReason = guilty ? "declined" : reason ?? null;
+      }
+    }
+
+    for (const t of match.teams) {
+      for (const p of t.players) {
+        if (p.bot) continue;
+        matchOf.delete(p.steamId);
+        emitTo(p.steamId, "rq:notice", {
+          kind: blamed.has(p.steamId) ? "error" : "warn",
+          code: blamed.has(p.steamId) ? "you_declined" : "match_cancelled",
+        });
+        emitTo(p.steamId, "rq:state", stateFor(p.steamId));
+      }
+    }
+    for (const party of affected) syncParty(party);
+  }
+
+  function beginVeto(match) {
+    clearTimeout(matchTimers.get(match.id));
+    match.phase = "veto";
+    armTurn(match);
+    syncMatch(match);
+  }
+
+  /**
+   * Start the clock on whoever's turn it is, and resolve it for them if that
+   * team is bots.
+   *
+   * Shared by the first turn and every turn after it. When only `advance` did
+   * this, a coin flip that gave the first ban to an all-bot team left the board
+   * frozen for the full turn timer before anything happened — twenty-five
+   * seconds of a veto screen that looks broken, on exactly half of all solo
+   * matches.
+   */
+  function armTurn(match) {
+    match.turnDeadline = now() + VETO_TURN_MS;
+    clearTimeout(matchTimers.get(match.id));
+    matchTimers.set(match.id, setTimeout(() => autoVeto(match.id), VETO_TURN_MS));
+
+    // A beat, so the ban is watchable rather than instant.
+    if (match.teams[match.turn].players.every((p) => p.bot)) {
+      setTimeout(() => autoVeto(match.id), 1400);
+    }
+  }
+
+  function autoVeto(matchId) {
+    const match = matches.get(matchId);
+    if (!match || match.phase !== "veto") return;
+    const step = match.plan[match.stepIndex];
+    if (!step) return;
+    if (step.type === "side") {
+      applySide(match, match.turn, Math.random() < 0.5 ? "CT" : "T", true);
+    } else {
+      const pick = match.remaining[Math.floor(Math.random() * match.remaining.length)];
+      applyBan(match, match.turn, pick, true);
+    }
+  }
+
+  function advance(match) {
+    match.stepIndex += 1;
+    const step = match.plan[match.stepIndex];
+    if (!step) return finishVeto(match);
+
+    match.turn = match.turn === 0 ? 1 : 0;
+    armTurn(match);
+    syncMatch(match);
+  }
+
+  function applyBan(match, teamIndex, map, auto) {
+    if (!match.remaining.includes(map)) return;
+    match.remaining = match.remaining.filter((m) => m !== map);
+    match.actions.push({ type: "ban", team: teamIndex, map, auto: !!auto, at: now() });
+    advance(match);
+  }
+
+  function applySide(match, teamIndex, side, auto) {
+    const other = teamIndex === 0 ? 1 : 0;
+    match.teams[teamIndex].side = side;
+    match.teams[other].side = side === "CT" ? "T" : "CT";
+    match.actions.push({ type: "side", team: teamIndex, side, auto: !!auto, at: now() });
+    advance(match);
+  }
+
+  function finishVeto(match) {
+    clearTimeout(matchTimers.get(match.id));
+    match.phase = "ready";
+    match.map = match.remaining[0] ?? match.pool[0];
+    match.connect = process.env.RETAKES_CONNECT || process.env.NEXT_PUBLIC_SERVER_ADDRESS || "retakes.fr:27015";
+    match.turnDeadline = null;
+    matchTimers.set(
+      match.id,
+      setTimeout(() => {
+        for (const t of match.teams) for (const p of t.players) if (!p.bot) matchOf.delete(p.steamId);
+        matches.delete(match.id);
+      }, READY_LINGER_MS)
+    );
+    syncMatch(match);
+  }
+
+  function enqueue(party) {
+    const q = queues.get(party.mode);
+    if (!q || q.includes(party.id)) return;
+    party.queuedAt = now();
+    party.queueReason = null;
+    q.push(party.id);
+
+    const t = setTimeout(() => fillWithBots(party), BOT_FILL_MS);
+    botTimers.set(party.id, t);
+
+    tryMatch(party.mode);
+  }
+
+  /** The captain speaks for their team; anyone else's veto click is ignored. */
+  function captainTeam(match, steamId) {
+    for (let i = 0; i < match.teams.length; i++) {
+      const p = match.teams[i].players.find((x) => x.steamId === steamId);
+      if (p) return p.leader ? i : -1;
+    }
+    return -1;
+  }
+
+  // ------------------------------------------------------------------ wiring
+
+  io.on("connection", (socket) => {
+    const me = () => socket.steamId && String(socket.steamId);
+
+    const push = () => {
+      const id = me();
+      if (id) socket.emit("rq:state", stateFor(id));
+    };
+
+    socket.on("rq:hello", (data) => {
+      const id = me();
+      if (!id) return socket.emit("rq:notice", { kind: "error", code: "not_signed_in" });
+      const party = ensureParty(id, data?.name);
+      // A name arriving later than the party (the profile fetch resolves after
+      // the socket does) should still land on the member row.
+      const mine = party.members.find((m) => m.steamId === id);
+      if (mine && data?.name) mine.name = data.name;
+      push();
+    });
+
+    socket.on("rq:party:mode", ({ mode } = {}) => {
+      const id = me();
+      const party = partyFor(id);
+      if (!party || party.leader !== id || !MODES[mode]) return;
+      if (party.members.length > MODES[mode].teamSize) {
+        return socket.emit("rq:notice", { kind: "error", code: "party_too_big" });
+      }
+      leaveQueue(party, "mode_changed");
+      party.mode = mode;
+      syncParty(party);
+    });
+
+    socket.on("rq:party:invite", ({ steamId, name } = {}) => {
+      const id = me();
+      const party = partyFor(id);
+      const target = String(steamId ?? "");
+      if (!party || !target) return;
+      if (party.leader !== id) return socket.emit("rq:notice", { kind: "error", code: "not_leader" });
+      if (party.members.length >= partyCapacity(party)) {
+        return socket.emit("rq:notice", { kind: "error", code: "party_full" });
+      }
+      if (partyOf.get(target) === party.id) return;
+      if (!socketFor(target)) return socket.emit("rq:notice", { kind: "error", code: "friend_offline" });
+
+      const inviterName = party.members.find((m) => m.steamId === id)?.name ?? null;
+      invites.set(target, { partyId: party.id, from: id, fromName: inviterName, at: now() });
+      emitTo(target, "rq:state", stateFor(target));
+      emitTo(target, "rq:notice", { kind: "invite", code: "invited", from: id, fromName: inviterName });
+      socket.emit("rq:notice", { kind: "ok", code: "invite_sent", to: target, toName: name ?? null });
+    });
+
+    socket.on("rq:party:accept", () => {
+      const id = me();
+      const invite = invites.get(id);
+      if (!invite) return;
+      invites.delete(id);
+      const party = parties.get(invite.partyId);
+      if (!party) return socket.emit("rq:notice", { kind: "error", code: "party_gone" });
+      if (party.members.length >= partyCapacity(party)) {
+        return socket.emit("rq:notice", { kind: "error", code: "party_full" });
+      }
+
+      // Leaving your own party to join another must not strand anyone left in it.
+      const old = partyFor(id);
+      if (old && old.id !== party.id) removeMember(old, id);
+
+      const name = old?.members.find((m) => m.steamId === id)?.name ?? null;
+      party.members.push({ steamId: id, name, ready: true });
+      partyOf.set(id, party.id);
+      leaveQueue(party, "party_changed");
+      syncParty(party);
+    });
+
+    socket.on("rq:party:decline", () => {
+      const id = me();
+      const invite = invites.get(id);
+      invites.delete(id);
+      if (invite) emitTo(invite.from, "rq:notice", { kind: "warn", code: "invite_declined", by: id });
+      push();
+    });
+
+    socket.on("rq:party:kick", ({ steamId } = {}) => {
+      const id = me();
+      const party = partyFor(id);
+      if (!party || party.leader !== id || String(steamId) === id) return;
+      removeMember(party, String(steamId));
+      emitTo(String(steamId), "rq:notice", { kind: "warn", code: "kicked" });
+      emitTo(String(steamId), "rq:state", stateFor(String(steamId)));
+      syncParty(party);
+    });
+
+    socket.on("rq:party:leave", () => {
+      const id = me();
+      const party = partyFor(id);
+      if (!party) return;
+      removeMember(party, id);
+      syncParty(party);
+      ensureParty(id);
+      push();
+    });
+
+    socket.on("rq:queue:join", ({ mode } = {}) => {
+      const id = me();
+      const party = partyFor(id);
+      if (!party) return;
+      if (party.leader !== id) return socket.emit("rq:notice", { kind: "error", code: "not_leader" });
+      if (matchOf.get(id)) return;
+      if (mode && MODES[mode]) party.mode = mode;
+      enqueue(party);
+      syncParty(party);
+    });
+
+    socket.on("rq:queue:leave", () => {
+      const id = me();
+      const party = partyFor(id);
+      if (!party || party.leader !== id) return;
+      leaveQueue(party, "cancelled");
+      syncParty(party);
+    });
+
+    socket.on("rq:match:accept", () => {
+      const id = me();
+      const match = matches.get(matchOf.get(id));
+      if (!match || match.phase !== "found") return;
+      const p = match.teams.flatMap((t) => t.players).find((x) => x.steamId === id);
+      if (!p || p.accepted) return;
+      p.accepted = true;
+      match.acceptedCount += 1;
+      if (match.acceptedCount >= match.humanCount) beginVeto(match);
+      else syncMatch(match);
+    });
+
+    socket.on("rq:match:decline", () => {
+      const id = me();
+      const match = matches.get(matchOf.get(id));
+      if (!match || match.phase !== "found") return;
+      abandonMatch(match, { requeue: true, blame: [id], reason: "declined" });
+    });
+
+    socket.on("rq:veto:ban", ({ map } = {}) => {
+      const id = me();
+      const match = matches.get(matchOf.get(id));
+      if (!match || match.phase !== "veto") return;
+      if (match.plan[match.stepIndex]?.type !== "ban") return;
+      if (captainTeam(match, id) !== match.turn) {
+        return socket.emit("rq:notice", { kind: "error", code: "not_your_turn" });
+      }
+      applyBan(match, match.turn, String(map), false);
+    });
+
+    socket.on("rq:veto:side", ({ side } = {}) => {
+      const id = me();
+      const match = matches.get(matchOf.get(id));
+      if (!match || match.phase !== "veto") return;
+      if (match.plan[match.stepIndex]?.type !== "side") return;
+      if (captainTeam(match, id) !== match.turn) {
+        return socket.emit("rq:notice", { kind: "error", code: "not_your_turn" });
+      }
+      applySide(match, match.turn, side === "T" ? "T" : "CT", false);
+    });
+
+    socket.on("rq:chat", ({ text } = {}) => {
+      const id = me();
+      const match = matches.get(matchOf.get(id));
+      const body = String(text ?? "").slice(0, 240).trim();
+      if (!match || !body) return;
+      const from = match.teams.flatMap((t) => t.players).find((p) => p.steamId === id);
+      match.chat.push({ from: id, name: from?.name ?? null, text: body, at: now() });
+      syncMatch(match);
+    });
+
+    socket.on("disconnect", () => {
+      const id = me();
+      if (!id) return;
+      invites.delete(id);
+      const party = partyFor(id);
+      if (!party) return;
+
+      // A disconnect during a live match is not a reason to dissolve it — the
+      // page may just be reloading, and the veto belongs to the team.
+      if (matchOf.get(id)) return;
+      removeMember(party, id);
+      syncParty(party);
+    });
+  });
+
+  function removeMember(party, steamId) {
+    party.members = party.members.filter((m) => m.steamId !== steamId);
+    partyOf.delete(steamId);
+    leaveQueue(party, "party_changed");
+    if (party.members.length === 0) {
+      disbandParty(party);
+      return;
+    }
+    if (party.leader === steamId) party.leader = party.members[0].steamId;
+  }
+
+  return {
+    stats: () => ({
+      parties: parties.size,
+      queued: Object.fromEntries(Object.keys(MODES).map((m) => [m, queuedPlayerCount(m)])),
+      matches: matches.size,
+    }),
+  };
+}
+
+module.exports = { attachRetakesMatchmaking, MODES, MAP_POOLS };
