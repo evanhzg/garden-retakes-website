@@ -241,7 +241,9 @@ export default function UtilityPage({ signedIn }: { signedIn: boolean }) {
                         textAlign: "left", 
                         background: "var(--bg-elevated)", 
                         cursor: "pointer",
-                        transition: "all 0.2s ease"
+                        transition: "all 0.2s ease",
+                        display: "flex",
+                        flexDirection: "column"
                       }}
                       onClick={() => setSelected(l)}
                     >
@@ -249,17 +251,17 @@ export default function UtilityPage({ signedIn }: { signedIn: boolean }) {
                         /* eslint-disable-next-line @next/next/no-img-element */
                         <img src={src} alt={l.name} style={{ width: "100%", aspectRatio: "16/9", objectFit: "cover", display: "block" }} loading="lazy" />
                       ) : (
-                        <div style={{ width: "100%", aspectRatio: "16/9", background: "var(--bg)", display: "flex", alignItems: "center", justifyContent: "center", color: "var(--muted)" }}>{t("utility.noimage")}</div>
+                        <span style={{ width: "100%", aspectRatio: "16/9", background: "var(--bg)", display: "flex", alignItems: "center", justifyContent: "center", color: "var(--muted)" }}>{t("utility.noimage")}</span>
                       )}
-                      <div style={{ padding: "0.75rem" }}>
-                        <div style={{ display: "flex", alignItems: "center", gap: "0.5rem", marginBottom: "0.25rem" }}>
+                      <span style={{ padding: "0.75rem", display: "block" }}>
+                        <span style={{ display: "flex", alignItems: "center", gap: "0.5rem", marginBottom: "0.25rem" }}>
                           <span className="util-row-dot" style={{ background: UTIL_COLOUR[l.utility] }} />
                           <span style={{ fontWeight: 600, fontSize: "0.95rem" }}>{l.name}</span>
-                        </div>
-                        <div style={{ fontSize: "0.8rem", color: "var(--muted)" }}>
+                        </span>
+                        <span style={{ fontSize: "0.8rem", color: "var(--muted)", display: "block" }}>
                           {l.area} • {l.throwType === "standing" ? "Standing" : THROW_SHORT[l.throwType] ?? l.throwType}
-                        </div>
-                      </div>
+                        </span>
+                      </span>
                     </button>
                   );
                 })}
