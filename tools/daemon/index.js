@@ -69,21 +69,46 @@ ${utilitySlot}
     }
 
     if (process.platform === "win32") {
-      execSync('echo exec garden_capture_daemon | clip', { stdio: "ignore" });
-      console.log("Copied 'exec garden_capture_daemon' to your clipboard!");
+      console.log(">>> PLEASE LEAVE YOUR CS2 CONSOLE OPEN! <<<");
+      console.log("The daemon will automatically focus CS2, type the command, and capture the screen in 3 seconds...");
+      
+      // Wait 3 seconds for safety
+      await new Promise(r => setTimeout(r, 3000));
+      
+      console.log("Executing command in CS2...");
+      try {
+        const psScript = `
+          $wshell = New-Object -ComObject wscript.shell;
+          $wshell.AppActivate('Counter-Strike 2');
+          Start-Sleep -m 500;
+          $wshell.SendKeys('exec garden_capture_daemon{ENTER}');
+        `;
+        execSync(`powershell -c "${psScript.replace(/\n/g, ' ')}"`);
+      } catch (e) {
+        console.error("Failed to focus and type in CS2:", e);
+      }
+      
+      // Wait for the game to process the teleport and draw the viewmodel
+      console.log("Waiting 2 seconds for teleport...");
+      await new Promise(r => setTimeout(r, 2000));
+    } else {
+      console.log(">>> PLEASE GO IN-GAME, LOAD THE MAP, AND PASTE 'exec garden_capture_daemon' IN CONSOLE <<<");
+      console.log("Taking screenshot automatically in 8 seconds. Switch to the game now!");
+      await new Promise(r => setTimeout(r, 8000));
     }
-    
-    console.log(">>> PLEASE GO IN-GAME, LOAD THE MAP, AND PASTE 'exec garden_capture_daemon' IN CONSOLE <<<");
-    console.log("Taking screenshot automatically in 8 seconds. Switch to the game now!");
-
-    // Wait 8 seconds to give the user time to execute the config and let the teleport finish
-    await new Promise(r => setTimeout(r, 8000));
 
     console.log("Capturing screen...");
     const shotPath = path.join(__dirname, `capture_${Date.now()}.jpg`);
     await screenshot({ filename: shotPath, format: 'jpg' });
 
     console.log(`Saved screenshot to: ${shotPath}`);
+
+    if (process.platform === "win32") {
+      try {
+        // Unfocus the game by focusing the node command prompt
+        execSync(`powershell -c "$wshell = New-Object -ComObject wscript.shell; $wshell.AppActivate('cmd'); $wshell.AppActivate('Windows PowerShell'); $wshell.AppActivate('node')"`);
+      } catch (e) {}
+    }
 
     // 4. Upload to website
     console.log("Uploading to website...");

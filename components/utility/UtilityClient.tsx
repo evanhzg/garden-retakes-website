@@ -102,6 +102,21 @@ export default function UtilityPage({ signedIn }: { signedIn: boolean }) {
     }
   }, [lineups]);
 
+  const handleSelect = (l: Lineup | null) => {
+    setSelected(l);
+    if (typeof window !== "undefined") {
+      const params = new URLSearchParams(window.location.search);
+      if (l) params.set("lineup", l.id.toString());
+      else params.delete("lineup");
+      window.history.pushState(null, "", "?" + params.toString());
+    }
+  };
+
+  const handleUpdate = (updated: Lineup) => {
+    setLineups(prev => prev ? prev.map(l => l.id === updated.id ? updated : l) : null);
+    setSelected(updated);
+  };
+
   const visible = useMemo(() => {
     if (!lineups || !cfg) return [];
     return lineups.filter((l) => {
@@ -235,23 +250,24 @@ export default function UtilityPage({ signedIn }: { signedIn: boolean }) {
                       key={l.id} 
                       className={`util-card ${selected?.id === l.id ? "active" : ""}`}
                       style={{ 
-                        border: selected?.id === l.id ? "2px solid var(--accent)" : "1px solid var(--border)", 
+                        border: selected?.id === l.id ? "2px solid var(--color-accent)" : "1px solid color-mix(in srgb, var(--color-text) 15%, transparent)", 
                         borderRadius: "8px", 
                         overflow: "hidden", 
                         textAlign: "left", 
-                        background: "var(--bg-elevated)", 
+                        background: "color-mix(in srgb, var(--color-bg) 50%, #000)", 
                         cursor: "pointer",
                         transition: "all 0.2s ease",
                         display: "flex",
-                        flexDirection: "column"
+                        flexDirection: "column",
+                        padding: 0
                       }}
-                      onClick={() => setSelected(l)}
+                      onClick={() => handleSelect(l)}
                     >
                       {src ? (
                         /* eslint-disable-next-line @next/next/no-img-element */
-                        <img src={src} alt={l.name} style={{ width: "100%", aspectRatio: "16/9", objectFit: "cover", display: "block" }} loading="lazy" />
+                        <img src={src} alt={l.name} style={{ width: "100%", aspectRatio: "16/9", objectFit: "cover", display: "block", borderBottom: "1px solid color-mix(in srgb, var(--color-text) 10%, transparent)" }} loading="lazy" />
                       ) : (
-                        <span style={{ width: "100%", aspectRatio: "16/9", background: "var(--bg)", display: "flex", alignItems: "center", justifyContent: "center", color: "var(--muted)" }}>{t("utility.noimage")}</span>
+                        <span style={{ width: "100%", aspectRatio: "16/9", background: "color-mix(in srgb, var(--color-text) 5%, transparent)", display: "flex", alignItems: "center", justifyContent: "center", color: "var(--muted)", borderBottom: "1px solid color-mix(in srgb, var(--color-text) 10%, transparent)" }}>{t("utility.noimage")}</span>
                       )}
                       <span style={{ padding: "0.75rem", display: "block" }}>
                         <span style={{ display: "flex", alignItems: "center", gap: "0.5rem", marginBottom: "0.25rem" }}>
@@ -268,7 +284,7 @@ export default function UtilityPage({ signedIn }: { signedIn: boolean }) {
               </div>
             )}
 
-            <p className="util-legend">
+            <div className="util-legend">
               {UTILITIES.map((u) => (
                 <button
                   key={u.id}
@@ -279,7 +295,7 @@ export default function UtilityPage({ signedIn }: { signedIn: boolean }) {
                   <span className="util-legend-dot" /> {u.label}
                 </button>
               ))}
-            </p>
+            </div>
           </div>
 
           <aside className="util-side">
@@ -295,10 +311,11 @@ export default function UtilityPage({ signedIn }: { signedIn: boolean }) {
                 signedIn={signedIn}
                 favourite={favorites.includes(selected.id)}
                 testing={testing}
-                onBack={() => setSelected(null)}
+                onBack={() => handleSelect(null)}
                 onTest={testLineup}
                 onToggleFavourite={toggleFavorite}
                 onNote={handleNote}
+                onUpdate={handleUpdate}
               />
             ) : (
               <div className="util-list">
@@ -369,23 +386,35 @@ export default function UtilityPage({ signedIn }: { signedIn: boolean }) {
                   </p>
                 ) : (
                   <ul>
-                    {visible.map((l) => (
-                      <li key={l.id}>
-                        <button
-                          className={`util-row ${hovered === l.id ? "hot" : ""}`}
-                          onMouseEnter={() => setHovered(l.id)}
-                          onMouseLeave={() => setHovered(null)}
-                          onClick={() => setSelected(l)}
-                        >
-                          <span className="util-row-dot" style={{ background: UTIL_COLOUR[l.utility] }} />
-                          <span className="util-row-name">
-                            {l.name}
-                            {!l.verified && <span className="util-row-flag" title={t("auto.utilityclient.position_not_on_the_map")}>?</span>}
-                          </span>
-                          <span className="util-row-throw">{l.throwType === "standing" ? "" : THROW_SHORT[l.throwType] ?? l.throwType}</span>
-                        </button>
-                      </li>
-                    ))}
+                    {visible.map((l) => {
+                      const src = l.shots.result || l.shots.aim;
+                      return (
+                        <li key={l.id}>
+                          <button
+                            className={`util-row ${hovered === l.id ? "hot" : ""}`}
+                            style={{ display: "flex", alignItems: "center", gap: "10px", padding: "6px 8px", width: "100%", textAlign: "left", borderRadius: "6px", border: "none", background: "transparent", cursor: "pointer" }}
+                            onMouseEnter={() => setHovered(l.id)}
+                            onMouseLeave={() => setHovered(null)}
+                            onClick={() => handleSelect(l)}
+                          >
+                            {src ? (
+                              /* eslint-disable-next-line @next/next/no-img-element */
+                              <img src={src} alt="" style={{ width: "48px", height: "32px", objectFit: "cover", borderRadius: "4px" }} loading="lazy" />
+                            ) : (
+                              <span style={{ width: "48px", height: "32px", background: "color-mix(in srgb, var(--color-text) 5%, transparent)", borderRadius: "4px", display: "flex", alignItems: "center", justifyContent: "center", fontSize: "10px", color: "var(--muted)" }}>No img</span>
+                            )}
+                            <div style={{ display: "flex", flexDirection: "column", overflow: "hidden" }}>
+                              <span className="util-row-name" style={{ display: "flex", alignItems: "center", gap: "6px" }}>
+                                <span className="util-row-dot" style={{ background: UTIL_COLOUR[l.utility] }} />
+                                {l.name}
+                                {!l.verified && <span className="util-row-flag" title={t("auto.utilityclient.position_not_on_the_map")}>?</span>}
+                              </span>
+                              <span className="util-row-throw">{l.throwType === "standing" ? "" : THROW_SHORT[l.throwType] ?? l.throwType}</span>
+                            </div>
+                          </button>
+                        </li>
+                      );
+                    })}
                   </ul>
                 )}
               </div>

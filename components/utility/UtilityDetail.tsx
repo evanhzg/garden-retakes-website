@@ -32,6 +32,7 @@ type Props = {
   onTest: (l: Lineup) => void;
   onToggleFavourite: (id: number) => void;
   onNote: (note: { kind: "ok" | "err"; text: string }) => void;
+  onUpdate?: (updated: Lineup) => void;
 };
 
 export default function UtilityDetail({
@@ -43,6 +44,7 @@ export default function UtilityDetail({
   onTest,
   onToggleFavourite,
   onNote,
+  onUpdate,
 }: Props) {
   const { t } = useI18n();
   const { socket, isAuthed } = useSocket();
@@ -113,17 +115,43 @@ export default function UtilityDetail({
   const handleAcceptCapture = async () => {
     setSubmitting(true);
     try {
-      await fetch(`/api/lineups/${lineup.id}`, {
+      const res = await fetch(`/api/lineups/${lineup.id}`, {
         method: "PATCH",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ shotType: shotKey, url: capturePreview })
       });
+      if (!res.ok) throw new Error("Save failed");
+      const json = await res.json();
       onNote({ kind: "ok", text: t("common.saved") });
+      setCapturePreview(null);
+      if (onUpdate && json.lineup) {
+        const r = json.lineup;
+        onUpdate({
+          id: r.Id,
+          map: r.Map,
+          name: r.Name,
+          area: r.Area,
+          utility: r.Utility,
+          purpose: r.Purpose,
+          team: r.Team,
+          throwType: r.ThrowType,
+          clickType: r.ClickType,
+          stand: { x: r.StandX, y: r.StandY, z: r.StandZ },
+          view: { pitch: r.Pitch, yaw: r.Yaw },
+          land: r.LandX !== null && r.LandY !== null ? { x: r.LandX, y: r.LandY, z: r.LandZ ?? 0 } : null,
+          notes: r.Notes,
+          clipUrl: r.ClipUrl,
+          thumb: r.Thumb,
+          shots: { stand: r.ShotStand, aim: r.ShotAim, result: r.ShotResult },
+          verified: r.Verified,
+          source: r.Source,
+        });
+      }
     } catch {
-      onNote({ kind: "err", text: t("common.networkError") });
+      onNote({ kind: "err", text: t("common.networkError") || "Failed to save" });
+    } finally {
+      setSubmitting(false);
     }
-    setSubmitting(false);
-    setCapturePreview(null);
   };
 
   const handleSubmitSuggestion = async (e: React.FormEvent) => {
@@ -312,7 +340,7 @@ export default function UtilityDetail({
             <h3 style={{ marginTop: 0 }}>{t("utility.capturePreview")}</h3>
             {!suggesting ? (
               <>
-                <img src={capturePreview} alt="Preview" style={{ width: "100%", borderRadius: 4, marginBottom: 16 }} />
+                <img src={capturePreview} alt="Preview" style={{ width: "100%", borderRadius: 8, marginBottom: 16 }} />
                 <div style={{ display: "flex", gap: 8, justifyContent: "flex-end" }}>
                   <button className="btn btn-secondary" onClick={() => setSuggesting(true)}>{t("utility.suggestModifications")}</button>
                   <button className="btn btn-primary" onClick={handleAcceptCapture} disabled={submitting}>{submitting ? t("common.saving") : t("utility.accept")}</button>
