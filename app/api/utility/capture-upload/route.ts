@@ -4,7 +4,10 @@ import { uploadBuffer, getPublicUrl } from "@/lib/r2";
 
 export async function POST(req: NextRequest) {
   const session = getSession();
-  if (!session) {
+  const adminKey = process.env.ADMIN_KEY || process.env.INVSIM_API_KEY;
+  const authHeader = req.headers.get("Authorization");
+  
+  if (!session && authHeader !== `Bearer ${adminKey}`) {
     return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
   }
 

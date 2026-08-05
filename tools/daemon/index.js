@@ -5,7 +5,7 @@ const path = require("path");
 const FormData = require("form-data");
 const fetch = require("node-fetch");
 
-const SERVER_URL = process.env.SERVER_URL || "https://retakes.fr";
+const SERVER_URL = process.env.SERVER_URL || "https://node-sockets-reeeeetakes.onrender.com";
 const WEBSITE_URL = process.env.WEBSITE_URL || "https://retakes.fr";
 
 // Make sure to set your SteamId in an env variable
@@ -34,8 +34,7 @@ socket.on("capture_job", async (job) => {
   console.log(`Setpos: ${job.setpos}`);
 
   try {
-    // 1. Write the custom CFG
-    // Added a small delay before jpeg so the viewmodel has time to draw and settle
+    const utilitySlot = job.utility === "flashbang" ? "slot7" : job.utility === "molotov" || job.utility === "incgrenade" ? "slot10" : "slot8";
     const cfgContent = `
 sv_cheats 1
 mp_freezetime 0
@@ -46,24 +45,16 @@ bot_kick
 cl_draw_only_deathnotices 1
 cl_drawhud_force_radar -1
 cl_showfps 0
-net_graph 0
 r_drawviewmodel 1
 viewmodel_offset_x 2.5
 viewmodel_offset_y 2
 viewmodel_offset_z -2
-sv_skyname_set 0
 ent_fire smokegrenade_projectile kill
 ent_fire molotov_projectile kill
 ent_fire flashbang_projectile kill
 ${job.setpos}
 give weapon_${job.utility || "smokegrenade"}
-use weapon_${job.utility || "smokegrenade"}
-
-alias "capture_shot" "jpeg"
-// Wait 1 second (approx 64 ticks) before taking the screenshot so the teleport finishes
-// CS2 doesn't have a reliable wait command, so we just take the shot immediately
-// For better results, user should bind a key or we just fire jpeg.
-jpeg
+${utilitySlot}
 `;
     // On Linux/WSL for dev, use a dummy path if CS2_CFG_DIR doesn't exist
     const cfgDirExists = fs.existsSync(CS2_CFG_DIR);
@@ -76,63 +67,74 @@ jpeg
       console.log(`Wrote config to ${cfgPath}`);
     }
 
-    // 2. Launch or focus CS2
-    // steam://rungame/730/76561202255233023/+map de_mirage +exec garden_capture_daemon
-    const command = `start steam://rungame/730/76561202255233023/+map%20${job.map}%20+exec%20garden_capture_daemon`;
-    console.log(`Executing: ${command}`);
-    
     if (process.platform === "win32") {
-      execSync(command, { stdio: "ignore" });
-    } else {
-      console.log("(Skipped execution because not on Windows)");
+      // Just copy it to clipboard so user can paste it
+      execSync('echo exec garden_capture_daemon | clip', { stdio: "ignore" });
+      console.log("Copied 'exec garden_capture_daemon' to your clipboard!");
+    }
+    
+    console.log(">>> PLEASE GO IN-GAME, LOAD THE MAP, AND PASTE 'exec garden_capture_daemon' IN CONSOLE <<<");
+    console.log("Waiting for a new screenshot to appear in your Steam screenshots folder (Press F12 in-game!)...");
+
+    // Watch the directory for a new screenshot
+    if (!fs.existsSync(CS2_SCREENSHOT_DIR)) {
+      throw new Error(`Screenshot dir not found: ${CS2_SCREENSHOT_DIR}`);
     }
 
-    console.log("Waiting 15 seconds for map to load and screenshot to be taken...");
-    await new Promise(r => setTimeout(r, 15000));
-
-    // 3. Find the newest screenshot
-    if (fs.existsSync(CS2_SCREENSHOT_DIR)) {
-      const files = fs.readdirSync(CS2_SCREENSHOT_DIR)
-        .filter(f => f.endsWith(".jpg") || f.endsWith(".jpeg"))
-        .map(f => ({ file: f, mtime: fs.statSync(path.join(CS2_SCREENSHOT_DIR, f)).mtimeMs }))
-        .sort((a, b) => b.mtime - a.mtime);
-      
-      if (files.length === 0) {
-        throw new Error("No screenshots found in dir");
-      }
-      const newest = files[0].file;
-      const shotPath = path.join(CS2_SCREENSHOT_DIR, newest);
-      console.log(`Found newest screenshot: ${shotPath}`);
-
-      // 4. Upload to website
-      console.log("Uploading to website...");
-      const form = new FormData();
-      form.append("file", fs.createReadStream(shotPath));
-
-      const res = await fetch(`${WEBSITE_URL}/api/utility/capture-upload`, {
-        method: "POST",
-        body: form
+    const initialFiles = new Set(fs.readdirSync(CS2_SCREENSHOT_DIR));
+    
+    const shotPath = await new Promise((resolve, reject) => {
+      const watcher = fs.watch(CS2_SCREENSHOT_DIR, (eventType, filename) => {
+        if (filename && (filename.endsWith('.jpg') || filename.endsWith('.jpeg'))) {
+          if (!initialFiles.has(filename)) {
+            // Wait a brief moment to ensure file is fully written
+            setTimeout(() => {
+              watcher.close();
+              resolve(path.join(CS2_SCREENSHOT_DIR, filename));
+            }, 500);
+          }
+        }
       });
-      
-      if (!res.ok) {
-        throw new Error(`Upload failed: ${await res.text()}`);
-      }
+      // Timeout after 3 minutes
+      setTimeout(() => {
+        watcher.close();
+        reject(new Error("Timed out waiting for screenshot after 3 minutes"));
+      }, 180000);
+    });
 
-      const { url } = await res.json();
-      console.log(`Upload successful: ${url}`);
+    console.log(`Found new screenshot: ${shotPath}`);
 
-      // 5. Reply with result
-      socket.emit("capture_result", {
-        steamId: job.steamId,
-        lineupId: job.lineupId,
-        url: url,
-        type: job.type || "aim"
-      });
-    } else {
-      console.log("(Skipped upload because screenshot dir not found)");
+    // 4. Upload to website
+    console.log("Uploading to website...");
+    const form = new FormData();
+    form.append("file", fs.createReadStream(shotPath));
+
+    const adminKey = process.env.ADMIN_KEY || "9fWH9jh3FwkUywtSyhdLJ8sX";
+    const res = await fetch(`${WEBSITE_URL}/api/utility/capture-upload`, {
+      method: "POST",
+      headers: {
+        "Authorization": `Bearer ${adminKey}`
+      },
+      body: form
+    });
+    
+    if (!res.ok) {
+      throw new Error(`Upload failed: ${await res.text()}`);
     }
+
+    const { url } = await res.json();
+    console.log(`Upload successful: ${url}`);
+
+    // 5. Reply with result
+    socket.emit("capture_result", {
+      steamId: job.steamId,
+      lineupId: job.lineupId,
+      url: url,
+      type: job.type || "aim"
+    });
 
   } catch (err) {
     console.error("Capture job failed:", err);
   }
 });
+
