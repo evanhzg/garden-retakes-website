@@ -34,7 +34,7 @@ export default function UtilityPage({ signedIn }: { signedIn: boolean }) {
   const [areaFilter, setAreaFilter] = useState<string>("");
   const [showUnverified, setShowUnverified] = useState(false);
   
-  const [viewMode, setViewMode] = useState<"map" | "list">("map");
+  const [viewMode, setViewMode] = useState<"map" | "list">("list");
   const [findMode, setFindMode] = useState(false);
   const [findAt, setFindAt] = useState<{ x: number; y: number } | null>(null);
 
@@ -47,6 +47,8 @@ export default function UtilityPage({ signedIn }: { signedIn: boolean }) {
       const params = new URLSearchParams(window.location.search);
       const m = params.get("map");
       if (m && MAPS[m]) setMap(m);
+      const v = params.get("view");
+      if (v === "map" || v === "list") setViewMode(v);
     }
   }, []);
 
@@ -112,6 +114,15 @@ export default function UtilityPage({ signedIn }: { signedIn: boolean }) {
     }
   };
 
+  const handleViewMode = (v: "map" | "list") => {
+    setViewMode(v);
+    if (typeof window !== "undefined") {
+      const params = new URLSearchParams(window.location.search);
+      params.set("view", v);
+      window.history.replaceState(null, "", "?" + params.toString());
+    }
+  };
+
   const handleUpdate = (updated: Lineup) => {
     setLineups(prev => prev ? prev.map(l => l.id === updated.id ? updated : l) : null);
     setSelected(updated);
@@ -171,35 +182,34 @@ export default function UtilityPage({ signedIn }: { signedIn: boolean }) {
   const shownMaps = maps.filter(([, c]) => c.pools.includes(pool));
 
   return (
-    <>
-      <section className="pro-hero">
-        <span className="kicker">{t("auto.utilityclient.utility")}</span>
-        <h1 style={{ fontSize: "clamp(28px, 4.2vw, 48px)", letterSpacing: "-0.025em", margin: "10px 0 6px" }}>
-          {t("auto.utilityclient.lineups")}
-        </h1>
-        <p className="muted" style={{ maxWidth: "60ch", margin: 0 }}>
-          {t("auto.utilityclient.every_saved_smoke_flash_molly")}
-        </p>
-      </section>
-
-      <section className="pro-section">
-        <div className="util-pools">
-          {POOLS.map((p) => (
-            <button
-              key={p.id}
-              className={`chip ${pool === p.id ? "active" : ""}`}
-              onClick={() => {
-                setPool(p.id);
-                const first = maps.find(([, c]) => c.pools.includes(p.id));
-                if (first && !MAPS[map]?.pools.includes(p.id)) setMap(first[0]);
-              }}
-            >
-              {p.label}
-            </button>
-          ))}
+    <div style={{ display: "flex", flexDirection: "column", height: "calc(100vh - 64px)", overflow: "hidden" }}>
+      <section className="pro-hero" style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-end", flexWrap: "wrap", gap: "1rem", paddingBottom: "1rem" }}>
+        <div>
+          <span className="kicker">{t("auto.utilityclient.utility")}</span>
+          <h1 style={{ fontSize: "clamp(28px, 4.2vw, 48px)", letterSpacing: "-0.025em", margin: "10px 0 6px" }}>
+            {t("auto.utilityclient.lineups")}
+          </h1>
+          <p className="muted" style={{ maxWidth: "60ch", margin: 0 }}>
+            {t("auto.utilityclient.every_saved_smoke_flash_molly")}
+          </p>
         </div>
-
-        <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
+        
+        <div style={{ display: "flex", flexDirection: "column", gap: "12px", alignItems: "flex-end" }}>
+          <div className="util-pools">
+            {POOLS.map((p) => (
+              <button
+                key={p.id}
+                className={`chip ${pool === p.id ? "active" : ""}`}
+                onClick={() => {
+                  setPool(p.id);
+                  const first = maps.find(([, c]) => c.pools.includes(p.id));
+                  if (first && !MAPS[map]?.pools.includes(p.id)) setMap(first[0]);
+                }}
+              >
+                {p.label}
+              </button>
+            ))}
+          </div>
           <div className="util-maps">
             {shownMaps.map(([id, c]) => (
               <button key={id} className={`util-map ${map === id ? "active" : ""}`} onClick={() => setMap(id)}>
@@ -207,14 +217,19 @@ export default function UtilityPage({ signedIn }: { signedIn: boolean }) {
               </button>
             ))}
           </div>
-          <div className="util-maps" style={{ marginLeft: "auto", flexWrap: "nowrap" }}>
-            <button className={`util-map ${viewMode === "map" ? "active" : ""}`} onClick={() => setViewMode("map")}>{t("utility.view.map")}</button>
-            <button className={`util-map ${viewMode === "list" ? "active" : ""}`} onClick={() => setViewMode("list")}>{t("utility.view.list")}</button>
+        </div>
+      </section>
+
+      <section className="pro-section" style={{ flex: 1, display: "flex", flexDirection: "column", minHeight: 0, paddingBottom: 0 }}>
+        <div style={{ display: "flex", justifyContent: "flex-end", alignItems: "center", marginBottom: "1rem" }}>
+          <div className="util-maps" style={{ flexWrap: "nowrap" }}>
+            <button className={`util-map ${viewMode === "map" ? "active" : ""}`} onClick={() => handleViewMode("map")}>{t("utility.view.map")}</button>
+            <button className={`util-map ${viewMode === "list" ? "active" : ""}`} onClick={() => handleViewMode("list")}>{t("utility.view.list")}</button>
           </div>
         </div>
 
-        <div className="util-layout">
-          <div className="util-mapwrap">
+        <div className="util-layout" style={{ flex: 1, minHeight: 0, display: "flex", gap: "20px" }}>
+          <div className="util-mapwrap" style={{ flex: 1, display: "flex", flexDirection: "column", minHeight: 0, overflow: "hidden" }}>
             {levels && (
               <div className="util-levels" role="group" aria-label={t("auto.utilityclient.level")}>
                 {levels.map((l) => (
@@ -242,7 +257,7 @@ export default function UtilityPage({ signedIn }: { signedIn: boolean }) {
             )}
 
             {viewMode === "list" && (
-              <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fill, minmax(220px, 1fr))", gap: "1rem", marginTop: "1rem", alignContent: "flex-start", overflowY: "auto", paddingRight: "0.5rem" }}>
+              <div style={{ flex: 1, display: "grid", gridTemplateColumns: "repeat(auto-fill, minmax(220px, 1fr))", gap: "1rem", alignContent: "flex-start", overflowY: "auto", paddingRight: "0.5rem" }}>
                 {visible.map((l) => {
                   const src = l.shots.result || l.shots.aim;
                   return (
@@ -431,7 +446,7 @@ export default function UtilityPage({ signedIn }: { signedIn: boolean }) {
           </aside>
         </div>
       </section>
-    </>
+    </div>
   );
 }
 

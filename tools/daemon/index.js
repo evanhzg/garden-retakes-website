@@ -40,7 +40,9 @@ socket.on("capture_job", async (job) => {
 sv_cheats 1
 mp_freezetime 0
 mp_roundtime 60
-mp_warmup_end
+mp_warmup_pausetimer 1
+mp_warmuptime 9999
+mp_warmup_start
 mp_team_intro_time 0
 bot_kick
 cl_draw_only_deathnotices 1
@@ -96,6 +98,10 @@ $wshell.AppActivate('Counter-Strike 2')
 Start-Sleep -m 1000
 $wshell.SendKeys('${consoleKey}')
 Start-Sleep -m 500
+$wshell.SendKeys('map ${job.map}{ENTER}')
+Start-Sleep -m 15000
+$wshell.SendKeys('${consoleKey}')
+Start-Sleep -m 500
 $wshell.SendKeys('exec garden_capture_daemon{ENTER}')
 Start-Sleep -m 500
 $wshell.SendKeys('${consoleKey}')
@@ -114,9 +120,9 @@ Start-Sleep -m 1500
         require('child_process').exec(`powershell -ExecutionPolicy Bypass -File "${scriptFile}"`);
         
         // Wait for the powershell script to signal readiness
-        console.log("Waiting for teleport...");
+        console.log("Waiting up to 30 seconds for map to load and teleport...");
         let attempts = 0;
-        while (!fs.existsSync(tmpFile) && attempts < 100) {
+        while (!fs.existsSync(tmpFile) && attempts < 300) {
           await new Promise(r => setTimeout(r, 100));
           attempts++;
         }

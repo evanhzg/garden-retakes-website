@@ -166,6 +166,7 @@ export default function UtilityDetail({
     socket.emit("capture_request", {
       lineupId: lineup.id,
       map: lineup.map,
+      utility: lineup.utility,
       setpos: `setpos ${lineup.stand.x} ${lineup.stand.y} ${lineup.stand.z}; setang ${lineup.view.pitch} ${lineup.view.yaw}`
     });
   };

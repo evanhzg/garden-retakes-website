@@ -148,7 +148,7 @@ export default function UtilityRadar({
   const findMark = findAt ? worldToPercent(cfg, findAt.x, findAt.y) : null;
 
   return (
-    <div className="util-radarbox">
+    <div className="util-radarbox" style={{ flex: 1, minHeight: 0 }}>
       <div
         ref={wrapRef}
         className={`util-radar ${findMode ? "finding" : ""} ${zoom > 1 ? "zoomed" : ""}`}
