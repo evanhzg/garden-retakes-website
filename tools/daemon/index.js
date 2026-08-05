@@ -50,6 +50,7 @@ r_drawviewmodel 1
 viewmodel_offset_x 2.5
 viewmodel_offset_y 2
 viewmodel_offset_z -2
+jointeam 3
 ent_fire smokegrenade_projectile kill
 ent_fire molotov_projectile kill
 ent_fire flashbang_projectile kill
@@ -70,10 +71,10 @@ ${utilitySlot}
 
     if (process.platform === "win32") {
       console.log(">>> AUTOMATIC CAPTURE INITIATED <<<");
-      console.log("The daemon will automatically focus CS2, execute the command, and capture the screen in 3 seconds...");
+      console.log("The daemon will automatically focus CS2, execute the command, and capture the screen in 4 seconds...");
       
-      // Wait 3 seconds for safety
-      await new Promise(r => setTimeout(r, 3000));
+      // Wait 4 seconds for safety
+      await new Promise(r => setTimeout(r, 4000));
       
       console.log("Executing command in CS2...");
       try {
@@ -92,13 +93,13 @@ Add-Type @"
 $original = [Win32]::GetForegroundWindow()
 $wshell = New-Object -ComObject wscript.shell
 $wshell.AppActivate('Counter-Strike 2')
-Start-Sleep -m 500
+Start-Sleep -m 1000
 $wshell.SendKeys('${consoleKey}')
 Start-Sleep -m 500
 $wshell.SendKeys('exec garden_capture_daemon{ENTER}')
 Start-Sleep -m 500
 $wshell.SendKeys('${consoleKey}')
-Start-Sleep -m 2500
+Start-Sleep -m 3500
 Out-File -FilePath "$env:TEMP\\garden_capture_ready.txt" -InputObject "READY"
 Start-Sleep -m 1500
 [Win32]::SetForegroundWindow($original)

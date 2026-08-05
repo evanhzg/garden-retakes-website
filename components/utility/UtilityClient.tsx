@@ -264,8 +264,17 @@ export default function UtilityPage({ signedIn }: { signedIn: boolean }) {
                       onClick={() => handleSelect(l)}
                     >
                       {src ? (
-                        /* eslint-disable-next-line @next/next/no-img-element */
-                        <img src={src} alt={l.name} style={{ width: "100%", aspectRatio: "16/9", objectFit: "cover", display: "block", borderBottom: "1px solid color-mix(in srgb, var(--color-text) 10%, transparent)" }} loading="lazy" />
+                        <div style={{ overflow: "hidden" }}>
+                          {/* eslint-disable-next-line @next/next/no-img-element */}
+                          <img 
+                            src={src} 
+                            alt={l.name} 
+                            style={{ width: "100%", aspectRatio: "16/9", objectFit: "cover", display: "block", borderBottom: "1px solid color-mix(in srgb, var(--color-text) 10%, transparent)", transition: "transform 0.3s ease", transformOrigin: "center" }} 
+                            loading="lazy" 
+                            onMouseEnter={e => e.currentTarget.style.transform = "scale(3)"}
+                            onMouseLeave={e => e.currentTarget.style.transform = "scale(1)"}
+                          />
+                        </div>
                       ) : (
                         <span style={{ width: "100%", aspectRatio: "16/9", background: "color-mix(in srgb, var(--color-text) 5%, transparent)", display: "flex", alignItems: "center", justifyContent: "center", color: "var(--muted)", borderBottom: "1px solid color-mix(in srgb, var(--color-text) 10%, transparent)" }}>{t("utility.noimage")}</span>
                       )}

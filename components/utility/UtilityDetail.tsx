@@ -57,6 +57,21 @@ export default function UtilityDetail({
   const [suggestSetpos, setSuggestSetpos] = useState("");
   const [suggestNotes, setSuggestNotes] = useState("");
   const [submitting, setSubmitting] = useState(false);
+  const [precisionTool, setPrecisionTool] = useState(false);
+  const [precisionLength, setPrecisionLength] = useState(100);
+
+  useEffect(() => {
+    try {
+      const saved = localStorage.getItem("precisionLength");
+      if (saved) setPrecisionLength(Number(saved));
+    } catch {}
+  }, []);
+
+  const handlePrecisionLengthChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const val = Number(e.target.value);
+    setPrecisionLength(val);
+    try { localStorage.setItem("precisionLength", val.toString()); } catch {}
+  };
 
   const shots = useMemo<Shot[]>(() => {
     const out: Shot[] = [];
@@ -224,9 +239,11 @@ export default function UtilityDetail({
             </div>
           )}
           <button className="util-shotframe" onClick={() => setLightbox(true)} title={t("utility.enlarge")} style={{ width: "100%", position: "relative", display: "block", padding: 0, border: "none", background: "transparent", cursor: "zoom-in" }}>
-            {/* eslint-disable-next-line @next/next/no-img-element */}
-            <img src={shot.src} alt={`${lineup.name} — ${shot.label}`} loading="lazy" style={{ width: "100%", display: "block", borderRadius: 8, border: "1px solid color-mix(in srgb, var(--color-text) 15%, transparent)" }} />
-            <span className="util-shotzoom" aria-hidden style={{ position: "absolute", bottom: 8, right: 8, background: "rgba(0,0,0,0.6)", padding: "4px 8px", borderRadius: 4 }}>⤢</span>
+            <div style={{ position: "relative", overflow: "hidden", borderRadius: 8 }}>
+              {/* eslint-disable-next-line @next/next/no-img-element */}
+              <img src={shot.src} alt={`${lineup.name} — ${shot.label}`} loading="lazy" style={{ width: "100%", display: "block", border: "1px solid color-mix(in srgb, var(--color-text) 15%, transparent)", transition: "transform 0.3s ease", transformOrigin: "center" }} onMouseEnter={e => e.currentTarget.style.transform = "scale(3)"} onMouseLeave={e => e.currentTarget.style.transform = "scale(1)"} />
+              <span className="util-shotzoom" aria-hidden style={{ position: "absolute", bottom: 8, right: 8, background: "rgba(0,0,0,0.6)", padding: "4px 8px", borderRadius: 4, pointerEvents: "none" }}>⤢</span>
+            </div>
           </button>
         </figure>
       ) : (
@@ -236,6 +253,18 @@ export default function UtilityDetail({
       {lineup.clipUrl && (
         <video className="util-clip" src={lineup.clipUrl} poster={lineup.thumb ?? undefined} muted loop playsInline controls />
       )}
+
+      <div style={{ display: "flex", gap: "12px", alignItems: "center", marginBottom: "12px", flexWrap: "wrap" }}>
+        <button className={`btn ${precisionTool ? "btn-primary" : "btn-secondary"}`} onClick={() => setPrecisionTool(!precisionTool)} style={{ transition: "all 0.1s ease" }}>
+          Precision tool
+        </button>
+        {precisionTool && (
+          <div style={{ display: "flex", alignItems: "center", gap: "8px" }}>
+            <span style={{ fontSize: "12px", color: "var(--muted)" }}>Length:</span>
+            <input type="range" min="10" max="100" value={precisionLength} onChange={handlePrecisionLengthChange} style={{ accentColor: "var(--color-accent)" }} />
+          </div>
+        )}
+      </div>
 
       <dl className="util-facts">
         <div>
@@ -314,22 +343,37 @@ export default function UtilityDetail({
       <code className="util-setpos">{setpos}</code>
 
       {lightbox && shot && (
-        <div className="util-lightbox" role="dialog" aria-modal="true" onClick={() => setLightbox(false)}>
-          {/* eslint-disable-next-line @next/next/no-img-element */}
-          <img src={shot.src} alt={`${lineup.name} — ${shot.label}`} onClick={(e) => e.stopPropagation()} />
-          <div className="util-lightbox-bar" onClick={(e) => e.stopPropagation()}>
+        <div className="util-lightbox-overlay" role="dialog" aria-modal="true" onClick={() => setLightbox(false)} style={{ position: "fixed", inset: 0, zIndex: 1000, background: "rgba(0,0,0,0.85)", display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center", padding: "2rem", animation: "fadein 0.2s ease" }}>
+          <style>{`
+            @keyframes fadein { from { opacity: 0; } to { opacity: 1; } }
+            @keyframes fadeout { from { opacity: 1; } to { opacity: 0; } }
+          `}</style>
+          
+          <div style={{ position: "relative", maxWidth: "90vw", maxHeight: "85vh", display: "flex" }}>
+            <button onClick={() => setLightbox(false)} style={{ position: "absolute", top: -40, right: -40, background: "transparent", border: "none", color: "var(--color-accent)", fontSize: "2rem", cursor: "pointer", padding: 8, lineHeight: 1, zIndex: 10 }}>✕</button>
+            {/* eslint-disable-next-line @next/next/no-img-element */}
+            <img src={shot.src} alt={`${lineup.name} — ${shot.label}`} onClick={(e) => e.stopPropagation()} style={{ maxWidth: "100%", maxHeight: "85vh", objectFit: "contain", borderRadius: 8, display: "block" }} />
+            
+            {precisionTool && (
+              <div style={{ position: "absolute", inset: 0, pointerEvents: "none", display: "flex", alignItems: "center", justifyContent: "center", overflow: "hidden", borderRadius: 8 }}>
+                {/* Horizontal line */}
+                <div style={{ position: "absolute", width: `${precisionLength}%`, height: 2, background: "var(--color-accent)", opacity: 0.5, transition: "width 0.1s ease" }} />
+                {/* Vertical line */}
+                <div style={{ position: "absolute", height: `${precisionLength}%`, width: 2, background: "var(--color-accent)", opacity: 0.5, transition: "height 0.1s ease" }} />
+              </div>
+            )}
+          </div>
+          
+          <div className="util-lightbox-bar" onClick={(e) => e.stopPropagation()} style={{ display: "flex", gap: "8px", marginTop: "20px" }}>
             {shots.map((s) => (
               <button
                 key={s.key}
-                className={`util-shottab ${s.key === shotKey ? "on" : ""}`}
+                className={`btn ${s.key === shotKey ? "btn-primary" : "btn-secondary"}`}
                 onClick={() => setShotKey(s.key)}
               >
                 {s.label}
               </button>
             ))}
-            <button className="util-shottab" onClick={() => setLightbox(false)}>
-              {t("utility.close")}
-            </button>
           </div>
         </div>
       )}
