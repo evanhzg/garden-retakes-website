@@ -50,7 +50,7 @@ r_drawviewmodel 1
 viewmodel_offset_x 2.5
 viewmodel_offset_y 2
 viewmodel_offset_z -2
-jointeam 3
+jointeam 2
 ent_fire smokegrenade_projectile kill
 ent_fire molotov_projectile kill
 ent_fire flashbang_projectile kill
@@ -78,7 +78,7 @@ ${utilitySlot}
       
       console.log("Executing command in CS2...");
       try {
-        const consoleKey = process.env.CONSOLE_KEY || '{F10}';
+        const consoleKey = process.env.CONSOLE_KEY || '{APP}';
         const psScript = `
 Add-Type @"
   using System;

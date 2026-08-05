@@ -58,20 +58,63 @@ export default function UtilityDetail({
   const [suggestNotes, setSuggestNotes] = useState("");
   const [submitting, setSubmitting] = useState(false);
   const [precisionTool, setPrecisionTool] = useState(false);
-  const [precisionLength, setPrecisionLength] = useState(100);
+  const [crosshairInsets, setCrosshairInsets] = useState({ t: 0, r: 0, b: 0, l: 0 });
 
   useEffect(() => {
     try {
-      const saved = localStorage.getItem("precisionLength");
-      if (saved) setPrecisionLength(Number(saved));
+      const saved = localStorage.getItem("crosshairInsets");
+      if (saved) setCrosshairInsets(JSON.parse(saved));
     } catch {}
   }, []);
 
-  const handlePrecisionLengthChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const val = Number(e.target.value);
-    setPrecisionLength(val);
-    try { localStorage.setItem("precisionLength", val.toString()); } catch {}
+  const updateInset = (key: keyof typeof crosshairInsets, val: number) => {
+    const next = { ...crosshairInsets, [key]: val };
+    setCrosshairInsets(next);
+    try { localStorage.setItem("crosshairInsets", JSON.stringify(next)); } catch {}
   };
+
+  const imgRef = React.useRef<HTMLImageElement>(null);
+  const [draggingHandle, setDraggingHandle] = useState<keyof typeof crosshairInsets | null>(null);
+
+  useEffect(() => {
+    if (!draggingHandle || !imgRef.current) return;
+    const img = imgRef.current;
+    
+    const onMove = (e: PointerEvent) => {
+      const rect = img.getBoundingClientRect();
+      let val = 0;
+      if (draggingHandle === 't') {
+        const pct = (e.clientY - rect.top) / rect.height * 100;
+        val = Math.max(0, Math.min(50, pct));
+      } else if (draggingHandle === 'b') {
+        const pct = (rect.bottom - e.clientY) / rect.height * 100;
+        val = Math.max(0, Math.min(50, pct));
+      } else if (draggingHandle === 'l') {
+        const pct = (e.clientX - rect.left) / rect.width * 100;
+        val = Math.max(0, Math.min(50, pct));
+      } else if (draggingHandle === 'r') {
+        const pct = (rect.right - e.clientX) / rect.width * 100;
+        val = Math.max(0, Math.min(50, pct));
+      }
+      updateInset(draggingHandle, val);
+    };
+    const onUp = () => setDraggingHandle(null);
+    window.addEventListener('pointermove', onMove);
+    window.addEventListener('pointerup', onUp);
+    return () => {
+      window.removeEventListener('pointermove', onMove);
+      window.removeEventListener('pointerup', onUp);
+    };
+  }, [draggingHandle, crosshairInsets]); // need crosshairInsets in dep array for updateInset
+
+  // Lock body scroll when lightbox or capture preview is open
+  useEffect(() => {
+    if (lightbox || capturePreview) {
+      const originalStyle = window.getComputedStyle(document.body).overflow;  
+      document.body.style.overflow = "hidden";
+      return () => { document.body.style.overflow = originalStyle; };
+    }
+  }, [lightbox, capturePreview]);
 
   const shots = useMemo<Shot[]>(() => {
     const out: Shot[] = [];
@@ -241,7 +284,7 @@ export default function UtilityDetail({
           <button className="util-shotframe" onClick={() => setLightbox(true)} title={t("utility.enlarge")} style={{ width: "100%", position: "relative", display: "block", padding: 0, border: "none", background: "transparent", cursor: "zoom-in" }}>
             <div style={{ position: "relative", overflow: "hidden", borderRadius: 8 }}>
               {/* eslint-disable-next-line @next/next/no-img-element */}
-              <img src={shot.src} alt={`${lineup.name} — ${shot.label}`} loading="lazy" style={{ width: "100%", display: "block", border: "1px solid color-mix(in srgb, var(--color-text) 15%, transparent)", transition: "transform 0.3s ease", transformOrigin: "center" }} onMouseEnter={e => e.currentTarget.style.transform = "scale(3)"} onMouseLeave={e => e.currentTarget.style.transform = "scale(1)"} />
+              <img src={shot.src} alt={`${lineup.name} — ${shot.label}`} loading="lazy" draggable={false} style={{ width: "100%", display: "block", border: "1px solid color-mix(in srgb, var(--color-text) 15%, transparent)", transition: "transform 0.3s ease", transformOrigin: "center", userSelect: "none", cursor: "default" }} onMouseEnter={e => e.currentTarget.style.transform = "scale(3)"} onMouseLeave={e => e.currentTarget.style.transform = "scale(1)"} />
               <span className="util-shotzoom" aria-hidden style={{ position: "absolute", bottom: 8, right: 8, background: "rgba(0,0,0,0.6)", padding: "4px 8px", borderRadius: 4, pointerEvents: "none" }}>⤢</span>
             </div>
           </button>
@@ -253,18 +296,6 @@ export default function UtilityDetail({
       {lineup.clipUrl && (
         <video className="util-clip" src={lineup.clipUrl} poster={lineup.thumb ?? undefined} muted loop playsInline controls />
       )}
-
-      <div style={{ display: "flex", gap: "12px", alignItems: "center", marginBottom: "12px", flexWrap: "wrap" }}>
-        <button className={`btn ${precisionTool ? "btn-primary" : "btn-secondary"}`} onClick={() => setPrecisionTool(!precisionTool)} style={{ transition: "all 0.1s ease" }}>
-          Precision tool
-        </button>
-        {precisionTool && (
-          <div style={{ display: "flex", alignItems: "center", gap: "8px" }}>
-            <span style={{ fontSize: "12px", color: "var(--muted)" }}>Length:</span>
-            <input type="range" min="10" max="100" value={precisionLength} onChange={handlePrecisionLengthChange} style={{ accentColor: "var(--color-accent)" }} />
-          </div>
-        )}
-      </div>
 
       <dl className="util-facts">
         <div>
@@ -347,24 +378,39 @@ export default function UtilityDetail({
           <style>{`
             @keyframes fadein { from { opacity: 0; } to { opacity: 1; } }
             @keyframes fadeout { from { opacity: 1; } to { opacity: 0; } }
+            .crosshair-handle { position: absolute; width: 24px; height: 24px; background: var(--color-accent); border-radius: 50%; opacity: 0; transition: opacity 0.2s ease; cursor: pointer; transform: translate(-50%, -50%); box-shadow: 0 0 0 4px rgba(0,0,0,0.3); z-index: 10; }
+            .crosshair-handle:hover, .crosshair-handle.dragging { opacity: 1; }
+            .crosshair-container:hover .crosshair-handle { opacity: 0.5; }
           `}</style>
           
           <div style={{ position: "relative", maxWidth: "90vw", maxHeight: "85vh", display: "flex" }}>
-            <button onClick={() => setLightbox(false)} style={{ position: "absolute", top: -40, right: -40, background: "transparent", border: "none", color: "var(--color-accent)", fontSize: "2rem", cursor: "pointer", padding: 8, lineHeight: 1, zIndex: 10 }}>✕</button>
+            <button onClick={() => setLightbox(false)} style={{ position: "absolute", bottom: 16, left: "50%", transform: "translateX(-50%)", background: "color-mix(in srgb, var(--color-text) 10%, transparent)", border: "none", color: "var(--color-text)", padding: "8px 16px", borderRadius: 20, cursor: "pointer", zIndex: 10, display: "flex", gap: "8px", alignItems: "center", fontSize: "14px" }}>
+              <span style={{ color: "var(--color-accent)", fontSize: "16px" }}>✕</span> Close
+            </button>
+            <button onClick={(e) => { e.stopPropagation(); setPrecisionTool(!precisionTool); }} style={{ position: "absolute", bottom: 16, right: 16, background: precisionTool ? "var(--color-accent)" : "color-mix(in srgb, var(--color-text) 10%, transparent)", border: "none", color: precisionTool ? "#000" : "var(--color-text)", padding: "8px 16px", borderRadius: 20, cursor: "pointer", zIndex: 10, fontSize: "14px", transition: "all 0.1s ease" }}>
+              Precision tool
+            </button>
+
             {/* eslint-disable-next-line @next/next/no-img-element */}
-            <img src={shot.src} alt={`${lineup.name} — ${shot.label}`} onClick={(e) => e.stopPropagation()} style={{ maxWidth: "100%", maxHeight: "85vh", objectFit: "contain", borderRadius: 8, display: "block" }} />
+            <img ref={imgRef} src={shot.src} alt={`${lineup.name} — ${shot.label}`} draggable={false} onClick={(e) => e.stopPropagation()} style={{ maxWidth: "100%", maxHeight: "85vh", objectFit: "contain", borderRadius: 8, display: "block", userSelect: "none" }} />
             
             {precisionTool && (
-              <div style={{ position: "absolute", inset: 0, pointerEvents: "none", display: "flex", alignItems: "center", justifyContent: "center", overflow: "hidden", borderRadius: 8 }}>
+              <div className="crosshair-container" style={{ position: "absolute", inset: 0, overflow: "hidden", borderRadius: 8 }}>
                 {/* Horizontal line */}
-                <div style={{ position: "absolute", width: `${precisionLength}%`, height: 2, background: "var(--color-accent)", opacity: 0.5, transition: "width 0.1s ease" }} />
+                <div style={{ position: "absolute", left: \`\${crosshairInsets.l}%\`, right: \`\${crosshairInsets.r}%\`, top: "50%", height: 2, background: "var(--color-accent)", opacity: 0.5, transform: "translateY(-50%)", pointerEvents: "none" }} />
                 {/* Vertical line */}
-                <div style={{ position: "absolute", height: `${precisionLength}%`, width: 2, background: "var(--color-accent)", opacity: 0.5, transition: "height 0.1s ease" }} />
+                <div style={{ position: "absolute", top: \`\${crosshairInsets.t}%\`, bottom: \`\${crosshairInsets.b}%\`, left: "50%", width: 2, background: "var(--color-accent)", opacity: 0.5, transform: "translateX(-50%)", pointerEvents: "none" }} />
+                
+                {/* Drag handles */}
+                <div className={\`crosshair-handle \${draggingHandle === 'l' ? 'dragging' : ''}\`} style={{ left: \`\${crosshairInsets.l}%\`, top: "50%" }} onPointerDown={(e) => { e.stopPropagation(); setDraggingHandle('l'); e.currentTarget.setPointerCapture(e.pointerId); }} />
+                <div className={\`crosshair-handle \${draggingHandle === 'r' ? 'dragging' : ''}\`} style={{ left: \`calc(100% - \${crosshairInsets.r}%)\`, top: "50%" }} onPointerDown={(e) => { e.stopPropagation(); setDraggingHandle('r'); e.currentTarget.setPointerCapture(e.pointerId); }} />
+                <div className={\`crosshair-handle \${draggingHandle === 't' ? 'dragging' : ''}\`} style={{ left: "50%", top: \`\${crosshairInsets.t}%\` }} onPointerDown={(e) => { e.stopPropagation(); setDraggingHandle('t'); e.currentTarget.setPointerCapture(e.pointerId); }} />
+                <div className={\`crosshair-handle \${draggingHandle === 'b' ? 'dragging' : ''}\`} style={{ left: "50%", top: \`calc(100% - \${crosshairInsets.b}%)\` }} onPointerDown={(e) => { e.stopPropagation(); setDraggingHandle('b'); e.currentTarget.setPointerCapture(e.pointerId); }} />
               </div>
             )}
           </div>
           
-          <div className="util-lightbox-bar" onClick={(e) => e.stopPropagation()} style={{ display: "flex", gap: "8px", marginTop: "20px" }}>
+          <div className="util-lightbox-bar" onClick={(e) => e.stopPropagation()} style={{ display: "flex", gap: "8px", marginTop: "24px" }}>
             {shots.map((s) => (
               <button
                 key={s.key}
