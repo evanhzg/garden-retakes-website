@@ -397,15 +397,15 @@ export default function UtilityDetail({
             {precisionTool && (
               <div className="crosshair-container" style={{ position: "absolute", inset: 0, overflow: "hidden", borderRadius: 8 }}>
                 {/* Horizontal line */}
-                <div style={{ position: "absolute", left: \`\${crosshairInsets.l}%\`, right: \`\${crosshairInsets.r}%\`, top: "50%", height: 2, background: "var(--color-accent)", opacity: 0.5, transform: "translateY(-50%)", pointerEvents: "none" }} />
+                <div style={{ position: "absolute", left: `${crosshairInsets.l}%`, right: `${crosshairInsets.r}%`, top: "50%", height: 2, background: "var(--color-accent)", opacity: 0.5, transform: "translateY(-50%)", pointerEvents: "none" }} />
                 {/* Vertical line */}
-                <div style={{ position: "absolute", top: \`\${crosshairInsets.t}%\`, bottom: \`\${crosshairInsets.b}%\`, left: "50%", width: 2, background: "var(--color-accent)", opacity: 0.5, transform: "translateX(-50%)", pointerEvents: "none" }} />
+                <div style={{ position: "absolute", top: `${crosshairInsets.t}%`, bottom: `${crosshairInsets.b}%`, left: "50%", width: 2, background: "var(--color-accent)", opacity: 0.5, transform: "translateX(-50%)", pointerEvents: "none" }} />
                 
                 {/* Drag handles */}
-                <div className={\`crosshair-handle \${draggingHandle === 'l' ? 'dragging' : ''}\`} style={{ left: \`\${crosshairInsets.l}%\`, top: "50%" }} onPointerDown={(e) => { e.stopPropagation(); setDraggingHandle('l'); e.currentTarget.setPointerCapture(e.pointerId); }} />
-                <div className={\`crosshair-handle \${draggingHandle === 'r' ? 'dragging' : ''}\`} style={{ left: \`calc(100% - \${crosshairInsets.r}%)\`, top: "50%" }} onPointerDown={(e) => { e.stopPropagation(); setDraggingHandle('r'); e.currentTarget.setPointerCapture(e.pointerId); }} />
-                <div className={\`crosshair-handle \${draggingHandle === 't' ? 'dragging' : ''}\`} style={{ left: "50%", top: \`\${crosshairInsets.t}%\` }} onPointerDown={(e) => { e.stopPropagation(); setDraggingHandle('t'); e.currentTarget.setPointerCapture(e.pointerId); }} />
-                <div className={\`crosshair-handle \${draggingHandle === 'b' ? 'dragging' : ''}\`} style={{ left: "50%", top: \`calc(100% - \${crosshairInsets.b}%)\` }} onPointerDown={(e) => { e.stopPropagation(); setDraggingHandle('b'); e.currentTarget.setPointerCapture(e.pointerId); }} />
+                <div className={`crosshair-handle ${draggingHandle === 'l' ? 'dragging' : ''}`} style={{ left: `${crosshairInsets.l}%`, top: "50%" }} onPointerDown={(e) => { e.stopPropagation(); setDraggingHandle('l'); e.currentTarget.setPointerCapture(e.pointerId); }} />
+                <div className={`crosshair-handle ${draggingHandle === 'r' ? 'dragging' : ''}`} style={{ left: `calc(100% - ${crosshairInsets.r}%)`, top: "50%" }} onPointerDown={(e) => { e.stopPropagation(); setDraggingHandle('r'); e.currentTarget.setPointerCapture(e.pointerId); }} />
+                <div className={`crosshair-handle ${draggingHandle === 't' ? 'dragging' : ''}`} style={{ left: "50%", top: `${crosshairInsets.t}%` }} onPointerDown={(e) => { e.stopPropagation(); setDraggingHandle('t'); e.currentTarget.setPointerCapture(e.pointerId); }} />
+                <div className={`crosshair-handle ${draggingHandle === 'b' ? 'dragging' : ''}`} style={{ left: "50%", top: `calc(100% - ${crosshairInsets.b}%)` }} onPointerDown={(e) => { e.stopPropagation(); setDraggingHandle('b'); e.currentTarget.setPointerCapture(e.pointerId); }} />
               </div>
             )}
           </div>
