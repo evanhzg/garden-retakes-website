@@ -34,6 +34,7 @@ export default function UtilityPage({ signedIn }: { signedIn: boolean }) {
   const [areaFilter, setAreaFilter] = useState<string>("");
   const [showUnverified, setShowUnverified] = useState(false);
   
+  const [viewMode, setViewMode] = useState<"map" | "list">("map");
   const [findMode, setFindMode] = useState(false);
   const [findAt, setFindAt] = useState<{ x: number; y: number } | null>(null);
 
@@ -183,12 +184,18 @@ export default function UtilityPage({ signedIn }: { signedIn: boolean }) {
           ))}
         </div>
 
-        <div className="util-maps">
-          {shownMaps.map(([id, c]) => (
-            <button key={id} className={`util-map ${map === id ? "active" : ""}`} onClick={() => setMap(id)}>
-              {c.label}
-            </button>
-          ))}
+        <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
+          <div className="util-maps">
+            {shownMaps.map(([id, c]) => (
+              <button key={id} className={`util-map ${map === id ? "active" : ""}`} onClick={() => setMap(id)}>
+                {c.label}
+              </button>
+            ))}
+          </div>
+          <div className="util-maps" style={{ marginLeft: "auto", flexWrap: "nowrap" }}>
+            <button className={`util-map ${viewMode === "map" ? "active" : ""}`} onClick={() => setViewMode("map")}>{t("utility.view.map")}</button>
+            <button className={`util-map ${viewMode === "list" ? "active" : ""}`} onClick={() => setViewMode("list")}>{t("utility.view.list")}</button>
+          </div>
         </div>
 
         <div className="util-layout">
@@ -203,7 +210,7 @@ export default function UtilityPage({ signedIn }: { signedIn: boolean }) {
               </div>
             )}
 
-            {cfg && (
+            {cfg && viewMode === "map" && (
               <UtilityRadar
                 cfg={cfg}
                 radar={radarUrl(map, level)}
@@ -217,6 +224,46 @@ export default function UtilityPage({ signedIn }: { signedIn: boolean }) {
                 onFind={(pos) => { setFindAt(pos); setFindMode(false); }}
                 label={`${cfg.label} radar`}
               />
+            )}
+
+            {viewMode === "list" && (
+              <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fill, minmax(220px, 1fr))", gap: "1rem", marginTop: "1rem", alignContent: "flex-start", overflowY: "auto", paddingRight: "0.5rem" }}>
+                {visible.map((l) => {
+                  const src = l.shots.result || l.shots.aim;
+                  return (
+                    <button 
+                      key={l.id} 
+                      className={`util-card ${selected?.id === l.id ? "active" : ""}`}
+                      style={{ 
+                        border: selected?.id === l.id ? "2px solid var(--accent)" : "1px solid var(--border)", 
+                        borderRadius: "8px", 
+                        overflow: "hidden", 
+                        textAlign: "left", 
+                        background: "var(--bg-elevated)", 
+                        cursor: "pointer",
+                        transition: "all 0.2s ease"
+                      }}
+                      onClick={() => setSelected(l)}
+                    >
+                      {src ? (
+                        /* eslint-disable-next-line @next/next/no-img-element */
+                        <img src={src} alt={l.name} style={{ width: "100%", aspectRatio: "16/9", objectFit: "cover", display: "block" }} loading="lazy" />
+                      ) : (
+                        <div style={{ width: "100%", aspectRatio: "16/9", background: "var(--bg)", display: "flex", alignItems: "center", justifyContent: "center", color: "var(--muted)" }}>{t("utility.noimage")}</div>
+                      )}
+                      <div style={{ padding: "0.75rem" }}>
+                        <div style={{ display: "flex", alignItems: "center", gap: "0.5rem", marginBottom: "0.25rem" }}>
+                          <span className="util-row-dot" style={{ background: UTIL_COLOUR[l.utility] }} />
+                          <span style={{ fontWeight: 600, fontSize: "0.95rem" }}>{l.name}</span>
+                        </div>
+                        <div style={{ fontSize: "0.8rem", color: "var(--muted)" }}>
+                          {l.area} • {l.throwType === "standing" ? "Standing" : THROW_SHORT[l.throwType] ?? l.throwType}
+                        </div>
+                      </div>
+                    </button>
+                  );
+                })}
+              </div>
             )}
 
             <p className="util-legend">

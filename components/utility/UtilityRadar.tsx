@@ -195,7 +195,6 @@ export default function UtilityRadar({
                 aria-label={l.name}
               >
                 <span className="util-pin-dot" />
-                <span className="util-pin-dir" aria-hidden />
               </button>
             );
           })}
