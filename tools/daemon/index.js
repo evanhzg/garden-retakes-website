@@ -79,45 +79,48 @@ ${utilitySlot}
       try {
         const consoleKey = process.env.CONSOLE_KEY || '{F10}';
         const psScript = `
-          Add-Type @"
-            using System;
-            using System.Runtime.InteropServices;
-            public class Win32 {
-              [DllImport("user32.dll")]
-              public static extern IntPtr GetForegroundWindow();
-              [DllImport("user32.dll")]
-              public static extern bool SetForegroundWindow(IntPtr hWnd);
-            }
+Add-Type @"
+  using System;
+  using System.Runtime.InteropServices;
+  public class Win32 {
+    [DllImport("user32.dll")]
+    public static extern IntPtr GetForegroundWindow();
+    [DllImport("user32.dll")]
+    public static extern bool SetForegroundWindow(IntPtr hWnd);
+  }
 "@
-          $original = [Win32]::GetForegroundWindow();
-          $wshell = New-Object -ComObject wscript.shell;
-          $wshell.AppActivate('Counter-Strike 2');
-          Start-Sleep -m 500;
-          $wshell.SendKeys('${consoleKey}');
-          Start-Sleep -m 500;
-          $wshell.SendKeys('exec garden_capture_daemon{ENTER}');
-          Start-Sleep -m 500;
-          $wshell.SendKeys('${consoleKey}');
-          Start-Sleep -m 2500; # Wait 2.5s for teleport to finish and viewmodel to draw
-          # Trigger screenshot tool (this runs back in node)
-          Out-File -FilePath "$env:TEMP\\garden_capture_ready.txt" -InputObject "READY";
-          Start-Sleep -m 1500; # Give node time to take the screenshot
-          [Win32]::SetForegroundWindow($original);
-        `;
+$original = [Win32]::GetForegroundWindow()
+$wshell = New-Object -ComObject wscript.shell
+$wshell.AppActivate('Counter-Strike 2')
+Start-Sleep -m 500
+$wshell.SendKeys('${consoleKey}')
+Start-Sleep -m 500
+$wshell.SendKeys('exec garden_capture_daemon{ENTER}')
+Start-Sleep -m 500
+$wshell.SendKeys('${consoleKey}')
+Start-Sleep -m 2500
+Out-File -FilePath "$env:TEMP\\garden_capture_ready.txt" -InputObject "READY"
+Start-Sleep -m 1500
+[Win32]::SetForegroundWindow($original)
+`;
         
-        // We will run this powershell script asynchronously so Node can take the screenshot while powershell sleeps
-        const fs = require('fs');
         const tmpFile = path.join(process.env.TEMP || 'C:\\Windows\\Temp', 'garden_capture_ready.txt');
-        if (fs.existsSync(tmpFile)) fs.unlinkSync(tmpFile);
+        const scriptFile = path.join(__dirname, 'capture.ps1');
         
-        require('child_process').exec(`powershell -c "${psScript.replace(/\n/g, ' ')}"`);
+        if (fs.existsSync(tmpFile)) fs.unlinkSync(tmpFile);
+        fs.writeFileSync(scriptFile, psScript);
+        
+        require('child_process').exec(`powershell -ExecutionPolicy Bypass -File "${scriptFile}"`);
         
         // Wait for the powershell script to signal readiness
         console.log("Waiting for teleport...");
-        while (!fs.existsSync(tmpFile)) {
+        let attempts = 0;
+        while (!fs.existsSync(tmpFile) && attempts < 100) {
           await new Promise(r => setTimeout(r, 100));
+          attempts++;
         }
         if (fs.existsSync(tmpFile)) fs.unlinkSync(tmpFile);
+        if (fs.existsSync(scriptFile)) fs.unlinkSync(scriptFile);
       } catch (e) {
         console.error("Failed to focus and type in CS2:", e);
       }
