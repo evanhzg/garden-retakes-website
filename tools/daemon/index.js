@@ -35,16 +35,7 @@ socket.on("capture_job", async (job) => {
   console.log(`Setpos: ${job.setpos}`);
 
   try {
-    const utilitySlot = job.utility === "flashbang" ? "slot7" : job.utility === "molotov" || job.utility === "incgrenade" ? "slot10" : "slot8";
     const cfgContent = `
-sv_cheats 1
-mp_freezetime 0
-mp_roundtime 60
-mp_warmup_pausetimer 1
-mp_warmuptime 9999
-mp_warmup_start
-mp_team_intro_time 0
-bot_kick
 cl_draw_only_deathnotices 1
 cl_drawhud_force_radar -1
 cl_showfps 0
@@ -52,21 +43,13 @@ r_drawviewmodel 1
 viewmodel_offset_x 2.5
 viewmodel_offset_y 2
 viewmodel_offset_z -2
-jointeam 2
-ent_fire smokegrenade_projectile kill
-ent_fire molotov_projectile kill
-ent_fire flashbang_projectile kill
-${job.setpos}
-give weapon_${job.utility || "smokegrenade"}
-${utilitySlot}
 `;
-    // On Linux/WSL for dev, use a dummy path if CS2_CFG_DIR doesn't exist
     const cfgDirExists = fs.existsSync(CS2_CFG_DIR);
     if (!cfgDirExists) {
       console.warn(`WARNING: CS2_CFG_DIR ${CS2_CFG_DIR} not found. Are you on Windows? Writing to local dir instead.`);
-      fs.writeFileSync("garden_capture_daemon.cfg", cfgContent);
+      fs.writeFileSync("garden_capture_client.cfg", cfgContent);
     } else {
-      const cfgPath = path.join(CS2_CFG_DIR, "garden_capture_daemon.cfg");
+      const cfgPath = path.join(CS2_CFG_DIR, "garden_capture_client.cfg");
       fs.writeFileSync(cfgPath, cfgContent);
       console.log(`Wrote config to ${cfgPath}`);
     }
@@ -95,17 +78,13 @@ Add-Type @"
 $original = [Win32]::GetForegroundWindow()
 $wshell = New-Object -ComObject wscript.shell
 $wshell.AppActivate('Counter-Strike 2')
-Start-Sleep -m 1000
-$wshell.SendKeys('${consoleKey}')
-Start-Sleep -m 500
-$wshell.SendKeys('map ${job.map}{ENTER}')
-Start-Sleep -m 15000
-$wshell.SendKeys('${consoleKey}')
-Start-Sleep -m 500
-$wshell.SendKeys('exec garden_capture_daemon{ENTER}')
 Start-Sleep -m 500
 $wshell.SendKeys('${consoleKey}')
-Start-Sleep -m 3500
+Start-Sleep -m 200
+$wshell.SendKeys('exec garden_capture_client{ENTER}')
+Start-Sleep -m 200
+$wshell.SendKeys('${consoleKey}')
+Start-Sleep -m 1500
 Out-File -FilePath "$env:TEMP\\garden_capture_ready.txt" -InputObject "READY"
 Start-Sleep -m 1500
 [Win32]::SetForegroundWindow($original)
@@ -120,9 +99,9 @@ Start-Sleep -m 1500
         require('child_process').exec(`powershell -ExecutionPolicy Bypass -File "${scriptFile}"`);
         
         // Wait for the powershell script to signal readiness
-        console.log("Waiting up to 30 seconds for map to load and teleport...");
+        console.log("Waiting for game focus...");
         let attempts = 0;
-        while (!fs.existsSync(tmpFile) && attempts < 300) {
+        while (!fs.existsSync(tmpFile) && attempts < 100) {
           await new Promise(r => setTimeout(r, 100));
           attempts++;
         }
@@ -132,9 +111,9 @@ Start-Sleep -m 1500
         console.error("Failed to focus and type in CS2:", e);
       }
     } else {
-      console.log(">>> PLEASE GO IN-GAME, LOAD THE MAP, AND PASTE 'exec garden_capture_daemon' IN CONSOLE <<<");
-      console.log("Taking screenshot automatically in 8 seconds. Switch to the game now!");
-      await new Promise(r => setTimeout(r, 8000));
+      console.log(">>> PLEASE GO IN-GAME AND PASTE 'exec garden_capture_client' IN CONSOLE <<<");
+      console.log("Taking screenshot automatically in 3 seconds. Switch to the game now!");
+      await new Promise(r => setTimeout(r, 3000));
     }
 
     console.log("Capturing screen...");

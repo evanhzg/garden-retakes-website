@@ -160,15 +160,39 @@ export default function UtilityDetail({
       .catch(() => onNote({ kind: "err", text: t("utility.copyfailed") }));
   };
 
-  const handleCaptureRequest = () => {
+  const handleCaptureRequest = async () => {
     if (!socket || !isAuthed) return;
     setCapturing(true);
-    socket.emit("capture_request", {
-      lineupId: lineup.id,
-      map: lineup.map,
-      utility: lineup.utility,
-      setpos: `setpos ${lineup.stand.x} ${lineup.stand.y} ${lineup.stand.z}; setang ${lineup.view.pitch} ${lineup.view.yaw}`
-    });
+
+    try {
+      const res = await fetch("/api/utility/capture-prep", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ id: lineup.id })
+      });
+      const data = await res.json();
+      
+      if (!res.ok) {
+        onNote({ kind: "err", text: data.error || "Server prep failed." });
+        setCapturing(false);
+        return;
+      }
+      
+      if (data.changingMap) {
+        onNote({ kind: "ok", text: data.message });
+        setCapturing(false);
+        return;
+      }
+      
+      socket.emit("capture_request", {
+        lineupId: lineup.id,
+        map: lineup.map,
+        utility: lineup.utility
+      });
+    } catch (err) {
+      onNote({ kind: "err", text: "Network error prepping server." });
+      setCapturing(false);
+    }
   };
 
   const handleAcceptCapture = async () => {
