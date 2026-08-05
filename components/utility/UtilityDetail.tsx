@@ -309,7 +309,7 @@ export default function UtilityDetail({
           <button className="util-shotframe" onClick={() => setLightbox(true)} title={t("utility.enlarge")} style={{ width: "100%", position: "relative", display: "block", padding: 0, border: "none", background: "transparent", cursor: "zoom-in" }}>
             <div style={{ position: "relative", overflow: "hidden", borderRadius: 8 }}>
               {/* eslint-disable-next-line @next/next/no-img-element */}
-              <img src={shot.src} alt={`${lineup.name} — ${shot.label}`} loading="lazy" draggable={false} style={{ width: "100%", display: "block", border: "1px solid color-mix(in srgb, var(--color-text) 15%, transparent)", transition: "transform 0.3s ease", transformOrigin: "center", userSelect: "none", cursor: "default" }} onMouseEnter={e => e.currentTarget.style.transform = "scale(3)"} onMouseLeave={e => e.currentTarget.style.transform = "scale(1)"} />
+              <img src={shot.src} alt={`${lineup.name} — ${shot.label}`} loading="lazy" draggable={false} style={{ width: "100%", aspectRatio: "16/9", objectFit: "cover", display: "block", border: "1px solid color-mix(in srgb, var(--color-text) 15%, transparent)", transition: "transform 0.3s ease", transformOrigin: "center", userSelect: "none", cursor: "default" }} onMouseEnter={e => e.currentTarget.style.transform = "scale(3)"} onMouseLeave={e => e.currentTarget.style.transform = "scale(1)"} />
               <span className="util-shotzoom" aria-hidden style={{ position: "absolute", bottom: 8, right: 8, background: "rgba(0,0,0,0.6)", padding: "4px 8px", borderRadius: 4, pointerEvents: "none" }}>⤢</span>
             </div>
           </button>
@@ -422,9 +422,9 @@ export default function UtilityDetail({
             {precisionTool && (
               <div className="crosshair-container" style={{ position: "absolute", inset: 0, overflow: "hidden", borderRadius: 8, pointerEvents: "none" }}>
                 {/* Horizontal line */}
-                <div style={{ position: "absolute", left: `${crosshairInsets.l}%`, right: `${crosshairInsets.r}%`, top: "50%", height: 2, background: "var(--color-accent)", opacity: 0.5, transform: "translateY(-50%)", pointerEvents: "none" }} />
+                <div style={{ position: "absolute", left: `${crosshairInsets.l}%`, right: `${crosshairInsets.r}%`, top: "50%", height: 2, background: "var(--color-accent)", opacity: 1, boxShadow: "0 0 0 1px rgba(0,0,0,0.5)", transform: "translateY(-50%)", pointerEvents: "none" }} />
                 {/* Vertical line */}
-                <div style={{ position: "absolute", top: `${crosshairInsets.t}%`, bottom: `${crosshairInsets.b}%`, left: "50%", width: 2, background: "var(--color-accent)", opacity: 0.5, transform: "translateX(-50%)", pointerEvents: "none" }} />
+                <div style={{ position: "absolute", top: `${crosshairInsets.t}%`, bottom: `${crosshairInsets.b}%`, left: "50%", width: 2, background: "var(--color-accent)", opacity: 1, boxShadow: "0 0 0 1px rgba(0,0,0,0.5)", transform: "translateX(-50%)", pointerEvents: "none" }} />
                 
                 {/* Drag handles */}
                 <div className={`crosshair-handle ${draggingHandle === 'l' ? 'dragging' : ''}`} style={{ left: `${crosshairInsets.l}%`, top: "50%" }} onPointerDown={(e) => { e.stopPropagation(); setDraggingHandle('l'); e.currentTarget.setPointerCapture(e.pointerId); }} />
