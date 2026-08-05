@@ -379,7 +379,7 @@ export default function UtilityDetail({
           <style>{`
             @keyframes fadein { from { opacity: 0; } to { opacity: 1; } }
             @keyframes fadeout { from { opacity: 1; } to { opacity: 0; } }
-            .crosshair-handle { position: absolute; width: 24px; height: 24px; background: var(--color-accent); border-radius: 50%; opacity: 0; transition: opacity 0.2s ease; cursor: pointer; transform: translate(-50%, -50%); box-shadow: 0 0 0 4px rgba(0,0,0,0.3); z-index: 10; }
+            .crosshair-handle { position: absolute; width: 24px; height: 24px; background: var(--color-accent); border-radius: 50%; opacity: 0; transition: opacity 0.2s ease; cursor: pointer; transform: translate(-50%, -50%); box-shadow: 0 0 0 4px rgba(0,0,0,0.3); z-index: 10; pointer-events: auto; }
             .crosshair-handle:hover, .crosshair-handle.dragging { opacity: 1; }
             .crosshair-container:hover .crosshair-handle { opacity: 0.5; }
           `}</style>
@@ -388,7 +388,7 @@ export default function UtilityDetail({
             <button onClick={() => setLightbox(false)} style={{ position: "absolute", bottom: 16, left: "50%", transform: "translateX(-50%)", background: "color-mix(in srgb, var(--color-text) 10%, transparent)", border: "none", color: "var(--color-text)", padding: "8px 16px", borderRadius: 20, cursor: "pointer", zIndex: 10, display: "flex", gap: "8px", alignItems: "center", fontSize: "14px" }}>
               <span style={{ color: "var(--color-accent)", fontSize: "16px" }}>✕</span> Close
             </button>
-            <button onClick={(e) => { e.stopPropagation(); setPrecisionTool(!precisionTool); }} style={{ position: "absolute", bottom: 16, right: 16, background: precisionTool ? "var(--color-accent)" : "color-mix(in srgb, var(--color-text) 10%, transparent)", border: "none", color: precisionTool ? "#000" : "var(--color-text)", padding: "8px 16px", borderRadius: 20, cursor: "pointer", zIndex: 10, fontSize: "14px", transition: "all 0.1s ease" }}>
+            <button onClick={(e) => { e.stopPropagation(); setPrecisionTool(p => !p); }} style={{ position: "absolute", bottom: 16, right: 16, background: precisionTool ? "var(--color-accent)" : "color-mix(in srgb, var(--color-text) 10%, transparent)", border: "none", color: precisionTool ? "#000" : "var(--color-text)", padding: "8px 16px", borderRadius: 20, cursor: "pointer", zIndex: 10, fontSize: "14px", transition: "all 0.1s ease" }}>
               Precision tool
             </button>
 
@@ -396,7 +396,7 @@ export default function UtilityDetail({
             <img ref={imgRef} src={shot.src} alt={`${lineup.name} — ${shot.label}`} draggable={false} onClick={(e) => e.stopPropagation()} style={{ maxWidth: "100%", maxHeight: "85vh", objectFit: "contain", borderRadius: 8, display: "block", userSelect: "none" }} />
             
             {precisionTool && (
-              <div className="crosshair-container" style={{ position: "absolute", inset: 0, overflow: "hidden", borderRadius: 8 }}>
+              <div className="crosshair-container" style={{ position: "absolute", inset: 0, overflow: "hidden", borderRadius: 8, pointerEvents: "none" }}>
                 {/* Horizontal line */}
                 <div style={{ position: "absolute", left: `${crosshairInsets.l}%`, right: `${crosshairInsets.r}%`, top: "50%", height: 2, background: "var(--color-accent)", opacity: 0.5, transform: "translateY(-50%)", pointerEvents: "none" }} />
                 {/* Vertical line */}
