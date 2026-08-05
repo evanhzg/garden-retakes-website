@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useState, useRef } from "react";
 import { useI18n } from "@/components/I18nProvider";
 import { useSocket } from "@/components/games/SocketProvider";
 import {
@@ -73,7 +73,7 @@ export default function UtilityDetail({
     try { localStorage.setItem("crosshairInsets", JSON.stringify(next)); } catch {}
   };
 
-  const imgRef = React.useRef<HTMLImageElement>(null);
+  const imgRef = useRef<HTMLImageElement>(null);
   const [draggingHandle, setDraggingHandle] = useState<keyof typeof crosshairInsets | null>(null);
 
   useEffect(() => {
