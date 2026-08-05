@@ -2143,4 +2143,15 @@ nextApp.prepare().then(() => {
   httpServer.listen(PORT, () => {
     console.log(`> Websockets & Next.js ready on http://localhost:${PORT}`);
   });
+}).catch((err) => {
+  console.warn("Next.js prepare failed (likely no build found). Starting WebSocket server in standalone mode...");
+  const PORT = process.env.PORT || 3000;
+
+  // Start the background meta scraper (once every hour)
+  scrapeAll().catch(console.error);
+  setInterval(() => scrapeAll().catch(console.error), 3600000);
+
+  httpServer.listen(PORT, () => {
+    console.log(`> Websockets ready on port ${PORT}`);
+  });
 });
