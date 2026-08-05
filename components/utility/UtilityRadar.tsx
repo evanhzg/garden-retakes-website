@@ -148,11 +148,11 @@ export default function UtilityRadar({
   const findMark = findAt ? worldToPercent(cfg, findAt.x, findAt.y) : null;
 
   return (
-    <div className="util-radarbox" style={{ flex: 1, minHeight: 0, display: "flex", justifyContent: "center", alignItems: "center" }}>
+    <div className="util-radarbox" style={{ flex: 1, minHeight: 0, display: "flex", justifyContent: "center", alignItems: "center", containerType: "size" }}>
       <div
         ref={wrapRef}
         className={`util-radar ${findMode ? "finding" : ""} ${zoom > 1 ? "zoomed" : ""}`}
-        style={{ width: "100%", maxHeight: "100%", aspectRatio: "1/1", margin: 0 }}
+        style={{ width: "100%", maxWidth: "min(100cqi, 100cqb)", maxHeight: "min(100cqi, 100cqb)", aspectRatio: "1/1", margin: 0 }}
         onPointerDown={onPointerDown}
         onPointerMove={onPointerMove}
         onPointerUp={onPointerUp}
