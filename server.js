@@ -2081,13 +2081,19 @@ const syncPublicLobbies = () => {
     .map(l => l.getPublicState()));
 };
 
+let nextReady = false;
+
 httpServer.on("request", (req, res) => {
   // Everything that isn't the Discord bridge is a website request: hand it to
   // Next. This used to `return` bare, which was correct when Next ran as a
   // separate process — once Next was folded into this server it meant every
   // page request was accepted and then never answered, so the site just hung.
   // (Socket.IO attaches its own upgrade/handler and is unaffected.)
-  if (!req.url || !req.url.startsWith("/discord/")) return nextHandler(req, res);
+  if (!req.url || !req.url.startsWith("/discord/")) {
+    if (nextReady) return nextHandler(req, res);
+    res.writeHead(404, { "Content-Type": "text/plain" });
+    return res.end("Not Found (Standalone WebSocket Server)");
+  }
   const json = (code, obj) => {
     res.writeHead(code, { "Content-Type": "application/json" });
     res.end(JSON.stringify(obj));
@@ -2130,10 +2136,13 @@ httpServer.on("request", (req, res) => {
   }
 
   // Fallback to Next.js handler
-  return nextHandler(req, res);
+  if (nextReady) return nextHandler(req, res);
+  res.writeHead(404, { "Content-Type": "text/plain" });
+  return res.end("Not Found");
 });
 
 nextApp.prepare().then(() => {
+  nextReady = true;
   const PORT = process.env.PORT || 3000;
 
   // Start the background meta scraper (once every hour)
