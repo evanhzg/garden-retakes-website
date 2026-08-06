@@ -28,8 +28,13 @@ const MODES = {
   "3v3": { id: "3v3", teamSize: 3, label: "Retakes", pool: "retakes" },
 };
 
+// Active duty plus Overpass, Train and Vertigo — the ten maps the site has
+// calibrated radars and art for, which is the same list.
 const MAP_POOLS = {
-  retakes: ["de_mirage", "de_inferno", "de_nuke", "de_overpass", "de_vertigo", "de_ancient", "de_anubis"],
+  retakes: [
+    "de_ancient", "de_anubis", "de_cache", "de_dust2", "de_inferno",
+    "de_mirage", "de_nuke", "de_overpass", "de_train", "de_vertigo",
+  ],
 };
 
 const BOT_NAMES = [
@@ -46,10 +51,38 @@ const VETO_TURN_MS = 25_000;
 /** How long a completed match stays on screen before the lobby resets. */
 const READY_LINGER_MS = 15 * 60_000;
 
+const STARTING_ELO = 1000;
+
+/**
+ * Which side of the rating range a mixed party is judged on.
+ *
+ * A pair of 1800s queueing with a 900 is not an average-1500 team — they will
+ * run the game and the third will be a passenger. Weighting the mean towards
+ * the top makes the lobby they get matched into closer to the game they will
+ * actually play. The skew scales with the party's own spread, so an evenly
+ * matched trio is still judged on its average.
+ *
+ * Mirrors effectiveElo() in lib/competitive.ts. Kept as a copy rather than an
+ * import because this file is CommonJS on the socket server and that one is
+ * TypeScript in the Next build.
+ */
+function effectiveElo(ratings) {
+  if (ratings.length === 0) return STARTING_ELO;
+  if (ratings.length === 1) return ratings[0];
+  const mean = ratings.reduce((a, b) => a + b, 0) / ratings.length;
+  const top = Math.max(...ratings);
+  const spread = top - Math.min(...ratings);
+  const skew = Math.max(0, Math.min(1, (spread - 150) / 450));
+  return Math.round(mean + (top - mean) * skew);
+}
+
+/** How far apart two parties may be, widening the longer they have waited. */
+const acceptableGap = (secondsWaiting) => 100 + Math.min(900, secondsWaiting * 12);
+
 const now = () => Date.now();
 const uid = (prefix) => `${prefix}_${Math.random().toString(36).slice(2, 10)}`;
 
-function attachRetakesMatchmaking(io, { connectedUsers, resolveNames }) {
+function attachRetakesMatchmaking(io, { connectedUsers, loadRatings }) {
   /** partyId -> party */
   const parties = new Map();
   /** steamId -> partyId */
@@ -86,7 +119,7 @@ function attachRetakesMatchmaking(io, { connectedUsers, resolveNames }) {
     const party = {
       id,
       leader: String(steamId),
-      members: [{ steamId: String(steamId), name: name ?? null, ready: true }],
+      members: [{ steamId: String(steamId), name: name ?? null, ready: true, elo: STARTING_ELO, matches: 0 }],
       mode: "2v2",
       queuedAt: null,
       createdAt: now(),
@@ -97,6 +130,26 @@ function attachRetakesMatchmaking(io, { connectedUsers, resolveNames }) {
   }
 
   const ensureParty = (steamId, name) => partyFor(steamId) ?? makeParty(steamId, name);
+
+  /** The rating a party is matched on. */
+  const partyElo = (party) => effectiveElo(party.members.map((m) => m.elo ?? STARTING_ELO));
+
+  /** Fill in ratings for whoever we do not have yet. Never fatal. */
+  async function refreshRatings(party) {
+    if (typeof loadRatings !== "function" || !party) return;
+    try {
+      const rows = await loadRatings(party.members.map((m) => m.steamId));
+      for (const m of party.members) {
+        const r = rows?.[m.steamId];
+        if (!r) continue;
+        m.elo = r.elo ?? STARTING_ELO;
+        m.matches = r.matches ?? 0;
+      }
+    } catch {
+      // A lobby without ratings still matches — everyone is simply treated as
+      // a new player, which is what they would be if the table were empty.
+    }
+  }
 
   /** A party can never hold more people than a whole team. */
   const partyCapacity = (party) => MODES[party.mode]?.teamSize ?? 2;
@@ -141,6 +194,7 @@ function attachRetakesMatchmaking(io, { connectedUsers, resolveNames }) {
         mode: party.mode,
         capacity: partyCapacity(party),
         members: party.members,
+        elo: partyElo(party),
         queuedAt: party.queuedAt,
         queueReason: party.queueReason ?? null,
       },
@@ -180,6 +234,12 @@ function attachRetakesMatchmaking(io, { connectedUsers, resolveNames }) {
           bot: !!p.bot,
           accepted: !!p.accepted,
           leader: !!p.leader,
+          elo: p.elo ?? STARTING_ELO,
+          matches: p.matches ?? 0,
+          // Which party this player queued with, as a small index rather than
+          // the raw id: it is what lets the roster show "these two came
+          // together and this one is solo" without leaking party ids around.
+          premade: p.premade ?? null,
         })),
       })),
       accept: match.phase === "found" ? { deadline: match.acceptDeadline, total: match.humanCount, done: match.acceptedCount } : null,
@@ -226,18 +286,36 @@ function attachRetakesMatchmaking(io, { connectedUsers, resolveNames }) {
     if (!cfg || !q) return;
     const needed = cfg.teamSize * 2;
 
-    // Greedy first-fit over parties in join order. Parties are small and never
-    // split, so the first combination that reaches the exact head-count is the
-    // one that has waited longest — which is the property that matters.
-    const chosen = [];
-    let total = 0;
-    for (const pid of q) {
-      const party = parties.get(pid);
-      if (!party) continue;
+    // Anchored on whoever has waited longest, then filled from the parties
+    // closest to them in rating. Pure join order made a level 2 and a level 9
+    // a match simply because they queued a second apart; ordering the
+    // candidates by rating distance means the lobby is built around the person
+    // who has been waiting rather than around the clock.
+    //
+    // The tolerance widens with that wait, so a queue with nobody suitable in
+    // it still resolves rather than leaving one person there forever.
+    const head = q.map((pid) => parties.get(pid)).find(Boolean);
+    if (!head) return;
+
+    const waited = (now() - (head.queuedAt ?? now())) / 1000;
+    const tolerance = acceptableGap(waited);
+    const anchor = partyElo(head);
+
+    const candidates = q
+      .map((pid) => parties.get(pid))
+      .filter((party) => party && party.id !== head.id)
+      .map((party) => ({ party, distance: Math.abs(partyElo(party) - anchor) }))
+      .filter((c) => c.distance <= tolerance)
+      .sort((a, b) => a.distance - b.distance)
+      .map((c) => c.party);
+
+    const chosen = [head];
+    let total = head.members.length;
+    for (const party of candidates) {
+      if (total === needed) break;
       if (total + party.members.length > needed) continue;
       chosen.push(party);
       total += party.members.length;
-      if (total === needed) break;
     }
     if (total !== needed) return;
 
@@ -275,7 +353,12 @@ function attachRetakesMatchmaking(io, { connectedUsers, resolveNames }) {
       { name: "Team B", players: [], side: null },
     ];
     const sorted = [...partiesIn].sort((a, b) => b.members.length - a.members.length);
+    // Only parties of two or more get a premade marker. A solo queuer is not
+    // "premade group 3 of 3"; they are on their own, and the roster should say
+    // so by saying nothing.
+    let premadeIndex = 0;
     for (const party of sorted) {
+      const marker = party.members.length > 1 ? ++premadeIndex : null;
       const target = teams[0].players.length <= teams[1].players.length ? teams[0] : teams[1];
       for (const m of party.members) {
         target.players.push({
@@ -283,6 +366,9 @@ function attachRetakesMatchmaking(io, { connectedUsers, resolveNames }) {
           name: m.name,
           accepted: false,
           leader: m.steamId === party.leader,
+          elo: m.elo ?? STARTING_ELO,
+          matches: m.matches ?? 0,
+          premade: marker,
         });
       }
     }
@@ -519,6 +605,9 @@ function attachRetakesMatchmaking(io, { connectedUsers, resolveNames }) {
       const mine = party.members.find((m) => m.steamId === id);
       if (mine && data?.name) mine.name = data.name;
       push();
+      // Ratings arrive a moment later; the lobby renders without them rather
+      // than waiting on a database round trip to show a party of one.
+      refreshRatings(party).then(() => syncParty(party));
     });
 
     socket.on("rq:party:mode", ({ mode } = {}) => {
@@ -609,8 +698,21 @@ function attachRetakesMatchmaking(io, { connectedUsers, resolveNames }) {
       if (party.leader !== id) return socket.emit("rq:notice", { kind: "error", code: "not_leader" });
       if (matchOf.get(id)) return;
       if (mode && MODES[mode]) party.mode = mode;
+
+      // Queue first, then re-read the ratings. Waiting on the database before
+      // joining meant the button did nothing until a round trip came back,
+      // which on a cold connection is a second of a screen that looks broken.
+      // The rating still gets refreshed — matching just re-runs once it lands,
+      // and a stale rating for that moment costs nothing because nothing has
+      // been matched yet.
       enqueue(party);
       syncParty(party);
+
+      refreshRatings(party).then(() => {
+        if (!party.queuedAt) return;
+        syncParty(party);
+        tryMatch(party.mode);
+      });
     });
 
     socket.on("rq:queue:leave", () => {

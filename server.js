@@ -215,7 +215,28 @@ const handlePkmnLeave = async (socket, io) => {
   }
 };
 
-attachRetakesMatchmaking(io, { connectedUsers });
+attachRetakesMatchmaking(io, {
+  connectedUsers,
+  /**
+   * Competitive ratings for a set of players.
+   *
+   * Missing rows are simply absent rather than defaulted here — the
+   * matchmaker treats anyone it has no rating for as a new player, which is
+   * exactly what they are, and creating a row on lookup would put people in
+   * the leaderboard for opening the page.
+   */
+  async loadRatings(steamIds) {
+    const ids = (steamIds || []).filter((id) => /^\d{5,20}$/.test(String(id)));
+    if (ids.length === 0) return {};
+    const rows = await prisma.gardenCompetitiveRating.findMany({
+      where: { SteamId: { in: ids.map((id) => BigInt(id)) } },
+      select: { SteamId: true, Elo: true, MatchesPlayed: true },
+    });
+    return Object.fromEntries(
+      rows.map((r) => [r.SteamId.toString(), { elo: r.Elo, matches: r.MatchesPlayed }])
+    );
+  },
+});
 
 io.on("connection", (socket) => {
   console.log(`Socket connected: ${socket.id}`);

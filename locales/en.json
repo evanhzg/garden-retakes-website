@@ -2231,5 +2231,7 @@
   "loadout.role.flex": "Flex",
   "loadout.role.flex.desc": "Takes whatever the other four did not.",
   "lobby.yourloadout": "Your loadout",
-  "lobby.yourform": "Your recent form"
+  "lobby.yourform": "Your recent form",
+  "lobby.premade": "Queued together",
+  "lobby.soloq": "Queued alone"
 }

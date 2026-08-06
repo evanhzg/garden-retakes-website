@@ -5,6 +5,7 @@ import { useSocket } from "@/components/games/SocketProvider";
 import { useI18n } from "@/components/I18nProvider";
 import { useOverlay } from "@/lib/useOverlay";
 import { FormCard, FormLine, useRosterForm, type RecentForm } from "./PlayerForm";
+import LevelBadge from "./LevelBadge";
 import "@/app/retakes/lobby/retakes-lobby.css";
 
 // Competitive matchmaking: party, queue, accept, veto, connect.
@@ -18,8 +19,13 @@ import "@/app/retakes/lobby/retakes-lobby.css";
 // a tab that was backgrounded shows the right number the moment it wakes,
 // rather than a countdown that drifted while nobody was looking at it.
 
-type Member = { steamId: string; name: string | null; ready: boolean };
-type MatchPlayer = { steamId: string; name: string | null; bot: boolean; accepted: boolean; leader: boolean };
+type Member = { steamId: string; name: string | null; ready: boolean; elo?: number; matches?: number };
+type MatchPlayer = {
+  steamId: string; name: string | null; bot: boolean; accepted: boolean; leader: boolean;
+  elo?: number; matches?: number;
+  /** Which party this player queued with; null when they queued alone. */
+  premade?: number | null;
+};
 type VetoAction = { type: "ban" | "side"; team: number; map?: string; side?: string; auto: boolean; at: number };
 
 type State = {
@@ -30,6 +36,7 @@ type State = {
     isLeader: boolean;
     mode: string;
     capacity: number;
+    elo?: number;
     members: Member[];
     queuedAt: number | null;
     queueReason: string | null;
@@ -289,6 +296,7 @@ export default function RetakesLobby({ signedIn }: { signedIn: boolean }) {
                   {m.name ?? t("lobby.player")}
                   {m.steamId === party?.leader && <span className="rq-crown" title={t("lobby.leader")}>★</span>}
                 </span>
+                <LevelBadge elo={m.elo} matches={m.matches} size="sm" />
                 {party?.isLeader && m.steamId !== steamId && (
                   <button
                     className="rq-kick"
@@ -527,7 +535,7 @@ function MatchRoom({
       </header>
 
       <div className="rq-room-body">
-        <Roster team={match.teams[0]} me={me} align="left" forms={forms} />
+        <Roster team={match.teams[0]} me={me} align="left" forms={forms} t={t} />
 
         <div className="rq-center">
           {ready && match.result ? (
@@ -615,7 +623,7 @@ function MatchRoom({
           )}
         </div>
 
-        <Roster team={match.teams[1]} me={me} align="right" forms={forms} />
+        <Roster team={match.teams[1]} me={me} align="right" forms={forms} t={t} />
       </div>
 
       <div className="rq-chat">
@@ -672,11 +680,13 @@ function Roster({
   me,
   align,
   forms,
+  t,
 }: {
   team: NonNullable<State["match"]>["teams"][number];
   me: string;
   align: "left" | "right";
   forms: Record<string, RecentForm>;
+  t: (k: string, v?: Record<string, string | number>) => string;
 }) {
   // Which row is showing its full card, and where that row is on screen. Kept
   // here rather than per row so only one card can be open at a time.
@@ -691,13 +701,22 @@ function Roster({
           onMouseEnter={(e) => !p.bot && setOpen({ steamId: p.steamId, rect: e.currentTarget.getBoundingClientRect() })}
           onMouseLeave={() => setOpen((o) => (o?.steamId === p.steamId ? null : o))}
         >
-          <span className="rq-avatar" aria-hidden>
-            {(p.name ?? "?").slice(0, 1).toUpperCase()}
-          </span>
+          {p.bot
+            ? <span className="rq-avatar" aria-hidden>{(p.name ?? "?").slice(0, 1).toUpperCase()}</span>
+            : <LevelBadge elo={p.elo} matches={p.matches} size="md" />}
           <span className="rq-player">
             <span className="rq-member-name">
               {p.name ?? "—"}
               {p.leader && <span className="rq-crown">★</span>}
+              {/* Who came together. A solo queuer gets no marker rather than
+                  a "group of 1", because that is not a thing. */}
+              {p.premade ? (
+                <span className={`rq-premade p${p.premade}`} title={t("lobby.premade")}>
+                  ⛓ {p.premade}
+                </span>
+              ) : (
+                !p.bot && <span className="rq-solo" title={t("lobby.soloq")}>◦</span>
+              )}
             </span>
             {!p.bot && <FormLine form={forms[p.steamId]} />}
           </span>

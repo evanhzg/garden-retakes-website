@@ -893,3 +893,26 @@ model FeedClipCommentLike {
   @@index([CommentId])
   @@map("FeedClipCommentLikes")
 }
+
+/// A player's standing in competitive retakes.
+///
+/// Deliberately separate from PlayerSeasonStats. That rating measures the
+/// open retakes server, where anyone can join mid-round and the sample is
+/// enormous; this one measures 2v2 and 3v3 matches with a veto and a result.
+/// Mixing them would let a thousand casual rounds drown out ten matches that
+/// were actually played for something.
+model GardenCompetitiveRating {
+  SteamId        BigInt    @id @db.UnsignedBigInt
+  Elo            Int       @default(1000)
+  PeakElo        Int       @default(1000)
+  /// Placements are the first ten; below that a level is not shown.
+  MatchesPlayed  Int       @default(0)
+  Wins           Int       @default(0)
+  Losses         Int       @default(0)
+  Abandons       Int       @default(0)
+  LastMatchAtUtc DateTime? @db.DateTime(6)
+  UpdatedAt      DateTime  @default(now()) @updatedAt @db.DateTime(6)
+
+  @@index([Elo])
+  @@map("GardenCompetitiveRatings")
+}

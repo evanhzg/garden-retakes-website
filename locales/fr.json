@@ -2225,5 +2225,7 @@
   "loadout.role.flex": "Flex",
   "loadout.role.flex.desc": "Prend ce que les quatre autres n'ont pas pris.",
   "lobby.yourloadout": "Ton loadout",
-  "lobby.yourform": "Ta forme récente"
+  "lobby.yourform": "Ta forme récente",
+  "lobby.premade": "En groupe",
+  "lobby.soloq": "Seul dans la file"
 }
