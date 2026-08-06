@@ -438,6 +438,9 @@ export default function RetakesLobby({ signedIn }: { signedIn: boolean }) {
             <a className="btn btn-secondary" href="/stats/form">
               {t("lobby.yourform")}
             </a>
+            <a className="btn btn-secondary" href="/retakes/economy">
+              {t("lobby.economy")}
+            </a>
           </div>
         </aside>
       </div>

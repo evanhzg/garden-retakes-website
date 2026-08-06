@@ -2227,5 +2227,6 @@
   "lobby.yourloadout": "Ton loadout",
   "lobby.yourform": "Ta forme récente",
   "lobby.premade": "En groupe",
-  "lobby.soloq": "Seul dans la file"
+  "lobby.soloq": "Seul dans la file",
+  "lobby.economy": "Comment marche l économie"
 }

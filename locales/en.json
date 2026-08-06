@@ -2233,5 +2233,6 @@
   "lobby.yourloadout": "Your loadout",
   "lobby.yourform": "Your recent form",
   "lobby.premade": "Queued together",
-  "lobby.soloq": "Queued alone"
+  "lobby.soloq": "Queued alone",
+  "lobby.economy": "How the economy works"
 }
