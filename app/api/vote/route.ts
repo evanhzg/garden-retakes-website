@@ -171,6 +171,12 @@ export async function PATCH() {
       counts.set(k, (counts.get(k) ?? 0) + 1);
     }
     const [winner, count] = Array.from(counts.entries()).sort((a, b) => b[1] - a[1])[0];
+    
+    // Remove any existing medal for this category and season to prevent duplicates (e.g. on ties resolving differently)
+    await prisma.gardenPlayerMedal.deleteMany({
+      where: { SeasonId: poll.SeasonId, MedalSlug: c.MedalSlug },
+    });
+
     await award(BigInt(winner), c.MedalSlug, poll.SeasonId, `${count} vote${count === 1 ? "" : "s"}`);
     awarded += 1;
   }

@@ -62,7 +62,7 @@ type State = {
       plan: { type: string }[];
     } | null;
     result: { map: string; connect: string | null; sides: (string | null)[] } | null;
-    chat: { from: string; name: string | null; text: string; at: number }[];
+    chat: { from: string; name: string | null; text: string; at: number; team?: number | null }[];
   } | null;
   online: number;
 };
@@ -111,8 +111,24 @@ export default function RetakesLobby({ signedIn, lobbyId }: { signedIn: boolean,
   const [friends, setFriends] = useState<Friend[]>([]);
   const [online, setOnline] = useState<string[]>([]);
   const [notice, setNotice] = useState<{ kind: string; text: string } | null>(null);
-  const [chatDraft, setChatDraft] = useState("");
-  const chatRef = useRef<HTMLDivElement>(null);
+  const [avatarPlayers, setAvatarPlayers] = useState<{ steamId: string, name: string, avatarSrc?: string }[]>([]);
+
+  useEffect(() => {
+    if (!state?.party?.members) return;
+    const ids = state.party.members.map((m: any) => m.steamId);
+    if (ids.length > 0) {
+      let active = true;
+      fetch("/api/users/avatars", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ steamIds: ids })
+      })
+      .then(r => r.json())
+      .then(d => { if (active) setAvatarPlayers(d); })
+      .catch(console.error);
+      return () => { active = false; };
+    }
+  }, [state?.party?.members]);
 
   const [editingName, setEditingName] = useState(false);
   const [draftName, setDraftName] = useState("");
@@ -173,10 +189,6 @@ export default function RetakesLobby({ signedIn, lobbyId }: { signedIn: boolean,
       socket.off("user_offline", down);
     };
   }, [socket]);
-
-  useEffect(() => {
-    chatRef.current?.scrollTo({ top: chatRef.current.scrollHeight });
-  }, [match?.chat.length]);
 
   const send = useCallback(
     (event: string, payload?: unknown) => socket?.emit(event, payload ?? {}),
@@ -256,12 +268,9 @@ export default function RetakesLobby({ signedIn, lobbyId }: { signedIn: boolean,
           match={match}
           me={steamId ?? ""}
           now={now}
-          chatDraft={chatDraft}
-          setChatDraft={setChatDraft}
-          chatRef={chatRef}
           onBan={(m) => send("rq:veto:ban", { map: m })}
           onSide={(s) => send("rq:veto:side", { side: s })}
-          onChat={(text) => send("rq:chat", { text })}
+          onChat={(text, teamOnly) => send("rq:chat", { text, teamOnly })}
           t={t}
         />
         {notice && <div className={`rq-toast ${notice.kind}`}>{notice.text}</div>}
@@ -324,10 +333,16 @@ export default function RetakesLobby({ signedIn, lobbyId }: { signedIn: boolean,
           )}
 
           <ul className="rq-members">
-            {(party?.members ?? []).map((m) => (
+            {(party?.members ?? []).map((m) => {
+              const pAvatar = avatarPlayers.find((ap) => ap.steamId === m.steamId);
+              return (
               <li key={m.steamId} className={m.steamId === steamId ? "me" : ""}>
-                <span className="rq-avatar" aria-hidden>
-                  {(m.name ?? "?").slice(0, 1).toUpperCase()}
+                <span className="rq-avatar" aria-hidden style={{ overflow: "hidden" }}>
+                  {pAvatar?.avatarSrc ? (
+                    <img src={pAvatar.avatarSrc} style={{ width: "100%", height: "100%", objectFit: "cover" }} />
+                  ) : (
+                    (m.name ?? "?").slice(0, 1).toUpperCase()
+                  )}
                 </span>
                 <span className="rq-member-name">
                   {m.name ?? t("lobby.player")}
@@ -344,7 +359,7 @@ export default function RetakesLobby({ signedIn, lobbyId }: { signedIn: boolean,
                   </button>
                 )}
               </li>
-            ))}
+            );})}
             {Array.from({ length: Math.max(0, (party?.capacity ?? 2) - (party?.members.length ?? 1)) }).map((_, i) => (
               <li key={`slot-${i}`} className="empty">
                 <span className="rq-avatar ghost" aria-hidden>
@@ -513,9 +528,6 @@ function MatchRoom({
   match,
   me,
   now,
-  chatDraft,
-  setChatDraft,
-  chatRef,
   onBan,
   onSide,
   onChat,
@@ -524,14 +536,13 @@ function MatchRoom({
   match: NonNullable<State["match"]>;
   me: string;
   now: number;
-  chatDraft: string;
-  setChatDraft: (v: string) => void;
-  chatRef: React.RefObject<HTMLDivElement>;
   onBan: (map: string) => void;
   onSide: (side: string) => void;
-  onChat: (text: string) => void;
+  onChat: (text: string, teamOnly: boolean) => void;
   t: (k: string, v?: Record<string, string | number>) => string;
 }) {
+  const [teamChatDraft, setTeamChatDraft] = useState("");
+  const [globalChatDraft, setGlobalChatDraft] = useState("");
   // One request for the whole roster: six calls fired the instant a match is
   // found is exactly when the page has other things to do.
   const forms = useRosterForm(match.teams.flatMap((tm) => tm.players.map((p) => p.steamId)));
@@ -543,10 +554,24 @@ function MatchRoom({
   const sideStep = step?.type === "side";
   const banned = new Map((veto?.actions ?? []).filter((a) => a.type === "ban").map((a) => [a.map as string, a]));
 
+  const getTeamName = (teamIdx: 0 | 1) => {
+    let name = match.teams[teamIdx].name;
+    if (name === "Team A" || name === "Team B") {
+      const leader = match.teams[teamIdx].players.find(p => p.leader) || match.teams[teamIdx].players[0];
+      if (leader) name = leader.name + "'s Team";
+    }
+    return name;
+  };
+  let t0Name = getTeamName(0);
+  let t1Name = getTeamName(1);
+  if (t0Name === t1Name) {
+    t1Name += " 2";
+  }
+
   return (
     <div className="rq-room">
       <header className="rq-room-head">
-        <TeamHead team={match.teams[0]} mine={match.yourTeam === 0} align="left" t={t} />
+        <TeamHead team={match.teams[0]} nameOverride={t0Name} mine={match.yourTeam === 0} align="left" t={t} />
         <div className="rq-room-status">
           {ready ? (
             <>
@@ -571,11 +596,18 @@ function MatchRoom({
             </>
           )}
         </div>
-        <TeamHead team={match.teams[1]} mine={match.yourTeam === 1} align="right" t={t} />
+        <TeamHead team={match.teams[1]} nameOverride={t1Name} mine={match.yourTeam === 1} align="right" t={t} />
       </header>
 
       <div className="rq-room-body">
-        <Roster team={match.teams[0]} me={me} align="left" forms={forms} t={t} />
+        <div style={{ display: "flex", flexDirection: "column", gap: "16px" }}>
+          <Roster team={match.teams[0]} me={me} align="left" forms={forms} t={t} />
+          {match.yourTeam === 0 ? (
+            <ChatBox messages={match.chat.filter(c => c.team === 0)} draft={teamChatDraft} setDraft={setTeamChatDraft} onSend={(text) => onChat(text, true)} placeholder="Team chat" t={t} />
+          ) : match.yourTeam === 1 ? (
+            <ChatBox messages={match.chat.filter(c => c.team == null)} draft={globalChatDraft} setDraft={setGlobalChatDraft} onSend={(text) => onChat(text, false)} placeholder="Global chat" t={t} />
+          ) : null}
+        </div>
 
         <div className="rq-center">
           {ready && match.result ? (
@@ -674,53 +706,85 @@ function MatchRoom({
           )}
         </div>
 
-        <Roster team={match.teams[1]} me={me} align="right" forms={forms} t={t} />
-      </div>
-
-      <div className="rq-chat">
-        <div className="rq-chat-log" ref={chatRef}>
-          {match.chat.map((c, i) => (
-            <p key={i}>
-              <strong>{c.name ?? t("lobby.player")}</strong> {c.text}
-            </p>
-          ))}
-          {match.chat.length === 0 && <p className="muted">{t("lobby.chatempty")}</p>}
+        <div style={{ display: "flex", flexDirection: "column", gap: "16px" }}>
+          <Roster team={match.teams[1]} me={me} align="right" forms={forms} t={t} />
+          {match.yourTeam === 1 ? (
+            <ChatBox messages={match.chat.filter(c => c.team === 1)} draft={teamChatDraft} setDraft={setTeamChatDraft} onSend={(text) => onChat(text, true)} placeholder="Team chat" t={t} />
+          ) : match.yourTeam === 0 ? (
+            <ChatBox messages={match.chat.filter(c => c.team == null)} draft={globalChatDraft} setDraft={setGlobalChatDraft} onSend={(text) => onChat(text, false)} placeholder="Global chat" t={t} />
+          ) : null}
         </div>
-        <form
-          onSubmit={(e) => {
-            e.preventDefault();
-            const text = chatDraft.trim();
-            if (!text) return;
-            onChat(text);
-            setChatDraft("");
-          }}
-        >
-          <input
-            value={chatDraft}
-            onChange={(e) => setChatDraft(e.target.value)}
-            placeholder={t("lobby.chatplaceholder")}
-            maxLength={240}
-          />
-        </form>
       </div>
+    </div>
+  );
+}
+
+function ChatBox({
+  messages,
+  draft,
+  setDraft,
+  onSend,
+  placeholder,
+  t
+}: {
+  messages: NonNullable<State["match"]>["chat"];
+  draft: string;
+  setDraft: (v: string) => void;
+  onSend: (text: string) => void;
+  placeholder: string;
+  t: (k: string, v?: Record<string, string | number>) => string;
+}) {
+  const ref = useRef<HTMLDivElement>(null);
+  useEffect(() => {
+    ref.current?.scrollTo({ top: ref.current.scrollHeight });
+  }, [messages.length]);
+
+  return (
+    <div className="rq-chat">
+      <div className="rq-chat-log" ref={ref}>
+        {messages.map((c, i) => (
+          <p key={i}>
+            <strong>{c.name ?? t("lobby.player")}</strong> {c.text}
+          </p>
+        ))}
+        {messages.length === 0 && <p className="muted">{t("lobby.chatempty")}</p>}
+      </div>
+      <form
+        onSubmit={(e) => {
+          e.preventDefault();
+          const text = draft.trim();
+          if (!text) return;
+          onSend(text);
+          setDraft("");
+        }}
+      >
+        <input
+          value={draft}
+          onChange={(e) => setDraft(e.target.value)}
+          placeholder={placeholder}
+          maxLength={240}
+        />
+      </form>
     </div>
   );
 }
 
 function TeamHead({
   team,
+  nameOverride,
   mine,
   align,
   t,
 }: {
   team: NonNullable<State["match"]>["teams"][number];
+  nameOverride?: string;
   mine: boolean;
   align: "left" | "right";
   t: (k: string, v?: Record<string, string | number>) => string;
 }) {
   return (
     <div className={`rq-teamhead ${align} ${mine ? "mine" : ""}`}>
-      <span className="rq-teamname">{team.name}</span>
+      <span className="rq-teamname">{nameOverride ?? team.name}</span>
       {mine && <span className="rq-youtag">{t("lobby.you")}</span>}
     </div>
   );

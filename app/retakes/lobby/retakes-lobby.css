@@ -375,7 +375,7 @@
 
 /* --- chat ----------------------------------------------------------------- */
 
-.rq-chat { border-radius: var(--rq-radius); background: var(--rq-panel); border: 1px solid var(--rq-edge); overflow: hidden; }
+.rq-chat { border-radius: 0; background: var(--rq-panel); border: 1px solid var(--rq-edge); overflow: hidden; }
 .rq-chat-log { max-height: 150px; overflow-y: auto; padding: 12px 14px; display: grid; gap: 4px; font-size: 13px; }
 .rq-chat-log p { margin: 0; }
 .rq-chat-log strong { color: var(--color-accent); margin-right: 4px; }

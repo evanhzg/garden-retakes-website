@@ -59,6 +59,15 @@ export async function POST(req: Request) {
   });
 
   // Placement is a fact from the ladder, so it is awarded now rather than voted.
+  // First, remove existing placement medals for this season to prevent duplicates if rankings changed
+  const placementSlugs = PLACEMENT_MEDALS.map(m => m.slug).filter(s => s.startsWith("season-"));
+  await prisma.gardenPlayerMedal.deleteMany({
+    where: {
+      SeasonId: season.Id,
+      MedalSlug: { in: placementSlugs },
+    },
+  });
+
   for (let i = 0; i < Math.min(3, standings.length); i += 1) {
     await award(standings[i].SteamId, PLACEMENT_MEDALS[i].slug, season.Id, season.Name ?? `Season ${season.Id}`);
   }

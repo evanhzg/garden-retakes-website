@@ -1,129 +1,171 @@
 "use client";
 
-import React, { useState, Suspense } from "react";
-import { Canvas } from "@react-three/fiber";
-import { OrbitControls, Stage } from "@react-three/drei";
-import { WeaponModel } from "./WeaponModel";
-import styles from "./page.module.css";
+import React, { useEffect, useState, useMemo } from "react";
+import { Viewer } from "@/lib/viewer/viewer-component";
+import { ViewerApi } from "@/lib/viewer/viewer-api";
+import { CS2Economy, CS2_ITEMS } from "@ianlucas/cs2-lib";
+import { ViewerItemInput } from "@/lib/viewer/viewer";
+import "@/app/globals.css";
 
-interface Sticker {
-  position: [number, number, number];
-  rotation: [number, number, number];
-  scale: [number, number, number];
-  color: string;
-}
+export default function ViewerPage() {
+  const [api, setApi] = useState<ViewerApi | undefined>();
+  const [loaded, setLoaded] = useState(false);
+  const [scrapeWear, setScrapeWear] = useState(0);
+  const [selectedWeapon, setSelectedWeapon] = useState<number>(2269); // Default AK-47 Redline
+  const [selectedSticker, setSelectedSticker] = useState<number>(73); // Default Titan Holo
+  const [selectedCharm, setSelectedCharm] = useState<number | null>(null);
 
-export default function CS2ViewerPage() {
-  const [skinColor, setSkinColor] = useState("#4f4f4f");
-  const [stickers, setStickers] = useState<Sticker[]>([]);
+  useEffect(() => {
+    try {
+      CS2Economy.load({ items: CS2_ITEMS });
+    } catch (e) {
+      console.warn("CS2Economy already initialized");
+    }
+    setLoaded(true);
+  }, []);
 
-  const addSticker = () => {
-    const x = (Math.random() - 0.5) * 2;
-    const y = (Math.random() - 0.5) * 1;
-    const z = 0.21; 
+  const weapons = useMemo(() => {
+    if (!loaded) return [];
+    return Array.from(CS2Economy.items.values()).filter(i => i.isWeapon() || i.isMelee() || i.isAgent());
+  }, [loaded]);
+
+  const stickers = useMemo(() => {
+    if (!loaded) return [];
+    // Include stickers and patches
+    return Array.from(CS2Economy.items.values()).filter(i => i.isSticker() || i.isPatch());
+  }, [loaded]);
+
+  const charms = useMemo(() => {
+    if (!loaded) return [];
+    return Array.from(CS2Economy.items.values()).filter(i => i.isKeychain());
+  }, [loaded]);
+
+  const itemToView = useMemo<ViewerItemInput | undefined>(() => {
+    if (!loaded) return undefined;
     
-    setStickers([...stickers, {
-      position: [x, y, z],
-      rotation: [0, 0, Math.random() * Math.PI],
-      scale: [0.5, 0.5, 0.5],
-      color: `hsl(${Math.random() * 360}, 100%, 50%)`
-    }]);
+    const baseItem: any = {
+      id: selectedWeapon,
+      wear: 0.15,
+    };
+
+    if (selectedSticker) {
+      baseItem.stickers = {
+        0: { id: selectedSticker, wear: scrapeWear, scale: 1, rotation: 0 }
+      };
+    }
+
+    if (selectedCharm) {
+      baseItem.keychains = {
+        0: { id: selectedCharm }
+      };
+    }
+    
+    return baseItem as ViewerItemInput;
+  }, [loaded, selectedWeapon, selectedSticker, selectedCharm, scrapeWear]);
+
+  const handleScrapeChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const val = parseFloat(e.target.value);
+    setScrapeWear(val);
+    if (api) {
+      api.setStickerWear({ index: 0, wear: val });
+    }
   };
 
-  const clearStickers = () => {
-    setStickers([]);
-  };
-
-  const skins = [
-    { name: 'Default', color: '#4f4f4f' },
-    { name: 'Asiimov', color: '#ff6600' },
-    { name: 'Vulcan', color: '#0055ff' },
-    { name: 'Redline', color: '#ff0000' },
-    { name: 'Gold', color: '#ffd700' },
-  ];
+  if (!loaded) return <div className="p-8 text-white">Loading CS2 Economy...</div>;
 
   return (
-    <div className={styles.container}>
-      {/* Sidebar for Controls */}
-      <div className={styles.sidebar}>
-        <div className={styles.header}>
-          <h1 className={styles.title}>
-            CS2 Skin Viewer <span className={styles.betaTag}>BETA</span>
-          </h1>
-          <p className={styles.subtitle}>Inspect weapons and place stickers in 3D.</p>
+    <div className="flex flex-col h-screen bg-[#0d0d0d] text-white font-sans">
+      <header className="p-4 border-b border-[#222] bg-[#111] flex justify-between items-center z-10 shadow-md">
+        <h1 className="text-2xl font-bold text-fuchsia-500 tracking-tight">Garden BETA 3D Skin Viewer</h1>
+        <div className="text-sm font-medium text-gray-500 bg-[#222] px-3 py-1 rounded-full">Powered by 3d.cstrike.app</div>
+      </header>
+      
+      <div className="flex flex-1 overflow-hidden relative">
+        {/* Main Viewer Area */}
+        <div className="flex-1 relative flex items-center justify-center bg-black">
+          <Viewer 
+            item={itemToView}
+            onApi={setApi}
+            className="w-full h-full border-none outline-none"
+            style={{ width: "100%", height: "100%", border: "none" }}
+          />
         </div>
         
-        <div className={styles.content}>
-          {/* Skin Selection */}
-          <section className={styles.section}>
-            <h2 className={styles.sectionTitle}>Weapon Skin (Base Color)</h2>
-            <div className={styles.skinGrid}>
-              {skins.map(skin => (
-                <button
-                  key={skin.name}
-                  onClick={() => setSkinColor(skin.color)}
-                  className={`${styles.skinButton} ${skinColor === skin.color ? styles.skinButtonActive : ''}`}
-                  style={{ backgroundColor: skin.color }}
-                  title={skin.name}
-                />
+        {/* Controls Sidebar */}
+        <div className="w-[400px] bg-[#111]/90 backdrop-blur-md border-l border-[#222] p-8 flex flex-col gap-8 overflow-y-auto shadow-2xl z-10">
+          
+          <div className="flex flex-col gap-3">
+            <h2 className="text-xl font-bold text-gray-100 flex items-center gap-2">
+              <span className="w-2 h-6 bg-fuchsia-500 rounded-sm inline-block"></span>
+              Item Selection
+            </h2>
+            <p className="text-xs text-gray-400 mb-2 leading-relaxed">Select a weapon, knife, or agent to inspect. The viewer provides exact in-game positioning and lighting.</p>
+            <select 
+              className="w-full bg-[#1a1a1a] border border-[#333] p-3 rounded-lg text-white focus:outline-none focus:border-fuchsia-500 transition-colors shadow-inner"
+              value={selectedWeapon}
+              onChange={(e) => setSelectedWeapon(Number(e.target.value))}
+            >
+              {weapons.map((w: any) => (
+                <option key={w.id} value={w.id}>{w.name}</option>
               ))}
-            </div>
-          </section>
+            </select>
+          </div>
 
-          {/* Sticker Selection */}
-          <section className={styles.section}>
-            <h2 className={styles.sectionTitle}>Stickers</h2>
-            <p className={styles.helpText}>Place a random Holo sticker on the weapon body.</p>
+          <div className="w-full h-px bg-gradient-to-r from-transparent via-[#333] to-transparent"></div>
+
+          <div className="flex flex-col gap-3">
+            <h2 className="text-xl font-bold text-gray-100 flex items-center gap-2">
+              <span className="w-2 h-6 bg-blue-500 rounded-sm inline-block"></span>
+              Stickers & Patches
+            </h2>
+            <p className="text-xs text-gray-400 mb-2 leading-relaxed">Apply stickers (or patches for agents). Exact scale and rotation matches the CS2 client.</p>
+            <select 
+              className="w-full bg-[#1a1a1a] border border-[#333] p-3 rounded-lg text-white focus:outline-none focus:border-blue-500 transition-colors shadow-inner"
+              value={selectedSticker}
+              onChange={(e) => setSelectedSticker(Number(e.target.value))}
+            >
+              <option value={0}>None</option>
+              {stickers.map((s: any) => (
+                <option key={s.id} value={s.id}>{s.name}</option>
+              ))}
+            </select>
             
-            <div className={styles.buttonGroup}>
-              <button onClick={addSticker} className={styles.actionButton}>
-                + Apply Random Sticker
-              </button>
-              
-              <button 
-                onClick={clearStickers}
-                disabled={stickers.length === 0}
-                className={styles.dangerButton}
-              >
-                Clear All Stickers
-              </button>
-            </div>
-            
-            <div className={styles.statusBox}>
-              <div className={styles.statusText}>Applied ({stickers.length})</div>
-              <div className={styles.stickerList}>
-                {stickers.map((s, i) => (
-                  <div key={i} className={styles.stickerTag} style={{ backgroundColor: s.color + '40', color: s.color, borderColor: s.color }}>
-                    S{i+1}
-                  </div>
-                ))}
+            {selectedSticker !== 0 && (
+              <div className="flex flex-col gap-3 mt-4 bg-[#1a1a1a] p-4 rounded-lg border border-[#2a2a2a]">
+                <label className="text-sm font-bold flex justify-between items-center text-gray-200">
+                  Scrape / Wear Level
+                  <span className="text-blue-400 font-mono bg-blue-900/30 px-2 py-1 rounded text-xs">{(scrapeWear * 100).toFixed(0)}%</span>
+                </label>
+                <input 
+                  type="range" 
+                  min="0" max="1" step="0.01" 
+                  value={scrapeWear}
+                  onChange={handleScrapeChange}
+                  className="w-full accent-blue-500 cursor-pointer"
+                />
               </div>
-            </div>
-          </section>
-        </div>
-      </div>
+            )}
+          </div>
 
-      {/* 3D Canvas Area */}
-      <div className={styles.canvasArea}>
-        <Canvas camera={{ position: [0, 0, 8], fov: 45 }} shadows dpr={[1, 2]}>
-          <Suspense fallback={null}>
-            <Stage environment="city" intensity={0.5}>
-              <WeaponModel skinColor={skinColor} stickers={stickers} />
-            </Stage>
-            <OrbitControls 
-              autoRotate 
-              autoRotateSpeed={0.5}
-              enablePan={false}
-              minDistance={3}
-              maxDistance={15}
-            />
-          </Suspense>
-        </Canvas>
-        
-        {/* Helper overlay */}
-        <div className={styles.overlayText}>
-          <p>Left Click + Drag to rotate</p>
-          <p>Scroll to zoom</p>
+          <div className="w-full h-px bg-gradient-to-r from-transparent via-[#333] to-transparent"></div>
+
+          <div className="flex flex-col gap-3">
+            <h2 className="text-xl font-bold text-gray-100 flex items-center gap-2">
+              <span className="w-2 h-6 bg-green-500 rounded-sm inline-block"></span>
+              Charms (Keychains)
+            </h2>
+            <select 
+              className="w-full bg-[#1a1a1a] border border-[#333] p-3 rounded-lg text-white focus:outline-none focus:border-green-500 transition-colors shadow-inner"
+              value={selectedCharm || 0}
+              onChange={(e) => setSelectedCharm(Number(e.target.value) || null)}
+            >
+              <option value={0}>None</option>
+              {charms.map((c: any) => (
+                <option key={c.id} value={c.id}>{c.name}</option>
+              ))}
+            </select>
+          </div>
+
         </div>
       </div>
     </div>

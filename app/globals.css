@@ -7813,15 +7813,33 @@ header .avatar-sm { width: 34px; height: 34px; }
 /* Medals under the name. */
 .medal-case { display: flex; flex-wrap: wrap; gap: 6px; margin-top: 10px; }
 .medal {
-  display: inline-flex; align-items: center; gap: 6px;
-  padding: 3px 10px 3px 6px; border-radius: 999px;
-  font-size: 12px; font-weight: 700;
-  background: color-mix(in srgb, var(--tint) 16%, transparent);
-  border: 1px solid color-mix(in srgb, var(--tint) 50%, transparent);
-  cursor: default;
+  display: inline-flex; align-items: center; justify-content: center;
+  position: relative;
+  background: transparent;
+  border: none;
+  cursor: help;
 }
-.medal-icon { font-size: 14px; line-height: 1; }
-.medal-name { color: var(--color-text); }
+.medal-icon { font-size: 28px; line-height: 1; filter: drop-shadow(0 4px 6px rgba(0,0,0,0.3)); }
+.medal-image { width: 42px !important; height: 42px !important; border-radius: 50%; filter: drop-shadow(0 4px 6px rgba(0,0,0,0.3)); }
+.medal-name { display: none; }
+.medal:hover::after {
+  content: attr(data-title);
+  position: absolute;
+  bottom: 100%;
+  left: 50%;
+  transform: translateX(-50%) translateY(-8px);
+  background: var(--color-surface);
+  color: var(--color-text);
+  border: 1px solid var(--color-accent);
+  padding: 8px 12px;
+  border-radius: var(--radius, 4px);
+  font-size: 13px;
+  white-space: nowrap;
+  pointer-events: none;
+  z-index: 100;
+  box-shadow: 0 4px 12px rgba(0,0,0,0.5);
+  font-weight: 600;
+}
 
 /* ---------------------------------------------------------------------------
    The rating explainer on /stats.

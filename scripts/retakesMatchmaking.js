@@ -897,13 +897,18 @@ function attachRetakesMatchmaking(io, { connectedUsers, loadRatings, prisma }) {
       applySide(match, match.turn, side === "T" ? "T" : "CT", false);
     });
 
-    socket.on("rq:chat", ({ text } = {}) => {
+    socket.on("rq:chat", ({ text, teamOnly } = {}) => {
       const id = me();
       const match = matches.get(matchOf.get(id));
       const body = String(text ?? "").slice(0, 240).trim();
       if (!match || !body) return;
       const from = match.teams.flatMap((t) => t.players).find((p) => p.steamId === id);
-      match.chat.push({ from: id, name: from?.name ?? null, text: body, at: now() });
+      let teamIndex = null;
+      if (teamOnly) {
+        const team = match.teams.find(t => t.players.some(p => p.steamId === id));
+        if (team) teamIndex = team.index !== undefined ? team.index : match.teams.indexOf(team);
+      }
+      match.chat.push({ from: id, name: from?.name ?? null, text: body, at: now(), team: teamIndex });
       syncMatch(match);
     });
 

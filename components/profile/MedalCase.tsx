@@ -41,7 +41,7 @@ export default function MedalCase({ steamId }: { steamId: string }) {
           key={`${m.slug}-${m.seasonId}`}
           className="medal"
           style={{ ["--tint" as string]: m.colour }}
-          title={`${m.name} — ${m.description}${m.note ? ` (${m.note})` : ""}`}
+          data-title={`${m.name} — ${m.description}${m.note ? ` (${m.note})` : ""}`}
         >
           {m.icon.startsWith("/") ? (
             <img className="medal-image" src={m.icon} alt={m.name} style={{ width: "24px", height: "24px", borderRadius: "50%", verticalAlign: "middle" }} aria-hidden />

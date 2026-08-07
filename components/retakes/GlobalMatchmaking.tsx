@@ -77,15 +77,15 @@ export default function GlobalMatchmaking({ avatarPlayers = [] }: { avatarPlayer
           initial={{ scale: 0.9, opacity: 0 }}
           animate={{ scale: 1, opacity: 1 }}
           style={{
-            background: "var(--color-background-elevated, #111)",
+            background: "var(--color-surface)",
             padding: "48px",
-            borderRadius: "16px",
+            borderRadius: "0",
             display: "flex", flexDirection: "column", alignItems: "center", gap: "32px",
-            border: "1px solid var(--color-accent)",
-            boxShadow: "0 0 50px rgba(168,85,247,0.3)"
+            border: "1px solid var(--color-border)",
+            boxShadow: "0 20px 40px rgba(0,0,0,0.5)"
           }}
         >
-          <h1 style={{ margin: 0, fontSize: "36px", color: "var(--color-accent)", textShadow: "0 0 20px var(--color-accent)" }}>MATCH FOUND</h1>
+          <h1 style={{ margin: 0, fontSize: "36px", color: "var(--color-accent)" }}>MATCH FOUND</h1>
           <div style={{ fontSize: "64px", fontWeight: "bold" }}>{timeLeft}s</div>
           <div style={{ fontSize: "18px", color: "var(--color-text-muted)" }}>
             {acceptData?.done || 0} / {acceptData?.total || 0} Accepted
@@ -94,10 +94,12 @@ export default function GlobalMatchmaking({ avatarPlayers = [] }: { avatarPlayer
             <button 
               disabled={iAccepted}
               onClick={() => socket?.emit("rq:match:accept")}
+              className={`btn ${iAccepted ? "btn-secondary" : "btn-primary"}`}
               style={{
-                padding: "16px 48px", background: iAccepted ? "rgba(255,255,255,0.1)" : "var(--color-accent)",
-                color: "#fff", fontSize: "20px", fontWeight: "bold", border: "none", borderRadius: "8px",
-                cursor: iAccepted ? "not-allowed" : "pointer"
+                padding: "16px 48px",
+                fontSize: "20px",
+                cursor: iAccepted ? "not-allowed" : "pointer",
+                borderRadius: "0"
               }}
             >
               {iAccepted ? "ACCEPTED" : "ACCEPT"}
@@ -105,9 +107,11 @@ export default function GlobalMatchmaking({ avatarPlayers = [] }: { avatarPlayer
             {!iAccepted && (
               <button 
                 onClick={() => socket?.emit("rq:match:decline")}
+                className="btn btn-secondary"
                 style={{
-                  padding: "16px 32px", background: "transparent", color: "var(--color-text-muted)",
-                  border: "2px solid var(--color-divider)", fontSize: "20px", fontWeight: "bold", borderRadius: "8px",
+                  padding: "16px 32px",
+                  fontSize: "20px",
+                  borderRadius: "0",
                   cursor: "pointer"
                 }}
               >
@@ -140,7 +144,7 @@ export default function GlobalMatchmaking({ avatarPlayers = [] }: { avatarPlayer
                 <div key={m.steamId} style={{ 
                   width: "36px", height: "36px", borderRadius: "50%", 
                   marginLeft: i > 0 ? "-12px" : "0",
-                  border: "2px solid var(--color-accent)",
+                  border: "1px solid rgba(255,255,255,0.2)",
                   background: "rgba(0,0,0,0.5)", overflow: "hidden",
                   display: "flex", alignItems: "center", justifyContent: "center"
                 }}>
@@ -171,7 +175,7 @@ export default function GlobalMatchmaking({ avatarPlayers = [] }: { avatarPlayer
                   color: "var(--color-accent)",
                   border: "none",
                   padding: "8px 48px",
-                  borderRadius: "24px",
+                  borderRadius: "0px",
                   fontWeight: "bold",
                   fontSize: "16px",
                   cursor: "pointer",
@@ -192,7 +196,7 @@ export default function GlobalMatchmaking({ avatarPlayers = [] }: { avatarPlayer
                 color: "#fff",
                 border: "1px solid rgba(255,255,255,0.3)",
                 padding: "8px 32px",
-                borderRadius: "24px",
+                borderRadius: "0px",
                 fontWeight: "bold",
                 fontSize: "16px",
                 cursor: "pointer",

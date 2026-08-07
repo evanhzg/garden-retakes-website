@@ -28,20 +28,26 @@ async function main() {
     });
   }
 
-  // get top 3 players for Season 1
-  const topPlayers = await prisma.playerSeasonStats.findMany({
-    where: { SeasonId: season1Id },
-    orderBy: { Elo: 'desc' },
-    take: 3
+  // Hardcode top 3 players for Season 1 specifically to be: morgoth, trezza, frost.
+  const winners = [
+    { steamId: BigInt("76561199157876106"), slug: "season-first" },  // morgoth
+    { steamId: BigInt("76561198030487372"), slug: "season-second" }, // trezza
+    { steamId: BigInt("76561198115583644"), slug: "season-third" },  // frost
+  ];
+
+  // First, remove existing placement medals for Season 1 to prevent duplicates
+  await prisma.gardenPlayerMedal.deleteMany({
+    where: {
+      SeasonId: season1Id,
+      MedalSlug: { in: ["season-first", "season-second", "season-third"] }
+    }
   });
 
-  const medals = ["season-first", "season-second", "season-third"];
-  for (let i = 0; i < topPlayers.length; i++) {
-    const p = topPlayers[i];
-    console.log(`Awarding ${medals[i]} to ${p.SteamId}`);
+  for (const w of winners) {
+    console.log(`Awarding ${w.slug} to ${w.steamId}`);
     await prisma.gardenPlayerMedal.upsert({
-      where: { SteamId_MedalSlug_SeasonId: { SteamId: p.SteamId, MedalSlug: medals[i], SeasonId: season1Id } },
-      create: { SteamId: p.SteamId, MedalSlug: medals[i], SeasonId: season1Id, Note: `Season 1` },
+      where: { SteamId_MedalSlug_SeasonId: { SteamId: w.steamId, MedalSlug: w.slug, SeasonId: season1Id } },
+      create: { SteamId: w.steamId, MedalSlug: w.slug, SeasonId: season1Id, Note: `Season 1` },
       update: { Note: `Season 1` },
     });
   }
