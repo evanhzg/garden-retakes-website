@@ -176,7 +176,7 @@ export default function ProfileHero({
   // smaller type, which is where they belong: context, not headline.
   const headline = [
     { label: "Rating", value: stats.rating.toFixed(2) },
-    { label: "CS Rating", value: stats.elo ?? "—", sub: stats.peakElo ? `peak ${stats.peakElo}` : undefined },
+    { label: "CS Rating", value: stats.isCalibrating ? "Calibrating" : (stats.elo ?? "—"), sub: stats.peakElo ? `peak ${stats.peakElo}` : undefined },
     { label: "K/D", value: stats.kd.toFixed(2) },
     { label: "ADR", value: stats.adr.toFixed(0) },
   ];

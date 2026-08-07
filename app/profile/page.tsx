@@ -13,6 +13,7 @@ export const dynamic = "force-dynamic";
 export type ProfileHeroStats = {
   elo: number | null;
   peakElo: number | null;
+  isCalibrating: boolean;
   rating: number;
   kd: number;
   adr: number;
@@ -65,8 +66,9 @@ export default async function ProfilePage({
   const total = summarize(rows);
 
   const stats: ProfileHeroStats = {
-    elo: seasonStats?.Elo ?? null,
-    peakElo: seasonStats?.PeakElo ?? null,
+    elo: seasonStats?.IsCalibrating ? null : (seasonStats?.Elo ?? null),
+    peakElo: seasonStats?.IsCalibrating ? null : (seasonStats?.PeakElo ?? null),
+    isCalibrating: seasonStats?.IsCalibrating ?? false,
     rating: total.rating,
     kd: total.kd,
     adr: total.adr,

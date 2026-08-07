@@ -46,7 +46,7 @@ export default async function HomePage() {
 
   const [ladder, standout] = await Promise.all([
     prisma.playerSeasonStats.findMany({
-      where: { SeasonId: season.Id, RankedRoundsPlayed: { gt: 0 } },
+      where: { SeasonId: season.Id, IsCalibrating: false, RankedRoundsPlayed: { gt: 0 } },
       orderBy: { Elo: "desc" },
       take: 20,
     }),

@@ -3,6 +3,7 @@
 import { useState } from "react";
 import { useI18n } from "@/components/I18nProvider";
 import PluginConfigEditor from "@/components/admin/PluginConfigEditor";
+import CalibrationDashboard from "@/components/admin/CalibrationDashboard";
 
 export default function SeasonManager({ adminKey }: { adminKey?: string }) {
   const { t } = useI18n();
@@ -55,6 +56,14 @@ export default function SeasonManager({ adminKey }: { adminKey?: string }) {
         >
           {loading ? "Starting..." : "Start New Season (Reset ELO)"}
         </button>
+      </section>
+
+      <section style={{ marginBottom: "2rem" }}>
+        <h3>Calibration Dashboard</h3>
+        <p className="muted" style={{ fontSize: 13, marginTop: 0 }}>
+          View round-by-round hidden ELO progression for all players currently in their 70 placement rounds.
+        </p>
+        <CalibrationDashboard />
       </section>
 
       <section>

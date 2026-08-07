@@ -52,7 +52,7 @@ export default async function ComparePage({
 
   // Ladder players for the pick lists.
   const ladderRaw = await prisma.playerSeasonStats.findMany({
-    where: { SeasonId: seasonId },
+    where: { SeasonId: seasonId, IsCalibrating: false, RankedRoundsPlayed: { gt: 0 } },
     orderBy: { Elo: "desc" },
     take: 100,
   });

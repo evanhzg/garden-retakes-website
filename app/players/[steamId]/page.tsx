@@ -146,8 +146,9 @@ export default async function PlayerPage({
         bio={webProfile?.Bio ?? null}
         country={webProfile?.Country ?? null}
         stats={{
-          elo: seasonStats?.Elo ?? null,
-          peakElo: seasonStats?.PeakElo ?? null,
+          elo: seasonStats?.IsCalibrating ? null : (seasonStats?.Elo ?? null),
+          peakElo: seasonStats?.IsCalibrating ? null : (seasonStats?.PeakElo ?? null),
+          isCalibrating: seasonStats?.IsCalibrating ?? false,
           rating: total.rating,
           kd: total.kd,
           adr: total.adr,

@@ -30,7 +30,7 @@ export default async function SeasonPage({ params }: { params: { id: string } })
   const [totals, ladder, maps] = await Promise.all([
     seasonTotals(season.Id, season.StartedAtUtc, season.EndedAtUtc),
     prisma.playerSeasonStats.findMany({
-      where: { SeasonId: season.Id, RankedRoundsPlayed: { gt: 0 } },
+      where: { SeasonId: season.Id, IsCalibrating: false, RankedRoundsPlayed: { gt: 0 } },
       orderBy: { Elo: "desc" },
       take: 100,
     }),
