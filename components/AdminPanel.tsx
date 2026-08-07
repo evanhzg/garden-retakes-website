@@ -4,6 +4,7 @@ import { useCallback, useEffect, useState } from "react";
 import RconConsole from "@/components/RconConsole";
 import SkinManager from "@/components/admin/SkinManager";
 import PluginConfigEditor from "@/components/admin/PluginConfigEditor";
+import SeasonManager from "@/components/admin/SeasonManager";
 import PendingDemos from "@/components/admin/PendingDemos";
 import AdminOverview from "@/components/admin/AdminOverview";
 import CaptureSuggestions from "@/components/admin/CaptureSuggestions";
@@ -37,7 +38,7 @@ type LogEntry = {
   detail: string | null;
 };
 
-type TabId = "overview" | "players" | "server" | "config" | "console" | "skins" | "demos" | "captures" | "log";
+type TabId = "overview" | "players" | "server" | "config" | "console" | "skins" | "demos" | "captures" | "log" | "season";
 
 /**
  * Sections, grouped.
@@ -70,6 +71,7 @@ const SECTIONS: {
     items: [
       { id: "server", label: "Control", icon: "▣", hint: "Map, game mode, restarts", level: 1 },
       { id: "config", label: "Plugin config", icon: "⚙", hint: "Rankings, allocator, game rules", level: 2 },
+      { id: "season", label: "Season", icon: "🏆", hint: "Season management, elo reset", level: 3 },
       { id: "console", label: "Console", icon: "❯", hint: "Raw RCON", level: 2 },
     ],
   },
@@ -531,6 +533,8 @@ export default function AdminPanel({
         )}
 
         {tab === "config" && canAdmin && <PluginConfigEditor adminKey={adminKey} />}
+
+        {tab === "season" && canOwner && <SeasonManager adminKey={adminKey} />}
 
         {tab === "console" && canAdmin && <RconConsole adminKey={adminKey} />}
 

@@ -548,11 +548,65 @@ function attachRetakesMatchmaking(io, { connectedUsers, loadRatings }) {
     advance(match);
   }
 
+  const net = require("net");
+  function rconExec(command) {
+    const host = process.env.RCON_HOST;
+    const port = parseInt(process.env.RCON_PORT || "27015", 10);
+    const password = process.env.RCON_PASSWORD;
+    if (!host || !password) return Promise.resolve("");
+
+    return new Promise((resolve, reject) => {
+      const socket = net.createConnection({ host, port, timeout: 6000 });
+      let buffer = Buffer.alloc(0);
+      let authed = false;
+      let response = "";
+      const done = (err) => { socket.destroy(); if (err) reject(err); else resolve(response.trim()); };
+
+      socket.on("timeout", () => done(new Error("RCON timeout")));
+      socket.on("error", (e) => done(e));
+      socket.on("connect", () => {
+        const body = Buffer.from(password, "utf8");
+        const b = Buffer.alloc(14 + body.length);
+        b.writeInt32LE(10 + body.length, 0); b.writeInt32LE(1, 4); b.writeInt32LE(3, 8); body.copy(b, 12);
+        socket.write(b);
+      });
+
+      socket.on("data", (chunk) => {
+        buffer = Buffer.concat([buffer, chunk]);
+        while (buffer.length >= 4) {
+          const size = buffer.readInt32LE(0);
+          if (buffer.length < 4 + size) break;
+          const id = buffer.readInt32LE(4);
+          const type = buffer.readInt32LE(8);
+          const str = buffer.toString("utf8", 12, buffer.length - 2);
+          buffer = buffer.subarray(4 + size);
+
+          if (id === -1) return done(new Error("RCON Auth Failed"));
+          if (type === 2) authed = true;
+          if (type === 0 && id === 2) response += str;
+
+          if (authed && id === 1) {
+            const body = Buffer.from(command, "utf8");
+            const b = Buffer.alloc(14 + body.length);
+            b.writeInt32LE(10 + body.length, 0); b.writeInt32LE(2, 4); b.writeInt32LE(2, 8); body.copy(b, 12);
+            socket.write(b);
+            
+            // Empty command to signal end
+            const e = Buffer.alloc(14);
+            e.writeInt32LE(10, 0); e.writeInt32LE(3, 4); e.writeInt32LE(0, 8);
+            socket.write(e);
+          }
+          if (type === 0 && id === 3) return done();
+        }
+      });
+    });
+  }
+
   function finishVeto(match) {
     clearTimeout(matchTimers.get(match.id));
     match.phase = "ready";
     match.map = match.remaining[0] ?? match.pool[0];
-    match.connect = process.env.RETAKES_CONNECT || process.env.NEXT_PUBLIC_SERVER_ADDRESS || "retakes.fr:27015";
+    match.connect = "adrien.gamergod.net:26541";
     match.turnDeadline = null;
     matchTimers.set(
       match.id,
@@ -562,6 +616,11 @@ function attachRetakesMatchmaking(io, { connectedUsers, loadRatings }) {
       }, READY_LINGER_MS)
     );
     syncMatch(match);
+    
+    // Configure server: change map and start competitive retakes
+    rconExec(`map ${match.map}`).then(() => {
+      setTimeout(() => rconExec("css_cr"), 5000);
+    }).catch(console.error);
   }
 
   function enqueue(party) {
