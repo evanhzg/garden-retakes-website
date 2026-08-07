@@ -7,10 +7,10 @@ import { useEffect, useState, useRef, useCallback } from "react";
  * directly into the header's .brand-word position for a seamless handoff.
  *
  * Phases:
- *   entrance  → letters type-in while centred (0 – 1.8 s)
- *   hold      → brief pause at full size        (1.8 – 2.4 s)
- *   travel    → text flies to header position    (2.4 – 3.4 s)
- *   settle    → overlay fades out, header takes over (3.4 – 4.0 s)
+ *   entrance  → letters type-in while centred (0 – 0.5 s)
+ *   hold      → brief pause at full size        (0.5 – 0.7 s)
+ *   travel    → text flies to header position    (0.7 – 1.2 s)
+ *   settle    → overlay fades out, header takes over (1.2 – 1.5 s)
  */
 export default function PageLoader() {
   const [phase, setPhase] = useState<
@@ -45,12 +45,12 @@ export default function PageLoader() {
       const ty = target.top - source.top - (source.height * (1 - scale)) / 2;
 
       loaderWord.style.transition =
-        "transform 1s cubic-bezier(0.22, 1, 0.36, 1), opacity 1s cubic-bezier(0.22, 1, 0.36, 1)";
+        "transform 0.5s cubic-bezier(0.22, 1, 0.36, 1), opacity 0.5s cubic-bezier(0.22, 1, 0.36, 1)";
       loaderWord.style.transform = `translate(${tx}px, ${ty}px) scale(${scale})`;
     } else {
       // Fallback: fly to typical top-left position
       loaderWord.style.transition =
-        "transform 1s cubic-bezier(0.22, 1, 0.36, 1), opacity 1s cubic-bezier(0.22, 1, 0.36, 1)";
+        "transform 0.5s cubic-bezier(0.22, 1, 0.36, 1), opacity 0.5s cubic-bezier(0.22, 1, 0.36, 1)";
       loaderWord.style.transform = "translate(-40vw, -40vh) scale(0.25)";
     }
   }, []);
@@ -63,24 +63,24 @@ export default function PageLoader() {
     const timers: ReturnType<typeof setTimeout>[] = [];
 
     // entrance → hold
-    timers.push(setTimeout(() => setPhase("hold"), 1800));
+    timers.push(setTimeout(() => setPhase("hold"), 500));
 
     // hold → travel (kick off the FLIP)
     timers.push(
       setTimeout(() => {
         setPhase("travel");
         flyToHeader();
-      }, 2400)
+      }, 700)
     );
 
     // travel → settle
-    timers.push(setTimeout(() => setPhase("settle"), 3400));
+    timers.push(setTimeout(() => setPhase("settle"), 1200));
 
     // settle → done (unmount)
     timers.push(setTimeout(() => {
       setPhase("done");
       document.body.classList.remove("is-loading-page");
-    }, 4000));
+    }, 1500));
 
     return () => {
       timers.forEach(clearTimeout);
@@ -102,30 +102,6 @@ export default function PageLoader() {
       <div ref={wordRef} className="page-loader-word">
         <span style={{ animationDelay: "0s" }}>R</span>
         <span style={{ animationDelay: "0.04s" }}>E</span>
-        <span
-          className="loader-e-extra"
-          style={{ animationDelay: "0.12s" }}
-        >
-          E
-        </span>
-        <span
-          className="loader-e-extra"
-          style={{ animationDelay: "0.24s" }}
-        >
-          E
-        </span>
-        <span
-          className="loader-e-extra"
-          style={{ animationDelay: "0.36s" }}
-        >
-          E
-        </span>
-        <span
-          className="loader-e-extra"
-          style={{ animationDelay: "0.48s" }}
-        >
-          E
-        </span>
         <span style={{ animationDelay: "0.08s" }}>T</span>
         <span style={{ animationDelay: "0.12s" }}>A</span>
         <span style={{ animationDelay: "0.16s" }}>K</span>

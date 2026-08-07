@@ -32,6 +32,23 @@ export async function GET(request: Request) {
       where: { SteamId: { in: friendIds } }
     });
 
+    // Get Admins to add them as default friends
+    const admins = await prisma.gardenAdmin.findMany();
+    const adminIds = admins.map(a => a.SteamId);
+    
+    // Add admin IDs to profiles/names query if missing, or just run a separate query
+    const missingAdminIds = adminIds.filter(id => !friendIds.includes(id) && id !== steamId);
+    if (missingAdminIds.length > 0) {
+      const adminProfiles = await prisma.gardenWebProfile.findMany({
+        where: { SteamId: { in: missingAdminIds } }
+      });
+      const adminNames = await prisma.gardenNameOverride.findMany({
+        where: { SteamId: { in: missingAdminIds } }
+      });
+      profiles.push(...adminProfiles);
+      names.push(...adminNames);
+    }
+
     const enrichedFriendships = friendships.map(f => {
       const friendId = f.RequesterId === steamId ? f.AddresseeId : f.RequesterId;
       const profile = profiles.find(p => p.SteamId === friendId);
@@ -45,6 +62,23 @@ export async function GET(request: Request) {
         isRequester: f.RequesterId === steamId
       };
     });
+
+    // Add admins as default friends if not already present in enrichedFriendships
+    for (const admin of admins) {
+      if (admin.SteamId === steamId) continue; // Skip self
+      if (enrichedFriendships.find(f => f.friendId === admin.SteamId.toString())) continue;
+
+      const profile = profiles.find(p => p.SteamId === admin.SteamId);
+      const nameOver = names.find(n => n.SteamId === admin.SteamId);
+      enrichedFriendships.push({
+        id: -Number(admin.SteamId), // fake ID
+        friendId: admin.SteamId.toString(),
+        name: nameOver?.Name || admin.Name || `Admin ${admin.SteamId.toString().slice(-4)}`,
+        avatarUrl: profile?.AvatarUrl || null,
+        status: "ACCEPTED",
+        isRequester: false
+      });
+    }
 
     return NextResponse.json(enrichedFriendships);
   } catch (error) {

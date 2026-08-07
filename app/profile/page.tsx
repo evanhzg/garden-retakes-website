@@ -6,6 +6,7 @@ import { dayKey, fetchRows, groupBy, sideName, summarize } from "@/lib/stats";
 import { resolveName } from "@/lib/names";
 import ProfileHero from "@/components/profile/ProfileHero";
 import ProfileStats from "@/components/profile/ProfileStats";
+import PassportCard from "@/components/profile/PassportCard";
 
 export const dynamic = "force-dynamic";
 
@@ -50,7 +51,7 @@ export default async function ProfilePage({
   const seasonId = searchParams.season ? Number(searchParams.season) : activeSeason?.Id ?? 0;
   const rankedOnly = searchParams.ranked === "1";
 
-  const [profile, override, webProfile, seasonStats, seasons, rows, name] = await Promise.all([
+  const [profile, override, webProfile, seasonStats, seasons, rows, name, passport] = await Promise.all([
     prisma.playerProfile.findUnique({ where: { SteamId: steamId } }),
     prisma.gardenNameOverride.findUnique({ where: { SteamId: steamId } }),
     prisma.gardenWebProfile.findUnique({ where: { SteamId: steamId } }),
@@ -58,6 +59,7 @@ export default async function ProfilePage({
     prisma.season.findMany({ orderBy: { Id: "asc" } }),
     fetchRows(seasonId, steamId, rankedOnly),
     resolveName(steamId),
+    prisma.playerPassport.findUnique({ where: { SteamId: steamId } }),
   ]);
 
   const total = summarize(rows);
@@ -112,6 +114,21 @@ export default async function ProfilePage({
         country={webProfile?.Country ?? null}
         stats={stats}
       />
+      
+      {passport && (
+        <section className="pro-section">
+          <PassportCard 
+            passport={passport} 
+            avatar={session.avatar ?? ""} 
+            stats={{ 
+              rating: total.rating, 
+              winrate2v2: Math.round(total.winPct), 
+              winrate3v3: Math.round(total.winPct), 
+              bestTeammate: "Unknown" 
+            }} 
+          />
+        </section>
+      )}
 
       {/* ---------- Season / filter ---------- */}
       <section className="pro-section">

@@ -9,6 +9,7 @@ import AvatarImage from "@/components/AvatarImage";
 import ProfileActivity from "@/components/ProfileActivity";
 import ProfileStats from "@/components/profile/ProfileStats";
 import ProfileHero from "@/components/profile/ProfileHero";
+import PassportCard from "@/components/profile/PassportCard";
 import { getT } from '@/lib/serverI18n';
 
 export const dynamic = "force-dynamic";
@@ -91,14 +92,15 @@ export default async function PlayerPage({
   const query = (extra: string) =>
     `?season=${seasonId}${rankedOnly ? "&ranked=1" : ""}${extra}`;
 
-  const [profile, override, webProfile, seasonStats, seasons, rows, gameStats] = await Promise.all([
+  const [profile, override, webProfile, seasonStats, seasons, rows, gameStats, passport] = await Promise.all([
     prisma.playerProfile.findUnique({ where: { SteamId: steamId } }),
     prisma.gardenNameOverride.findUnique({ where: { SteamId: steamId } }),
     prisma.gardenWebProfile.findUnique({ where: { SteamId: steamId } }),
     prisma.playerSeasonStats.findFirst({ where: { SeasonId: seasonId, SteamId: steamId } }),
     prisma.season.findMany({ orderBy: { Id: "asc" } }),
     fetchRows(seasonId, steamId, rankedOnly),
-    prisma.webGameStats.findMany({ where: { SteamId: steamId } })
+    prisma.webGameStats.findMany({ where: { SteamId: steamId } }),
+    prisma.playerPassport.findUnique({ where: { SteamId: steamId } }),
   ]);
 
   const name = override?.Name ?? profile?.LastKnownName ?? params.steamId;
@@ -157,6 +159,21 @@ export default async function PlayerPage({
           openingKills: total.openingKills,
         }}
       />
+
+      {passport && (
+        <section className="pro-section">
+          <PassportCard 
+            passport={passport} 
+            avatar={webProfile?.AvatarUrl || (fs.existsSync(path.join(process.cwd(), "public", `${params.steamId}_pp.png`)) ? `/${params.steamId}_pp.png` : "")} 
+            stats={{ 
+              rating: total.rating, 
+              winrate2v2: Math.round(total.winPct), 
+              winrate3v3: Math.round(total.winPct), 
+              bestTeammate: "Unknown" 
+            }} 
+          />
+        </section>
+      )}
 
       <section className="pro-section">
         <div className="chip-row" style={{ marginTop: 16, marginBottom: 0 }}>
