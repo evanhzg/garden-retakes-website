@@ -1,7 +1,6 @@
 "use client";
 
 import dynamic from "next/dynamic";
-import { SocketProvider } from "@/components/games/SocketProvider";
 import { useI18n } from '@/components/I18nProvider';
 import { useGameIdentity } from "@/components/games/hooks";
 
@@ -35,8 +34,8 @@ export default function PkmnPage() {
   }
 
   return (
-    <SocketProvider steamId={steamId}>
+    <>
       <PhaserGameNoSSR />
-    </SocketProvider>
+    </>
   );
 }

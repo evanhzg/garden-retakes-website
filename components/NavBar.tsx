@@ -8,6 +8,7 @@ import { ThemeToggle } from "./ThemeToggle";
 import AvatarImage from "./AvatarImage";
 import NotificationCenter from "@/components/NotificationCenter";
 import { useI18n } from "@/components/I18nProvider";
+import GlobalMatchmaking from "./retakes/GlobalMatchmaking";
 
 type NavLink = {
   href: string;
@@ -239,6 +240,7 @@ export default function NavBar({
   });
 
   return (
+    <>
     <header
       ref={headerRef}
       style={{
@@ -516,5 +518,7 @@ export default function NavBar({
         </div>
       </div>
     </header>
+    <GlobalMatchmaking />
+    </>
   );
 }

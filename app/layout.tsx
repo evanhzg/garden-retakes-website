@@ -11,6 +11,7 @@ import "./globals.css";
 import { I18nProvider } from "@/components/I18nProvider";
 import SiteFooter from "@/components/SiteFooter";
 import { ToastProvider } from "@/components/Toast";
+import { SocketProvider } from "@/components/games/SocketProvider";
 import { resolveLocale, LOCALE_COOKIE } from "@/lib/i18n";
 
 // Modernist: one grotesque carries headings and body, and a mono handles every
@@ -128,6 +129,7 @@ export default async function RootLayout({ children }: { children: React.ReactNo
         <PageLoader />
         <ThemeProvider attribute="class" defaultTheme="system" enableSystem>
         <I18nProvider initial={locale}>
+        <SocketProvider steamId={session?.steamId}>
         <ToastProvider>
           {/* The three blurred orbs were the last of the old purple/pink wash
               (#ec4899 / #a855f7 / #d946ef) and fought the Modernist ground. */}
@@ -141,6 +143,7 @@ export default async function RootLayout({ children }: { children: React.ReactNo
             </div>
           </div>
         </ToastProvider>
+        </SocketProvider>
         </I18nProvider>
         </ThemeProvider>
       </body>

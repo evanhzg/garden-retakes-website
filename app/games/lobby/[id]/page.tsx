@@ -1,9 +1,9 @@
 "use client";
+import { useSocket } from "@/components/games/SocketProvider";
 
 import React, { useState, useEffect, useRef, useMemo } from "react";
 import { useParams, useRouter } from "next/navigation";
 import { motion, AnimatePresence } from "framer-motion";
-import { SocketProvider, useSocket } from "@/components/games/SocketProvider";
 import { useGameIdentity, usePlayerNames, displayNameFor, PlayerNameMap } from "@/components/games/hooks";
 
 // Import game components
@@ -78,9 +78,9 @@ export default function UniversalLobbyWrapper() {
   }
 
   return (
-    <SocketProvider steamId={steamId}>
+    <>
       <LobbyClient lobbyId={id} mySteamId={steamId} />
-    </SocketProvider>
+    </>
   );
 }
 

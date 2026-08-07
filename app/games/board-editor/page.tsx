@@ -1,8 +1,8 @@
 "use client";
+import { useSocket } from "@/components/games/SocketProvider";
 
 import React, { useState, useEffect, useMemo, useRef } from "react";
 import dynamic from "next/dynamic";
-import { SocketProvider, useSocket } from "@/components/games/SocketProvider";
 import { useGameIdentity } from "@/components/games/hooks";
 import BoardPanel from "@/components/games/editor/BoardPanel";
 import TileMenu from "@/components/games/editor/TileMenu";
@@ -37,9 +37,9 @@ export default function BoardEditorPage() {
     return <div className="ed-root" style={{ display: "grid", placeItems: "center" }}><div className="loader" /></div>;
   }
   return (
-    <SocketProvider steamId={steamId}>
+    <>
       <EditorClient />
-    </SocketProvider>
+    </>
   );
 }
 

@@ -151,9 +151,9 @@ function ensureLoaded() {
       continue;
     }
     if (item.isPatch()) {
-      const entry: WeaponEntry = { id: item.id, def: item.index, name: item.name, model: "", image: item.getImage(), category: "Patches", team: "both" };
+      const entry: WeaponEntry = { id: item.id, def: item.index ?? 0, name: item.name, model: "", image: item.getImage(), category: "Patches", team: "both" };
       weaponsByCategory["Patches"].push(entry);
-      weaponByDef.set(item.index, entry);
+      weaponByDef.set(item.index ?? 0, entry);
       continue;
     }
     if (item.isKeychain()) {
@@ -232,7 +232,7 @@ export function searchStickers(query: string, limit = 80): StickerEntry[] {
     if (q && !name.toLowerCase().includes(q)) continue;
     results.push({
       id: item.id,
-      def: item.index,
+      def: item.index ?? 0,
       name,
       image: item.getImage(),
       rarity: item.rarity ?? "#b0c3d9",

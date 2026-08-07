@@ -1,6 +1,5 @@
 import { getSession } from "@/lib/auth";
 import UtilityPage from "@/components/utility/UtilityClient";
-import { SocketProvider } from "@/components/games/SocketProvider";
 
 export const dynamic = "force-dynamic";
 
@@ -15,8 +14,8 @@ export const metadata = {
 export default function Page() {
   const session = getSession();
   return (
-    <SocketProvider steamId={session?.steamId}>
+    <>
       <UtilityPage signedIn={Boolean(session)} />
-    </SocketProvider>
+    </>
   );
 }

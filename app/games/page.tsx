@@ -1,9 +1,9 @@
 "use client";
+import { useSocket } from "@/components/games/SocketProvider";
 
 import React, { useState, useEffect } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
-import { SocketProvider, useSocket } from "@/components/games/SocketProvider";
 import { useGameIdentity, usePlayerNames, displayNameFor } from "@/components/games/hooks";
 import GameIcon from "@/components/games/GameIcon";
 import { useI18n } from '@/components/I18nProvider';
@@ -80,9 +80,9 @@ export default function GamesHubWrapper() {
   }
 
   return (
-    <SocketProvider steamId={steamId}>
+    <>
       <GamesHub />
-    </SocketProvider>
+    </>
   );
 }
 

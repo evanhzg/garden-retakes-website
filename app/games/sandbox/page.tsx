@@ -1,8 +1,8 @@
 "use client";
+import { useSocket } from "@/components/games/SocketProvider";
 
 import React, { useState, useEffect, useMemo } from "react";
 import dynamic from "next/dynamic";
-import { SocketProvider, useSocket } from "@/components/games/SocketProvider";
 import { useGameIdentity } from "@/components/games/hooks";
 import {
   type BoardDef, makeBlankBoard, cloneDef, normalizeBoard, defToGameState,
@@ -29,9 +29,9 @@ export default function SandboxPage() {
   const steamId = useGameIdentity();
   if (!steamId) return <div className="mono-root" style={{ display: "grid", placeItems: "center" }}><div className="loader" /></div>;
   return (
-    <SocketProvider steamId={steamId}>
+    <>
       <SandboxClient />
-    </SocketProvider>
+    </>
   );
 }
 
