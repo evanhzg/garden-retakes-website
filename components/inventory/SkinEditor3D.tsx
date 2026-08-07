@@ -1,6 +1,7 @@
 "use client";
 
 import React, { useEffect, useState, useMemo } from "react";
+import { createPortal } from "react-dom";
 import { Viewer } from "@/lib/viewer/viewer-component";
 import { ViewerApi } from "@/lib/viewer/viewer-api";
 import { CS2Economy } from "@ianlucas/cs2-lib";
@@ -146,7 +147,10 @@ export default function SkinEditor3D({
     };
   }, [skinId, wear, seed, statTrak, nameTag, stickers, charm]);
 
-  return (
+  const [mounted, setMounted] = useState(false);
+  useEffect(() => setMounted(true), []);
+
+  const content = (
     <div className="fixed inset-0 z-[9999] bg-[#0d0d0d] text-white flex flex-col font-sans">
       {/* Navbar */}
       <div className="flex justify-between items-center px-6 py-4 bg-[#111] border-b border-[#222]">
@@ -255,4 +259,7 @@ export default function SkinEditor3D({
       `}} />
     </div>
   );
+
+  if (!mounted) return null;
+  return createPortal(content, document.body);
 }

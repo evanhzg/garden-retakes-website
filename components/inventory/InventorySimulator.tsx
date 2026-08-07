@@ -113,6 +113,13 @@ export default function InventorySimulator() {
   const [nameTag, setNameTag] = useState("");
   const [stickers, setStickers] = useState<(PlacedSticker | null)[]>(defaultStickerSlots());
   const [editor3dOpen, setEditor3dOpen] = useState(false);
+  const [contextMenu, setContextMenu] = useState<{ x: number; y: number; skin: Skin } | null>(null);
+
+  useEffect(() => {
+    const handleClick = () => setContextMenu(null);
+    window.addEventListener("click", handleClick);
+    return () => window.removeEventListener("click", handleClick);
+  }, []);
   const [stickerQuery, setStickerQuery] = useState("Katowice 2014");
   const [stickerResults, setStickerResults] = useState<StickerOption[]>([]);
   const [stickersLoading, setStickersLoading] = useState(false);
@@ -523,60 +530,67 @@ export default function InventorySimulator() {
   });
 
   // ---------- Equip / clear ----------
-  const equipSkin = (skin: Skin) => {
+  const equipSkin = (skin: Skin, overrideSide?: "t" | "ct" | "both", preventClose?: boolean) => {
     if (!weapon) return;
     const kind = kindOfCategory(weapon.category);
+    const targetSides = overrideSide === "both" ? ["t" as const, "ct" as const] : [overrideSide || side];
+    
     setStore((cur) => {
       const loadout = cur.loadouts.find((l) => l.id === cur.activeLoadoutId);
       if (!loadout) return cur;
-      const existing = slotItemForChooser(weapon.def, kind, side, loadout);
-      let items = cur.items;
-      let itemId: string;
       let nextUid = cur.nextUid;
-      const payload = {
-        kind,
-        weaponDef: weapon.def,
-        weaponName: weapon.name,
-        team: weapon.team,
-        skinId: skin.id,
-        skinName: skin.name,
-        paint: skin.paint,
-        image: skin.image,
-        rarity: skin.rarity,
-        wear,
-        seed,
-        statTrak: supportsStatTrak ? statTrak : false,
-        nameTag,
-        stickers: supportsStickers ? stickers : defaultStickerSlots(),
-      };
-      if (existing) {
-        itemId = existing.id;
-        items = cur.items.map((i) => (i.id === existing.id ? { ...i, ...payload } : i));
-      } else {
-        itemId = newId();
-        items = [{ id: itemId, uid: nextUid, createdAt: Date.now(), ...payload }, ...cur.items];
-        nextUid += 1;
-      }
-      const loadouts = cur.loadouts.map((l) => {
-        if (l.id !== loadout.id) return l;
-        const nl: Loadout = { ...l, equippedCT: { ...l.equippedCT }, equippedT: { ...l.equippedT } };
+      let newItems = [...cur.items];
+      let newLoadout = { ...loadout, equippedCT: { ...loadout.equippedCT }, equippedT: { ...loadout.equippedT } };
+
+      for (const s of targetSides) {
+        const existing = slotItemForChooser(weapon.def, kind, s, newLoadout);
+        const payload = {
+          kind,
+          weaponDef: weapon.def,
+          weaponName: weapon.name,
+          team: weapon.team,
+          skinId: skin.id,
+          skinName: skin.name,
+          paint: skin.paint,
+          image: skin.image,
+          rarity: skin.rarity,
+          wear,
+          seed,
+          statTrak: supportsStatTrak ? statTrak : false,
+          nameTag,
+          stickers: supportsStickers ? stickers : defaultStickerSlots(),
+        };
+        let itemId: string;
+        if (existing) {
+          itemId = existing.id;
+          newItems = newItems.map((i) => (i.id === existing.id ? { ...i, ...payload } : i));
+        } else {
+          itemId = newId();
+          newItems = [{ id: itemId, uid: nextUid, createdAt: Date.now(), ...payload }, ...newItems];
+          nextUid += 1;
+        }
+
         if (kind === "knife") {
-          if (side === "t") nl.knifeT = itemId;
-          else nl.knifeCT = itemId;
+          if (s === "t") newLoadout.knifeT = itemId;
+          else newLoadout.knifeCT = itemId;
         } else if (kind === "gloves") {
-          if (side === "t") nl.glovesT = itemId;
-          else nl.glovesCT = itemId;
+          if (s === "t") newLoadout.glovesT = itemId;
+          else newLoadout.glovesCT = itemId;
         } else if (kind === "agent") {
-          if (side === "t") nl.agentT = itemId;
-          else nl.agentCT = itemId;
-        } else if (side === "t") nl.equippedT[weapon.def] = itemId;
-        else nl.equippedCT[weapon.def] = itemId;
-        return nl;
-      });
-      return pruneItems({ ...cur, items, loadouts, nextUid });
+          if (s === "t") newLoadout.agentT = itemId;
+          else newLoadout.agentCT = itemId;
+        } else {
+          if (s === "t") newLoadout.equippedT[weapon.def] = itemId;
+          else newLoadout.equippedCT[weapon.def] = itemId;
+        }
+      }
+      
+      const loadouts = cur.loadouts.map(l => l.id === newLoadout.id ? newLoadout : l);
+      return pruneItems({ ...cur, items: newItems, loadouts, nextUid });
     });
-    showToast(`Equipped ${skinLabel(skin.name)} — ${side.toUpperCase()}`);
-    closeChooser();
+    
+    showToast(`Equipped ${skinLabel(skin.name)}`);
+    if (!preventClose) closeChooser();
   };
 
   const clearSlot = (def: number, kind: ItemKind) => {
@@ -1194,7 +1208,15 @@ export default function InventorySimulator() {
                   {shownSkins.map((s) => {
                     const fav = favorites.has(skinKey(s.def, s.paint));
                     return (
-                      <div key={s.id} className={`inv4-skin ${s.id === currentSkinId ? "current" : ""}`} style={{ "--rarity": s.rarity } as React.CSSProperties}>
+                      <div 
+                        key={s.id} 
+                        className={`inv4-skin ${s.id === currentSkinId ? "current" : ""}`} 
+                        style={{ "--rarity": s.rarity } as React.CSSProperties}
+                        onContextMenu={(e) => {
+                          e.preventDefault();
+                          setContextMenu({ x: e.clientX, y: e.clientY, skin: s });
+                        }}
+                      >
                         <button className="inv4-skin-pick" onClick={() => equipSkin(s)}>
                           {/* eslint-disable-next-line @next/next/no-img-element */}
                           <img src={s.image} alt={s.name} loading="lazy" />
@@ -1276,6 +1298,38 @@ export default function InventorySimulator() {
           }}
           onClose={() => setEditor3dOpen(false)}
         />
+      )}
+      
+      {contextMenu && (
+        <div 
+          className="fixed z-[10000] rounded-xl border border-[var(--color-divider)] shadow-2xl flex flex-col py-1 overflow-hidden"
+          style={{ 
+            left: contextMenu.x, 
+            top: contextMenu.y, 
+            backgroundColor: 'var(--color-text)', 
+            color: 'var(--color-bg)',
+            minWidth: 180
+          }}
+          onContextMenu={(e) => e.preventDefault()}
+        >
+          <div className="px-3 py-2 font-bold border-b border-[var(--color-divider)] text-sm" style={{ color: contextMenu.skin.rarity }}>
+            {skinLabel(contextMenu.skin.name)}
+          </div>
+          {supportsStickers && (
+            <button className="px-3 py-2 text-left text-sm opacity-80 hover:opacity-100 transition-opacity" onClick={() => { equipSkin(contextMenu.skin, side, true); setEditor3dOpen(true); }}>
+              3D Edit
+            </button>
+          )}
+          <button className="px-3 py-2 text-left text-sm opacity-80 hover:opacity-100 transition-opacity" onClick={() => equipSkin(contextMenu.skin, "t")}>
+            Equip T
+          </button>
+          <button className="px-3 py-2 text-left text-sm opacity-80 hover:opacity-100 transition-opacity" onClick={() => equipSkin(contextMenu.skin, "ct")}>
+            Equip CT
+          </button>
+          <button className="px-3 py-2 text-left text-sm opacity-80 hover:opacity-100 transition-opacity" onClick={() => equipSkin(contextMenu.skin, "both")}>
+            Equip Both
+          </button>
+        </div>
       )}
     </div>
   );
