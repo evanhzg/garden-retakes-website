@@ -151,112 +151,101 @@ export default function SkinEditor3D({
   useEffect(() => setMounted(true), []);
 
   const content = (
-    <div className="fixed inset-0 z-[9999] bg-[#0d0d0d] text-white flex flex-col font-sans">
+    <div className="inv4-editor3d">
       {/* Navbar */}
-      <div className="flex justify-between items-center px-6 py-4 bg-[#111] border-b border-[#222]">
-        <h2 className="text-xl font-bold">3D Skin Editor</h2>
-        <div className="flex gap-4">
-          <button className="px-6 py-2 rounded font-semibold bg-[#222] hover:bg-[#333] transition-colors" onClick={onClose}>
+      <div className="inv4-editor3d-nav">
+        <h2>3D Skin Editor</h2>
+        <div className="inv4-editor3d-actions">
+          <button className="btn secondary" onClick={onClose}>
             Abort
           </button>
-          <button className="px-6 py-2 rounded font-semibold bg-accent text-white hover:opacity-90 transition-opacity" onClick={() => onSave(stickers)}>
+          <button className="btn" onClick={() => onSave(stickers)}>
             Update
           </button>
         </div>
       </div>
 
-      <div className="flex flex-1 overflow-hidden relative">
+      <div className="inv4-editor3d-main">
         {/* Left Bar: Sticker/Charm Slots */}
-        <div className="w-24 bg-[#151515] border-r border-[#222] flex flex-col items-center py-6 gap-4 z-20 shadow-xl">
+        <div className="inv4-editor3d-sidebar">
           {[0, 1, 2, 3, 4].map((slot) => {
             const st = stickers[slot];
             return (
-              <div key={slot} className="relative group">
+              <div key={slot} style={{ position: 'relative' }}>
                 <button 
-                  className={`w-16 h-16 rounded-xl border-2 flex items-center justify-center transition-all ${activeSlot === slot ? 'border-accent bg-accent/10' : 'border-[#333] bg-[#222] hover:border-gray-500'}`}
+                  className={`inv4-editor3d-slot ${activeSlot === slot ? 'active' : ''}`}
                   onClick={() => { setActiveSlot(activeSlot === slot ? null : slot); setSearchQuery(""); }}
                 >
-                  {st ? <img src={st.image} alt="Sticker" className="w-12 h-12 object-contain" /> : <span className="text-gray-500 text-xs text-center">Slot {slot+1}</span>}
+                  {st ? <img src={st.image} alt="Sticker" /> : <span>Slot {slot+1}</span>}
                 </button>
                 {st && (
-                  <button className="absolute -top-2 -right-2 bg-red-500 text-white rounded-full w-5 h-5 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity text-xs" onClick={(e) => { e.stopPropagation(); handleRemoveItem(slot); }}>×</button>
+                  <button className="inv4-editor3d-slot-remove" onClick={(e) => { e.stopPropagation(); handleRemoveItem(slot); }}>×</button>
                 )}
               </div>
             );
           })}
           
-          <div className="w-12 h-px bg-[#333] my-2"></div>
+          <div className="inv4-editor3d-divider"></div>
 
-          <div className="relative group">
+          <div style={{ position: 'relative' }}>
             <button 
-              className={`w-16 h-16 rounded-xl border-2 border-dashed flex items-center justify-center transition-all ${activeSlot === 5 ? 'border-accent bg-accent/10' : 'border-[#444] bg-[#222] hover:border-gray-400'}`}
+              className={`inv4-editor3d-slot ${activeSlot === 5 ? 'active' : ''}`}
+              style={{ borderStyle: 'dashed' }}
               onClick={() => { setActiveSlot(activeSlot === 5 ? null : 5); setSearchQuery(""); }}
             >
-              {charm ? <img src={charm.image} alt="Charm" className="w-10 h-10 object-contain" /> : <span className="text-gray-500 text-xs">Charm</span>}
+              {charm ? <img src={charm.image} alt="Charm" /> : <span>Charm</span>}
             </button>
             {charm && (
-              <button className="absolute -top-2 -right-2 bg-red-500 text-white rounded-full w-5 h-5 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity text-xs" onClick={(e) => { e.stopPropagation(); handleRemoveItem(5); }}>×</button>
+              <button className="inv4-editor3d-slot-remove" onClick={(e) => { e.stopPropagation(); handleRemoveItem(5); }}>×</button>
             )}
           </div>
         </div>
 
         {/* Sliding Sidebar for Sticker Selection */}
         <div 
-          className="bg-[#1a1a1a] border-r border-[#222] flex flex-col transition-[width,min-width] duration-300 ease-in-out z-10 overflow-hidden"
+          className="inv4-editor3d-drawer"
           style={{ width: activeSlot !== null ? '320px' : '0px', minWidth: activeSlot !== null ? '320px' : '0px' }}
         >
-          <div className="w-[320px] flex flex-col h-full">
-            <div className="p-4 border-b border-[#222]">
+          <div className="inv4-editor3d-drawer-inner">
+            <div className="inv4-editor3d-search">
               <input 
                 type="text" 
                 placeholder={activeSlot === 5 ? "Search Charms (Regex supported)..." : "Search Stickers (Regex supported)..."}
-                className="w-full bg-[#111] border border-[#333] rounded px-3 py-2 text-sm focus:outline-none focus:border-accent text-white"
+                className="input"
                 value={searchQuery}
                 onChange={(e) => setSearchQuery(e.target.value)}
               />
             </div>
-            <div className="flex-1 overflow-y-auto p-4 grid grid-cols-3 gap-2 align-start content-start">
+            <div className="inv4-editor3d-grid">
               {searchResults.map(s => (
                 <button 
                   key={s.id} 
-                  className="aspect-square bg-[#222] rounded border border-[#333] hover:border-accent flex items-center justify-center p-2 group"
+                  className="inv4-editor3d-item"
                   onClick={() => handleApplyItem(s)}
                   title={s.name}
                 >
-                  <img src={s.image} alt="" className="w-full h-full object-contain group-hover:scale-110 transition-transform" loading="lazy" />
+                  <img src={s.image} alt="" loading="lazy" />
                 </button>
               ))}
               {searchResults.length === 0 && (
-                <div className="col-span-3 text-center text-gray-500 text-sm py-8">No results found.</div>
+                <div className="inv4-editor3d-empty">No results found.</div>
               )}
             </div>
           </div>
         </div>
 
         {/* 3D Viewer Area */}
-        <div className="flex-1 relative bg-grid-pattern">
+        <div className="inv4-editor3d-viewer">
           {/* Radial gradient background at the bottom */}
-          <div className="absolute inset-0 pointer-events-none" style={{
-            background: 'radial-gradient(ellipse at bottom, rgba(0,0,0,0.8) 0%, rgba(0,0,0,0) 70%)'
-          }}></div>
+          <div className="inv4-editor3d-gradient"></div>
           
           <Viewer 
             item={viewerItem}
             onApi={setApi}
-            className="w-full h-full border-none outline-none relative z-0"
-            style={{ width: "100%", height: "100%", border: "none" }}
+            style={{ width: "100%", height: "100%", border: "none", position: "relative", zIndex: 0 }}
           />
         </div>
       </div>
-      
-      <style dangerouslySetInnerHTML={{__html: `
-        .bg-grid-pattern {
-          background-color: var(--c-bg);
-          background-image: linear-gradient(rgba(255, 255, 255, 0.03) 1px, transparent 1px),
-                            linear-gradient(90deg, rgba(255, 255, 255, 0.03) 1px, transparent 1px);
-          background-size: 30px 30px;
-        }
-      `}} />
     </div>
   );
 

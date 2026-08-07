@@ -5942,6 +5942,114 @@ html { scroll-behavior: smooth; }
 }
 .inv4-guest a { color: var(--color-accent); font-weight: 700; }
 
+/* ---- 3d editor ---- */
+.inv4-editor3d {
+  position: fixed; inset: 0; z-index: 9999;
+  background: var(--color-bg); color: var(--color-text);
+  display: flex; flex-direction: column; font-family: var(--font-body);
+}
+.inv4-editor3d-nav {
+  display: flex; justify-content: space-between; align-items: center;
+  padding: var(--space-4) var(--space-6);
+  background: var(--color-surface);
+  border-bottom: 1px solid var(--color-divider);
+}
+.inv4-editor3d-nav h2 { margin: 0; font-size: 20px; font-weight: 700; }
+.inv4-editor3d-actions { display: flex; gap: var(--space-4); }
+
+.inv4-editor3d-main {
+  flex: 1; display: flex; overflow: hidden; position: relative;
+}
+.inv4-editor3d-sidebar {
+  width: 96px;
+  background: var(--color-bg);
+  border-right: 1px solid var(--color-divider);
+  display: flex; flex-direction: column; align-items: center;
+  padding: var(--space-6) 0; gap: var(--space-4);
+  z-index: 20; box-shadow: var(--shadow-lg);
+}
+.inv4-editor3d-slot {
+  position: relative; width: 64px; height: 64px;
+  border-radius: var(--radius-md); border: 2px solid var(--color-divider);
+  background: var(--color-surface);
+  display: flex; align-items: center; justify-content: center;
+  cursor: pointer; transition: all 0.2s ease;
+}
+.inv4-editor3d-slot:hover { border-color: color-mix(in srgb, var(--color-divider) 80%, var(--color-text)); }
+.inv4-editor3d-slot.active { border-color: var(--color-accent); background: color-mix(in srgb, var(--color-accent) 10%, transparent); }
+.inv4-editor3d-slot img { width: 48px; height: 48px; object-fit: contain; }
+.inv4-editor3d-slot span { font-size: 11px; color: color-mix(in srgb, var(--color-text) 50%, transparent); }
+.inv4-editor3d-slot-remove {
+  position: absolute; top: -8px; right: -8px;
+  width: 20px; height: 20px; border-radius: 50%;
+  background: #e11d48; color: #fff;
+  display: flex; align-items: center; justify-content: center;
+  font-size: 12px; border: none; cursor: pointer;
+  opacity: 0; transition: opacity 0.2s ease;
+}
+.inv4-editor3d-slot:hover .inv4-editor3d-slot-remove { opacity: 1; }
+.inv4-editor3d-divider { width: 48px; height: 1px; background: var(--color-divider); margin: var(--space-2) 0; }
+
+.inv4-editor3d-drawer {
+  background: var(--color-surface);
+  border-right: 1px solid var(--color-divider);
+  display: flex; flex-direction: column;
+  transition: width 0.3s ease, min-width 0.3s ease;
+  z-index: 10; overflow: hidden;
+}
+.inv4-editor3d-drawer-inner { width: 320px; display: flex; flex-direction: column; height: 100%; }
+.inv4-editor3d-search { padding: var(--space-4); border-bottom: 1px solid var(--color-divider); }
+.inv4-editor3d-grid {
+  flex: 1; overflow-y: auto; padding: var(--space-4);
+  display: grid; grid-template-columns: repeat(3, 1fr); gap: 8px;
+  align-content: flex-start;
+}
+.inv4-editor3d-item {
+  aspect-ratio: 1; background: var(--color-bg);
+  border: 1px solid var(--color-divider); border-radius: var(--radius);
+  display: flex; align-items: center; justify-content: center;
+  padding: 8px; cursor: pointer; transition: border-color 0.2s ease;
+}
+.inv4-editor3d-item:hover { border-color: var(--color-accent); }
+.inv4-editor3d-item img { width: 100%; height: 100%; object-fit: contain; transition: transform 0.2s ease; }
+.inv4-editor3d-item:hover img { transform: scale(1.1); }
+.inv4-editor3d-empty { grid-column: 1 / -1; text-align: center; color: color-mix(in srgb, var(--color-text) 50%, transparent); font-size: 13px; padding: 32px 0; }
+
+.inv4-editor3d-viewer {
+  flex: 1; position: relative;
+  background-color: var(--color-bg);
+  background-image: linear-gradient(color-mix(in srgb, var(--color-text) 5%, transparent) 1px, transparent 1px),
+                    linear-gradient(90deg, color-mix(in srgb, var(--color-text) 5%, transparent) 1px, transparent 1px);
+  background-size: 30px 30px;
+}
+.inv4-editor3d-gradient {
+  position: absolute; inset: 0; pointer-events: none;
+  background: radial-gradient(ellipse at bottom, color-mix(in srgb, #000 80%, transparent) 0%, transparent 70%);
+}
+
+/* ---- context menu ---- */
+.inv4-context {
+  position: fixed; z-index: 10000;
+  background: var(--color-text); color: var(--color-bg);
+  border-radius: var(--radius);
+  border: 1px solid var(--color-divider);
+  box-shadow: var(--shadow-lg);
+  display: flex; flex-direction: column; padding: 4px 0;
+  min-width: 180px; overflow: hidden;
+}
+.inv4-context-title {
+  padding: 8px 12px; font-weight: 700; font-size: 13px;
+  border-bottom: 1px solid color-mix(in srgb, var(--color-bg) 20%, transparent);
+}
+.inv4-context-btn {
+  padding: 8px 12px; text-align: left; font-size: 13px;
+  background: transparent; border: none; color: inherit;
+  opacity: 0.8; cursor: pointer; transition: all 0.2s ease;
+}
+.inv4-context-btn:hover {
+  opacity: 1; background: color-mix(in srgb, var(--color-bg) 10%, transparent);
+}
+
 /* ---- tablet + phone: stack, and let the page scroll again ---- */
 @media (max-width: 1000px) {
   .inv4 { height: auto; margin-bottom: 0; }

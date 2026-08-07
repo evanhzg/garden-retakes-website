@@ -1302,31 +1302,28 @@ export default function InventorySimulator() {
       
       {contextMenu && (
         <div 
-          className="fixed z-[10000] rounded-xl border border-[var(--color-divider)] shadow-2xl flex flex-col py-1 overflow-hidden"
+          className="inv4-context"
           style={{ 
             left: contextMenu.x, 
-            top: contextMenu.y, 
-            backgroundColor: 'var(--color-text)', 
-            color: 'var(--color-bg)',
-            minWidth: 180
+            top: contextMenu.y 
           }}
           onContextMenu={(e) => e.preventDefault()}
         >
-          <div className="px-3 py-2 font-bold border-b border-[var(--color-divider)] text-sm" style={{ color: contextMenu.skin.rarity }}>
+          <div className="inv4-context-title" style={{ color: contextMenu.skin.rarity }}>
             {skinLabel(contextMenu.skin.name)}
           </div>
           {supportsStickers && (
-            <button className="px-3 py-2 text-left text-sm opacity-80 hover:opacity-100 transition-opacity" onClick={() => { equipSkin(contextMenu.skin, side, true); setEditor3dOpen(true); }}>
+            <button className="inv4-context-btn" onClick={() => { equipSkin(contextMenu.skin, side, true); setEditor3dOpen(true); }}>
               3D Edit
             </button>
           )}
-          <button className="px-3 py-2 text-left text-sm opacity-80 hover:opacity-100 transition-opacity" onClick={() => equipSkin(contextMenu.skin, "t")}>
+          <button className="inv4-context-btn" onClick={() => equipSkin(contextMenu.skin, "t")}>
             Equip T
           </button>
-          <button className="px-3 py-2 text-left text-sm opacity-80 hover:opacity-100 transition-opacity" onClick={() => equipSkin(contextMenu.skin, "ct")}>
+          <button className="inv4-context-btn" onClick={() => equipSkin(contextMenu.skin, "ct")}>
             Equip CT
           </button>
-          <button className="px-3 py-2 text-left text-sm opacity-80 hover:opacity-100 transition-opacity" onClick={() => equipSkin(contextMenu.skin, "both")}>
+          <button className="inv4-context-btn" onClick={() => equipSkin(contextMenu.skin, "both")}>
             Equip Both
           </button>
         </div>
