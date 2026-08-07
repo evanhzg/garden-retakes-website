@@ -1,5 +1,6 @@
 "use client";
 
+import { createPortal } from "react-dom";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import {
   InventoryItem,
@@ -113,7 +114,10 @@ export default function InventorySimulator() {
   const [nameTag, setNameTag] = useState("");
   const [stickers, setStickers] = useState<(PlacedSticker | null)[]>(defaultStickerSlots());
   const [editor3dOpen, setEditor3dOpen] = useState(false);
-  const [contextMenu, setContextMenu] = useState<{ x: number; y: number; skin: Skin } | null>(null);
+  const [contextMenu, setContextMenu] = useState<{ x: number; y: number; skin: Skin; weapon: WeaponEntry; side: "t" | "ct"; boardSlot?: BoardSlot } | null>(null);
+
+  const [mounted, setMounted] = useState(false);
+  useEffect(() => setMounted(true), []);
 
   useEffect(() => {
     const handleClick = () => setContextMenu(null);
@@ -530,9 +534,10 @@ export default function InventorySimulator() {
   });
 
   // ---------- Equip / clear ----------
-  const equipSkin = (skin: Skin, overrideSide?: "t" | "ct" | "both", preventClose?: boolean) => {
-    if (!weapon) return;
-    const kind = kindOfCategory(weapon.category);
+  const equipSkin = (skin: Skin, overrideSide?: "t" | "ct" | "both", preventClose?: boolean, explicitWeapon?: WeaponEntry) => {
+    const targetWeapon = explicitWeapon || weapon;
+    if (!targetWeapon) return;
+    const kind = kindOfCategory(targetWeapon.category);
     const targetSides = overrideSide === "both" ? ["t" as const, "ct" as const] : [overrideSide || side];
     
     setStore((cur) => {
@@ -543,12 +548,12 @@ export default function InventorySimulator() {
       let newLoadout = { ...loadout, equippedCT: { ...loadout.equippedCT }, equippedT: { ...loadout.equippedT } };
 
       for (const s of targetSides) {
-        const existing = slotItemForChooser(weapon.def, kind, s, newLoadout);
+        const existing = slotItemForChooser(targetWeapon.def, kind, s, newLoadout);
         const payload = {
           kind,
-          weaponDef: weapon.def,
-          weaponName: weapon.name,
-          team: weapon.team,
+          weaponDef: targetWeapon.def,
+          weaponName: targetWeapon.name,
+          team: targetWeapon.team,
           skinId: skin.id,
           skinName: skin.name,
           paint: skin.paint,
@@ -580,8 +585,8 @@ export default function InventorySimulator() {
           if (s === "t") newLoadout.agentT = itemId;
           else newLoadout.agentCT = itemId;
         } else {
-          if (s === "t") newLoadout.equippedT[weapon.def] = itemId;
-          else newLoadout.equippedCT[weapon.def] = itemId;
+          if (s === "t") newLoadout.equippedT[targetWeapon.def] = itemId;
+          else newLoadout.equippedCT[targetWeapon.def] = itemId;
         }
       }
       
@@ -1019,11 +1024,28 @@ export default function InventorySimulator() {
 
             {openBoardType && (
               <ul className="inv4-slots">
-                {(boardGroups.find(([g]) => g === openBoardType)?.[1] ?? []).map((slot) => (
+                {(boardGroups.find(([g]) => g === openBoardType)?.[1] ?? []).map((slot) => {
+                  const handleSlotContextMenu = (e: React.MouseEvent) => {
+                    e.preventDefault();
+                    if (!slot.item || !catalog) return;
+                    const w = Object.values(catalog).flat().find((x) => x.def === slot.item!.weaponDef);
+                    if (!w) return;
+                    const itemSkin: Skin = {
+                      id: slot.item.skinId,
+                      def: slot.item.weaponDef,
+                      paint: slot.item.paint,
+                      name: slot.item.skinName,
+                      image: slot.item.image,
+                      rarity: slot.item.rarity || "default"
+                    };
+                    setContextMenu({ x: e.clientX, y: e.clientY, skin: itemSkin, weapon: w, side, boardSlot: slot });
+                  };
+                  return (
                   <li key={slot.key}>
                     <button
                       className={`inv4-slot ${slot.item ? "filled" : "empty"}`}
                       onClick={() => openBoardSlot(slot, side)}
+                      onContextMenu={handleSlotContextMenu}
                       style={slot.item?.rarity ? ({ "--rarity": slot.item.rarity } as React.CSSProperties) : undefined}
                     >
                       <span className="inv4-slot-art">
@@ -1042,7 +1064,7 @@ export default function InventorySimulator() {
                       </span>
                     </button>
                   </li>
-                ))}
+                )})}
               </ul>
             )}
           </div>
@@ -1217,7 +1239,7 @@ export default function InventorySimulator() {
                         style={{ "--rarity": s.rarity } as React.CSSProperties}
                         onContextMenu={(e) => {
                           e.preventDefault();
-                          setContextMenu({ x: e.clientX, y: e.clientY, skin: s });
+                          setContextMenu({ x: e.clientX, y: e.clientY, skin: s, weapon: weapon!, side });
                         }}
                       >
                         <button className="inv4-skin-pick" onClick={() => equipSkin(s)}>
@@ -1303,7 +1325,7 @@ export default function InventorySimulator() {
         />
       )}
       
-      {contextMenu && (
+      {contextMenu && mounted && createPortal(
         <div 
           className="inv4-context"
           style={{ 
@@ -1313,24 +1335,32 @@ export default function InventorySimulator() {
           onContextMenu={(e) => e.preventDefault()}
         >
           <div className="inv4-context-title" style={{ color: contextMenu.skin.rarity }}>
-            {weapon ? `${weapon.name} | ` : ""}{skinLabel(contextMenu.skin.name)}
+            {contextMenu.weapon.name} | {skinLabel(contextMenu.skin.name)}
           </div>
           {supportsStickers && (
-            <button className="inv4-context-btn" onClick={() => { equipSkin(contextMenu.skin, side, true); setEditor3dOpen(true); }}>
+            <button className="inv4-context-btn" onClick={() => {
+              if (contextMenu.boardSlot) {
+                openBoardSlot(contextMenu.boardSlot, contextMenu.side);
+              } else {
+                equipSkin(contextMenu.skin, contextMenu.side, true, contextMenu.weapon);
+              }
+              setEditor3dOpen(true);
+              setContextMenu(null);
+            }}>
               3D Edit
             </button>
           )}
-          <button className="inv4-context-btn" onClick={() => equipSkin(contextMenu.skin, "t")}>
+          <button className="inv4-context-btn" onClick={() => { equipSkin(contextMenu.skin, "t", false, contextMenu.weapon); setContextMenu(null); }}>
             Equip T
           </button>
-          <button className="inv4-context-btn" onClick={() => equipSkin(contextMenu.skin, "ct")}>
+          <button className="inv4-context-btn" onClick={() => { equipSkin(contextMenu.skin, "ct", false, contextMenu.weapon); setContextMenu(null); }}>
             Equip CT
           </button>
-          <button className="inv4-context-btn" onClick={() => equipSkin(contextMenu.skin, "both")}>
+          <button className="inv4-context-btn" onClick={() => { equipSkin(contextMenu.skin, "both", false, contextMenu.weapon); setContextMenu(null); }}>
             Equip Both
           </button>
         </div>
-      )}
+      , document.body)}
     </div>
   );
 }
