@@ -898,6 +898,46 @@ model GardenCompetitiveRating {
   LastMatchAtUtc DateTime? @db.DateTime(6)
   UpdatedAt      DateTime  @default(now()) @updatedAt @db.DateTime(6)
 
-  @@index([Elo])
   @@map("GardenCompetitiveRatings")
+}
+
+model GardenSafeStatus {
+  SteamId       BigInt   @id
+  Status        String   @db.VarChar(16) // "PROBING", "ACTIVE", "REJECTED", "BANNED", "NONE"
+  SafeScore     Float    @default(50.0)
+  ToxicityScore Float    @default(50.0)
+  TeamplayScore Float    @default(50.0)
+  CommScore     Float    @default(50.0)
+
+  @@map("GardenSafeStatuses")
+}
+
+model GardenSafeRequest {
+  Id            Int      @id @default(autoincrement())
+  SteamId       BigInt
+  DiscordId     String   @db.VarChar(32)
+  Motivation    String   @db.VarChar(1000)
+  Gender        String   @db.VarChar(32)
+  AgreedToRules Boolean  @default(true)
+  Status        String   @default("PENDING") @db.VarChar(16) // "PENDING", "APPROVED", "REJECTED"
+  CreatedAt     DateTime @default(now()) @db.DateTime(6)
+
+  @@index([SteamId])
+  @@map("GardenSafeRequests")
+}
+
+model GardenMatchVote {
+  Id            Int      @id @default(autoincrement())
+  MatchId       String   @db.VarChar(64)
+  VoterSteamId  BigInt
+  TargetSteamId BigInt
+  Toxicity      Int
+  Safeness      Int
+  Comm          Int
+  Teamplay      Int
+  Weight        Float
+
+  @@index([MatchId])
+  @@index([TargetSteamId])
+  @@map("GardenMatchVotes")
 }

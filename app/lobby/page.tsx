@@ -5,5 +5,5 @@ export const dynamic = "force-dynamic";
 
 export default function LobbyRedirect() {
   const newLobbyId = uuidv4();
-  redirect(`/retakes/lobby/${newLobbyId}`);
+  redirect(`/lobby/${newLobbyId}`);
 }

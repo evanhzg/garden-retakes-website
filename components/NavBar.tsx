@@ -35,6 +35,8 @@ const CS2_LINKS: NavLink[] = [
   { href: "/feed", label: "Feed", key: "nav.feed", primary: true },
   { href: "/utility", label: "Utility", key: "nav.utility", primary: true },
   { href: "/live", label: "Live", key: "nav.live", isLive: true, primary: true },
+  { href: "/lobby", label: "Matchmaking", key: "nav.lobby", primary: true },
+  { href: "/safe-place", label: "Safe Place", key: "nav.safe_place", primary: true },
   { href: "/compare", label: "Compare" },
   { href: "/duels", label: "Duels" },
   { href: "/request-skin", label: "Request skin" },

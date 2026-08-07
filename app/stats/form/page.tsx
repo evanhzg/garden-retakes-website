@@ -140,7 +140,7 @@ export default async function RecentFormPage({
         <Link className="btn btn-secondary" href="/stats">
           {t("stats.layout.overview")}
         </Link>
-        <Link className="btn btn-secondary" href="/retakes/lobby">
+        <Link className="btn btn-secondary" href="/lobby">
           {t("form.page.tolobby")}
         </Link>
       </section>

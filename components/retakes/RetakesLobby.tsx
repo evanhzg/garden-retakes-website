@@ -6,7 +6,24 @@ import { useI18n } from "@/components/I18nProvider";
 import { useOverlay } from "@/lib/useOverlay";
 import { FormCard, FormLine, useRosterForm, type RecentForm } from "./PlayerForm";
 import LevelBadge from "./LevelBadge";
-import "@/app/retakes/lobby/retakes-lobby.css";
+import LiveGames from "./LiveGames";
+import PostMatchModal from "./PostMatchModal";
+import "@/app/lobby/retakes-lobby.css";
+
+function SafeShield({ score, probation }: { score: number; probation: boolean }) {
+  let color = "#888";
+  if (probation) color = "#888";
+  else if (score >= 90) color = "#FFD700";
+  else if (score >= 60) color = "#4A90E2";
+  else color = "#E0533A";
+
+  return (
+    <svg style={{ width: '14px', height: '14px', marginLeft: '6px', flexShrink: 0, verticalAlign: 'middle' }} viewBox="0 0 24 24" fill="none" stroke={color} strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+      <title>{`Safe Score: ${probation ? 'Probation' : score}`}</title>
+      <path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z" fill={color} fillOpacity="0.2" />
+    </svg>
+  );
+}
 
 // Competitive matchmaking: party, queue, accept, veto, connect.
 //
@@ -112,6 +129,10 @@ export default function RetakesLobby({ signedIn, lobbyId }: { signedIn: boolean,
   const [online, setOnline] = useState<string[]>([]);
   const [notice, setNotice] = useState<{ kind: string; text: string } | null>(null);
   const [avatarPlayers, setAvatarPlayers] = useState<{ steamId: string, name: string, avatarSrc?: string }[]>([]);
+  const [safeScores, setSafeScores] = useState<{ steamId: string, score: number, probation: boolean }[]>([]);
+  const [activeTab, setActiveTab] = useState<"lobby" | "live">("lobby");
+  const [safeQueue, setSafeQueue] = useState(false);
+  const [showPostMatch, setShowPostMatch] = useState(false);
 
   useEffect(() => {
     if (!state?.party?.members) return;
@@ -126,6 +147,16 @@ export default function RetakesLobby({ signedIn, lobbyId }: { signedIn: boolean,
       .then(r => r.json())
       .then(d => { if (active) setAvatarPlayers(d); })
       .catch(console.error);
+      
+      fetch("/api/users/safe-scores", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ steamIds: ids })
+      })
+      .then(r => r.json())
+      .then(d => { if (active && Array.isArray(d)) setSafeScores(d); })
+      .catch(console.error);
+
       return () => { active = false; };
     }
   }, [state?.party?.members]);
@@ -289,7 +320,12 @@ export default function RetakesLobby({ signedIn, lobbyId }: { signedIn: boolean,
         <p className="muted">{t("lobby.blurb")}</p>
       </section>
 
-      <div className="rq-grid">
+      <div style={{ display: 'flex', gap: '20px', marginBottom: '24px', justifyContent: 'center' }}>
+        <button className={`rq-tab ${activeTab === 'lobby' ? 'active' : ''}`} onClick={() => setActiveTab('lobby')} style={{ background: 'none', color: activeTab === 'lobby' ? 'var(--color-accent)' : 'var(--muted)', fontSize: '18px', fontWeight: 'bold', cursor: 'pointer', border: 'none', borderBottom: activeTab === 'lobby' ? '2px solid var(--color-accent)' : '2px solid transparent', padding: '10px 20px', transition: 'all 0.2s' }}>Lobby</button>
+        <button className={`rq-tab ${activeTab === 'live' ? 'active' : ''}`} onClick={() => setActiveTab('live')} style={{ background: 'none', color: activeTab === 'live' ? 'var(--color-accent)' : 'var(--muted)', fontSize: '18px', fontWeight: 'bold', cursor: 'pointer', border: 'none', borderBottom: activeTab === 'live' ? '2px solid var(--color-accent)' : '2px solid transparent', padding: '10px 20px', transition: 'all 0.2s' }}>Live Games</button>
+      </div>
+
+      <div className="rq-grid" style={{ display: activeTab === 'lobby' ? 'grid' : 'none' }}>
         {/* ------------------------------------------------------------ party */}
         <aside className="rq-panel rq-party">
           <header className="rq-panel-head">
@@ -347,6 +383,11 @@ export default function RetakesLobby({ signedIn, lobbyId }: { signedIn: boolean,
                 <span className="rq-member-name">
                   {m.name ?? t("lobby.player")}
                   {m.steamId === party?.leader && <span className="rq-crown" title={t("lobby.leader")}>★</span>}
+                  {(() => {
+                    const ss = safeScores.find(s => s.steamId === m.steamId);
+                    if (ss) return <SafeShield score={ss.score} probation={ss.probation} />;
+                    return null;
+                  })()}
                 </span>
                 <LevelBadge elo={m.elo} matches={m.matches} size="sm" />
                 {party?.isLeader && m.steamId !== steamId && (
@@ -426,30 +467,45 @@ export default function RetakesLobby({ signedIn, lobbyId }: { signedIn: boolean,
           ) : (
             <>
               <h2 className="rq-choose">{t("lobby.choosemode")}</h2>
-              <div className="rq-modes">
+              
+              <div className="rq-mode-toggle" style={{ display: 'flex', background: 'color-mix(in srgb, var(--color-text) 5%, transparent)', borderRadius: '999px', padding: '4px', marginBottom: '24px', width: '100%', maxWidth: '300px' }}>
                 {(state?.modes ?? []).map((m) => {
                   const tooBig = (party?.members.length ?? 1) > m.teamSize;
                   return (
                     <button
                       key={m.id}
-                      className={`rq-mode ${mode === m.id ? "on" : ""} ${tooBig ? "blocked" : ""}`}
+                      className={`rq-toggle-btn ${mode === m.id ? 'active' : ''}`}
                       disabled={!party?.isLeader || tooBig}
                       onClick={() => send("rq:party:mode", { mode: m.id })}
+                      style={{ 
+                        flex: 1, 
+                        padding: '10px 20px', 
+                        borderRadius: '999px', 
+                        border: 'none', 
+                        background: mode === m.id ? 'var(--color-accent)' : 'transparent', 
+                        color: mode === m.id ? '#fff' : 'var(--color-text)', 
+                        cursor: (!party?.isLeader || tooBig) ? 'not-allowed' : 'pointer',
+                        opacity: tooBig ? 0.4 : 1,
+                        fontWeight: 'bold',
+                        transition: 'all 0.2s',
+                        fontSize: '15px'
+                      }}
                     >
-                      <span className="rq-mode-id">{m.id}</span>
-                      <span className="rq-mode-label">{m.label}</span>
-                      <span className="rq-mode-sub">
-                        {tooBig ? t("lobby.partytoobig", { n: m.teamSize }) : t("lobby.perteam", { n: m.teamSize })}
-                      </span>
+                      {m.label}
                     </button>
                   );
                 })}
               </div>
 
+              <label className="rq-safe-queue" style={{ marginBottom: '24px', display: 'flex', alignItems: 'center', gap: '8px', cursor: 'pointer', userSelect: 'none' }}>
+                <input type="checkbox" checked={safeQueue} onChange={(e) => setSafeQueue(e.target.checked)} style={{ cursor: 'pointer', width: '18px', height: '18px', accentColor: 'var(--color-accent)' }} />
+                <span style={{ fontWeight: 'bold', fontSize: '14px', color: safeQueue ? 'var(--color-accent)' : 'var(--muted)', transition: 'color 0.2s' }}>Safe Queue</span>
+              </label>
+
               <button
                 className="btn btn-primary rq-play"
                 disabled={!party?.isLeader}
-                onClick={() => send("rq:queue:join", { mode })}
+                onClick={() => send("rq:queue:join", { mode, safeQueue })}
               >
                 {t("lobby.findmatch")}
               </button>
@@ -484,7 +540,7 @@ export default function RetakesLobby({ signedIn, lobbyId }: { signedIn: boolean,
           </ol>
 
           <div className="rq-links">
-            <a className="btn btn-secondary" href="/retakes/loadout">
+            <a className="btn btn-secondary" href="/loadout">
               {t("lobby.yourloadout")}
             </a>
             <a className="btn btn-secondary" href="/stats/form">
@@ -493,9 +549,31 @@ export default function RetakesLobby({ signedIn, lobbyId }: { signedIn: boolean,
             <a className="btn btn-secondary" href="/retakes/economy">
               {t("lobby.economy")}
             </a>
+            <button className="btn btn-secondary" onClick={() => setShowPostMatch(true)}>
+              View Last Match
+            </button>
           </div>
         </aside>
       </div>
+
+      {activeTab === 'live' && (
+        <div style={{ maxWidth: '800px', margin: '0 auto' }}>
+          <LiveGames />
+        </div>
+      )}
+
+      {showPostMatch && (
+        <PostMatchModal 
+          matchId="dummy-123"
+          myTeamScore={13}
+          enemyTeamScore={11}
+          teammates={[
+            { steamId: "u1", name: "PlayerOne", kills: 22, deaths: 14, rating: 1.2, eloChange: 25, elo: 1450 },
+            { steamId: "u2", name: "PlayerTwo", kills: 18, deaths: 16, rating: 1.05, eloChange: 22, elo: 1380 }
+          ]}
+          onClose={() => setShowPostMatch(false)}
+        />
+      )}
 
       {/* An invite is a modal because it expires and because saying no is a
           real answer — a banner people scroll past is neither. */}

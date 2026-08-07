@@ -210,9 +210,10 @@ export default function GlobalMatchmaking({ avatarPlayers = [] }: { avatarPlayer
 
         {/* Right: Lobby Link */}
         <div style={{ display: "flex", justifyContent: "flex-end", width: "33%" }}>
-          {pathname !== "/retakes/lobby" && (
-            <Link href="/retakes/lobby" style={{
+          {pathname !== "/lobby" && (
+            <Link href="/lobby" style={{
               color: "#fff",
+              display: "block",
               textDecoration: "none",
               fontWeight: "bold",
               fontSize: "14px",

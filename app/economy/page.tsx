@@ -76,7 +76,7 @@ export default function EconomyPage() {
         <p>
           So this mode keeps money between rounds. It is <strong>hidden</strong> — the allocator
           spends it for you, along the preferences you set on your{" "}
-          <Link href="/retakes/loadout">loadout page</Link>. What you notice is that some rounds you
+          <Link href="/loadout">loadout page</Link>. What you notice is that some rounds you
           have an AK and a full bag, and some rounds you have an MP9 and one flash, and that this
           follows from how the last few rounds went.
         </p>
@@ -234,8 +234,8 @@ export default function EconomyPage() {
       </section>
 
       <section className="ec-panel ec-links">
-        <Link className="btn btn-primary" href="/retakes/loadout">Set your loadout</Link>
-        <Link className="btn btn-secondary" href="/retakes/lobby">Queue a match</Link>
+        <Link className="btn btn-primary" href="/loadout">Set your loadout</Link>
+        <Link className="btn btn-secondary" href="/lobby">Queue a match</Link>
       </section>
 
       <p className="ec-foot muted">

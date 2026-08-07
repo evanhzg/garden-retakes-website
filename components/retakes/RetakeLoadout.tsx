@@ -16,7 +16,7 @@ import {
   type UtilityPrefs,
   type WeaponPrefs,
 } from "@/lib/retakeLoadout";
-import "@/app/retakes/loadout/loadout.css";
+import "@/app/loadout/loadout.css";
 
 // Your competitive retakes loadout.
 //
@@ -56,7 +56,7 @@ export default function RetakeLoadoutPage({ signedIn }: { signedIn: boolean }) {
 
   useEffect(() => {
     if (!signedIn) return;
-    fetch("/api/retakes/loadout")
+    fetch("/api/loadout")
       .then((r) => (r.ok ? r.json() : null))
       .then((d) => setLoadout(d ? { weapons: d.weapons, roleT: d.roleT, roleCt: d.roleCt, utility: d.utility, notes: d.notes } : EMPTY))
       .catch(() => setLoadout(EMPTY));
@@ -95,7 +95,7 @@ export default function RetakeLoadoutPage({ signedIn }: { signedIn: boolean }) {
     setSaving(true);
     setNote(null);
     try {
-      const res = await fetch("/api/retakes/loadout", {
+      const res = await fetch("/api/loadout", {
         method: "PUT",
         headers: { "content-type": "application/json" },
         body: JSON.stringify(loadout),

@@ -1,12 +1,11 @@
 import { NextRequest, NextResponse } from "next/server";
-import { prisma } from "@/lib/prisma";
-import { checkAdmin } from "@/lib/checkAdmin";
-import { AdminLevel } from "@/lib/auth/user";
+import { prisma } from "@/lib/db";
+import { getAdminContext, AdminLevel } from "@/lib/adminAuth";
 
 export const dynamic = "force-dynamic";
 
 export async function GET(req: NextRequest) {
-  const auth = await checkAdmin(req);
+  const auth = await getAdminContext();
   if (!auth) return new NextResponse("Unauthorized", { status: 401 });
   if (auth.level < AdminLevel.Owner) return new NextResponse("Forbidden", { status: 403 });
 
