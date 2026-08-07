@@ -140,12 +140,40 @@ export default function SkinEditor3D({
     if (api && syncToApi.current) {
       syncToApi.current = false;
       api.setItem(viewerItem);
+      // Re-apply selection since setItem might reset it
+      if (activeSlot === null) {
+        api.setSelection({ selection: null });
+      } else if (activeSlot === 5) {
+        api.setSelection({ selection: { kind: "keychain", index: 0 } });
+      } else {
+        api.setSelection({ selection: { kind: "sticker", index: activeSlot } });
+      }
     }
-  }, [api, viewerItem]);
+  }, [api, viewerItem, activeSlot]);
+
+  useEffect(() => {
+    if (!api) return;
+    if (activeSlot === null) {
+      api.setSelection({ selection: null });
+    } else if (activeSlot === 5) {
+      api.setSelection({ selection: { kind: "keychain", index: 0 } });
+    } else {
+      api.setSelection({ selection: { kind: "sticker", index: activeSlot } });
+    }
+  }, [api, activeSlot]);
 
   useEffect(() => {
     if (!api) return;
     const off = api.on("change", (state) => {
+      // Sync selection from 3D viewer
+      if (state.selection === null) {
+        setActiveSlot(null);
+      } else if (state.selection.kind === "keychain") {
+        setActiveSlot(5);
+      } else if (state.selection.kind === "sticker") {
+        setActiveSlot(state.selection.index);
+      }
+
       setStickers(cur => {
         let changed = false;
         const newStickers = [...cur];

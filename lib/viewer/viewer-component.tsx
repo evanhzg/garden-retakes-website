@@ -53,5 +53,5 @@ export function Viewer({
     };
   }, []);
 
-  return <iframe ref={iframeRef} src={src} title={title} {...props} />;
+  return <iframe ref={iframeRef} src={src} title={title} allowTransparency={true} style={{ backgroundColor: 'transparent', ...props.style }} {...props} />;
 }
