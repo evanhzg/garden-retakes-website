@@ -1857,6 +1857,18 @@ tbody tr:hover {
   display: inline-flex;
   align-items: center;
   flex-wrap: wrap;
+  gap: 8px;
+}
+.pro-badge {
+  background: linear-gradient(to right, #f59e0b, #f97316);
+  color: white;
+  border: none;
+  box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.1), 0 4px 6px -2px rgba(0, 0, 0, 0.05);
+  padding: 2px 8px;
+  display: inline-flex;
+  align-items: center;
+  height: 18px;
+  font-size: 10px;
 }
 
 .player-bio {
@@ -3323,15 +3335,18 @@ body.is-docs-page .left-sidebar {
   z-index: 20;
 }
 
-.ls-avatar-link img {
+.ls-avatar-img {
   width: 100%;
   height: 100%;
-  object-fit: contain;
+  object-fit: cover;
+  position: relative;
+  z-index: 10;
+  border-radius: 8px; /* rounded-lg */
   transition: transform 0.2s ease, filter 0.2s ease;
   pointer-events: none;
 }
 
-.ls-avatar-link:hover img {
+.ls-avatar-link:hover .ls-avatar-img {
   transform: scale(3);
   filter: drop-shadow(0 4px 30px rgb(236, 72, 153, 1));
 }
@@ -5677,6 +5692,14 @@ html { scroll-behavior: smooth; }
 }
 .inv4-lo-new { font-size: 13px; }
 
+.inv4-lo-dropdown { display: flex; align-items: center; }
+.inv4-lo-select {
+  background: var(--color-surface); border: 1px solid var(--color-border);
+  color: var(--color-text); padding: 6px 12px; border-radius: 4px;
+  font: inherit; font-size: 13px; cursor: pointer; outline: none;
+}
+.inv4-lo-select:hover { border-color: var(--color-border-hover); }
+
 .inv4-bar-right { display: flex; align-items: center; gap: var(--space-3); flex-wrap: wrap; }
 
 /* Completeness. A bar plus the raw count — the number is the motivating part. */
@@ -5827,6 +5850,7 @@ html { scroll-behavior: smooth; }
   display: grid;
   grid-template-columns: repeat(auto-fill, minmax(150px, 1fr));
   gap: var(--space-2);
+  padding: var(--space-3);
   align-content: start;
 }
 .inv4-weapon {
@@ -10815,3 +10839,4 @@ body.overlay-open .socket-status-banner {
    declare itself. */
 .util-lightbox,
 .rq-takeover { z-index: 1200; }
+.heatmap-container { width: 100%; }

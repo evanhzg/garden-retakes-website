@@ -15,7 +15,7 @@ export default async function HeatmapPage() {
   }));
 
   return (
-    <div className="w-full">
+    <div className="heatmap-container">
       <HeatmapClient users={users} />
     </div>
   );

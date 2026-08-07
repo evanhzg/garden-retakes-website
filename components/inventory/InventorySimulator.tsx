@@ -60,7 +60,7 @@ type BoardSlot = {
   extra?: boolean;
 };
 
-const CATEGORY_ORDER = ["Rifles", "Snipers", "SMGs", "Pistols", "Heavy", "Knives", "Gloves"];
+const CATEGORY_ORDER = ["Rifles", "Snipers", "SMGs", "Pistols", "Heavy", "Knives", "Gloves", "Agents", "Patches"];
 const SIDES: Side[] = ["t", "ct"];
 
 function wearLabel(wear: number): string {
@@ -78,6 +78,8 @@ const skinLabel = (name: string) => name.split(" | ")[1] ?? name;
 function kindOfCategory(category: string): ItemKind {
   if (category === "Knives") return "knife";
   if (category === "Gloves") return "gloves";
+  if (category === "Agents") return "agent";
+  if (category === "Patches") return "patch";
   return "weapon";
 }
 
@@ -538,7 +540,12 @@ export default function InventorySimulator() {
     const targetWeapon = explicitWeapon || weapon;
     if (!targetWeapon) return;
     const kind = kindOfCategory(targetWeapon.category);
-    const targetSides = overrideSide === "both" ? ["t" as const, "ct" as const] : [overrideSide || side];
+    const targetSidesRaw = overrideSide === "both" ? ["t" as const, "ct" as const] : [overrideSide || side];
+    const targetSides = targetSidesRaw.filter(s => targetWeapon.team === "both" || targetWeapon.team === s);
+    if (targetSides.length === 0) {
+      showToast("This item cannot be equipped on this team");
+      return;
+    }
     
     setStore((cur) => {
       const loadout = cur.loadouts.find((l) => l.id === cur.activeLoadoutId);
@@ -704,6 +711,9 @@ export default function InventorySimulator() {
     const name = window.prompt("Loadout name (in-game: /loadout <name>)", l.name)?.trim();
     if (!name) return;
     setStore((c) => ({ ...c, loadouts: c.loadouts.map((x) => (x.id === l.id ? { ...x, name } : x)) }));
+  };
+  const toggleFavoriteLoadout = (l: Loadout) => {
+    setStore((c) => ({ ...c, loadouts: c.loadouts.map((x) => (x.id === l.id ? { ...x, favorite: !x.favorite } : x)) }));
   };
   const deleteLoadout = (l: Loadout) => {
     if (store.loadouts.length <= 1) {
@@ -874,13 +884,26 @@ export default function InventorySimulator() {
   const weapons = catalog?.[category] ?? [];
   const borrowUrl = share && origin ? `${origin}/inventory?borrow=${share.key}` : "";
 
+  const sortedLoadouts = useMemo(() => {
+    return [...store.loadouts].sort((a, b) => {
+      if (a.favorite && !b.favorite) return -1;
+      if (!a.favorite && b.favorite) return 1;
+      const aDate = a.createdAt ?? 0;
+      const bDate = b.createdAt ?? 0;
+      return aDate - bDate; // Ascending by date created
+    });
+  }, [store.loadouts]);
+
+  const visibleLoadouts = sortedLoadouts.slice(0, 4);
+  const overflowLoadouts = sortedLoadouts.slice(4);
+
   // ---------- Render ----------
   return (
     <div className="inv4">
       {/* ===== Header: which loadout, how full, and what to do with it ===== */}
       <header className="inv4-bar">
         <div className="inv4-loadouts" role="tablist" aria-label={t("auto.inventorysimulator.loadouts")}>
-          {store.loadouts.map((l, idx) => (
+          {visibleLoadouts.map((l, idx) => (
             <button
               key={l.id}
               role="tab"
@@ -900,10 +923,20 @@ export default function InventorySimulator() {
               onClick={() => setActiveLoadout(l.id)}
             >
               <span className="inv4-lo-dot" style={{ background: l.color ?? "var(--color-neutral-500)" }} />
-              {l.name}
+              {l.favorite ? '★ ' : ''}{l.name}
               <span className="inv4-lo-count">{loadoutSize(l)}</span>
             </button>
           ))}
+          {overflowLoadouts.length > 0 && (
+            <div className="inv4-lo-dropdown">
+              <select className="inv4-lo-select" value={overflowLoadouts.find(l => l.id === store.activeLoadoutId) ? store.activeLoadoutId : ""} onChange={(e) => { if (e.target.value) setActiveLoadout(e.target.value); }}>
+                <option value="" disabled>+{overflowLoadouts.length} More...</option>
+                {overflowLoadouts.map(l => (
+                  <option key={l.id} value={l.id}>{l.favorite ? '★ ' : ''}{l.name} ({loadoutSize(l)})</option>
+                ))}
+              </select>
+            </div>
+          )}
           <button className="btn btn-secondary inv4-lo-new" onClick={addLoadout} title={t("auto.inventorysimulator.new_loadout")}>
             {t("auto.inventorysimulator._new")}
                                 </button>
@@ -967,6 +1000,9 @@ export default function InventorySimulator() {
               </div>
               <div className="inv4-board-actions">
                 <button className="btn btn-ghost" title={t("auto.inventorysimulator.rename")} onClick={() => renameLoadout(activeLoadout)}>{t("auto.inventorysimulator.rename")}</button>
+                <button className={`btn btn-ghost ${activeLoadout.favorite ? 'on' : ''}`} title="Favorite" onClick={() => toggleFavoriteLoadout(activeLoadout)}>
+                  {activeLoadout.favorite ? '★' : '☆'}
+                </button>
                 <button className="btn btn-ghost" title={t("auto.inventorysimulator.duplicate")} onClick={() => duplicateLoadout(activeLoadout)}>{t("auto.inventorysimulator.duplicate")}</button>
                 {store.loadouts.length > 1 && (
                   <button className="btn btn-ghost" title={t("auto.inventorysimulator.delete")} onClick={() => deleteLoadout(activeLoadout)}>{t("auto.inventorysimulator.delete")}</button>
@@ -1138,7 +1174,23 @@ export default function InventorySimulator() {
                     <button
                       key={w.def}
                       className={`inv4-weapon ${item ? "has-skin" : ""}`}
-                      onClick={() => openWeapon(w)}
+                      onClick={() => {
+                        setPreviewMode(false);
+                        openWeapon(w);
+                      }}
+                      onContextMenu={(e) => {
+                        e.preventDefault();
+                        if (!item) return;
+                        const itemSkin: Skin = {
+                          id: item.skinId,
+                          def: item.weaponDef,
+                          paint: item.paint,
+                          name: item.skinName,
+                          image: item.image,
+                          rarity: item.rarity || "default"
+                        };
+                        setContextMenu({ x: e.clientX, y: e.clientY, skin: itemSkin, weapon: w, side });
+                      }}
                       style={item?.rarity ? ({ "--rarity": item.rarity } as React.CSSProperties) : undefined}
                     >
                       <div className="inv4-weapon-img">
@@ -1288,7 +1340,7 @@ export default function InventorySimulator() {
               </div>
               <div className="inv4-share-row">
                 <span className="inv4-share-label">{t("auto.inventorysimulator.in_game")}</span>
-                <code className="skin-path">{t("auto.inventorysimulator._borrow")} {share.key}</code>
+                <code className="skin-path">/borrow {share.key}</code>
                 <button className="btn btn-secondary" onClick={() => copy(`/borrow ${share.key}`, "cmd")}>
                   {copied === "cmd" ? "Copied" : "Copy"}
                 </button>
@@ -1350,15 +1402,21 @@ export default function InventorySimulator() {
               3D Edit
             </button>
           )}
-          <button className="inv4-context-btn" onClick={() => { equipSkin(contextMenu.skin, "t", false, contextMenu.weapon); setContextMenu(null); }}>
-            Equip T
-          </button>
-          <button className="inv4-context-btn" onClick={() => { equipSkin(contextMenu.skin, "ct", false, contextMenu.weapon); setContextMenu(null); }}>
-            Equip CT
-          </button>
-          <button className="inv4-context-btn" onClick={() => { equipSkin(contextMenu.skin, "both", false, contextMenu.weapon); setContextMenu(null); }}>
-            Equip Both
-          </button>
+          {(contextMenu.weapon.team === "both" || contextMenu.weapon.team === "t") && (
+            <button className="inv4-context-btn" onClick={() => { equipSkin(contextMenu.skin, "t", false, contextMenu.weapon); setContextMenu(null); }}>
+              Equip T
+            </button>
+          )}
+          {(contextMenu.weapon.team === "both" || contextMenu.weapon.team === "ct") && (
+            <button className="inv4-context-btn" onClick={() => { equipSkin(contextMenu.skin, "ct", false, contextMenu.weapon); setContextMenu(null); }}>
+              Equip CT
+            </button>
+          )}
+          {contextMenu.weapon.team === "both" && (
+            <button className="inv4-context-btn" onClick={() => { equipSkin(contextMenu.skin, "both", false, contextMenu.weapon); setContextMenu(null); }}>
+              Equip Both
+            </button>
+          )}
         </div>
       , document.body)}
     </div>

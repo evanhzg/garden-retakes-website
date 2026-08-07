@@ -89,9 +89,9 @@ export default async function ProPage({
             <AvatarImage steamId={steamId.toString()} src={webProfile.AvatarUrl || `/pros/${nickname}_pp.png`} />
           </div>
           <div style={{ flex: 1, minWidth: 220 }}>
-            <h1 className="hero-name flex items-center gap-2">
+            <h1 className="hero-name">
               {name}
-              <span className="mini-badge bg-gradient-to-r from-amber-500 to-orange-500 text-white border-0 shadow-lg px-2 py-0.5" style={{ display: 'inline-flex', alignItems: 'center', height: '18px', fontSize: '10px' }}>{t("auto.page.pro")}</span>
+              <span className="mini-badge pro-badge">{t("auto.page.pro")}</span>
               {override && <span className="mini-badge">{t("auto.page.custom_name")}</span>}
             </h1>
             <div className="hero-sub">

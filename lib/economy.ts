@@ -201,6 +201,23 @@ export function getSkinsForWeapon(def: number): SkinEntry[] {
   const skins: SkinEntry[] = [];
   for (const item of CS2Economy.itemsAsArray) {
     if (
+      item.isAgent() || item.isPatch() || item.isKeychain()
+    ) {
+      if ((item.def === def && item.isAgent()) || (item.index === def && item.isPatch()) || (item.id === def && item.isKeychain())) {
+        skins.push({
+          id: item.id,
+          def,
+          paint: 0,
+          name: item.name,
+          image: item.getImage(),
+          rarity: item.rarity ?? "#b0c3d9",
+          collection: item.collectionName ?? "",
+        });
+      }
+      continue;
+    }
+
+    if (
       (!item.isWeapon() && !item.isMelee() && !item.isGloves()) ||
       item.base ||
       item.def !== def ||

@@ -80,6 +80,8 @@ export type Loadout = {
   color?: string;
   /** Preferred CT rifle def for the profile preview: 16 = M4A4, 60 = M4A1-S. */
   preferredM4?: number;
+  favorite?: boolean;
+  createdAt?: number;
 };
 
 export type InventoryStore = {
@@ -148,7 +150,17 @@ export function newId(): string {
 }
 
 export function emptyLoadout(name: string): Loadout {
-  return { id: newId(), name, equippedCT: {}, equippedT: {}, equippedPatchesCT: [], equippedPatchesT: [] };
+  return { 
+    id: newId(), 
+    name, 
+    equippedCT: {}, 
+    equippedT: {}, 
+    color: LOADOUT_COLORS[0].hex, 
+    preferredM4: M4A4, 
+    createdAt: Date.now(), 
+    equippedPatchesCT: [], 
+    equippedPatchesT: [] 
+  };
 }
 
 export function defaultStore(): InventoryStore {

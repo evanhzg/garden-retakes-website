@@ -101,7 +101,7 @@ export default function LeftSidebar({
         }
 
         return (
-          <Link key={p.steamId} href={getHref(`/players/${p.steamId}`)} title={p.name} className="ls-avatar-link relative inline-block">
+          <Link key={p.steamId} href={getHref(`/players/${p.steamId}`)} title={p.name} className="ls-avatar-link">
             <div 
               style={{ 
                 position: 'absolute', top: 0, right: 0, width: '14px', height: '14px', 
@@ -110,7 +110,8 @@ export default function LeftSidebar({
                 transform: 'translate(25%, -25%)', transition: 'background-color 0.5s ease'
               }} 
             />
-            <img src={p.avatarSrc} alt={p.name} className="w-full h-full object-cover relative z-10 rounded-lg" />
+            {/* eslint-disable-next-line @next/next/no-img-element */}
+            <img src={p.avatarSrc} alt={p.name} className="ls-avatar-img" />
           </Link>
         );
       })}
