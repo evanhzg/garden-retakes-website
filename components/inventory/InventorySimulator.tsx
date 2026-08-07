@@ -29,6 +29,7 @@ import {
 } from "@/lib/inventory";
 import { useI18n } from '@/components/I18nProvider';
 import { importSnapshot, type LoadoutSnapshot } from "@/lib/share";
+import SkinEditor3D from "./SkinEditor3D";
 
 type WeaponEntry = {
   id: number;
@@ -111,7 +112,7 @@ export default function InventorySimulator() {
   const [statTrak, setStatTrak] = useState(false);
   const [nameTag, setNameTag] = useState("");
   const [stickers, setStickers] = useState<(PlacedSticker | null)[]>(defaultStickerSlots());
-  const [showStickers, setShowStickers] = useState(false);
+  const [editor3dOpen, setEditor3dOpen] = useState(false);
   const [stickerQuery, setStickerQuery] = useState("Katowice 2014");
   const [stickerResults, setStickerResults] = useState<StickerOption[]>([]);
   const [stickersLoading, setStickersLoading] = useState(false);
@@ -272,7 +273,7 @@ export default function InventorySimulator() {
 
   // ---------- Sticker search ----------
   useEffect(() => {
-    if (!showStickers) return;
+    if (!editor3dOpen) return;
     const h = window.setTimeout(() => {
       setStickersLoading(true);
       fetch(`/api/stickers?q=${encodeURIComponent(stickerQuery)}`)
@@ -282,7 +283,7 @@ export default function InventorySimulator() {
         .finally(() => setStickersLoading(false));
     }, 350);
     return () => window.clearTimeout(h);
-  }, [stickerQuery, showStickers]);
+  }, [stickerQuery, editor3dOpen]);
 
   // ---------- Slot helpers ----------
   const slotItemFor = useCallback(
@@ -398,7 +399,7 @@ export default function InventorySimulator() {
       setWeapon(w);
       setSkinSearch("");
       setCollectionFilter("");
-      setShowStickers(false);
+      setEditor3dOpen(false);
       writeUrl({ w: String(w.def), cat: w.category }, opts.push ?? true);
       const existing = slotItemForChooser(w.def, kindOfCategory(w.category), side);
       if (existing) {
@@ -1178,48 +1179,13 @@ export default function InventorySimulator() {
                                                                 </label>
                 )}
                 {supportsStickers && (
-                  <button className="btn btn-secondary" onClick={() => setShowStickers((v) => !v)}>
-                    {showStickers ? "Hide stickers" : "Stickers"}
+                  <button className="btn btn-secondary" onClick={() => setEditor3dOpen(true)}>
+                    Edit in 3D
                   </button>
                 )}
               </div>
 
-              {showStickers && supportsStickers && (
-                <div className="inv4-stickers">
-                  <div ref={stageRef} className="sticker-stage" onPointerMove={onStageMove} onPointerUp={endDrag} onPointerLeave={endDrag}>
-                    {(slotItemForChooser(weapon.def, builderKind, side)?.image ?? shownSkins[0]?.image) && (
-                      // eslint-disable-next-line @next/next/no-img-element
-                      <img className="weapon-img" src={slotItemForChooser(weapon.def, builderKind, side)?.image ?? shownSkins[0]?.image} alt="" />
-                    )}
-                    {stickers.map((st, slot) =>
-                      st ? (
-                        <div key={slot} className="placed-sticker" style={{ left: `${st.x}%`, top: `${st.y}%` }} onPointerDown={onStickerDown(slot)} title={st.name}>
-                          {/* eslint-disable-next-line @next/next/no-img-element */}
-                          <img src={st.image} alt="" />
-                          <button className="remove" onClick={() => removeSticker(slot)}>×</button>
-                        </div>
-                      ) : null
-                    )}
-                  </div>
-                  <div className="sticker-picker">
-                    <label className="sr-only" htmlFor="inv-sticker-search">{t("auto.inventorysimulator.search_stickers")}</label>
-                    <input id="inv-sticker-search" className="input" placeholder={t("auto.inventorysimulator.search_stickers")} value={stickerQuery} onChange={(e) => setStickerQuery(e.target.value)} />
-                    {stickersLoading ? (
-                      <p className="empty-hint">{t("auto.inventorysimulator.searching")}</p>
-                    ) : (
-                      <div className="results">
-                        {stickerResults.map((s) => (
-                          <button key={s.id} className="sticker-cell" title={s.name} onClick={() => addSticker(s)}>
-                            {/* eslint-disable-next-line @next/next/no-img-element */}
-                            <img src={s.image} alt="" loading="lazy" />
-                          </button>
-                        ))}
-                      </div>
-                    )}
-                  </div>
-                  <p className="muted" style={{ fontSize: "0.78rem" }}>{t("auto.inventorysimulator.stickers_apply_when_you_pick_a")}</p>
-                </div>
-              )}
+
 
               {skinsLoading ? (
                 <p className="empty-hint">{t("auto.inventorysimulator.loading_skins")}</p>
@@ -1296,6 +1262,21 @@ export default function InventorySimulator() {
       )}
 
       {toast && <div className="toast">{toast}</div>}
+      {editor3dOpen && weapon && (
+        <SkinEditor3D 
+          skinId={currentSkinId || weapon.id}
+          wear={wear}
+          seed={seed}
+          statTrak={statTrak}
+          nameTag={nameTag}
+          initialStickers={stickers}
+          onSave={(newStickers) => {
+            setStickers(newStickers);
+            setEditor3dOpen(false);
+          }}
+          onClose={() => setEditor3dOpen(false)}
+        />
+      )}
     </div>
   );
 }
