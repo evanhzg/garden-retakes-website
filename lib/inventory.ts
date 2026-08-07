@@ -26,9 +26,9 @@ export type PlacedSticker = {
   /** Scratch/wear 0 (pristine) .. 1 (fully scratched). */
   wear: number;
   /** Position as a percentage of the 2D stage (website preview only). */
-  x: number;
-  y: number;
-  rotation: number;
+  x?: number;
+  y?: number;
+  rotation?: number;
 };
 
 export type InventoryItem = {
@@ -303,6 +303,8 @@ type PluginSticker = {
   slot: number;
   wear: number;
   rotation?: number;
+  x?: number;
+  y?: number;
 };
 
 type PluginWeapon = {
@@ -338,7 +340,9 @@ function toPluginWeapon(item: InventoryItem): PluginWeapon {
   item.stickers.forEach((s) => {
     if (!s) return;
     const sticker: PluginSticker = { def: s.def, slot: s.slot, wear: s.wear };
-    if (s.rotation) sticker.rotation = s.rotation;
+    if (s.rotation !== undefined) sticker.rotation = s.rotation;
+    if (s.x !== undefined) sticker.x = s.x;
+    if (s.y !== undefined) sticker.y = s.y;
     stickers.push(sticker);
   });
   return {

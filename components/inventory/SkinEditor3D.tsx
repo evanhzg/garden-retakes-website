@@ -80,7 +80,7 @@ export default function SkinEditor3D({
         name: item.name,
         image: item.image,
         slot: 5,
-        wear: 0, x: 0, y: 0, rotation: 0
+        wear: 0
       });
     } else {
       const newStickers = [...stickers];
@@ -89,7 +89,7 @@ export default function SkinEditor3D({
         name: item.name,
         image: item.image,
         slot: activeSlot,
-        wear: 0, x: 0, y: 0, rotation: 0
+        wear: 0
       };
       setStickers(newStickers);
     }
@@ -183,9 +183,9 @@ export default function SkinEditor3D({
             const slot = parseInt(slotStr);
             if (newStickers[slot]) {
               const wear = st.wear ?? 0;
-              const x = st.x ?? 0;
-              const y = st.y ?? 0;
-              const rotation = st.rotation ?? 0;
+              const x = st.x;
+              const y = st.y;
+              const rotation = st.rotation;
               if (
                 newStickers[slot]!.wear !== wear ||
                 newStickers[slot]!.x !== x ||
