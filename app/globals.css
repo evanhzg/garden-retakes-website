@@ -5837,7 +5837,7 @@ html { scroll-behavior: smooth; }
   border-bottom: 3px solid var(--rarity, var(--color-divider));
   transition: transform 0.15s ease, border-color 0.15s ease;
 }
-.inv4-weapon:hover { transform: translateY(-2px); border-color: var(--color-accent); }
+.inv4-weapon:hover { transform: translateY(-2px); border-color: var(--color-accent); position: relative; z-index: 10; }
 .inv4-weapon-img { display: grid; place-items: center; height: 62px; }
 .inv4-weapon-img img { max-width: 100%; max-height: 62px; object-fit: contain; }
 .inv4-weapon-name { font-size: 12px; font-weight: 700; }
@@ -5849,7 +5849,7 @@ html { scroll-behavior: smooth; }
 
 /* ---- skin chooser ---- */
 .inv4-chooser { display: flex; flex-direction: column; min-height: 0; flex: 1; gap: var(--space-3); }
-.inv4-chooser-head { display: flex; align-items: center; gap: var(--space-3); flex-wrap: wrap; }
+.inv4-chooser-head { display: flex; align-items: center; gap: var(--space-3); flex-wrap: wrap; padding: var(--space-3) 0; }
 .inv4-chooser-head strong { font-family: var(--font-heading); font-size: 17px; }
 .inv4-chooser-head-right { margin-left: auto; display: flex; gap: var(--space-2); }
 .inv4-filters { display: flex; gap: var(--space-2); flex-wrap: wrap; }

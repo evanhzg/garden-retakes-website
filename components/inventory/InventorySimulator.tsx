@@ -929,8 +929,8 @@ export default function InventorySimulator() {
                                 </button>
 
           <button className="btn btn-secondary" disabled={shareBusy || !activeLoadout} onClick={() => activeLoadout && shareLoadout(activeLoadout)}>
-            {t("auto.inventorysimulator.share")}
-                                </button>
+            {t("common.share")}
+          </button>
 
           <form
             className="inv4-borrow"
