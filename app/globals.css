@@ -5945,17 +5945,19 @@ html { scroll-behavior: smooth; }
 /* ---- 3d editor ---- */
 .inv4-editor3d {
   position: fixed; inset: 0; z-index: 9999;
+  background: color-mix(in srgb, #000 60%, transparent);
+  display: grid; place-items: center; padding: var(--space-6);
+  font-family: var(--font-body);
+}
+.inv4-editor3d-window {
+  width: min(1200px, 100%); height: min(800px, 100%);
   background: var(--color-bg); color: var(--color-text);
-  display: flex; flex-direction: column; font-family: var(--font-body);
+  display: flex; flex-direction: row; border: 1px solid var(--color-divider);
+  border-radius: var(--radius-lg); overflow: hidden;
+  box-shadow: var(--shadow-lg);
+  animation: gr-pop 0.18s ease both;
 }
-.inv4-editor3d-nav {
-  display: flex; justify-content: space-between; align-items: center;
-  padding: var(--space-4) var(--space-6);
-  background: var(--color-surface);
-  border-bottom: 1px solid var(--color-divider);
-}
-.inv4-editor3d-nav h2 { margin: 0; font-size: 20px; font-weight: 700; }
-.inv4-editor3d-actions { display: flex; gap: var(--space-4); }
+.inv4-editor3d-nav { display: none; }
 
 .inv4-editor3d-main {
   flex: 1; display: flex; overflow: hidden; position: relative;
@@ -6031,7 +6033,7 @@ html { scroll-behavior: smooth; }
 .inv4-context {
   position: fixed; z-index: 10000;
   background: var(--color-text); color: var(--color-bg);
-  border-radius: var(--radius);
+  border-radius: var(--radius-lg);
   border: 1px solid var(--color-divider);
   box-shadow: var(--shadow-lg);
   display: flex; flex-direction: column; padding: 4px 0;

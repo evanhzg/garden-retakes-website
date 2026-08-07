@@ -1137,9 +1137,12 @@ export default function InventorySimulator() {
                 <strong>{weapon.name}</strong>
                 <span className="muted">{side.toUpperCase()} {t("auto.inventorysimulator.slot")}</span>
                 <div className="inv4-chooser-head-right">
-                  <button className="btn btn-secondary" onClick={surpriseMe} disabled={skinsLoading} title={t("auto.inventorysimulator.roll_a_random_skin_from_the_cu")}>
+                  <button className="btn btn-secondary" style={{ display: 'flex', alignItems: 'center', gap: '6px' }} onClick={surpriseMe} disabled={skinsLoading} title={t("auto.inventorysimulator.roll_a_random_skin_from_the_cu")}>
+                    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                      <path d="M16 3h5v5M4 20L21 3M21 16v5h-5M15 15l6 6M4 4l5 5"/>
+                    </svg>
                     {t("auto.inventorysimulator._surprise_me")}
-                                                                </button>
+                  </button>
                   {slotItemForChooser(weapon.def, builderKind, side) && (
                     <button
                       className="btn btn-secondary"
@@ -1304,13 +1307,13 @@ export default function InventorySimulator() {
         <div 
           className="inv4-context"
           style={{ 
-            left: contextMenu.x, 
-            top: contextMenu.y 
+            left: contextMenu.x + 4, 
+            top: contextMenu.y + 4 
           }}
           onContextMenu={(e) => e.preventDefault()}
         >
           <div className="inv4-context-title" style={{ color: contextMenu.skin.rarity }}>
-            {skinLabel(contextMenu.skin.name)}
+            {weapon ? `${weapon.name} | ` : ""}{skinLabel(contextMenu.skin.name)}
           </div>
           {supportsStickers && (
             <button className="inv4-context-btn" onClick={() => { equipSkin(contextMenu.skin, side, true); setEditor3dOpen(true); }}>

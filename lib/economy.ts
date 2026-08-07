@@ -242,3 +242,24 @@ export function searchStickers(query: string, limit = 80): StickerEntry[] {
   }
   return results;
 }
+
+export function searchCharms(query: string, limit = 80): StickerEntry[] {
+  ensureLoaded();
+  const q = query.toLowerCase().trim();
+  const results: StickerEntry[] = [];
+  for (const item of CS2Economy.itemsAsArray) {
+    if (!item.isKeychain()) continue;
+    const name = item.name.replace(/^Charm \| /, "");
+    if (q && !name.toLowerCase().includes(q)) continue;
+    results.push({
+      id: item.id,
+      def: item.id, // Charms use item.id as def for indexing
+      name,
+      image: item.getImage(),
+      rarity: item.rarity ?? "#b0c3d9",
+      category: item.category ?? "",
+    });
+    if (results.length >= limit) break;
+  }
+  return results;
+}

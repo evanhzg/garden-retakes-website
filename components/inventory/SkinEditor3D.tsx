@@ -35,44 +35,29 @@ export default function SkinEditor3D({
   const { t } = useI18n();
   const [api, setApi] = useState<ViewerApi | undefined>();
   const [stickers, setStickers] = useState<(PlacedSticker | null)[]>([...initialStickers]);
-  const [charm, setCharm] = useState<PlacedSticker | null>(null); // We store charm separately in UI, but wait, Garden loadouts don't have charms yet! The prompt says "+1 for charm". We can just mock it or add it. We will add charm to slot 5 (index 5) or handle it visually.
+  const [charm, setCharm] = useState<PlacedSticker | null>(null); 
   
-  // The prompt asks for 5 sticker squares + 1 charm square.
-  const [activeSlot, setActiveSlot] = useState<number | null>(null); // 0-4 for stickers, 5 for charm
-  
+  const [activeSlot, setActiveSlot] = useState<number | null>(null);
   const [searchQuery, setSearchQuery] = useState("");
   
-  const allStickers = useMemo(() => {
-    return Array.from(CS2Economy.items.values()).filter(i => i.isSticker() || i.isPatch()).map(i => ({
-      id: i.id,
-      def: i.index ?? 0,
-      name: i.name,
-      image: i.getImage(),
-      rarity: i.rarity ?? "default"
-    }));
-  }, []);
-
-  const allCharms = useMemo(() => {
-    return Array.from(CS2Economy.items.values()).filter(i => i.isKeychain()).map(i => ({
-      id: i.id,
-      def: i.index ?? 0,
-      name: i.name,
-      image: i.getImage(),
-      rarity: i.rarity ?? "default",
-      isCharm: true
-    }));
+  const [allStickers, setAllStickers] = useState<StickerOption[]>([]);
+  const [allCharms, setAllCharms] = useState<StickerOption[]>([]);
+  
+  useEffect(() => {
+    // Load initial stickers and charms list
+    fetch('/api/stickers?q=').then(res => res.json()).then(data => setAllStickers(data));
+    fetch('/api/charms?q=').then(res => res.json()).then(data => setAllCharms(data));
   }, []);
 
   const searchResults = useMemo(() => {
     if (activeSlot === null) return [];
     const source = activeSlot === 5 ? allCharms : allStickers;
-    if (!searchQuery.trim()) return source.slice(0, 50); // Show some defaults
+    if (!searchQuery.trim()) return source.slice(0, 50);
     
     try {
       const regex = new RegExp(searchQuery, "i");
       return source.filter(s => regex.test(s.name)).slice(0, 100);
     } catch {
-      // Fallback if regex is invalid
       const lower = searchQuery.toLowerCase();
       return source.filter(s => s.name.toLowerCase().includes(lower)).slice(0, 100);
     }
@@ -151,21 +136,8 @@ export default function SkinEditor3D({
   useEffect(() => setMounted(true), []);
 
   const content = (
-    <div className="inv4-editor3d">
-      {/* Navbar */}
-      <div className="inv4-editor3d-nav">
-        <h2>3D Skin Editor</h2>
-        <div className="inv4-editor3d-actions">
-          <button className="btn secondary" onClick={onClose}>
-            Abort
-          </button>
-          <button className="btn" onClick={() => onSave(stickers)}>
-            Update
-          </button>
-        </div>
-      </div>
-
-      <div className="inv4-editor3d-main">
+    <div className="inv4-editor3d" onClick={onClose}>
+      <div className="inv4-editor3d-window" onClick={e => e.stopPropagation()}>
         {/* Left Bar: Sticker/Charm Slots */}
         <div className="inv4-editor3d-sidebar">
           {[0, 1, 2, 3, 4].map((slot) => {
@@ -187,7 +159,7 @@ export default function SkinEditor3D({
           
           <div className="inv4-editor3d-divider"></div>
 
-          <div style={{ position: 'relative' }}>
+          <div style={{ position: 'relative', marginBottom: 'auto' }}>
             <button 
               className={`inv4-editor3d-slot ${activeSlot === 5 ? 'active' : ''}`}
               style={{ borderStyle: 'dashed' }}
@@ -199,8 +171,17 @@ export default function SkinEditor3D({
               <button className="inv4-editor3d-slot-remove" onClick={(e) => { e.stopPropagation(); handleRemoveItem(5); }}>×</button>
             )}
           </div>
+          
+          <div className="inv4-editor3d-actions" style={{ flexDirection: 'column', gap: '8px', padding: '0 8px', width: '100%' }}>
+            <button className="btn" style={{ width: '100%', justifyContent: 'center' }} onClick={() => onSave(stickers)}>
+              Save
+            </button>
+            <button className="btn btn-secondary" style={{ width: '100%', justifyContent: 'center' }} onClick={onClose}>
+              Abort
+            </button>
+          </div>
         </div>
-
+          
         {/* Sliding Sidebar for Sticker Selection */}
         <div 
           className="inv4-editor3d-drawer"
