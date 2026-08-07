@@ -100,7 +100,9 @@ export default function InventorySimulator() {
   const [openBoardType, setOpenBoardType] = useState<string | null>(null);
   const [side, setSide] = useState<Side>("t");
   const [weapon, setWeapon] = useState<WeaponEntry | null>(null); // set = skin chooser open
+  const [chooserTab, setChooserTab] = useState<"catalog" | "inventory">("catalog");
   const [skins, setSkins] = useState<Skin[]>([]);
+  const [overrideSide, setOverrideSide] = useState<"t" | "ct" | "both" | null>(null);
   const [skinsLoading, setSkinsLoading] = useState(false);
 
   // Skin chooser filters
@@ -115,6 +117,7 @@ export default function InventorySimulator() {
   const [statTrak, setStatTrak] = useState(false);
   const [nameTag, setNameTag] = useState("");
   const [stickers, setStickers] = useState<(PlacedSticker | null)[]>(defaultStickerSlots());
+  const [charm, setCharm] = useState<PlacedSticker | null>(null);
   const [editor3dOpen, setEditor3dOpen] = useState(false);
   const [contextMenu, setContextMenu] = useState<{ x: number; y: number; skin: Skin; weapon: WeaponEntry; side: "t" | "ct"; boardSlot?: BoardSlot } | null>(null);
 
@@ -416,17 +419,19 @@ export default function InventorySimulator() {
       writeUrl({ w: String(w.def), cat: w.category }, opts.push ?? true);
       const existing = slotItemForChooser(w.def, kindOfCategory(w.category), side);
       if (existing) {
-        setWear(existing.wear);
-        setSeed(existing.seed);
-        setStatTrak(existing.statTrak);
-        setNameTag(existing.nameTag);
+        setWear(existing.wear ?? 0.0);
+        setSeed(existing.seed ?? 0);
+        setStatTrak(existing.statTrak ?? false);
+        setNameTag(existing.nameTag ?? "");
         setStickers(existing.stickers?.length ? [...existing.stickers] : defaultStickerSlots());
+        setCharm(existing.charm || null);
       } else {
-        setWear(0.02);
-        setSeed(1);
+        setWear(0.0);
+        setSeed(0);
         setStatTrak(false);
         setNameTag("");
         setStickers(defaultStickerSlots());
+        setCharm(null);
       }
     },
     [side, slotItemForChooser, writeUrl]
@@ -434,6 +439,11 @@ export default function InventorySimulator() {
 
   const closeChooser = useCallback(() => {
     setWeapon(null);
+    setSkinSearch("");
+    setSkins([]);
+    setOverrideSide(null);
+    setChooserTab("catalog");
+    setCharm(null);
     writeUrl({ w: null }, true);
   }, [writeUrl]);
 
@@ -571,11 +581,23 @@ export default function InventorySimulator() {
           statTrak: supportsStatTrak ? statTrak : false,
           nameTag,
           stickers: supportsStickers ? stickers : defaultStickerSlots(),
+          charm: supportsStickers ? charm : null,
         };
+        
         let itemId: string;
-        if (existing) {
-          itemId = existing.id;
-          newItems = newItems.map((i) => (i.id === existing.id ? { ...i, ...payload } : i));
+        const identical = cur.items.find(i => 
+          i.weaponDef === payload.weaponDef &&
+          i.skinId === payload.skinId &&
+          i.wear === payload.wear &&
+          i.seed === payload.seed &&
+          i.statTrak === payload.statTrak &&
+          i.nameTag === payload.nameTag &&
+          JSON.stringify(i.stickers) === JSON.stringify(payload.stickers) &&
+          JSON.stringify(i.charm) === JSON.stringify(payload.charm)
+        );
+
+        if (identical) {
+          itemId = identical.id;
         } else {
           itemId = newId();
           newItems = [{ id: itemId, uid: nextUid, createdAt: Date.now(), ...payload }, ...newItems];
@@ -1211,6 +1233,13 @@ export default function InventorySimulator() {
                 <strong>{weapon.name}</strong>
                 <span className="muted">{side.toUpperCase()} {t("auto.inventorysimulator.slot")}</span>
                 <div className="inv4-chooser-head-right">
+                  <button className={`chip ${chooserTab === 'catalog' ? 'active' : ''}`} onClick={() => setChooserTab('catalog')}>
+                    Catalog
+                  </button>
+                  <button className={`chip ${chooserTab === 'inventory' ? 'active' : ''}`} onClick={() => setChooserTab('inventory')}>
+                    My Crafts
+                  </button>
+
                   <button className="btn btn-secondary" style={{ display: 'flex', alignItems: 'center', gap: '6px' }} onClick={surpriseMe} disabled={skinsLoading} title={t("auto.inventorysimulator.roll_a_random_skin_from_the_cu")}>
                     <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
                       <path d="M16 3h5v5M4 20L21 3M21 16v5h-5M15 15l6 6M4 4l5 5"/>
@@ -1231,87 +1260,136 @@ export default function InventorySimulator() {
                 </div>
               </div>
 
-              <div className="inv4-filters">
-                <label className="sr-only" htmlFor="inv-skin-search">{t("auto.inventorysimulator.search_skins")}</label>
-                <input id="inv-skin-search" className="input" placeholder={t("auto.inventorysimulator.search_skins")} value={skinSearch} onChange={(e) => setSkinSearch(e.target.value)} />
-                <label className="sr-only" htmlFor="inv-skin-sort">{t("auto.inventorysimulator.sort_skins")}</label>
-                <select id="inv-skin-sort" className="input" value={skinSort} onChange={(e) => setSkinSort(e.target.value as SkinSort)}>
-                  <option value="quality">{t("auto.inventorysimulator.quality")}</option>
-                  <option value="name">{t("auto.inventorysimulator.name_a_z")}</option>
-                  <option value="newest">{t("auto.inventorysimulator.newest")}</option>
-                  <option value="fav">{t("auto.inventorysimulator.favorites_first")}</option>
-                </select>
-                <label className="sr-only" htmlFor="inv-skin-collection">{t("auto.inventorysimulator.collection")}</label>
-                <select id="inv-skin-collection" className="input" value={collectionFilter} onChange={(e) => setCollectionFilter(e.target.value)}>
-                  <option value="">{t("auto.inventorysimulator.all_collections")}</option>
-                  {collections.map((c) => (
-                    <option key={c} value={c}>{c}</option>
-                  ))}
-                </select>
-                <button className={`chip ${favOnly ? "active" : ""}`} onClick={() => setFavOnly((v) => !v)}>{t("auto.inventorysimulator._favorites")}</button>
-              </div>
+              {chooserTab === 'catalog' ? (
+                <>
+                  <div className="inv4-filters">
+                    <label className="sr-only" htmlFor="inv-skin-search">{t("auto.inventorysimulator.search_skins")}</label>
+                    <input id="inv-skin-search" className="input" placeholder={t("auto.inventorysimulator.search_skins")} value={skinSearch} onChange={(e) => setSkinSearch(e.target.value)} />
+                    <label className="sr-only" htmlFor="inv-skin-sort">{t("auto.inventorysimulator.sort_skins")}</label>
+                    <select id="inv-skin-sort" className="input" value={skinSort} onChange={(e) => setSkinSort(e.target.value as SkinSort)}>
+                      <option value="quality">{t("auto.inventorysimulator.quality")}</option>
+                      <option value="name">{t("auto.inventorysimulator.name_a_z")}</option>
+                      <option value="newest">{t("auto.inventorysimulator.newest")}</option>
+                      <option value="fav">{t("auto.inventorysimulator.favorites_first")}</option>
+                    </select>
+                    <label className="sr-only" htmlFor="inv-skin-collection">{t("auto.inventorysimulator.collection")}</label>
+                    <select id="inv-skin-collection" className="input" value={collectionFilter} onChange={(e) => setCollectionFilter(e.target.value)}>
+                      <option value="">{t("auto.inventorysimulator.all_collections")}</option>
+                      {collections.map((c) => (
+                        <option key={c} value={c}>{c}</option>
+                      ))}
+                    </select>
+                    <button className={`chip ${favOnly ? "active" : ""}`} onClick={() => setFavOnly((v) => !v)}>{t("auto.inventorysimulator._favorites")}</button>
+                  </div>
 
-              <div className="inv4-config">
-                <label>
-                  {t("auto.inventorysimulator.wear")} <strong>{wear.toFixed(3)}</strong> <em>{wearLabel(wear)}</em>
-                  <input type="range" min={0} max={1} step={0.001} value={wear} onChange={(e) => setWear(Number(e.target.value))} />
-                </label>
-                <label>
-                  {t("auto.inventorysimulator.seed")}
-                                                            <input className="input" type="number" min={0} max={1000} value={seed} onChange={(e) => setSeed(Math.max(0, Math.min(1000, Number(e.target.value) || 0)))} />
-                </label>
-                <label>
-                  {t("auto.inventorysimulator.name_tag")}
-                                                            <input className="input" maxLength={20} value={nameTag} placeholder={t("auto.inventorysimulator.none")} onChange={(e) => setNameTag(e.target.value)} />
-                </label>
-                {supportsStatTrak && (
-                  <label className="inv4-cfg-toggle">
-                    <input type="checkbox" checked={statTrak} onChange={(e) => setStatTrak(e.target.checked)} /> {t("auto.inventorysimulator.stattrak")}
-                                                                </label>
-                )}
-                {supportsStickers && (
-                  <button className="btn btn-secondary" onClick={() => setEditor3dOpen(true)}>
-                    Edit in 3D
-                  </button>
-                )}
-              </div>
+                  <div className="inv4-config">
+                    <label>
+                      {t("auto.inventorysimulator.wear")} <strong>{wear.toFixed(3)}</strong> <em>{wearLabel(wear)}</em>
+                      <input type="range" min={0} max={1} step={0.001} value={wear} onChange={(e) => setWear(Number(e.target.value))} />
+                    </label>
+                    <label>
+                      {t("auto.inventorysimulator.seed")}
+                      <input className="input" type="number" min={0} max={1000} value={seed} onChange={(e) => setSeed(Math.max(0, Math.min(1000, Number(e.target.value) || 0)))} />
+                    </label>
+                    <label>
+                      {t("auto.inventorysimulator.name_tag")}
+                      <input className="input" maxLength={20} value={nameTag} placeholder={t("auto.inventorysimulator.none")} onChange={(e) => setNameTag(e.target.value)} />
+                    </label>
+                    {supportsStatTrak && (
+                      <label className="inv4-cfg-toggle">
+                        <input type="checkbox" checked={statTrak} onChange={(e) => setStatTrak(e.target.checked)} /> {t("auto.inventorysimulator.stattrak")}
+                      </label>
+                    )}
+                    {supportsStickers && (
+                      <button className="btn btn-secondary" onClick={() => setEditor3dOpen(true)}>
+                        Edit in 3D
+                      </button>
+                    )}
+                  </div>
 
-
-
-              {skinsLoading ? (
-                <p className="empty-hint">{t("auto.inventorysimulator.loading_skins")}</p>
+                  {skinsLoading ? (
+                    <p className="empty-hint">{t("auto.inventorysimulator.loading_skins")}</p>
+                  ) : (
+                    <div className="inv4-skins">
+                      {shownSkins.map((s) => {
+                        const fav = favorites.has(skinKey(s.def, s.paint));
+                        return (
+                          <div 
+                            key={s.id} 
+                            className={`inv4-skin ${s.id === currentSkinId ? "current" : ""}`} 
+                            style={{ "--rarity": s.rarity } as React.CSSProperties}
+                            onContextMenu={(e) => {
+                              e.preventDefault();
+                              setContextMenu({ x: e.clientX, y: e.clientY, skin: s, weapon: weapon!, side });
+                            }}
+                          >
+                            <button className="inv4-skin-pick" onClick={() => equipSkin(s)}>
+                              {/* eslint-disable-next-line @next/next/no-img-element */}
+                              <img src={s.image} alt={s.name} loading="lazy" />
+                              <span className="inv4-skin-name">{skinLabel(s.name)}</span>
+                              <span className="inv4-skin-rarity">{rarityName(s.rarity)}</span>
+                              <span className="inv4-skin-equip">{t("auto.inventorysimulator.equip")}</span>
+                            </button>
+                            <button
+                              className={`inv4-heart ${fav ? "on" : ""}`}
+                              title={fav ? "Remove from favorites" : "Add to favorites"}
+                              aria-label={fav ? `Unfavorite ${skinLabel(s.name)}` : `Favorite ${skinLabel(s.name)}`}
+                              onClick={() => toggleFavorite(s.def, s.paint)}
+                            >
+                              {fav ? "♥" : "♡"}
+                            </button>
+                          </div>
+                        );
+                      })}
+                    </div>
+                  )}
+                </>
               ) : (
                 <div className="inv4-skins">
-                  {shownSkins.map((s) => {
-                    const fav = favorites.has(skinKey(s.def, s.paint));
-                    return (
-                      <div 
-                        key={s.id} 
-                        className={`inv4-skin ${s.id === currentSkinId ? "current" : ""}`} 
-                        style={{ "--rarity": s.rarity } as React.CSSProperties}
-                        onContextMenu={(e) => {
-                          e.preventDefault();
-                          setContextMenu({ x: e.clientX, y: e.clientY, skin: s, weapon: weapon!, side });
-                        }}
-                      >
-                        <button className="inv4-skin-pick" onClick={() => equipSkin(s)}>
-                          {/* eslint-disable-next-line @next/next/no-img-element */}
-                          <img src={s.image} alt={s.name} loading="lazy" />
-                          <span className="inv4-skin-name">{skinLabel(s.name)}</span>
-                          <span className="inv4-skin-rarity">{rarityName(s.rarity)}</span>
-                          <span className="inv4-skin-equip">{t("auto.inventorysimulator.equip")}</span>
-                        </button>
-                        <button
-                          className={`inv4-heart ${fav ? "on" : ""}`}
-                          title={fav ? "Remove from favorites" : "Add to favorites"}
-                          aria-label={fav ? `Unfavorite ${skinLabel(s.name)}` : `Favorite ${skinLabel(s.name)}`}
-                          onClick={() => toggleFavorite(s.def, s.paint)}
-                        >
-                          {fav ? "♥" : "♡"}
-                        </button>
-                      </div>
-                    );
-                  })}
+                  {store.items.filter(i => i.weaponDef === weapon.def).map(item => (
+                    <div 
+                      key={item.id}
+                      className={`inv4-skin ${store.loadouts.find(l => l.id === store.activeLoadoutId)?.equippedCT?.[weapon.def] === item.id || store.loadouts.find(l => l.id === store.activeLoadoutId)?.equippedT?.[weapon.def] === item.id ? "current" : ""}`}
+                      style={{ "--rarity": item.rarity } as React.CSSProperties}
+                    >
+                      <button className="inv4-skin-pick" onClick={() => {
+                        // Equip this specific custom item
+                        setStore(cur => {
+                          const loadout = cur.loadouts.find(l => l.id === cur.activeLoadoutId);
+                          if (!loadout) return cur;
+                          let newLoadout = { ...loadout, equippedCT: { ...loadout.equippedCT }, equippedT: { ...loadout.equippedT } };
+                          const kind = kindOfCategory(weapon.category);
+                          const targetSides = (overrideSide === "both" ? ["t" as const, "ct" as const] : [overrideSide || side]).filter(s => weapon.team === "both" || weapon.team === s);
+                          
+                          for (const s of targetSides) {
+                            if (kind === "knife") { if (s === "t") newLoadout.knifeT = item.id; else newLoadout.knifeCT = item.id; }
+                            else if (kind === "gloves") { if (s === "t") newLoadout.glovesT = item.id; else newLoadout.glovesCT = item.id; }
+                            else if (kind === "agent") { if (s === "t") newLoadout.agentT = item.id; else newLoadout.agentCT = item.id; }
+                            else { if (s === "t") newLoadout.equippedT[weapon.def] = item.id; else newLoadout.equippedCT[weapon.def] = item.id; }
+                          }
+                          return { ...cur, loadouts: cur.loadouts.map(l => l.id === newLoadout.id ? newLoadout : l) };
+                        });
+                        closeChooser();
+                      }}>
+                        {/* eslint-disable-next-line @next/next/no-img-element */}
+                        <img src={item.image} alt={item.skinName} loading="lazy" />
+                        <span className="inv4-skin-name">{skinLabel(item.skinName)}</span>
+                        <span className="inv4-skin-rarity">{item.nameTag ? `"${item.nameTag}"` : rarityName(item.rarity || 'default')}</span>
+                        <span className="inv4-skin-equip">{t("auto.inventorysimulator.equip")}</span>
+                      </button>
+                      <button className="btn btn-secondary" onClick={() => {
+                        setStore(cur => ({
+                          ...cur,
+                          items: cur.items.filter(i => i.id !== item.id)
+                        }));
+                      }}>
+                        🗑️
+                      </button>
+                    </div>
+                  ))}
+                  {store.items.filter(i => i.weaponDef === weapon.def).length === 0 && (
+                    <p className="empty-hint">You have no crafted {weapon.name} skins in your inventory.</p>
+                  )}
                 </div>
               )}
             </div>
@@ -1369,8 +1447,10 @@ export default function InventorySimulator() {
           statTrak={statTrak}
           nameTag={nameTag}
           initialStickers={stickers}
-          onSave={(newStickers) => {
+          initialCharm={charm}
+          onSave={(newStickers, newCharm) => {
             setStickers(newStickers);
+            setCharm(newCharm);
             setEditor3dOpen(false);
           }}
           onClose={() => setEditor3dOpen(false)}

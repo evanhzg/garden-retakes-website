@@ -128,5 +128,6 @@ export function buildViewerSrc(
     url.searchParams.set("icon", "");
   }
   url.searchParams.set("transparent", "true");
+  url.searchParams.set("bg", "transparent");
   return url.toString();
 }

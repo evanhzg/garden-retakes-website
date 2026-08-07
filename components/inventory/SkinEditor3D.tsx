@@ -16,7 +16,8 @@ type SkinEditor3DProps = {
   statTrak: boolean;
   nameTag: string;
   initialStickers: (PlacedSticker | null)[];
-  onSave: (stickers: (PlacedSticker | null)[]) => void;
+  initialCharm: PlacedSticker | null;
+  onSave: (stickers: (PlacedSticker | null)[], charm: PlacedSticker | null) => void;
   onClose: () => void;
 };
 
@@ -29,13 +30,14 @@ export default function SkinEditor3D({
   statTrak,
   nameTag,
   initialStickers,
+  initialCharm,
   onSave,
   onClose
 }: SkinEditor3DProps) {
   const { t } = useI18n();
   const [api, setApi] = useState<ViewerApi | undefined>();
   const [stickers, setStickers] = useState<(PlacedSticker | null)[]>([...initialStickers]);
-  const [charm, setCharm] = useState<PlacedSticker | null>(null); 
+  const [charm, setCharm] = useState<PlacedSticker | null>(initialCharm); 
   
   const [activeSlot, setActiveSlot] = useState<number | null>(null);
   const [searchQuery, setSearchQuery] = useState("");
@@ -246,9 +248,53 @@ export default function SkinEditor3D({
               <button className="inv4-editor3d-slot-remove" onClick={(e) => { e.stopPropagation(); handleRemoveItem(5); }}>×</button>
             )}
           </div>
-          
-          <div className="inv4-editor3d-actions" style={{ flexDirection: 'column', gap: '8px', padding: '0 8px', width: '100%' }}>
-            <button className="btn" style={{ width: '100%', justifyContent: 'center', background: 'var(--color-accent)', borderColor: 'var(--color-accent)' }} onClick={() => onSave(stickers)}>
+          <div className="inv4-editor3d-actions" style={{ flexDirection: 'column', gap: '8px', padding: '0 8px', width: '100%', overflowY: 'auto' }}>
+            {activeSlot !== null && activeSlot !== 5 && stickers[activeSlot] && (
+              <div style={{ display: 'flex', flexDirection: 'column', gap: '8px', padding: '8px 0', borderTop: '1px solid var(--color-divider)' }}>
+                <label style={{ fontSize: '12px' }}>
+                  Wear: {(stickers[activeSlot]!.wear ?? 0).toFixed(2)}
+                  <input type="range" min="0" max="1" step="0.01" style={{ width: '100%' }} value={stickers[activeSlot]!.wear ?? 0} onChange={(e) => {
+                    const val = parseFloat(e.target.value);
+                    setStickers(cur => { const n = [...cur]; n[activeSlot] = { ...n[activeSlot]!, wear: val }; return n; });
+                    syncToApi.current = true;
+                  }} />
+                </label>
+                <label style={{ fontSize: '12px' }}>
+                  X Offset: {(stickers[activeSlot]!.x ?? 0).toFixed(2)}
+                  <input type="range" min="-1" max="1" step="0.01" style={{ width: '100%' }} value={stickers[activeSlot]!.x ?? 0} onChange={(e) => {
+                    const val = parseFloat(e.target.value);
+                    setStickers(cur => { const n = [...cur]; n[activeSlot] = { ...n[activeSlot]!, x: val }; return n; });
+                    syncToApi.current = true;
+                  }} />
+                </label>
+                <label style={{ fontSize: '12px' }}>
+                  Y Offset: {(stickers[activeSlot]!.y ?? 0).toFixed(2)}
+                  <input type="range" min="-1" max="1" step="0.01" style={{ width: '100%' }} value={stickers[activeSlot]!.y ?? 0} onChange={(e) => {
+                    const val = parseFloat(e.target.value);
+                    setStickers(cur => { const n = [...cur]; n[activeSlot] = { ...n[activeSlot]!, y: val }; return n; });
+                    syncToApi.current = true;
+                  }} />
+                </label>
+                <label style={{ fontSize: '12px' }}>
+                  Rotation: {(stickers[activeSlot]!.rotation ?? 0).toFixed(0)}°
+                  <input type="range" min="-180" max="180" step="1" style={{ width: '100%' }} value={stickers[activeSlot]!.rotation ?? 0} onChange={(e) => {
+                    const val = parseFloat(e.target.value);
+                    setStickers(cur => { const n = [...cur]; n[activeSlot] = { ...n[activeSlot]!, rotation: val }; return n; });
+                    syncToApi.current = true;
+                  }} />
+                </label>
+              </div>
+            )}
+            
+            {activeSlot === 5 && charm && (
+              <div style={{ display: 'flex', flexDirection: 'column', gap: '8px', padding: '8px 0', borderTop: '1px solid var(--color-divider)' }}>
+                 <button className="btn btn-secondary" style={{ width: '100%', fontSize: '12px', padding: '4px' }} onClick={() => {
+                   api?.rerollKeychainPosition({ index: 0 });
+                 }}>Random Position</button>
+              </div>
+            )}
+
+            <button className="btn" style={{ width: '100%', justifyContent: 'center', background: 'var(--color-accent)', borderColor: 'var(--color-accent)' }} onClick={() => onSave(stickers, charm)}>
               Save
             </button>
             <button className="btn btn-secondary" style={{ width: '100%', justifyContent: 'center' }} onClick={onClose}>

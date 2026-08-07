@@ -14,7 +14,7 @@ export type Team = "ct" | "t" | "both";
 export type ItemKind = "weapon" | "knife" | "gloves" | "agent" | "patch" | "charm";
 export type Side = "t" | "ct";
 
-export const STICKER_SLOTS = 4;
+export const STICKER_SLOTS = 5;
 
 export type PlacedSticker = {
   /** Sticker kit index (plugin sticker `def`). */
@@ -58,6 +58,7 @@ export type InventoryItem = {
   statTrak: boolean;
   nameTag: string;
   stickers: (PlacedSticker | null)[];
+  charm?: PlacedSticker | null;
   createdAt: number;
 };
 
@@ -329,7 +330,7 @@ type PluginWeapon = {
   wear: number;
   uid: number;
   stickers: PluginSticker[];
-  keychains: [];
+  keychains: any[];
 };
 
 export type EquippedV4 = {
@@ -357,6 +358,19 @@ function toPluginWeapon(item: InventoryItem): PluginWeapon {
     if (s.y !== undefined) sticker.y = s.y;
     stickers.push(sticker);
   });
+  const keychains: any[] = [];
+  if (item.charm) {
+    const c: any = { 
+      def: item.charm.def, 
+      slot: item.charm.slot ?? 0, 
+      seed: Math.floor((item.charm.wear || 0) * 100000) 
+    };
+    if (item.charm.x !== undefined) c.x = item.charm.x;
+    if (item.charm.y !== undefined) c.y = item.charm.y;
+    if (item.charm.rotation !== undefined) c.z = item.charm.rotation; // Fallback mapping rotation to Z
+    keychains.push(c);
+  }
+
   return {
     def: item.weaponDef,
     hash: econHash(item),
@@ -367,7 +381,7 @@ function toPluginWeapon(item: InventoryItem): PluginWeapon {
     wear: item.wear,
     uid: item.uid,
     stickers,
-    keychains: [],
+    keychains,
   };
 }
 
