@@ -518,7 +518,7 @@ export default function NavBar({
         </div>
       </div>
     </header>
-    <GlobalMatchmaking />
+    <GlobalMatchmaking avatarPlayers={avatarPlayers} />
     </>
   );
 }

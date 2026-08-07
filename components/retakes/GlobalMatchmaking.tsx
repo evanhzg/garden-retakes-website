@@ -4,13 +4,15 @@ import React, { useEffect, useState } from "react";
 import { useSocket } from "@/components/games/SocketProvider";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import { motion } from "framer-motion";
+import { motion, AnimatePresence } from "framer-motion";
+import AvatarImage from "@/components/AvatarImage";
 
-export default function GlobalMatchmaking() {
-  const { socket, isAuthed } = useSocket();
+export default function GlobalMatchmaking({ avatarPlayers = [] }: { avatarPlayers?: any[] }) {
+  const { socket, isAuthed, steamId } = useSocket();
   const [state, setState] = useState<any>(null);
   const pathname = usePathname();
   const [clicked, setClicked] = useState(false);
+  const [now, setNow] = useState(Date.now());
 
   useEffect(() => {
     if (!socket || !isAuthed) return;
@@ -20,11 +22,27 @@ export default function GlobalMatchmaking() {
     return () => { socket.off("rq:state", onState); };
   }, [socket, isAuthed]);
 
+  // Tick for timer
+  useEffect(() => {
+    const int = setInterval(() => setNow(Date.now()), 1000);
+    return () => clearInterval(int);
+  }, []);
+
+  // Lock body scroll when match is found
+  useEffect(() => {
+    const isFound = state?.match && state.match.phase === "found";
+    if (isFound) {
+      document.body.style.overflow = "hidden";
+    } else {
+      document.body.style.overflow = "";
+    }
+    return () => { document.body.style.overflow = ""; };
+  }, [state?.match?.phase]);
+
   if (!state || !state.party) return null;
   const isQueueing = state.party.queuedAt !== null;
   const isFound = state.match && state.match.phase === "found";
-  const isReady = state.match && state.match.phase === "ready";
-
+  
   const handlePlay = () => {
     if (!socket) return;
     setClicked(true);
@@ -32,150 +50,179 @@ export default function GlobalMatchmaking() {
     if (!isQueueing) socket.emit("rq:queue:join", { mode: state.party.mode });
   };
   const handleStop = () => { if (socket) socket.emit("rq:queue:leave"); };
-  const toggleMode = (mode: string) => { if (socket && !isQueueing) socket.emit("rq:party:mode", { mode }); };
+
+  const elapsed = isQueueing ? Math.floor((now - state.party.queuedAt) / 1000) : 0;
+  const formattedTime = `${Math.floor(elapsed / 60)}:${String(elapsed % 60).padStart(2, "0")}`;
+
+  const renderAcceptModal = () => {
+    if (!isFound) return null;
+    const acceptData = state.match.accept;
+    const timeLeft = acceptData ? Math.max(0, Math.ceil((acceptData.deadline - now) / 1000)) : 0;
+    
+    // Check if I have accepted
+    let iAccepted = false;
+    for (const t of state.match.teams) {
+      for (const p of t.players) {
+        if (p.steamId === steamId && p.accepted) iAccepted = true;
+      }
+    }
+
+    return (
+      <div style={{
+        position: "fixed", inset: 0, zIndex: 999999,
+        display: "flex", alignItems: "center", justifyContent: "center",
+        background: "rgba(0,0,0,0.85)", backdropFilter: "blur(12px)"
+      }}>
+        <motion.div 
+          initial={{ scale: 0.9, opacity: 0 }}
+          animate={{ scale: 1, opacity: 1 }}
+          style={{
+            background: "var(--color-background-elevated, #111)",
+            padding: "48px",
+            borderRadius: "16px",
+            display: "flex", flexDirection: "column", alignItems: "center", gap: "32px",
+            border: "1px solid var(--color-accent)",
+            boxShadow: "0 0 50px rgba(168,85,247,0.3)"
+          }}
+        >
+          <h1 style={{ margin: 0, fontSize: "36px", color: "var(--color-accent)", textShadow: "0 0 20px var(--color-accent)" }}>MATCH FOUND</h1>
+          <div style={{ fontSize: "64px", fontWeight: "bold" }}>{timeLeft}s</div>
+          <div style={{ fontSize: "18px", color: "var(--color-text-muted)" }}>
+            {acceptData?.done || 0} / {acceptData?.total || 0} Accepted
+          </div>
+          <div style={{ display: "flex", gap: "16px", marginTop: "16px" }}>
+            <button 
+              disabled={iAccepted}
+              onClick={() => socket?.emit("rq:match:accept")}
+              style={{
+                padding: "16px 48px", background: iAccepted ? "rgba(255,255,255,0.1)" : "var(--color-accent)",
+                color: "#fff", fontSize: "20px", fontWeight: "bold", border: "none", borderRadius: "8px",
+                cursor: iAccepted ? "not-allowed" : "pointer"
+              }}
+            >
+              {iAccepted ? "ACCEPTED" : "ACCEPT"}
+            </button>
+            {!iAccepted && (
+              <button 
+                onClick={() => socket?.emit("rq:match:decline")}
+                style={{
+                  padding: "16px 32px", background: "transparent", color: "var(--color-text-muted)",
+                  border: "2px solid var(--color-divider)", fontSize: "20px", fontWeight: "bold", borderRadius: "8px",
+                  cursor: "pointer"
+                }}
+              >
+                DECLINE
+              </button>
+            )}
+          </div>
+        </motion.div>
+      </div>
+    );
+  };
 
   return (
-    <div style={{
-      backgroundColor: "var(--color-background-accent, rgba(168,85,247,0.05))",
-      borderBottom: "1px solid var(--color-accent, #a855f7)",
-      padding: "12px var(--page-pad)",
-      display: "flex",
-      alignItems: "center",
-      justifyContent: "space-between",
-      flexWrap: "wrap",
-      gap: "16px"
-    }}>
-      <div style={{ display: "flex", alignItems: "center", gap: "16px" }}>
-        {isQueueing && (
-          <div className="thinking-orb" style={{
-            width: "36px", height: "36px", borderRadius: "50%",
-            background: "radial-gradient(circle at 30% 30%, var(--color-accent), transparent), repeating-linear-gradient(0deg, transparent, transparent 2px, rgba(255,255,255,0.1) 2px, rgba(255,255,255,0.1) 4px), repeating-linear-gradient(90deg, transparent, transparent 2px, rgba(255,255,255,0.1) 2px, rgba(255,255,255,0.1) 4px)",
-            animation: "pulse-orb 2s infinite ease-in-out, spin 10s linear infinite",
-            boxShadow: "0 0 15px var(--color-accent), inset 0 0 10px rgba(0,0,0,0.5)",
-            border: "1px solid rgba(255,255,255,0.2)"
-          }} />
-        )}
-        <div style={{ display: "flex", flexDirection: "column" }}>
-          <span style={{ fontWeight: 600, fontSize: "14px" }}>
-            {isReady ? "Server Ready" : isFound ? "Match Found!" : isQueueing ? "Searching for a game..." : "Ready to play"}
-          </span>
-          {isQueueing && (
-            <span style={{ fontSize: "12px", color: "var(--color-text-muted)" }}>
-              {Math.floor((Date.now() - state.party.queuedAt) / 1000)}s elapsed
+    <>
+      <div style={{
+        backgroundColor: "var(--color-accent)",
+        color: "var(--color-accent-foreground, #fff)",
+        padding: "12px var(--page-pad)",
+        display: "flex",
+        alignItems: "center",
+        justifyContent: "space-between",
+        height: "64px"
+      }}>
+        {/* Left: Avatars & Team Name */}
+        <div style={{ display: "flex", alignItems: "center", gap: "12px", width: "33%" }}>
+          <div style={{ display: "flex", marginLeft: "8px" }}>
+            {state.party.members.map((m: any, i: number) => {
+              const p = avatarPlayers.find((ap) => ap.steamId === m.steamId);
+              return (
+                <div key={m.steamId} style={{ 
+                  width: "36px", height: "36px", borderRadius: "50%", 
+                  marginLeft: i > 0 ? "-12px" : "0",
+                  border: "2px solid var(--color-accent)",
+                  background: "rgba(0,0,0,0.5)", overflow: "hidden",
+                  display: "flex", alignItems: "center", justifyContent: "center"
+                }}>
+                  {p?.avatarSrc ? (
+                    <img src={p.avatarSrc} alt={m.name || "Player"} style={{ width: "100%", height: "100%", objectFit: "cover" }} />
+                  ) : (
+                    <span style={{ fontSize: "14px", fontWeight: "bold" }}>{(m.name || "?").charAt(0).toUpperCase()}</span>
+                  )}
+                </div>
+              );
+            })}
+          </div>
+          {state.party.name && (
+            <span style={{ fontWeight: "bold", fontSize: "16px", textShadow: "0 1px 2px rgba(0,0,0,0.3)" }}>
+              {state.party.name}
             </span>
           )}
         </div>
-      </div>
 
-      <div style={{ display: "flex", alignItems: "center", gap: "24px" }}>
-        <div style={{ display: "flex", flexDirection: "column", alignItems: "center", gap: "6px" }}>
-          {!isQueueing && !state.match ? (
+        {/* Center: Play/Timer Button */}
+        <div style={{ display: "flex", justifyContent: "center", width: "33%" }}>
+          {!isQueueing ? (
             <div style={{ position: "relative" }}>
               <button 
                 onClick={handlePlay}
                 style={{
-                  background: "var(--color-accent)",
-                  color: "#fff",
+                  background: "var(--color-accent-foreground, #fff)",
+                  color: "var(--color-accent)",
                   border: "none",
-                  padding: "8px 32px",
-                  borderRadius: "4px",
+                  padding: "8px 48px",
+                  borderRadius: "24px",
                   fontWeight: "bold",
+                  fontSize: "16px",
                   cursor: "pointer",
                   position: "relative",
                   zIndex: 2,
                   transition: "transform 0.1s ease",
-                  transform: clicked ? "scale(0.95)" : "scale(1)"
+                  transform: clicked ? "scale(0.95)" : "scale(1)",
+                  boxShadow: "0 4px 12px rgba(0,0,0,0.2)"
                 }}>
                 PLAY
               </button>
-              {clicked && (
-                <motion.div
-                  initial={{ opacity: 0.8, scale: 1, boxShadow: "0 0 0px var(--color-accent)" }}
-                  animate={{ opacity: 0, scale: 1.6, boxShadow: "0 0 40px var(--color-accent)" }}
-                  transition={{ duration: 0.5, ease: "easeOut" }}
-                  style={{
-                    position: "absolute",
-                    inset: 0,
-                    background: "var(--color-accent)",
-                    borderRadius: "4px",
-                    zIndex: 1,
-                    pointerEvents: "none"
-                  }}
-                />
-              )}
             </div>
           ) : (
             <button 
               onClick={handleStop}
               style={{
-                background: "transparent",
-                color: "var(--color-text)",
-                border: "1px solid var(--color-divider)",
-                padding: "8px 24px",
-                borderRadius: "4px",
+                background: "rgba(0,0,0,0.2)",
+                color: "#fff",
+                border: "1px solid rgba(255,255,255,0.3)",
+                padding: "8px 32px",
+                borderRadius: "24px",
                 fontWeight: "bold",
-                cursor: "pointer"
+                fontSize: "16px",
+                cursor: "pointer",
+                display: "flex", alignItems: "center", gap: "8px"
               }}>
-              STOP
+              <span style={{ width: "8px", height: "8px", borderRadius: "50%", background: "#ef4444", animation: "pulse 1.5s infinite" }} />
+              SEARCHING {formattedTime}
             </button>
-          )}
-
-          {!isQueueing && !state.match && (
-            <div style={{ display: "flex", background: "rgba(0,0,0,0.2)", borderRadius: "20px", padding: "2px", width: "100%", justifyContent: "space-between" }}>
-              <button 
-                onClick={() => toggleMode("2v2")}
-                style={{
-                  flex: 1,
-                  padding: "2px 8px",
-                  borderRadius: "16px",
-                  background: state.party.mode === "2v2" ? "var(--color-accent)" : "transparent",
-                  color: state.party.mode === "2v2" ? "#fff" : "var(--color-text-muted)",
-                  border: "none", cursor: "pointer", fontSize: "10px", fontWeight: "bold"
-                }}>
-                2V2
-              </button>
-              <button 
-                onClick={() => toggleMode("3v3")}
-                style={{
-                  flex: 1,
-                  padding: "2px 8px",
-                  borderRadius: "16px",
-                  background: state.party.mode === "3v3" ? "var(--color-accent)" : "transparent",
-                  color: state.party.mode === "3v3" ? "#fff" : "var(--color-text-muted)",
-                  border: "none", cursor: "pointer", fontSize: "10px", fontWeight: "bold"
-                }}>
-                3V3
-              </button>
-            </div>
           )}
         </div>
 
-        {pathname !== "/retakes/lobby" && (
-          <Link href="/retakes/lobby" style={{
-            background: "rgba(255,255,255,0.1)",
-            color: "#fff",
-            textDecoration: "none",
-            padding: "8px 16px",
-            borderRadius: "4px",
-            fontSize: "13px",
-            display: "flex",
-            alignItems: "center"
-          }}>
-            Go to Lobby
-          </Link>
-        )}
+        {/* Right: Lobby Link */}
+        <div style={{ display: "flex", justifyContent: "flex-end", width: "33%" }}>
+          {pathname !== "/retakes/lobby" && (
+            <Link href="/retakes/lobby" style={{
+              color: "#fff",
+              textDecoration: "none",
+              fontWeight: "bold",
+              fontSize: "14px",
+              padding: "8px 16px",
+              borderRadius: "4px",
+              background: "rgba(0,0,0,0.15)",
+              transition: "background 0.2s"
+            }}>
+              LOBBY &rarr;
+            </Link>
+          )}
+        </div>
       </div>
-      <style dangerouslySetInnerHTML={{__html: `
-        @keyframes pulse-orb {
-          0% { transform: scale(0.95); opacity: 0.8; }
-          50% { transform: scale(1.05); opacity: 1; }
-          100% { transform: scale(0.95); opacity: 0.8; }
-        }
-        @keyframes spin {
-          0% { background-position: 0 0; }
-          100% { background-position: 36px 36px; }
-        }
-      `}} />
-    </div>
+      {renderAcceptModal()}
+    </>
   );
 }

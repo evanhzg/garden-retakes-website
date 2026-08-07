@@ -23,9 +23,10 @@ export type MedalDef = {
 
 /** Placement medals, awarded from the final ladder rather than voted on. */
 export const PLACEMENT_MEDALS: MedalDef[] = [
-  { slug: "season-first", name: "Champion", description: "Finished a season first on the ladder.", icon: "🥇", colour: "#e8b53a", kind: "season", sort: 1 },
-  { slug: "season-second", name: "Runner-up", description: "Finished a season second on the ladder.", icon: "🥈", colour: "#b9c0c7", kind: "season", sort: 2 },
-  { slug: "season-third", name: "Third place", description: "Finished a season third on the ladder.", icon: "🥉", colour: "#c98b4b", kind: "season", sort: 3 },
+  { slug: "season-first", name: "Champion", description: "Finished a season first on the ladder.", icon: "/medals/season-1-top-1.jpg", colour: "#e8b53a", kind: "season", sort: 1 },
+  { slug: "season-second", name: "Runner-up", description: "Finished a season second on the ladder.", icon: "/medals/season-1-top-2.jpg", colour: "#b9c0c7", kind: "season", sort: 2 },
+  { slug: "season-third", name: "Third place", description: "Finished a season third on the ladder.", icon: "/medals/season-1-top-3.jpg", colour: "#c98b4b", kind: "season", sort: 3 },
+  { slug: "pre-season-1", name: "Pre-season 1 Participant", description: "Played in Pre-season 1.", icon: "/medals/pre-season-1.jpg", colour: "#5fc9c9", kind: "season", sort: 4 },
 ];
 
 /**

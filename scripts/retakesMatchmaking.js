@@ -115,10 +115,12 @@ function attachRetakesMatchmaking(io, { connectedUsers, loadRatings, prisma }) {
   };
 
   async function makeParty(steamId, name, lobbyId) {
+    const ANIMAL_NAMES = ["Lions", "Tigers", "Bears", "Wolves", "Eagles", "Sharks", "Panthers", "Hawks", "Cobras", "Dragons"];
     const id = lobbyId || uid("p");
     const party = {
       id,
       leader: String(steamId),
+      name: ANIMAL_NAMES[Math.floor(Math.random() * ANIMAL_NAMES.length)], // Custom team name
       members: [{ steamId: String(steamId), name: name ?? null, ready: true, elo: STARTING_ELO, matches: 0 }],
       mode: "2v2",
       queuedAt: null,
@@ -153,6 +155,7 @@ function attachRetakesMatchmaking(io, { connectedUsers, loadRatings, prisma }) {
           p = {
             id: dbLobby.Id,
             leader: String(steamId),
+            name: ["Lions", "Tigers", "Bears", "Wolves", "Eagles"][Math.floor(Math.random() * 5)], // Custom team name
             members: [{ steamId: String(steamId), name: name ?? null, ready: true, elo: STARTING_ELO, matches: 0 }],
             mode: dbLobby.Mode,
             queuedAt: null,
@@ -230,6 +233,7 @@ function attachRetakesMatchmaking(io, { connectedUsers, loadRatings, prisma }) {
         id: party.id,
         leader: party.leader,
         isLeader: party.leader === id,
+        name: party.name,
         mode: party.mode,
         capacity: partyCapacity(party),
         members: party.members,
@@ -739,6 +743,15 @@ function attachRetakesMatchmaking(io, { connectedUsers, loadRatings, prisma }) {
       }
       leaveQueue(party, "mode_changed");
       party.mode = mode;
+      syncParty(party);
+    });
+
+    socket.on("rq:party:name", ({ name } = {}) => {
+      const id = me();
+      const party = partyFor(id);
+      if (!party || party.leader !== id) return;
+      party.name = typeof name === "string" ? name.trim().slice(0, 32) : null;
+      if (party.name === "") party.name = null;
       syncParty(party);
     });
 

@@ -43,7 +43,11 @@ export default function MedalCase({ steamId }: { steamId: string }) {
           style={{ ["--tint" as string]: m.colour }}
           title={`${m.name} — ${m.description}${m.note ? ` (${m.note})` : ""}`}
         >
-          <span className="medal-icon" aria-hidden>{m.icon}</span>
+          {m.icon.startsWith("/") ? (
+            <img className="medal-image" src={m.icon} alt={m.name} style={{ width: "24px", height: "24px", borderRadius: "50%", verticalAlign: "middle" }} aria-hidden />
+          ) : (
+            <span className="medal-icon" aria-hidden>{m.icon}</span>
+          )}
           <span className="medal-name">{m.name}</span>
         </span>
       ))}

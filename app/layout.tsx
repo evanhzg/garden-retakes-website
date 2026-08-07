@@ -12,6 +12,7 @@ import { I18nProvider } from "@/components/I18nProvider";
 import SiteFooter from "@/components/SiteFooter";
 import { ToastProvider } from "@/components/Toast";
 import { SocketProvider } from "@/components/games/SocketProvider";
+import PassportWorkflow from "@/components/PassportWorkflow";
 import { resolveLocale, LOCALE_COOKIE } from "@/lib/i18n";
 
 // Modernist: one grotesque carries headings and body, and a mono handles every
@@ -142,6 +143,7 @@ export default async function RootLayout({ children }: { children: React.ReactNo
               <SiteFooter serverAddress={process.env.NEXT_PUBLIC_SERVER_ADDRESS ?? "127.0.0.1:27015"} />
             </div>
           </div>
+          {session && <PassportWorkflow session={session} />}
         </ToastProvider>
         </SocketProvider>
         </I18nProvider>

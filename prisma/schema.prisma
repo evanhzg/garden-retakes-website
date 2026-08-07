@@ -127,6 +127,32 @@ model RoundRecord {
   @@map("RoundRecords")
 }
 
+
+model GardenSchedulerState {
+  Key          String   @id @db.VarChar(64)
+  Value        String   @db.VarChar(64)
+  UpdatedAtUtc DateTime @db.DateTime(6)
+
+  @@map("GardenSchedulerState")
+}
+
+model PlayerConsistency {
+  Id                  Int      @id @default(autoincrement())
+  SeasonId            Int
+  SteamId             BigInt
+  LastScoredLocalDate String?  @db.VarChar(10)
+  DailyScore          Float    @db.Double
+  GlobalScore         Float    @db.Double
+  CombinedScore       Float    @db.Double
+  Multiplier          Float    @default(1.0) @db.Double
+  DailyRounds         Int
+  GlobalRounds        Int
+  LastBonusElo        Int
+  UpdatedAtUtc        DateTime @db.DateTime(6)
+
+  @@map("PlayerConsistency")
+}
+
 model CrTeamStats {
   Id            Int      @id @default(autoincrement())
   SeasonId      Int
@@ -199,6 +225,19 @@ model GardenWebProfile {
   UpdatedAt      DateTime  @updatedAt
 
   @@map("GardenWebProfiles")
+}
+
+model PlayerPassport {
+  SteamId        BigInt   @id
+  Username       String   @db.VarChar(64)
+  Role           String   @db.VarChar(32)
+  Age            Int
+  Country        String   @db.VarChar(64)
+  BackgroundId   String   @db.VarChar(255)
+  CreatedAt      DateTime @default(now()) @db.DateTime(6)
+  UpdatedAt      DateTime @updatedAt @db.DateTime(6)
+
+  @@map("PlayerPassports")
 }
 
 // Discord account links (see lib/discord.ts + /api/auth/discord/*). Kept in its
@@ -816,7 +855,7 @@ model GardenMedal {
   Name        String @db.VarChar(64)
   Description String @db.VarChar(240)
   /// Emoji, so a medal needs no asset pipeline to exist.
-  Icon        String @default("🏅") @db.VarChar(8)
+  Icon        String @default("🏅") @db.VarChar(255)
   Colour      String @default("#e8b53a") @db.VarChar(9)
   /// season (placement) | vote (community) | special (given by hand)
   Kind        String @default("vote") @db.VarChar(16)

@@ -34,6 +34,7 @@ type State = {
     id: string;
     leader: string;
     isLeader: boolean;
+    name?: string | null;
     mode: string;
     capacity: number;
     elo?: number;
@@ -112,6 +113,9 @@ export default function RetakesLobby({ signedIn, lobbyId }: { signedIn: boolean,
   const [notice, setNotice] = useState<{ kind: string; text: string } | null>(null);
   const [chatDraft, setChatDraft] = useState("");
   const chatRef = useRef<HTMLDivElement>(null);
+
+  const [editingName, setEditingName] = useState(false);
+  const [draftName, setDraftName] = useState("");
 
   const match = state?.match ?? null;
   const now = useNow(Boolean(state?.queue || match));
@@ -285,6 +289,39 @@ export default function RetakesLobby({ signedIn, lobbyId }: { signedIn: boolean,
               {party?.members.length ?? 1}/{party?.capacity ?? 2}
             </span>
           </header>
+
+          {party && (party.members.length >= Math.ceil(party.capacity * (2/3))) && (
+            <div style={{ padding: "0 16px", marginBottom: "16px", display: "flex", alignItems: "center", gap: "8px" }}>
+              <span style={{ fontSize: "12px", color: "var(--color-text-muted)", textTransform: "uppercase" }}>Team Name:</span>
+              {editingName ? (
+                <input 
+                  autoFocus
+                  value={draftName}
+                  onChange={(e) => setDraftName(e.target.value)}
+                  onBlur={() => {
+                    setEditingName(false);
+                    if (draftName !== party.name) send("rq:party:name", { name: draftName });
+                  }}
+                  onKeyDown={(e) => {
+                    if (e.key === "Enter") {
+                      setEditingName(false);
+                      if (draftName !== party.name) send("rq:party:name", { name: draftName });
+                    }
+                  }}
+                  style={{ background: "transparent", border: "none", borderBottom: "1px solid var(--color-accent)", color: "#fff", outline: "none", fontSize: "14px", fontWeight: "bold", width: "120px" }}
+                />
+              ) : (
+                <span style={{ fontSize: "14px", fontWeight: "bold", cursor: party.isLeader ? "pointer" : "default" }} onClick={() => {
+                  if (party.isLeader) {
+                    setDraftName(party.name || "");
+                    setEditingName(true);
+                  }
+                }}>
+                  {party.name || "Unnamed"} {party.isLeader && <span style={{ opacity: 0.5, fontSize: "12px", marginLeft: "4px" }}>✎</span>}
+                </span>
+              )}
+            </div>
+          )}
 
           <ul className="rq-members">
             {(party?.members ?? []).map((m) => (
