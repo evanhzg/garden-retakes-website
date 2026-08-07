@@ -217,6 +217,7 @@ const handlePkmnLeave = async (socket, io) => {
 
 attachRetakesMatchmaking(io, {
   connectedUsers,
+  prisma,
   /**
    * Competitive ratings for a set of players.
    *

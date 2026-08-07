@@ -18,7 +18,10 @@ export type WeaponCategory =
   | "Snipers"
   | "Heavy"
   | "Knives"
-  | "Gloves";
+  | "Gloves"
+  | "Agents"
+  | "Patches"
+  | "Charms";
 
 export const WEAPON_CATEGORY_ORDER: WeaponCategory[] = [
   "Rifles",
@@ -28,6 +31,9 @@ export const WEAPON_CATEGORY_ORDER: WeaponCategory[] = [
   "Heavy",
   "Knives",
   "Gloves",
+  "Agents",
+  "Patches",
+  "Charms",
 ];
 
 export type Team = "ct" | "t" | "both";
@@ -108,6 +114,9 @@ function ensureLoaded() {
     Heavy: [],
     Knives: [],
     Gloves: [],
+    Agents: [],
+    Patches: [],
+    Charms: [],
   };
   weaponByDef = new Map();
 
@@ -131,6 +140,26 @@ function ensureLoaded() {
       };
       weaponsByCategory[entry.category].push(entry);
       weaponByDef.set(item.def, entry);
+      continue;
+    }
+
+    
+    if (item.isAgent()) {
+      const entry: WeaponEntry = { id: item.id, def: item.def, name: item.name, model: item.model ?? "", image: item.getImage(), category: "Agents", team: teamOf(item) };
+      weaponsByCategory["Agents"].push(entry);
+      weaponByDef.set(item.def, entry);
+      continue;
+    }
+    if (item.isPatch()) {
+      const entry: WeaponEntry = { id: item.id, def: item.index, name: item.name, model: "", image: item.getImage(), category: "Patches", team: "both" };
+      weaponsByCategory["Patches"].push(entry);
+      weaponByDef.set(item.index, entry);
+      continue;
+    }
+    if (item.isKeychain()) {
+      const entry: WeaponEntry = { id: item.id, def: item.id, name: item.name, model: "", image: item.getImage(), category: "Charms", team: "both" };
+      weaponsByCategory["Charms"].push(entry);
+      weaponByDef.set(item.id, entry);
       continue;
     }
 

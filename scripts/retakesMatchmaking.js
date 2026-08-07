@@ -82,7 +82,7 @@ const acceptableGap = (secondsWaiting) => 100 + Math.min(900, secondsWaiting * 1
 const now = () => Date.now();
 const uid = (prefix) => `${prefix}_${Math.random().toString(36).slice(2, 10)}`;
 
-function attachRetakesMatchmaking(io, { connectedUsers, loadRatings }) {
+function attachRetakesMatchmaking(io, { connectedUsers, loadRatings, prisma }) {
   /** partyId -> party */
   const parties = new Map();
   /** steamId -> partyId */
@@ -114,8 +114,8 @@ function attachRetakesMatchmaking(io, { connectedUsers, loadRatings }) {
     return id ? parties.get(id) ?? null : null;
   };
 
-  function makeParty(steamId, name) {
-    const id = uid("p");
+  async function makeParty(steamId, name, lobbyId) {
+    const id = lobbyId || uid("p");
     const party = {
       id,
       leader: String(steamId),
@@ -126,10 +126,49 @@ function attachRetakesMatchmaking(io, { connectedUsers, loadRatings }) {
     };
     parties.set(id, party);
     partyOf.set(String(steamId), id);
+    if (prisma) {
+      await prisma.retakesLobby.upsert({
+        where: { Id: id },
+        create: { Id: id, LeaderId: BigInt(steamId), Mode: "2v2" },
+        update: {}
+      }).catch(console.error);
+    }
     return party;
   }
 
-  const ensureParty = (steamId, name) => partyFor(steamId) ?? makeParty(steamId, name);
+  async function ensureParty(steamId, name, lobbyId) {
+    let p = partyFor(steamId);
+    if (!p) {
+      if (lobbyId && parties.has(lobbyId)) {
+        p = parties.get(lobbyId);
+        if (p.members.length < partyCapacity(p)) {
+          p.members.push({ steamId: String(steamId), name: name ?? null, ready: true, elo: STARTING_ELO, matches: 0 });
+          partyOf.set(String(steamId), lobbyId);
+        } else {
+          p = await makeParty(steamId, name);
+        }
+      } else if (lobbyId && prisma) {
+        const dbLobby = await prisma.retakesLobby.findUnique({ where: { Id: lobbyId } }).catch(() => null);
+        if (dbLobby) {
+          p = {
+            id: dbLobby.Id,
+            leader: String(steamId),
+            members: [{ steamId: String(steamId), name: name ?? null, ready: true, elo: STARTING_ELO, matches: 0 }],
+            mode: dbLobby.Mode,
+            queuedAt: null,
+            createdAt: now(),
+          };
+          parties.set(dbLobby.Id, p);
+          partyOf.set(String(steamId), dbLobby.Id);
+        } else {
+          p = await makeParty(steamId, name, lobbyId);
+        }
+      } else {
+        p = await makeParty(steamId, name, lobbyId);
+      }
+    }
+    return p;
+  }
 
   /** The rating a party is matched on. */
   const partyElo = (party) => effectiveElo(party.members.map((m) => m.elo ?? STARTING_ELO));
@@ -606,7 +645,7 @@ function attachRetakesMatchmaking(io, { connectedUsers, loadRatings }) {
     clearTimeout(matchTimers.get(match.id));
     match.phase = "ready";
     match.map = match.remaining[0] ?? match.pool[0];
-    match.connect = "adrien.gamergod.net:26541";
+    match.connect = null; // Will be set once server is ready
     match.turnDeadline = null;
     matchTimers.set(
       match.id,
@@ -620,6 +659,28 @@ function attachRetakesMatchmaking(io, { connectedUsers, loadRatings }) {
     // Configure server: change map and start competitive retakes
     rconExec(`map ${match.map}`).then(() => {
       setTimeout(() => rconExec("css_cr"), 5000);
+      
+      let attempts = 0;
+      const poll = setInterval(() => {
+        attempts++;
+        if (attempts > 30) {
+          clearInterval(poll);
+          // Fallback just in case
+          match.connect = "adrien.gamergod.net:26541";
+          syncMatch(match);
+          return;
+        }
+        
+        rconExec("status").then(out => {
+          // Verify map matches and possibly check game mode if status provides it
+          // status output usually has: map     : de_mirage
+          if (out.includes(`map     : ${match.map}`)) {
+            match.connect = "adrien.gamergod.net:26541";
+            syncMatch(match);
+            clearInterval(poll);
+          }
+        }).catch(err => console.error("RCON status error", err));
+      }, 3000);
     }).catch(console.error);
   }
 
@@ -655,10 +716,10 @@ function attachRetakesMatchmaking(io, { connectedUsers, loadRatings }) {
       if (id) socket.emit("rq:state", stateFor(id));
     };
 
-    socket.on("rq:hello", (data) => {
+    socket.on("rq:hello", async (data) => {
       const id = me();
       if (!id) return socket.emit("rq:notice", { kind: "error", code: "not_signed_in" });
-      const party = ensureParty(id, data?.name);
+      const party = await ensureParty(id, data?.name, data?.lobbyId);
       // A name arriving later than the party (the profile fetch resolves after
       // the socket does) should still land on the member row.
       const mine = party.members.find((m) => m.steamId === id);

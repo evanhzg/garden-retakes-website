@@ -296,6 +296,10 @@ export default function InventorySimulator() {
         const item = itemById(s === "t" ? loadout.glovesT : loadout.glovesCT);
         return item?.weaponDef === def ? item : undefined;
       }
+      if (kind === "agent") {
+        const item = itemById(s === "t" ? loadout.agentT : loadout.agentCT);
+        return item?.weaponDef === def ? item : undefined;
+      }
       return itemById((s === "t" ? loadout.equippedT : loadout.equippedCT)[def]);
     },
     [activeLoadout, itemById]
@@ -308,6 +312,7 @@ export default function InventorySimulator() {
       if (!loadout) return undefined;
       if (kind === "knife") return itemById(s === "t" ? loadout.knifeT : loadout.knifeCT);
       if (kind === "gloves") return itemById(s === "t" ? loadout.glovesT : loadout.glovesCT);
+      if (kind === "agent") return itemById(s === "t" ? loadout.agentT : loadout.agentCT);
       return itemById((s === "t" ? loadout.equippedT : loadout.equippedCT)[def]);
     },
     [activeLoadout, itemById]
@@ -334,6 +339,7 @@ export default function InventorySimulator() {
 
       const knifeItem = itemById(s === "t" ? activeLoadout.knifeT : activeLoadout.knifeCT);
       const gloveItem = itemById(s === "t" ? activeLoadout.glovesT : activeLoadout.glovesCT);
+      const agentItem = itemById(s === "t" ? activeLoadout.agentT : activeLoadout.agentCT);
 
       // Anything equipped on this side that the signature set doesn't cover —
       // an AK on CT, an MP9 on T — still has to be visible somewhere.
@@ -356,6 +362,7 @@ export default function InventorySimulator() {
         ...guns,
         { key: `${s}-knife`, def: knifeItem?.weaponDef ?? -1, kind: "knife", label: "Knife", item: knifeItem },
         { key: `${s}-gloves`, def: gloveItem?.weaponDef ?? -1, kind: "gloves", label: "Gloves", item: gloveItem },
+        { key: `${s}-agent`, def: agentItem?.weaponDef ?? -1, kind: "agent", label: "Agent", item: agentItem },
         ...extras,
       ];
     },
@@ -423,7 +430,7 @@ export default function InventorySimulator() {
     if (slot.kind !== "weapon") {
       // Knife and glove tiles have no fixed def until something is equipped,
       // so an empty one lands on the right category instead of the chooser.
-      const cat = slot.kind === "knife" ? "Knives" : "Gloves";
+      const cat = slot.kind === "knife" ? "Knives" : slot.kind === "gloves" ? "Gloves" : slot.kind === "agent" ? "Agents" : slot.kind === "patch" ? "Patches" : slot.kind === "charm" ? "Charms" : "Gloves";
       if (slot.item) {
         const entry = Object.values(catalog ?? {}).flat().find((w) => w.def === slot.item!.weaponDef);
         if (entry) return openWeapon(entry);
@@ -452,7 +459,7 @@ export default function InventorySimulator() {
     };
     const groups = new Map<string, typeof slots>();
     for (const slot of slots) {
-      const g = slot.kind === "knife" ? "Knives" : slot.kind === "gloves" ? "Gloves" : categoryOf(slot.def);
+      const g = slot.kind === "knife" ? "Knives" : slot.kind === "gloves" ? "Gloves" : slot.kind === "agent" ? "Agents" : slot.kind === "patch" ? "Patches" : slot.kind === "charm" ? "Charms" : categoryOf(slot.def);
       if (!groups.has(g)) groups.set(g, []);
       groups.get(g)!.push(slot);
     }
@@ -558,6 +565,9 @@ export default function InventorySimulator() {
         } else if (kind === "gloves") {
           if (side === "t") nl.glovesT = itemId;
           else nl.glovesCT = itemId;
+        } else if (kind === "agent") {
+          if (side === "t") nl.agentT = itemId;
+          else nl.agentCT = itemId;
         } else if (side === "t") nl.equippedT[weapon.def] = itemId;
         else nl.equippedCT[weapon.def] = itemId;
         return nl;
@@ -579,6 +589,9 @@ export default function InventorySimulator() {
         } else if (kind === "gloves") {
           if (side === "t") nl.glovesT = undefined;
           else nl.glovesCT = undefined;
+        } else if (kind === "agent") {
+          if (side === "t") nl.agentT = undefined;
+          else nl.agentCT = undefined;
         } else if (side === "t") delete nl.equippedT[def];
         else delete nl.equippedCT[def];
         return nl;
@@ -593,7 +606,9 @@ export default function InventorySimulator() {
     for (const l of s.loadouts) {
       Object.values(l.equippedCT).forEach((id) => used.add(id));
       Object.values(l.equippedT).forEach((id) => used.add(id));
-      [l.knifeCT, l.knifeT, l.glovesCT, l.glovesT].forEach((id) => id && used.add(id));
+      [l.knifeCT, l.knifeT, l.glovesCT, l.glovesT, l.agentCT, l.agentT].forEach((id) => id && used.add(id));
+      l.equippedPatchesCT?.forEach(id => id && used.add(id));
+      l.equippedPatchesT?.forEach(id => id && used.add(id));
     }
     return { ...s, items: s.items.filter((i) => used.has(i.id)) };
   };
@@ -735,6 +750,40 @@ export default function InventorySimulator() {
     }
   };
 
+
+  const importCstrike = async (raw: string) => {
+    const payload = raw.trim();
+    if (!payload) return;
+    setShareBusy(true);
+    try {
+      const res = await fetch("/api/loadout/import-cstrike", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ payload }),
+      });
+      const j = await res.json();
+      if (!res.ok || !j.loadout) {
+        showToast(j.error ?? "Import failed");
+        return;
+      }
+      setStore((cur) => {
+        let maxUid = cur.nextUid;
+        for (const i of j.items) if (i.uid >= maxUid) maxUid = i.uid + 1;
+        return {
+          ...cur,
+          items: [...cur.items, ...j.items],
+          loadouts: [...cur.loadouts, j.loadout],
+          activeLoadoutId: j.loadout.id,
+          nextUid: maxUid,
+        };
+      });
+      setImportKey("");
+      showToast("Imported from cstrike");
+    } finally {
+      setShareBusy(false);
+    }
+  };
+
   const importByKey = useCallback(
     async (raw: string) => {
       const key = raw.trim().toLowerCase();
@@ -867,7 +916,7 @@ export default function InventorySimulator() {
             className="inv4-borrow"
             onSubmit={(e) => {
               e.preventDefault();
-              importByKey(importKey);
+              if (importKey.includes("cstrike.app") || importKey.startsWith("[")) { importCstrike(importKey); } else { importByKey(importKey); }
             }}
           >
             <label className="sr-only" htmlFor="inv-borrow">{t("auto.inventorysimulator.borrow_key")}</label>
@@ -876,7 +925,7 @@ export default function InventorySimulator() {
               className="input"
               placeholder={t("auto.inventorysimulator.borrow_key")}
               value={importKey}
-              maxLength={16}
+              // removed max length for cstrike json payloads
               spellCheck={false}
               onChange={(e) => setImportKey(e.target.value)}
             />

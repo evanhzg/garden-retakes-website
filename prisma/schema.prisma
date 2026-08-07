@@ -156,6 +156,15 @@ model WebInventory {
   @@map("WebInventories")
 }
 
+model RetakesLobby {
+  Id        String   @id @db.VarChar(64)
+  LeaderId  BigInt?
+  Mode      String   @default("2v2") @db.VarChar(16)
+  CreatedAt DateTime @default(now())
+  
+  @@map("RetakesLobbies")
+}
+
 // Garden (W2): bans, display-name overrides, web profiles.
 model GardenBan {
   SteamId      BigInt    @id

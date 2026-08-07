@@ -11,7 +11,7 @@
 // per-side knife and glove slots. Legacy v2 stores are migrated transparently.
 
 export type Team = "ct" | "t" | "both";
-export type ItemKind = "weapon" | "knife" | "gloves";
+export type ItemKind = "weapon" | "knife" | "gloves" | "agent" | "patch" | "charm";
 export type Side = "t" | "ct";
 
 export const STICKER_SLOTS = 4;
@@ -72,6 +72,10 @@ export type Loadout = {
   knifeT?: string;
   glovesCT?: string;
   glovesT?: string;
+  agentCT?: string;
+  agentT?: string;
+  equippedPatchesCT?: string[];
+  equippedPatchesT?: string[];
   /** Accent colour for visibility & sorting (hex, from LOADOUT_COLORS). */
   color?: string;
   /** Preferred CT rifle def for the profile preview: 16 = M4A4, 60 = M4A1-S. */
@@ -144,7 +148,7 @@ export function newId(): string {
 }
 
 export function emptyLoadout(name: string): Loadout {
-  return { id: newId(), name, equippedCT: {}, equippedT: {} };
+  return { id: newId(), name, equippedCT: {}, equippedT: {}, equippedPatchesCT: [], equippedPatchesT: [] };
 }
 
 export function defaultStore(): InventoryStore {
@@ -320,6 +324,8 @@ export type EquippedV4 = {
   /** Keyed by engine team number: 2 = T, 3 = CT. */
   knives: Record<number, PluginWeapon>;
   gloves: Record<number, PluginWeapon>;
+  agents: Record<number, PluginWeapon>;
+  patches: Record<number, PluginWeapon>;
 };
 
 function econHash(item: InventoryItem): string {
@@ -352,7 +358,7 @@ function toPluginWeapon(item: InventoryItem): PluginWeapon {
 /** Build the plugin's equipped-items payload for a loadout (by id or name). */
 export function toEquippedV4(store: InventoryStore, loadoutRef?: string | null): EquippedV4 {
   const loadout = findLoadout(store, loadoutRef);
-  const result: EquippedV4 = { ctWeapons: {}, tWeapons: {}, knives: {}, gloves: {} };
+  const result: EquippedV4 = { ctWeapons: {}, tWeapons: {}, knives: {}, gloves: {}, agents: {}, patches: {} };
   if (!loadout) return result;
 
   const itemById = (id: string | undefined) =>
@@ -376,6 +382,14 @@ export function toEquippedV4(store: InventoryStore, loadoutRef?: string | null):
   if (glovesT) result.gloves[2] = toPluginWeapon(glovesT);
   const glovesCT = itemById(loadout.glovesCT);
   if (glovesCT) result.gloves[3] = toPluginWeapon(glovesCT);
+
+
+  const agentT = itemById(loadout.agentT);
+  if (agentT) result.agents[2] = toPluginWeapon(agentT);
+  const agentCT = itemById(loadout.agentCT);
+  if (agentCT) result.agents[3] = toPluginWeapon(agentCT);
+
+  // Patches aren't currently bound to teams cleanly in PluginWeapon structure so we can just leave patches map empty or add if needed.
 
   return result;
 }

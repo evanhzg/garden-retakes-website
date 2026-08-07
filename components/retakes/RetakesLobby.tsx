@@ -60,7 +60,7 @@ type State = {
       step: number;
       plan: { type: string }[];
     } | null;
-    result: { map: string; connect: string; sides: (string | null)[] } | null;
+    result: { map: string; connect: string | null; sides: (string | null)[] } | null;
     chat: { from: string; name: string | null; text: string; at: number }[];
   } | null;
   online: number;
@@ -102,7 +102,7 @@ const clock = (ms: number) => {
   return `${Math.floor(s / 60)}:${String(s % 60).padStart(2, "0")}`;
 };
 
-export default function RetakesLobby({ signedIn }: { signedIn: boolean }) {
+export default function RetakesLobby({ signedIn, lobbyId }: { signedIn: boolean, lobbyId?: string }) {
   const { t } = useI18n();
   const { socket, isAuthed, steamId } = useSocket();
 
@@ -125,7 +125,7 @@ export default function RetakesLobby({ signedIn }: { signedIn: boolean }) {
 
   useEffect(() => {
     if (!socket || !isAuthed) return;
-    socket.emit("rq:hello", {});
+    socket.emit("rq:hello", { lobbyId });
 
     const onState = (s: State) => setState(s);
     const onNotice = (n: { kind: string; code: string; fromName?: string | null; toName?: string | null }) => {
@@ -549,23 +549,34 @@ function MatchRoom({
                 <span className="rq-ready-name">{mapName(match.result.map)}</span>
               </div>
               <div className="rq-sides">
-                {match.teams.map((tm, i) => (
-                  <span key={i} className={`rq-side ${tm.side === "CT" ? "ct" : "tr"} ${match.yourTeam === i ? "mine" : ""}`}>
-                    {tm.name} — {tm.side ?? "?"}
-                  </span>
+                {match.teams.map((t) => (
+                  <div key={t.index} className="rq-team-side">
+                    <span className="rq-team">{t.name}</span> starts <span className={`rq-${t.side}`}>{t.side}</span>
+                  </div>
                 ))}
               </div>
-              <div className="rq-connect">
-                <code>connect {match.result.connect}</code>
-                <button
-                  className="btn btn-primary"
-                  onClick={() => navigator.clipboard?.writeText(`connect ${match.result!.connect}`)}
-                >
-                  {t("lobby.copyconnect")}
-                </button>
-                <a className="btn btn-secondary" href={`steam://connect/${match.result.connect}`}>
-                  {t("lobby.launch")}
-                </a>
+              <div className="rq-connect-wrapper" style={{ minHeight: "80px", display: "flex", alignItems: "center", justifyContent: "center" }}>
+                {match.result.connect ? (
+                  <div className="rq-connect">
+                    <code>connect {match.result.connect}</code>
+                    <div className="rq-connect-buttons">
+                      <button
+                        className="btn"
+                        onClick={() => navigator.clipboard?.writeText(`connect ${match.result!.connect}`)}
+                      >
+                        {t("lobby.copyconnect")}
+                      </button>
+                      <a className="btn btn-secondary" href={`steam://connect/${match.result.connect}`}>
+                        {t("lobby.join_server")}
+                      </a>
+                    </div>
+                  </div>
+                ) : (
+                  <div className="rq-loading-server" style={{ display: "flex", flexDirection: "column", alignItems: "center", gap: "0.5rem" }}>
+                    <div className="spinner" style={{ width: "24px", height: "24px", border: "2px solid rgba(255,255,255,0.2)", borderTopColor: "white", borderRadius: "50%", animation: "spin 1s linear infinite" }}></div>
+                    <span style={{ fontSize: "14px", color: "var(--fg-muted)" }}>Configuring server...</span>
+                  </div>
+                )}
               </div>
             </div>
           ) : (

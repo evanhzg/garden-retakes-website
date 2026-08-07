@@ -1,0 +1,52 @@
+--- lib/economy.ts
++++ lib/economy.ts
+@@ -19,4 +19,7 @@
+   | "Heavy"
+   | "Knives"
+-  | "Gloves";
++  | "Gloves"
++  | "Agents"
++  | "Patches"
++  | "Charms";
+ 
+@@ -29,4 +32,7 @@
+   "Knives",
+-  "Gloves",
++  "Gloves",
++  "Agents",
++  "Patches",
++  "Charms"
+ ];
+@@ -110,4 +116,7 @@
+     Heavy: [],
+     Knives: [],
+-    Gloves: [],
++    Gloves: [],
++    Agents: [],
++    Patches: [],
++    Charms: [],
+   };
+@@ -131,2 +140,29 @@
+ 
++    if (item.isAgent()) {
++      const entry = { id: item.id, def: item.def, name: item.name, model: item.model ?? "", image: item.getImage(), category: "Agents", team: teamOf(item) };
++      weaponsByCategory["Agents"].push(entry);
++      weaponByDef.set(item.def, entry);
++      continue;
++    }
++
++    if (item.isPatch()) {
++      const entry = { id: item.id, def: item.index, name: item.name, model: "", image: item.getImage(), category: "Patches", team: "both" };
++      weaponsByCategory["Patches"].push(entry);
++      weaponByDef.set(item.index, entry);
++      continue;
++    }
++
++    if (item.isKeychain()) {
++      const entry = { id: item.id, def: item.id, name: item.name, model: "", image: item.getImage(), category: "Charms", team: "both" };
++      weaponsByCategory["Charms"].push(entry);
++      weaponByDef.set(item.id, entry);
++      continue;
++    }
++
+     if (!item.isWeapon()) continue;
