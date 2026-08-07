@@ -238,7 +238,7 @@ export function searchStickers(query: string, limit = 80): StickerEntry[] {
       rarity: item.rarity ?? "#b0c3d9",
       category: item.category ?? "",
     });
-    if (results.length >= limit) break;
+    if (limit > 0 && results.length >= limit) break;
   }
   return results;
 }
@@ -259,7 +259,7 @@ export function searchCharms(query: string, limit = 80): StickerEntry[] {
       rarity: item.rarity ?? "#b0c3d9",
       category: item.category ?? "",
     });
-    if (results.length >= limit) break;
+    if (limit > 0 && results.length >= limit) break;
   }
   return results;
 }
