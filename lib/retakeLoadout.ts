@@ -93,7 +93,6 @@ export const CHOICES: Record<Slot, Choice[]> = {
     { id: ITEMS.Bizon, name: "PP-Bizon", sides: ["T", "CT"] },
     { id: ITEMS.Galil, name: "Galil AR", sides: ["T"] },
     { id: ITEMS.Famas, name: "FAMAS", sides: ["CT"] },
-    { id: ITEMS.SSG08, name: "SSG 08", sides: ["T", "CT"] },
     { id: ITEMS.Nova, name: "Nova", sides: ["T", "CT"] },
     { id: ITEMS.MAG7, name: "MAG-7", sides: ["CT"] },
     { id: ITEMS.SawedOff, name: "Sawed-Off", sides: ["T"] },
@@ -103,12 +102,10 @@ export const CHOICES: Record<Slot, Choice[]> = {
     { id: ITEMS.AK47, name: "AK-47", sides: ["T"] },
     { id: ITEMS.M4A4, name: "M4A4", sides: ["CT"] },
     { id: ITEMS.M4A1S, name: "M4A1-S", sides: ["CT"] },
-    { id: ITEMS.AWP, name: "AWP", sides: ["T", "CT"] },
     { id: ITEMS.SG553, name: "SG 553", sides: ["T"] },
     { id: ITEMS.AUG, name: "AUG", sides: ["CT"] },
     { id: ITEMS.Galil, name: "Galil AR", sides: ["T"] },
     { id: ITEMS.Famas, name: "FAMAS", sides: ["CT"] },
-    { id: ITEMS.SSG08, name: "SSG 08", sides: ["T", "CT"] },
     { id: ITEMS.G3SG1, name: "G3SG1", sides: ["T"] },
     { id: ITEMS.SCAR20, name: "SCAR-20", sides: ["CT"] },
     { id: ITEMS.M249, name: "M249", sides: ["T", "CT"] },
@@ -138,13 +135,11 @@ export const itemName = (id: number | null | undefined): string | null => {
  * actually exist when four people walk onto a site with the bomb down.
  */
 export const ROLES = [
-  { id: "entry", side: "T" as const },
-  { id: "support", side: "T" as const },
-  { id: "trade", side: "T" as const },
-  { id: "awp", side: "both" as const },
+  { id: "sniper", side: "both" as const },
+  { id: "lurker", side: "T" as const },
+  { id: "rifler", side: "T" as const },
   { id: "anchor", side: "CT" as const },
   { id: "rotator", side: "CT" as const },
-  { id: "flex", side: "both" as const },
 ] as const;
 
 export type RoleId = (typeof ROLES)[number]["id"];

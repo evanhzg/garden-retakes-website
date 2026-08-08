@@ -1,5 +1,5 @@
 import { NextResponse } from "next/server";
-import { searchStickers } from "@/lib/economy";
+import { searchPatches } from "@/lib/economy";
 
 export const revalidate = 86400;
 
@@ -7,7 +7,6 @@ export async function GET(request: Request) {
   const url = new URL(request.url);
   const query = url.searchParams.get("q") ?? "";
   const limitStr = url.searchParams.get("limit");
-  const kind = (url.searchParams.get("kind") as "sticker" | "patch" | "charm") ?? "sticker";
   const limit = limitStr ? parseInt(limitStr, 10) : 80;
-  return NextResponse.json(searchStickers(query, limit, kind));
+  return NextResponse.json(searchPatches(query, limit));
 }

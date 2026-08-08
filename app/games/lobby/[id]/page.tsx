@@ -787,6 +787,35 @@ function LobbyClient({ lobbyId, mySteamId }: { lobbyId: string; mySteamId: strin
       >
         {setupPanel}
       </SetupModal>
+
+      {reportOpen && (
+        <div className="modal-scrim" onClick={() => setReportOpen(false)}>
+           <div className="modal-content" onClick={e => e.stopPropagation()} style={{ background: 'var(--color-bg)', padding: '24px', borderRadius: '12px', maxWidth: '400px', width: '100%', zIndex: 9999 }}>
+              <h2 style={{ margin: '0 0 16px' }}>Report Lobby</h2>
+              <textarea 
+                 value={reportText} 
+                 onChange={e => setReportText(e.target.value)}
+                 placeholder="Please provide details about the report..."
+                 style={{ width: '100%', height: '100px', padding: '8px', background: 'var(--color-surface)', border: '1px solid var(--color-divider)', color: 'white', borderRadius: '4px', resize: 'none' }}
+              />
+              <div style={{ display: 'flex', gap: '8px', marginTop: '16px', justifyContent: 'flex-end' }}>
+                 <button className="btn btn-ghost" onClick={() => setReportOpen(false)}>Cancel</button>
+                 <button className="btn btn-primary" onClick={async () => {
+                    try {
+                       await fetch("/api/tickets", {
+                          method: "POST",
+                          headers: { "Content-Type": "application/json", "Authorization": `Bearer ${mySteamId}` },
+                          body: JSON.stringify({ message: `Report against lobby ${lobbyId}:\n${reportText}`, category: "REPORT" })
+                       });
+                       setReportOpen(false);
+                       setReportText("");
+                       alert("Report submitted successfully.");
+                    } catch(e) {}
+                 }}>Submit Report</button>
+              </div>
+           </div>
+        </div>
+      )}
     </div>
   );
 }

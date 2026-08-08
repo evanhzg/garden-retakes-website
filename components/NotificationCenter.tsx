@@ -269,7 +269,7 @@ export default function NotificationCenter({ isAdmin, steamId }: { isAdmin?: boo
                             <strong style={{ fontSize: '12px' }}>Ticket #{t.Id}</strong>
                             <span style={{ fontSize: '12px', color: t.Status === 'OPEN' ? 'var(--color-primary)' : 'var(--color-text)' }}>{t.Status}</span>
                          </div>
-                         <p style={{ margin: '0 0 8px 0', fontSize: '13px' }}>{t.Message}</p>
+                         <p style={{ margin: '0 0 8px 0', fontSize: '13px' }}>{t.Description}</p>
                          <button className="btn btn-secondary btn-sm" onClick={async () => {
                              try {
                                 await fetch("/api/messages", {

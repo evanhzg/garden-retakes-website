@@ -1,5 +1,6 @@
 import { NextResponse } from "next/server";
 import { PrismaClient } from "@prisma/client";
+import { getSession } from "@/lib/auth";
 
 const prisma = new PrismaClient();
 
@@ -28,8 +29,15 @@ export async function GET(request: Request) {
 export async function POST(request: Request) {
   try {
     const steamIdHeader = request.headers.get("Authorization")?.replace("Bearer ", "");
-    if (!steamIdHeader) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
-    const steamId = BigInt(steamIdHeader);
+    let steamId: bigint;
+    
+    if (steamIdHeader) {
+       steamId = BigInt(steamIdHeader);
+    } else {
+       const session = getSession();
+       if (!session || !session.steamId) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+       steamId = BigInt(session.steamId);
+    }
 
     const { message, category } = await request.json();
     if (!message) return NextResponse.json({ error: "Missing message" }, { status: 400 });

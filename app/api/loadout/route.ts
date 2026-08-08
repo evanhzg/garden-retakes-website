@@ -30,6 +30,7 @@ async function read(steamId: bigint) {
     weapons: decodeWeaponPrefs(settings?.WeaponPreferences),
     roleT: loadout?.RoleT ?? "",
     roleCt: loadout?.RoleCt ?? "",
+    isCaller: loadout?.IsCaller ?? false,
     utility: loadout?.UtilityPrefs ? sanitiseUtilityPrefs(JSON.parse(loadout.UtilityPrefs)) : DEFAULT_UTILITY,
     notes: loadout?.Notes ?? "",
     updatedAt: loadout?.UpdatedAt ?? null,
@@ -59,7 +60,7 @@ export async function PUT(req: Request) {
   if (!session) return NextResponse.json({ error: "Sign in to save your loadout." }, { status: 401 });
   const steamId = BigInt(session.steamId);
 
-  let body: { weapons?: unknown; roleT?: unknown; roleCt?: unknown; utility?: unknown; notes?: unknown };
+  let body: { weapons?: unknown; roleT?: unknown; roleCt?: unknown; isCaller?: unknown; utility?: unknown; notes?: unknown };
   try {
     body = await req.json();
   } catch {
@@ -70,6 +71,7 @@ export async function PUT(req: Request) {
   const utility = sanitiseUtilityPrefs(body.utility);
   const roleT = typeof body.roleT === "string" && (body.roleT === "" || isRole(body.roleT)) ? body.roleT : "";
   const roleCt = typeof body.roleCt === "string" && (body.roleCt === "" || isRole(body.roleCt)) ? body.roleCt : "";
+  const isCaller = typeof body.isCaller === "boolean" ? body.isCaller : false;
   const notes = typeof body.notes === "string" ? body.notes.slice(0, 300) : "";
 
   try {
@@ -91,12 +93,14 @@ export async function PUT(req: Request) {
           SteamId: steamId,
           RoleT: roleT,
           RoleCt: roleCt,
+          IsCaller: isCaller,
           UtilityPrefs: JSON.stringify(utility),
           Notes: notes,
         },
         update: {
           RoleT: roleT,
           RoleCt: roleCt,
+          IsCaller: isCaller,
           UtilityPrefs: JSON.stringify(utility),
           Notes: notes,
         },

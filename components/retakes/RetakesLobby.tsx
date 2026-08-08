@@ -1,8 +1,10 @@
 "use client";
 
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
+import { Crosshair, Ghost, Target as TargetIcon, Anchor, RotateCcw, Mic } from "lucide-react";
 import { useSocket } from "@/components/games/SocketProvider";
 import { useI18n } from "@/components/I18nProvider";
+import { ROLES, DEFAULT_UTILITY, type Side } from "@/lib/retakeLoadout";
 import { useOverlay } from "@/lib/useOverlay";
 import { usePlayerNames, displayNameFor } from "@/components/games/hooks";
 import { FormCard, FormLine, useRosterForm, type RecentForm } from "./PlayerForm";
@@ -135,6 +137,11 @@ export default function RetakesLobby({ signedIn, lobbyId }: { signedIn: boolean,
   const [safeQueue, setSafeQueue] = useState(false);
   const [showPostMatch, setShowPostMatch] = useState(false);
   const [pendingInvites, setPendingInvites] = useState<{ id: string, name: string, expiresAt: number }[]>([]);
+  const [reportOpen, setReportOpen] = useState(false);
+  const [reportText, setReportText] = useState("");
+  const [partyLoadouts, setPartyLoadouts] = useState<Record<string, { roleT: string, roleCt: string, isCaller: boolean, weapons: any, utility: any, notes: string }>>({});
+  const [sideTab, setSideTab] = useState<Side>("T");
+  const [savingRole, setSavingRole] = useState(false);
 
   const allIds = useMemo(() => {
     const ids = new Set<string>();
@@ -173,6 +180,21 @@ export default function RetakesLobby({ signedIn, lobbyId }: { signedIn: boolean,
       .then(r => r.json())
       .then(d => { if (active && Array.isArray(d)) setSafeScores(d); })
       .catch(console.error);
+      
+      Promise.all(ids.map(async (id: string) => {
+         try {
+           const res = await fetch(`/api/loadout?steamId=${id}`);
+           if (res.ok) return await res.json();
+         } catch {}
+         return null;
+      })).then(results => {
+         if (!active) return;
+         const next: Record<string, any> = {};
+         results.forEach((r: any) => {
+           if (r) next[r.steamId] = r;
+         });
+         setPartyLoadouts(prev => ({ ...prev, ...next }));
+      });
 
       return () => { active = false; };
     }
@@ -254,6 +276,45 @@ export default function RetakesLobby({ signedIn, lobbyId }: { signedIn: boolean,
     [friends, online]
   );
   const inPartyIds = useMemo(() => new Set((party?.members ?? []).map((m) => m.steamId)), [party]);
+
+  const conflicts = useMemo(() => {
+     if (!party) return [];
+     const res: string[] = [];
+     const max1T = ["sniper", "lurker"];
+     const max1Ct = ["sniper", "anchor"];
+     let callers = 0;
+     const tRoles = new Map<string, number>();
+     const ctRoles = new Map<string, number>();
+     
+     party.members.forEach(m => {
+        const l = partyLoadouts[m.steamId];
+        if (!l) return;
+        if (l.isCaller) callers++;
+        if (l.roleT) tRoles.set(l.roleT, (tRoles.get(l.roleT) ?? 0) + 1);
+        if (l.roleCt) ctRoles.set(l.roleCt, (ctRoles.get(l.roleCt) ?? 0) + 1);
+     });
+     
+     if (callers > 1) res.push("Max 1 Caller per team");
+     max1T.forEach(r => { if ((tRoles.get(r) ?? 0) > 1) res.push(`Max 1 ${r} (T)`); });
+     max1Ct.forEach(r => { if ((ctRoles.get(r) ?? 0) > 1) res.push(`Max 1 ${r} (CT)`); });
+     return res;
+  }, [party, partyLoadouts]);
+
+  const updateMyLoadout = async (changes: any) => {
+    if (!steamId || savingRole) return;
+    const myL = partyLoadouts[steamId] || { roleT: "", roleCt: "", isCaller: false, weapons: {}, utility: DEFAULT_UTILITY, notes: "" };
+    const nextL = { ...myL, ...changes };
+    setPartyLoadouts(prev => ({ ...prev, [steamId]: nextL }));
+    setSavingRole(true);
+    try {
+       await fetch("/api/loadout", {
+         method: "PUT",
+         headers: { "Content-Type": "application/json" },
+         body: JSON.stringify(nextL)
+       });
+    } catch {}
+    setSavingRole(false);
+  };
 
   if (!signedIn) {
     return (
@@ -346,11 +407,16 @@ export default function RetakesLobby({ signedIn, lobbyId }: { signedIn: boolean,
       <div className="rq-grid" style={{ display: activeTab === 'lobby' ? 'grid' : 'none' }}>
         {/* ------------------------------------------------------------ party */}
         <aside className="rq-panel rq-party">
-          <header className="rq-panel-head">
-            <h2>{t("lobby.party")}</h2>
-            <span className="rq-count">
-              {party?.members.length ?? 1}/{party?.capacity ?? 2}
-            </span>
+          <header className="rq-panel-head" style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+            <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+               <h2>{t("lobby.party")}</h2>
+               <span className="rq-count">
+                 {party?.members.length ?? 1}/{party?.capacity ?? 2}
+               </span>
+            </div>
+            <button className="btn btn-ghost" onClick={() => setReportOpen(true)} style={{ color: 'var(--color-danger)', fontSize: '12px', padding: '4px 8px' }}>
+               Report Lobby
+            </button>
           </header>
 
           {party && (party.members.length >= Math.ceil(party.capacity * (2/3))) && (
@@ -407,6 +473,17 @@ export default function RetakesLobby({ signedIn, lobbyId }: { signedIn: boolean,
                     if (ss) return <SafeShield score={ss.score} probation={ss.probation} />;
                     return null;
                   })()}
+                  {partyLoadouts[m.steamId]?.isCaller && <Mic size={14} style={{ marginLeft: 4, color: "var(--color-accent)" }} title="Caller" />}
+                  {partyLoadouts[m.steamId]?.roleT && <span style={{ marginLeft: 6, opacity: 0.7 }} title={`T: ${partyLoadouts[m.steamId].roleT}`}>
+                     {partyLoadouts[m.steamId].roleT === 'sniper' && <Crosshair size={14} />}
+                     {partyLoadouts[m.steamId].roleT === 'lurker' && <Ghost size={14} />}
+                     {partyLoadouts[m.steamId].roleT === 'rifler' && <TargetIcon size={14} />}
+                  </span>}
+                  {partyLoadouts[m.steamId]?.roleCt && <span style={{ marginLeft: 4, opacity: 0.7 }} title={`CT: ${partyLoadouts[m.steamId].roleCt}`}>
+                     {partyLoadouts[m.steamId].roleCt === 'sniper' && <Crosshair size={14} />}
+                     {partyLoadouts[m.steamId].roleCt === 'anchor' && <Anchor size={14} />}
+                     {partyLoadouts[m.steamId].roleCt === 'rotator' && <RotateCcw size={14} />}
+                  </span>}
                 </span>
                 <LevelBadge elo={m.elo} matches={m.matches} size="sm" />
                 {party?.isLeader && m.steamId !== steamId && (
@@ -502,13 +579,51 @@ export default function RetakesLobby({ signedIn, lobbyId }: { signedIn: boolean,
                 <span style={{ fontWeight: 'bold', fontSize: '14px', color: safeQueue ? 'var(--color-accent)' : 'var(--muted)', transition: 'color 0.2s' }}>Safe Queue</span>
               </label>
 
+              <div style={{ marginBottom: 24, padding: "16px", background: "color-mix(in srgb, var(--color-surface) 50%, transparent)", borderRadius: "8px", border: "1px solid var(--border)" }}>
+                 <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: "12px" }}>
+                    <h3 style={{ margin: 0, fontSize: "16px" }}>Your Role</h3>
+                    <div style={{ display: "flex", gap: "8px" }}>
+                       <button className={`btn btn-sm ${sideTab === 'T' ? 'btn-primary' : 'btn-ghost'}`} onClick={() => setSideTab("T")} style={{ padding: "4px 8px", fontSize: "12px" }}>T Side</button>
+                       <button className={`btn btn-sm ${sideTab === 'CT' ? 'btn-primary' : 'btn-ghost'}`} onClick={() => setSideTab("CT")} style={{ padding: "4px 8px", fontSize: "12px" }}>CT Side</button>
+                    </div>
+                 </div>
+                 <div style={{ display: "flex", flexWrap: "wrap", gap: "8px" }}>
+                    {ROLES.filter(r => r.side === sideTab || r.side === "both").map(r => {
+                       const active = sideTab === "T" ? partyLoadouts[steamId!]?.roleT === r.id : partyLoadouts[steamId!]?.roleCt === r.id;
+                       return (
+                         <button key={r.id} onClick={() => updateMyLoadout({ [sideTab === 'T' ? 'roleT' : 'roleCt']: active ? "" : r.id })} style={{ display: "flex", alignItems: "center", gap: "6px", padding: "6px 12px", background: active ? "var(--color-accent)" : "var(--bg-elevated)", color: active ? "#fff" : "var(--fg)", border: "none", borderRadius: "4px", cursor: "pointer", fontSize: "13px", fontWeight: 600 }}>
+                           {r.id === 'sniper' && <Crosshair size={14} />}
+                           {r.id === 'lurker' && <Ghost size={14} />}
+                           {r.id === 'rifler' && <TargetIcon size={14} />}
+                           {r.id === 'anchor' && <Anchor size={14} />}
+                           {r.id === 'rotator' && <RotateCcw size={14} />}
+                           {r.id.charAt(0).toUpperCase() + r.id.slice(1)}
+                         </button>
+                       );
+                    })}
+                 </div>
+                 <label style={{ display: "flex", alignItems: "center", gap: "8px", marginTop: "16px", cursor: "pointer", fontSize: "14px", fontWeight: "bold" }}>
+                   <input type="checkbox" checked={partyLoadouts[steamId!]?.isCaller || false} onChange={e => updateMyLoadout({ isCaller: e.target.checked })} style={{ width: 16, height: 16, accentColor: "var(--color-accent)" }} />
+                   <Mic size={16} /> I am the Caller
+                 </label>
+              </div>
+
+              {conflicts.length > 0 && party?.isLeader && (
+                <div style={{ marginBottom: 16, padding: "12px", background: "rgba(224, 83, 58, 0.1)", border: "1px solid #E0533A", borderRadius: "8px", color: "#E0533A", fontSize: "14px" }}>
+                   <strong>Role Conflict:</strong>
+                   <ul style={{ margin: "4px 0 0", paddingLeft: "20px" }}>
+                     {conflicts.map((c, i) => <li key={i}>{c}</li>)}
+                   </ul>
+                </div>
+              )}
+
               <button
                 className="btn btn-primary rq-play"
-                disabled={!party?.isLeader}
+                disabled={!party?.isLeader || conflicts.length > 0}
                 onClick={() => send("rq:queue:join", { mode, safeQueue })}
                 style={{ marginBottom: '24px' }}
               >
-                {t("lobby.findmatch")}
+                {conflicts.length > 0 ? "Fix Roles to Queue" : t("lobby.findmatch")}
               </button>
 
               <p className="rq-online">{t("lobby.onlinenow", { n: state?.online ?? 0 })}</p>
@@ -627,6 +742,35 @@ export default function RetakesLobby({ signedIn, lobbyId }: { signedIn: boolean,
       )}
 
       {notice && <div className={`rq-toast ${notice.kind}`}>{notice.text}</div>}
+
+      {reportOpen && (
+        <div className="modal-scrim" onClick={() => setReportOpen(false)}>
+           <div className="modal-content" onClick={e => e.stopPropagation()} style={{ background: 'var(--color-bg)', padding: '24px', borderRadius: '12px', maxWidth: '400px', width: '100%', zIndex: 9999 }}>
+              <h2 style={{ margin: '0 0 16px' }}>Report Lobby</h2>
+              <textarea 
+                 value={reportText} 
+                 onChange={e => setReportText(e.target.value)}
+                 placeholder="Please provide details about the report..."
+                 style={{ width: '100%', height: '100px', padding: '8px', background: 'var(--color-surface)', border: '1px solid var(--color-divider)', color: 'white', borderRadius: '4px', resize: 'none' }}
+              />
+              <div style={{ display: 'flex', gap: '8px', marginTop: '16px', justifyContent: 'flex-end' }}>
+                 <button className="btn btn-ghost" onClick={() => setReportOpen(false)}>Cancel</button>
+                 <button className="btn btn-primary" onClick={async () => {
+                    try {
+                       await fetch("/api/tickets", {
+                          method: "POST",
+                          headers: { "Content-Type": "application/json", "Authorization": `Bearer ${steamId}` },
+                          body: JSON.stringify({ message: `Report against Retakes party ${party?.leader}:\n${reportText}`, category: "REPORT" })
+                       });
+                       setReportOpen(false);
+                       setReportText("");
+                       alert("Report submitted successfully.");
+                    } catch(e) {}
+                 }}>Submit Report</button>
+              </div>
+           </div>
+        </div>
+      )}
     </div>
   );
 }

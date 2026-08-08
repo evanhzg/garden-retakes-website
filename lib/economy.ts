@@ -48,6 +48,7 @@ export type WeaponEntry = {
   image: string;
   category: WeaponCategory;
   team: Team;
+  rarity?: string;
 };
 
 export type SkinEntry = {
@@ -144,19 +145,19 @@ function ensureLoaded() {
 
     
     if (item.isAgent()) {
-      const entry: WeaponEntry = { id: item.id, def: item.def ?? 0, name: item.name, model: item.model ?? "", image: item.getImage(), category: "Agents", team: teamOf(item) };
+      const entry: WeaponEntry = { id: item.id, def: item.def ?? 0, name: item.name, model: item.model ?? "", image: item.getImage(), category: "Agents", team: teamOf(item), rarity: item.rarity ?? "#b0c3d9" };
       weaponsByCategory["Agents"].push(entry);
       weaponByDef.set(item.def ?? 0, entry);
       continue;
     }
     if (item.isPatch()) {
-      const entry: WeaponEntry = { id: item.id, def: item.index ?? 0, name: item.name, model: "", image: item.getImage(), category: "Patches", team: "both" };
+      const entry: WeaponEntry = { id: item.id, def: item.index ?? 0, name: item.name, model: "", image: item.getImage(), category: "Patches", team: "both", rarity: item.rarity ?? "#b0c3d9" };
       weaponsByCategory["Patches"].push(entry);
       weaponByDef.set(item.index ?? 0, entry);
       continue;
     }
     if (item.isKeychain()) {
-      const entry: WeaponEntry = { id: item.id, def: item.id, name: item.name, model: "", image: item.getImage(), category: "Charms", team: "both" };
+      const entry: WeaponEntry = { id: item.id, def: item.id, name: item.name, model: "", image: item.getImage(), category: "Charms", team: "both", rarity: item.rarity ?? "#b0c3d9" };
       weaponsByCategory["Charms"].push(entry);
       weaponByDef.set(item.id, entry);
       continue;
@@ -239,13 +240,39 @@ export function getSkinsForWeapon(def: number): SkinEntry[] {
   return skins;
 }
 
-export function searchStickers(query: string, limit = 80): StickerEntry[] {
+export function searchStickers(query: string, limit = 80, kind: "sticker" | "patch" | "charm" = "sticker"): StickerEntry[] {
   ensureLoaded();
   const q = query.toLowerCase().trim();
   const results: StickerEntry[] = [];
-  for (const item of CS2Economy.getStickers()) {
+  
+  const items = kind === "patch" ? CS2Economy.itemsAsArray.filter(i => i.isPatch()) : 
+                kind === "charm" ? CS2Economy.itemsAsArray.filter(i => i.isKeychain()) : 
+                CS2Economy.getStickers();
+                
+  for (const item of items) {
     if (item.index === undefined) continue;
-    const name = item.name.replace(/^Sticker \| /, "");
+    const name = item.name.replace(/^(Sticker \| |Patch \| |Charm \| )/, "");
+    if (q && !name.toLowerCase().includes(q)) continue;
+    results.push({
+      id: item.id,
+      def: item.index ?? 0,
+      name,
+      image: item.getImage(),
+      rarity: item.rarity ?? "#b0c3d9",
+      category: item.category ?? "",
+    });
+    if (limit > 0 && results.length >= limit) break;
+  }
+  return results;
+}
+
+export function searchPatches(query: string, limit = 80): StickerEntry[] {
+  ensureLoaded();
+  const q = query.toLowerCase().trim();
+  const results: StickerEntry[] = [];
+  for (const item of CS2Economy.itemsAsArray) {
+    if (!item.isPatch()) continue;
+    const name = item.name.replace(/^Patch \| /, "");
     if (q && !name.toLowerCase().includes(q)) continue;
     results.push({
       id: item.id,

@@ -1,6 +1,7 @@
 "use client";
 
 import { useCallback, useEffect, useMemo, useState } from "react";
+import { Crosshair, Ghost, Target, Anchor, RotateCcw, Mic } from "lucide-react";
 import { useI18n } from "@/components/I18nProvider";
 import {
   DEFAULT_UTILITY,
@@ -34,11 +35,12 @@ type Loadout = {
   weapons: WeaponPrefs;
   roleT: string;
   roleCt: string;
+  isCaller: boolean;
   utility: UtilityPrefs;
   notes: string;
 };
 
-const EMPTY: Loadout = { weapons: {}, roleT: "", roleCt: "", utility: DEFAULT_UTILITY, notes: "" };
+const EMPTY: Loadout = { weapons: {}, roleT: "", roleCt: "", isCaller: false, utility: DEFAULT_UTILITY, notes: "" };
 
 const ROUND_SLOTS: Record<RoundKind, Slot[]> = {
   pistol: ["PistolRound"],
@@ -58,7 +60,7 @@ export default function RetakeLoadoutPage({ signedIn }: { signedIn: boolean }) {
     if (!signedIn) return;
     fetch("/api/loadout")
       .then((r) => (r.ok ? r.json() : null))
-      .then((d) => setLoadout(d ? { weapons: d.weapons, roleT: d.roleT, roleCt: d.roleCt, utility: d.utility, notes: d.notes } : EMPTY))
+      .then((d) => setLoadout(d ? { weapons: d.weapons, roleT: d.roleT, roleCt: d.roleCt, isCaller: d.isCaller ?? false, utility: d.utility, notes: d.notes } : EMPTY))
       .catch(() => setLoadout(EMPTY));
   }, [signedIn]);
 
@@ -104,7 +106,7 @@ export default function RetakeLoadoutPage({ signedIn }: { signedIn: boolean }) {
       if (!res.ok) {
         setNote({ kind: "err", text: json.error ?? t("loadout.savefailed") });
       } else {
-        setLoadout({ weapons: json.weapons, roleT: json.roleT, roleCt: json.roleCt, utility: json.utility, notes: json.notes });
+        setLoadout({ weapons: json.weapons, roleT: json.roleT, roleCt: json.roleCt, isCaller: json.isCaller ?? false, utility: json.utility, notes: json.notes });
         setDirty(false);
         setNote({ kind: "ok", text: t("loadout.saved") });
       }
@@ -174,10 +176,25 @@ export default function RetakeLoadoutPage({ signedIn }: { signedIn: boolean }) {
                   className={`lo-role ${role === r.id ? "on" : ""}`}
                   onClick={() => setRole(role === r.id ? "" : r.id)}
                 >
-                  <span className="lo-role-name">{t(`loadout.role.${r.id}`)}</span>
+                  <span className="lo-role-name">
+                    {r.id === 'sniper' && <Crosshair size={16} style={{marginRight: 6, verticalAlign: 'middle'}}/>}
+                    {r.id === 'lurker' && <Ghost size={16} style={{marginRight: 6, verticalAlign: 'middle'}}/>}
+                    {r.id === 'rifler' && <Target size={16} style={{marginRight: 6, verticalAlign: 'middle'}}/>}
+                    {r.id === 'anchor' && <Anchor size={16} style={{marginRight: 6, verticalAlign: 'middle'}}/>}
+                    {r.id === 'rotator' && <RotateCcw size={16} style={{marginRight: 6, verticalAlign: 'middle'}}/>}
+                    {t(`loadout.role.${r.id}`)}
+                  </span>
                   <span className="lo-role-desc">{t(`loadout.role.${r.id}.desc`)}</span>
                 </button>
               ))}
+              <label className={`lo-role ${loadout.isCaller ? "on" : ""}`} style={{ display: "flex", flexDirection: "row", alignItems: "center", gap: "8px", cursor: "pointer", justifyContent: "center", padding: "12px", border: "1px solid var(--border)", borderRadius: "8px" }}>
+                <Mic size={20} />
+                <div style={{ display: "flex", flexDirection: "column", flex: 1, textAlign: "left" }}>
+                   <span className="lo-role-name">Caller</span>
+                   <span className="lo-role-desc">I will make the calls.</span>
+                </div>
+                <input type="checkbox" checked={loadout.isCaller} onChange={(e) => patch(l => ({ ...l, isCaller: e.target.checked }))} style={{ width: 18, height: 18, accentColor: "var(--color-accent)" }} />
+              </label>
             </div>
           </section>
 
@@ -213,8 +230,20 @@ export default function RetakeLoadoutPage({ signedIn }: { signedIn: boolean }) {
                               key={o.id}
                               className={`lo-pick ${value === o.id ? "on" : ""}`}
                               onClick={() => setWeapon(slot, o.id)}
+                              title={o.name}
+                              style={{ display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center", padding: "8px", gap: "4px" }}
                             >
-                              {o.name}
+                              <img 
+                                src={`/images/weapons/${o.name.toLowerCase().replace(/[^a-z0-9]/g, "")}.svg`} 
+                                alt={o.name} 
+                                style={{ width: 40, height: "auto", objectFit: "contain", filter: "drop-shadow(0 2px 4px rgba(0,0,0,0.5))" }}
+                                onError={(e) => {
+                                  e.currentTarget.style.display = "none";
+                                  const span = e.currentTarget.nextElementSibling as HTMLSpanElement;
+                                  if (span) span.style.display = "block";
+                                }}
+                              />
+                              <span style={{ fontSize: "10px", display: "none" }}>{o.name}</span>
                             </button>
                           ))}
                         </div>

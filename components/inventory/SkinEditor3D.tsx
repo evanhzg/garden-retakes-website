@@ -6,11 +6,12 @@ import { Viewer } from "@/lib/viewer/viewer-component";
 import { ViewerApi } from "@/lib/viewer/viewer-api";
 import { CS2Economy } from "@ianlucas/cs2-lib";
 import { ViewerItemInput } from "@/lib/viewer/viewer";
-import { PlacedSticker, STICKER_SLOTS } from "@/lib/inventory";
+import { PlacedSticker, STICKER_SLOTS, ItemKind } from "@/lib/inventory";
 import { useI18n } from '@/components/I18nProvider';
 
 type SkinEditor3DProps = {
   skinId: number;
+  itemKind: ItemKind;
   wear: number;
   seed: number;
   statTrak: boolean;
@@ -29,6 +30,7 @@ export default function SkinEditor3D({
   seed,
   statTrak,
   nameTag,
+  itemKind,
   initialStickers,
   initialCharm,
   onSave,
@@ -50,13 +52,13 @@ export default function SkinEditor3D({
   useEffect(() => {
     // Load ALL stickers and charms
     Promise.all([
-      fetch('/api/stickers?limit=0').then(res => res.json()),
+      fetch(itemKind === "agent" ? '/api/patches?limit=0' : '/api/stickers?limit=0').then(res => res.json()),
       fetch('/api/charms?limit=0').then(res => res.json())
     ]).then(([stickersData, charmsData]) => {
       setAllStickers(stickersData);
       setAllCharms(charmsData);
     });
-  }, []);
+  }, [itemKind]);
 
   const searchResults = useMemo(() => {
     if (activeSlot === null) return [];
@@ -310,13 +312,9 @@ export default function SkinEditor3D({
         >
           <div className="inv4-editor3d-drawer-inner">
             <div className="inv4-editor3d-search">
-              <input 
-                type="text" 
-                placeholder={activeSlot === 5 ? "Search Charms (Regex supported)..." : "Search Stickers (Regex supported)..."}
-                className="input"
-                value={searchQuery}
-                onChange={(e) => setSearchQuery(e.target.value)}
-              />
+              <div className="inv4-search">
+                <input autoFocus type="text" placeholder={`Search ${activeSlot === 5 ? 'charms' : (itemKind === 'agent' ? 'patches' : 'stickers')}...`} className="input" value={searchQuery} onChange={e => setSearchQuery(e.target.value)} />
+              </div>
             </div>
             <div className="inv4-editor3d-grid">
               {searchResults.map(s => (

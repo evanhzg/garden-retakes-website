@@ -1,0 +1,212 @@
+{
+    "agent-4613": {
+        "name": "Bloody Darryl The Strapped | The Professionals",
+        "faction": "Professionals",
+        "radio_commands": {
+            "Go Go Go": "/audio/agents/professionals_go_go_go.ogg",
+            "Fall Back": "/audio/agents/professionals_fall_back.ogg",
+            "Stick Together": "/audio/agents/professionals_stick_together.ogg",
+            "Hold This Position": "/audio/agents/professionals_hold_this_position.ogg",
+            "Follow Me": "/audio/agents/professionals_follow_me.ogg",
+            "Affirmative": "/audio/agents/professionals_affirmative.ogg",
+            "Negative": "/audio/agents/professionals_negative.ogg",
+            "Cheer": "/audio/agents/professionals_cheer.ogg",
+            "Compliment": "/audio/agents/professionals_compliment.ogg",
+            "Thanks": "/audio/agents/professionals_thanks.ogg",
+            "Enemy Spotted": "/audio/agents/professionals_enemy_spotted.ogg",
+            "Need Backup": "/audio/agents/professionals_need_backup.ogg",
+            "Take the Point": "/audio/agents/professionals_take_the_point.ogg",
+            "Sector Clear": "/audio/agents/professionals_sector_clear.ogg",
+            "I'm in Position": "/audio/agents/professionals_im_in_position.ogg"
+        }
+    },
+    "agent-4619": {
+        "name": "'Blueberries' Buckshot | NSWC SEAL",
+        "faction": "SEAL_Team_6",
+        "radio_commands": {
+            "Go Go Go": "/audio/agents/seal_team_6_go_go_go.ogg",
+            "Fall Back": "/audio/agents/seal_team_6_fall_back.ogg",
+            "Stick Together": "/audio/agents/seal_team_6_stick_together.ogg",
+            "Hold This Position": "/audio/agents/seal_team_6_hold_this_position.ogg",
+            "Follow Me": "/audio/agents/seal_team_6_follow_me.ogg",
+            "Affirmative": "/audio/agents/seal_team_6_affirmative.ogg",
+            "Negative": "/audio/agents/seal_team_6_negative.ogg",
+            "Cheer": "/audio/agents/seal_team_6_cheer.ogg",
+            "Compliment": "/audio/agents/seal_team_6_compliment.ogg",
+            "Thanks": "/audio/agents/seal_team_6_thanks.ogg",
+            "Enemy Spotted": "/audio/agents/seal_team_6_enemy_spotted.ogg",
+            "Need Backup": "/audio/agents/seal_team_6_need_backup.ogg",
+            "Take the Point": "/audio/agents/seal_team_6_take_the_point.ogg",
+            "Sector Clear": "/audio/agents/seal_team_6_sector_clear.ogg",
+            "I'm in Position": "/audio/agents/seal_team_6_im_in_position.ogg"
+        }
+    },
+    "agent-4680": {
+        "name": "'Two Times' McCoy | TACP Cavalry",
+        "faction": "SAS",
+        "radio_commands": {
+            "Go Go Go": "/audio/agents/sas_go_go_go.ogg",
+            "Fall Back": "/audio/agents/sas_fall_back.ogg",
+            "Stick Together": "/audio/agents/sas_stick_together.ogg",
+            "Hold This Position": "/audio/agents/sas_hold_this_position.ogg",
+            "Follow Me": "/audio/agents/sas_follow_me.ogg",
+            "Affirmative": "/audio/agents/sas_affirmative.ogg",
+            "Negative": "/audio/agents/sas_negative.ogg",
+            "Cheer": "/audio/agents/sas_cheer.ogg",
+            "Compliment": "/audio/agents/sas_compliment.ogg",
+            "Thanks": "/audio/agents/sas_thanks.ogg",
+            "Enemy Spotted": "/audio/agents/sas_enemy_spotted.ogg",
+            "Need Backup": "/audio/agents/sas_need_backup.ogg",
+            "Take the Point": "/audio/agents/sas_take_the_point.ogg",
+            "Sector Clear": "/audio/agents/sas_sector_clear.ogg",
+            "I'm in Position": "/audio/agents/sas_im_in_position.ogg"
+        }
+    },
+    "agent-4711": {
+        "name": "Cmdr. Mae 'Dead Cold' Jamison | SWAT",
+        "faction": "SWAT",
+        "radio_commands": {
+            "Go Go Go": "/audio/agents/swat_go_go_go.ogg",
+            "Fall Back": "/audio/agents/swat_fall_back.ogg",
+            "Stick Together": "/audio/agents/swat_stick_together.ogg",
+            "Hold This Position": "/audio/agents/swat_hold_this_position.ogg",
+            "Follow Me": "/audio/agents/swat_follow_me.ogg",
+            "Affirmative": "/audio/agents/swat_affirmative.ogg",
+            "Negative": "/audio/agents/swat_negative.ogg",
+            "Cheer": "/audio/agents/swat_cheer.ogg",
+            "Compliment": "/audio/agents/swat_compliment.ogg",
+            "Thanks": "/audio/agents/swat_thanks.ogg",
+            "Enemy Spotted": "/audio/agents/swat_enemy_spotted.ogg",
+            "Need Backup": "/audio/agents/swat_need_backup.ogg",
+            "Take the Point": "/audio/agents/swat_take_the_point.ogg",
+            "Sector Clear": "/audio/agents/swat_sector_clear.ogg",
+            "I'm in Position": "/audio/agents/swat_im_in_position.ogg"
+        }
+    },
+    "agent-4712": {
+        "name": "1st Lieutenant Farlow | SWAT",
+        "faction": "SWAT",
+        "radio_commands": {
+            "Go Go Go": "/audio/agents/swat_go_go_go.ogg",
+            "Fall Back": "/audio/agents/swat_fall_back.ogg",
+            "Stick Together": "/audio/agents/swat_stick_together.ogg",
+            "Hold This Position": "/audio/agents/swat_hold_this_position.ogg",
+            "Follow Me": "/audio/agents/swat_follow_me.ogg",
+            "Affirmative": "/audio/agents/swat_affirmative.ogg",
+            "Negative": "/audio/agents/swat_negative.ogg",
+            "Cheer": "/audio/agents/swat_cheer.ogg",
+            "Compliment": "/audio/agents/swat_compliment.ogg",
+            "Thanks": "/audio/agents/swat_thanks.ogg",
+            "Enemy Spotted": "/audio/agents/swat_enemy_spotted.ogg",
+            "Need Backup": "/audio/agents/swat_need_backup.ogg",
+            "Take the Point": "/audio/agents/swat_take_the_point.ogg",
+            "Sector Clear": "/audio/agents/swat_sector_clear.ogg",
+            "I'm in Position": "/audio/agents/swat_im_in_position.ogg"
+        }
+    },
+    "agent-4713": {
+        "name": "John 'Van Healen' Kask | SWAT",
+        "faction": "SWAT",
+        "radio_commands": {
+            "Go Go Go": "/audio/agents/swat_go_go_go.ogg",
+            "Fall Back": "/audio/agents/swat_fall_back.ogg",
+            "Stick Together": "/audio/agents/swat_stick_together.ogg",
+            "Hold This Position": "/audio/agents/swat_hold_this_position.ogg",
+            "Follow Me": "/audio/agents/swat_follow_me.ogg",
+            "Affirmative": "/audio/agents/swat_affirmative.ogg",
+            "Negative": "/audio/agents/swat_negative.ogg",
+            "Cheer": "/audio/agents/swat_cheer.ogg",
+            "Compliment": "/audio/agents/swat_compliment.ogg",
+            "Thanks": "/audio/agents/swat_thanks.ogg",
+            "Enemy Spotted": "/audio/agents/swat_enemy_spotted.ogg",
+            "Need Backup": "/audio/agents/swat_need_backup.ogg",
+            "Take the Point": "/audio/agents/swat_take_the_point.ogg",
+            "Sector Clear": "/audio/agents/swat_sector_clear.ogg",
+            "I'm in Position": "/audio/agents/swat_im_in_position.ogg"
+        }
+    },
+    "agent-4714": {
+        "name": "Bio-Haz Specialist | SWAT",
+        "faction": "SWAT",
+        "radio_commands": {
+            "Go Go Go": "/audio/agents/swat_go_go_go.ogg",
+            "Fall Back": "/audio/agents/swat_fall_back.ogg",
+            "Stick Together": "/audio/agents/swat_stick_together.ogg",
+            "Hold This Position": "/audio/agents/swat_hold_this_position.ogg",
+            "Follow Me": "/audio/agents/swat_follow_me.ogg",
+            "Affirmative": "/audio/agents/swat_affirmative.ogg",
+            "Negative": "/audio/agents/swat_negative.ogg",
+            "Cheer": "/audio/agents/swat_cheer.ogg",
+            "Compliment": "/audio/agents/swat_compliment.ogg",
+            "Thanks": "/audio/agents/swat_thanks.ogg",
+            "Enemy Spotted": "/audio/agents/swat_enemy_spotted.ogg",
+            "Need Backup": "/audio/agents/swat_need_backup.ogg",
+            "Take the Point": "/audio/agents/swat_take_the_point.ogg",
+            "Sector Clear": "/audio/agents/swat_sector_clear.ogg",
+            "I'm in Position": "/audio/agents/swat_im_in_position.ogg"
+        }
+    },
+    "agent-4715": {
+        "name": "Sergeant Bombson | SWAT",
+        "faction": "SWAT",
+        "radio_commands": {
+            "Go Go Go": "/audio/agents/swat_go_go_go.ogg",
+            "Fall Back": "/audio/agents/swat_fall_back.ogg",
+            "Stick Together": "/audio/agents/swat_stick_together.ogg",
+            "Hold This Position": "/audio/agents/swat_hold_this_position.ogg",
+            "Follow Me": "/audio/agents/swat_follow_me.ogg",
+            "Affirmative": "/audio/agents/swat_affirmative.ogg",
+            "Negative": "/audio/agents/swat_negative.ogg",
+            "Cheer": "/audio/agents/swat_cheer.ogg",
+            "Compliment": "/audio/agents/swat_compliment.ogg",
+            "Thanks": "/audio/agents/swat_thanks.ogg",
+            "Enemy Spotted": "/audio/agents/swat_enemy_spotted.ogg",
+            "Need Backup": "/audio/agents/swat_need_backup.ogg",
+            "Take the Point": "/audio/agents/swat_take_the_point.ogg",
+            "Sector Clear": "/audio/agents/swat_sector_clear.ogg",
+            "I'm in Position": "/audio/agents/swat_im_in_position.ogg"
+        }
+    },
+    "agent-4716": {
+        "name": "Chem-Haz Specialist | SWAT",
+        "faction": "SWAT",
+        "radio_commands": {
+            "Go Go Go": "/audio/agents/swat_go_go_go.ogg",
+            "Fall Back": "/audio/agents/swat_fall_back.ogg",
+            "Stick Together": "/audio/agents/swat_stick_together.ogg",
+            "Hold This Position": "/audio/agents/swat_hold_this_position.ogg",
+            "Follow Me": "/audio/agents/swat_follow_me.ogg",
+            "Affirmative": "/audio/agents/swat_affirmative.ogg",
+            "Negative": "/audio/agents/swat_negative.ogg",
+            "Cheer": "/audio/agents/swat_cheer.ogg",
+            "Compliment": "/audio/agents/swat_compliment.ogg",
+            "Thanks": "/audio/agents/swat_thanks.ogg",
+            "Enemy Spotted": "/audio/agents/swat_enemy_spotted.ogg",
+            "Need Backup": "/audio/agents/swat_need_backup.ogg",
+            "Take the Point": "/audio/agents/swat_take_the_point.ogg",
+            "Sector Clear": "/audio/agents/swat_sector_clear.ogg",
+            "I'm in Position": "/audio/agents/swat_im_in_position.ogg"
+        }
+    },
+    "agent-4718": {
+        "name": "Sir Bloody Miami Darryl | The Professionals",
+        "faction": "Professionals",
+        "radio_commands": {
+            "Go Go Go": "/audio/agents/professionals_go_go_go.ogg",
+            "Fall Back": "/audio/agents/professionals_fall_back.ogg",
+            "Stick Together": "/audio/agents/professionals_stick_together.ogg",
+            "Hold This Position": "/audio/agents/professionals_hold_this_position.ogg",
+            "Follow Me": "/audio/agents/professionals_follow_me.ogg",
+            "Affirmative": "/audio/agents/professionals_affirmative.ogg",
+            "Negative": "/audio/agents/professionals_negative.ogg",
+            "Cheer": "/audio/agents/professionals_cheer.ogg",
+            "Compliment": "/audio/agents/professionals_compliment.ogg",
+            "Thanks": "/audio/agents/professionals_thanks.ogg",
+            "Enemy Spotted": "/audio/agents/professionals_enemy_spotted.ogg",
+            "Need Backup": "/audio/agents/professionals_need_backup.ogg",
+            "Take the Point": "/audio/agents/professionals_take_the_point.ogg",
+            "Sector Clear": "/audio/agents/professionals_sector_clear.ogg",
+            "I'm in Position": "/audio/agents/professionals_im_in_position.ogg"
+        }
+    }
+}

@@ -376,6 +376,7 @@ model GardenRetakeLoadout {
   /// One of lib/retakeLoadout ROLES, or "" for none chosen.
   RoleT        String   @default("") @db.VarChar(16)
   RoleCt       String   @default("") @db.VarChar(16)
+  IsCaller     Boolean  @default(false)
   /// { pistol: [...], half: [...], full: [...] } — ordered, first choice first.
   UtilityPrefs String?  @db.Text
   Notes        String?  @db.VarChar(300)

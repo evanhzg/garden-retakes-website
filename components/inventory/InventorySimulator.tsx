@@ -31,6 +31,7 @@ import {
 import { useI18n } from '@/components/I18nProvider';
 import { importSnapshot, type LoadoutSnapshot } from "@/lib/share";
 import SkinEditor3D from "./SkinEditor3D";
+import agentVoicesData from "@/data/agent_voices.json";
 
 type WeaponEntry = {
   id: number;
@@ -40,6 +41,7 @@ type WeaponEntry = {
   image: string;
   category: string;
   team: Team;
+  rarity?: string;
 };
 type Skin = { id: number; def: number; paint: number; name: string; image: string; rarity: string; collection?: string };
 type StickerOption = { id: number; def: number; name: string; image: string; rarity: string };
@@ -153,7 +155,7 @@ export default function InventorySimulator() {
   }, []);
 
   const builderKind: ItemKind = weapon ? kindOfCategory(weapon.category) : "weapon";
-  const supportsStickers = builderKind === "weapon";
+  const supportsStickers = builderKind === "weapon" || builderKind === "agent";
   const supportsStatTrak = builderKind !== "gloves";
 
   // Full-height page: hide the global footer so the workspace never scrolls.
@@ -289,17 +291,20 @@ export default function InventorySimulator() {
 
   // ---------- Sticker search ----------
   useEffect(() => {
-    if (!editor3dOpen) return;
+    if (!editor3dOpen && builderKind !== "agent") return; // Allow patches to be picked even without 3D editor if that's how it's handled, but actually keep it true to the original logic
+    // Actually, wait, let me just restore the original logic exactly but with kind support
+    if (!editor3dOpen && builderKind !== "agent" && !weapon) return; // ensure something is open
+    const searchKind = builderKind === "agent" ? "patch" : "sticker";
     const h = window.setTimeout(() => {
       setStickersLoading(true);
-      fetch(`/api/stickers?q=${encodeURIComponent(stickerQuery)}`)
+      fetch(`/api/stickers?q=${encodeURIComponent(stickerQuery)}&kind=${searchKind}`)
         .then((r) => r.json())
         .then((d: StickerOption[]) => setStickerResults(Array.isArray(d) ? d : []))
         .catch(() => setStickerResults([]))
         .finally(() => setStickersLoading(false));
     }, 350);
     return () => window.clearTimeout(h);
-  }, [stickerQuery, editor3dOpen]);
+  }, [stickerQuery, editor3dOpen, builderKind, weapon]);
 
   // ---------- Slot helpers ----------
   const slotItemFor = useCallback(
@@ -1221,7 +1226,7 @@ export default function InventorySimulator() {
                         };
                         setContextMenu({ x: e.clientX, y: e.clientY, skin: itemSkin, weapon: w, side });
                       }}
-                      style={item?.rarity ? ({ "--rarity": item.rarity } as React.CSSProperties) : undefined}
+                      style={(item?.rarity || w.rarity) ? ({ "--rarity": item?.rarity || w.rarity } as React.CSSProperties) : undefined}
                     >
                       <div className="inv4-weapon-img">
                         {/* eslint-disable-next-line @next/next/no-img-element */}
@@ -1317,6 +1322,64 @@ export default function InventorySimulator() {
 
                   {skinsLoading ? (
                     <p className="empty-hint">{t("auto.inventorysimulator.loading_skins")}</p>
+                  ) : builderKind === "agent" ? (
+                    <div style={{ marginTop: 24, padding: 16, background: 'var(--bg-elevated)', borderRadius: 8 }}>
+                      <h3 style={{ marginTop: 0, marginBottom: 12 }}>Radio Commands</h3>
+                      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(140px, 1fr))', gap: 8 }}>
+                        {[
+                          "Go Go Go", "Fall Back", "Stick Together", "Hold This Position",
+                          "Follow Me", "Affirmative", "Negative", "Cheer", "Compliment",
+                          "Thanks", "Enemy Spotted", "Need Backup", "Take the Point",
+                          "Sector Clear", "I'm in Position"
+                        ].map(cmd => {
+                          const voices = (agentVoicesData as any)[`agent-${weapon.id}`];
+                          const src = voices?.radio_commands?.[cmd];
+                          return (
+                            <button
+                              key={cmd}
+                              disabled={!src}
+                              onClick={() => {
+                                if (src) new Audio(src).play().catch(() => {});
+                              }}
+                              style={{
+                                padding: "8px",
+                                borderRadius: "4px",
+                                border: "1px solid var(--border)",
+                                background: src ? "var(--color-surface)" : "transparent",
+                                opacity: src ? 1 : 0.4,
+                                cursor: src ? "pointer" : "not-allowed",
+                                color: "var(--fg)",
+                                fontSize: "12px",
+                                fontWeight: 500,
+                                transition: "all 0.2s"
+                              }}
+                              onMouseOver={e => { if (src) e.currentTarget.style.borderColor = "var(--color-accent)"; }}
+                              onMouseOut={e => { if (src) e.currentTarget.style.borderColor = "var(--border)"; }}
+                            >
+                              {cmd}
+                            </button>
+                          );
+                        })}
+                      </div>
+                      <div style={{ marginTop: 24, display: 'flex', justifyContent: 'center' }}>
+                         <button className="btn btn-primary" onClick={() => {
+                            // Quick equip base agent logic
+                            setStore(cur => {
+                              const loadout = cur.loadouts.find(l => l.id === cur.activeLoadoutId);
+                              if (!loadout) return cur;
+                              let newLoadout = { ...loadout };
+                              const targetSides = (overrideSide === "both" ? ["t" as const, "ct" as const] : [overrideSide || side]).filter(s => weapon.team === "both" || weapon.team === s);
+                              for (const s of targetSides) {
+                                if (s === "t") newLoadout.agentT = String(weapon.id); else newLoadout.agentCT = String(weapon.id);
+                              }
+                              return { ...cur, loadouts: cur.loadouts.map(l => l.id === newLoadout.id ? newLoadout : l) };
+                            });
+                            closeChooser();
+                         }}>
+                            Equip Agent
+                         </button>
+                      </div>
+                    </div>
                   ) : (
                     <div className="inv4-skins">
                       {shownSkins.map((s) => {
@@ -1449,6 +1512,7 @@ export default function InventorySimulator() {
       {toast && <div className="toast">{toast}</div>}
       {editor3dOpen && weapon && (
         <SkinEditor3D 
+          itemKind={weapon.category === "Agents" ? "agent" : "weapon"}
           skinId={currentSkinId || weapon.id}
           wear={wear}
           seed={seed}
