@@ -473,7 +473,7 @@ export default function RetakesLobby({ signedIn, lobbyId }: { signedIn: boolean,
                     if (ss) return <SafeShield score={ss.score} probation={ss.probation} />;
                     return null;
                   })()}
-                  {partyLoadouts[m.steamId]?.isCaller && <Mic size={14} style={{ marginLeft: 4, color: "var(--color-accent)" }} title="Caller" />}
+                  {partyLoadouts[m.steamId]?.isCaller && <span title="Caller"><Mic size={14} style={{ marginLeft: 4, color: "var(--color-accent)" }} /></span>}
                   {partyLoadouts[m.steamId]?.roleT && <span style={{ marginLeft: 6, opacity: 0.7 }} title={`T: ${partyLoadouts[m.steamId].roleT}`}>
                      {partyLoadouts[m.steamId].roleT === 'sniper' && <Crosshair size={14} />}
                      {partyLoadouts[m.steamId].roleT === 'lurker' && <Ghost size={14} />}
