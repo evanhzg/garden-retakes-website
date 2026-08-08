@@ -32,6 +32,7 @@ export async function GET(req: Request) {
     recentActions,
     poll,
     seasonPlayers,
+    demoModeState,
   ] = await Promise.all([
     prisma.playerProfile.count(),
     prisma.gardenBan.count({ where: { OR: [{ ExpiresAtUtc: null }, { ExpiresAtUtc: { gt: new Date() } }] } }).catch(() => 0),
@@ -45,6 +46,7 @@ export async function GET(req: Request) {
     season
       ? prisma.playerSeasonStats.count({ where: { SeasonId: season.Id } }).catch(() => 0)
       : Promise.resolve(0),
+    prisma.gardenSchedulerState.findUnique({ where: { Key: "DemoMode" } }).catch(() => null),
   ]);
 
   // What is actually running, so the panel can show which button is already the
@@ -98,5 +100,6 @@ export async function GET(req: Request) {
           open: now >= poll.OpensAt && now < poll.ClosesAt,
         }
       : null,
+    demoMode: demoModeState?.Value === "true",
   });
 }

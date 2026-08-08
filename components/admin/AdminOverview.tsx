@@ -24,6 +24,7 @@ type Overview = {
     recentActions: number;
   };
   poll: { id: number; seasonId: number; closesAt: string; open: boolean } | null;
+  demoMode?: boolean;
 };
 
 type Tile = {
@@ -122,6 +123,27 @@ export default function AdminOverview({
     }
   };
 
+  const toggleDemoMode = async () => {
+    if (!data) return;
+    const newValue = !data.demoMode;
+    try {
+      const res = await fetch("/api/admin/action", {
+        method: "POST",
+        headers: { "content-type": "application/json" },
+        body: JSON.stringify({ type: "toggleDemoMode", value: String(newValue), key: adminKey }),
+      });
+      const json = await res.json();
+      if (!res.ok) {
+        setStartNote({ ok: false, text: json.error ?? t("auto.adminpanel.action_failed") });
+        return;
+      }
+      setStartNote({ ok: true, text: json.message ?? "Success" });
+      setData(d => d ? { ...d, demoMode: newValue } : d);
+    } catch {
+      setStartNote({ ok: false, text: "Action failed" });
+    }
+  };
+
   if (error) {
     return <p className="skin-note skin-note-error"><span>{error}</span></p>;
   }
@@ -216,6 +238,23 @@ export default function AdminOverview({
             >
               {opening ? t("admin.season.open_vote_busy") : t("admin.season.open_vote")}
             </button>
+          </div>
+        )}
+
+        {viewerLevel >= 3 && data && (
+          <div>
+            <span className="adm-strip-k">Demo Mode</span>
+            <span className="adm-strip-v">
+              {data.demoMode ? "Active" : "Inactive"}
+            </span>
+            <div className="adm-strip-actions">
+              <button
+                className={`btn ${data.demoMode ? "btn-danger" : "btn-primary"}`}
+                onClick={toggleDemoMode}
+              >
+                {data.demoMode ? "Disable Demo Mode" : "Enable Demo Mode"}
+              </button>
+            </div>
           </div>
         )}
       </div>

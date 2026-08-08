@@ -65,11 +65,13 @@ type Session = {
 export default function NavBar({ 
   avatarPlayers = [], 
   host = "retakes.fr", 
-  protocol = "https" 
+  protocol = "https",
+  isDemoMode = false
 }: { 
   avatarPlayers?: any[], 
   host?: string, 
-  protocol?: string 
+  protocol?: string,
+  isDemoMode?: boolean
 }) {
   const pathname = usePathname();
   const router = useRouter();
@@ -173,7 +175,15 @@ export default function NavBar({
   }, []);
 
   const isGamesSection = pathname.startsWith("/games");
-  const baseLinks = isGamesSection ? [...GAMES_LINKS] : [...CS2_LINKS];
+  
+  let baseLinks = isGamesSection ? [...GAMES_LINKS] : [...CS2_LINKS];
+  if (isDemoMode) {
+    const hiddenInDemo = [
+      "/insights", "/utility", "/live", "/compare", "/duels", 
+      "/request-skin", "/docs", "/commands", "/roadmap", "/games"
+    ];
+    baseLinks = baseLinks.filter(l => !hiddenInDemo.includes(l.href));
+  }
   
   if (isGamesSection) {
     baseLinks.push({ href: "/games/profile", label: "Profile" });

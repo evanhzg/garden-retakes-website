@@ -112,6 +112,9 @@ export default async function RootLayout({ children }: { children: React.ReactNo
     }
   }
 
+  const demoModeRecord = await prisma.gardenSchedulerState.findUnique({ where: { Key: "DemoMode" } });
+  const isDemoMode = demoModeRecord?.Value === "true";
+
   return (
     <html
       lang={locale}
@@ -136,7 +139,7 @@ export default async function RootLayout({ children }: { children: React.ReactNo
               (#ec4899 / #a855f7 / #d946ef) and fought the Modernist ground. */}
           <DynamicGridBackground />
           <RouteLoader />
-          <NavBar avatarPlayers={avatarPlayers} host={host} protocol={protocol} />
+          <NavBar avatarPlayers={avatarPlayers} host={host} protocol={protocol} isDemoMode={isDemoMode} />
           <div className="layout-wrapper">
             <div className="main-content">
               <main className="container">{children}</main>

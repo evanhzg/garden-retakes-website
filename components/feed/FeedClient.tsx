@@ -3,6 +3,7 @@
 import { useCallback, useEffect, useRef, useState } from "react";
 import ClipCard, { type Clip } from "@/components/feed/ClipCard";
 import UploadClipModal from "@/components/feed/UploadClipModal";
+import ClipRequestsModal from "@/components/feed/ClipRequestsModal";
 import { useI18n } from '@/components/I18nProvider';
 import { CLIP_TAGS } from "@/lib/feedShared";
 
@@ -53,6 +54,7 @@ export default function FeedClient({ signedIn, isAdmin = false }: { signedIn: bo
   const [updates, setUpdates] = useState<Update[] | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [uploading, setUploading] = useState(false);
+  const [showRequests, setShowRequests] = useState(false);
 
   /** A clip id from ?clip= — a notification links here rather than to the bare
    *  share page, which has no navigation and reads as a broken link. */
@@ -211,7 +213,10 @@ export default function FeedClient({ signedIn, isAdmin = false }: { signedIn: bo
                                       </p>
           </div>
           {signedIn ? (
-            <button className="btn btn-primary" onClick={() => setUploading(true)}>{t("auto.feedclient.post_a_clip")}</button>
+            <div style={{ display: "flex", gap: 12 }}>
+              <button className="btn btn-secondary" onClick={() => setShowRequests(true)}>My /clip requests</button>
+              <button className="btn btn-primary" onClick={() => setUploading(true)}>{t("auto.feedclient.post_a_clip")}</button>
+            </div>
           ) : (
             <a className="btn btn-secondary" href="/api/auth/steam/login">{t("auto.feedclient.sign_in_to_post")}</a>
           )}
@@ -378,6 +383,10 @@ export default function FeedClient({ signedIn, isAdmin = false }: { signedIn: bo
           )}
         </div>
       </section>
+
+      {showRequests && (
+        <ClipRequestsModal onClose={() => setShowRequests(false)} />
+      )}
 
       {uploading && (
         <UploadClipModal

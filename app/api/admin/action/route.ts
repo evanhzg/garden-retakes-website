@@ -1,4 +1,5 @@
 import { NextResponse } from "next/server";
+import { prisma } from "@/lib/db";
 import { AdminLevel, getAdminContext } from "@/lib/adminAuth";
 import {
   banPlayer,
@@ -28,6 +29,7 @@ const REQUIRED: Record<string, number> = {
   clearName: AdminLevel.Admin,
   setRole: AdminLevel.Owner,
   removeRole: AdminLevel.Owner,
+  toggleDemoMode: AdminLevel.Owner,
 };
 
 export async function POST(req: Request) {
@@ -84,6 +86,16 @@ export async function POST(req: Request) {
     case "removeRole":
       result = await removeRole(ctx, str("steamId"));
       break;
+    case "toggleDemoMode": {
+      const mode = str("value");
+      await prisma.gardenSchedulerState.upsert({
+        where: { Key: "DemoMode" },
+        update: { Value: mode, UpdatedAtUtc: new Date() },
+        create: { Key: "DemoMode", Value: mode, UpdatedAtUtc: new Date() },
+      });
+      result = { ok: true, message: `Demo Mode set to ${mode}` };
+      break;
+    }
     default:
       return NextResponse.json({ error: "Unknown action." }, { status: 400 });
   }
