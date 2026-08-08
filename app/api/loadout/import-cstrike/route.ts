@@ -1,113 +1,152 @@
 import { NextResponse } from "next/server";
-import { CS2Economy, CS2_ITEMS } from "@ianlucas/cs2-lib";
+import { CS2Inventory, CS2Economy, CS2_ITEMS } from "@ianlucas/cs2-lib";
 import { english } from "@ianlucas/cs2-lib/translations/english";
-import { newId, emptyLoadout, Loadout, defaultStickerSlots, PlacedSticker, InventoryItem, STICKER_SLOTS } from "@/lib/inventory";
+import { newId, Loadout, InventoryItem, emptyLoadout, M4A4, M4A1S, PlacedSticker } from "@/lib/inventory";
 
 let economyLoaded = false;
+function loadEconomy() {
+  if (economyLoaded) return;
+  CS2Economy.load({ items: CS2_ITEMS, language: english });
+  economyLoaded = true;
+}
 
-export async function POST(req: Request) {
+export async function POST(request: Request) {
   try {
-    if (!economyLoaded) {
-      CS2Economy.load({ items: CS2_ITEMS, language: english });
-      economyLoaded = true;
-    }
-    const { payload } = await req.json();
-    let data;
-    try {
-      const url = new URL(payload);
-      const search = url.searchParams.get("inventory");
-      data = search ? JSON.parse(decodeURIComponent(search)) : JSON.parse(payload);
-    } catch {
-      data = JSON.parse(payload);
+    loadEconomy();
+    const { payload } = await request.json();
+    if (!payload) return NextResponse.json({ error: "Missing payload" }, { status: 400 });
+
+    let shareCode = payload;
+    if (payload.includes("v4_") || payload.includes("share=")) {
+      const match = payload.match(/(?:share=)?(v[0-9]+_[A-Za-z0-9+\/=]+)/);
+      if (match) shareCode = match[1];
+    } else if (payload.startsWith("http")) {
+       const u = new URL(payload);
+       shareCode = u.searchParams.get("share") || payload;
     }
 
-    if (!Array.isArray(data)) {
-      return NextResponse.json({ error: "Invalid format: expected array" }, { status: 400 });
+    const invData = CS2Inventory.parse(shareCode, CS2Economy);
+    if (!invData) {
+      return NextResponse.json({ error: "Invalid cstrike inventory data" }, { status: 400 });
     }
 
-    const loadout = emptyLoadout("Imported Loadout");
-    loadout.equippedPatchesCT = [];
-    loadout.equippedPatchesT = [];
-    
-    let uidCounter = Date.now();
+    const loadout: Loadout = emptyLoadout("Imported from cstrike");
     const items: InventoryItem[] = [];
+    let nextUid = 1;
 
-    for (const i of data) {
-      if (!i.id || !i.equipped) continue;
-      const econItem = CS2Economy.getById(i.id);
-      if (!econItem) continue;
+    for (const [index, csItem] of Object.entries(invData.items)) {
+      const economyItem = CS2Economy.getById(csItem.id);
+      if (!economyItem) continue;
 
-      const itemKind = econItem.isAgent() ? "agent" : econItem.isPatch() ? "patch" : econItem.isKeychain() ? "charm" : econItem.isMelee() ? "knife" : econItem.isGloves() ? "gloves" : "weapon";
+      if (!csItem.equipped && !csItem.equippedCT && !csItem.equippedT) {
+         continue; // Only import equipped items for the loadout
+      }
+
+      let kind: "weapon" | "knife" | "gloves" | "agent" | "patch" | "charm" = "weapon";
+      if (economyItem.isMelee()) kind = "knife";
+      else if (economyItem.isGloves()) kind = "gloves";
+      else if (economyItem.isAgent()) kind = "agent";
+      else if (economyItem.isPatch()) kind = "patch";
+      else if (economyItem.isKeychain()) kind = "charm";
+
+      let weaponDef = economyItem.def;
+      if (kind === "patch") weaponDef = economyItem.index ?? 0;
+      if (kind === "charm") weaponDef = economyItem.id;
       
-      const stickers: (PlacedSticker | null)[] = defaultStickerSlots();
-      if (i.stickers) {
-        for (const [slot, s] of Object.entries(i.stickers)) {
-          const sIdx = Number(slot);
-          if (sIdx >= 0 && sIdx < STICKER_SLOTS) {
-            const stickerItem = CS2Economy.getById(s as number);
-            if (stickerItem) {
-              stickers[sIdx] = {
-                def: stickerItem.index ?? 0,
-                name: stickerItem.name,
-                image: stickerItem.getImage(),
-                slot: sIdx,
-                wear: i.stickerswear?.[slot] ?? 0,
-                x: 0,
-                y: 0,
-                rotation: i.stickersrotation?.[slot] ?? 0
-              };
-            }
-          }
+      const targetSides = [];
+      if (csItem.equipped) targetSides.push("t", "ct");
+      else {
+         if (csItem.equippedT) targetSides.push("t");
+         if (csItem.equippedCT) targetSides.push("ct");
+      }
+
+      const stickers: (PlacedSticker | null)[] = [];
+      if (csItem.stickers) {
+        for (const [slot, s] of Object.entries(csItem.stickers)) {
+          const st = CS2Economy.getById(s.id);
+          stickers[parseInt(slot)] = {
+            def: st.index ?? 0,
+            name: st.name.replace(/^Sticker \| /, ""),
+            image: st.getImage(),
+            slot: parseInt(slot),
+            wear: s.wear ?? 0,
+            x: s.x, y: s.y, rotation: s.rotation
+          };
         }
+      }
+      
+      let charm: PlacedSticker | null = null;
+      if (csItem.keychains && Object.keys(csItem.keychains).length > 0) {
+        const slot = Object.keys(csItem.keychains)[0];
+        const c = csItem.keychains[slot];
+        const ch = CS2Economy.getById(c.id);
+        charm = {
+            def: c.id,
+            name: ch.name.replace(/^Charm \| /, ""),
+            image: ch.getImage(),
+            slot: parseInt(slot),
+            wear: 0,
+            x: c.x, y: c.y, rotation: c.z
+        };
+      }
+
+      let weaponName = economyItem.name;
+      if (economyItem.baseId) {
+         weaponName = CS2Economy.getById(economyItem.baseId).name;
+      } else if (economyItem.base) {
+         weaponName = economyItem.name;
       }
 
       const invItem: InventoryItem = {
         id: newId(),
-        uid: uidCounter++,
-        kind: itemKind as any,
-        weaponDef: econItem.def ?? econItem.id, // For agents/charms
-        weaponName: econItem.name,
-        team: econItem.teams?.includes(3) && econItem.teams?.includes(2) ? "both" : econItem.teams?.includes(3) ? "ct" : "t",
-        skinId: i.id,
-        skinName: econItem.name,
-        paint: econItem.index ?? 0,
-        image: econItem.getImage(),
-        rarity: econItem.rarity ?? "#b0c3d9",
-        wear: i.wear ?? 0.02,
-        seed: i.seed ?? 1,
-        statTrak: i.stattrak !== undefined,
-        nameTag: i.nametag ?? "",
-        stickers,
+        uid: nextUid++,
+        kind,
+        weaponDef: weaponDef ?? 0,
+        weaponName,
+        team: "both",
+        skinId: economyItem.id,
+        skinName: economyItem.name,
+        paint: economyItem.index ?? 0,
+        image: economyItem.getImage(),
+        rarity: economyItem.rarity ?? "",
+        wear: csItem.wear ?? 0,
+        seed: csItem.seed ?? 1,
+        statTrak: csItem.statTrak !== undefined,
+        nameTag: csItem.nameTag ?? "",
+        stickers: Array.from({length: 5}, (_, i) => stickers[i] || null),
+        charm,
         createdAt: Date.now()
       };
-
+      
       items.push(invItem);
-
-      if (i.equipped) {
-        const isCT = i.equipped.includes(3) || i.equippedCT;
-        const isT = i.equipped.includes(2) || i.equippedT;
-
-        if (itemKind === "knife") {
-          if (isCT) loadout.knifeCT = invItem.id;
-          if (isT) loadout.knifeT = invItem.id;
-        } else if (itemKind === "gloves") {
-          if (isCT) loadout.glovesCT = invItem.id;
-          if (isT) loadout.glovesT = invItem.id;
-        } else if (itemKind === "agent") {
-          if (isCT) loadout.agentCT = invItem.id;
-          if (isT) loadout.agentT = invItem.id;
-        } else if (itemKind === "patch") {
-          if (isCT) loadout.equippedPatchesCT?.push(invItem.id);
-          if (isT) loadout.equippedPatchesT?.push(invItem.id);
-        } else if (itemKind === "weapon") {
-          if (isCT) loadout.equippedCT[econItem.def ?? 0] = invItem.id;
-          if (isT) loadout.equippedT[econItem.def ?? 0] = invItem.id;
-        }
+      
+      for (const side of targetSides) {
+          if (kind === "knife") {
+            if (side === "t") loadout.knifeT = invItem.id;
+            else loadout.knifeCT = invItem.id;
+          } else if (kind === "gloves") {
+            if (side === "t") loadout.glovesT = invItem.id;
+            else loadout.glovesCT = invItem.id;
+          } else if (kind === "agent") {
+            if (side === "t") loadout.agentT = invItem.id;
+            else loadout.agentCT = invItem.id;
+          } else if (kind === "patch") {
+            if (!loadout.equippedPatchesT) loadout.equippedPatchesT = [];
+            if (!loadout.equippedPatchesCT) loadout.equippedPatchesCT = [];
+            if (side === "t") loadout.equippedPatchesT.push(invItem.id);
+            else loadout.equippedPatchesCT.push(invItem.id);
+          } else if (kind === "weapon" && weaponDef) {
+            if (side === "t") loadout.equippedT[weaponDef] = invItem.id;
+            else loadout.equippedCT[weaponDef] = invItem.id;
+            if (weaponDef === M4A1S || weaponDef === M4A4) {
+               if (side === "ct") loadout.preferredM4 = weaponDef;
+            }
+          }
       }
     }
 
-    return NextResponse.json({ success: true, loadout, items });
+    return NextResponse.json({ loadout, items });
   } catch (err: any) {
-    return NextResponse.json({ error: "Failed to parse: " + err.message }, { status: 400 });
+    return NextResponse.json({ error: err.message }, { status: 400 });
   }
 }

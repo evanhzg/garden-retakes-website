@@ -60,7 +60,7 @@ type BoardSlot = {
   extra?: boolean;
 };
 
-const CATEGORY_ORDER = ["Rifles", "Snipers", "SMGs", "Pistols", "Heavy", "Knives", "Gloves", "Agents", "Patches"];
+const CATEGORY_ORDER = ["Rifles", "Snipers", "SMGs", "Pistols", "Heavy", "Knives", "Gloves", "Agents", "Patches", "Charms"];
 const SIDES: Side[] = ["t", "ct"];
 
 function wearLabel(wear: number): string {
@@ -487,7 +487,9 @@ export default function InventorySimulator() {
       if (!groups.has(g)) groups.set(g, []);
       groups.get(g)!.push(slot);
     }
-    return Array.from(groups.entries());
+    return Array.from(groups.entries()).sort(
+      (a, b) => CATEGORY_ORDER.indexOf(a[0]) - CATEGORY_ORDER.indexOf(b[0])
+    );
   }, [side, boardT, boardCT, catalog]);
 
   const chooseSide = (s: Side) => {
@@ -962,6 +964,12 @@ export default function InventorySimulator() {
           <button className="btn btn-secondary inv4-lo-new" onClick={addLoadout} title={t("auto.inventorysimulator.new_loadout")}>
             {t("auto.inventorysimulator._new")}
                                 </button>
+          <button className="btn btn-secondary inv4-lo-new" onClick={() => {
+            const url = window.prompt("Paste inventory.cstrike.app link or data:");
+            if (url) importCstrike(url);
+          }} title="Import from inventory.cstrike.app">
+            Import CStrike
+          </button>
         </div>
 
         <div className="inv4-bar-right">
@@ -998,7 +1006,7 @@ export default function InventorySimulator() {
             <input
               id="inv-borrow"
               className="input"
-              placeholder={t("auto.inventorysimulator.borrow_key")}
+              placeholder="Borrow key or cstrike.app link"
               value={importKey}
               // removed max length for cstrike json payloads
               spellCheck={false}

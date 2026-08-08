@@ -17,7 +17,86 @@ export default function FriendsSidebar() {
   const [pendingRequests, setPendingRequests] = useState<any[]>([]);
   const [onlineUsers, setOnlineUsers] = useState<string[]>([]);
   const [addFriendInput, setAddFriendInput] = useState("");
-  const [activeTab, setActiveTab] = useState<"FRIENDS" | "PENDING" | "ADD">("FRIENDS");
+  const [activeTab, setActiveTab] = useState<"FRIENDS" | "PENDING" | "ADD" | "MESSAGES">("FRIENDS");
+  const [messages, setMessages] = useState<any[]>([]);
+  const [activeDmUser, setActiveDmUser] = useState<string | null>(null);
+  const [dmInput, setDmInput] = useState("");
+
+  const fetchMessages = async (targetId: string) => {
+    if (!steamId) return;
+    try {
+      const res = await fetch(`/api/messages?targetId=${targetId}`, {
+        headers: { "Authorization": `Bearer ${steamId}` }
+      });
+      if (res.ok) {
+        const data = await res.json();
+        setMessages(data);
+      }
+    } catch (e) {
+      console.error(e);
+    }
+  };
+
+  useEffect(() => {
+    if (activeTab === "MESSAGES" && activeDmUser) {
+      fetchMessages(activeDmUser);
+    }
+  }, [activeTab, activeDmUser]);
+
+  useEffect(() => {
+    if (socket) {
+      const handleNewMessage = (msg: any) => {
+        if (msg.type === "dm" && activeDmUser && (msg.from === activeDmUser || msg.from === steamId)) {
+          setMessages(prev => [...prev, msg]);
+        }
+      };
+      socket.on("new_message", handleNewMessage);
+      return () => { socket.off("new_message", handleNewMessage); };
+    }
+  }, [socket, activeDmUser, steamId]);
+
+  const sendDm = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!dmInput.trim() || !activeDmUser || !steamId) return;
+    const content = dmInput.trim();
+    setDmInput("");
+
+    if (content.startsWith("/invite")) {
+       inviteFriend(activeDmUser);
+       return;
+    }
+
+    try {
+      const res = await fetch("/api/messages", {
+        method: "POST",
+        headers: { "Content-Type": "application/json", "Authorization": `Bearer ${steamId}` },
+        body: JSON.stringify({ targetSteamId: activeDmUser, content })
+      });
+      if (res.ok) {
+        const data = await res.json();
+        if (socket) {
+          socket.emit("send_message", { type: "dm", content, targetSteamId: activeDmUser });
+          // Optimistic local update isn't strictly needed if socket echoes it, but standard approach:
+          setMessages(prev => [...prev, { from: steamId, content, ts: Date.now(), id: data.message.Id }]);
+        }
+      }
+    } catch(e) {
+      console.error(e);
+    }
+  };
+
+  const renderClip = (content: string) => {
+    const clipMatch = content.match(/https?:\/\/[^\s]+(\/clips?\/[^\s]+|\.mp4)/);
+    if (clipMatch) {
+      return (
+        <div>
+          <span>{content}</span>
+          <video src={clipMatch[0]} controls style={{ maxWidth: '100%', marginTop: '8px' }} />
+        </div>
+      );
+    }
+    return content;
+  };
 
   // Fetch friends from API
   const fetchFriends = async () => {
@@ -111,13 +190,29 @@ export default function FriendsSidebar() {
 
   const inviteFriend = async (friendId: string) => {
     if (!steamId || !socket) return;
+    
     // We assume the user is currently in a lobby if window.location points to one
+    let lobbyId = "";
     const match = window.location.pathname.match(/\/games\/lobby\/([a-zA-Z0-9]+)/);
     if (!match) {
-      alert(t("social.friends.notInLobby"));
-      return;
+      const rlMatch = window.location.pathname.match(/\/lobby\/([a-zA-Z0-9-]+)/);
+      if (!rlMatch) {
+         // create a lobby
+         const res = await fetch('/api/lobby/create', { method: 'POST', headers: { "Authorization": `Bearer ${steamId}` } });
+         if (res.ok) {
+            const data = await res.json();
+            lobbyId = data.lobbyId;
+            router.push(`/lobby/${lobbyId}`);
+         } else {
+            alert(t("social.friends.notInLobby"));
+            return;
+         }
+      } else {
+         lobbyId = rlMatch[1];
+      }
+    } else {
+      lobbyId = match[1];
     }
-    const lobbyId = match[1];
     
     try {
       const res = await fetch("/api/friends/invite", {
@@ -159,6 +254,7 @@ export default function FriendsSidebar() {
 
         <div className="friends-tabs">
           <button className={activeTab === "FRIENDS" ? "active" : ""} onClick={() => setActiveTab("FRIENDS")}>{t("social.friends.tabFriends")}</button>
+          <button className={activeTab === "MESSAGES" ? "active" : ""} onClick={() => setActiveTab("MESSAGES")}>MESSAGES</button>
           <button className={activeTab === "PENDING" ? "active" : ""} onClick={() => setActiveTab("PENDING")}>
             {t("social.friends.tabRequests")} {pendingRequests.length > 0 && `(${pendingRequests.length})`}
           </button>
@@ -179,12 +275,50 @@ export default function FriendsSidebar() {
                         <span className="friend-name">{f.name}</span>
                       </PlayerBubble>
                     </div>
-                    {isOnline && window.location.pathname.includes("/games/lobby/") && (
-                      <button className="btn-invite" onClick={() => inviteFriend(f.friendId)}>{t("social.friends.inviteBtn")}</button>
-                    )}
+                    <div className="friend-actions">
+                      <button className="btn-msg" onClick={() => { setActiveDmUser(f.friendId); setActiveTab("MESSAGES"); }}>DM</button>
+                      {isOnline && (window.location.pathname.includes("/games/lobby/") || window.location.pathname.includes("/lobby/")) && (
+                        <button className="btn-invite" onClick={() => inviteFriend(f.friendId)}>{t("social.friends.inviteBtn")}</button>
+                      )}
+                    </div>
                   </div>
                 );
               })}
+            </div>
+          )}
+
+          {activeTab === "MESSAGES" && (
+            <div className="messages-tab">
+              {!activeDmUser ? (
+                <div className="friends-list">
+                   {friends.map(f => (
+                     <div key={f.id} className="friend-item" onClick={() => setActiveDmUser(f.friendId)} style={{cursor: 'pointer'}}>
+                        <PlayerBubble steamId={f.friendId} name={f.name}>
+                          <span className="friend-name">{f.name}</span>
+                        </PlayerBubble>
+                     </div>
+                   ))}
+                </div>
+              ) : (
+                <div className="dm-view">
+                  <div className="dm-header">
+                     <button onClick={() => setActiveDmUser(null)}>Back</button>
+                     <span>{friends.find(f => f.friendId === activeDmUser)?.name || activeDmUser}</span>
+                  </div>
+                  <div className="dm-messages" style={{ display: 'flex', flexDirection: 'column', gap: '8px', overflowY: 'auto', flex: 1, padding: '8px' }}>
+                     {messages.map((m, i) => (
+                        <div key={i} className={`dm-message ${m.from === steamId ? 'own' : 'other'}`} style={{ alignSelf: m.from === steamId ? 'flex-end' : 'flex-start', background: m.from === steamId ? 'var(--color-primary)' : 'var(--color-surface)', padding: '6px 10px', borderRadius: '8px' }}>
+                           {m.isAdmin && <span title="Admin/Mod" style={{ marginRight: '4px' }}>🛡️</span>}
+                           {renderClip(m.content)}
+                        </div>
+                     ))}
+                  </div>
+                  <form onSubmit={sendDm} className="dm-input-form" style={{ display: 'flex', gap: '8px', padding: '8px' }}>
+                     <input type="text" value={dmInput} onChange={e => setDmInput(e.target.value)} placeholder="Type a message or /invite..." style={{ flex: 1 }} />
+                     <button type="submit">Send</button>
+                  </form>
+                </div>
+              )}
             </div>
           )}
 

@@ -99,6 +99,8 @@ function LobbyClient({ lobbyId, mySteamId }: { lobbyId: string; mySteamId: strin
   const [copied, setCopied] = useState(false);
   const [privInput, setPrivInput] = useState("");
   const [showPrivacy, setShowPrivacy] = useState(false);
+  const [editingName, setEditingName] = useState(false);
+  const [draftName, setDraftName] = useState("");
   const [boards, setBoards] = useState<any[]>([]);
   const [savedBoards, setSavedBoards] = useState<any[]>([]);
   const [setupOpen, setSetupOpen] = useState(false);
@@ -473,7 +475,34 @@ function LobbyClient({ lobbyId, mySteamId }: { lobbyId: string; mySteamId: strin
               {currentGameConfig ? currentGameConfig.name : "PICK A GAME"}
               {currentGameConfig && <span className="lobby-hero-tag">{currentGameConfig.tagline}</span>}
             </div>
-            <h1 className="lobby-hero-name">{lobbyState.name}</h1>
+            {isHost && editingName ? (
+              <input
+                autoFocus
+                className="lobby-hero-name-input"
+                value={draftName}
+                onChange={e => setDraftName(e.target.value)}
+                onBlur={() => {
+                  setEditingName(false);
+                  if (draftName !== lobbyState.name) socket?.emit("lobby_rename", { name: draftName });
+                }}
+                onKeyDown={e => {
+                  if (e.key === "Enter") {
+                    setEditingName(false);
+                    if (draftName !== lobbyState.name) socket?.emit("lobby_rename", { name: draftName });
+                  }
+                }}
+                style={{ fontSize: "2rem", fontWeight: "bold", background: "transparent", border: "none", borderBottom: "2px solid rgba(255,255,255,0.5)", color: "white", outline: "none", width: "100%", maxWidth: "400px" }}
+              />
+            ) : (
+              <h1 className="lobby-hero-name" onClick={() => {
+                if (isHost) {
+                   setDraftName(lobbyState.name || "");
+                   setEditingName(true);
+                }
+              }} style={{ cursor: isHost ? "pointer" : "default" }}>
+                {lobbyState.name} {isHost && <span style={{ opacity: 0.5, fontSize: "0.5em", verticalAlign: "middle" }}>✎</span>}
+              </h1>
+            )}
             <div className="lobby-badges">
               <span className="lbadge">{lobbyState.isPrivate ? "🔒 Private" : "🌍 Public"}</span>
               <span className="lbadge">👥 {playerCount}/{maxPlayers}</span>

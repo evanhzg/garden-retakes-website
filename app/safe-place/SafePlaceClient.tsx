@@ -17,9 +17,9 @@ export default function SafePlaceClient({ loggedIn, hasAccess }: { loggedIn: boo
   const [error, setError] = useState("");
 
   const wordVariants = {
-    initial: { y: 20, opacity: 0, scale: 0.8 },
-    animate: { y: 0, opacity: 1, scale: 1 },
-    exit: { y: -20, opacity: 0, scale: 0.8 }
+    initial: { y: 30, opacity: 0, scale: 0.5, rotateX: 90 },
+    animate: { y: 0, opacity: 1, scale: 1.1, rotateX: 0 },
+    exit: { y: -30, opacity: 0, scale: 0.8, rotateX: -90 }
   };
 
   const [wordIndex, setWordIndex] = useState(0);

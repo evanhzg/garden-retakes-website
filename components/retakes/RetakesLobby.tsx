@@ -4,6 +4,7 @@ import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { useSocket } from "@/components/games/SocketProvider";
 import { useI18n } from "@/components/I18nProvider";
 import { useOverlay } from "@/lib/useOverlay";
+import { usePlayerNames, displayNameFor } from "@/components/games/hooks";
 import { FormCard, FormLine, useRosterForm, type RecentForm } from "./PlayerForm";
 import LevelBadge from "./LevelBadge";
 import LiveGames from "./LiveGames";
@@ -133,6 +134,22 @@ export default function RetakesLobby({ signedIn, lobbyId }: { signedIn: boolean,
   const [activeTab, setActiveTab] = useState<"lobby" | "live">("lobby");
   const [safeQueue, setSafeQueue] = useState(false);
   const [showPostMatch, setShowPostMatch] = useState(false);
+  const [pendingInvites, setPendingInvites] = useState<{ id: string, name: string, expiresAt: number }[]>([]);
+
+  const allIds = useMemo(() => {
+    const ids = new Set<string>();
+    state?.party?.members.forEach((m) => ids.add(m.steamId));
+    state?.match?.teams.forEach((t) => t.players.forEach((p) => ids.add(p.steamId)));
+    return Array.from(ids);
+  }, [state?.party, state?.match]);
+  const names = usePlayerNames(allIds);
+
+  useEffect(() => {
+    const i = setInterval(() => {
+       setPendingInvites(p => p.filter(inv => inv.expiresAt > Date.now()));
+    }, 1000);
+    return () => clearInterval(i);
+  }, []);
 
   useEffect(() => {
     if (!state?.party?.members) return;
@@ -302,6 +319,7 @@ export default function RetakesLobby({ signedIn, lobbyId }: { signedIn: boolean,
           onBan={(m) => send("rq:veto:ban", { map: m })}
           onSide={(s) => send("rq:veto:side", { side: s })}
           onChat={(text, teamOnly) => send("rq:chat", { text, teamOnly })}
+          names={names}
           t={t}
         />
         {notice && <div className={`rq-toast ${notice.kind}`}>{notice.text}</div>}
@@ -370,18 +388,19 @@ export default function RetakesLobby({ signedIn, lobbyId }: { signedIn: boolean,
 
           <ul className="rq-members">
             {(party?.members ?? []).map((m) => {
-              const pAvatar = avatarPlayers.find((ap) => ap.steamId === m.steamId);
+              const avatarUrl = names[m.steamId]?.avatar;
+              const displayName = displayNameFor(m.steamId, names, { isBot: false }) ?? m.name ?? t("lobby.player");
               return (
               <li key={m.steamId} className={m.steamId === steamId ? "me" : ""}>
                 <span className="rq-avatar" aria-hidden style={{ overflow: "hidden" }}>
-                  {pAvatar?.avatarSrc ? (
-                    <img src={pAvatar.avatarSrc} style={{ width: "100%", height: "100%", objectFit: "cover" }} />
+                  {avatarUrl ? (
+                    <img src={avatarUrl} style={{ width: "100%", height: "100%", objectFit: "cover" }} />
                   ) : (
-                    (m.name ?? "?").slice(0, 1).toUpperCase()
+                    displayName.slice(0, 1).toUpperCase()
                   )}
                 </span>
                 <span className="rq-member-name">
-                  {m.name ?? t("lobby.player")}
+                  {displayName}
                   {m.steamId === party?.leader && <span className="rq-crown" title={t("lobby.leader")}>★</span>}
                   {(() => {
                     const ss = safeScores.find(s => s.steamId === m.steamId);
@@ -401,12 +420,21 @@ export default function RetakesLobby({ signedIn, lobbyId }: { signedIn: boolean,
                 )}
               </li>
             );})}
-            {Array.from({ length: Math.max(0, (party?.capacity ?? 2) - (party?.members.length ?? 1)) }).map((_, i) => (
-              <li key={`slot-${i}`} className="empty">
+            {pendingInvites.map((inv) => (
+              <li key={`inv-${inv.id}`} className="empty pending-invite" style={{ opacity: 0.7 }}>
+                 <span className="rq-avatar ghost" aria-hidden>+</span>
+                 <span className="rq-member-name muted">Inviting {inv.name}... ({(Math.max(0, inv.expiresAt - Date.now()) / 1000).toFixed(0)}s)</span>
+              </li>
+            ))}
+            {Array.from({ length: Math.max(0, (party?.capacity ?? 2) - (party?.members.length ?? 1) - pendingInvites.length) }).map((_, i) => (
+              <li key={`slot-${i}`} className="empty" onClick={() => {
+                  navigator.clipboard.writeText(`${window.location.origin}/lobby/${lobbyId}`);
+                  alert("Lobby invite link copied!");
+              }} style={{ cursor: "pointer" }}>
                 <span className="rq-avatar ghost" aria-hidden>
                   +
                 </span>
-                <span className="rq-member-name muted">{t("lobby.emptyslot")}</span>
+                <span className="rq-member-name muted">{t("lobby.emptyslot")} - Click to copy link</span>
               </li>
             ))}
           </ul>
@@ -419,8 +447,8 @@ export default function RetakesLobby({ signedIn, lobbyId }: { signedIn: boolean,
           ) : (
             <ul className="rq-friends">
               {onlineFriends.map((f) => {
-                const already = inPartyIds.has(f.friendId);
-                const full = (party?.members.length ?? 1) >= (party?.capacity ?? 2);
+                const already = inPartyIds.has(f.friendId) || pendingInvites.some(inv => inv.id === f.friendId);
+                const full = (party?.members.length ?? 1) + pendingInvites.length >= (party?.capacity ?? 2);
                 return (
                   <li key={f.friendId}>
                     <span className="rq-avatar sm" aria-hidden>
@@ -430,7 +458,10 @@ export default function RetakesLobby({ signedIn, lobbyId }: { signedIn: boolean,
                     <button
                       className="btn btn-secondary rq-invite"
                       disabled={already || full || !party?.isLeader}
-                      onClick={() => send("rq:party:invite", { steamId: f.friendId, name: f.name })}
+                      onClick={() => {
+                         send("rq:party:invite", { steamId: f.friendId, name: f.name });
+                         setPendingInvites(p => [...p, { id: f.friendId, name: f.name, expiresAt: Date.now() + 10000 }]);
+                      }}
                     >
                       {already ? t("lobby.inparty") : t("lobby.invite")}
                     </button>
@@ -466,11 +497,26 @@ export default function RetakesLobby({ signedIn, lobbyId }: { signedIn: boolean,
             </div>
           ) : (
             <>
-              <h2 className="rq-choose">{t("lobby.choosemode")}</h2>
-              
-              <div className="rq-mode-toggle" style={{ display: 'flex', background: 'color-mix(in srgb, var(--color-text) 5%, transparent)', borderRadius: '999px', padding: '4px', marginBottom: '24px', width: '100%', maxWidth: '300px' }}>
+              <label className="rq-safe-queue" style={{ marginBottom: '24px', display: 'flex', alignItems: 'center', gap: '8px', cursor: 'pointer', userSelect: 'none' }}>
+                <input type="checkbox" checked={safeQueue} onChange={(e) => setSafeQueue(e.target.checked)} style={{ cursor: 'pointer', width: '18px', height: '18px', accentColor: 'var(--color-accent)' }} />
+                <span style={{ fontWeight: 'bold', fontSize: '14px', color: safeQueue ? 'var(--color-accent)' : 'var(--muted)', transition: 'color 0.2s' }}>Safe Queue</span>
+              </label>
+
+              <button
+                className="btn btn-primary rq-play"
+                disabled={!party?.isLeader}
+                onClick={() => send("rq:queue:join", { mode, safeQueue })}
+                style={{ marginBottom: '24px' }}
+              >
+                {t("lobby.findmatch")}
+              </button>
+
+              <p className="rq-online">{t("lobby.onlinenow", { n: state?.online ?? 0 })}</p>
+
+              <div className="rq-mode-toggle" style={{ display: 'flex', background: 'color-mix(in srgb, var(--color-text) 5%, transparent)', padding: '4px', marginTop: '24px', width: '100%', maxWidth: '300px' }}>
                 {(state?.modes ?? []).map((m) => {
                   const tooBig = (party?.members.length ?? 1) > m.teamSize;
+                  const btnText = m.id === '2v2' ? '2vs' : m.id === '3v3' ? 'vs3' : m.label;
                   return (
                     <button
                       key={m.id}
@@ -480,7 +526,7 @@ export default function RetakesLobby({ signedIn, lobbyId }: { signedIn: boolean,
                       style={{ 
                         flex: 1, 
                         padding: '10px 20px', 
-                        borderRadius: '999px', 
+                        borderRadius: '0', 
                         border: 'none', 
                         background: mode === m.id ? 'var(--color-accent)' : 'transparent', 
                         color: mode === m.id ? '#fff' : 'var(--color-text)', 
@@ -491,26 +537,11 @@ export default function RetakesLobby({ signedIn, lobbyId }: { signedIn: boolean,
                         fontSize: '15px'
                       }}
                     >
-                      {m.label}
+                      {btnText}
                     </button>
                   );
                 })}
               </div>
-
-              <label className="rq-safe-queue" style={{ marginBottom: '24px', display: 'flex', alignItems: 'center', gap: '8px', cursor: 'pointer', userSelect: 'none' }}>
-                <input type="checkbox" checked={safeQueue} onChange={(e) => setSafeQueue(e.target.checked)} style={{ cursor: 'pointer', width: '18px', height: '18px', accentColor: 'var(--color-accent)' }} />
-                <span style={{ fontWeight: 'bold', fontSize: '14px', color: safeQueue ? 'var(--color-accent)' : 'var(--muted)', transition: 'color 0.2s' }}>Safe Queue</span>
-              </label>
-
-              <button
-                className="btn btn-primary rq-play"
-                disabled={!party?.isLeader}
-                onClick={() => send("rq:queue:join", { mode, safeQueue })}
-              >
-                {t("lobby.findmatch")}
-              </button>
-
-              <p className="rq-online">{t("lobby.onlinenow", { n: state?.online ?? 0 })}</p>
             </>
           )}
         </main>
@@ -609,6 +640,7 @@ function MatchRoom({
   onBan,
   onSide,
   onChat,
+  names,
   t,
 }: {
   match: NonNullable<State["match"]>;
@@ -617,6 +649,7 @@ function MatchRoom({
   onBan: (map: string) => void;
   onSide: (side: string) => void;
   onChat: (text: string, teamOnly: boolean) => void;
+  names: Record<string, any>;
   t: (k: string, v?: Record<string, string | number>) => string;
 }) {
   const [teamChatDraft, setTeamChatDraft] = useState("");
@@ -679,7 +712,7 @@ function MatchRoom({
 
       <div className="rq-room-body">
         <div style={{ display: "flex", flexDirection: "column", gap: "16px" }}>
-          <Roster team={match.teams[0]} me={me} align="left" forms={forms} t={t} />
+          <Roster team={match.teams[0]} me={me} align="left" forms={forms} names={names} t={t} />
           {match.yourTeam === 0 ? (
             <ChatBox messages={match.chat.filter(c => c.team === 0)} draft={teamChatDraft} setDraft={setTeamChatDraft} onSend={(text) => onChat(text, true)} placeholder="Team chat" t={t} />
           ) : match.yourTeam === 1 ? (
@@ -785,7 +818,7 @@ function MatchRoom({
         </div>
 
         <div style={{ display: "flex", flexDirection: "column", gap: "16px" }}>
-          <Roster team={match.teams[1]} me={me} align="right" forms={forms} t={t} />
+          <Roster team={match.teams[1]} me={me} align="right" forms={forms} names={names} t={t} />
           {match.yourTeam === 1 ? (
             <ChatBox messages={match.chat.filter(c => c.team === 1)} draft={teamChatDraft} setDraft={setTeamChatDraft} onSend={(text) => onChat(text, true)} placeholder="Team chat" t={t} />
           ) : match.yourTeam === 0 ? (
@@ -873,12 +906,14 @@ function Roster({
   me,
   align,
   forms,
+  names,
   t,
 }: {
   team: NonNullable<State["match"]>["teams"][number];
   me: string;
   align: "left" | "right";
   forms: Record<string, RecentForm>;
+  names: Record<string, any>;
   t: (k: string, v?: Record<string, string | number>) => string;
 }) {
   // Which row is showing its full card, and where that row is on screen. Kept
@@ -887,7 +922,10 @@ function Roster({
 
   return (
     <ul className={`rq-roster ${align}`}>
-      {team.players.map((p) => (
+      {team.players.map((p) => {
+        const displayName = displayNameFor(p.steamId, names, { isBot: !!p.bot }) ?? p.name ?? "—";
+        const avatarUrl = names[p.steamId]?.avatar;
+        return (
         <li
           key={p.steamId}
           className={`${p.steamId === me ? "me" : ""} ${p.bot ? "bot" : ""}`}
@@ -895,11 +933,11 @@ function Roster({
           onMouseLeave={() => setOpen((o) => (o?.steamId === p.steamId ? null : o))}
         >
           {p.bot
-            ? <span className="rq-avatar" aria-hidden>{(p.name ?? "?").slice(0, 1).toUpperCase()}</span>
-            : <LevelBadge elo={p.elo} matches={p.matches} size="md" />}
+            ? <span className="rq-avatar" aria-hidden>{displayName.slice(0, 1).toUpperCase()}</span>
+            : avatarUrl ? <img className="rq-avatar" src={avatarUrl} alt="" /> : <LevelBadge elo={p.elo} matches={p.matches} size="md" />}
           <span className="rq-player">
             <span className="rq-member-name">
-              {p.name ?? "—"}
+              {displayName}
               {p.leader && <span className="rq-crown">★</span>}
               {/* Who came together. A solo queuer gets no marker rather than
                   a "group of 1", because that is not a thing. */}
@@ -914,12 +952,12 @@ function Roster({
             {!p.bot && <FormLine form={forms[p.steamId]} />}
           </span>
         </li>
-      ))}
+      )})}
 
       {open && (
         <FormCard
           form={forms[open.steamId]}
-          name={team.players.find((p) => p.steamId === open.steamId)?.name ?? "—"}
+          name={displayNameFor(open.steamId, names, { isBot: false }) ?? team.players.find((p) => p.steamId === open.steamId)?.name ?? "—"}
           anchor={open.rect}
           onClose={() => setOpen(null)}
         />

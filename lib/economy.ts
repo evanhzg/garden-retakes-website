@@ -121,11 +121,10 @@ function ensureLoaded() {
   weaponByDef = new Map();
 
   for (const item of CS2Economy.itemsAsArray) {
-    if (!item.base || item.def === undefined) continue;
-
     // Knives & gloves live outside isWeapon(); the stock knives/gloves have
     // no paints, so skip them (nothing to equip).
     if (item.isMelee() || item.isGloves()) {
+      if (!item.base || item.def === undefined) continue;
       const isStock =
         item.def === 42 || item.def === 59 || item.def === 5028 || item.free === true;
       if (isStock) continue;
@@ -145,9 +144,9 @@ function ensureLoaded() {
 
     
     if (item.isAgent()) {
-      const entry: WeaponEntry = { id: item.id, def: item.def, name: item.name, model: item.model ?? "", image: item.getImage(), category: "Agents", team: teamOf(item) };
+      const entry: WeaponEntry = { id: item.id, def: item.def ?? 0, name: item.name, model: item.model ?? "", image: item.getImage(), category: "Agents", team: teamOf(item) };
       weaponsByCategory["Agents"].push(entry);
-      weaponByDef.set(item.def, entry);
+      weaponByDef.set(item.def ?? 0, entry);
       continue;
     }
     if (item.isPatch()) {
@@ -163,6 +162,7 @@ function ensureLoaded() {
       continue;
     }
 
+    if (!item.base || item.def === undefined) continue;
     if (!item.isWeapon()) continue;
     const category = categoryOf(item);
     if (!category) continue;

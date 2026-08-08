@@ -206,11 +206,16 @@
 .loopText {
   display: inline-block;
   overflow: hidden;
-  height: 1.2em;
-  vertical-align: bottom;
+  height: 1.3em;
+  vertical-align: sub;
   position: relative;
-  min-width: 80px;
+  min-width: 90px;
+  font-weight: 900;
   color: var(--color-accent);
+  background: var(--gradient);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  text-shadow: 0 2px 10px color-mix(in srgb, var(--color-accent) 40%, transparent);
 }
 
 .accessGranted {

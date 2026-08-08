@@ -1,5 +1,5 @@
-const { CS2Economy, CS2_ITEMS } = require("@ianlucas/cs2-lib");
-const { english } = require("@ianlucas/cs2-lib/translations/english");
+import { CS2Economy, CS2_ITEMS } from "@ianlucas/cs2-lib";
+import { english } from "@ianlucas/cs2-lib/translations/english";
 
 CS2Economy.load({ items: CS2_ITEMS, language: english });
 const agents = CS2Economy.itemsAsArray.filter(i => i.isAgent());

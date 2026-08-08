@@ -418,7 +418,7 @@ export default function NavBar({
           </span>
         </button>
 
-        <NotificationCenter />
+        <NotificationCenter steamId={session.steamId} />
 
         {session.authenticated ? (
           <div className="nav-identity" style={{ display: "flex", alignItems: "center", gap: 10 }}>

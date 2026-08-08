@@ -60,10 +60,12 @@ const ago = (iso: string, t: any) => {
   return `${Math.floor(s / 86400)}${t('time.daysShort')}`;
 };
 
-export default function NotificationCenter() {
+export default function NotificationCenter({ isAdmin, steamId }: { isAdmin?: boolean, steamId?: string | null }) {
   const { t } = useI18n();
   const [items, setItems] = useState<Item[] | null>(null);
+  const [tickets, setTickets] = useState<any[] | null>(null);
   const [open, setOpen] = useState(false);
+  const [activeTab, setActiveTab] = useState<"notifications" | "tickets">("notifications");
   const [dismissed, setDismissed] = useState<string[]>([]);
   const [leaving, setLeaving] = useState<string[]>([]);
   const [restored, setRestored] = useState(false);
@@ -76,10 +78,18 @@ export default function NotificationCenter() {
       const j = await res.json();
       if (!j.signedIn) return setItems(null);
       setItems(j.items ?? []);
+
+      if (isAdmin && steamId) {
+         const tRes = await fetch("/api/tickets", { cache: "no-store", headers: { "Authorization": `Bearer ${steamId}` } });
+         if (tRes.ok) {
+            const tj = await tRes.json();
+            setTickets(tj.tickets ?? []);
+         }
+      }
     } catch {
       /* the bell is not worth an error state */
     }
-  }, []);
+  }, [isAdmin, steamId]);
 
   useEffect(() => {
     load();
@@ -191,49 +201,92 @@ export default function NotificationCenter() {
 
       {open && (
         <div className="notif-panel" role="menu">
-          <div className="notif-head">
-            <strong>{t('notif.title')}</strong>
-            <Link href="/feed" className="btn btn-ghost" onClick={() => setOpen(false)}>{t('nav.feed')}</Link>
+          <div className="notif-head" style={{ flexDirection: 'column', alignItems: 'stretch' }}>
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+               <strong>{t('notif.title')}</strong>
+               <Link href="/feed" className="btn btn-ghost" onClick={() => setOpen(false)}>{t('nav.feed')}</Link>
+            </div>
+            {isAdmin && (
+               <div style={{ display: 'flex', gap: '8px', marginTop: '8px', borderBottom: '1px solid var(--color-divider)' }}>
+                  <button onClick={() => setActiveTab("notifications")} style={{ background: 'none', border: 'none', padding: '4px 8px', color: activeTab === "notifications" ? 'var(--color-accent)' : 'var(--color-text)', borderBottom: activeTab === "notifications" ? '2px solid var(--color-accent)' : 'none', cursor: 'pointer' }}>Notifications</button>
+                  <button onClick={() => setActiveTab("tickets")} style={{ background: 'none', border: 'none', padding: '4px 8px', color: activeTab === "tickets" ? 'var(--color-accent)' : 'var(--color-text)', borderBottom: activeTab === "tickets" ? '2px solid var(--color-accent)' : 'none', cursor: 'pointer' }}>Tickets ({tickets?.filter(t => t.Status === "OPEN").length || 0})</button>
+               </div>
+            )}
           </div>
 
-          {visible.length === 0 ? (
-            <p className="notif-empty">{t('notif.empty')}</p>
-          ) : (
-            <ul className="notif-list">
-              {visible.map((n) => {
-                const inner = (
-                  <>
-                    <span className="notif-icon" aria-hidden>{n.icon}</span>
-                    <span className="notif-text">{n.content}</span>
-                    <span className="notif-at num">{ago(n.at, t)}</span>
-                  </>
-                );
-                return (
-                  <li key={n.id} className={[n.read ? "" : "unread", leaving.includes(n.id) ? "is-leaving" : ""].join(" ").trim()}>
-                    {n.url ? (
-                      n.url.startsWith("http") ? (
-                        <a href={n.url} target="_blank" rel="noreferrer noopener" onClick={() => setOpen(false)}>{inner}</a>
-                      ) : (
-                        <Link href={n.url} onClick={() => setOpen(false)}>{inner}</Link>
-                      )
-                    ) : (
-                      <span>{inner}</span>
-                    )}
-                    {/* Beside the link rather than inside it: a button nested in
-                        an anchor is neither valid nor reliably clickable. */}
-                    <button
-                      type="button"
-                      className="notif-x"
-                      onClick={() => remove(n.id)}
-                      title={t('common.delete')}
-                      aria-label={t('common.delete')}
-                    >
-                      ×
-                    </button>
-                  </li>
-                );
-              })}
-            </ul>
+          {activeTab === "notifications" && (
+            <>
+              {visible.length === 0 ? (
+                <p className="notif-empty">{t('notif.empty')}</p>
+              ) : (
+                <ul className="notif-list">
+                  {visible.map((n) => {
+                    const inner = (
+                      <>
+                        <span className="notif-icon" aria-hidden>{n.icon}</span>
+                        <span className="notif-text">{n.content}</span>
+                        <span className="notif-at num">{ago(n.at, t)}</span>
+                      </>
+                    );
+                    return (
+                      <li key={n.id} className={[n.read ? "" : "unread", leaving.includes(n.id) ? "is-leaving" : ""].join(" ").trim()}>
+                        {n.url ? (
+                          n.url.startsWith("http") ? (
+                            <a href={n.url} target="_blank" rel="noreferrer noopener" onClick={() => setOpen(false)}>{inner}</a>
+                          ) : (
+                            <Link href={n.url} onClick={() => setOpen(false)}>{inner}</Link>
+                          )
+                        ) : (
+                          <span>{inner}</span>
+                        )}
+                        {/* Beside the link rather than inside it: a button nested in
+                            an anchor is neither valid nor reliably clickable. */}
+                        <button
+                          type="button"
+                          className="notif-x"
+                          onClick={() => remove(n.id)}
+                          title={t('common.delete')}
+                          aria-label={t('common.delete')}
+                        >
+                          ×
+                        </button>
+                      </li>
+                    );
+                  })}
+                </ul>
+              )}
+            </>
+          )}
+
+          {activeTab === "tickets" && (
+             <ul className="notif-list">
+                {tickets?.length === 0 ? (
+                   <p className="notif-empty">No tickets</p>
+                ) : (
+                   tickets?.map(t => (
+                      <li key={t.Id} style={{ flexDirection: 'column', alignItems: 'flex-start', padding: '12px' }}>
+                         <div style={{ display: 'flex', justifyContent: 'space-between', width: '100%', marginBottom: '4px' }}>
+                            <strong style={{ fontSize: '12px' }}>Ticket #{t.Id}</strong>
+                            <span style={{ fontSize: '12px', color: t.Status === 'OPEN' ? 'var(--color-primary)' : 'var(--color-text)' }}>{t.Status}</span>
+                         </div>
+                         <p style={{ margin: '0 0 8px 0', fontSize: '13px' }}>{t.Message}</p>
+                         <button className="btn btn-secondary btn-sm" onClick={async () => {
+                             try {
+                                await fetch("/api/messages", {
+                                   method: "POST",
+                                   headers: { "Content-Type": "application/json", "Authorization": `Bearer ${steamId}` },
+                                   body: JSON.stringify({ targetSteamId: t.CreatorSteamId.toString(), content: "Regarding your ticket: " })
+                                });
+                                await fetch(`/api/tickets/${t.Id}`, { method: "PATCH", body: JSON.stringify({ Status: "RESOLVED" }) });
+                                load();
+                                setOpen(false);
+                                alert("DM thread started. Open Friends -> MESSAGES to reply.");
+                             } catch(e) {}
+                         }}>Reply in DMs</button>
+                      </li>
+                   ))
+                )}
+             </ul>
           )}
         </div>
       )}

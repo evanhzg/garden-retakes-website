@@ -953,3 +953,33 @@ model GardenMap {
   @@index([Mode])
   @@map("GardenMaps")
 }
+
+model WebTicket {
+  Id           Int      @id @default(autoincrement())
+  CreatorId    BigInt   @db.UnsignedBigInt
+  AssigneeId   BigInt?  @db.UnsignedBigInt
+  Status       String   @default("OPEN") @db.VarChar(16)
+  Topic        String   @db.VarChar(128)
+  Description  String   @db.Text
+  CreatedAtUtc DateTime @default(now()) @db.DateTime(6)
+  UpdatedAtUtc DateTime @default(now()) @updatedAt @db.DateTime(6)
+
+  @@index([CreatorId])
+  @@index([AssigneeId])
+  @@map("WebTickets")
+}
+
+model WebReport {
+  Id           Int      @id @default(autoincrement())
+  ReporterId   BigInt   @db.UnsignedBigInt
+  TargetId     BigInt?  @db.UnsignedBigInt
+  LobbyId      String?  @db.VarChar(128)
+  Reason       String   @db.VarChar(128)
+  Details      String   @db.Text
+  Status       String   @default("PENDING") @db.VarChar(16)
+  CreatedAtUtc DateTime @default(now()) @db.DateTime(6)
+
+  @@index([ReporterId])
+  @@index([TargetId])
+  @@map("WebReports")
+}

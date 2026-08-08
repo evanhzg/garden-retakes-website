@@ -13,6 +13,8 @@
   "nav.roadmap": "Feuille de route",
   "nav.games": "Parties",
   "nav.admin": "Admin",
+  "nav.lobby": "Matchmaking",
+  "nav.safe_place": "Espace Sécurisé",
   "nav.more": "Plus",
   "nav.signIn": "Se connecter",
   "nav.signOut": "Se déconnecter",

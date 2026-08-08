@@ -13,6 +13,8 @@
   "nav.roadmap": "Roadmap",
   "nav.games": "Games",
   "nav.admin": "Admin",
+  "nav.lobby": "Matchmaking",
+  "nav.safe_place": "Safe Place",
   "nav.more": "More",
   "nav.signIn": "Sign in",
   "nav.signOut": "Log out",
