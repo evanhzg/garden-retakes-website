@@ -15,7 +15,7 @@ export async function PATCH(request: Request, { params }: { params: { id: string
       data: { Status }
     });
 
-    return NextResponse.json({ success: true, ticket: { ...ticket, CreatorSteamId: ticket.CreatorSteamId.toString(), AssignedAdminId: ticket.AssignedAdminId?.toString() } });
+    return NextResponse.json({ success: true, ticket: { ...ticket, CreatorSteamId: ticket.CreatorId.toString(), AssignedAdminId: ticket.AssigneeId?.toString() } });
   } catch (error) {
     console.error(error);
     return NextResponse.json({ error: "Internal Server Error" }, { status: 500 });

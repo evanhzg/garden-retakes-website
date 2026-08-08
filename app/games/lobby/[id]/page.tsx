@@ -101,6 +101,8 @@ function LobbyClient({ lobbyId, mySteamId }: { lobbyId: string; mySteamId: strin
   const [showPrivacy, setShowPrivacy] = useState(false);
   const [editingName, setEditingName] = useState(false);
   const [draftName, setDraftName] = useState("");
+  const [reportOpen, setReportOpen] = useState(false);
+  const [reportText, setReportText] = useState("");
   const [boards, setBoards] = useState<any[]>([]);
   const [savedBoards, setSavedBoards] = useState<any[]>([]);
   const [setupOpen, setSetupOpen] = useState(false);
