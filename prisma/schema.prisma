@@ -941,3 +941,15 @@ model GardenMatchVote {
   @@index([TargetSteamId])
   @@map("GardenMatchVotes")
 }
+
+model GardenMap {
+  Id         Int      @id @default(autoincrement())
+  Mode       String   @db.VarChar(32)
+  MapName    String   @db.VarChar(64)
+  ImageUrl   String?  @db.VarChar(255)
+  WorkshopId String?  @db.VarChar(64)
+  CreatedAt  DateTime @default(now()) @db.DateTime(6)
+
+  @@index([Mode])
+  @@map("GardenMaps")
+}

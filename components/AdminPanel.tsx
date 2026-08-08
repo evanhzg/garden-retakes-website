@@ -9,6 +9,7 @@ import PendingDemos from "@/components/admin/PendingDemos";
 import AdminOverview from "@/components/admin/AdminOverview";
 import CaptureSuggestions from "@/components/admin/CaptureSuggestions";
 import SafeQueue from "@/components/admin/SafeQueue";
+import MapManager from "@/components/admin/MapManager";
 import { useI18n } from '@/components/I18nProvider';
 import { GAME_MODES, RETAKE_FLAVOURS } from "@/lib/gameModes";
 import { freezeDate, freezeLeft, isFrozen, type FreezePoll } from "@/lib/seasonFreeze";
@@ -39,7 +40,7 @@ type LogEntry = {
   detail: string | null;
 };
 
-type TabId = "overview" | "players" | "server" | "config" | "console" | "skins" | "demos" | "captures" | "log" | "season" | "safequeue";
+type TabId = "overview" | "players" | "server" | "config" | "console" | "skins" | "demos" | "captures" | "log" | "season" | "safequeue" | "maps";
 
 /**
  * Sections, grouped.
@@ -72,6 +73,7 @@ const SECTIONS: {
     group: "Server",
     items: [
       { id: "server", label: "Control", icon: "▣", hint: "Map, game mode, restarts", level: 1 },
+      { id: "maps", label: "Maps", icon: "🗺️", hint: "Workshop maps by mode", level: 1 },
       { id: "config", label: "Plugin config", icon: "⚙", hint: "Rankings, allocator, game rules", level: 2 },
       { id: "season", label: "Season", icon: "🏆", hint: "Season management, elo reset", level: 3 },
       { id: "console", label: "Console", icon: "❯", hint: "Raw RCON", level: 2 },
@@ -547,6 +549,8 @@ export default function AdminPanel({
         {tab === "captures" && canMod && <CaptureSuggestions adminKey={adminKey} />}
 
         {tab === "safequeue" && canMod && <SafeQueue adminKey={adminKey} />}
+
+        {tab === "maps" && canMod && <MapManager adminKey={adminKey} />}
 
         {tab === "log" && (
           <div className="adm-scroll">
