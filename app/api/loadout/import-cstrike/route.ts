@@ -115,7 +115,8 @@ export async function POST(request: Request) {
         nameTag: csItem.nameTag ?? "",
         stickers: Array.from({length: 5}, (_, i) => stickers[i] || null),
         charm,
-        createdAt: Date.now()
+        createdAt: Date.now(),
+        source: "cstrike"
       };
       
       items.push(invItem);

@@ -209,7 +209,7 @@ export default function InventorySimulator() {
   const [stickers, setStickers] = useState<(PlacedSticker | null)[]>(defaultStickerSlots());
   const [charm, setCharm] = useState<PlacedSticker | null>(null);
   const [editor3dOpen, setEditor3dOpen] = useState(false);
-  const [contextMenu, setContextMenu] = useState<{ x: number; y: number; skin: Skin; weapon: WeaponEntry; side: "t" | "ct"; boardSlot?: BoardSlot } | null>(null);
+  const [contextMenu, setContextMenu] = useState<{ id: string; skin: Skin; weapon: WeaponEntry; side: "t" | "ct"; boardSlot?: BoardSlot } | null>(null);
   const [selectedItems, setSelectedItems] = useState<Set<string>>(new Set());
   const [selectedSkins, setSelectedSkins] = useState<Set<number>>(new Set());
 
@@ -227,6 +227,7 @@ export default function InventorySimulator() {
   const [stickerQuery, setStickerQuery] = useState("Katowice 2014");
   const [stickerResults, setStickerResults] = useState<StickerOption[]>([]);
   const [stickersLoading, setStickersLoading] = useState(false);
+  const [vaultCatsCollapsed, setVaultCatsCollapsed] = useState<Record<string, boolean>>({});
 
   // Loadout switcher drag-reorder
   const dragIndex = useRef<number | null>(null);
@@ -1013,6 +1014,82 @@ export default function InventorySimulator() {
   const visibleLoadouts = sortedLoadouts.slice(0, 4);
   const overflowLoadouts = sortedLoadouts.slice(4);
 
+  const renderContext = (id: string) => {
+    if (!contextMenu || contextMenu.id !== id || !mounted) return null;
+    return (
+      <div 
+        className="inv4-context"
+        style={{ 
+          position: "absolute",
+          right: 0, 
+          bottom: 0,
+          transform: "translateX(102%)",
+          zIndex: 100
+        }}
+        onClick={(e) => e.stopPropagation()}
+        onContextMenu={(e) => e.preventDefault()}
+      >
+        <div className="inv4-context-title" style={{ color: contextMenu.skin.rarity, paddingBottom: '8px', borderBottom: '1px solid var(--color-divider)' }}>
+          {contextMenu.weapon.name} | {skinLabel(contextMenu.skin.name)}
+        </div>
+        {contextMenu.weapon.category !== "Agents" && (
+          <div style={{ padding: '8px 12px', display: 'flex', flexDirection: 'column', gap: '4px', borderBottom: '1px solid var(--color-divider)' }}>
+            <label style={{ fontSize: '12px', display: 'flex', flexDirection: 'column' }}>
+              Wear <strong>{wear.toFixed(3)}</strong>
+              <input type="range" min={0} max={1} step={0.001} style={{ width: '100%' }} value={wear} onChange={(e) => setWear(Number(e.target.value))} />
+            </label>
+            <label style={{ fontSize: '12px', display: 'flex', flexDirection: 'column' }}>
+              Pattern
+              <input className="input" type="number" min={0} max={1000} style={{ width: '100%', padding: '2px 4px' }} value={seed} onChange={(e) => setSeed(Math.max(0, Math.min(1000, Number(e.target.value) || 0)))} />
+            </label>
+          </div>
+        )}
+        {supportsStickers && (
+          <button className="inv4-context-btn" onClick={() => {
+            if (contextMenu.boardSlot) {
+              openBoardSlot(contextMenu.boardSlot, contextMenu.side);
+            } else {
+              equipSkin(contextMenu.skin, contextMenu.side, true, contextMenu.weapon);
+            }
+            setEditor3dOpen(true);
+            setContextMenu(null);
+          }}>
+            Edit (3D)
+          </button>
+        )}
+        {contextMenu.weapon.category === "Agents" && (
+          <button className="inv4-context-btn" onClick={() => {
+            setRadioModalOpen(contextMenu.weapon);
+            setContextMenu(null);
+          }}>
+            Radio Commands
+          </button>
+        )}
+        {(contextMenu.weapon.team === "both" || contextMenu.weapon.team === "t") && (
+          <button className="inv4-context-btn" onClick={() => { equipSkin(contextMenu.skin, "t", false, contextMenu.weapon); setContextMenu(null); }}>
+            Equip (T)
+          </button>
+        )}
+        {(contextMenu.weapon.team === "both" || contextMenu.weapon.team === "ct") && (
+          <button className="inv4-context-btn" onClick={() => { equipSkin(contextMenu.skin, "ct", false, contextMenu.weapon); setContextMenu(null); }}>
+            Equip (CT)
+          </button>
+        )}
+        {contextMenu.weapon.team === "both" && (
+          <button className="inv4-context-btn" onClick={() => { equipSkin(contextMenu.skin, "both", false, contextMenu.weapon); setContextMenu(null); }}>
+            Equip (Both)
+          </button>
+        )}
+        <button className="inv4-context-btn" onClick={() => {
+          equipSkin(contextMenu.skin, contextMenu.weapon.team === "ct" ? "ct" : "t", true, contextMenu.weapon, true);
+          setContextMenu(null);
+        }}>
+          Add to Vault
+        </button>
+      </div>
+    );
+  };
+
   // ---------- Render ----------
   return (
     <div className="inv4">
@@ -1081,7 +1158,22 @@ export default function InventorySimulator() {
             aria-pressed={previewMode}
           >
             {t("auto.inventorysimulator.preview")}
-                                </button>
+          </button>
+
+          <button
+            className={`btn ${chooserTab === 'inventory' ? "btn-primary" : "btn-secondary"}`}
+            onClick={() => {
+              if (chooserTab !== 'inventory') {
+                setChooserTab('inventory');
+                setWeapon(catalog ? catalog["Rifles"][0] : null); // Open chooser implicitly if not open
+              } else {
+                setChooserTab('catalog');
+                closeChooser();
+              }
+            }}
+          >
+            Vault
+          </button>
 
           <button className="btn btn-secondary" disabled={shareBusy || !activeLoadout} onClick={() => activeLoadout && shareLoadout(activeLoadout)}>
             {t("common.share")}
@@ -1197,10 +1289,10 @@ export default function InventorySimulator() {
                       image: slot.item.image,
                       rarity: slot.item.rarity || "default"
                     };
-                    setContextMenu({ x: e.clientX, y: e.clientY, skin: itemSkin, weapon: w, side, boardSlot: slot });
+                    setContextMenu({ id: `board-${slot.key}`, skin: itemSkin, weapon: w, side, boardSlot: slot });
                   };
                   return (
-                  <li key={slot.key}>
+                  <li key={slot.key} style={{ position: 'relative' }}>
                     <button
                       className={`inv4-slot ${slot.item ? "filled" : "empty"}`}
                       onClick={() => openBoardSlot(slot, side)}
@@ -1222,6 +1314,7 @@ export default function InventorySimulator() {
                         </span>
                       </span>
                     </button>
+                    {renderContext(`board-${slot.key}`)}
                   </li>
                 )})}
               </ul>
@@ -1257,12 +1350,26 @@ export default function InventorySimulator() {
               // like" view — the store answers a different question and shows
               // one type at a time.
               <div className="inv4-preview">
-                {CATEGORY_ORDER.filter((c) => catalog[c]?.length).map((c) => (
+                {CATEGORY_ORDER.filter((c) => catalog[c]?.length).map((c) => {
+                  const isSingleSlot = c === "Agents" || c === "Knives" || c === "Gloves" || c === "Patches" || c === "Charms";
+                  const kind = kindOfCategory(c);
+                  const weaponsToRender = isSingleSlot 
+                    ? (() => {
+                        const equippedItem = slotItemFor(catalog[c][0].def, kind, side); // The def doesn't matter for these kinds in slotItemFor
+                        if (equippedItem) {
+                          const w = catalog[c].find(x => x.def === equippedItem.weaponDef) || catalog[c][0];
+                          return [w];
+                        }
+                        return [catalog[c][0]]; // Return a placeholder (e.g., first item) if none equipped, but we'll show it as unequipped
+                      })()
+                    : catalog[c];
+                  
+                  return (
                   <section key={c} className="inv4-preview-group">
                     <h3 className="inv4-preview-title">{c}</h3>
                     <div className="inv4-preview-row">
-                      {catalog[c].map((w) => {
-                        const item = slotItemFor(w.def, kindOfCategory(w.category), side);
+                      {weaponsToRender.map((w) => {
+                        const item = slotItemFor(w.def, kind, side);
                         return (
                           <button
                             key={w.def}
@@ -1270,20 +1377,20 @@ export default function InventorySimulator() {
                             style={item?.rarity ? ({ "--rarity": item.rarity } as React.CSSProperties) : undefined}
                             onClick={() => {
                               setPreviewMode(false);
-                              openWeapon(w);
+                              if (isSingleSlot) chooseCategory(c); else openWeapon(w);
                             }}
-                            title={item ? item.skinName : `${w.name} — no skin`}
+                            title={item ? item.skinName : `${isSingleSlot ? c : w.name} — no skin`}
                           >
                             {/* eslint-disable-next-line @next/next/no-img-element */}
                             <img src={item?.image ?? w.image} alt={w.name} loading="lazy" />
-                            <span className="inv4-preview-name">{w.name}</span>
+                            <span className="inv4-preview-name">{isSingleSlot && !item ? c : w.name}</span>
                             <span className="inv4-preview-skin">{item ? skinLabel(item.skinName) : "—"}</span>
                           </button>
                         );
                       })}
                     </div>
                   </section>
-                ))}
+                )})}
               </div>
             )
           ) : !weapon ? (
@@ -1298,6 +1405,7 @@ export default function InventorySimulator() {
                       key={w.def}
                       className={`inv4-weapon ${item ? "has-skin" : ""}`}
                       onClick={(e) => {
+                        e.stopPropagation();
                         if (w.category === "Agents") {
                           const itemSkin: Skin = {
                             id: w.id,
@@ -1307,7 +1415,7 @@ export default function InventorySimulator() {
                             image: w.image,
                             rarity: w.rarity || "default"
                           };
-                          setContextMenu({ x: e.clientX, y: e.clientY, skin: itemSkin, weapon: w, side });
+                          setContextMenu({ id: `weapon-${w.def}`, skin: itemSkin, weapon: w, side });
                           return;
                         }
                         setPreviewMode(false);
@@ -1325,9 +1433,9 @@ export default function InventorySimulator() {
                           image: item.image,
                           rarity: item.rarity || "default"
                         };
-                        setContextMenu({ x: e.clientX, y: e.clientY, skin: itemSkin, weapon: w, side });
+                        setContextMenu({ id: `weapon-${w.def}`, skin: itemSkin, weapon: w, side });
                       }}
-                      style={(item?.rarity || w.rarity) ? ({ "--rarity": item?.rarity || w.rarity } as React.CSSProperties) : undefined}
+                      style={(item?.rarity || w.rarity) ? ({ "--rarity": item?.rarity || w.rarity, position: "relative" } as React.CSSProperties) : { position: "relative" }}
                     >
                       <div className="inv4-weapon-img">
                         {/* eslint-disable-next-line @next/next/no-img-element */}
@@ -1335,6 +1443,7 @@ export default function InventorySimulator() {
                       </div>
                       <div className="inv4-weapon-name">{w.name}</div>
                       <div className="inv4-weapon-skin">{item ? skinLabel(item.skinName) : "Default"}</div>
+                      {renderContext(`weapon-${w.def}`)}
                     </button>
                   );
                 })}
@@ -1444,11 +1553,11 @@ export default function InventorySimulator() {
                           <div 
                             key={s.id} 
                             className={`inv4-skin ${s.id === currentSkinId ? "current" : ""}`} 
-                            style={{ "--rarity": s.rarity } as React.CSSProperties}
+                            style={{ "--rarity": s.rarity, position: "relative" } as React.CSSProperties}
                             onContextMenu={(e) => {
                               e.preventDefault();
                               e.stopPropagation();
-                              setContextMenu({ x: e.clientX, y: e.clientY, skin: s, weapon: weapon!, side });
+                              setContextMenu({ id: `skin-${s.id}`, skin: s, weapon: weapon!, side });
                             }}
                           >
                             <input type="checkbox" style={{ position: 'absolute', top: 8, left: 8, zIndex: 10 }} checked={selectedSkins.has(s.id)} onChange={(e) => {
@@ -1459,7 +1568,7 @@ export default function InventorySimulator() {
                             <button className="inv4-skin-pick" onClick={(e) => {
                               e.preventDefault();
                               e.stopPropagation();
-                              setContextMenu({ x: e.clientX, y: e.clientY, skin: s, weapon: weapon!, side });
+                              setContextMenu({ id: `skin-${s.id}`, skin: s, weapon: weapon!, side });
                             }}>
                               {/* eslint-disable-next-line @next/next/no-img-element */}
                               <img src={s.image} alt={s.name} loading="lazy" />
@@ -1475,6 +1584,7 @@ export default function InventorySimulator() {
                             >
                               {fav ? "♥" : "♡"}
                             </button>
+                            {renderContext(`skin-${s.id}`)}
                           </div>
                         );
                       })}
@@ -1519,51 +1629,97 @@ export default function InventorySimulator() {
                       else setSelectedItems(new Set(store.items.map(i => i.id)));
                     }}>Select All</button>
                   </div>
-                  <div className="inv4-skins" style={{ flex: 1, overflowY: 'auto' }}>
-                    {store.items.map(item => {
+                  <div style={{ flex: 1, overflowY: 'auto', paddingRight: '4px' }}>
+                    {(() => {
                       const loadout = store.loadouts.find(l => l.id === store.activeLoadoutId);
-                      let isCurrent = false;
+                      const equipped = new Set<string>();
                       if (loadout) {
-                        if (item.kind === "knife") isCurrent = loadout.knifeCT === item.id || loadout.knifeT === item.id;
-                        else if (item.kind === "gloves") isCurrent = loadout.glovesCT === item.id || loadout.glovesT === item.id;
-                        else if (item.kind === "agent") isCurrent = loadout.agentCT === item.id || loadout.agentT === item.id;
-                        else isCurrent = loadout.equippedCT?.[item.weaponDef] === item.id || loadout.equippedT?.[item.weaponDef] === item.id;
+                        if (loadout.knifeCT) equipped.add(loadout.knifeCT);
+                        if (loadout.knifeT) equipped.add(loadout.knifeT);
+                        if (loadout.glovesCT) equipped.add(loadout.glovesCT);
+                        if (loadout.glovesT) equipped.add(loadout.glovesT);
+                        if (loadout.agentCT) equipped.add(loadout.agentCT);
+                        if (loadout.agentT) equipped.add(loadout.agentT);
+                        Object.values(loadout.equippedCT ?? {}).forEach(id => equipped.add(id as string));
+                        Object.values(loadout.equippedT ?? {}).forEach(id => equipped.add(id as string));
                       }
-                      return (
-                      <div 
-                        key={item.id}
-                        className={`inv4-skin ${isCurrent ? "current" : ""}`}
-                        style={{ "--rarity": item.rarity } as React.CSSProperties}
-                      >
-                        <input type="checkbox" style={{ position: 'absolute', top: 8, left: 8, zIndex: 10 }} checked={selectedItems.has(item.id)} onChange={(e) => {
-                          const n = new Set(selectedItems);
-                          if (e.target.checked) n.add(item.id); else n.delete(item.id);
-                          setSelectedItems(n);
-                        }} />
-                        <button className="inv4-skin-pick" onClick={(e) => {
-                           // Open context menu for vault items? Or just toggle selection?
-                           const n = new Set(selectedItems);
-                           if (n.has(item.id)) n.delete(item.id); else n.add(item.id);
-                           setSelectedItems(n);
-                        }}>
-                          {/* eslint-disable-next-line @next/next/no-img-element */}
-                          <img src={item.image} alt={item.skinName} loading="lazy" />
-                          <div style={{ position: 'absolute', bottom: 4, right: 4, display: 'flex', gap: 2, zIndex: 5, background: 'rgba(0,0,0,0.5)', padding: 2, borderRadius: 4 }}>
-                            {item.stickers?.filter(s => s).slice(0,6).map((st, i) => (
-                              <img key={i} src={st!.image} style={{ width: 16, height: 16 }} alt="" />
-                            ))}
-                            {item.charm && <img src={item.charm.image} style={{ width: 16, height: 16 }} alt="" />}
+                      
+                      const eq: InventoryItem[] = [];
+                      const imp: InventoryItem[] = [];
+                      const oth: InventoryItem[] = [];
+                      
+                      store.items.forEach(item => {
+                        if (equipped.has(item.id)) {
+                          eq.push(item);
+                        } else if (item.source === 'cstrike') {
+                          imp.push(item);
+                        } else {
+                          oth.push(item);
+                        }
+                      });
+
+                      const renderCat = (title: string, itemsList: InventoryItem[], key: string) => {
+                        if (itemsList.length === 0) return null;
+                        const collapsed = vaultCatsCollapsed[key];
+                        return (
+                          <div key={key} style={{ marginBottom: '16px' }}>
+                            <button 
+                              onClick={() => setVaultCatsCollapsed(c => ({...c, [key]: !collapsed}))}
+                              style={{ width: '100%', textAlign: 'left', padding: '8px 0', borderBottom: '1px solid var(--color-divider)', background: 'none', border: 'none', color: 'var(--color-text)', fontWeight: 600, display: 'flex', justifyContent: 'space-between', alignItems: 'center', cursor: 'pointer', outline: 'none' }}
+                            >
+                              <span>{title} ({itemsList.length})</span>
+                              <span style={{ fontSize: '10px', transition: 'transform 0.2s', transform: collapsed ? 'rotate(-90deg)' : 'rotate(0)' }}>▼</span>
+                            </button>
+                            <div className="inv4-skins" style={{ 
+                              display: collapsed ? 'none' : 'grid',
+                              paddingTop: '12px'
+                            }}>
+                              {itemsList.map(item => (
+                                <div 
+                                  key={item.id}
+                                  className={`inv4-skin ${equipped.has(item.id) ? "current" : ""}`}
+                                  style={{ "--rarity": item.rarity, position: "relative" } as React.CSSProperties}
+                                >
+                                  <input type="checkbox" style={{ position: 'absolute', top: 8, left: 8, zIndex: 10 }} checked={selectedItems.has(item.id)} onChange={(e) => {
+                                    const n = new Set(selectedItems);
+                                    if (e.target.checked) n.add(item.id); else n.delete(item.id);
+                                    setSelectedItems(n);
+                                  }} />
+                                  <button className="inv4-skin-pick" onClick={(e) => {
+                                     const n = new Set(selectedItems);
+                                     if (n.has(item.id)) n.delete(item.id); else n.add(item.id);
+                                     setSelectedItems(n);
+                                  }}>
+                                    {/* eslint-disable-next-line @next/next/no-img-element */}
+                                    <img src={item.image} alt={item.skinName} loading="lazy" />
+                                    <div style={{ position: 'absolute', bottom: 4, right: 4, display: 'flex', gap: 2, zIndex: 5, background: 'rgba(0,0,0,0.5)', padding: 2, borderRadius: 4 }}>
+                                      {item.stickers?.filter(s => s).slice(0,6).map((st, i) => (
+                                        <img key={i} src={st!.image} style={{ width: 16, height: 16 }} alt="" />
+                                      ))}
+                                      {item.charm && <img src={item.charm.image} style={{ width: 16, height: 16 }} alt="" />}
+                                    </div>
+                                    <span className="inv4-skin-name">{skinLabel(item.skinName)}</span>
+                                    <span className="inv4-skin-rarity">{item.nameTag ? `"${item.nameTag}"` : rarityName(item.rarity || 'default')}</span>
+                                    <span className="inv4-skin-equip">Select</span>
+                                  </button>
+                                </div>
+                              ))}
+                            </div>
                           </div>
-                          <span className="inv4-skin-name">{skinLabel(item.skinName)}</span>
-                          <span className="inv4-skin-rarity">{item.nameTag ? `"${item.nameTag}"` : rarityName(item.rarity || 'default')}</span>
-                          <span className="inv4-skin-equip">Select</span>
-                        </button>
-                      </div>
-                    );
-                  })}
-                  {store.items.length === 0 && (
-                      <p className="empty-hint">You have no crafted skins in your Vault.</p>
-                    )}
+                        );
+                      };
+
+                      return (
+                        <>
+                          {renderCat("Equipped", eq, "equipped")}
+                          {renderCat("Imported", imp, "imported")}
+                          {renderCat("Vault", oth, "other")}
+                          {store.items.length === 0 && (
+                            <p className="empty-hint">You have no crafted skins in your Vault.</p>
+                          )}
+                        </>
+                      );
+                    })()}
                   </div>
                 </div>
               )}
@@ -1639,75 +1795,6 @@ export default function InventorySimulator() {
           onClose={() => setRadioModalOpen(null)} 
         />
       )}
-      
-      {contextMenu && mounted && createPortal(
-        <div 
-          className="inv4-context"
-          style={{ 
-            left: contextMenu.x + 4, 
-            top: contextMenu.y + 4 
-          }}
-          onContextMenu={(e) => e.preventDefault()}
-        >
-          <div className="inv4-context-title" style={{ color: contextMenu.skin.rarity, paddingBottom: '8px', borderBottom: '1px solid var(--color-divider)' }}>
-            {contextMenu.weapon.name} | {skinLabel(contextMenu.skin.name)}
-          </div>
-          {contextMenu.weapon.category !== "Agents" && (
-            <div style={{ padding: '8px 12px', display: 'flex', flexDirection: 'column', gap: '4px', borderBottom: '1px solid var(--color-divider)' }}>
-              <label style={{ fontSize: '12px', display: 'flex', flexDirection: 'column' }}>
-                Wear <strong>{wear.toFixed(3)}</strong>
-                <input type="range" min={0} max={1} step={0.001} style={{ width: '100%' }} value={wear} onChange={(e) => setWear(Number(e.target.value))} />
-              </label>
-              <label style={{ fontSize: '12px', display: 'flex', flexDirection: 'column' }}>
-                Pattern
-                <input className="input" type="number" min={0} max={1000} style={{ width: '100%', padding: '2px 4px' }} value={seed} onChange={(e) => setSeed(Math.max(0, Math.min(1000, Number(e.target.value) || 0)))} />
-              </label>
-            </div>
-          )}
-          {supportsStickers && (
-            <button className="inv4-context-btn" onClick={() => {
-              if (contextMenu.boardSlot) {
-                openBoardSlot(contextMenu.boardSlot, contextMenu.side);
-              } else {
-                equipSkin(contextMenu.skin, contextMenu.side, true, contextMenu.weapon);
-              }
-              setEditor3dOpen(true);
-              setContextMenu(null);
-            }}>
-              Edit (3D)
-            </button>
-          )}
-          {contextMenu.weapon.category === "Agents" && (
-            <button className="inv4-context-btn" onClick={() => {
-              setRadioModalOpen(contextMenu.weapon);
-              setContextMenu(null);
-            }}>
-              Radio Commands
-            </button>
-          )}
-          {(contextMenu.weapon.team === "both" || contextMenu.weapon.team === "t") && (
-            <button className="inv4-context-btn" onClick={() => { equipSkin(contextMenu.skin, "t", false, contextMenu.weapon); setContextMenu(null); }}>
-              Equip (T)
-            </button>
-          )}
-          {(contextMenu.weapon.team === "both" || contextMenu.weapon.team === "ct") && (
-            <button className="inv4-context-btn" onClick={() => { equipSkin(contextMenu.skin, "ct", false, contextMenu.weapon); setContextMenu(null); }}>
-              Equip (CT)
-            </button>
-          )}
-          {contextMenu.weapon.team === "both" && (
-            <button className="inv4-context-btn" onClick={() => { equipSkin(contextMenu.skin, "both", false, contextMenu.weapon); setContextMenu(null); }}>
-              Equip (Both)
-            </button>
-          )}
-          <button className="inv4-context-btn" onClick={() => {
-            equipSkin(contextMenu.skin, contextMenu.weapon.team === "ct" ? "ct" : "t", true, contextMenu.weapon, true);
-            setContextMenu(null);
-          }}>
-            Add to Vault
-          </button>
-        </div>
-      , document.body)}
     </div>
   );
 }

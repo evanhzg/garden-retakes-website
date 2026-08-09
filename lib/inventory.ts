@@ -59,7 +59,7 @@ export type InventoryItem = {
   nameTag: string;
   stickers: (PlacedSticker | null)[];
   charm?: PlacedSticker | null;
-  createdAt: number;
+  createdAt: number; source?: string;
 };
 
 export type Loadout = {
