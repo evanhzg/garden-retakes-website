@@ -31,7 +31,8 @@ import {
 import { useI18n } from '@/components/I18nProvider';
 import { importSnapshot, type LoadoutSnapshot } from "@/lib/share";
 import SkinEditor3D from "./SkinEditor3D";
-import agentVoicesData from "@/data/agent_voices.json";
+import agentAudioMapping from "@/lib/agent_audio_mapping.json";
+import agentVoicesV2 from "@/data/agent_voices_v2.json";
 
 type WeaponEntry = {
   id: number;
@@ -1336,107 +1337,94 @@ export default function InventorySimulator() {
 
                   {skinsLoading ? (
                     <p className="empty-hint">{t("auto.inventorysimulator.loading_skins")}</p>
-                  ) : builderKind === "agent" ? (
-                    <div style={{ marginTop: 24, padding: 16, background: 'var(--bg-elevated)', borderRadius: 8 }}>
-                      <h3 style={{ marginTop: 0, marginBottom: 12 }}>Radio Commands</h3>
-                      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(140px, 1fr))', gap: 8 }}>
-                        {[
-                          "Go Go Go", "Fall Back", "Stick Together", "Hold This Position",
-                          "Follow Me", "Affirmative", "Negative", "Cheer", "Compliment",
-                          "Thanks", "Enemy Spotted", "Need Backup", "Take the Point",
-                          "Sector Clear", "I'm in Position"
-                        ].map(cmd => {
-                          const voices = (agentVoicesData as any)[`agent-${weapon.id}`];
-                          const src = voices?.radio_commands?.[cmd];
+                  ) : (
+                    <>
+                      {builderKind === "agent" && weapon && (
+                        <div style={{ marginTop: 24, marginBottom: 24, padding: 16, background: 'var(--bg-elevated)', borderRadius: 8 }}>
+                          <h3 style={{ marginTop: 0, marginBottom: 12 }}>Radio Commands</h3>
+                          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(140px, 1fr))', gap: 8 }}>
+                            {[
+                              { label: "Go Go Go", key: "go" }, { label: "Fall Back", key: "fallback" }, { label: "Stick Together", key: "stick_together" }, { label: "Hold This Position", key: "hold_this_position" },
+                              { label: "Follow Me", key: "follow_me" }, { label: "Affirmative", key: "agree" }, { label: "Negative", key: "negative" }, { label: "Cheer", key: "cheer" }, { label: "Compliment", key: "compliment" },
+                              { label: "Thanks", key: "thanks" }, { label: "Enemy Spotted", key: "enemy_spotted" }, { label: "Need Backup", key: "coverme" }, { label: "Take the Point", key: "take_the_point" },
+                              { label: "Sector Clear", key: "sector_clear" }, { label: "I'm in Position", key: "im_in_position" }
+                            ].map(cmd => {
+                              const factionId = (agentAudioMapping as any)[weapon.id.toString()];
+                              const voices = factionId ? (agentVoicesV2 as any)[factionId]?.sounds || [] : [];
+                              const variants = voices.filter((v: string) => v.includes(`_${cmd.key}_`) || v.includes(`${cmd.key}_`));
+                              const src = variants.length > 0 ? `/audio/agents/${factionId}/${variants[Math.floor(Math.random() * variants.length)]}` : null;
+                              return (
+                                <button
+                                  key={cmd.label}
+                                  disabled={!src}
+                                  onClick={() => {
+                                    if (src) new Audio(src).play().catch(() => {});
+                                  }}
+                                  style={{
+                                    padding: "8px",
+                                    borderRadius: "4px",
+                                    border: "1px solid var(--border)",
+                                    background: src ? "var(--color-surface)" : "transparent",
+                                    opacity: src ? 1 : 0.4,
+                                    cursor: src ? "pointer" : "not-allowed",
+                                    color: "var(--fg)",
+                                    fontSize: "12px",
+                                    fontWeight: 500,
+                                    transition: "all 0.2s"
+                                  }}
+                                  onMouseOver={e => { if (src) e.currentTarget.style.borderColor = "var(--color-accent)"; }}
+                                  onMouseOut={e => { if (src) e.currentTarget.style.borderColor = "var(--border)"; }}
+                                >
+                                  {cmd.label} {variants.length > 1 ? `(${variants.length})` : ''}
+                                </button>
+                              );
+                            })}
+                          </div>
+                        </div>
+                      )}
+                      <div className="inv4-skins">
+                        {shownSkins.map((s) => {
+                          const fav = favorites.has(skinKey(s.def, s.paint));
                           return (
-                            <button
-                              key={cmd}
-                              disabled={!src}
-                              onClick={() => {
-                                if (src) new Audio(src).play().catch(() => {});
+                            <div 
+                              key={s.id} 
+                              className={`inv4-skin ${s.id === currentSkinId ? "current" : ""}`} 
+                              style={{ "--rarity": s.rarity } as React.CSSProperties}
+                              onContextMenu={(e) => {
+                                e.preventDefault();
+                                e.stopPropagation();
+                                setContextMenu({ x: e.clientX, y: e.clientY, skin: s, weapon: weapon!, side });
                               }}
-                              style={{
-                                padding: "8px",
-                                borderRadius: "4px",
-                                border: "1px solid var(--border)",
-                                background: src ? "var(--color-surface)" : "transparent",
-                                opacity: src ? 1 : 0.4,
-                                cursor: src ? "pointer" : "not-allowed",
-                                color: "var(--fg)",
-                                fontSize: "12px",
-                                fontWeight: 500,
-                                transition: "all 0.2s"
-                              }}
-                              onMouseOver={e => { if (src) e.currentTarget.style.borderColor = "var(--color-accent)"; }}
-                              onMouseOut={e => { if (src) e.currentTarget.style.borderColor = "var(--border)"; }}
                             >
-                              {cmd}
-                            </button>
+                              <input type="checkbox" style={{ position: 'absolute', top: 8, left: 8, zIndex: 10 }} checked={selectedSkins.has(s.id)} onChange={(e) => {
+                                const n = new Set(selectedSkins);
+                                if (e.target.checked) n.add(s.id); else n.delete(s.id);
+                                setSelectedSkins(n);
+                              }} />
+                              <button className="inv4-skin-pick" onClick={(e) => {
+                                e.preventDefault();
+                                e.stopPropagation();
+                                setContextMenu({ x: e.clientX, y: e.clientY, skin: s, weapon: weapon!, side });
+                              }}>
+                                {/* eslint-disable-next-line @next/next/no-img-element */}
+                                <img src={s.image} alt={s.name} loading="lazy" />
+                                <span className="inv4-skin-name">{skinLabel(s.name)}</span>
+                                <span className="inv4-skin-rarity">{rarityName(s.rarity)}</span>
+                                <span className="inv4-skin-equip">Options</span>
+                              </button>
+                              <button
+                                className={`inv4-heart ${fav ? "on" : ""}`}
+                                title={fav ? "Remove from favorites" : "Add to favorites"}
+                                aria-label={fav ? `Unfavorite ${skinLabel(s.name)}` : `Favorite ${skinLabel(s.name)}`}
+                                onClick={() => toggleFavorite(s.def, s.paint)}
+                              >
+                                {fav ? "♥" : "♡"}
+                              </button>
+                            </div>
                           );
                         })}
                       </div>
-                      <div style={{ marginTop: 24, display: 'flex', justifyContent: 'center' }}>
-                         <button className="btn btn-primary" onClick={() => {
-                            // Quick equip base agent logic
-                            setStore(cur => {
-                              const loadout = cur.loadouts.find(l => l.id === cur.activeLoadoutId);
-                              if (!loadout) return cur;
-                              let newLoadout = { ...loadout };
-                              const targetSides = (overrideSide === "both" ? ["t" as const, "ct" as const] : [overrideSide || side]).filter(s => weapon.team === "both" || weapon.team === s);
-                              for (const s of targetSides) {
-                                if (s === "t") newLoadout.agentT = String(weapon.id); else newLoadout.agentCT = String(weapon.id);
-                              }
-                              return { ...cur, loadouts: cur.loadouts.map(l => l.id === newLoadout.id ? newLoadout : l) };
-                            });
-                            closeChooser();
-                         }}>
-                            Equip Agent
-                         </button>
-                      </div>
-                    </div>
-                  ) : (
-                    <div className="inv4-skins">
-                      {shownSkins.map((s) => {
-                        const fav = favorites.has(skinKey(s.def, s.paint));
-                        return (
-                          <div 
-                            key={s.id} 
-                            className={`inv4-skin ${s.id === currentSkinId ? "current" : ""}`} 
-                            style={{ "--rarity": s.rarity } as React.CSSProperties}
-                            onContextMenu={(e) => {
-                              e.preventDefault();
-                              e.stopPropagation();
-                              setContextMenu({ x: e.clientX, y: e.clientY, skin: s, weapon: weapon!, side });
-                            }}
-                          >
-                            <input type="checkbox" style={{ position: 'absolute', top: 8, left: 8, zIndex: 10 }} checked={selectedSkins.has(s.id)} onChange={(e) => {
-                              const n = new Set(selectedSkins);
-                              if (e.target.checked) n.add(s.id); else n.delete(s.id);
-                              setSelectedSkins(n);
-                            }} />
-                            <button className="inv4-skin-pick" onClick={(e) => {
-                              e.preventDefault();
-                              e.stopPropagation();
-                              setContextMenu({ x: e.clientX, y: e.clientY, skin: s, weapon: weapon!, side });
-                            }}>
-                              {/* eslint-disable-next-line @next/next/no-img-element */}
-                              <img src={s.image} alt={s.name} loading="lazy" />
-                              <span className="inv4-skin-name">{skinLabel(s.name)}</span>
-                              <span className="inv4-skin-rarity">{rarityName(s.rarity)}</span>
-                              <span className="inv4-skin-equip">Options</span>
-                            </button>
-                            <button
-                              className={`inv4-heart ${fav ? "on" : ""}`}
-                              title={fav ? "Remove from favorites" : "Add to favorites"}
-                              aria-label={fav ? `Unfavorite ${skinLabel(s.name)}` : `Favorite ${skinLabel(s.name)}`}
-                              onClick={() => toggleFavorite(s.def, s.paint)}
-                            >
-                              {fav ? "♥" : "♡"}
-                            </button>
-                          </div>
-                        );
-                      })}
-                    </div>
+                    </>
                   )}
                 </>
               ) : (
@@ -1478,10 +1466,19 @@ export default function InventorySimulator() {
                     }}>Select All</button>
                   </div>
                   <div className="inv4-skins" style={{ flex: 1, overflowY: 'auto' }}>
-                    {store.items.map(item => (
+                    {store.items.map(item => {
+                      const loadout = store.loadouts.find(l => l.id === store.activeLoadoutId);
+                      let isCurrent = false;
+                      if (loadout) {
+                        if (item.kind === "knife") isCurrent = loadout.knifeCT === item.id || loadout.knifeT === item.id;
+                        else if (item.kind === "gloves") isCurrent = loadout.glovesCT === item.id || loadout.glovesT === item.id;
+                        else if (item.kind === "agent") isCurrent = loadout.agentCT === item.id || loadout.agentT === item.id;
+                        else isCurrent = loadout.equippedCT?.[item.weaponDef] === item.id || loadout.equippedT?.[item.weaponDef] === item.id;
+                      }
+                      return (
                       <div 
                         key={item.id}
-                        className={`inv4-skin ${store.loadouts.find(l => l.id === store.activeLoadoutId)?.equippedCT?.[item.weaponDef] === item.id || store.loadouts.find(l => l.id === store.activeLoadoutId)?.equippedT?.[item.weaponDef] === item.id ? "current" : ""}`}
+                        className={`inv4-skin ${isCurrent ? "current" : ""}`}
                         style={{ "--rarity": item.rarity } as React.CSSProperties}
                       >
                         <input type="checkbox" style={{ position: 'absolute', top: 8, left: 8, zIndex: 10 }} checked={selectedItems.has(item.id)} onChange={(e) => {
@@ -1508,8 +1505,9 @@ export default function InventorySimulator() {
                           <span className="inv4-skin-equip">Select</span>
                         </button>
                       </div>
-                    ))}
-                    {store.items.length === 0 && (
+                    );
+                  })}
+                  {store.items.length === 0 && (
                       <p className="empty-hint">You have no crafted skins in your Vault.</p>
                     )}
                   </div>

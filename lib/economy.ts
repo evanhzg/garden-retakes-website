@@ -145,9 +145,9 @@ function ensureLoaded() {
 
     
     if (item.isAgent()) {
-      const entry: WeaponEntry = { id: item.id, def: item.def ?? 0, name: item.name, model: item.model ?? "", image: item.getImage(), category: "Agents", team: teamOf(item), rarity: item.rarity ?? "#b0c3d9" };
+      const entry: WeaponEntry = { id: item.id, def: item.id, name: item.name, model: item.model ?? "", image: item.getImage(), category: "Agents", team: teamOf(item), rarity: item.rarity ?? "#b0c3d9" };
       weaponsByCategory["Agents"].push(entry);
-      weaponByDef.set(item.def ?? 0, entry);
+      weaponByDef.set(item.id, entry);
       continue;
     }
     if (item.isPatch()) {
@@ -204,7 +204,7 @@ export function getSkinsForWeapon(def: number): SkinEntry[] {
     if (
       item.isAgent() || item.isPatch() || item.isKeychain()
     ) {
-      if ((item.def === def && item.isAgent()) || (item.index === def && item.isPatch()) || (item.id === def && item.isKeychain())) {
+      if ((item.id === def && item.isAgent()) || (item.index === def && item.isPatch()) || (item.id === def && item.isKeychain())) {
         skins.push({
           id: item.id,
           def,

@@ -227,7 +227,7 @@ export default function SkinEditor3D({
                   className={`inv4-editor3d-slot ${activeSlot === slot ? 'active' : ''}`}
                   onClick={() => { setActiveSlot(activeSlot === slot ? null : slot); setSearchQuery(""); }}
                 >
-                  {st ? <img src={st.image} alt="Sticker" /> : <span>Slot {slot+1}</span>}
+                  {st ? <img src={st.image} alt={itemKind === "agent" ? "Patch" : "Sticker"} /> : <span>{itemKind === "agent" ? "Patch" : "Slot"} {slot+1}</span>}
                 </button>
                 {st && (
                   <button className="inv4-editor3d-slot-remove" onClick={(e) => { e.stopPropagation(); handleRemoveItem(slot); }}>×</button>
@@ -236,20 +236,24 @@ export default function SkinEditor3D({
             );
           })}
           
-          <div className="inv4-editor3d-divider"></div>
+          {itemKind !== "agent" && itemKind !== "gloves" && (
+            <>
+              <div className="inv4-editor3d-divider"></div>
 
-          <div style={{ position: 'relative', marginBottom: 'auto' }}>
-            <button 
-              className={`inv4-editor3d-slot ${activeSlot === 5 ? 'active' : ''}`}
-              style={{ borderStyle: 'dashed' }}
-              onClick={() => { setActiveSlot(activeSlot === 5 ? null : 5); setSearchQuery(""); }}
-            >
-              {charm ? <img src={charm.image} alt="Charm" /> : <span>Charm</span>}
-            </button>
-            {charm && (
-              <button className="inv4-editor3d-slot-remove" onClick={(e) => { e.stopPropagation(); handleRemoveItem(5); }}>×</button>
-            )}
-          </div>
+              <div style={{ position: 'relative', marginBottom: 'auto' }}>
+                <button 
+                  className={`inv4-editor3d-slot ${activeSlot === 5 ? 'active' : ''}`}
+                  style={{ borderStyle: 'dashed' }}
+                  onClick={() => { setActiveSlot(activeSlot === 5 ? null : 5); setSearchQuery(""); }}
+                >
+                  {charm ? <img src={charm.image} alt="Charm" /> : <span>Charm</span>}
+                </button>
+                {charm && (
+                  <button className="inv4-editor3d-slot-remove" onClick={(e) => { e.stopPropagation(); handleRemoveItem(5); }}>×</button>
+                )}
+              </div>
+            </>
+          )}
           <div className="inv4-editor3d-actions" style={{ flexDirection: 'column', gap: '8px', padding: '0 8px', width: '100%', overflowY: 'auto' }}>
             {activeSlot !== null && activeSlot !== 5 && stickers[activeSlot] && (
               <div style={{ display: 'flex', flexDirection: 'column', gap: '8px', padding: '8px 0', borderTop: '1px solid var(--color-divider)' }}>
