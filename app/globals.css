@@ -5846,7 +5846,7 @@ html { scroll-behavior: smooth; }
 .inv4-cats .chip { padding: 5px 12px; font-size: 12px; }
 
 .inv4-weapons {
-  flex: 1; min-height: 0; overflow-y: auto;
+  flex: 1; min-height: 0; overflow: visible;
   display: grid;
   grid-template-columns: repeat(auto-fill, minmax(150px, 1fr));
   gap: var(--space-2);
@@ -5872,7 +5872,7 @@ html { scroll-behavior: smooth; }
 .inv4-weapon.has-skin .inv4-weapon-skin { color: var(--color-text); }
 
 /* ---- skin chooser ---- */
-.inv4-chooser { display: flex; flex-direction: column; min-height: 0; flex: 1; gap: var(--space-3); }
+.inv4-chooser { display: flex; flex-direction: column; min-height: 0; flex: 1; gap: var(--space-3); overflow: visible; }
 .inv4-chooser-head { display: flex; align-items: center; gap: var(--space-3); flex-wrap: wrap; padding: var(--space-3) 0; }
 .inv4-chooser-head strong { font-family: var(--font-heading); font-size: 17px; }
 .inv4-chooser-head-right { margin-left: auto; display: flex; gap: var(--space-2); }
@@ -5892,7 +5892,7 @@ html { scroll-behavior: smooth; }
 .inv4-stickers { display: grid; gap: var(--space-3); }
 
 .inv4-skins {
-  flex: 1; min-height: 0; overflow-y: auto;
+  flex: 1; min-height: 0; overflow: visible;
   display: grid;
   grid-template-columns: repeat(auto-fill, minmax(160px, 1fr));
   gap: var(--space-2);
@@ -8197,7 +8197,7 @@ header .avatar-sm { width: 34px; height: 34px; }
 .inv4-body { min-height: 0; }
 .inv4-browse { min-height: 0; display: flex; flex-direction: column; }
 .inv4-weapons, .inv4-preview, .inv4-chooser { min-height: 0; }
-.inv4-chooser { display: flex; flex-direction: column; overflow: hidden; }
+.inv4-chooser { display: flex; flex-direction: column; overflow: visible; }
 
 
 

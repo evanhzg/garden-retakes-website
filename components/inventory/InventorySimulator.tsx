@@ -87,29 +87,28 @@ function kindOfCategory(category: string): ItemKind {
 }
 
 const RADIO_COMMANDS = [
-  { label: "Go Go Go", key: "go" }, 
-  { label: "Fall Back", key: "fallback" }, 
-  { label: "Stick Together", key: "stick_together" }, 
-  { label: "Hold This Position", key: "hold" },
-  { label: "Follow Me", key: "follow_me" }, 
-  { label: "Affirmative", key: "agree" }, 
-  { label: "Negative", key: "negative" }, 
-  { label: "Cheer", key: "cheer" }, 
-  { label: "Compliment", key: "compliment" },
-  { label: "Thanks", key: "thanks" }, 
-  { label: "Enemy Spotted", key: "spotted" }, 
-  { label: "Need Backup", key: "coverme" }, 
-  { label: "Take the Point", key: "point" },
-  { label: "Sector Clear", key: "clear" }, 
-  { label: "I'm in Position", key: "position" },
-  { label: "Report In", key: "report_in" },
-  { label: "Reporting In", key: "reporting_in" },
-  { label: "Get in Position", key: "get_in_position" },
-  { label: "Regroup", key: "regroup" },
-  { label: "Sniper Warning", key: "sniper_warning" },
-  { label: "Bomb Planted", key: "bomb_planted" },
-  { label: "Lost Round", key: "lost" },
-  { label: "Won Round", key: "won" }
+  { label: "Go Go Go", keys: ["go_go_go", "go"] }, 
+  { label: "Fall Back", keys: ["fall_back", "fallback", "request_fallback"] }, 
+  { label: "Stick Together", keys: ["stick_together"] }, 
+  { label: "Hold This Position", keys: ["hold_this_position", "hold"] },
+  { label: "Follow Me", keys: ["follow_me"] }, 
+  { label: "Affirmative / Agree", keys: ["affirmative", "agree"] }, 
+  { label: "Negative / Disagree", keys: ["negative", "disagree"] }, 
+  { label: "Cheer", keys: ["cheer"] }, 
+  { label: "Compliment", keys: ["compliment"] },
+  { label: "Thanks", keys: ["thanks"] }, 
+  { label: "Enemy Spotted", keys: ["enemy_spotted", "spotted"] }, 
+  { label: "Need Backup", keys: ["need_backup", "coverme", "request_coverme"] }, 
+  { label: "Take the Point", keys: ["take_the_point", "point"] },
+  { label: "Sector Clear", keys: ["sector_clear", "clear"] }, 
+  { label: "I'm in Position", keys: ["im_in_position", "position"] },
+  { label: "Report In", keys: ["report_in", "reporting_in"] },
+  { label: "Get in Position", keys: ["get_in_position"] },
+  { label: "Regroup", keys: ["regroup"] },
+  { label: "Sniper Warning", keys: ["sniper_warning"] },
+  { label: "Bomb Planted", keys: ["bomb_planted"] },
+  { label: "Lost Round", keys: ["lost", "lost_round"] },
+  { label: "Won Round", keys: ["won", "won_round"] }
 ];
 
 function RadioCommandsModal({ weapon, onClose }: { weapon: WeaponEntry, onClose: () => void }) {
@@ -126,9 +125,12 @@ function RadioCommandsModal({ weapon, onClose }: { weapon: WeaponEntry, onClose:
         <div style={{ flex: 1, overflowY: 'auto', padding: '4px', margin: '0 -4px' }}>
           <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(160px, 1fr))', gap: 8 }}>
             {RADIO_COMMANDS.map(cmd => {
-              const variants = voices.filter((v: string) => v.includes(`_${cmd.key}_`) || v.includes(`${cmd.key}_`)).sort();
+              const variants = voices.filter((v: string) => {
+                return cmd.keys.some(k => v.includes(`_${k}_`) || v.includes(`${k}_`) || v.includes(`_${k}.`) || v.includes(`${k}.`));
+              }).sort();
+              if (variants.length === 0) return null;
               const count = variants.length;
-              const idx = playIndexes[cmd.key] || 0;
+              const idx = playIndexes[cmd.label] || 0;
               const currentVariant = variants.length > 0 ? variants[idx % variants.length] : null;
               const src = currentVariant ? `/audio/agents/${factionId}/${currentVariant}` : null;
               
@@ -1051,6 +1053,9 @@ export default function InventorySimulator() {
             } else {
               equipSkin(contextMenu.skin, contextMenu.side, true, contextMenu.weapon);
             }
+            if (!weapon && contextMenu.weapon) {
+              openWeapon(contextMenu.weapon);
+            }
             setEditor3dOpen(true);
             setContextMenu(null);
           }}>
@@ -1629,7 +1634,7 @@ export default function InventorySimulator() {
                       else setSelectedItems(new Set(store.items.map(i => i.id)));
                     }}>Select All</button>
                   </div>
-                  <div style={{ flex: 1, overflowY: 'auto', paddingRight: '4px' }}>
+                  <div style={{ flex: 1, overflow: 'visible', paddingRight: '4px' }}>
                     {(() => {
                       const loadout = store.loadouts.find(l => l.id === store.activeLoadoutId);
                       const equipped = new Set<string>();
