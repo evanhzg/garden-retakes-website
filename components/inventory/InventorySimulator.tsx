@@ -136,12 +136,12 @@ function RadioCommandsModal({ weapon, onClose }: { weapon: WeaponEntry, onClose:
               
               return (
                 <button
-                  key={cmd.key}
+                  key={cmd.label}
                   disabled={!src}
                   onClick={() => {
                     if (src) {
                       new Audio(src).play().catch(() => {});
-                      setPlayIndexes(prev => ({ ...prev, [cmd.key]: (prev[cmd.key] || 0) + 1 }));
+                      setPlayIndexes(prev => ({ ...prev, [cmd.label]: (prev[cmd.label] || 0) + 1 }));
                     }
                   }}
                   style={{
