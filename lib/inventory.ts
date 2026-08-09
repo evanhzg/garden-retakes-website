@@ -11,7 +11,7 @@
 // per-side knife and glove slots. Legacy v2 stores are migrated transparently.
 
 export type Team = "ct" | "t" | "both";
-export type ItemKind = "weapon" | "knife" | "gloves" | "agent" | "patch" | "charm";
+export type ItemKind = "weapon" | "knife" | "gloves" | "agent" | "patch" | "charm" | "musickit";
 export type Side = "t" | "ct";
 
 export const STICKER_SLOTS = 5;
@@ -75,6 +75,8 @@ export type Loadout = {
   glovesT?: string;
   agentCT?: string;
   agentT?: string;
+  musicKitCT?: string;
+  musicKitT?: string;
   equippedPatchesCT?: string[];
   equippedPatchesT?: string[];
   /** Accent colour for visibility & sorting (hex, from LOADOUT_COLORS). */
@@ -219,7 +221,11 @@ export function loadoutSize(loadout: Loadout): number {
     (loadout.knifeCT ? 1 : 0) +
     (loadout.knifeT ? 1 : 0) +
     (loadout.glovesCT ? 1 : 0) +
-    (loadout.glovesT ? 1 : 0)
+    (loadout.glovesT ? 1 : 0) +
+    (loadout.agentCT ? 1 : 0) +
+    (loadout.agentT ? 1 : 0) +
+    (loadout.musicKitCT ? 1 : 0) +
+    (loadout.musicKitT ? 1 : 0)
   );
 }
 

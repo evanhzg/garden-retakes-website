@@ -21,8 +21,10 @@ export async function POST(request: Request) {
       const match = payload.match(/(?:share=)?(v[0-9]+_[A-Za-z0-9+\/=]+)/);
       if (match) shareCode = match[1];
     } else if (payload.startsWith("http")) {
-       const u = new URL(payload);
-       shareCode = u.searchParams.get("share") || payload;
+       const req = await fetch(payload);
+       if (!req.ok) throw new Error("Failed to fetch from url");
+       const data = await req.text();
+       shareCode = data;
     }
 
     const invData = CS2Inventory.parse(shareCode, CS2Economy);
@@ -42,12 +44,13 @@ export async function POST(request: Request) {
          continue; // Only import equipped items for the loadout
       }
 
-      let kind: "weapon" | "knife" | "gloves" | "agent" | "patch" | "charm" = "weapon";
+      let kind: "weapon" | "knife" | "gloves" | "agent" | "patch" | "charm" | "musickit" = "weapon";
       if (economyItem.isMelee()) kind = "knife";
       else if (economyItem.isGloves()) kind = "gloves";
       else if (economyItem.isAgent()) kind = "agent";
       else if (economyItem.isPatch()) kind = "patch";
       else if (economyItem.isKeychain()) kind = "charm";
+      else if (economyItem.isMusicKit()) kind = "musickit";
 
       let weaponDef = economyItem.def;
       if (kind === "patch") weaponDef = economyItem.index ?? 0;
@@ -136,6 +139,9 @@ export async function POST(request: Request) {
             if (!loadout.equippedPatchesCT) loadout.equippedPatchesCT = [];
             if (side === "t") loadout.equippedPatchesT.push(invItem.id);
             else loadout.equippedPatchesCT.push(invItem.id);
+          } else if (kind === "musickit") {
+            if (side === "t") loadout.musicKitT = invItem.id;
+            else loadout.musicKitCT = invItem.id;
           } else if (kind === "weapon" && weaponDef) {
             if (side === "t") loadout.equippedT[weaponDef] = invItem.id;
             else loadout.equippedCT[weaponDef] = invItem.id;

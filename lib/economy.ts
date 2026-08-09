@@ -21,7 +21,8 @@ export type WeaponCategory =
   | "Gloves"
   | "Agents"
   | "Patches"
-  | "Charms";
+  | "Charms"
+  | "Music Kits";
 
 export const WEAPON_CATEGORY_ORDER: WeaponCategory[] = [
   "Rifles",
@@ -34,6 +35,7 @@ export const WEAPON_CATEGORY_ORDER: WeaponCategory[] = [
   "Agents",
   "Patches",
   "Charms",
+  "Music Kits"
 ];
 
 export type Team = "ct" | "t" | "both";
@@ -118,6 +120,7 @@ function ensureLoaded() {
     Agents: [],
     Patches: [],
     Charms: [],
+    "Music Kits": [],
   };
   weaponByDef = new Map();
 
@@ -159,6 +162,12 @@ function ensureLoaded() {
     if (item.isKeychain()) {
       const entry: WeaponEntry = { id: item.id, def: item.id, name: item.name, model: "", image: item.getImage(), category: "Charms", team: "both", rarity: item.rarity ?? "#b0c3d9" };
       weaponsByCategory["Charms"].push(entry);
+      weaponByDef.set(item.id, entry);
+      continue;
+    }
+    if (item.isMusicKit()) {
+      const entry: WeaponEntry = { id: item.id, def: item.id, name: item.name, model: "", image: item.getImage(), category: "Music Kits", team: "both", rarity: item.rarity ?? "#b0c3d9" };
+      weaponsByCategory["Music Kits"].push(entry);
       weaponByDef.set(item.id, entry);
       continue;
     }

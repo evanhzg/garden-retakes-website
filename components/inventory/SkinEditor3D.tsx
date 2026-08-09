@@ -255,7 +255,7 @@ export default function SkinEditor3D({
             </>
           )}
           <div className="inv4-editor3d-actions" style={{ flexDirection: 'column', gap: '8px', padding: '0 8px', width: '100%', overflowY: 'auto' }}>
-            {activeSlot !== null && activeSlot !== 5 && stickers[activeSlot] && (
+            {activeSlot !== null && activeSlot !== 5 && stickers[activeSlot] && itemKind !== "agent" && (
               <div style={{ display: 'flex', flexDirection: 'column', gap: '8px', padding: '8px 0', borderTop: '1px solid var(--color-divider)' }}>
                 <label style={{ fontSize: '12px' }}>
                   Wear: {(stickers[activeSlot]!.wear ?? 0).toFixed(2)}
@@ -343,11 +343,17 @@ export default function SkinEditor3D({
           {/* Radial gradient background at the bottom */}
           <div className="inv4-editor3d-gradient"></div>
           
-          <Viewer 
-            item={viewerItem}
-            onApi={setApi}
-            style={{ width: "100%", height: "100%", border: "none", position: "relative", zIndex: 0 }}
-          />
+          {itemKind === "agent" ? (
+            <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', height: '100%' }}>
+              <img src={`https://cdn.cstrike.app/agents/${skinId}.png`} alt="Agent" style={{ maxHeight: '80%', opacity: 0.9 }} onError={(e) => e.currentTarget.style.display = 'none'} />
+            </div>
+          ) : (
+            <Viewer 
+              item={viewerItem}
+              onApi={setApi}
+              style={{ width: "100%", height: "100%", border: "none", position: "relative", zIndex: 0 }}
+            />
+          )}
         </div>
       </div>
     </div>

@@ -63,7 +63,7 @@ type BoardSlot = {
   extra?: boolean;
 };
 
-const CATEGORY_ORDER = ["Rifles", "Snipers", "SMGs", "Pistols", "Heavy", "Knives", "Gloves", "Agents"];
+const CATEGORY_ORDER = ["Rifles", "Snipers", "SMGs", "Pistols", "Heavy", "Knives", "Gloves", "Agents", "Music Kits"];
 const SIDES: Side[] = ["t", "ct"];
 
 function wearLabel(wear: number): string {
@@ -83,6 +83,7 @@ function kindOfCategory(category: string): ItemKind {
   if (category === "Gloves") return "gloves";
   if (category === "Agents") return "agent";
   if (category === "Patches") return "patch";
+  if (category === "Music Kits") return "musickit";
   return "weapon";
 }
 
@@ -418,6 +419,10 @@ export default function InventorySimulator() {
         const item = itemById(s === "t" ? loadout.agentT : loadout.agentCT);
         return item?.weaponDef === def ? item : undefined;
       }
+      if (kind === "musickit") {
+        const item = itemById(s === "t" ? loadout.musicKitT : loadout.musicKitCT);
+        return item?.weaponDef === def ? item : undefined;
+      }
       return itemById((s === "t" ? loadout.equippedT : loadout.equippedCT)[def]);
     },
     [activeLoadout, itemById]
@@ -431,6 +436,7 @@ export default function InventorySimulator() {
       if (kind === "knife") return itemById(s === "t" ? loadout.knifeT : loadout.knifeCT);
       if (kind === "gloves") return itemById(s === "t" ? loadout.glovesT : loadout.glovesCT);
       if (kind === "agent") return itemById(s === "t" ? loadout.agentT : loadout.agentCT);
+      if (kind === "musickit") return itemById(s === "t" ? loadout.musicKitT : loadout.musicKitCT);
       return itemById((s === "t" ? loadout.equippedT : loadout.equippedCT)[def]);
     },
     [activeLoadout, itemById]
@@ -458,6 +464,7 @@ export default function InventorySimulator() {
       const knifeItem = itemById(s === "t" ? activeLoadout.knifeT : activeLoadout.knifeCT);
       const gloveItem = itemById(s === "t" ? activeLoadout.glovesT : activeLoadout.glovesCT);
       const agentItem = itemById(s === "t" ? activeLoadout.agentT : activeLoadout.agentCT);
+      const musicKitItem = itemById(s === "t" ? activeLoadout.musicKitT : activeLoadout.musicKitCT);
 
       // Anything equipped on this side that the signature set doesn't cover —
       // an AK on CT, an MP9 on T — still has to be visible somewhere.
@@ -481,6 +488,7 @@ export default function InventorySimulator() {
         { key: `${s}-knife`, def: knifeItem?.weaponDef ?? -1, kind: "knife", label: "Knife", item: knifeItem },
         { key: `${s}-gloves`, def: gloveItem?.weaponDef ?? -1, kind: "gloves", label: "Gloves", item: gloveItem },
         { key: `${s}-agent`, def: agentItem?.weaponDef ?? -1, kind: "agent", label: "Agent", item: agentItem },
+        { key: `${s}-musickit`, def: musicKitItem?.weaponDef ?? -1, kind: "musickit", label: "Music Kit", item: musicKitItem },
         ...extras,
       ];
     },
@@ -584,7 +592,7 @@ export default function InventorySimulator() {
     };
     const groups = new Map<string, typeof slots>();
     for (const slot of slots) {
-      const g = slot.kind === "knife" ? "Knives" : slot.kind === "gloves" ? "Gloves" : slot.kind === "agent" ? "Agents" : slot.kind === "patch" ? "Patches" : slot.kind === "charm" ? "Charms" : categoryOf(slot.def);
+      const g = slot.kind === "knife" ? "Knives" : slot.kind === "gloves" ? "Gloves" : slot.kind === "agent" ? "Agents" : slot.kind === "musickit" ? "Music Kits" : slot.kind === "patch" ? "Patches" : slot.kind === "charm" ? "Charms" : categoryOf(slot.def);
       if (!groups.has(g)) groups.set(g, []);
       groups.get(g)!.push(slot);
     }
@@ -717,6 +725,9 @@ export default function InventorySimulator() {
           } else if (kind === "agent") {
             if (s === "t") newLoadout.agentT = itemId;
             else newLoadout.agentCT = itemId;
+          } else if (kind === "musickit") {
+            if (s === "t") newLoadout.musicKitT = itemId;
+            else newLoadout.musicKitCT = itemId;
           } else {
             if (s === "t") newLoadout.equippedT[targetWeapon.def] = itemId;
             else newLoadout.equippedCT[targetWeapon.def] = itemId;
@@ -732,22 +743,35 @@ export default function InventorySimulator() {
     if (!preventClose) closeChooser();
   };
 
-  const clearSlot = (def: number, kind: ItemKind) => {
+  const clearSlot = (def: number, kind: ItemKind, targetSide: Team) => {
     setStore((cur) => {
       const loadouts = cur.loadouts.map((l) => {
         if (l.id !== cur.activeLoadoutId) return l;
         const nl: Loadout = { ...l, equippedCT: { ...l.equippedCT }, equippedT: { ...l.equippedT } };
-        if (kind === "knife") {
-          if (side === "t") nl.knifeT = undefined;
-          else nl.knifeCT = undefined;
-        } else if (kind === "gloves") {
-          if (side === "t") nl.glovesT = undefined;
-          else nl.glovesCT = undefined;
-        } else if (kind === "agent") {
-          if (side === "t") nl.agentT = undefined;
-          else nl.agentCT = undefined;
-        } else if (side === "t") delete nl.equippedT[def];
-        else delete nl.equippedCT[def];
+        
+        const clearForSide = (s: "t" | "ct") => {
+          if (kind === "knife") {
+            if (s === "t") nl.knifeT = undefined;
+            else nl.knifeCT = undefined;
+          } else if (kind === "gloves") {
+            if (s === "t") nl.glovesT = undefined;
+            else nl.glovesCT = undefined;
+          } else if (kind === "agent") {
+            if (s === "t") nl.agentT = undefined;
+            else nl.agentCT = undefined;
+          } else if (kind === "musickit") {
+            if (s === "t") nl.musicKitT = undefined;
+            else nl.musicKitCT = undefined;
+          } else if (s === "t") {
+            delete nl.equippedT[def];
+          } else {
+            delete nl.equippedCT[def];
+          }
+        };
+
+        if (targetSide === "both" || targetSide === "t") clearForSide("t");
+        if (targetSide === "both" || targetSide === "ct") clearForSide("ct");
+        
         return nl;
       });
       return { ...cur, loadouts };
@@ -1018,6 +1042,52 @@ export default function InventorySimulator() {
 
   const renderContext = (id: string) => {
     if (!contextMenu || contextMenu.id !== id || !mounted) return null;
+    
+    const isMusicKit = contextMenu.weapon.category === "Music Kits";
+    const isAgent = contextMenu.weapon.category === "Agents";
+    
+    const fav = favorites.has(skinKey(contextMenu.weapon.def, contextMenu.skin.paint));
+    
+    const payload = {
+      kind: kindOfCategory(contextMenu.weapon.category),
+      weaponDef: contextMenu.weapon.def,
+      skinId: contextMenu.skin.id,
+      wear,
+      seed,
+      statTrak: supportsStatTrak ? statTrak : false,
+      nameTag,
+      stickers: supportsStickers ? stickers : defaultStickerSlots(),
+      charm: supportsStickers ? charm : null,
+    };
+    
+    const identical = store.items.find(i => 
+      i.weaponDef === payload.weaponDef &&
+      i.skinId === payload.skinId &&
+      i.wear === payload.wear &&
+      i.seed === payload.seed &&
+      i.statTrak === payload.statTrak &&
+      i.nameTag === payload.nameTag &&
+      JSON.stringify(i.stickers) === JSON.stringify(payload.stickers) &&
+      JSON.stringify(i.charm) === JSON.stringify(payload.charm)
+    );
+    const inVault = !!identical;
+
+    const equippedT = identical && activeLoadout ? (
+      (payload.kind === "knife" && activeLoadout.knifeT === identical.id) ||
+      (payload.kind === "gloves" && activeLoadout.glovesT === identical.id) ||
+      (payload.kind === "agent" && activeLoadout.agentT === identical.id) ||
+      (payload.kind === "musickit" && activeLoadout.musicKitT === identical.id) ||
+      (payload.kind === "weapon" && activeLoadout.equippedT[payload.weaponDef] === identical.id)
+    ) : false;
+
+    const equippedCT = identical && activeLoadout ? (
+      (payload.kind === "knife" && activeLoadout.knifeCT === identical.id) ||
+      (payload.kind === "gloves" && activeLoadout.glovesCT === identical.id) ||
+      (payload.kind === "agent" && activeLoadout.agentCT === identical.id) ||
+      (payload.kind === "musickit" && activeLoadout.musicKitCT === identical.id) ||
+      (payload.kind === "weapon" && activeLoadout.equippedCT[payload.weaponDef] === identical.id)
+    ) : false;
+
     return (
       <div 
         className="inv4-context"
@@ -1034,7 +1104,7 @@ export default function InventorySimulator() {
         <div className="inv4-context-title" style={{ color: contextMenu.skin.rarity, paddingBottom: '8px', borderBottom: '1px solid var(--color-divider)' }}>
           {contextMenu.weapon.name} | {skinLabel(contextMenu.skin.name)}
         </div>
-        {contextMenu.weapon.category !== "Agents" && (
+        {!isAgent && !isMusicKit && (
           <div style={{ padding: '8px 12px', display: 'flex', flexDirection: 'column', gap: '4px', borderBottom: '1px solid var(--color-divider)' }}>
             <label style={{ fontSize: '12px', display: 'flex', flexDirection: 'column' }}>
               Wear <strong>{wear.toFixed(3)}</strong>
@@ -1046,7 +1116,7 @@ export default function InventorySimulator() {
             </label>
           </div>
         )}
-        {supportsStickers && (
+        {supportsStickers && !isMusicKit && (
           <button className="inv4-context-btn" onClick={() => {
             if (contextMenu.boardSlot) {
               openBoardSlot(contextMenu.boardSlot, contextMenu.side);
@@ -1059,10 +1129,10 @@ export default function InventorySimulator() {
             setEditor3dOpen(true);
             setContextMenu(null);
           }}>
-            Edit (3D)
+            {isAgent ? "Manage Patches" : "Edit (3D)"}
           </button>
         )}
-        {contextMenu.weapon.category === "Agents" && (
+        {isAgent && (
           <button className="inv4-context-btn" onClick={() => {
             setRadioModalOpen(contextMenu.weapon);
             setContextMenu(null);
@@ -1071,25 +1141,47 @@ export default function InventorySimulator() {
           </button>
         )}
         {(contextMenu.weapon.team === "both" || contextMenu.weapon.team === "t") && (
-          <button className="inv4-context-btn" onClick={() => { equipSkin(contextMenu.skin, "t", false, contextMenu.weapon); setContextMenu(null); }}>
-            Equip (T)
+          <button className="inv4-context-btn" onClick={() => { 
+            if (equippedT && identical) clearSlot(contextMenu.weapon.def, payload.kind, "t");
+            else equipSkin(contextMenu.skin, "t", false, contextMenu.weapon); 
+            setContextMenu(null); 
+          }}>
+            {equippedT ? "Unequip (T)" : "Equip (T)"}
           </button>
         )}
         {(contextMenu.weapon.team === "both" || contextMenu.weapon.team === "ct") && (
-          <button className="inv4-context-btn" onClick={() => { equipSkin(contextMenu.skin, "ct", false, contextMenu.weapon); setContextMenu(null); }}>
-            Equip (CT)
+          <button className="inv4-context-btn" onClick={() => { 
+            if (equippedCT && identical) clearSlot(contextMenu.weapon.def, payload.kind, "ct");
+            else equipSkin(contextMenu.skin, "ct", false, contextMenu.weapon); 
+            setContextMenu(null); 
+          }}>
+            {equippedCT ? "Unequip (CT)" : "Equip (CT)"}
           </button>
         )}
         {contextMenu.weapon.team === "both" && (
-          <button className="inv4-context-btn" onClick={() => { equipSkin(contextMenu.skin, "both", false, contextMenu.weapon); setContextMenu(null); }}>
-            Equip (Both)
+          <button className="inv4-context-btn" onClick={() => { 
+            if (equippedCT && equippedT && identical) clearSlot(contextMenu.weapon.def, payload.kind, "both");
+            else equipSkin(contextMenu.skin, "both", false, contextMenu.weapon); 
+            setContextMenu(null); 
+          }}>
+            {equippedCT && equippedT ? "Unequip (Both)" : "Equip (Both)"}
           </button>
         )}
         <button className="inv4-context-btn" onClick={() => {
-          equipSkin(contextMenu.skin, contextMenu.weapon.team === "ct" ? "ct" : "t", true, contextMenu.weapon, true);
+          if (inVault) {
+            setStore(s => ({ ...s, items: s.items.filter(i => i.id !== identical!.id) }));
+          } else {
+            equipSkin(contextMenu.skin, contextMenu.weapon.team === "ct" ? "ct" : "t", true, contextMenu.weapon, true);
+          }
           setContextMenu(null);
         }}>
-          Add to Vault
+          {inVault ? "Remove from Vault" : "Add to Vault"}
+        </button>
+        <button className="inv4-context-btn" onClick={() => {
+          toggleFavorite(contextMenu.weapon.def, contextMenu.skin.paint);
+          setContextMenu(null);
+        }}>
+          {fav ? "Remove from favorites" : "Add to favorites"}
         </button>
       </div>
     );
@@ -1139,8 +1231,8 @@ export default function InventorySimulator() {
             {t("auto.inventorysimulator._new")}
                                 </button>
           <button className="btn btn-secondary inv4-lo-new" onClick={() => {
-            const url = window.prompt("Paste inventory.cstrike.app link or data:");
-            if (url) importCstrike(url);
+            if (!session.steamId) return showToast("Not connected");
+            importCstrike(`https://inventory.cstrike.app/api/inventory/${session.steamId}.json`);
           }} title="Import from inventory.cstrike.app">
             Import CStrike
           </button>
@@ -1360,7 +1452,7 @@ export default function InventorySimulator() {
                   const kind = kindOfCategory(c);
                   const weaponsToRender = isSingleSlot 
                     ? (() => {
-                        const equippedItem = slotItemFor(catalog[c][0].def, kind, side); // The def doesn't matter for these kinds in slotItemFor
+                        const equippedItem = slotItemForChooser(catalog[c][0].def, kind, side); // The def doesn't matter for these kinds in slotItemForChooser
                         if (equippedItem) {
                           const w = catalog[c].find(x => x.def === equippedItem.weaponDef) || catalog[c][0];
                           return [w];
@@ -1478,7 +1570,7 @@ export default function InventorySimulator() {
                     <button
                       className="btn btn-secondary"
                       onClick={() => {
-                        clearSlot(weapon.def, builderKind);
+                        clearSlot(weapon.def, builderKind, side);
                         closeChooser();
                       }}
                     >
@@ -1645,6 +1737,8 @@ export default function InventorySimulator() {
                         if (loadout.glovesT) equipped.add(loadout.glovesT);
                         if (loadout.agentCT) equipped.add(loadout.agentCT);
                         if (loadout.agentT) equipped.add(loadout.agentT);
+                        if (loadout.musicKitCT) equipped.add(loadout.musicKitCT);
+                        if (loadout.musicKitT) equipped.add(loadout.musicKitT);
                         Object.values(loadout.equippedCT ?? {}).forEach(id => equipped.add(id as string));
                         Object.values(loadout.equippedT ?? {}).forEach(id => equipped.add(id as string));
                       }
@@ -1697,7 +1791,7 @@ export default function InventorySimulator() {
                                   }}>
                                     {/* eslint-disable-next-line @next/next/no-img-element */}
                                     <img src={item.image} alt={item.skinName} loading="lazy" />
-                                    <div style={{ position: 'absolute', bottom: 4, right: 4, display: 'flex', gap: 2, zIndex: 5, background: 'rgba(0,0,0,0.5)', padding: 2, borderRadius: 4 }}>
+                                    <div style={{ position: 'absolute', top: 4, right: 4, display: 'flex', gap: 2, zIndex: 5, background: 'rgba(0,0,0,0.5)', padding: 2, borderRadius: 4 }}>
                                       {item.stickers?.filter(s => s).slice(0,6).map((st, i) => (
                                         <img key={i} src={st!.image} style={{ width: 16, height: 16 }} alt="" />
                                       ))}
