@@ -139,6 +139,7 @@ export default function RetakesLobby({ signedIn, lobbyId }: { signedIn: boolean,
   const [pendingInvites, setPendingInvites] = useState<{ id: string, name: string, expiresAt: number }[]>([]);
   const [reportOpen, setReportOpen] = useState(false);
   const [reportText, setReportText] = useState("");
+  const [openPartyCard, setOpenPartyCard] = useState<{ steamId: string; rect: DOMRect } | null>(null);
   const [partyLoadouts, setPartyLoadouts] = useState<Record<string, { roleT: string, roleCt: string, isCaller: boolean, weapons: any, utility: any, notes: string }>>({});
   const [sideTab, setSideTab] = useState<Side>("T");
   const [savingRole, setSavingRole] = useState(false);
@@ -203,8 +204,11 @@ export default function RetakesLobby({ signedIn, lobbyId }: { signedIn: boolean,
   const [editingName, setEditingName] = useState(false);
   const [draftName, setDraftName] = useState("");
 
+  const party = state?.party ?? null;
   const match = state?.match ?? null;
   const now = useNow(Boolean(state?.queue || match));
+
+  const partyForms = useRosterForm(party?.members.map((m: any) => m.steamId) ?? []);
 
   // Both takeovers cover the screen, so the friends launcher has to stand down
   // — it is position:fixed and mounted app-wide, and was otherwise floating on
@@ -267,7 +271,6 @@ export default function RetakesLobby({ signedIn, lobbyId }: { signedIn: boolean,
 
   // --------------------------------------------------------------- derived UI
 
-  const party = state?.party ?? null;
   const mode = party?.mode ?? "2v2";
   const modeInfo = state?.modes.find((m) => m.id === mode);
 
@@ -457,7 +460,12 @@ export default function RetakesLobby({ signedIn, lobbyId }: { signedIn: boolean,
               const avatarUrl = names[m.steamId]?.avatar;
               const displayName = displayNameFor(m.steamId, names, { isBot: false }) ?? m.name ?? t("lobby.player");
               return (
-              <li key={m.steamId} className={m.steamId === steamId ? "me" : ""}>
+              <li 
+                key={m.steamId} 
+                className={m.steamId === steamId ? "me" : ""}
+                onMouseEnter={(e) => setOpenPartyCard({ steamId: m.steamId, rect: e.currentTarget.getBoundingClientRect() })}
+                onMouseLeave={() => setOpenPartyCard((o) => (o?.steamId === m.steamId ? null : o))}
+              >
                 <span className="rq-avatar" aria-hidden style={{ overflow: "hidden" }}>
                   {avatarUrl ? (
                     <img src={avatarUrl} style={{ width: "100%", height: "100%", objectFit: "cover" }} />
@@ -485,7 +493,10 @@ export default function RetakesLobby({ signedIn, lobbyId }: { signedIn: boolean,
                      {partyLoadouts[m.steamId].roleCt === 'rotator' && <RotateCcw size={14} />}
                   </span>}
                 </span>
-                <LevelBadge elo={m.elo} matches={m.matches} size="sm" />
+                <span style={{ display: 'inline-flex', alignItems: 'center', gap: '8px' }}>
+                  <FormLine form={partyForms[m.steamId]} />
+                  <LevelBadge elo={m.elo} matches={m.matches} size="sm" />
+                </span>
                 {party?.isLeader && m.steamId !== steamId && (
                   <button
                     className="rq-kick"
@@ -517,6 +528,15 @@ export default function RetakesLobby({ signedIn, lobbyId }: { signedIn: boolean,
           </ul>
 
           {party && !party.isLeader && <p className="rq-hint">{t("lobby.leaderqueues")}</p>}
+
+          {openPartyCard && (
+            <FormCard
+              form={partyForms[openPartyCard.steamId]}
+              name={displayNameFor(openPartyCard.steamId, names, { isBot: false }) ?? party?.members.find((m) => m.steamId === openPartyCard.steamId)?.name ?? "—"}
+              anchor={openPartyCard.rect}
+              onClose={() => setOpenPartyCard(null)}
+            />
+          )}
 
           <h3 className="rq-subhead">{t("lobby.invitefriends")}</h3>
           {onlineFriends.length === 0 ? (

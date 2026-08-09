@@ -5977,7 +5977,7 @@ html { scroll-behavior: smooth; }
   width: min(1200px, 100%); height: min(800px, 100%);
   background: var(--color-bg); color: var(--color-text);
   display: flex; flex-direction: row; border: 1px solid var(--color-divider);
-  border-radius: var(--radius-lg); overflow: hidden;
+  border-radius: 0; overflow: hidden;
   box-shadow: var(--shadow-lg);
   animation: gr-pop 0.18s ease both;
 }
@@ -6057,7 +6057,7 @@ html { scroll-behavior: smooth; }
 .inv4-context {
   position: fixed; z-index: 10000;
   background: var(--color-text); color: var(--color-bg);
-  border-radius: var(--radius-lg);
+  border-radius: 0;
   border: 1px solid var(--color-divider);
   box-shadow: var(--shadow-lg);
   display: flex; flex-direction: column; padding: 4px 0;

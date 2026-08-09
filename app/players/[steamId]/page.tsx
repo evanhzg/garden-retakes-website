@@ -92,7 +92,7 @@ export default async function PlayerPage({
   const query = (extra: string) =>
     `?season=${seasonId}${rankedOnly ? "&ranked=1" : ""}${extra}`;
 
-  const [profile, override, webProfile, seasonStats, seasons, rows, gameStats, passport] = await Promise.all([
+  const [profile, override, webProfile, seasonStats, seasons, rows, gameStats, passport, crStats] = await Promise.all([
     prisma.playerProfile.findUnique({ where: { SteamId: steamId } }),
     prisma.gardenNameOverride.findUnique({ where: { SteamId: steamId } }),
     prisma.gardenWebProfile.findUnique({ where: { SteamId: steamId } }),
@@ -101,6 +101,7 @@ export default async function PlayerPage({
     fetchRows(seasonId, steamId, rankedOnly),
     prisma.webGameStats.findMany({ where: { SteamId: steamId } }),
     prisma.playerPassport.findUnique({ where: { SteamId: steamId } }),
+    prisma.gardenCompetitiveRating.findUnique({ where: { SteamId: steamId } }),
   ]);
 
   const name = override?.Name ?? profile?.LastKnownName ?? params.steamId;
@@ -158,6 +159,9 @@ export default async function PlayerPage({
           kast: total.kast,
           clutches: total.clutches,
           openingKills: total.openingKills,
+          crElo: crStats?.Elo ?? null,
+          crPeakElo: crStats?.PeakElo ?? null,
+          crMatches: crStats?.MatchesPlayed ?? 0,
         }}
       />
 

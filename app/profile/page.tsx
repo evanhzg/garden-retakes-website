@@ -23,6 +23,9 @@ export type ProfileHeroStats = {
   kast: number;
   clutches: number;
   openingKills: number;
+  crElo?: number | null;
+  crPeakElo?: number | null;
+  crMatches?: number;
 };
 
 export default async function ProfilePage({
@@ -52,7 +55,7 @@ export default async function ProfilePage({
   const seasonId = searchParams.season ? Number(searchParams.season) : activeSeason?.Id ?? 0;
   const rankedOnly = searchParams.ranked === "1";
 
-  const [profile, override, webProfile, seasonStats, seasons, rows, name, passport] = await Promise.all([
+  const [profile, override, webProfile, seasonStats, seasons, rows, name, passport, crStats] = await Promise.all([
     prisma.playerProfile.findUnique({ where: { SteamId: steamId } }),
     prisma.gardenNameOverride.findUnique({ where: { SteamId: steamId } }),
     prisma.gardenWebProfile.findUnique({ where: { SteamId: steamId } }),
@@ -61,6 +64,7 @@ export default async function ProfilePage({
     fetchRows(seasonId, steamId, rankedOnly),
     resolveName(steamId),
     prisma.playerPassport.findUnique({ where: { SteamId: steamId } }),
+    prisma.gardenCompetitiveRating.findUnique({ where: { SteamId: steamId } }),
   ]);
 
   const total = summarize(rows);
@@ -78,6 +82,9 @@ export default async function ProfilePage({
     kast: total.kast,
     clutches: total.clutches,
     openingKills: total.openingKills,
+    crElo: crStats?.Elo ?? null,
+    crPeakElo: crStats?.PeakElo ?? null,
+    crMatches: crStats?.MatchesPlayed ?? 0,
   };
 
   const bySide = groupBy(rows, (r) => sideName(r.TeamNum)).map(([side, sideRows]) => ({

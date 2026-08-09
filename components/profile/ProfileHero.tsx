@@ -179,6 +179,7 @@ export default function ProfileHero({
   const headline = [
     { label: "Rating", value: stats.rating.toFixed(2) },
     { label: "CS Rating", value: stats.isCalibrating ? "Calibrating" : (stats.elo ?? "—"), sub: stats.peakElo ? `peak ${stats.peakElo}` : undefined },
+    { label: "CR Rank", value: stats.crMatches && stats.crMatches < 10 ? "Calibrating" : (stats.crElo ?? "—"), sub: stats.crPeakElo ? `peak ${stats.crPeakElo}` : undefined },
     { label: "K/D", value: stats.kd.toFixed(2) },
     { label: "ADR", value: stats.adr.toFixed(0) },
   ];
