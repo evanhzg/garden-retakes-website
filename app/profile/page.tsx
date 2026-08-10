@@ -1,4 +1,3 @@
-import Link from "next/link";
 import { getT } from "@/lib/serverI18n";
 import { getSession } from "@/lib/auth";
 import { getActiveSeason, prisma } from "@/lib/db";
@@ -7,6 +6,7 @@ import { resolveName } from "@/lib/names";
 import ProfileHero from "@/components/profile/ProfileHero";
 import ProfileStats from "@/components/profile/ProfileStats";
 import PassportCard from "@/components/profile/PassportCard";
+import SeasonFilters from "@/components/profile/SeasonFilters";
 
 export const dynamic = "force-dynamic";
 
@@ -145,23 +145,13 @@ export default async function ProfilePage({
           <h2>{t("profile.season.title")}</h2>
           <span className="pro-section-note">{rankedOnly ? t("profile.season.rankedOnlyNote") : t("profile.season.allRoundsNote")}</span>
         </div>
-        <div className="pro-filters">
-          {seasons.map((s) => (
-            <Link
-              key={s.Id}
-              className={`chip ${s.Id === seasonId ? "active" : ""}`}
-              href={`?season=${s.Id}${rankedOnly ? "&ranked=1" : ""}`}
-            >
-              {s.Name}
-            </Link>
-          ))}
-          <Link
-            className={`chip ${rankedOnly ? "active" : ""}`}
-            href={`?season=${seasonId}${rankedOnly ? "" : "&ranked=1"}`}
-          >
-            {t("profile.season.rankedOnly")}
-          </Link>
-        </div>
+        <SeasonFilters
+          seasons={seasons}
+          seasonId={seasonId}
+          rankedOnly={rankedOnly}
+          rankedOnlyLabel={t("profile.season.rankedOnly")}
+          className="pro-filters"
+        />
       </section>
 
       <ProfileStats

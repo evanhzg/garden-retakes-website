@@ -1,4 +1,3 @@
-import Link from "next/link";
 import type { Metadata } from "next";
 import fs from "fs";
 import path from "path";
@@ -10,6 +9,8 @@ import ProfileActivity from "@/components/ProfileActivity";
 import ProfileStats from "@/components/profile/ProfileStats";
 import ProfileHero from "@/components/profile/ProfileHero";
 import PassportCard from "@/components/profile/PassportCard";
+import SeasonFilters from "@/components/profile/SeasonFilters";
+import PerformanceMeters from "@/components/profile/PerformanceMeters";
 import { getT } from '@/lib/serverI18n';
 
 export const dynamic = "force-dynamic";
@@ -132,8 +133,6 @@ export default async function PlayerPage({
     .filter((r) => !r.WasAfk)
     .slice(-30)
     .map((r) => r.Rating);
-  const maxRecent = Math.max(1.5, ...recentRatings);
-
   return (
     <>
       {/* ---------- Hero ---------- */}
@@ -181,23 +180,13 @@ export default async function PlayerPage({
       )}
 
       <section className="pro-section">
-        <div className="chip-row" style={{ marginTop: 16, marginBottom: 0 }}>
-          {seasons.map((s) => (
-            <a
-              key={s.Id}
-              className={`chip ${s.Id === seasonId ? "active" : ""}`}
-              href={`?season=${s.Id}${rankedOnly ? "&ranked=1" : ""}`}
-            >
-              {s.Name}
-            </a>
-          ))}
-          <a
-            className={`chip ${rankedOnly ? "active" : ""}`}
-            href={`?season=${seasonId}${rankedOnly ? "" : "&ranked=1"}`}
-          >
-            {t("auto.page.ranked_only")}
-                                </a>
-        </div>
+        <SeasonFilters
+          seasons={seasons}
+          seasonId={seasonId}
+          rankedOnly={rankedOnly}
+          rankedOnlyLabel={t("auto.page.ranked_only")}
+          style={{ marginTop: 16, marginBottom: 0 }}
+        />
       </section>
 
       {/* ---------- Headline numbers ---------- */}
@@ -209,57 +198,16 @@ export default async function PlayerPage({
           {formatPlaytime(profile?.TimeSpentSeconds ?? 0)} {t("auto.page.played")} {byMap.length} {t("auto.page.maps")}
                           </p>
 
-        <div style={{ marginTop: 18 }}>
-          <div className="meter">
-            <span className="cap">{t("auto.page.round_win")}</span>
-            <div className="track">
-              <div className="fill" style={{ width: `${Math.min(100, total.winPct)}%` }} />
-            </div>
-            <span className="val">{total.winPct.toFixed(0)}%</span>
-          </div>
-          <div className="meter">
-            <span className="cap">{t("auto.page.kast")}</span>
-            <div className="track">
-              <div className="fill" style={{ width: `${Math.min(100, total.kast)}%` }} />
-            </div>
-            <span className="val">{total.kast.toFixed(0)}%</span>
-          </div>
-          <div className="meter">
-            <span className="cap">{t("auto.page.headshots")}</span>
-            <div className="track">
-              <div className="fill" style={{ width: `${Math.min(100, total.hs)}%` }} />
-            </div>
-            <span className="val">{total.hs.toFixed(0)}%</span>
-          </div>
-          <div className="meter">
-            <span className="cap">{t("auto.page.adr")}</span>
-            <div className="track">
-              <div className="fill" style={{ width: `${Math.min(100, (total.adr / 150) * 100)}%` }} />
-            </div>
-            <span className="val">{total.adr.toFixed(0)}</span>
-          </div>
-        </div>
-
-        {recentRatings.length > 1 && (
-          <div style={{ marginTop: 16 }}>
-            <div className="cap muted" style={{ fontSize: "0.78rem", fontWeight: 700, marginBottom: 6 }}>
-              {t("auto.page.last")} {recentRatings.length} {t("auto.page.rounds_rating")}
-                                      </div>
-            <div className="sparkline">
-              {recentRatings.map((r, i) => (
-                <span
-                  key={i}
-                  title={r.toFixed(2)}
-                  style={{
-                    height: `${Math.max(6, (r / maxRecent) * 100)}%`,
-                    animationDelay: `${i * 0.015}s`,
-                    opacity: r >= 1 ? 1 : 0.45,
-                  }}
-                />
-              ))}
-            </div>
-          </div>
-        )}
+        <PerformanceMeters
+          meters={[
+            { label: t("auto.page.round_win"), value: total.winPct, display: `${total.winPct.toFixed(0)}%` },
+            { label: t("auto.page.kast"), value: total.kast, display: `${total.kast.toFixed(0)}%` },
+            { label: t("auto.page.headshots"), value: total.hs, display: `${total.hs.toFixed(0)}%` },
+            { label: t("auto.page.adr"), value: (total.adr / 150) * 100, display: total.adr.toFixed(0) },
+          ]}
+          recentRatings={recentRatings}
+          ratingHistoryLabel={`${t("auto.page.last")} ${recentRatings.length} ${t("auto.page.rounds_rating")}`}
+        />
       </section>
 
       {/* ---------- Web Game Stats ---------- */}
