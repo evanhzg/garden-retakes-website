@@ -1,15 +1,14 @@
-import React from 'react';
-import { useSession } from 'next-auth/react';
+import { getSession } from "@/lib/auth";
 
 export default function HomePage() {
-  const session = useSession();
+  const session = getSession();
 
   return (
     <div className="home-page">
       <header>
         <h1>Welcome to Garden</h1>
-        {session.status === "authenticated" && (
-          <p>Logged in as {session.data.user.name}</p>
+        {session && (
+          <p>Logged in as {session.name ?? session.steamId}</p>
         )}
       </header>
       <main>
