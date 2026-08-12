@@ -91,7 +91,7 @@ const RADIO_CATEGORIES = [
   {
     name: "Preparation",
     commands: [
-      { label: "Go Go Go", keys: ["go_go_go", "go_"], file: "go_go_go" }, 
+      { label: "Go Go Go", keys: ["go_go_go", "lets_go", "letsgo", "gogogo"], file: "go_go_go" }, 
       { label: "Fall Back", keys: ["fall_back", "fallback", "request_fallback"], file: "fall_back" }, 
       { label: "Stick Together", keys: ["stick_together"], file: "stick_together" }, 
       { label: "Hold This Position", keys: ["hold_this_position", "holdpos"], file: "hold_this_position" },
@@ -101,13 +101,13 @@ const RADIO_CATEGORIES = [
   {
     name: "Movement",
     commands: [
-      { label: "Go A", keys: ["go_a"], file: "go_a" },
-      { label: "Go B", keys: ["go_b"], file: "go_b" },
-      { label: "Go to Bombsite A", keys: ["goto_a"], file: "goto_a" },
-      { label: "Go to Bombsite B", keys: ["goto_b"], file: "goto_b" },
+      { label: "Go A", keys: ["go_a", "goa"], file: "go_a" },
+      { label: "Go B", keys: ["go_b", "gob"], file: "go_b" },
+      { label: "Go to Bombsite A", keys: ["goto_a", "gotoa"], file: "goto_a" },
+      { label: "Go to Bombsite B", keys: ["goto_b", "gotob"], file: "goto_b" },
       { label: "Spread Out", keys: ["spread_out"], file: "spread_out" },
       { label: "Move Up", keys: ["move_up"], file: "move_up" },
-      { label: "Cover Me", keys: ["cover_me"], file: "cover_me" },
+      { label: "Cover Me", keys: ["cover_me", "coverme"], file: "cover_me" },
     ]
   },
   {
@@ -222,7 +222,21 @@ function RadioCommandsModal({ weapon, onClose }: { weapon: WeaponEntry, onClose:
   const allPredefinedMatches = (v: string) => allPredefinedKeys.some(k => v.includes(`_${k}_`) || v.includes(`${k}_`) || v.includes(`_${k}.`) || v.includes(`${k}.`));
   const eventVariants = voices.filter((v: string) => !allPredefinedMatches(v)).sort();
   
-  const categories = [...RADIO_CATEGORIES, { name: "Events", commands: eventVariants.map((v: string) => ({ isEvent: true, label: v.replace(/_/g, ' ').replace('.wav', ''), keys: [], file: v })) }];
+  const groupedEvents: Record<string, string[]> = {};
+  eventVariants.forEach((v: string) => {
+    const baseName = v.replace(/_?(0[0-9]|[1-9][0-9]|v[0-9]+)?\.(wav|mp3)$/, '');
+    if (!groupedEvents[baseName]) groupedEvents[baseName] = [];
+    groupedEvents[baseName].push(v);
+  });
+  
+  const eventCommands = Object.entries(groupedEvents).map(([baseName, variants]) => ({
+    label: baseName.replace(/_/g, ' ').replace(/\b\w/g, c => c.toUpperCase()),
+    keys: [baseName],
+    file: baseName,
+    variants
+  }));
+  
+  const categories = [...RADIO_CATEGORIES, { name: "Events", commands: eventCommands }];
   const activeCategory = categories.find(c => c.name === activeTab) || categories[0];
 
   return createPortal(
@@ -230,7 +244,7 @@ function RadioCommandsModal({ weapon, onClose }: { weapon: WeaponEntry, onClose:
       <div className="inv4-modal-card" style={{ maxWidth: 900, width: '100%', maxHeight: '85vh', display: 'flex', flexDirection: 'column' }} onClick={(e) => e.stopPropagation()}>
         <h2 style={{ marginTop: 0, marginBottom: 8 }}>Radio Commands - {weapon.name}</h2>
         
-        <div style={{ display: 'flex', gap: 8, overflowX: 'auto', paddingBottom: 8, borderBottom: '1px solid var(--border)', marginBottom: 12 }}>
+        <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap', paddingBottom: 8, borderBottom: '1px solid var(--border)', marginBottom: 12 }}>
           {categories.map(c => (
             <button 
               key={c.name}
@@ -250,13 +264,14 @@ function RadioCommandsModal({ weapon, onClose }: { weapon: WeaponEntry, onClose:
               const needsFallback: any[] = [];
               
               activeCategory.commands.forEach((cmd: any) => {
-                if (cmd.isEvent) {
-                  hasNative.push({ cmd, count: 1, src: `https://cdn.jsdelivr.net/gh/evanhzg/garden-retakes-website@assets/voice-lines/public/audio/agents/${factionId}/${cmd.file}`, hasVariant: true });
-                  return;
-                }
-                
-                const variants = voices.filter((v: string) => {
-                  return cmd.keys.some((k: string) => v.includes(`_${k}_`) || v.includes(`${k}_`) || v.includes(`_${k}.`) || v.includes(`${k}.`));
+                const variants = cmd.variants || voices.filter((v: string) => {
+                  return cmd.keys.some((k: string) => {
+                    if (v.includes(`_${k}_`) || v.includes(`${k}_`) || v.includes(`_${k}.`) || v.includes(`${k}.`)) return true;
+                    const nk = k.replace(/_/g, '').toLowerCase();
+                    const base = v.split('.')[0].toLowerCase();
+                    const matchRegex = new RegExp(`${nk}(0[0-9]|[1-9][0-9]|v[0-9]+)?$`, 'i');
+                    return matchRegex.test(base);
+                  });
                 }).sort();
                 
                 if (variants.length > 0) {
