@@ -32,3 +32,4 @@ data/avatars/
 
 # Source2Viewer CLI — 50 MB of native binaries, fetched per-platform (tools/extract-radars.mjs)
 tools/bin/
+.aider*

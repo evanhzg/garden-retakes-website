@@ -88,29 +88,51 @@ function kindOfCategory(category: string): ItemKind {
 }
 
 const RADIO_COMMANDS = [
-  { label: "Go Go Go", keys: ["go_go_go", "go"] }, 
-  { label: "Fall Back", keys: ["fall_back", "fallback", "request_fallback"] }, 
-  { label: "Stick Together", keys: ["stick_together"] }, 
-  { label: "Hold This Position", keys: ["hold_this_position", "hold"] },
-  { label: "Follow Me", keys: ["follow_me"] }, 
-  { label: "Affirmative / Agree", keys: ["affirmative", "agree"] }, 
-  { label: "Negative / Disagree", keys: ["negative", "disagree"] }, 
-  { label: "Cheer", keys: ["cheer"] }, 
-  { label: "Compliment", keys: ["compliment"] },
-  { label: "Thanks", keys: ["thanks"] }, 
-  { label: "Enemy Spotted", keys: ["enemy_spotted", "spotted"] }, 
-  { label: "Need Backup", keys: ["need_backup", "coverme", "request_coverme"] }, 
-  { label: "Take the Point", keys: ["take_the_point", "point"] },
-  { label: "Sector Clear", keys: ["sector_clear", "clear"] }, 
-  { label: "I'm in Position", keys: ["im_in_position", "position"] },
-  { label: "Report In", keys: ["report_in", "reporting_in"] },
-  { label: "Get in Position", keys: ["get_in_position"] },
-  { label: "Regroup", keys: ["regroup"] },
-  { label: "Sniper Warning", keys: ["sniper_warning"] },
-  { label: "Bomb Planted", keys: ["bomb_planted"] },
-  { label: "Lost Round", keys: ["lost", "lost_round"] },
-  { label: "Won Round", keys: ["won", "won_round"] }
+  { label: "Go Go Go", keys: ["go_go_go", "go_"], file: "go_go_go" }, 
+  { label: "Fall Back", keys: ["fall_back", "fallback", "request_fallback"], file: "fall_back" }, 
+  { label: "Stick Together", keys: ["stick_together"], file: "stick_together" }, 
+  { label: "Hold This Position", keys: ["hold_this_position", "holdpos"], file: "hold_this_position" },
+  { label: "Follow Me", keys: ["follow_me", "followme"], file: "follow_me" }, 
+  { label: "Affirmative", keys: ["affirmative", "agree"], file: "affirmative" }, 
+  { label: "Negative", keys: ["negative", "disagree"], file: "negative" }, 
+  { label: "Cheer", keys: ["cheer"], file: "cheer" }, 
+  { label: "Compliment", keys: ["compliment", "nice"], file: "compliment" },
+  { label: "Thanks", keys: ["thanks"], file: "thanks" }, 
+  { label: "Enemy Spotted", keys: ["enemy_spotted", "spotted"], file: "enemy_spotted" }, 
+  { label: "Need Backup", keys: ["need_backup", "coverme", "request_coverme"], file: "need_backup" }, 
+  { label: "Take the Point", keys: ["take_the_point", "point"], file: "take_the_point" },
+  { label: "Sector Clear", keys: ["sector_clear", "clear"], file: "sector_clear" }, 
+  { label: "I'm in Position", keys: ["im_in_position", "position"], file: "im_in_position" },
+  { label: "Report In", keys: ["report_in", "reporting_in"], file: "report_in" },
+  { label: "Get in Position", keys: ["get_in_position"], file: "get_in_position" },
+  { label: "Regroup", keys: ["regroup"], file: "regroup" },
+  { label: "Sniper Warning", keys: ["sniper_warning"], file: "sniper_warning" },
+  { label: "Bomb Planted", keys: ["bomb_planted"], file: "bomb_planted" },
+  { label: "Lost Round", keys: ["lost", "lost_round"], file: "lost_round" },
+  { label: "Won Round", keys: ["won", "won_round"], file: "won_round" }
 ];
+
+const BASE_FACTION_MAP: Record<string, string> = {
+  "professional_epic": "professionals",
+  "professional_fem": "professionals",
+  "seal_epic": "seal_team_6",
+  "seal_fem": "seal_team_6",
+  "seal_diver_01": "seal_team_6",
+  "seal_diver_02": "seal_team_6",
+  "seal_diver_03": "seal_team_6",
+  "swat_epic": "swat",
+  "swat_fem": "swat",
+  "balkan_epic": "balkan",
+  "leet_epic": "leet",
+  "fbihrt_epic": "fbi",
+  "gendarmerie_fem": "gign",
+  "gendarmerie_fem_epic": "gign",
+  "jungle_fem": "jungle",
+  "jungle_fem_epic": "jungle",
+  "jungle_male_epic": "jungle",
+  "sas": "sas",
+  "phoenix": "phoenix_connexion",
+};
 
 function RadioCommandsModal({ weapon, onClose }: { weapon: WeaponEntry, onClose: () => void }) {
   const factionId = (agentAudioMapping as any)[weapon.id.toString()];
@@ -129,11 +151,20 @@ function RadioCommandsModal({ weapon, onClose }: { weapon: WeaponEntry, onClose:
               const variants = voices.filter((v: string) => {
                 return cmd.keys.some(k => v.includes(`_${k}_`) || v.includes(`${k}_`) || v.includes(`_${k}.`) || v.includes(`${k}.`));
               }).sort();
-              if (variants.length === 0) return null;
-              const count = variants.length;
+              
+              let count = variants.length;
+              let currentVariant = null;
+              let src = null;
               const idx = playIndexes[cmd.label] || 0;
-              const currentVariant = variants.length > 0 ? variants[idx % variants.length] : null;
-              const src = currentVariant ? `/audio/agents/${factionId}/${currentVariant}` : null;
+
+              if (variants.length > 0) {
+                currentVariant = variants[idx % variants.length];
+                src = `/audio/agents/${factionId}/${currentVariant}`;
+              } else {
+                const base = BASE_FACTION_MAP[factionId] || factionId;
+                src = `/audio/agents/${base}_${cmd.file}.wav`;
+                count = 1;
+              }
               
               return (
                 <button
@@ -253,6 +284,7 @@ export default function InventorySimulator() {
 
   const builderKind: ItemKind = weapon ? kindOfCategory(weapon.category) : "weapon";
   const supportsStickers = builderKind === "weapon" || builderKind === "agent";
+  const supportsCharms = builderKind === "weapon";
   const supportsStatTrak = builderKind !== "gloves";
 
   // Full-height page: hide the global footer so the workspace never scrolls.
@@ -692,7 +724,7 @@ export default function InventorySimulator() {
           statTrak: supportsStatTrak ? statTrak : false,
           nameTag,
           stickers: supportsStickers ? stickers : defaultStickerSlots(),
-          charm: supportsStickers ? charm : null,
+          charm: supportsCharms ? charm : null,
         };
         
         let itemId: string;
@@ -1057,7 +1089,7 @@ export default function InventorySimulator() {
       statTrak: supportsStatTrak ? statTrak : false,
       nameTag,
       stickers: supportsStickers ? stickers : defaultStickerSlots(),
-      charm: supportsStickers ? charm : null,
+      charm: charm,
     };
     
     const identical = store.items.find(i => 
