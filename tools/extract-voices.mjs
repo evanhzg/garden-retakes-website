@@ -111,12 +111,8 @@ function main() {
       const folder = match[1].toLowerCase();
       const filename = match[2].toLowerCase();
       
-      if (!genericFolders.includes(folder)) {
-        agentFolders.add(folder);
-        if (TARGET_COMMANDS.some(cmd => filename.includes(cmd))) {
-            filesToExtract.push(exactVpkPath);
-        }
-      }
+      agentFolders.add(folder);
+      filesToExtract.push(exactVpkPath);
     }
   }
 
