@@ -88,28 +88,83 @@ function kindOfCategory(category: string): ItemKind {
 }
 
 const RADIO_COMMANDS = [
+  // Preparation (5)
   { label: "Go Go Go", keys: ["go_go_go", "go_"], file: "go_go_go" }, 
   { label: "Fall Back", keys: ["fall_back", "fallback", "request_fallback"], file: "fall_back" }, 
   { label: "Stick Together", keys: ["stick_together"], file: "stick_together" }, 
   { label: "Hold This Position", keys: ["hold_this_position", "holdpos"], file: "hold_this_position" },
   { label: "Follow Me", keys: ["follow_me", "followme"], file: "follow_me" }, 
+
+  // Movement (7)
+  { label: "Go A", keys: ["go_a"], file: "go_a" },
+  { label: "Go B", keys: ["go_b"], file: "go_b" },
+  { label: "Go to Bombsite A", keys: ["goto_a"], file: "goto_a" },
+  { label: "Go to Bombsite B", keys: ["goto_b"], file: "goto_b" },
+  { label: "Spread Out", keys: ["spread_out"], file: "spread_out" },
+  { label: "Move Up", keys: ["move_up"], file: "move_up" },
+  { label: "Cover Me", keys: ["cover_me"], file: "cover_me" },
+
+  // Commands (9)
+  { label: "Need Drop", keys: ["need_drop"], file: "need_drop" },
+  { label: "Need Backup", keys: ["need_backup", "coverme", "request_coverme"], file: "need_backup" }, 
+  { label: "Need Decoy", keys: ["need_decoy"], file: "need_decoy" },
+  { label: "Need Smoke", keys: ["need_smoke"], file: "need_smoke" },
+  { label: "Need Flashbang", keys: ["need_flashbang"], file: "need_flashbang" },
+  { label: "Need Grenade", keys: ["need_grenade"], file: "need_grenade" },
+  { label: "Need Incendiary", keys: ["need_incendiary"], file: "need_incendiary" },
+  { label: "Take the Point", keys: ["take_the_point", "point"], file: "take_the_point" },
+  { label: "Regroup", keys: ["regroup"], file: "regroup" },
+
+  // Report (17)
+  { label: "Enemy Spotted", keys: ["enemy_spotted", "spotted"], file: "enemy_spotted" }, 
+  { label: "Sector Clear", keys: ["sector_clear", "clear"], file: "sector_clear" }, 
+  { label: "I'm in Position", keys: ["im_in_position", "position"], file: "im_in_position" },
+  { label: "Reporting In", keys: ["report_in", "reporting_in"], file: "report_in" },
+  { label: "Get in Position", keys: ["get_in_position"], file: "get_in_position" },
+  { label: "Sniper Warning", keys: ["sniper_warning"], file: "sniper_warning" },
+  { label: "Taking Fire", keys: ["taking_fire"], file: "taking_fire" },
+  { label: "Multiple Enemies", keys: ["multiple_enemies"], file: "multiple_enemies" },
+  { label: "Enemy Down", keys: ["enemy_down"], file: "enemy_down" },
+  { label: "Area Secure", keys: ["area_secure"], file: "area_secure" },
+  { label: "Bombsite A Clear", keys: ["bombsite_a_clear"], file: "bombsite_a_clear" },
+  { label: "Bombsite B Clear", keys: ["bombsite_b_clear"], file: "bombsite_b_clear" },
+  { label: "Hearing Noise", keys: ["hearing_noise"], file: "hearing_noise" },
+  { label: "Heard Something", keys: ["heard_something"], file: "heard_something" },
+  { label: "Need Assistance", keys: ["need_assistance"], file: "need_assistance" },
+  { label: "Requesting Backup", keys: ["requesting_backup"], file: "requesting_backup" },
+  { label: "Under Attack", keys: ["under_attack"], file: "under_attack" },
+
+  // Bomb Status (10)
+  { label: "Bomb Planted", keys: ["bomb_planted"], file: "bomb_planted" },
+  { label: "Bomb Dropped", keys: ["bomb_dropped"], file: "bomb_dropped" },
+  { label: "Bomb Picked Up", keys: ["bomb_picked_up"], file: "bomb_picked_up" },
+  { label: "Guarding the Bomb", keys: ["guarding_the_bomb"], file: "guarding_the_bomb" },
+  { label: "Defusing the Bomb", keys: ["defusing_the_bomb"], file: "defusing_the_bomb" },
+  { label: "Get Out of There!", keys: ["get_out"], file: "get_out" },
+  { label: "Bomb at A", keys: ["bomb_at_a"], file: "bomb_at_a" },
+  { label: "Bomb at B", keys: ["bomb_at_b"], file: "bomb_at_b" },
+  { label: "Need to Plant", keys: ["need_to_plant"], file: "need_to_plant" },
+  { label: "Need to Defuse", keys: ["need_to_defuse"], file: "need_to_defuse" },
+
+  // Responses (11)
   { label: "Affirmative", keys: ["affirmative", "agree"], file: "affirmative" }, 
   { label: "Negative", keys: ["negative", "disagree"], file: "negative" }, 
   { label: "Cheer", keys: ["cheer"], file: "cheer" }, 
   { label: "Compliment", keys: ["compliment", "nice"], file: "compliment" },
   { label: "Thanks", keys: ["thanks"], file: "thanks" }, 
-  { label: "Enemy Spotted", keys: ["enemy_spotted", "spotted"], file: "enemy_spotted" }, 
-  { label: "Need Backup", keys: ["need_backup", "coverme", "request_coverme"], file: "need_backup" }, 
-  { label: "Take the Point", keys: ["take_the_point", "point"], file: "take_the_point" },
-  { label: "Sector Clear", keys: ["sector_clear", "clear"], file: "sector_clear" }, 
-  { label: "I'm in Position", keys: ["im_in_position", "position"], file: "im_in_position" },
-  { label: "Report In", keys: ["report_in", "reporting_in"], file: "report_in" },
-  { label: "Get in Position", keys: ["get_in_position"], file: "get_in_position" },
-  { label: "Regroup", keys: ["regroup"], file: "regroup" },
-  { label: "Sniper Warning", keys: ["sniper_warning"], file: "sniper_warning" },
-  { label: "Bomb Planted", keys: ["bomb_planted"], file: "bomb_planted" },
-  { label: "Lost Round", keys: ["lost", "lost_round"], file: "lost_round" },
-  { label: "Won Round", keys: ["won", "won_round"], file: "won_round" }
+  { label: "Sorry", keys: ["sorry"], file: "sorry" },
+  { label: "You're Welcome", keys: ["youre_welcome"], file: "youre_welcome" },
+  { label: "Quiet!", keys: ["quiet"], file: "quiet" },
+  { label: "Good Job", keys: ["good_job"], file: "good_job" },
+  { label: "Nice", keys: ["nice_shot", "nice"], file: "nice" },
+  { label: "Oh No", keys: ["oh_no"], file: "oh_no" },
+
+  // Grenades (5)
+  { label: "Throwing Smoke", keys: ["throwing_smoke"], file: "throwing_smoke" },
+  { label: "Throwing Flashbang", keys: ["throwing_flashbang"], file: "throwing_flashbang" },
+  { label: "Throwing Grenade", keys: ["throwing_grenade"], file: "throwing_grenade" },
+  { label: "Throwing Decoy", keys: ["throwing_decoy"], file: "throwing_decoy" },
+  { label: "Throwing Incendiary", keys: ["throwing_incendiary"], file: "throwing_incendiary" },
 ];
 
 const BASE_FACTION_MAP: Record<string, string> = {
