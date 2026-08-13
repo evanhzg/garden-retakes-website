@@ -11,10 +11,11 @@ import { useSocket } from "@/components/games/SocketProvider";
 interface PlayerBubbleProps {
   steamId: string;
   name: string;
+  isFriend?: boolean;
   children: React.ReactNode;
 }
 
-export default function PlayerBubble({ steamId, name, children }: PlayerBubbleProps) {
+export default function PlayerBubble({ steamId, name, isFriend = false, children }: PlayerBubbleProps) {
     const { t } = useI18n();
 
   const [isOpen, setIsOpen] = useState(false);
@@ -39,8 +40,10 @@ export default function PlayerBubble({ steamId, name, children }: PlayerBubblePr
     const r = el.getBoundingClientRect();
     const estimated = popoverRef.current?.offsetHeight ?? 320;
 
-    // Open on the left side of the trigger
-    const left = r.left - WIDTH - GAP;
+    // Open on the left side of the sidebar, which is typically 330px from the right window edge
+    // r.left is the element's position, but we just want to put it to the left of the sidebar
+    // We can use the window inner width minus the sidebar width and bubble width
+    const left = window.innerWidth - 330 - WIDTH - GAP;
     
     // Vertically align with the trigger, keeping it within bounds
     let top = r.top + r.height / 2 - estimated / 2;
@@ -135,7 +138,7 @@ export default function PlayerBubble({ steamId, name, children }: PlayerBubblePr
               border: "1px solid rgba(255, 255, 255, 0.1)",
               borderRadius: 16,
               boxShadow: "0 8px 32px rgba(0,0,0,0.4)",
-              zIndex: 1000,
+              zIndex: 1002,
               overflow: "hidden",
               color: "#fff"
             }}
@@ -195,24 +198,28 @@ export default function PlayerBubble({ steamId, name, children }: PlayerBubblePr
               <div 
                 style={{ width: 1, background: "rgba(255,255,255,0.05)" }}
               />
-              <button 
-                onClick={handleAddFriend}
-                style={{ flex: 1, padding: 12, background: "none", border: "none", cursor: "pointer", fontSize: 13, fontWeight: 600, color: "#4ade80", transition: "background 0.2s" }}
-                onMouseEnter={(e) => e.currentTarget.style.background = "rgba(74, 222, 128, 0.1)"}
-                onMouseLeave={(e) => e.currentTarget.style.background = "transparent"}
-                title={t("auto.playerbubble.add_friend")}
-              >
-                <svg viewBox="0 0 24 24" width="18" height="18" stroke="currentColor" strokeWidth="2" fill="none" strokeLinecap="round" strokeLinejoin="round" style={{ verticalAlign: "middle" }}>
-                  <path d="M16 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2" />
-                  <circle cx="8.5" cy="7" r="4" />
-                  <line x1="20" y1="8" x2="20" y2="14" />
-                  <line x1="23" y1="11" x2="17" y2="11" />
-                </svg>
-              </button>
-              <div 
-                style={{ width: 1, background: "rgba(255,255,255,0.05)" }}
-              />
-              <button 
+              {!isFriend && (
+                <>
+                  <button 
+                    onClick={handleAddFriend}
+                    style={{ flex: 1, padding: 12, background: "none", border: "none", cursor: "pointer", fontSize: 13, fontWeight: 600, color: "#4ade80", transition: "background 0.2s" }}
+                    onMouseEnter={(e) => e.currentTarget.style.background = "rgba(74, 222, 128, 0.1)"}
+                    onMouseLeave={(e) => e.currentTarget.style.background = "transparent"}
+                    title={t("auto.playerbubble.add_friend")}
+                  >
+                    <svg viewBox="0 0 24 24" width="18" height="18" stroke="currentColor" strokeWidth="2" fill="none" strokeLinecap="round" strokeLinejoin="round" style={{ verticalAlign: "middle" }}>
+                      <path d="M16 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2" />
+                      <circle cx="8.5" cy="7" r="4" />
+                      <line x1="20" y1="8" x2="20" y2="14" />
+                      <line x1="23" y1="11" x2="17" y2="11" />
+                    </svg>
+                  </button>
+                  <div 
+                    style={{ width: 1, background: "rgba(255,255,255,0.05)" }}
+                  />
+                </>
+              )}
+              <button  
                 onClick={() => { alert('Reported!'); setIsOpen(false); }}
                 style={{ flex: 1, padding: 12, background: "none", border: "none", cursor: "pointer", fontSize: 13, fontWeight: 600, color: "#f87171", transition: "background 0.2s" }}
                 onMouseEnter={(e) => e.currentTarget.style.background = "rgba(248, 113, 113, 0.1)"}

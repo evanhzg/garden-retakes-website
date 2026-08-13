@@ -32,6 +32,14 @@ export async function GET(request: Request) {
       where: { SteamId: { in: friendIds } }
     });
 
+    const stats = await prisma.playerSeasonStats.findMany({
+      where: { SteamId: { in: friendIds } }
+    });
+
+    const playerProfiles = await prisma.playerProfile.findMany({
+      where: { SteamId: { in: friendIds } }
+    });
+
     // Get Admins to add them as default friends
     const admins = await prisma.gardenAdmin.findMany();
     const adminIds = admins.map(a => a.SteamId);
@@ -47,6 +55,14 @@ export async function GET(request: Request) {
       });
       profiles.push(...adminProfiles);
       names.push(...adminNames);
+      const adminStats = await prisma.playerSeasonStats.findMany({
+        where: { SteamId: { in: missingAdminIds } }
+      });
+      const adminPlayerProfiles = await prisma.playerProfile.findMany({
+        where: { SteamId: { in: missingAdminIds } }
+      });
+      stats.push(...adminStats);
+      playerProfiles.push(...adminPlayerProfiles);
     }
 
     const enrichedFriendships = friendships.map(f => {
@@ -98,7 +114,28 @@ export async function POST(request: Request) {
 
     if (!targetSteamId) return NextResponse.json({ error: "Missing targetSteamId" }, { status: 400 });
 
-    const target = BigInt(targetSteamId);
+    let target: bigint;
+    try {
+      target = BigInt(targetSteamId);
+    } catch {
+      // It's a nickname
+      const nameMatch = await prisma.gardenNameOverride.findFirst({
+        where: { Name: targetSteamId }
+      });
+      if (nameMatch) {
+        target = nameMatch.SteamId;
+      } else {
+        const profileMatch = await prisma.playerProfile.findFirst({
+          where: { LastKnownName: targetSteamId }
+        });
+        if (profileMatch) {
+          target = profileMatch.SteamId;
+        } else {
+          return NextResponse.json({ error: "Player not found" }, { status: 404 });
+        }
+      }
+    }
+
     if (steamId === target) return NextResponse.json({ error: "Cannot add yourself" }, { status: 400 });
 
     // Check if exists
