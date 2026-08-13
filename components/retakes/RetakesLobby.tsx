@@ -204,9 +204,14 @@ export default function RetakesLobby({ signedIn, lobbyId }: { signedIn: boolean,
 
   const [editingName, setEditingName] = useState(false);
   const [draftName, setDraftName] = useState("");
+  const [hideMatchRoom, setHideMatchRoom] = useState(false);
 
   const party = state?.party ?? null;
   const match = state?.match ?? null;
+
+  useEffect(() => {
+    if (!match) setHideMatchRoom(false);
+  }, [match?.id]);
   const now = useNow(Boolean(state?.queue || match));
 
   const partyForms = useRosterForm(party?.members.map((m: any) => m.steamId) ?? []);
@@ -339,7 +344,7 @@ export default function RetakesLobby({ signedIn, lobbyId }: { signedIn: boolean,
 
   // The accept prompt is a takeover on purpose: it is twenty seconds long and
   // missing it costs five other people their match.
-  if (match?.phase === "found" && match.accept) {
+  if (match?.phase === "found" && match.accept && !hideMatchRoom) {
     const me = match.teams.flatMap((x) => x.players).find((p) => p.steamId === steamId);
     const left = secondsTo(match.accept.deadline, now);
     return (
@@ -367,6 +372,16 @@ export default function RetakesLobby({ signedIn, lobbyId }: { signedIn: boolean,
               <button className="btn btn-ghost" onClick={() => send("rq:match:decline")}>
                 {t("lobby.decline")}
               </button>
+              <button className="btn btn-ghost" onClick={() => setHideMatchRoom(true)}>
+                Leave Game
+              </button>
+            </div>
+          )}
+          {me?.accepted && (
+            <div style={{ marginTop: "12px" }}>
+              <button className="btn btn-ghost" onClick={() => setHideMatchRoom(true)}>
+                Leave Game
+              </button>
             </div>
           )}
         </div>
@@ -374,7 +389,7 @@ export default function RetakesLobby({ signedIn, lobbyId }: { signedIn: boolean,
     );
   }
 
-  if (match && (match.phase === "veto" || match.phase === "ready")) {
+  if (match && (match.phase === "veto" || match.phase === "ready") && !hideMatchRoom) {
     return (
       <div className="rq">
         <MatchRoom
@@ -386,6 +401,7 @@ export default function RetakesLobby({ signedIn, lobbyId }: { signedIn: boolean,
           onChat={(text, teamOnly) => send("rq:chat", { text, teamOnly })}
           names={names}
           t={t}
+          onLeave={() => setHideMatchRoom(true)}
         />
         {notice && <div className={`rq-toast ${notice.kind}`}>{notice.text}</div>}
       </div>
@@ -641,13 +657,16 @@ export default function RetakesLobby({ signedIn, lobbyId }: { signedIn: boolean,
               <div style={{ display: "flex", gap: "12px", marginBottom: "24px" }}>
                 <button
                   className="btn btn-primary rq-play"
-                  disabled={!party?.isLeader || conflicts.length > 0}
-                  onClick={() => send("rq:queue:join", { mode, safeQueue })}
+                  disabled={(!party?.isLeader && !match) || (conflicts.length > 0 && !match)}
+                  onClick={() => {
+                    if (match) setHideMatchRoom(false);
+                    else send("rq:queue:join", { mode, safeQueue });
+                  }}
                   style={{ flex: 1 }}
                 >
-                  {conflicts.length > 0 ? "Fix Roles to Queue" : t("lobby.findmatch")}
+                  {match ? "Return to Game" : conflicts.length > 0 ? "Fix Roles to Queue" : t("lobby.findmatch")}
                 </button>
-                {party && party.members.length > 1 && (
+                {party && party.members.length > 1 && !match && (
                   <button
                     className="btn btn-secondary"
                     onClick={() => send("rq:party:leave")}
@@ -801,6 +820,7 @@ function MatchRoom({
   onChat,
   names,
   t,
+  onLeave,
 }: {
   match: NonNullable<State["match"]>;
   me: string;
@@ -810,6 +830,7 @@ function MatchRoom({
   onChat: (text: string, teamOnly: boolean) => void;
   names: Record<string, any>;
   t: (k: string, v?: Record<string, string | number>) => string;
+  onLeave: () => void;
 }) {
   const [teamChatDraft, setTeamChatDraft] = useState("");
   const [globalChatDraft, setGlobalChatDraft] = useState("");
@@ -841,7 +862,14 @@ function MatchRoom({
 
   return (
     <div className="rq-room">
-      <header className="rq-room-head">
+      <header className="rq-room-head" style={{ position: "relative" }}>
+        <button 
+          className="btn btn-ghost" 
+          onClick={onLeave} 
+          style={{ position: "absolute", top: -20, right: 0, fontSize: "12px", opacity: 0.7 }}
+        >
+          Leave Game
+        </button>
         <TeamHead team={match.teams[0]} nameOverride={t0Name} mine={match.yourTeam === 0} align="left" t={t} />
         <div className="rq-room-status">
           {ready ? (

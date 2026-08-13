@@ -80,7 +80,12 @@ export default function AppearanceSettings({
               aria-pressed={locale === l.id}
               onClick={() => setLocale(l.id)}
             >
-              <span aria-hidden>{l.flag}</span>
+              <img 
+                src={`https://flagcdn.com/w40/${l.id === 'en' ? 'gb' : l.id}.png`} 
+                alt=""
+                style={{ width: "20px", height: "15px", borderRadius: "3px", marginRight: "6px", objectFit: "cover" }} 
+                aria-hidden
+              />
               {l.label}
             </button>
           ))}

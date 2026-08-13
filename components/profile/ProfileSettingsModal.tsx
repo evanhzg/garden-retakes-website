@@ -6,6 +6,7 @@ import MotionToggle from "@/components/MotionToggle";
 import ConnectionsEditor from "@/components/profile/Connections";
 import { useI18n } from '@/components/I18nProvider';
 import AppearanceSettings from "@/components/profile/AppearanceSettings";
+import AllstarConnect from "@/components/AllstarConnect";
 
 // Profile settings, moved out of a panel at the very bottom of the page into a
 // modal reachable from the hero. The old form was a vertical list of unrelated
@@ -41,6 +42,12 @@ export default function ProfileSettingsModal({ onClose }: { onClose: () => void 
   const [status, setStatus] = useState<{ kind: "idle" | "saving" | "ok" | "error"; message?: string }>({ kind: "idle" });
   const [cropping, setCropping] = useState<string | null>(null);
   const [avatarPreview, setAvatarPreview] = useState<string | null>(null);
+  const [closing, setClosing] = useState(false);
+
+  const handleClose = useCallback(() => {
+    setClosing(true);
+    setTimeout(onClose, 180);
+  }, [onClose]);
 
   useEffect(() => {
     fetch("/api/profile")
@@ -65,12 +72,12 @@ export default function ProfileSettingsModal({ onClose }: { onClose: () => void 
   useEffect(() => setMounted(true), []);
   useEffect(() => {
     const onKey = (e: KeyboardEvent) => {
-      if (e.key === "Escape" && !cropping) onClose();
+      if (e.key === "Escape" && !cropping) handleClose();
     };
     window.addEventListener("keydown", onKey);
     cardRef.current?.focus();
     return () => window.removeEventListener("keydown", onKey);
-  }, [onClose, cropping]);
+  }, [handleClose, cropping]);
 
   const save = async (payload: Record<string, unknown>) => {
     setStatus({ kind: "saving" });
@@ -86,6 +93,7 @@ export default function ProfileSettingsModal({ onClose }: { onClose: () => void 
         return false;
       }
       setStatus({ kind: "ok", message: "Saved." });
+      handleClose();
       return true;
     } catch {
       setStatus({ kind: "error", message: "Network error." });
@@ -148,11 +156,12 @@ export default function ProfileSettingsModal({ onClose }: { onClose: () => void 
   if (!mounted) return null;
 
   return createPortal(
-    <div className="pro-modal" role="dialog" aria-modal="true" aria-labelledby="pro-settings-title" onClick={onClose}>
+  return createPortal(
+    <div className="pro-modal" style={closing ? { animation: 'gr-pop 0.18s ease reverse both' } : {}} role="dialog" aria-modal="true" aria-labelledby="pro-settings-title" onClick={handleClose}>
       <div className="pro-modal-card" ref={cardRef} tabIndex={-1} onClick={(e) => e.stopPropagation()}>
         <div className="pro-modal-head">
           <h2 id="pro-settings-title">{t("auto.profilesettingsmodal.profile_settings")}</h2>
-          <button className="btn btn-secondary" onClick={onClose} aria-label={t("auto.profilesettingsmodal.close_settings")}>{t("auto.profilesettingsmodal.close")}</button>
+          <button type="button" className="btn btn-secondary" onClick={handleClose} aria-label={t("auto.profilesettingsmodal.close_settings")}>{t("auto.profilesettingsmodal.close")}</button>
         </div>
 
         {!data ? (
@@ -272,6 +281,10 @@ export default function ProfileSettingsModal({ onClose }: { onClose: () => void 
           <section className="pro-settings-conn">
             <h3>{t("auto.profilesettingsmodal.connections")}</h3>
             <ConnectionsEditor />
+          </section>
+
+          <section className="pro-settings-conn">
+            <AllstarConnect />
           </section>
           </>
         )}

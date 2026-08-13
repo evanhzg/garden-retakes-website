@@ -55,6 +55,7 @@ export default function RetakeLoadoutPage({ signedIn }: { signedIn: boolean }) {
   const [saving, setSaving] = useState(false);
   const [dirty, setDirty] = useState(false);
   const [note, setNote] = useState<{ kind: "ok" | "err"; text: string } | null>(null);
+  const [hoveredItem, setHoveredItem] = useState<{ name: string; x: number; y: number } | null>(null);
 
   useEffect(() => {
     if (!signedIn) return;
@@ -221,30 +222,21 @@ export default function RetakeLoadoutPage({ signedIn }: { signedIn: boolean }) {
                       <div key={slot} className="lo-slot">
                         <span className="lo-slot-label">{t(meta.labelKey)}</span>
                         <div className="lo-picks">
-                          <button
-                            className={`lo-pick ${value === null ? "on" : ""}`}
-                            onClick={() => setWeapon(slot, null)}
-                          >
-                            {t("loadout.noPreference")}
-                          </button>
                           {options.map((o) => (
                             <button
                               key={o.id}
                               className={`lo-pick weapon ${value === o.id ? "on" : ""}`}
                               onClick={() => setWeapon(slot, o.id)}
-                              title={o.name}
+                              onMouseEnter={(e) => setHoveredItem({ name: o.name, x: e.clientX, y: e.clientY })}
+                              onMouseMove={(e) => setHoveredItem((prev) => (prev ? { ...prev, x: e.clientX, y: e.clientY } : null))}
+                              onMouseLeave={() => setHoveredItem(null)}
                             >
                               <img 
-                                src={`/images/weapons/${o.name.toLowerCase().replace(/[^a-z0-9]/g, "")}.svg`} 
+                                src={`https://raw.githubusercontent.com/ChetdeJong/cs2-killfeed-generator/master/public/weapons/${o.name.toLowerCase().replace(/[^a-z0-9]/g, "")}.svg`} 
                                 alt={o.name} 
                                 className="lo-weapon-img"
-                                onError={(e) => {
-                                  e.currentTarget.style.display = "none";
-                                  const span = e.currentTarget.nextElementSibling as HTMLSpanElement;
-                                  if (span) span.style.display = "block";
-                                }}
+                                onError={(e) => { e.currentTarget.style.display = "none"; }}
                               />
-                              <span className="lo-weapon-name">{o.name}</span>
                             </button>
                           ))}
                         </div>
@@ -262,9 +254,17 @@ export default function RetakeLoadoutPage({ signedIn }: { signedIn: boolean }) {
                             key={u}
                             className={`lo-pick util ${order >= 0 ? "on" : ""}`}
                             onClick={() => toggleUtility(kind, u)}
+                            onMouseEnter={(e) => setHoveredItem({ name: t(`utility.type.${u}`), x: e.clientX, y: e.clientY })}
+                            onMouseMove={(e) => setHoveredItem((prev) => (prev ? { ...prev, x: e.clientX, y: e.clientY } : null))}
+                            onMouseLeave={() => setHoveredItem(null)}
                           >
                             {order >= 0 && <span className="lo-order">{order + 1}</span>}
-                            {t(`utility.type.${u}`)}
+                            <img 
+                              src={`https://raw.githubusercontent.com/ChetdeJong/cs2-killfeed-generator/master/public/weapons/${u.toLowerCase()}.svg`}
+                              alt={t(`utility.type.${u}`)}
+                              className="lo-weapon-img"
+                              onError={(e) => { e.currentTarget.style.display = "none"; }}
+                            />
                           </button>
                         );
                       })}
@@ -298,6 +298,12 @@ export default function RetakeLoadoutPage({ signedIn }: { signedIn: boolean }) {
             )}
           </div>
         </>
+      )}
+      
+      {hoveredItem && (
+        <div style={{ position: "fixed", top: hoveredItem.y + 15, left: hoveredItem.x + 15, background: "rgba(0,0,0,0.85)", color: "white", padding: "6px 10px", borderRadius: "6px", pointerEvents: "none", zIndex: 9999, fontSize: "14px", fontWeight: "bold", border: "1px solid rgba(255,255,255,0.1)", whiteSpace: "nowrap" }}>
+          {hoveredItem.name}
+        </div>
       )}
     </div>
   );
