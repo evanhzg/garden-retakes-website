@@ -30,6 +30,7 @@ import { useGameLang, HEADSHOT, PENTAKILL, BUILDPATH, BUYMENU } from "@/componen
 import GameIcon from "@/components/games/GameIcon";
 import { useI18n } from '@/components/I18nProvider';
 import { listBoards } from "@/components/games/editor/boardStore";
+import PlayerBubble from "@/components/social/PlayerBubble";
 
 import "./lobby.css";
 
@@ -249,7 +250,9 @@ function LobbyClient({ lobbyId, mySteamId }: { lobbyId: string; mySteamId: strin
     }
     return (
       <div key={i} className={`chat-message ${msg.from === mySteamId ? "own" : ""}`}>
-        <span className="chat-author">{displayNameFor(msg.from, names)}</span>
+        <PlayerBubble steamId={msg.from} name={displayNameFor(msg.from, names)}>
+          <span className="chat-author">{displayNameFor(msg.from, names)}</span>
+        </PlayerBubble>
         <span className="chat-content">{msg.content}</span>
       </div>
     );

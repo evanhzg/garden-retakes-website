@@ -39,9 +39,16 @@ export default function FriendsSidebar() {
   };
 
   useEffect(() => {
+    let interval: NodeJS.Timeout;
     if (activeTab === "MESSAGES" && activeDmUser) {
       fetchMessages(activeDmUser);
+      interval = setInterval(() => {
+        fetchMessages(activeDmUser);
+      }, 1000);
     }
+    return () => {
+      if (interval) clearInterval(interval);
+    };
   }, [activeTab, activeDmUser]);
 
   useEffect(() => {

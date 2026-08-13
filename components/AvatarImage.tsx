@@ -52,7 +52,7 @@ export default function AvatarImage({
     // eslint-disable-next-line @next/next/no-img-element
     <img
       className={className}
-      style={style}
+      style={{ maxWidth: "100%", ...style }}
       src={imgSrc}
       alt={alt}
       loading="lazy"
