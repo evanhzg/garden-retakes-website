@@ -1619,6 +1619,18 @@ export default function InventorySimulator() {
                   const kind = kindOfCategory(c);
                   const weaponsToRender = isSingleSlot 
                     ? (() => {
+                        if (c === "Agents") {
+                          const wT = (() => {
+                            const equippedT = slotItemForChooser(catalog[c][0].def, kind, "t");
+                            return equippedT ? (catalog[c].find(x => x.def === equippedT.weaponDef) || catalog[c][0]) : catalog[c][0];
+                          })();
+                          const wCT = (() => {
+                            const equippedCT = slotItemForChooser(catalog[c][0].def, kind, "ct");
+                            return equippedCT ? (catalog[c].find(x => x.def === equippedCT.weaponDef) || catalog[c][0]) : catalog[c][0];
+                          })();
+                          // Return wrapped objects to pass side info if needed, but since the map uses `side` state, we must render them directly or map them over custom elements.
+                          return [ { ...wT, forceSide: "t" }, { ...wCT, forceSide: "ct" } ];
+                        }
                         const equippedItem = slotItemForChooser(catalog[c][0].def, kind, side); // The def doesn't matter for these kinds in slotItemForChooser
                         if (equippedItem) {
                           const w = catalog[c].find(x => x.def === equippedItem.weaponDef) || catalog[c][0];
@@ -1632,15 +1644,17 @@ export default function InventorySimulator() {
                   <section key={c} className="inv4-preview-group">
                     <h3 className="inv4-preview-title">{c}</h3>
                     <div className="inv4-preview-row">
-                      {weaponsToRender.map((w) => {
-                        const item = slotItemFor(w.def, kind, side);
+                      {weaponsToRender.map((w: any) => {
+                        const effectiveSide = w.forceSide || side;
+                        const item = slotItemFor(w.def, kind, effectiveSide);
                         return (
                           <button
-                            key={w.def}
+                            key={`${w.def}-${w.forceSide || 'base'}`}
                             className={`inv4-preview-cell ${item ? "has-skin" : ""}`}
                             style={item?.rarity ? ({ "--rarity": item.rarity } as React.CSSProperties) : undefined}
                             onClick={() => {
                               setPreviewMode(false);
+                              if (w.forceSide) chooseSide(w.forceSide as Side);
                               if (isSingleSlot) chooseCategory(c); else openWeapon(w);
                             }}
                             title={item ? item.skinName : `${isSingleSlot ? c : w.name} — no skin`}

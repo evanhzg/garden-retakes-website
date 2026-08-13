@@ -637,14 +637,24 @@ export default function RetakesLobby({ signedIn, lobbyId }: { signedIn: boolean,
                 </div>
               )}
 
-              <button
-                className="btn btn-primary rq-play"
-                disabled={!party?.isLeader || conflicts.length > 0}
-                onClick={() => send("rq:queue:join", { mode, safeQueue })}
-                style={{ marginBottom: '24px' }}
-              >
-                {conflicts.length > 0 ? "Fix Roles to Queue" : t("lobby.findmatch")}
-              </button>
+              <div style={{ display: "flex", gap: "12px", marginBottom: "24px" }}>
+                <button
+                  className="btn btn-primary rq-play"
+                  disabled={!party?.isLeader || conflicts.length > 0}
+                  onClick={() => send("rq:queue:join", { mode, safeQueue })}
+                  style={{ flex: 1 }}
+                >
+                  {conflicts.length > 0 ? "Fix Roles to Queue" : t("lobby.findmatch")}
+                </button>
+                {party && party.members.length > 1 && (
+                  <button
+                    className="btn btn-secondary"
+                    onClick={() => send("rq:party:leave")}
+                  >
+                    Leave Lobby
+                  </button>
+                )}
+              </div>
 
               <p className="rq-online">{t("lobby.onlinenow", { n: state?.online ?? 0 })}</p>
 
@@ -741,24 +751,8 @@ export default function RetakesLobby({ signedIn, lobbyId }: { signedIn: boolean,
         />
       )}
 
-      {/* An invite is a modal because it expires and because saying no is a
-          real answer — a banner people scroll past is neither. */}
       {state?.invite && (
-        <div className="rq-takeover soft">
-          <div className="rq-invite-card">
-            <span className="rq-found-kicker">{t("lobby.invited")}</span>
-            <h2>{state.invite.fromName ?? t("lobby.player")}</h2>
-            <p className="muted">{t("lobby.invitedblurb")}</p>
-            <div className="rq-found-actions">
-              <button className="btn btn-primary" onClick={() => send("rq:party:accept")}>
-                {t("lobby.join")}
-              </button>
-              <button className="btn btn-ghost" onClick={() => send("rq:party:decline")}>
-                {t("lobby.decline")}
-              </button>
-            </div>
-          </div>
-        </div>
+        <InviteModal invite={state.invite} send={send} t={t} />
       )}
 
       {notice && <div className={`rq-toast ${notice.kind}`}>{notice.text}</div>}
@@ -818,6 +812,7 @@ function MatchRoom({
 }) {
   const [teamChatDraft, setTeamChatDraft] = useState("");
   const [globalChatDraft, setGlobalChatDraft] = useState("");
+  const [chatCard, setChatCard] = useState<{ steamId: string; rect: DOMRect } | null>(null);
   // One request for the whole roster: six calls fired the instant a match is
   // found is exactly when the page has other things to do.
   const forms = useRosterForm(match.teams.flatMap((tm) => tm.players.map((p) => p.steamId)));
@@ -878,9 +873,9 @@ function MatchRoom({
         <div style={{ display: "flex", flexDirection: "column", gap: "16px" }}>
           <Roster team={match.teams[0]} me={me} align="left" forms={forms} names={names} t={t} />
           {match.yourTeam === 0 ? (
-            <ChatBox messages={match.chat.filter(c => c.team === 0)} draft={teamChatDraft} setDraft={setTeamChatDraft} onSend={(text) => onChat(text, true)} placeholder="Team chat" t={t} />
+            <ChatBox messages={match.chat.filter(c => c.team === 0)} draft={teamChatDraft} setDraft={setTeamChatDraft} onSend={(text) => onChat(text, true)} placeholder="Team chat" t={t} names={names} onPlayerClick={(id, e) => setChatCard({ steamId: id, rect: e.currentTarget.getBoundingClientRect() })} />
           ) : match.yourTeam === 1 ? (
-            <ChatBox messages={match.chat.filter(c => c.team == null)} draft={globalChatDraft} setDraft={setGlobalChatDraft} onSend={(text) => onChat(text, false)} placeholder="Global chat" t={t} />
+            <ChatBox messages={match.chat.filter(c => c.team == null)} draft={globalChatDraft} setDraft={setGlobalChatDraft} onSend={(text) => onChat(text, false)} placeholder="Global chat" t={t} names={names} onPlayerClick={(id, e) => setChatCard({ steamId: id, rect: e.currentTarget.getBoundingClientRect() })} />
           ) : null}
         </div>
 
@@ -984,12 +979,20 @@ function MatchRoom({
         <div style={{ display: "flex", flexDirection: "column", gap: "16px" }}>
           <Roster team={match.teams[1]} me={me} align="right" forms={forms} names={names} t={t} />
           {match.yourTeam === 1 ? (
-            <ChatBox messages={match.chat.filter(c => c.team === 1)} draft={teamChatDraft} setDraft={setTeamChatDraft} onSend={(text) => onChat(text, true)} placeholder="Team chat" t={t} />
+            <ChatBox messages={match.chat.filter(c => c.team === 1)} draft={teamChatDraft} setDraft={setTeamChatDraft} onSend={(text) => onChat(text, true)} placeholder="Team chat" t={t} names={names} onPlayerClick={(id, e) => setChatCard({ steamId: id, rect: e.currentTarget.getBoundingClientRect() })} />
           ) : match.yourTeam === 0 ? (
-            <ChatBox messages={match.chat.filter(c => c.team == null)} draft={globalChatDraft} setDraft={setGlobalChatDraft} onSend={(text) => onChat(text, false)} placeholder="Global chat" t={t} />
+            <ChatBox messages={match.chat.filter(c => c.team == null)} draft={globalChatDraft} setDraft={setGlobalChatDraft} onSend={(text) => onChat(text, false)} placeholder="Global chat" t={t} names={names} onPlayerClick={(id, e) => setChatCard({ steamId: id, rect: e.currentTarget.getBoundingClientRect() })} />
           ) : null}
         </div>
       </div>
+      {chatCard && (
+        <FormCard
+          form={forms[chatCard.steamId]}
+          name={displayNameFor(chatCard.steamId, names, { isBot: false }) ?? match.teams.flatMap((tm) => tm.players).find((p) => p.steamId === chatCard.steamId)?.name ?? "—"}
+          anchor={chatCard.rect}
+          onClose={() => setChatCard(null)}
+        />
+      )}
     </div>
   );
 }
@@ -1000,7 +1003,9 @@ function ChatBox({
   setDraft,
   onSend,
   placeholder,
-  t
+  t,
+  names,
+  onPlayerClick
 }: {
   messages: NonNullable<State["match"]>["chat"];
   draft: string;
@@ -1008,6 +1013,8 @@ function ChatBox({
   onSend: (text: string) => void;
   placeholder: string;
   t: (k: string, v?: Record<string, string | number>) => string;
+  names: Record<string, any>;
+  onPlayerClick: (steamId: string, e: React.MouseEvent) => void;
 }) {
   const ref = useRef<HTMLDivElement>(null);
   useEffect(() => {
@@ -1017,11 +1024,21 @@ function ChatBox({
   return (
     <div className="rq-chat">
       <div className="rq-chat-log" ref={ref}>
-        {messages.map((c, i) => (
-          <p key={i}>
-            <strong>{c.name ?? t("lobby.player")}</strong> {c.text}
-          </p>
-        ))}
+        {messages.map((c, i) => {
+          const fromId = (c as any).from;
+          const disp = fromId ? (displayNameFor(fromId, names, { isBot: false }) ?? c.name ?? t("lobby.player")) : (c.name ?? t("lobby.player"));
+          return (
+            <p key={i}>
+              <strong 
+                onClick={(e) => fromId && onPlayerClick(fromId, e)}
+                style={{ cursor: fromId ? "pointer" : "default", textDecoration: fromId ? "underline" : "none" }}
+              >
+                {disp}
+              </strong>{" "}
+              {c.text}
+            </p>
+          );
+        })}
         {messages.length === 0 && <p className="muted">{t("lobby.chatempty")}</p>}
       </div>
       <form
@@ -1127,5 +1144,42 @@ function Roster({
         />
       )}
     </ul>
+  );
+}
+
+function InviteModal({ invite, send, t }: { invite: any, send: any, t: any }) {
+  useEffect(() => {
+    const tId = setTimeout(() => {
+      send("rq:party:decline");
+    }, 10000);
+    return () => clearTimeout(tId);
+  }, [invite, send]);
+
+  return (
+    <div style={{
+       position: "fixed", top: "80px", left: "50%", transform: "translateX(-50%)",
+       background: "var(--color-surface)", border: "1px solid var(--color-accent)",
+       padding: "16px", borderRadius: "8px", zIndex: 99999, display: "flex", flexDirection: "column",
+       boxShadow: "0 10px 30px rgba(0,0,0,0.5)", pointerEvents: "auto", width: "320px"
+    }}>
+      <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: "12px" }}>
+         <div>
+            <span style={{ fontSize: "12px", color: "var(--color-accent)", textTransform: "uppercase", fontWeight: "bold" }}>{t("lobby.invited")}</span>
+            <div style={{ fontSize: "16px", fontWeight: "bold" }}>{invite.fromName ?? t("lobby.player")}</div>
+         </div>
+      </div>
+      <div style={{ display: "flex", gap: "8px" }}>
+        <button className="btn btn-primary" onClick={() => send("rq:party:accept")} style={{ flex: 1, padding: "8px", fontSize: "14px" }}>{t("lobby.join")}</button>
+        <button className="btn btn-secondary" onClick={() => send("rq:party:decline")} style={{ flex: 1, padding: "8px", fontSize: "14px" }}>{t("lobby.decline")}</button>
+      </div>
+      <div style={{ height: "4px", background: "rgba(255,255,255,0.1)", marginTop: "12px", borderRadius: "2px", overflow: "hidden" }}>
+         <motion.div 
+           initial={{ width: "100%" }} 
+           animate={{ width: "0%" }} 
+           transition={{ duration: 10, ease: "linear" }}
+           style={{ height: "100%", background: "var(--color-accent)" }}
+         />
+      </div>
+    </div>
   );
 }

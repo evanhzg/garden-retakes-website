@@ -242,6 +242,12 @@ function normaliseLoadout(raw: LegacyLoadout, itemTeam: (id: string) => Team): L
     knifeT: raw.knifeT,
     glovesCT: raw.glovesCT,
     glovesT: raw.glovesT,
+    agentCT: raw.agentCT,
+    agentT: raw.agentT,
+    musicKitCT: raw.musicKitCT,
+    musicKitT: raw.musicKitT,
+    equippedPatchesCT: raw.equippedPatchesCT,
+    equippedPatchesT: raw.equippedPatchesT,
     color: raw.color,
     preferredM4: raw.preferredM4,
   };

@@ -39,21 +39,14 @@ export default function PlayerBubble({ steamId, name, children }: PlayerBubblePr
     const r = el.getBoundingClientRect();
     const estimated = popoverRef.current?.offsetHeight ?? 320;
 
-    const roomAbove = r.top;
-    const roomBelow = window.innerHeight - r.bottom;
-    // Prefer above (the original behaviour) but flip when it would not fit.
-    const placement: "above" | "below" =
-      roomAbove >= estimated + GAP || roomAbove >= roomBelow ? "above" : "below";
+    // Open on the left side of the trigger
+    const left = r.left - WIDTH - GAP;
+    
+    // Vertically align with the trigger, keeping it within bounds
+    let top = r.top + r.height / 2 - estimated / 2;
+    top = Math.max(GAP, Math.min(top, window.innerHeight - estimated - GAP));
 
-    const top = placement === "above" ? r.top - GAP - estimated : r.bottom + GAP;
-
-    // Keep it on screen horizontally regardless of how close the row is to an edge.
-    const left = Math.min(
-      Math.max(GAP, r.left + r.width / 2 - WIDTH / 2),
-      window.innerWidth - WIDTH - GAP,
-    );
-
-    setPos({ left, top: Math.max(GAP, Math.min(top, window.innerHeight - estimated - GAP)), placement });
+    setPos({ left, top, placement: "above" });
   }, []);
 
   useEffect(() => {

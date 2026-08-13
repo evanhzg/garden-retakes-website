@@ -4,6 +4,7 @@ import React, { useState, useEffect } from "react";
 import { useSocket } from "@/components/games/SocketProvider";
 import { useRouter } from "next/navigation";
 import PlayerBubble from "./PlayerBubble";
+import { MessageSquare, UserPlus, Gamepad2, Eye } from "lucide-react";
 import { useI18n } from "@/components/I18nProvider";
 import "./social.css";
 
@@ -107,7 +108,22 @@ export default function FriendsSidebar() {
       });
       if (res.ok) {
         const data = await res.json();
-        setFriends(data.filter((f: any) => f.status === "ACCEPTED"));
+        
+        // Add fake friend always in lobby for testing
+        const friendsList = data.filter((f: any) => f.status === "ACCEPTED");
+        if (!friendsList.find((f: any) => f.friendId === "76561198154541270")) {
+           friendsList.push({
+              id: -999,
+              friendId: "76561198154541270",
+              name: "Fake Friend",
+              avatarUrl: null,
+              status: "ACCEPTED",
+              isRequester: false,
+              inLobby: true
+           });
+        }
+        
+        setFriends(friendsList);
         setPendingRequests(data.filter((f: any) => f.status === "PENDING" && !f.isRequester));
       }
     } catch (e) {
@@ -270,15 +286,30 @@ export default function FriendsSidebar() {
                 return (
                   <div key={f.id} className="friend-item">
                     <div className="friend-info">
-                      <div className={`status-dot ${isOnline ? "online" : "offline"}`} />
+                      <div className={`status-dot ${isOnline || f.friendId === "76561198154541270" ? "online" : "offline"}`} />
                       <PlayerBubble steamId={f.friendId} name={f.name}>
                         <span className="friend-name">{f.name}</span>
                       </PlayerBubble>
                     </div>
                     <div className="friend-actions">
-                      <button className="btn-msg" onClick={() => { setActiveDmUser(f.friendId); setActiveTab("MESSAGES"); }}>DM</button>
-                      {isOnline && (
-                        <button className="btn-invite" onClick={() => inviteFriend(f.friendId)}>{t("social.friends.inviteBtn")}</button>
+                      <button className="btn-msg" onClick={() => { setActiveDmUser(f.friendId); setActiveTab("MESSAGES"); }} title="Chat" style={{ padding: "6px", display: "flex" }}>
+                        <MessageSquare size={14} />
+                      </button>
+                      {(isOnline || f.friendId === "76561198154541270") && !f.inLobby && (
+                        <button className="btn-invite" onClick={() => inviteFriend(f.friendId)} title={t("social.friends.inviteBtn")} style={{ padding: "6px", display: "flex" }}>
+                          <UserPlus size={14} />
+                        </button>
+                      )}
+                      {f.inLobby ? (
+                        <button className="btn-spectate" onClick={() => {}} title="Spectate" style={{ padding: "6px", display: "flex" }}>
+                          <Eye size={14} />
+                        </button>
+                      ) : (
+                        (isOnline || f.friendId === "76561198154541270") && (
+                          <button className="btn-join" onClick={() => {}} title="Play/Join" style={{ padding: "6px", display: "flex" }}>
+                            <Gamepad2 size={14} />
+                          </button>
+                        )
                       )}
                     </div>
                   </div>

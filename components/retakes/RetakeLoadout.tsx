@@ -230,22 +230,21 @@ export default function RetakeLoadoutPage({ signedIn }: { signedIn: boolean }) {
                           {options.map((o) => (
                             <button
                               key={o.id}
-                              className={`lo-pick ${value === o.id ? "on" : ""}`}
+                              className={`lo-pick weapon ${value === o.id ? "on" : ""}`}
                               onClick={() => setWeapon(slot, o.id)}
                               title={o.name}
-                              style={{ display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center", padding: "8px", gap: "4px" }}
                             >
                               <img 
                                 src={`/images/weapons/${o.name.toLowerCase().replace(/[^a-z0-9]/g, "")}.svg`} 
                                 alt={o.name} 
-                                style={{ width: 40, height: "auto", objectFit: "contain", filter: "drop-shadow(0 2px 4px rgba(0,0,0,0.5))" }}
+                                className="lo-weapon-img"
                                 onError={(e) => {
                                   e.currentTarget.style.display = "none";
                                   const span = e.currentTarget.nextElementSibling as HTMLSpanElement;
                                   if (span) span.style.display = "block";
                                 }}
                               />
-                              <span style={{ fontSize: "10px", display: "none" }}>{o.name}</span>
+                              <span className="lo-weapon-name">{o.name}</span>
                             </button>
                           ))}
                         </div>

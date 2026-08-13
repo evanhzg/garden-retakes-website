@@ -120,7 +120,7 @@ function attachRetakesMatchmaking(io, { connectedUsers, loadRatings, prisma }) {
     const party = {
       id,
       leader: String(steamId),
-      name: ANIMAL_NAMES[Math.floor(Math.random() * ANIMAL_NAMES.length)], // Custom team name
+      name: null,
       members: [{ steamId: String(steamId), name: name ?? null, ready: true, elo: STARTING_ELO, matches: 0 }],
       mode: "2v2",
       queuedAt: null,
@@ -155,7 +155,7 @@ function attachRetakesMatchmaking(io, { connectedUsers, loadRatings, prisma }) {
           p = {
             id: dbLobby.Id,
             leader: String(steamId),
-            name: ["Lions", "Tigers", "Bears", "Wolves", "Eagles"][Math.floor(Math.random() * 5)], // Custom team name
+            name: null,
             members: [{ steamId: String(steamId), name: name ?? null, ready: true, elo: STARTING_ELO, matches: 0 }],
             mode: dbLobby.Mode,
             queuedAt: null,
