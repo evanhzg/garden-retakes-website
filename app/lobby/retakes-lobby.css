@@ -407,7 +407,7 @@
 /* The roster row becomes two lines: name, then the two numbers people judge on.
    Everything else is a hover away — a roster is read at a glance while a timer
    is running. */
-.rq-player { flex: 1; min-width: 0; display: grid; gap: 2px; }
+.rq-player { flex: 1; min-width: 0; display: grid; grid-template-columns: minmax(0, 1fr); gap: 2px; }
 .rq-roster.right .rq-player { justify-items: end; }
 
 .pf-line { display: flex; align-items: center; gap: 7px; font-size: 11px; }

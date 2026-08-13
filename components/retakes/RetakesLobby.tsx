@@ -11,6 +11,7 @@ import { FormCard, FormLine, useRosterForm, type RecentForm } from "./PlayerForm
 import LevelBadge from "./LevelBadge";
 import LiveGames from "./LiveGames";
 import PostMatchModal from "./PostMatchModal";
+import { motion } from "framer-motion";
 import "@/app/lobby/retakes-lobby.css";
 
 function SafeShield({ score, probation }: { score: number; probation: boolean }) {
