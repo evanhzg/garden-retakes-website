@@ -61,6 +61,7 @@ type Comment = {
 const describeFallback = (clip: Clip): string => {
   if (clip.kind === "youtube") return "Shared from YouTube";
   if (clip.kind === "r2") return "Server highlight";
+  if (clip.kind === "allstar") return "Shared from Allstar.gg";
   return "Community clip";
 };
 
@@ -143,7 +144,9 @@ export default function ClipCard({
     if (clip.kind === "upload") {
       return [{ name: "Source", height: 0, url: `/api/feed/video/${encodeURIComponent(clip.source)}` }];
     }
-    if (clip.kind === "r2") return [{ name: "Source", height: 0, url: clip.source }];
+    if (clip.kind === "r2" || clip.kind === "allstar") {
+      return [{ name: "Source", height: 0, url: clip.source }];
+    }
     return [];
   })();
 

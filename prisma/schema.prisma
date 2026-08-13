@@ -209,6 +209,9 @@ model GardenWebProfile {
   /// avoids writing a row per player per event.
   NotifSeenAtUtc DateTime? @db.DateTime(6)
 
+    AllstarUsername String?   @db.VarChar(64)
+  AllstarSync     Boolean   @default(true)
+
   @@map("GardenWebProfiles")
 }
 

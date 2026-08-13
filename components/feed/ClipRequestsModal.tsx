@@ -3,27 +3,24 @@
 import { useEffect, useState } from "react";
 import { createPortal } from "react-dom";
 import { useI18n } from '@/components/I18nProvider';
+import { formatDistanceToNow } from "date-fns";
 
 type ClipRequest = {
-  id: string;
-  mapName: string;
-  kills: number;
-  weapons: string[];
-  team: "T" | "CT";
-  date: string;
+  id: number;
+  map: string;
+  sessionId: string;
+  durationSec: number;
+  status: string;
+  note: string | null;
+  clipId: number | null;
+  createdAt: string;
 };
-
-const MOCK_REQUESTS: ClipRequest[] = [
-  { id: "1", mapName: "Mirage", kills: 4, weapons: ["AK-47", "Desert Eagle"], team: "T", date: "2 mins ago" },
-  { id: "2", mapName: "Inferno", kills: 3, weapons: ["AWP"], team: "CT", date: "15 mins ago" },
-  { id: "3", mapName: "Nuke", kills: 5, weapons: ["M4A4"], team: "CT", date: "1 hour ago" },
-  { id: "4", mapName: "Dust II", kills: 4, weapons: ["Galil AR", "AK-47"], team: "T", date: "3 hours ago" },
-  { id: "5", mapName: "Overpass", kills: 3, weapons: ["USP-S"], team: "CT", date: "5 hours ago" },
-];
 
 export default function ClipRequestsModal({ onClose }: { onClose: () => void }) {
   const { t } = useI18n();
   const [mounted, setMounted] = useState(false);
+  const [requests, setRequests] = useState<ClipRequest[]>([]);
+  const [loading, setLoading] = useState(true);
 
   useEffect(() => {
     setMounted(true);
@@ -33,6 +30,14 @@ export default function ClipRequestsModal({ onClose }: { onClose: () => void }) 
     const scroller = document.querySelector<HTMLElement>(".main-content");
     const previous = scroller?.style.overflow ?? "";
     if (scroller) scroller.style.overflow = "hidden";
+
+    fetch("/api/feed/clip-requests")
+      .then((res) => res.json())
+      .then((data) => {
+        if (data.requests) setRequests(data.requests);
+        setLoading(false);
+      })
+      .catch(() => setLoading(false));
 
     return () => {
       window.removeEventListener("keydown", onKey);
@@ -49,26 +54,34 @@ export default function ClipRequestsModal({ onClose }: { onClose: () => void }) 
           <h2 id="clip-requests-title">Your /clip Requests</h2>
           <button className="btn btn-secondary" onClick={onClose}>{t("auto.uploadclipmodal.close")}</button>
         </div>
-        <div className="pro-panel" style={{ padding: 0 }}>
-          <div style={{ display: "flex", flexDirection: "column", gap: "1px", background: "var(--color-divider)", borderRadius: "inherit", overflow: "hidden" }}>
-            {MOCK_REQUESTS.map((req) => (
-              <div key={req.id} style={{ padding: "16px 20px", background: "var(--color-surface)", display: "flex", justifyContent: "space-between", alignItems: "center", gap: 16 }}>
-                <div>
-                  <div style={{ fontWeight: 600, fontSize: 16, marginBottom: 4 }}>
-                    {req.mapName} · {req.kills}K ({req.team})
+        <div className="pro-panel" style={{ padding: 0, minHeight: 100 }}>
+          {loading ? (
+            <div style={{ padding: 20, textAlign: "center" }}>Loading...</div>
+          ) : requests.length === 0 ? (
+            <div style={{ padding: 20, textAlign: "center" }} className="muted">No clip requests found. Use /clip in-game!</div>
+          ) : (
+            <div style={{ display: "flex", flexDirection: "column", gap: "1px", background: "var(--color-divider)", borderRadius: "inherit", overflow: "hidden" }}>
+              {requests.map((req) => (
+                <div key={req.id} style={{ padding: "16px 20px", background: "var(--color-surface)", display: "flex", justifyContent: "space-between", alignItems: "center", gap: 16 }}>
+                  <div>
+                    <div style={{ fontWeight: 600, fontSize: 16, marginBottom: 4 }}>
+                      {req.map}
+                    </div>
+                    <div className="muted" style={{ fontSize: 13, display: "flex", gap: 8, alignItems: "center" }}>
+                      <span>{req.status === "pending" ? "Waiting to be processed" : req.status === "processing" ? "Processing..." : req.status === "done" ? "Ready" : req.status}</span>
+                      <span>&bull;</span>
+                      <span>{formatDistanceToNow(new Date(req.createdAt), { addSuffix: true })}</span>
+                    </div>
                   </div>
-                  <div className="muted" style={{ fontSize: 13, display: "flex", gap: 8, alignItems: "center" }}>
-                    <span>{req.weapons.join(", ")}</span>
-                    <span>&bull;</span>
-                    <span>{req.date}</span>
-                  </div>
+                  {req.status === "done" && req.clipId ? (
+                    <button className="btn btn-primary" style={{ fontSize: 13, padding: "6px 12px" }}>
+                      Publish
+                    </button>
+                  ) : null}
                 </div>
-                <button className="btn btn-primary" style={{ fontSize: 13, padding: "6px 12px" }}>
-                  Publish
-                </button>
-              </div>
-            ))}
-          </div>
+              ))}
+            </div>
+          )}
         </div>
       </div>
     </div>,

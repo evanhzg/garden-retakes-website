@@ -86,6 +86,7 @@ export const CLIP_TAGS = [
   { id: "clutchfail", label: "Choke", colour: "#9b9797" },
   { id: "funny", label: "Funny", colour: "#e85fa8" },
   { id: "teamplay", label: "Teamplay", colour: "#5fc9c9" },
+  { id: "allstar", label: "Allstar", colour: "#00a1ff" },
 ] as const;
 
 export type ClipTagId = (typeof CLIP_TAGS)[number]["id"];

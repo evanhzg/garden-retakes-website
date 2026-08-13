@@ -2,6 +2,7 @@ import { getT } from "@/lib/serverI18n";
 import { getSession } from "@/lib/auth";
 import DiscordConnect from "@/components/DiscordConnect";
 import GoogleConnect from "@/components/GoogleConnect";
+import AllstarConnect from "@/components/AllstarConnect";
 import Link from "next/link";
 import AvatarImage from "@/components/AvatarImage";
 import { resolveName } from "@/lib/names";
@@ -62,6 +63,9 @@ export default async function SettingsPage() {
           </div>
           <div className="side-card">
             <GoogleConnect />
+          </div>
+          <div className="side-card">
+            <AllstarConnect />
           </div>
         </div>
       </section>

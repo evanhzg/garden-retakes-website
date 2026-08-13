@@ -49,6 +49,8 @@ export async function GET() {
     country: profile?.Country ?? null,
     popConfig: profile?.PopConfig ?? null,
     accentColor: playerProfile?.accentColor ?? null,
+    allstarUsername: profile?.AllstarUsername ?? null,
+    allstarSync: profile?.AllstarSync ?? true,
   });
 }
 
@@ -95,6 +97,8 @@ export async function POST(req: Request) {
   }
 
   const popConfigRaw = typeof body.popConfig === "string" ? body.popConfig.trim().slice(0, 512) : undefined;
+  const allstarUsername = typeof body.allstarUsername === "string" ? body.allstarUsername.trim().slice(0, 64) : undefined;
+  const allstarSync = typeof body.allstarSync === "boolean" ? body.allstarSync : undefined;
 
   await prisma.gardenWebProfile.upsert({
     where: { SteamId: steamId },
@@ -104,12 +108,16 @@ export async function POST(req: Request) {
       Bio: bioRaw,
       Country: countryRaw,
       ...(popConfigRaw !== undefined && { PopConfig: popConfigRaw }),
+      ...(allstarUsername !== undefined && { AllstarUsername: allstarUsername || null }),
+      ...(allstarSync !== undefined && { AllstarSync: allstarSync }),
     },
     update: {
       AvatarUrl: avatarUrl,
       Bio: bioRaw,
       Country: countryRaw,
       ...(popConfigRaw !== undefined && { PopConfig: popConfigRaw }),
+      ...(allstarUsername !== undefined && { AllstarUsername: allstarUsername || null }),
+      ...(allstarSync !== undefined && { AllstarSync: allstarSync }),
     },
   });
 

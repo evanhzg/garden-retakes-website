@@ -48,7 +48,7 @@ export async function GET(req: Request) {
     ...visibility,
     ...(since ? { CreatedAt: { gte: since } } : {}),
     ...(steamId && /^\d{17}$/.test(steamId) ? { SteamId: BigInt(steamId) } : {}),
-    ...(kind && ["upload", "youtube", "r2"].includes(kind) ? { Kind: kind } : {}),
+    ...(kind && ["upload", "youtube", "r2", "allstar"].includes(kind) ? { Kind: kind } : {}),
   };
 
   let clips;
