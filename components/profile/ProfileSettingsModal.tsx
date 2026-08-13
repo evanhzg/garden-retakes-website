@@ -156,7 +156,6 @@ export default function ProfileSettingsModal({ onClose }: { onClose: () => void 
   if (!mounted) return null;
 
   return createPortal(
-  return createPortal(
     <div className="pro-modal" style={closing ? { animation: 'gr-pop 0.18s ease reverse both' } : {}} role="dialog" aria-modal="true" aria-labelledby="pro-settings-title" onClick={handleClose}>
       <div className="pro-modal-card" ref={cardRef} tabIndex={-1} onClick={(e) => e.stopPropagation()}>
         <div className="pro-modal-head">
