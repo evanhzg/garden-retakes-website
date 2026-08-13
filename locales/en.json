@@ -2232,6 +2232,8 @@
   "loadout.role.rotator.desc": "Plays off the anchor and arrives from the flank.",
   "loadout.role.flex": "Flex",
   "loadout.role.flex.desc": "Takes whatever the other four did not.",
+  "loadout.role.caller": "Caller",
+  "loadout.role.caller.desc": "I will make the calls.",
   "lobby.yourloadout": "Your loadout",
   "lobby.yourform": "Your recent form",
   "lobby.premade": "Queued together",

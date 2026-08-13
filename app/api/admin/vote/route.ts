@@ -82,3 +82,47 @@ export async function POST(req: Request) {
     placementAwarded: Math.min(3, standings.length),
   });
 }
+
+export async function PATCH(req: Request) {
+  const keyParam = new URL(req.url).searchParams.get("key");
+  const ctx = await getAdminContext(keyParam);
+  if (ctx.level < AdminLevel.Owner) {
+    return NextResponse.json({ error: "Owner only." }, { status: 403 });
+  }
+
+  const now = new Date();
+  const poll = await prisma.gardenVotePoll.findFirst({
+    where: { ClosesAt: { lte: now } },
+    orderBy: { Id: "desc" },
+  });
+  if (!poll) return NextResponse.json({ awarded: 0, note: "no closed poll" });
+
+  const categories = await prisma.gardenVoteCategory.findMany({
+    where: { PollId: poll.Id },
+  });
+
+  let awarded = 0;
+  for (const c of categories) {
+    const votes = await prisma.gardenVote.findMany({ where: { CategoryId: c.Id } });
+    if (votes.length === 0) continue;
+    const counts = new Map<string, number>();
+    for (const v of votes) {
+      const k = v.TargetSteamId.toString();
+      counts.set(k, (counts.get(k) ?? 0) + 1);
+    }
+    const sorted = Array.from(counts.entries()).sort((a, b) => b[1] - a[1]);
+    if (sorted.length === 0) continue;
+    const [winner, count] = sorted[0];
+
+    await prisma.gardenPlayerMedal.deleteMany({
+      where: { SeasonId: poll.SeasonId, MedalSlug: c.MedalSlug },
+    });
+
+    await award(BigInt(winner), c.MedalSlug, poll.SeasonId, `${count} vote${count === 1 ? "" : "s"}`);
+    awarded += 1;
+  }
+
+  await logAdminAction(ctx, "vote.close", undefined, `season ${poll.SeasonId}, awarded ${awarded}`);
+
+  return NextResponse.json({ ok: true, awarded });
+}

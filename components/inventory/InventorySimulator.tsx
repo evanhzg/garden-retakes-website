@@ -82,7 +82,6 @@ function kindOfCategory(category: string): ItemKind {
   if (category === "Knives") return "knife";
   if (category === "Gloves") return "gloves";
   if (category === "Agents") return "agent";
-  if (category === "Patches") return "patch";
   if (category === "Music Kits") return "musickit";
   return "weapon";
 }
@@ -731,7 +730,7 @@ export default function InventorySimulator() {
     if (slot.kind !== "weapon") {
       // Knife and glove tiles have no fixed def until something is equipped,
       // so an empty one lands on the right category instead of the chooser.
-      const cat = slot.kind === "knife" ? "Knives" : slot.kind === "gloves" ? "Gloves" : slot.kind === "agent" ? "Agents" : slot.kind === "patch" ? "Patches" : slot.kind === "charm" ? "Charms" : "Gloves";
+      const cat = slot.kind === "knife" ? "Knives" : slot.kind === "gloves" ? "Gloves" : slot.kind === "agent" ? "Agents" : slot.kind === "charm" ? "Charms" : "Gloves";
       if (slot.item) {
         const entry = Object.values(catalog ?? {}).flat().find((w) => w.def === slot.item!.weaponDef);
         if (entry) return openWeapon(entry);
@@ -760,7 +759,7 @@ export default function InventorySimulator() {
     };
     const groups = new Map<string, typeof slots>();
     for (const slot of slots) {
-      const g = slot.kind === "knife" ? "Knives" : slot.kind === "gloves" ? "Gloves" : slot.kind === "agent" ? "Agents" : slot.kind === "musickit" ? "Music Kits" : slot.kind === "patch" ? "Patches" : slot.kind === "charm" ? "Charms" : categoryOf(slot.def);
+      const g = slot.kind === "knife" ? "Knives" : slot.kind === "gloves" ? "Gloves" : slot.kind === "agent" ? "Agents" : slot.kind === "musickit" ? "Music Kits" : slot.kind === "charm" ? "Charms" : categoryOf(slot.def);
       if (!groups.has(g)) groups.set(g, []);
       groups.get(g)!.push(slot);
     }
@@ -1616,7 +1615,7 @@ export default function InventorySimulator() {
               // one type at a time.
               <div className="inv4-preview">
                 {CATEGORY_ORDER.filter((c) => catalog[c]?.length).map((c) => {
-                  const isSingleSlot = c === "Agents" || c === "Knives" || c === "Gloves" || c === "Patches" || c === "Charms";
+                  const isSingleSlot = c === "Agents" || c === "Knives" || c === "Gloves" || c === "Charms";
                   const kind = kindOfCategory(c);
                   const weaponsToRender = isSingleSlot 
                     ? (() => {

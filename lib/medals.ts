@@ -38,31 +38,31 @@ export const VOTE_CATEGORIES: { slug: string; name: string; description: string;
     slug: "clutch",
     name: "Ice in the veins",
     description: "Who you actually wanted alive in a 1v3.",
-    medal: { slug: "medal-clutch", name: "Ice in the veins", description: "Voted the one you wanted alive in a 1v3.", icon: "🧊", colour: "#5fc9c9", kind: "vote", sort: 10 },
+    medal: { slug: "medal-clutch", name: "Ice in the veins", description: "Voted the one you wanted alive in a 1v3.", icon: "/medals/medal-clutch.jpg", colour: "#5fc9c9", kind: "vote", sort: 10 },
   },
   {
     slug: "entry",
     name: "First one through",
     description: "Opens the site and asks questions later.",
-    medal: { slug: "medal-entry", name: "First one through", description: "Voted the one who always opens the site.", icon: "🚪", colour: "#e8703a", kind: "vote", sort: 11 },
+    medal: { slug: "medal-entry", name: "First one through", description: "Voted the one who always opens the site.", icon: "/medals/medal-entry.jpg", colour: "#e8703a", kind: "vote", sort: 11 },
   },
   {
     slug: "utility",
     name: "Smoke criminal",
     description: "Best — or most memorable — utility.",
-    medal: { slug: "medal-utility", name: "Smoke criminal", description: "Voted for the most memorable utility.", icon: "💨", colour: "#8bb8d8", kind: "vote", sort: 12 },
+    medal: { slug: "medal-utility", name: "Smoke criminal", description: "Voted for the most memorable utility.", icon: "/medals/medal-utility.jpg", colour: "#8bb8d8", kind: "vote", sort: 12 },
   },
   {
     slug: "chaos",
     name: "Agent of chaos",
     description: "You never know what they are about to do. Neither do they.",
-    medal: { slug: "medal-chaos", name: "Agent of chaos", description: "Voted the least predictable player on the server.", icon: "🌪️", colour: "#b58fd8", kind: "vote", sort: 13 },
+    medal: { slug: "medal-chaos", name: "Agent of chaos", description: "Voted the least predictable player on the server.", icon: "/medals/medal-chaos.jpg", colour: "#b58fd8", kind: "vote", sort: 13 },
   },
   {
     slug: "voice",
     name: "Loudest in comms",
     description: "The one you hear before you see.",
-    medal: { slug: "medal-voice", name: "Loudest in comms", description: "Voted the one you hear before you see.", icon: "📣", colour: "#e85fa8", kind: "vote", sort: 14 },
+    medal: { slug: "medal-voice", name: "Loudest in comms", description: "Voted the one you hear before you see.", icon: "/medals/medal-voice.jpg", colour: "#e85fa8", kind: "vote", sort: 14 },
   },
 ];
 

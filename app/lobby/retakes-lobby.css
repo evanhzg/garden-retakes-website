@@ -11,9 +11,9 @@
  */
 
 .rq {
-  --rq-radius: 14px;
-  --rq-panel: color-mix(in srgb, var(--color-text) 4%, var(--color-bg));
-  --rq-edge: color-mix(in srgb, var(--color-text) 13%, transparent);
+  --rq-radius: var(--radius);
+  --rq-panel: var(--panel);
+  --rq-edge: var(--border);
   --rq-ct: #6aa9e0;
   --rq-t: #e0a94a;
   max-width: 1240px;
@@ -204,7 +204,7 @@
 .rq-found, .rq-invite-card {
   display: grid; justify-items: center; gap: 14px;
   padding: clamp(28px, 5vh, 48px) clamp(28px, 6vw, 64px);
-  border-radius: 20px;
+  border-radius: var(--radius);
   background: var(--rq-panel);
   border: 1px solid var(--rq-edge);
   box-shadow: 0 30px 80px rgb(0 0 0 / 0.45);
@@ -276,7 +276,7 @@
 .rq-roster { gap: 6px; }
 .rq-roster > li {
   display: flex; align-items: center; gap: 9px;
-  padding: 8px 10px; border-radius: 10px;
+  padding: 8px 10px; border-radius: var(--radius);
   background: var(--rq-panel);
   border: 1px solid var(--rq-edge);
 }
@@ -294,7 +294,7 @@
 .rq-map {
   position: relative;
   padding: 0; border: 1.5px solid var(--rq-edge);
-  border-radius: 12px; overflow: hidden;
+  border-radius: var(--radius); overflow: hidden;
   background: #0c0b0b;
   cursor: pointer; font: inherit; color: #fff;
   transition: border-color 0.15s ease, transform 0.15s ease, filter 0.3s ease;

@@ -277,7 +277,7 @@ export default function FriendsSidebar() {
                     </div>
                     <div className="friend-actions">
                       <button className="btn-msg" onClick={() => { setActiveDmUser(f.friendId); setActiveTab("MESSAGES"); }}>DM</button>
-                      {isOnline && (window.location.pathname.includes("/games/lobby/") || window.location.pathname.includes("/lobby/")) && (
+                      {isOnline && (
                         <button className="btn-invite" onClick={() => inviteFriend(f.friendId)}>{t("social.friends.inviteBtn")}</button>
                       )}
                     </div>

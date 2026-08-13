@@ -348,13 +348,26 @@ function GamesHub() {
                         <span className={lobby.status === "PLAYING" ? "lobby-playing" : ""}>
                           {lobby.status === "PLAYING" ? "▶ In game" : `👥 ${lobby.playerCount}/${lobby.maxPlayers ?? 8}`}
                         </span>
-                        <button
-                          onClick={() => router.push(`/games/lobby/${lobby.id}`)}
-                          className="btn-join"
-                          disabled={lobby.status === "PLAYING" || lobby.playerCount >= (lobby.maxPlayers ?? 8)}
-                        >
-                          {t("auto.page.join")}
-                                                          </button>
+                        <div style={{ display: "flex", gap: "8px" }}>
+                          <button
+                            onClick={() => {
+                              navigator.clipboard.writeText(`${window.location.origin}/games/lobby/${lobby.id}`);
+                              alert(t("social.friends.inviteCopied") || "Invite link copied!");
+                            }}
+                            className="btn-join"
+                            style={{ background: "transparent", border: "1px solid var(--border)", color: "var(--color-text)" }}
+                            title="Copy Invite Link"
+                          >
+                            🔗
+                          </button>
+                          <button
+                            onClick={() => router.push(`/games/lobby/${lobby.id}`)}
+                            className="btn-join"
+                            disabled={lobby.status === "PLAYING" || lobby.playerCount >= (lobby.maxPlayers ?? 8)}
+                          >
+                            {t("auto.page.join")}
+                          </button>
+                        </div>
                       </div>
                     </div>
                   ))

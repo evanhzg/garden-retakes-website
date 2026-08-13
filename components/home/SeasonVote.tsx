@@ -90,35 +90,7 @@ export default function SeasonVote() {
   };
 
   // ---- closed: results ----
-  if (!data.poll.open) {
-    return (
-      <aside className="vote-panel">
-        <header className="vote-head">
-          <span className="kicker">{t("auto.seasonvote.season")} {data.poll.seasonId}</span>
-          <h3>{t("auto.seasonvote.the_votes_are_in")}</h3>
-        </header>
-        <ul className="vote-results">
-          {(data.results ?? []).map((r) => {
-            const win = r.results[0];
-            return (
-              <li key={r.category}>
-                <span className="vote-res-cat">{r.name}</span>
-                {win ? (
-                  <span className="vote-res-win">
-                    <AvatarImage steamId={win.steamId} src={win.avatar} alt={win.name} className="avatar avatar-sm" />
-                    <strong>{win.name}</strong>
-                    <span className="num">{win.count}</span>
-                  </span>
-                ) : (
-                  <span className="muted">{t("auto.seasonvote.no_votes")}</span>
-                )}
-              </li>
-            );
-          })}
-        </ul>
-      </aside>
-    );
-  }
+  if (!data.poll.open) return null;
 
   // ---- open: ballot ----
   const mine = data.mine ?? {};

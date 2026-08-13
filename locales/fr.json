@@ -2226,6 +2226,8 @@
   "loadout.role.rotator.desc": "Joue en appui de l'ancre et arrive par le flanc.",
   "loadout.role.flex": "Flex",
   "loadout.role.flex.desc": "Prend ce que les quatre autres n'ont pas pris.",
+  "loadout.role.caller": "Caller",
+  "loadout.role.caller.desc": "Je ferai les calls.",
   "lobby.yourloadout": "Ton loadout",
   "lobby.yourform": "Ta forme récente",
   "lobby.premade": "En groupe",

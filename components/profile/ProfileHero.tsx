@@ -260,7 +260,31 @@ export default function ProfileHero({
           )}
           <Link className="btn btn-secondary" href={`/compare?a=${steamId}`}>{t("auto.profilehero.compare")}</Link>
           {!owner && (
-             <button className="btn btn-secondary" onClick={() => setReportOpen(true)} style={{ color: 'var(--color-danger)' }}>Report</button>
+            <>
+              <button
+                className="btn btn-secondary"
+                onClick={async () => {
+                  try {
+                    const res = await fetch("/api/friends", {
+                      method: "POST",
+                      headers: { "Content-Type": "application/json" },
+                      body: JSON.stringify({ targetSteamId: steamId })
+                    });
+                    if (res.ok) {
+                      alert(t("social.friends.requestSent") || "Friend request sent!");
+                    } else {
+                      const err = await res.json();
+                      alert(t("social.friends.error", { error: err.error }) || err.error);
+                    }
+                  } catch (e) {
+                    console.error(e);
+                  }
+                }}
+              >
+                {t("social.friends.addFriend") || "Add Friend"}
+              </button>
+              <button className="btn btn-secondary" onClick={() => setReportOpen(true)} style={{ color: 'var(--color-danger)' }}>Report</button>
+            </>
           )}
         </div>
       </div>

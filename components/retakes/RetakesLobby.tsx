@@ -409,7 +409,7 @@ export default function RetakesLobby({ signedIn, lobbyId }: { signedIn: boolean,
 
       <div className="rq-grid" style={{ display: activeTab === 'lobby' ? 'grid' : 'none' }}>
         {/* ------------------------------------------------------------ party */}
-        <aside className="rq-panel rq-party">
+        <aside className="panel rq-party">
           <header className="rq-panel-head" style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
             <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
                <h2>{t("lobby.party")}</h2>
@@ -570,7 +570,7 @@ export default function RetakesLobby({ signedIn, lobbyId }: { signedIn: boolean,
         </aside>
 
         {/* ------------------------------------------------------------- queue */}
-        <main className="rq-panel rq-main">
+        <main className="panel rq-main">
           {queue ? (
             <div className="rq-searching">
               <div className="rq-radar" aria-hidden>
@@ -682,7 +682,7 @@ export default function RetakesLobby({ signedIn, lobbyId }: { signedIn: boolean,
         </main>
 
         {/* ------------------------------------------------------------ format */}
-        <aside className="rq-panel rq-format">
+        <aside className="panel rq-format">
           <header className="rq-panel-head">
             <h2>{t("lobby.format")}</h2>
           </header>

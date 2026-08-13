@@ -258,7 +258,7 @@ function LobbyClient({ lobbyId, mySteamId }: { lobbyId: string; mySteamId: strin
   if (error === "Invalid password") {
     return (
       <div className="lobby-container flex-center">
-        <form className="lobby-modal glass-panel" onSubmit={handleJoinWithPassword}>
+        <form className="lobby-modal panel" onSubmit={handleJoinWithPassword}>
           <div className="lobby-modal-icon">🔒</div>
           <h2>{t("auto.page.private_lobby")}</h2>
           <p>{t("auto.page.enter_the_password_to_join")}</p>
@@ -280,7 +280,7 @@ function LobbyClient({ lobbyId, mySteamId }: { lobbyId: string; mySteamId: strin
   if (error) {
     return (
       <div className="lobby-container flex-center">
-        <div className="lobby-modal glass-panel">
+        <div className="lobby-modal panel">
           <div className="lobby-modal-icon">😵</div>
           <h2>{t("auto.page.oops")}</h2>
           <p>{error}</p>
@@ -453,7 +453,7 @@ function LobbyClient({ lobbyId, mySteamId }: { lobbyId: string; mySteamId: strin
 
       <AnimatePresence>
         {toast && (
-          <motion.div className="lobby-toast glass-panel" initial={{ opacity: 0, y: -10 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, y: -10 }}>
+          <motion.div className="lobby-toast panel" initial={{ opacity: 0, y: -10 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, y: -10 }}>
             {toast}
           </motion.div>
         )}
@@ -548,7 +548,7 @@ function LobbyClient({ lobbyId, mySteamId }: { lobbyId: string; mySteamId: strin
         {/* main: setup + roster */}
         <div className="lobby-main">
           {/* game picker */}
-          <section className="lobby-section glass-panel">
+          <section className="lobby-section panel">
             <div className="picker-header">
               <h3>{t("auto.page._choose_your_game")}</h3>
               {isHost ? (
@@ -612,7 +612,7 @@ function LobbyClient({ lobbyId, mySteamId }: { lobbyId: string; mySteamId: strin
           {/* per-game setup — chips summarise the ruleset inline, the modal holds
               the controls so the lobby itself never grows a scrollbar */}
           {baseGame !== "none" && hasOptions && (
-            <section className="lobby-section glass-panel lobby-setup-strip">
+            <section className="lobby-section panel lobby-setup-strip">
               <div className="setup-strip-head">
                 <h3>⚙ {currentGameConfig?.name} {t("auto.page.setup")}</h3>
                 <button className="setup-open-btn" onClick={() => setSetupOpen(true)}>
@@ -626,7 +626,7 @@ function LobbyClient({ lobbyId, mySteamId }: { lobbyId: string; mySteamId: strin
 
           {/* codenames seating */}
           {cnMode && (
-            <section className="lobby-section glass-panel">
+            <section className="lobby-section panel">
               <div className="picker-header">
                 <h3>{t("auto.page._teams")}</h3>
                 {isHost
@@ -681,7 +681,7 @@ function LobbyClient({ lobbyId, mySteamId }: { lobbyId: string; mySteamId: strin
           )}
 
           {/* roster */}
-          <section className="lobby-section glass-panel">
+          <section className="lobby-section panel">
             <div className="players-header">
               <h3>{t("auto.page._players")} <span className="players-count">{playerCount}/{maxPlayers}</span></h3>
               <div className="ready-track">
@@ -733,7 +733,7 @@ function LobbyClient({ lobbyId, mySteamId }: { lobbyId: string; mySteamId: strin
 
         {/* side: chat + actions */}
         <aside className="lobby-side">
-          <div className="lobby-chat glass-panel">
+          <div className="lobby-chat panel">
             <h3 className="chat-title">{t("auto.page._lobby_chat")}</h3>
             <div className="chat-messages">
               {chatMessages.length === 0 && <div className="chat-message system">{t("auto.page.say_hi")}</div>}
@@ -746,7 +746,7 @@ function LobbyClient({ lobbyId, mySteamId }: { lobbyId: string; mySteamId: strin
             </form>
           </div>
 
-          <div className="lobby-actions-panel glass-panel">
+          <div className="lobby-actions-panel panel">
             {isHost ? (
               <>
                 <div className="ready-summary">

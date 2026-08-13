@@ -187,14 +187,16 @@ export default function RetakeLoadoutPage({ signedIn }: { signedIn: boolean }) {
                   <span className="lo-role-desc">{t(`loadout.role.${r.id}.desc`)}</span>
                 </button>
               ))}
-              <label className={`lo-role ${loadout.isCaller ? "on" : ""}`} style={{ display: "flex", flexDirection: "row", alignItems: "center", gap: "8px", cursor: "pointer", justifyContent: "center", padding: "12px", border: "1px solid var(--border)", borderRadius: "8px" }}>
-                <Mic size={20} />
-                <div style={{ display: "flex", flexDirection: "column", flex: 1, textAlign: "left" }}>
-                   <span className="lo-role-name">Caller</span>
-                   <span className="lo-role-desc">I will make the calls.</span>
-                </div>
-                <input type="checkbox" checked={loadout.isCaller} onChange={(e) => patch(l => ({ ...l, isCaller: e.target.checked }))} style={{ width: 18, height: 18, accentColor: "var(--color-accent)" }} />
-              </label>
+              <button
+                className={`lo-role ${loadout.isCaller ? "on" : ""}`}
+                onClick={() => patch(l => ({ ...l, isCaller: !l.isCaller }))}
+              >
+                <span className="lo-role-name">
+                  <Mic size={16} style={{marginRight: 6, verticalAlign: 'middle'}}/>
+                  {t("loadout.role.caller")}
+                </span>
+                <span className="lo-role-desc">{t("loadout.role.caller.desc")}</span>
+              </button>
             </div>
           </section>
 

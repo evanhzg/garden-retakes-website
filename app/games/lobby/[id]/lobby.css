@@ -113,7 +113,7 @@
   border: 1px solid var(--border);
   color: var(--muted);
   padding: 0.35rem 0.85rem;
-  border-radius: 2rem;
+  border-radius: var(--radius);
   font-size: 0.78rem;
   font-weight: 700;
 }
@@ -132,7 +132,7 @@
   padding: 0.8rem 1.2rem;
   background: rgba(234, 179, 8, 0.10);
   border: 1px solid rgba(234, 179, 8, 0.35);
-  border-radius: 0.75rem;
+  border-radius: var(--radius);
   font-size: 0.88rem;
   font-weight: 600;
   color: #b45309;
@@ -217,7 +217,7 @@
   position: relative;
   background: color-mix(in srgb, var(--bg-soft) 70%, transparent);
   border: 1.5px solid var(--border);
-  border-radius: 0.8rem;
+  border-radius: var(--radius);
   padding: 0.9rem 0.6rem;
   display: flex;
   flex-direction: column;
@@ -266,7 +266,7 @@
   position: relative;
   background: color-mix(in srgb, var(--bg-soft) 70%, transparent);
   border: 1.5px solid var(--border);
-  border-radius: 0.8rem;
+  border-radius: var(--radius);
   padding: 0.7rem;
   display: flex;
   flex-direction: column;
@@ -293,7 +293,7 @@
 }
 .board-pick-name { font-weight: 700; color: var(--text, #e8edf5); font-size: 0.95rem; }
 .board-pick-meta { font-size: 0.72rem; color: var(--text-dim, #94a3b8); }
-.board-pick-custom { font-size: 0.6rem; color: #38bdf8; background: rgba(56, 189, 248, 0.15); padding: 1px 5px; border-radius: 6px; margin-left: 4px; vertical-align: middle; }
+.board-pick-custom { font-size: 0.6rem; color: #38bdf8; background: rgba(56, 189, 248, 0.15); padding: 1px 5px; border-radius: var(--radius); margin-left: 4px; vertical-align: middle; }
 .editor-link { color: #38bdf8; text-decoration: none; font-weight: 600; font-size: 0.8rem; }
 .editor-link:hover { text-decoration: underline; }
 
@@ -369,7 +369,7 @@
 .player-card {
   background: color-mix(in srgb, var(--bg-soft) 70%, transparent);
   padding: 0.7rem 0.9rem;
-  border-radius: 0.75rem;
+  border-radius: var(--radius);
   display: flex;
   align-items: center;
   gap: 0.7rem;
@@ -409,7 +409,7 @@
   flex-direction: column;
   gap: 0.45rem;
   padding: 0.6rem;
-  border-radius: 0.85rem;
+  border-radius: var(--radius);
   border: 1px solid var(--border);
   background: color-mix(in srgb, var(--bg-soft) 60%, transparent);
 }
@@ -436,7 +436,7 @@
 .cn-lobby-seat {
   display: flex; align-items: center; justify-content: space-between; gap: 0.4rem;
   padding: 0.32rem 0.5rem;
-  border-radius: 0.55rem;
+  border-radius: var(--radius);
   border: 1px solid transparent;
   background: rgba(255, 255, 255, 0.05);
   color: var(--text);
@@ -454,7 +454,7 @@
 .cn-lobby-join {
   margin-top: auto;
   padding: 0.32rem 0.6rem;
-  border-radius: 0.55rem;
+  border-radius: var(--radius);
   border: 1px solid var(--border);
   background: rgba(255, 255, 255, 0.06);
   color: var(--text);
@@ -472,7 +472,7 @@
 /* team mode (2v2) */
 .lobby-team-picker { margin-top: 0.6rem; }
 .team-mode-toggle {
-  display: inline-flex; border-radius: 0.7rem; overflow: hidden;
+  display: inline-flex; border-radius: var(--radius); overflow: hidden;
   border: 1px solid var(--border); background: color-mix(in srgb, var(--bg-soft) 70%, transparent);
 }
 .team-mode-toggle button {
@@ -486,7 +486,7 @@
 .player-card.team-t1 { border-left: 3px solid #f472b6; }
 .team-switch { display: inline-flex; gap: 3px; }
 .team-btn {
-  width: 26px; height: 26px; border-radius: 6px; font-weight: 800; font-size: 0.8rem;
+  width: 26px; height: 26px; border-radius: var(--radius); font-weight: 800; font-size: 0.8rem;
   border: 1px solid var(--border); background: color-mix(in srgb, var(--bg-soft) 70%, transparent);
   color: var(--muted); cursor: pointer;
 }
@@ -707,7 +707,7 @@
   width: 100%;
   padding: 0.85rem;
   border: none;
-  border-radius: 0.7rem;
+  border-radius: var(--radius);
   font-weight: 800;
   font-size: 0.95rem;
   letter-spacing: 0.03em;
@@ -821,7 +821,7 @@
   border: 1px solid var(--border);
   color: var(--text);
   padding: 0.75rem 1rem;
-  border-radius: 0.6rem;
+  border-radius: var(--radius);
   margin: 0.4rem 0 0.8rem;
   font-size: 1rem;
   outline: none;
@@ -1015,7 +1015,7 @@
   gap: 0.25rem;
   text-align: left;
   padding: 0.6rem 0.7rem;
-  border-radius: 0.7rem;
+  border-radius: var(--radius);
   border: 1.5px solid var(--border);
   background: color-mix(in srgb, var(--bg-soft) 70%, transparent);
   color: var(--text);
@@ -1101,7 +1101,7 @@
 .uno-stepper-opts button {
   flex: 1;
   padding: 0.32rem 0.2rem;
-  border-radius: 0.45rem;
+  border-radius: var(--radius);
   border: 1px solid var(--border);
   background: color-mix(in srgb, var(--bg-soft) 70%, transparent);
   color: var(--text);
@@ -1131,7 +1131,7 @@
   align-items: flex-start;
   gap: 0.2rem;
   padding: 0.55rem 0.65rem;
-  border-radius: 0.7rem;
+  border-radius: var(--radius);
   border: 1.5px solid var(--border);
   background: color-mix(in srgb, var(--bg-soft) 70%, transparent);
   color: var(--text);
@@ -1164,7 +1164,7 @@
 .meme-import-row { display: flex; gap: 0.4rem; margin-bottom: 0.4rem; }
 .meme-import-input {
   padding: 0.5rem 0.7rem;
-  border-radius: 0.5rem;
+  border-radius: var(--radius);
   border: 1px solid var(--border);
   background: color-mix(in srgb, var(--bg-soft) 80%, transparent);
   color: var(--text);
@@ -1180,11 +1180,11 @@
 .meme-import-chip {
   display: inline-flex; align-items: center; gap: 0.4rem;
   padding: 0.25rem 0.5rem 0.25rem 0.25rem;
-  border-radius: 0.6rem;
+  border-radius: var(--radius);
   border: 1px solid var(--border);
   background: color-mix(in srgb, var(--bg-soft) 70%, transparent);
 }
-.meme-import-chip img { width: 26px; height: 26px; border-radius: 5px; object-fit: cover; }
+.meme-import-chip img { width: 26px; height: 26px; border-radius: var(--radius); object-fit: cover; }
 .meme-import-name { font-size: 0.74rem; font-weight: 700; color: var(--text); max-width: 90px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 .meme-import-remove {
   width: 18px; height: 18px; border-radius: 50%;
@@ -1202,7 +1202,7 @@
   display: flex;
   flex-direction: column;
   overflow: hidden;
-  border-radius: 18px;
+  border-radius: var(--radius);
   isolation: isolate;
 }
 
@@ -1240,7 +1240,7 @@
   flex: 0 0 auto;
   display: grid; place-items: center;
   font-size: 2.1rem;
-  border-radius: 18px;
+  border-radius: var(--radius);
   background: rgba(0, 0, 0, 0.3);
   border: 1px solid rgba(255, 255, 255, 0.18);
   box-shadow: 0 10px 30px -10px rgba(0, 0, 0, 0.6);
@@ -1272,7 +1272,7 @@
 .lobby-hero .btn-invite { background: rgba(255, 255, 255, 0.16); color: #fff; border-color: rgba(255, 255, 255, 0.25); }
 .lobby-hero .btn-invite:hover { background: #fff; color: #111; }
 .btn-hero-leave {
-  width: 40px; height: 40px; border-radius: 12px;
+  width: 40px; height: 40px; border-radius: var(--radius);
   background: rgba(0, 0, 0, 0.28); border: 1px solid rgba(255, 255, 255, 0.2);
   color: #fff; cursor: pointer; font-size: 1rem;
   transition: background 0.2s ease, transform 0.15s ease;
@@ -1327,7 +1327,7 @@
   align-items: center;
   gap: 0.4rem;
   padding: 1rem 0.7rem 0.8rem;
-  border-radius: 1rem;
+  border-radius: var(--radius);
   border: 1.5px solid var(--border);
   background: color-mix(in srgb, var(--bg-soft) 68%, transparent);
   transition: border-color 0.25s ease, box-shadow 0.25s ease, transform 0.2s ease, background 0.25s ease;
@@ -1389,7 +1389,7 @@
 .seat-empty, .seat-add {
   min-height: 130px;
   display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 0.4rem;
-  border-radius: 1rem;
+  border-radius: var(--radius);
   border: 1.5px dashed var(--border);
   color: var(--muted);
   font-family: inherit;

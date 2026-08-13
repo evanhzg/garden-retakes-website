@@ -8,7 +8,7 @@ import { resolveAvatars } from "@/lib/avatars";
 import { getLastSessionStandout } from "@/lib/hero";
 import Reveal from "@/components/home/Reveal";
 import LadderRows, { type LadderRow } from "@/components/home/LadderRows";
-import SeasonVote from "@/components/home/SeasonVote";
+
 import LiveCard from "@/components/home/LiveCard";
 import CountUp from "@/components/home/CountUp";
 import SkinsBanner from "@/components/home/SkinsBanner";
@@ -131,7 +131,7 @@ export default async function HomePage() {
           months of the year. */}
       <div className="home-hero-row">
         <Hero serverAddress={serverAddress} activePlayers={activePlayers} season={season.Name ?? `Season ${season.Id}`} />
-        <SeasonVote />
+
       </div>
 
       <Marquee items={marquee.length ? marquee : ["Garden Retakes", "Ranked sessions", "Season live"]} />
