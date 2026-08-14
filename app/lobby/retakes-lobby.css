@@ -113,7 +113,7 @@
 .rq-kick:hover { background: color-mix(in srgb, #e0533a 25%, transparent); color: var(--color-text); }
 .rq-invite { padding: 5px 12px; font-size: 12px; }
 
-/* --- mode picker ---------------------------------------------------------- */
+/* --- queue picker --------------------------------------------------------- */
 
 .rq-main {
   display: flex; flex-direction: column; align-items: center;
@@ -121,32 +121,57 @@
   padding: clamp(22px, 4vh, 40px) 18px;
   min-height: 380px; justify-content: center;
 }
-.rq-choose { margin: 0 0 18px; font-size: 13px; font-weight: 700; letter-spacing: 0.12em; text-transform: uppercase; color: var(--muted); }
+.rq-choose { margin: 0 0 12px; font-size: 13px; font-weight: 700; letter-spacing: 0.12em; text-transform: uppercase; color: var(--muted); }
 
-.rq-modes { display: grid; grid-template-columns: repeat(2, minmax(0, 200px)); gap: 14px; margin-bottom: 28px; }
-@media (max-width: 420px) { .rq-modes { grid-template-columns: minmax(0, 1fr); } }
-
-.rq-mode {
-  position: relative;
-  display: grid; gap: 3px;
-  padding: 20px 16px;
-  border-radius: var(--rq-radius);
-  border: 1.5px solid var(--rq-edge);
-  background: color-mix(in srgb, var(--color-text) 3%, transparent);
-  color: var(--color-text);
-  font: inherit; cursor: pointer; text-align: center;
-  transition: border-color 0.15s ease, background 0.15s ease, transform 0.15s ease;
+/* Three queues, one card each.
+ *
+ * The team size is set in the mono face because it is a figure, and the
+ * selected card is the only thing on this panel wearing the accent — which is
+ * how the page answers "which queue am I in" without a second label saying so. */
+.rq-queues {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 12px;
+  width: 100%; max-width: 660px;
+  margin: 0 0 20px;
 }
-.rq-mode:hover:not(:disabled) { border-color: color-mix(in srgb, var(--color-accent) 55%, transparent); transform: translateY(-2px); }
-.rq-mode.on {
+@media (max-width: 620px) { .rq-queues { grid-template-columns: minmax(0, 1fr); } }
+
+.rq-queue {
+  display: grid; gap: 4px; align-content: start;
+  padding: 16px 14px;
+  border: 2px solid var(--rq-edge);
+  border-radius: 0;
+  background: transparent;
+  color: var(--color-text);
+  font: inherit; text-align: left; cursor: pointer;
+  transition: border-color 0.15s ease, background 0.15s ease;
+}
+.rq-queue:hover:not(:disabled) { border-color: var(--color-accent); }
+.rq-queue.on {
   border-color: var(--color-accent);
   background: color-mix(in srgb, var(--color-accent) 12%, transparent);
 }
-.rq-mode:disabled { cursor: not-allowed; opacity: 0.55; }
-.rq-mode.blocked { opacity: 0.4; }
-.rq-mode-id { font-size: 30px; font-weight: 800; letter-spacing: -0.03em; line-height: 1; }
-.rq-mode-label { font-size: 14px; font-weight: 700; }
-.rq-mode-sub { font-size: 11.5px; color: var(--muted); }
+.rq-queue:disabled { cursor: not-allowed; opacity: 0.45; }
+
+.rq-queue-size {
+  font-family: var(--font-mono);
+  font-variant-numeric: tabular-nums;
+  font-size: 22px; font-weight: 700; line-height: 1; letter-spacing: -0.02em;
+}
+.rq-queue.on .rq-queue-size { color: var(--color-accent); }
+.rq-queue-label { font-size: 13.5px; font-weight: 800; }
+.rq-queue-sub { font-size: 11.5px; color: var(--muted); line-height: 1.35; }
+.rq-queue-sub.warn { color: var(--color-accent); font-weight: 700; }
+
+/* Said in words as well, right above the button that acts on it. */
+.rq-queue-current {
+  margin: 0 0 14px;
+  font-size: 12px; font-weight: 700;
+  letter-spacing: 0.14em; text-transform: uppercase;
+  color: var(--muted);
+}
+.rq-queue-current strong { color: var(--color-text); }
 
 .rq-play {
   padding: 16px 56px;
@@ -161,6 +186,13 @@
 .rq-searching h2 { margin: 6px 0 0; font-size: 13px; font-weight: 700; letter-spacing: 0.14em; text-transform: uppercase; color: var(--muted); }
 .rq-timer { font-size: clamp(40px, 7vw, 64px); font-weight: 800; letter-spacing: -0.03em; font-variant-numeric: tabular-nums; line-height: 1.05; }
 .rq-botfill { font-size: 12.5px; color: var(--color-accent); margin: 2px 0 14px; }
+
+/* A competitive queue is waiting for people, and says how many. Without this
+   the only difference between "nobody is queueing" and "it is broken" is how
+   long you are willing to sit there. */
+.rq-waiting { margin: 2px 0 2px; font-size: 12.5px; color: var(--muted); max-width: 42ch; }
+.rq-waiting b { color: var(--color-text); font-family: var(--font-mono); font-variant-numeric: tabular-nums; font-weight: 700; }
+.rq-waiting.hint { color: var(--color-accent); margin-bottom: 12px; }
 
 /* Three rings leaving the centre: a search that is obviously still running,
    without a spinner that implies a fixed amount of work is being done. */
@@ -372,6 +404,46 @@
   background: color-mix(in srgb, var(--color-text) 7%, transparent);
   font-size: 14px; font-weight: 600;
 }
+
+/* --- the hand-off to the game server -------------------------------------- */
+
+/* Four steps, drawn as four rules rather than a spinner. A spinner claims a
+   fixed amount of work is being done and says nothing about which part is slow;
+   the map load is the slow one and this says so while it happens. */
+.rq-server { display: grid; justify-items: center; gap: 10px; }
+.rq-server-steps { display: flex; gap: 6px; }
+.rq-server-pip {
+  width: 34px; height: 4px;
+  background: color-mix(in srgb, var(--color-text) 16%, transparent);
+  transition: background 0.2s ease;
+}
+.rq-server-pip.done { background: var(--color-accent); }
+.rq-server-pip.now { background: var(--color-accent); animation: rq-server-now 1.2s ease-in-out infinite; }
+@keyframes rq-server-now { 0%, 100% { opacity: 1; } 50% { opacity: 0.3; } }
+@media (prefers-reduced-motion: reduce) { .rq-server-pip.now { animation: none; } }
+html[data-motion="off"] .rq-server-pip.now { animation: none; }
+
+.rq-server-label {
+  font-size: 12px; font-weight: 700;
+  letter-spacing: 0.12em; text-transform: uppercase;
+  color: var(--muted);
+}
+
+/* A failed start is not a slow start. The screen has to stop pretending. */
+.rq-server-failed {
+  display: grid; justify-items: center; gap: 6px;
+  padding: 14px 18px;
+  border: 2px solid var(--color-accent);
+  background: color-mix(in srgb, var(--color-accent) 10%, transparent);
+  max-width: 48ch; text-align: center;
+}
+.rq-server-failed strong {
+  font-size: 12px; font-weight: 800;
+  letter-spacing: 0.12em; text-transform: uppercase;
+  color: var(--color-accent);
+}
+.rq-server-failed p { margin: 0; font-size: 12.5px; color: var(--muted); }
+.rq-server-failed code { font-family: var(--font-mono); font-size: 11px; color: var(--muted); }
 
 /* --- chat ----------------------------------------------------------------- */
 

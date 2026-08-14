@@ -371,6 +371,8 @@ type IdMaps = {
   keychainIndexes: Set<number>;
   stickerIndexById: Map<number, number>;
   stickerIndexes: Set<number>;
+  musicKitIndexById: Map<number, number>;
+  musicKitIndexes: Set<number>;
 };
 
 let idMaps: IdMaps | null = null;
@@ -386,9 +388,18 @@ function ensureIdMaps(): IdMaps {
     keychainIndexes: new Set(),
     stickerIndexById: new Map(),
     stickerIndexes: new Set(),
+    musicKitIndexById: new Map(),
+    musicKitIndexes: new Set(),
   };
 
   for (const item of CS2Economy.itemsAsArray) {
+    if (item.isMusicKit()) {
+      if (item.index !== undefined) {
+        maps.musicKitIndexById.set(item.id, item.index);
+        maps.musicKitIndexes.add(item.index);
+      }
+      continue;
+    }
     if (item.isAgent()) {
       if (item.def !== undefined) {
         maps.agentDefById.set(item.id, item.def);
@@ -454,6 +465,17 @@ export const toGameStickerDef = (value: number): number => {
 export const toGameKeychainDef = (value: number): number => {
   const maps = ensureIdMaps();
   return translate(value, maps.keychainIndexById, maps.keychainIndexes);
+};
+
+/**
+ * Music kits are addressed by their kit number — the small one, 1, 3, 4… — and
+ * not by the cs2-lib item id or by the shared `def` every music kit has in
+ * common. The plugin assigns it straight to `InventoryServices.MusicID`, so the
+ * wrong number here is silently no music rather than an error.
+ */
+export const toGameMusicKitDef = (value: number): number => {
+  const maps = ensureIdMaps();
+  return translate(value, maps.musicKitIndexById, maps.musicKitIndexes);
 };
 
 export function searchCharms(query: string, limit = 80): StickerEntry[] {

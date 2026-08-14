@@ -364,6 +364,19 @@ type PluginWeapon = {
 };
 
 /**
+ * A music kit is a kit number and, if it is StatTrak, something to count on.
+ *
+ * There is exactly one per player. CS2 does not equip music per side — the
+ * board offers a slot on each tab because every other slot has one, but the
+ * game has a single `MusicID` on the player and no notion of a CT playlist.
+ */
+type PluginMusicKit = {
+  def: number;
+  uid: number;
+  stattrak: number;
+};
+
+/**
  * An agent is a model and a set of patches, nothing else.
  *
  * Deliberately not a PluginWeapon: the plugin turns every field it is given
@@ -393,6 +406,8 @@ export type EquippedV4 = {
    * the plugin has no field to receive it.
    */
   agents: Record<number, PluginAgent>;
+  /** Omitted entirely when nothing is equipped — the plugin's field is nullable. */
+  musicKit?: PluginMusicKit;
 };
 
 /**
@@ -407,12 +422,14 @@ export type GameIdResolver = {
   agentDef: (value: number) => number;
   stickerDef: (value: number) => number;
   keychainDef: (value: number) => number;
+  musicKitDef: (value: number) => number;
 };
 
 const IDENTITY_IDS: GameIdResolver = {
   agentDef: (v) => v,
   stickerDef: (v) => v,
   keychainDef: (v) => v,
+  musicKitDef: (v) => v,
 };
 
 /** CS2 gives a weapon exactly one keychain, and it hangs in slot 0. */
@@ -525,6 +542,19 @@ export function toEquippedV4(
   if (agentT) result.agents[2] = withPatches(agentT, loadout.equippedPatchesT, store, ids);
   const agentCT = itemById(loadout.agentCT);
   if (agentCT) result.agents[3] = withPatches(agentCT, loadout.equippedPatchesCT, store, ids);
+
+  // One kit, not two. The board lets you set one per side because every other
+  // slot is per-side, but the game has a single MusicID per player — so the T
+  // pick is the one that counts, and the CT pick only stands in when there is
+  // no T pick at all. Serialising both would mean silently dropping one.
+  const musicKit = itemById(loadout.musicKitT) ?? itemById(loadout.musicKitCT);
+  if (musicKit) {
+    result.musicKit = {
+      def: ids.musicKitDef(musicKit.weaponDef),
+      uid: musicKit.uid,
+      stattrak: musicKit.statTrak ? 0 : -1,
+    };
+  }
 
   return result;
 }

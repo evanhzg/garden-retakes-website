@@ -1,7 +1,12 @@
 import { NextResponse } from "next/server";
 import { prisma } from "@/lib/db";
 import { normaliseStore, toEquippedV4, type GameIdResolver, type InventoryStore } from "@/lib/inventory";
-import { toGameAgentDef, toGameKeychainDef, toGameStickerDef } from "@/lib/economy";
+import {
+  toGameAgentDef,
+  toGameKeychainDef,
+  toGameMusicKitDef,
+  toGameStickerDef,
+} from "@/lib/economy";
 
 export const dynamic = "force-dynamic";
 
@@ -15,6 +20,7 @@ const GAME_IDS: GameIdResolver = {
   agentDef: toGameAgentDef,
   stickerDef: toGameStickerDef,
   keychainDef: toGameKeychainDef,
+  musicKitDef: toGameMusicKitDef,
 };
 
 // Public endpoint polled by the Garden-inventory plugin:

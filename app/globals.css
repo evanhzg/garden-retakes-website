@@ -5752,6 +5752,52 @@ html { scroll-behavior: smooth; }
 }
 .inv4-color.active { border-color: var(--color-text); }
 
+/* The two agents, side by side and always on screen.
+   Kept in the board head rather than in the collapsible type list because it
+   answers a question about the loadout as a whole, like the colour swatches and
+   the rarity chips it sits between. */
+.inv4-agents { display: grid; grid-template-columns: 1fr 1fr; gap: var(--space-2); }
+
+.inv4-agent {
+  display: flex; align-items: center; gap: 8px;
+  padding: 6px 8px; min-width: 0;
+  border: 1px solid var(--color-divider);
+  background: color-mix(in srgb, var(--color-text) 3%, transparent);
+  color: var(--color-text); font: inherit; text-align: left;
+  cursor: pointer;
+  transition: border-color 0.15s ease, background 0.15s ease;
+}
+.inv4-agent:hover { border-color: var(--color-accent); background: color-mix(in srgb, var(--color-accent) 8%, transparent); }
+/* The side stripe is the only colour difference: T and CT are read off it at a
+   glance without the two tiles becoming two different components. */
+.inv4-agent.t { border-left: 3px solid #e0a94a; }
+.inv4-agent.ct { border-left: 3px solid #6aa9e0; }
+.inv4-agent.empty { opacity: 0.72; }
+.inv4-agent.empty:hover { opacity: 1; }
+
+.inv4-agent-art {
+  flex: none;
+  width: 34px; height: 40px;
+  display: grid; place-items: center;
+  overflow: hidden;
+}
+.inv4-agent-art img { width: 100%; height: 100%; object-fit: contain; }
+.inv4-agent.empty .inv4-agent-art img { filter: grayscale(1); opacity: 0.55; }
+
+.inv4-agent-text { display: grid; gap: 1px; min-width: 0; }
+.inv4-agent-side {
+  font-size: 9.5px; font-weight: 800; letter-spacing: 0.12em;
+  color: color-mix(in srgb, var(--color-text) 55%, transparent);
+}
+.inv4-agent-name {
+  font-size: 12px; font-weight: 700;
+  overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
+}
+.inv4-agent-patches {
+  font-size: 10px;
+  color: color-mix(in srgb, var(--color-text) 60%, transparent);
+}
+
 .inv4-rarities { display: flex; gap: 6px; flex-wrap: wrap; }
 .inv4-rarity {
   display: inline-flex; align-items: center; gap: 5px;

@@ -49,14 +49,25 @@ type MatchPlayer = {
 };
 type VetoAction = { type: "ban" | "side"; team: number; map?: string; side?: string; auto: boolean; at: number };
 
+/** One of the three queues, as the server describes it. */
+type QueueInfo = { id: string; label: string; teamSize: number; bots: boolean };
+
+/** How the hand-off to the game server is going. */
+type ServerStatus = {
+  state: "idle" | "starting" | "ready" | "failed";
+  step: string | null;
+  error: string | null;
+};
+
 type State = {
-  modes: { id: string; label: string; teamSize: number }[];
+  queues: QueueInfo[];
   party: {
     id: string;
     leader: string;
     isLeader: boolean;
     name?: string | null;
-    mode: string;
+    /** Which queue this party is set to, not whether it is searching. */
+    queue: string;
     capacity: number;
     elo?: number;
     members: Member[];
@@ -64,10 +75,20 @@ type State = {
     queueReason: string | null;
   } | null;
   invite: { partyId: string; from: string; fromName: string | null; at: number } | null;
-  queue: { mode: string; since: number; searching: number; botFillAt: number } | null;
+  /** Present only while searching. */
+  search: {
+    queue: string;
+    label: string;
+    since: number;
+    searching: number;
+    needed: number;
+    bots: boolean;
+    botFillAt: number | null;
+  } | null;
   match: {
     id: string;
-    mode: string;
+    queue: string;
+    queueLabel: string;
     phase: "found" | "veto" | "ready";
     yourTeam: number | null;
     teams: { index: number; name: string; side: string | null; players: MatchPlayer[] }[];
@@ -82,7 +103,12 @@ type State = {
       step: number;
       plan: { type: string }[];
     } | null;
-    result: { map: string; connect: string | null; sides: (string | null)[] } | null;
+    result: {
+      map: string;
+      connect: string | null;
+      sides: (string | null)[];
+      server: ServerStatus;
+    } | null;
     chat: { from: string; name: string | null; text: string; at: number; team?: number | null }[];
   } | null;
   online: number;
@@ -104,6 +130,24 @@ const MAP_LABEL: Record<string, string> = {
 };
 
 const mapName = (id: string) => MAP_LABEL[id] ?? id.replace(/^de_/, "");
+
+type T = (k: string, v?: Record<string, string | number>) => string;
+
+/**
+ * A queue's name in the reader's language, falling back to the server's own.
+ *
+ * The three queues are translated; a fourth added on the server before it is
+ * added to the dictionaries should read as its English label rather than as the
+ * key, which is what `t()` alone would give.
+ */
+function queueName(t: T, id: string, fallback?: string | null) {
+  const key = `lobby.queue.${id}`;
+  const label = t(key);
+  return label === key ? fallback ?? id : label;
+}
+
+/** The steps of the hand-off to the game server, in the order the server takes them. */
+const SERVER_STEPS = ["map", "loading", "roster", "go"];
 
 /** A ticking `now`, so every deadline on screen counts down from one clock. */
 function useNow(active: boolean) {
@@ -212,7 +256,7 @@ export default function RetakesLobby({ signedIn, lobbyId }: { signedIn: boolean,
   useEffect(() => {
     if (!match) setHideMatchRoom(false);
   }, [match?.id]);
-  const now = useNow(Boolean(state?.queue || match));
+  const now = useNow(Boolean(state?.search || match));
 
   const partyForms = useRosterForm(party?.members.map((m: any) => m.steamId) ?? []);
 
@@ -277,8 +321,8 @@ export default function RetakesLobby({ signedIn, lobbyId }: { signedIn: boolean,
 
   // --------------------------------------------------------------- derived UI
 
-  const mode = party?.mode ?? "2v2";
-  const modeInfo = state?.modes.find((m) => m.id === mode);
+  const queueId = party?.queue ?? "classic";
+  const queueInfo = state?.queues.find((q) => q.id === queueId) ?? null;
 
   const onlineFriends = useMemo(
     () => friends.filter((f) => online.includes(f.friendId)),
@@ -408,8 +452,11 @@ export default function RetakesLobby({ signedIn, lobbyId }: { signedIn: boolean,
     );
   }
 
-  const queue = state?.queue ?? null;
-  const botIn = queue ? secondsTo(queue.botFillAt, now) : 0;
+  const search = state?.search ?? null;
+  const botIn = search?.botFillAt ? secondsTo(search.botFillAt, now) : 0;
+  // A minute in a queue with nobody else in it is long enough to wonder whether
+  // the button worked. It did; there is simply nobody there.
+  const waitedLong = Boolean(search && now - search.since > 60_000);
 
   return (
     <div className="rq">
@@ -588,7 +635,7 @@ export default function RetakesLobby({ signedIn, lobbyId }: { signedIn: boolean,
 
         {/* ------------------------------------------------------------- queue */}
         <main className="panel rq-main">
-          {queue ? (
+          {search ? (
             <div className="rq-searching">
               <div className="rq-radar" aria-hidden>
                 <span />
@@ -596,15 +643,26 @@ export default function RetakesLobby({ signedIn, lobbyId }: { signedIn: boolean,
                 <span />
               </div>
               <h2>{t("lobby.searching")}</h2>
-              <div className="rq-timer">{clock(now - queue.since)}</div>
+              <div className="rq-timer">{clock(now - search.since)}</div>
               <p className="muted">
-                {t("lobby.inqueue", { n: queue.searching, mode: modeInfo?.label ?? mode })}
+                {t("lobby.inqueue", { n: search.searching, mode: queueName(t, search.queue, search.label) })}
               </p>
-              {/* Said plainly rather than pretending a full lobby is imminent:
-                  on a server this size the honest answer is usually bots. */}
-              <p className="rq-botfill">
-                {botIn > 0 ? t("lobby.botfillin", { n: botIn }) : t("lobby.botfillnow")}
-              </p>
+              {search.bots ? (
+                /* Said plainly rather than pretending a full lobby is imminent:
+                   in the training queue the honest answer is always bots. */
+                <p className="rq-botfill">
+                  {botIn > 0 ? t("lobby.botfillin", { n: botIn }) : t("lobby.botfillnow")}
+                </p>
+              ) : (
+                <>
+                  {/* No bots are coming to this one. What it is waiting for is
+                      people, so it says how many and how many it has. */}
+                  <p className="rq-waiting">
+                    {t("lobby.waitingplayers", { n: search.searching, needed: search.needed })}
+                  </p>
+                  {waitedLong && <p className="rq-waiting hint">{t("lobby.waitinglong")}</p>}
+                </>
+              )}
               <button className="btn btn-ghost" onClick={() => send("rq:queue:leave")}>
                 {t("lobby.cancel")}
               </button>
@@ -654,13 +712,43 @@ export default function RetakesLobby({ signedIn, lobbyId }: { signedIn: boolean,
                 </div>
               )}
 
+              {/* ----------------------------------------------- queue picker */}
+              <h3 className="rq-choose">{t("lobby.choosequeue")}</h3>
+              <div className="rq-queues">
+                {(state?.queues ?? []).map((q) => {
+                  const tooBig = (party?.members.length ?? 1) > q.teamSize;
+                  const on = queueId === q.id;
+                  return (
+                    <button
+                      key={q.id}
+                      type="button"
+                      className={`rq-queue ${on ? "on" : ""}`}
+                      aria-pressed={on}
+                      disabled={!party?.isLeader || tooBig}
+                      onClick={() => send("rq:party:queue", { queue: q.id })}
+                    >
+                      <span className="rq-queue-size">{t("lobby.queue.size", { n: q.teamSize })}</span>
+                      <span className="rq-queue-label">{queueName(t, q.id, q.label)}</span>
+                      <span className="rq-queue-sub">{t(`lobby.queue.${q.id}sub`)}</span>
+                      {tooBig && (
+                        <span className="rq-queue-sub warn">{t("lobby.partytoobig", { n: q.teamSize })}</span>
+                      )}
+                    </button>
+                  );
+                })}
+              </div>
+
+              <p className="rq-queue-current">
+                {t("lobby.queue.current", { queue: queueName(t, queueId, queueInfo?.label) })}
+              </p>
+
               <div style={{ display: "flex", gap: "12px", marginBottom: "24px" }}>
                 <button
                   className="btn btn-primary rq-play"
                   disabled={(!party?.isLeader && !match) || (conflicts.length > 0 && !match)}
                   onClick={() => {
                     if (match) setHideMatchRoom(false);
-                    else send("rq:queue:join", { mode, safeQueue });
+                    else send("rq:queue:join", { queue: queueId, safeQueue });
                   }}
                   style={{ flex: 1 }}
                 >
@@ -677,36 +765,6 @@ export default function RetakesLobby({ signedIn, lobbyId }: { signedIn: boolean,
               </div>
 
               <p className="rq-online">{t("lobby.onlinenow", { n: state?.online ?? 0 })}</p>
-
-              <div className="rq-mode-toggle" style={{ display: 'flex', background: 'color-mix(in srgb, var(--color-text) 5%, transparent)', padding: '4px', marginTop: '24px', width: '100%', maxWidth: '300px' }}>
-                {(state?.modes ?? []).map((m) => {
-                  const tooBig = (party?.members.length ?? 1) > m.teamSize;
-                  const btnText = m.id === '2v2' ? '2vs' : m.id === '3v3' ? 'vs3' : m.label;
-                  return (
-                    <button
-                      key={m.id}
-                      className={`rq-toggle-btn ${mode === m.id ? 'active' : ''}`}
-                      disabled={!party?.isLeader || tooBig}
-                      onClick={() => send("rq:party:mode", { mode: m.id })}
-                      style={{ 
-                        flex: 1, 
-                        padding: '10px 20px', 
-                        borderRadius: '0', 
-                        border: 'none', 
-                        background: mode === m.id ? 'var(--color-accent)' : 'transparent', 
-                        color: mode === m.id ? '#fff' : 'var(--color-text)', 
-                        cursor: (!party?.isLeader || tooBig) ? 'not-allowed' : 'pointer',
-                        opacity: tooBig ? 0.4 : 1,
-                        fontWeight: 'bold',
-                        transition: 'all 0.2s',
-                        fontSize: '15px'
-                      }}
-                    >
-                      {btnText}
-                    </button>
-                  );
-                })}
-              </div>
             </>
           )}
         </main>
@@ -719,7 +777,7 @@ export default function RetakesLobby({ signedIn, lobbyId }: { signedIn: boolean,
           <ol className="rq-steps">
             <li>
               <strong>{t("lobby.step1")}</strong>
-              <span className="muted">{t("lobby.step1sub", { n: modeInfo?.teamSize ?? 2 })}</span>
+              <span className="muted">{t("lobby.step1sub", { n: queueInfo?.teamSize ?? 5 })}</span>
             </li>
             <li>
               <strong>{t("lobby.step2")}</strong>
@@ -885,7 +943,7 @@ function MatchRoom({
           {ready ? (
             <>
               <span className="rq-phase ready">{t("lobby.matchready")}</span>
-              <span className="muted">{t("lobby.mode", { mode: match.mode })}</span>
+              <span className="muted">{queueName(t, match.queue, match.queueLabel)}</span>
             </>
           ) : (
             <>
@@ -937,6 +995,10 @@ function MatchRoom({
                   </div>
                 ))}
               </div>
+              {/* Three states, and the third one is the point: a start that
+                  failed says so instead of spinning until people leave. The
+                  connect string only ever appears alongside a server that has
+                  confirmed it is on the map and has taken the roster. */}
               <div className="rq-connect-wrapper" style={{ minHeight: "80px", display: "flex", alignItems: "center", justifyContent: "center" }}>
                 {match.result.connect ? (
                   <div className="rq-connect">
@@ -953,10 +1015,30 @@ function MatchRoom({
                       </a>
                     </div>
                   </div>
+                ) : match.result.server?.state === "failed" ? (
+                  <div className="rq-server-failed" role="alert">
+                    <strong>{t("lobby.server.failed")}</strong>
+                    <p>{t("lobby.server.failedblurb")}</p>
+                    <code>
+                      {match.result.server.step ?? "?"} · {match.result.server.error ?? "?"}
+                    </code>
+                  </div>
                 ) : (
-                  <div className="rq-loading-server" style={{ display: "flex", flexDirection: "column", alignItems: "center", gap: "0.5rem" }}>
-                    <div className="spinner" style={{ width: "24px", height: "24px", border: "2px solid rgba(255,255,255,0.2)", borderTopColor: "white", borderRadius: "50%", animation: "spin 1s linear infinite" }}></div>
-                    <span style={{ fontSize: "14px", color: "var(--fg-muted)" }}>Configuring server...</span>
+                  <div className="rq-server">
+                    <div className="rq-server-steps" aria-hidden>
+                      {SERVER_STEPS.map((s, i) => {
+                        const at = SERVER_STEPS.indexOf(match.result?.server?.step ?? "map");
+                        return (
+                          <span
+                            key={s}
+                            className={`rq-server-pip ${i < at ? "done" : ""} ${i === at ? "now" : ""}`}
+                          />
+                        );
+                      })}
+                    </div>
+                    <span className="rq-server-label">
+                      {t(`lobby.server.step.${match.result.server?.step ?? "map"}`)}
+                    </span>
                   </div>
                 )}
               </div>

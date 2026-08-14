@@ -15,18 +15,99 @@
  * and there is no amount of state here worth optimising for — a party is at
  * most three people and a match at most six.
  *
- * Bots fill empty slots after a grace period rather than never. A queue with
- * one real person in it has to do something, and "wait for five strangers" is
- * not it on a server this size.
+ * Bots fill empty slots in the training queue after a grace period rather than
+ * never, and in that queue only. A competitive queue that quietly hands you
+ * four robots is not a competitive queue, and the rating attached to it stops
+ * meaning anything the first time it happens.
  */
 
-// Both modes are retakes — the only thing that differs is how many people are
-// on a side. They were briefly labelled Wingman and Trios, which named two
-// different game modes we do not run and pointed 2v2 at the Wingman map pool.
-const MODES = {
-  "2v2": { id: "2v2", teamSize: 2, label: "Retakes", pool: "retakes" },
-  "3v3": { id: "3v3", teamSize: 3, label: "Retakes", pool: "retakes" },
+/** How long the training queue waits for humans before bots are offered. */
+const BOT_FILL_MS = 15_000;
+
+/**
+ * The three queues.
+ *
+ * They are queues, not game modes: all three are retakes on the same map pool,
+ * and what separates them is who you are matched with. `bots` is the only one
+ * allowed to invent players — a training queue exists so one person can walk
+ * the whole flow end to end without five strangers, which is also why it is the
+ * small one.
+ *
+ * `band` is how far apart two parties may be rated, widening the longer the
+ * party at the head of the queue has waited: `base` points at zero seconds,
+ * plus `widen` per second, and never more than `base + max` in total. Premium
+ * is the same game as classic with a tighter band and a slower widen — it takes
+ * longer to fill and the lobby it fills with is closer together. That band is
+ * the only thing separating the two, and it is meant to be tuned here.
+ */
+const QUEUES = {
+  bots: {
+    id: "bots",
+    label: "Bot Training",
+    teamSize: 2,
+    pool: "retakes",
+    /** The only queue that may fill empty slots with bots. */
+    bots: true,
+    botFillMs: BOT_FILL_MS,
+    band: { base: 400, widen: 40, max: 1600 },
+  },
+  classic: {
+    id: "classic",
+    label: "Classic Competitive",
+    teamSize: 3,
+    pool: "retakes",
+    bots: false,
+    botFillMs: null,
+    band: { base: 100, widen: 12, max: 900 },
+  },
+  premium: {
+    id: "premium",
+    label: "Premium Competitive",
+    teamSize: 3,
+    pool: "retakes",
+    bots: false,
+    botFillMs: null,
+    band: { base: 50, widen: 5, max: 300 },
+  },
 };
+
+/**
+ * Team sizes have to be ones the game server will accept.
+ *
+ * The plugin validates the roster against `Competitive.AllowedTeamSizes` in
+ * rankings.json — [2, 3] as shipped — and refuses anything else, so a queue
+ * that formed 5v5 here would build a lobby, run a veto, change the map and then
+ * be turned away at the last command with "team size 5 is not allowed". Which
+ * is also the right answer: this is a retakes server, the map configs hold
+ * retake spawns per bombsite, and five a side is not a retake.
+ *
+ * Raising it is a two-sided change: this list and AllowedTeamSizes both, plus
+ * enough spawns in the map configs to stand everyone up.
+ */
+const SERVER_ALLOWED_TEAM_SIZES = [2, 3];
+
+for (const q of Object.values(QUEUES)) {
+  if (!SERVER_ALLOWED_TEAM_SIZES.includes(q.teamSize)) {
+    throw new Error(
+      `queue "${q.id}" is ${q.teamSize}v${q.teamSize}, which the game server will refuse ` +
+      `(allowed: ${SERVER_ALLOWED_TEAM_SIZES.join(", ")})`
+    );
+  }
+}
+
+/** What a party is set to before anyone chooses. */
+const DEFAULT_QUEUE = "classic";
+
+const isQueueId = (id) => typeof id === "string" && Object.hasOwn(QUEUES, id);
+
+/**
+ * Where the finished match tells people to connect.
+ *
+ * One place, one environment variable. It was written out twice inside the
+ * ready handler, which is exactly the kind of string that gets changed in one
+ * of its two homes.
+ */
+const CONNECT_ADDRESS = process.env.RETAKES_CONNECT_ADDRESS || "adrien.gamergod.net:26541";
 
 // Active duty plus Overpass, Train and Vertigo — the ten maps the site has
 // calibrated radars and art for, which is the same list.
@@ -42,8 +123,6 @@ const BOT_NAMES = [
   "coldzera", "olofmeister", "dupreeh", "electronic", "sh1ro", "m0NESY",
 ];
 
-/** How long a solo queue waits for humans before bots are offered. */
-const BOT_FILL_MS = 15_000;
 /** How long everyone has to accept a found match. */
 const ACCEPT_MS = 20_000;
 /** How long one veto turn lasts before it is taken automatically. */
@@ -91,7 +170,12 @@ function effectiveElo(ratings) {
 }
 
 /** How far apart two parties may be, widening the longer they have waited. */
-const acceptableGap = (secondsWaiting) => 100 + Math.min(900, secondsWaiting * 12);
+const acceptableGap = (cfg, secondsWaiting) =>
+  cfg.band.base + Math.min(cfg.band.max, Math.max(0, secondsWaiting) * cfg.band.widen);
+
+/** How often the map-load gate re-reads `status`, and for how long it keeps trying. */
+const STATUS_POLL_MS = 3_000;
+const STATUS_POLL_LIMIT = 30;
 
 const now = () => Date.now();
 const uid = (prefix) => `${prefix}_${Math.random().toString(36).slice(2, 10)}`;
@@ -103,8 +187,8 @@ function attachRetakesMatchmaking(io, { connectedUsers, loadRatings, prisma }) {
   const partyOf = new Map();
   /** steamId -> { partyId, from, at } */
   const invites = new Map();
-  /** mode -> [partyId] in join order */
-  const queues = new Map(Object.keys(MODES).map((m) => [m, []]));
+  /** queue id -> [partyId] in join order */
+  const queues = new Map(Object.keys(QUEUES).map((q) => [q, []]));
   /** matchId -> match */
   const matches = new Map();
   /** steamId -> matchId */
@@ -156,7 +240,7 @@ function attachRetakesMatchmaking(io, { connectedUsers, loadRatings, prisma }) {
       leader: String(steamId),
       name: null,
       members: [{ steamId: String(steamId), name: name ?? null, ready: true, elo: STARTING_ELO, matches: 0 }],
-      mode: "2v2",
+      queue: DEFAULT_QUEUE,
       queuedAt: null,
       createdAt: now(),
     };
@@ -165,7 +249,7 @@ function attachRetakesMatchmaking(io, { connectedUsers, loadRatings, prisma }) {
     if (prisma) {
       await prisma.retakesLobby.upsert({
         where: { Id: id },
-        create: { Id: id, LeaderId: BigInt(steamId), Mode: "2v2" },
+        create: { Id: id, LeaderId: BigInt(steamId), Mode: DEFAULT_QUEUE },
         update: {}
       }).catch(console.error);
     }
@@ -191,7 +275,10 @@ function attachRetakesMatchmaking(io, { connectedUsers, loadRatings, prisma }) {
             leader: String(steamId),
             name: null,
             members: [{ steamId: String(steamId), name: name ?? null, ready: true, elo: STARTING_ELO, matches: 0 }],
-            mode: dbLobby.Mode,
+            // Rows written before the queues existed carry the old `2v2`/`3v3`
+            // labels. Those are not queues any more, so they read as the
+            // default rather than as a queue nobody can join.
+            queue: isQueueId(dbLobby.Mode) ? dbLobby.Mode : DEFAULT_QUEUE,
             queuedAt: null,
             createdAt: now(),
           };
@@ -227,12 +314,15 @@ function attachRetakesMatchmaking(io, { connectedUsers, loadRatings, prisma }) {
     }
   }
 
+  /** The configuration of the queue a party is set to. */
+  const queueOf = (party) => QUEUES[party?.queue] ?? QUEUES[DEFAULT_QUEUE];
+
   /** A party can never hold more people than a whole team. */
-  const partyCapacity = (party) => MODES[party.mode]?.teamSize ?? 2;
+  const partyCapacity = (party) => queueOf(party).teamSize;
 
   function leaveQueue(party, reason) {
     if (!party?.queuedAt) return;
-    const q = queues.get(party.mode);
+    const q = queues.get(party.queue);
     const i = q ? q.indexOf(party.id) : -1;
     if (i >= 0) q.splice(i, 1);
     party.queuedAt = null;
@@ -261,14 +351,21 @@ function attachRetakesMatchmaking(io, { connectedUsers, loadRatings, prisma }) {
     const match = matchId ? matches.get(matchId) : null;
     const invite = invites.get(id) ?? null;
 
+    const cfg = party ? queueOf(party) : null;
+
     return {
-      modes: Object.values(MODES).map((m) => ({ id: m.id, label: m.label, teamSize: m.teamSize })),
+      queues: Object.values(QUEUES).map((q) => ({
+        id: q.id,
+        label: q.label,
+        teamSize: q.teamSize,
+        bots: q.bots,
+      })),
       party: party && {
         id: party.id,
         leader: party.leader,
         isLeader: party.leader === id,
         name: party.name,
-        mode: party.mode,
+        queue: party.queue,
         capacity: partyCapacity(party),
         members: party.members,
         elo: partyElo(party),
@@ -276,12 +373,20 @@ function attachRetakesMatchmaking(io, { connectedUsers, loadRatings, prisma }) {
         queueReason: party.queueReason ?? null,
       },
       invite: invite && { partyId: invite.partyId, from: invite.from, fromName: invite.fromName, at: invite.at },
-      queue: party?.queuedAt
+      // What the search is doing right now. Separate from `party.queue`, which
+      // is only which queue the party is set to — you can be set to premium and
+      // not be searching.
+      search: party?.queuedAt
         ? {
-            mode: party.mode,
+            queue: party.queue,
+            label: cfg.label,
             since: party.queuedAt,
-            searching: queuedPlayerCount(party.mode),
-            botFillAt: party.queuedAt + BOT_FILL_MS,
+            searching: queuedPlayerCount(party.queue),
+            // What a full lobby costs, so a queue that is waiting can say what
+            // it is waiting for instead of spinning.
+            needed: cfg.teamSize * 2,
+            bots: cfg.bots,
+            botFillAt: cfg.bots && cfg.botFillMs ? party.queuedAt + cfg.botFillMs : null,
           }
         : null,
       match: match ? publicMatch(match, id) : null,
@@ -289,8 +394,8 @@ function attachRetakesMatchmaking(io, { connectedUsers, loadRatings, prisma }) {
     };
   }
 
-  function queuedPlayerCount(mode) {
-    const q = queues.get(mode) ?? [];
+  function queuedPlayerCount(queueId) {
+    const q = queues.get(queueId) ?? [];
     return q.reduce((n, pid) => n + (parties.get(pid)?.members.length ?? 0), 0);
   }
 
@@ -298,7 +403,8 @@ function attachRetakesMatchmaking(io, { connectedUsers, loadRatings, prisma }) {
     const mine = match.teams.findIndex((t) => t.players.some((p) => p.steamId === viewerId));
     return {
       id: match.id,
-      mode: match.mode,
+      queue: match.queue,
+      queueLabel: QUEUES[match.queue]?.label ?? match.queue,
       phase: match.phase,
       yourTeam: mine < 0 ? null : mine,
       teams: match.teams.map((t, i) => ({
@@ -332,7 +438,18 @@ function attachRetakesMatchmaking(io, { connectedUsers, loadRatings, prisma }) {
             plan: match.plan,
           }
         : null,
-      result: match.phase === "ready" ? { map: match.map, connect: match.connect, sides: match.teams.map((t) => t.side) } : null,
+      // `connect` stays null until the game server has confirmed it is on the
+      // right map and taken the roster. `server` is what the lobby shows in the
+      // meantime — including when it never gets there, which is a thing the
+      // screen has to be able to say.
+      result: match.phase === "ready"
+        ? {
+            map: match.map,
+            connect: match.connect,
+            sides: match.teams.map((t) => t.side),
+            server: { state: match.server.state, step: match.server.step, error: match.server.error },
+          }
+        : null,
       // Team chat is filtered here, not in the browser.
       //
       // It used to be sent whole and hidden with a client-side filter, which is
@@ -359,15 +476,15 @@ function attachRetakesMatchmaking(io, { connectedUsers, loadRatings, prisma }) {
     }
   }
 
-  function syncQueue(mode) {
-    for (const pid of queues.get(mode) ?? []) syncParty(parties.get(pid));
+  function syncQueue(queueId) {
+    for (const pid of queues.get(queueId) ?? []) syncParty(parties.get(pid));
   }
 
   // -------------------------------------------------------------- match-making
 
-  function tryMatch(mode) {
-    const cfg = MODES[mode];
-    const q = queues.get(mode);
+  function tryMatch(queueId) {
+    const cfg = QUEUES[queueId];
+    const q = queues.get(queueId);
     if (!cfg || !q) return;
     const needed = cfg.teamSize * 2;
 
@@ -383,7 +500,7 @@ function attachRetakesMatchmaking(io, { connectedUsers, loadRatings, prisma }) {
     if (!head) return;
 
     const waited = (now() - (head.queuedAt ?? now())) / 1000;
-    const tolerance = acceptableGap(waited);
+    const tolerance = acceptableGap(cfg, waited);
     const anchor = partyElo(head);
 
     const candidates = q
@@ -405,14 +522,22 @@ function attachRetakesMatchmaking(io, { connectedUsers, loadRatings, prisma }) {
     if (total !== needed) return;
 
     for (const p of chosen) leaveQueue(p, "matched");
-    startMatch(mode, chosen, []);
-    syncQueue(mode);
+    startMatch(queueId, chosen, []);
+    syncQueue(queueId);
   }
 
-  /** Bots exist so one person can still play. They accept instantly and ban randomly. */
+  /**
+   * Bots exist so one person can still walk the flow. They accept instantly and
+   * ban randomly.
+   *
+   * The guard is the point: this is reachable from a timer, and a timer that
+   * fires against a competitive queue would quietly turn it into training. Only
+   * the queue that says it may have bots gets them, and it says so in one place.
+   */
   function fillWithBots(party) {
     if (!party?.queuedAt) return;
-    const cfg = MODES[party.mode];
+    const cfg = queueOf(party);
+    if (!cfg.bots) return;
     const needed = cfg.teamSize * 2;
     const humans = party.members.length;
     const pool = BOT_NAMES.slice().sort(() => Math.random() - 0.5);
@@ -423,19 +548,19 @@ function attachRetakesMatchmaking(io, { connectedUsers, loadRatings, prisma }) {
       accepted: true,
     }));
     leaveQueue(party, "bots");
-    startMatch(party.mode, [party], bots);
-    syncQueue(party.mode);
+    startMatch(party.queue, [party], bots);
+    syncQueue(party.queue);
   }
 
-  function startMatch(mode, partiesIn, bots) {
-    const cfg = MODES[mode];
+  function startMatch(queueId, partiesIn, bots) {
+    const cfg = QUEUES[queueId];
     const id = uid("m");
 
     // Parties are placed whole — splitting a duo across both teams is the one
     // thing a party is for.
     const teams = [
-      { name: "Team A", players: [], side: null },
-      { name: "Team B", players: [], side: null },
+      { name: "Team A", players: [], side: null, sources: [] },
+      { name: "Team B", players: [], side: null, sources: [] },
     ];
     const sorted = [...partiesIn].sort((a, b) => b.members.length - a.members.length);
     // Only parties of two or more get a premade marker. A solo queuer is not
@@ -445,6 +570,7 @@ function attachRetakesMatchmaking(io, { connectedUsers, loadRatings, prisma }) {
     for (const party of sorted) {
       const marker = party.members.length > 1 ? ++premadeIndex : null;
       const target = teams[0].players.length <= teams[1].players.length ? teams[0] : teams[1];
+      target.sources.push(party);
       for (const m of party.members) {
         target.players.push({
           steamId: m.steamId,
@@ -470,10 +596,21 @@ function attachRetakesMatchmaking(io, { connectedUsers, loadRatings, prisma }) {
       }
     }
 
+    // A team that is one named party keeps its name — it is the name that team
+    // already answers to, and it is what the game server is told the side is
+    // called. Anything else stays Team A / Team B, because a lobby stitched out
+    // of three solo queuers does not have a name yet.
+    for (const t of teams) {
+      const named = t.sources.length === 1 ? t.sources[0].name : null;
+      if (named) t.name = named;
+      delete t.sources;
+    }
+    if (teams[0].name === teams[1].name) teams[1].name = `${teams[1].name} 2`;
+
     const pool = MAP_POOLS[cfg.pool].slice();
     const match = {
       id,
-      mode,
+      queue: queueId,
       phase: "found",
       teams,
       pool,
@@ -488,6 +625,8 @@ function attachRetakesMatchmaking(io, { connectedUsers, loadRatings, prisma }) {
       turnDeadline: null,
       map: null,
       connect: null,
+      /** How the hand-off to the game server is going: idle → starting → ready | failed. */
+      server: { state: "idle", step: null, error: null },
       chat: [],
       humanCount: teams.flatMap((t) => t.players).filter((p) => !p.bot).length,
       acceptedCount: 0,
@@ -638,7 +777,13 @@ function attachRetakesMatchmaking(io, { connectedUsers, loadRatings, prisma }) {
     const host = process.env.RCON_HOST;
     const port = parseInt(process.env.RCON_PORT || "27015", 10);
     const password = process.env.RCON_PASSWORD;
-    if (!host || !password) return Promise.resolve("");
+    // An unset password used to resolve as an empty string, which reads to every
+    // caller as "it ran and said nothing". It did not run, and a start sequence
+    // that believes it did is exactly how a lobby gets a connect string for a
+    // server nobody ever spoke to.
+    if (!host || !password) {
+      return Promise.reject(new Error("RCON is not configured (RCON_HOST / RCON_PASSWORD)"));
+    }
 
     return new Promise((resolve, reject) => {
       const socket = net.createConnection({ host, port, timeout: 6000 });
@@ -687,11 +832,211 @@ function attachRetakesMatchmaking(io, { connectedUsers, loadRatings, prisma }) {
     });
   }
 
+  /**
+   * One RCON command, said out loud.
+   *
+   * Every step of the hand-off is logged with what was sent and what came back.
+   * The other half of this conversation is a plugin on another machine, so this
+   * log is the only place a start that did not happen can be read from.
+   */
+  async function rconStep(matchId, command) {
+    console.log(`[retakes ${matchId}] rcon > ${command}`);
+    try {
+      const out = await rconExec(command);
+      const line = String(out ?? "").replace(/\s+/g, " ").trim();
+      if (line) console.log(`[retakes ${matchId}] rcon < ${line.slice(0, 300)}`);
+      return out;
+    } catch (err) {
+      console.error(`[retakes ${matchId}] rcon ! ${command} — ${err?.message ?? err}`);
+      throw err;
+    }
+  }
+
+  /**
+   * A team name the plugin can read as a single argument.
+   *
+   * `css_cr_team 0 <slug> <ids…>` is positional, so a name with a space in it
+   * would be taken as a name followed by a SteamID that is not one.
+   */
+  function teamSlug(name, fallback) {
+    const slug = String(name ?? "")
+      .normalize("NFKD")
+      .replace(/[^A-Za-z0-9]+/g, "-")
+      .replace(/-{2,}/g, "-")
+      .replace(/^-+|-+$/g, "")
+      .slice(0, 24);
+    return slug || fallback;
+  }
+
+  /** Real SteamID64s only — a bot's `bot_8f2k1x9c` is not one and is never sent. */
+  const rosterIds = (team) =>
+    team.players
+      .filter((p) => !p.bot && /^\d{5,20}$/.test(String(p.steamId)))
+      .map((p) => String(p.steamId));
+
+  /**
+   * The map `status` says is loaded, or null when it does not say.
+   *
+   * Read with a regex rather than by matching `map     : ` literally: the
+   * column width is the server's to change, and a workshop map answers with a
+   * path rather than a bare name.
+   */
+  function loadedMap(statusOutput) {
+    const m = /^\s*map\s*[:=]\s*(\S+)/im.exec(String(statusOutput ?? ""));
+    return m ? m[1].split("/").pop().trim() : null;
+  }
+
+  /**
+   * Resolve once the server reports it is on `match.map`; reject if it never does.
+   *
+   * This is the gate, not a progress bar running beside one. The roster only
+   * means anything to a server that has finished loading the level it will be
+   * played on — sent during the change, it is sent into a level about to be
+   * torn down.
+   */
+  function waitForMap(match) {
+    return new Promise((resolve, reject) => {
+      let attempts = 0;
+      const tick = async () => {
+        if (!matches.has(match.id)) return reject(new Error("match ended before the server was ready"));
+        attempts += 1;
+        let reported = null;
+        try {
+          reported = loadedMap(await rconExec("status"));
+        } catch (err) {
+          // A server mid-change refuses connections. That is the ordinary shape
+          // of "not yet", and only matters if it is still true at the deadline.
+          console.log(
+            `[retakes ${match.id}] status ${attempts}/${STATUS_POLL_LIMIT} — ${err?.message ?? err}`
+          );
+        }
+        if (reported === match.map) {
+          console.log(`[retakes ${match.id}] ${match.map} loaded after ${attempts} polls`);
+          return resolve();
+        }
+        if (attempts >= STATUS_POLL_LIMIT) {
+          return reject(
+            new Error(`server never reported ${match.map} (last seen: ${reported ?? "unknown"})`)
+          );
+        }
+        setTimeout(tick, STATUS_POLL_MS);
+      };
+      setTimeout(tick, STATUS_POLL_MS);
+    });
+  }
+
+  /** A short, safe reason the lobby can be shown and a bug report can quote. */
+  function failureCode(err) {
+    const message = String(err?.message ?? err ?? "");
+    if (message.includes("not configured")) return "rcon_unconfigured";
+    if (message.includes("never reported")) return "map_timeout";
+    if (message.includes("match ended")) return "abandoned";
+    // The server was reachable and on the right map; it read the roster and
+    // said no. That is a different bug from a network one, and worth its own
+    // code so the log points at the plugin rather than at the connection.
+    if (message.includes("plugin refused")) return "plugin_refused";
+    return "rcon_error";
+  }
+
+  /**
+   * Hand the finished veto to the game server.
+   *
+   * The sequence is the plugin's, and it is roster-driven: reset, both rosters
+   * by SteamID64, the side team 0 won in the veto, then go. The single `css_cr`
+   * this replaced returns immediately when it is called from a console instead
+   * of by a player, which is why a match has never actually started.
+   */
+  async function startServer(match) {
+    let step = "map";
+    const setStep = (next) => {
+      step = next;
+      match.server = { state: "starting", step: next, error: null };
+      syncMatch(match);
+    };
+
+    try {
+      setStep("map");
+      await rconStep(match.id, `map ${match.map}`);
+
+      setStep("loading");
+      await waitForMap(match);
+
+      const rosters = match.teams.map(rosterIds);
+
+      // A rated match needs two rosters of real accounts. The training queue
+      // fills with bots, which have no SteamID64 to name, so there is nothing
+      // for the plugin to build a competitive match out of — and asking it to
+      // anyway would have it refuse, quietly, while this went on to hand out a
+      // connect string for a match that never started. Training gets the map
+      // and the address, and says so.
+      if (rosters.some((ids) => ids.length === 0)) {
+        // Straight to ready rather than through setStep: "training" is not one
+        // of the steps the lobby draws pips for, and flashing an unknown one
+        // would render its missing translation key.
+        console.log(
+          `[retakes ${match.id}] bots on a side — map only, no competitive match`
+        );
+        match.connect = CONNECT_ADDRESS;
+        match.server = { state: "ready", step: null, error: null, competitive: false };
+        syncMatch(match);
+        return;
+      }
+
+      setStep("roster");
+      await rconStep(match.id, "css_cr_reset");
+      for (let i = 0; i < match.teams.length; i++) {
+        const args = [
+          `css_cr_team ${i} ${teamSlug(match.teams[i].name, `team-${i}`)}`,
+          ...rosters[i],
+        ];
+        await rconStep(match.id, args.join(" "));
+      }
+      await rconStep(match.id, `css_cr_side 0 ${match.teams[0].side === "T" ? "T" : "CT"}`);
+
+      setStep("go");
+      // The plugin answers every one of these commands, and the answer is the
+      // only way to know it agreed. It replies "CR: started …" on success and
+      // "CR: <why not>" on anything else — and because a refusal is a reply and
+      // not an RCON error, not reading it meant a rejected match still ended up
+      // on screen as ready.
+      const started = String(await rconStep(match.id, `css_cr_go ${match.id}`) ?? "");
+      if (!/CR:\s*started/i.test(started)) {
+        throw new Error(`plugin refused the match: ${started.replace(/\s+/g, " ").trim() || "no reply"}`);
+      }
+
+      // Not load-bearing: it is here so the log carries the plugin's own account
+      // of what it believes it was just told.
+      await rconStep(match.id, "css_cr_status").catch(() => {});
+
+      match.connect = CONNECT_ADDRESS;
+      match.server = { state: "ready", step: null, error: null, competitive: true };
+      console.log(`[retakes ${match.id}] live on ${match.map} — ${CONNECT_ADDRESS}`);
+      syncMatch(match);
+    } catch (err) {
+      // No connect string, and the lobby is told so. A party sent to a server
+      // that never came up spends the linger blaming its own game; being told
+      // it failed is worse news and better information.
+      match.connect = null;
+      match.server = { state: "failed", step, error: failureCode(err) };
+      console.error(`[retakes ${match.id}] start failed at "${step}":`, err?.message ?? err);
+      syncMatch(match);
+      for (const t of match.teams) {
+        for (const p of t.players) {
+          if (!p.bot) emitTo(p.steamId, "rq:notice", { kind: "error", code: "server_failed" });
+        }
+      }
+    }
+  }
+
   function finishVeto(match) {
     clearTimeout(matchTimers.get(match.id));
     match.phase = "ready";
     match.map = match.remaining[0] ?? match.pool[0];
-    match.connect = null; // Will be set once server is ready
+    // Set once, in startServer, and only after the server has said it is on the
+    // map. There is no fallback timer: an address for a server that is not
+    // ready is worse than no address at all.
+    match.connect = null;
+    match.server = { state: "starting", step: "map", error: null };
     match.turnDeadline = null;
     matchTimers.set(
       match.id,
@@ -701,46 +1046,26 @@ function attachRetakesMatchmaking(io, { connectedUsers, loadRatings, prisma }) {
       }, READY_LINGER_MS)
     );
     syncMatch(match);
-    
-    // Configure server: change map and start competitive retakes
-    rconExec(`map ${match.map}`).then(() => {
-      setTimeout(() => rconExec("css_cr"), 5000);
-      
-      let attempts = 0;
-      const poll = setInterval(() => {
-        attempts++;
-        if (attempts > 30) {
-          clearInterval(poll);
-          // Fallback just in case
-          match.connect = "adrien.gamergod.net:26541";
-          syncMatch(match);
-          return;
-        }
-        
-        rconExec("status").then(out => {
-          // Verify map matches and possibly check game mode if status provides it
-          // status output usually has: map     : de_mirage
-          if (out.includes(`map     : ${match.map}`)) {
-            match.connect = "adrien.gamergod.net:26541";
-            syncMatch(match);
-            clearInterval(poll);
-          }
-        }).catch(err => console.error("RCON status error", err));
-      }, 3000);
-    }).catch(console.error);
+
+    startServer(match).catch((err) => console.error(`[retakes ${match.id}] start crashed:`, err));
   }
 
   function enqueue(party) {
-    const q = queues.get(party.mode);
+    const q = queues.get(party.queue);
     if (!q || q.includes(party.id)) return;
     party.queuedAt = now();
     party.queueReason = null;
     q.push(party.id);
 
-    const t = setTimeout(() => fillWithBots(party), BOT_FILL_MS);
-    botTimers.set(party.id, t);
+    // The bot-fill timer is armed for the training queue and nowhere else. It
+    // used to be armed unconditionally, which is the whole of how bots would
+    // have ended up in a competitive match: not a decision, a timeout.
+    const cfg = queueOf(party);
+    if (cfg.bots && cfg.botFillMs) {
+      botTimers.set(party.id, setTimeout(() => fillWithBots(party), cfg.botFillMs));
+    }
 
-    tryMatch(party.mode);
+    tryMatch(party.queue);
   }
 
   /** The captain speaks for their team; anyone else's veto click is ignored. */
@@ -776,15 +1101,15 @@ function attachRetakesMatchmaking(io, { connectedUsers, loadRatings, prisma }) {
       refreshRatings(party).then(() => syncParty(party));
     });
 
-    socket.on("rq:party:mode", ({ mode } = {}) => {
+    socket.on("rq:party:queue", ({ queue } = {}) => {
       const id = me();
       const party = partyFor(id);
-      if (!party || party.leader !== id || !MODES[mode]) return;
-      if (party.members.length > MODES[mode].teamSize) {
+      if (!party || party.leader !== id || !isQueueId(queue)) return;
+      if (party.members.length > QUEUES[queue].teamSize) {
         return socket.emit("rq:notice", { kind: "error", code: "party_too_big" });
       }
-      leaveQueue(party, "mode_changed");
-      party.mode = mode;
+      leaveQueue(party, "queue_changed");
+      party.queue = queue;
       syncParty(party);
     });
 
@@ -866,13 +1191,18 @@ function attachRetakesMatchmaking(io, { connectedUsers, loadRatings, prisma }) {
       push();
     });
 
-    socket.on("rq:queue:join", ({ mode } = {}) => {
+    socket.on("rq:queue:join", ({ queue } = {}) => {
       const id = me();
       const party = partyFor(id);
       if (!party) return;
       if (party.leader !== id) return socket.emit("rq:notice", { kind: "error", code: "not_leader" });
       if (matchOf.get(id)) return;
-      if (mode && MODES[mode]) party.mode = mode;
+      if (isQueueId(queue)) {
+        if (party.members.length > QUEUES[queue].teamSize) {
+          return socket.emit("rq:notice", { kind: "error", code: "party_too_big" });
+        }
+        party.queue = queue;
+      }
 
       // Queue first, then re-read the ratings. Waiting on the database before
       // joining meant the button did nothing until a round trip came back,
@@ -886,7 +1216,7 @@ function attachRetakesMatchmaking(io, { connectedUsers, loadRatings, prisma }) {
       refreshRatings(party).then(() => {
         if (!party.queuedAt) return;
         syncParty(party);
-        tryMatch(party.mode);
+        tryMatch(party.queue);
       });
     });
 
@@ -999,10 +1329,10 @@ function attachRetakesMatchmaking(io, { connectedUsers, loadRatings, prisma }) {
   return {
     stats: () => ({
       parties: parties.size,
-      queued: Object.fromEntries(Object.keys(MODES).map((m) => [m, queuedPlayerCount(m)])),
+      queued: Object.fromEntries(Object.keys(QUEUES).map((q) => [q, queuedPlayerCount(q)])),
       matches: matches.size,
     }),
   };
 }
 
-module.exports = { attachRetakesMatchmaking, MODES, MAP_POOLS };
+module.exports = { attachRetakesMatchmaking, QUEUES, DEFAULT_QUEUE, MAP_POOLS };

@@ -78,6 +78,16 @@ const wearShort = (wear: number) =>
 
 const skinLabel = (name: string) => name.split(" | ")[1] ?? name;
 
+/**
+ * Stand-in art for a side with no agent chosen.
+ *
+ * The game's default T and CT models (item defs 5036 and 5037) are not
+ * tradeable, so they are not in the item catalog and have no CDN image. This is
+ * a local placeholder for them — the point is that the slot shows a body rather
+ * than a hole, because in game an unset agent is still somebody.
+ */
+const DEFAULT_AGENT_ART = "/default_character.PNG";
+
 function kindOfCategory(category: string): ItemKind {
   if (category === "Knives") return "knife";
   if (category === "Gloves") return "gloves";
@@ -743,6 +753,31 @@ export default function InventorySimulator() {
     const entry = Object.values(catalog ?? {}).flat().find((w) => w.def === slot.def);
     if (entry) openWeapon(entry);
   };
+
+  /**
+   * Jump straight to one side's agent from the always-visible pair.
+   *
+   * Switches side first so an equip made from here lands on the side whose
+   * portrait was clicked, then opens the chooser on the equipped agent when
+   * there is one — you almost always want to edit its patches rather than
+   * start again from the full list.
+   */
+  const openAgentFor = useCallback(
+    (s: Side) => {
+      setSide(s);
+      writeUrl({ side: s });
+      setOpenBoardType("Agents");
+      const agent = itemById(s === "t" ? activeLoadout?.agentT : activeLoadout?.agentCT);
+      if (agent && catalog) {
+        const entry = Object.values(catalog).flat().find((w) => w.def === agent.weaponDef);
+        if (entry) return openWeapon(entry);
+      }
+      setCategory("Agents");
+      setWeapon(null);
+      writeUrl({ cat: "Agents", w: null }, true);
+    },
+    [activeLoadout, catalog, itemById, openWeapon, writeUrl]
+  );
 
   /**
    * The rail's slots, grouped by weapon type, for the side currently selected.
@@ -1501,6 +1536,48 @@ export default function InventorySimulator() {
                   />
                 ))}
               </div>
+              {/* Both sides at once, always visible.
+                  Everywhere else on this board shows one side at a time, which
+                  is right for guns — but "who am I playing as" is a pair, and
+                  answering it used to mean opening the Agents group, reading it,
+                  switching side, and opening it again. An unset side shows the
+                  model the game will actually give you rather than an empty
+                  square, because "nothing" and "the default agent" look the same
+                  in game and only one of them is true. */}
+              <div className="inv4-agents">
+                {(["t", "ct"] as Side[]).map((s) => {
+                  const agent = itemById(s === "t" ? activeLoadout.agentT : activeLoadout.agentCT);
+                  const patches = agent?.stickers.filter(Boolean).length ?? 0;
+                  return (
+                    <button
+                      key={s}
+                      className={`inv4-agent ${s} ${agent ? "filled" : "empty"}`}
+                      onClick={() => openAgentFor(s)}
+                      title={agent ? agent.skinName || agent.weaponName : "Default agent"}
+                    >
+                      <span className="inv4-agent-art">
+                        {/* eslint-disable-next-line @next/next/no-img-element */}
+                        <img
+                          src={agent?.image || DEFAULT_AGENT_ART}
+                          alt=""
+                          loading="lazy"
+                          onError={(e) => { e.currentTarget.src = DEFAULT_AGENT_ART; }}
+                        />
+                      </span>
+                      <span className="inv4-agent-text">
+                        <span className="inv4-agent-side">{s.toUpperCase()}</span>
+                        <span className="inv4-agent-name">
+                          {agent ? skinLabel(agent.skinName || agent.weaponName) : "Default"}
+                        </span>
+                        {patches > 0 && (
+                          <span className="inv4-agent-patches">{patches} patch{patches > 1 ? "es" : ""}</span>
+                        )}
+                      </span>
+                    </button>
+                  );
+                })}
+              </div>
+
               {rarityBreakdown.length > 0 && (
                 <div className="inv4-rarities">
                   {rarityBreakdown.map((r) => (

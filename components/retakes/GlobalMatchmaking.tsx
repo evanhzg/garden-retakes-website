@@ -48,7 +48,7 @@ export default function GlobalMatchmaking({ avatarPlayers = [] }: { avatarPlayer
     if (!socket) return;
     setClicked(true);
     setTimeout(() => setClicked(false), 300);
-    if (!isQueueing) socket.emit("rq:queue:join", { mode: state.party.mode });
+    if (!isQueueing) socket.emit("rq:queue:join", { queue: state.party.queue });
   };
   const handleStop = () => { if (socket) socket.emit("rq:queue:leave"); };
 
@@ -92,7 +92,9 @@ export default function GlobalMatchmaking({ avatarPlayers = [] }: { avatarPlayer
           ) : (
             <button className="mm-searching" onClick={handleStop} title="Leave the queue">
               <span className="mm-dot" />
-              Searching
+              {/* Which queue, not just that something is happening: the bar is
+                  on every page, and "searching" alone does not say what for. */}
+              {state.search?.label ?? "Searching"}
               <span className="mm-searching-time">{formattedTime}</span>
             </button>
           )}
@@ -104,7 +106,7 @@ export default function GlobalMatchmaking({ avatarPlayers = [] }: { avatarPlayer
       {isFound && (
         <AcceptModal
           match={state.match}
-          mode={state.party.mode}
+          queue={state.match.queueLabel ?? state.party.queue}
           me={steamId}
           now={now}
           onAccept={() => socket?.emit("rq:match:accept")}
@@ -134,14 +136,15 @@ export default function GlobalMatchmaking({ avatarPlayers = [] }: { avatarPlayer
  */
 function AcceptModal({
   match,
-  mode,
+  queue,
   me,
   now,
   onAccept,
   onDecline,
 }: {
   match: { teams: Team[]; accept?: { deadline: number; total: number; done: number } | null };
-  mode?: string;
+  /** The queue's own name — "Classic Competitive", not "3V3". */
+  queue?: string;
   me?: string | null;
   now: number;
   onAccept: () => void;
@@ -183,7 +186,7 @@ function AcceptModal({
         <div className="mm-modal-body">
           <span className="mm-kicker">Ready up</span>
           <h1 className="mm-title">Match found</h1>
-          {mode && <p className="mm-mode">{mode.toUpperCase()} · Competitive retakes</p>}
+          {queue && <p className="mm-mode">{queue}</p>}
 
           <div className={`mm-count${urgent ? " urgent" : ""}`} aria-live="off">
             {secondsLeft}
