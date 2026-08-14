@@ -835,6 +835,16 @@ function MatchRoom({
   const [teamChatDraft, setTeamChatDraft] = useState("");
   const [globalChatDraft, setGlobalChatDraft] = useState("");
   const [chatCard, setChatCard] = useState<{ steamId: string; rect: DOMRect } | null>(null);
+
+  // Split once. Re-filtering inline gave each ChatBox a freshly-built array on
+  // every render, so its scroll effect fired whether or not anything had been
+  // said — which is what kept dragging the log back to the bottom mid-read.
+  const teamChat = useMemo(() => match.chat.filter((c) => c.team != null), [match.chat]);
+  const globalChat = useMemo(() => match.chat.filter((c) => c.team == null), [match.chat]);
+
+  const openChatCard = useCallback((steamId: string, e: React.MouseEvent) => {
+    setChatCard({ steamId, rect: e.currentTarget.getBoundingClientRect() });
+  }, []);
   // One request for the whole roster: six calls fired the instant a match is
   // found is exactly when the page has other things to do.
   const forms = useRosterForm(match.teams.flatMap((tm) => tm.players.map((p) => p.steamId)));
@@ -901,10 +911,14 @@ function MatchRoom({
       <div className="rq-room-body">
         <div style={{ display: "flex", flexDirection: "column", gap: "16px" }}>
           <Roster team={match.teams[0]} me={me} align="left" forms={forms} names={names} t={t} />
+          {/* Your own column carries team chat; the other one carries global.
+              The team filter is just "has a team": the server only ever sends a
+              viewer their own side's lines, so matching on the index as well
+              would be a second, weaker copy of a check already made. */}
           {match.yourTeam === 0 ? (
-            <ChatBox messages={match.chat.filter(c => c.team === 0)} draft={teamChatDraft} setDraft={setTeamChatDraft} onSend={(text) => onChat(text, true)} placeholder="Team chat" t={t} names={names} onPlayerClick={(id, e) => setChatCard({ steamId: id, rect: e.currentTarget.getBoundingClientRect() })} />
+            <ChatBox messages={teamChat} draft={teamChatDraft} setDraft={setTeamChatDraft} onSend={(text) => onChat(text, true)} placeholder="Team chat" t={t} names={names} me={me} onPlayerClick={openChatCard} />
           ) : match.yourTeam === 1 ? (
-            <ChatBox messages={match.chat.filter(c => c.team == null)} draft={globalChatDraft} setDraft={setGlobalChatDraft} onSend={(text) => onChat(text, false)} placeholder="Global chat" t={t} names={names} onPlayerClick={(id, e) => setChatCard({ steamId: id, rect: e.currentTarget.getBoundingClientRect() })} />
+            <ChatBox messages={globalChat} draft={globalChatDraft} setDraft={setGlobalChatDraft} onSend={(text) => onChat(text, false)} placeholder="Global chat" t={t} names={names} me={me} onPlayerClick={openChatCard} />
           ) : null}
         </div>
 
@@ -1008,9 +1022,9 @@ function MatchRoom({
         <div style={{ display: "flex", flexDirection: "column", gap: "16px" }}>
           <Roster team={match.teams[1]} me={me} align="right" forms={forms} names={names} t={t} />
           {match.yourTeam === 1 ? (
-            <ChatBox messages={match.chat.filter(c => c.team === 1)} draft={teamChatDraft} setDraft={setTeamChatDraft} onSend={(text) => onChat(text, true)} placeholder="Team chat" t={t} names={names} onPlayerClick={(id, e) => setChatCard({ steamId: id, rect: e.currentTarget.getBoundingClientRect() })} />
+            <ChatBox messages={teamChat} draft={teamChatDraft} setDraft={setTeamChatDraft} onSend={(text) => onChat(text, true)} placeholder="Team chat" t={t} names={names} me={me} onPlayerClick={openChatCard} />
           ) : match.yourTeam === 0 ? (
-            <ChatBox messages={match.chat.filter(c => c.team == null)} draft={globalChatDraft} setDraft={setGlobalChatDraft} onSend={(text) => onChat(text, false)} placeholder="Global chat" t={t} names={names} onPlayerClick={(id, e) => setChatCard({ steamId: id, rect: e.currentTarget.getBoundingClientRect() })} />
+            <ChatBox messages={globalChat} draft={globalChatDraft} setDraft={setGlobalChatDraft} onSend={(text) => onChat(text, false)} placeholder="Global chat" t={t} names={names} me={me} onPlayerClick={openChatCard} />
           ) : null}
         </div>
       </div>
@@ -1026,6 +1040,14 @@ function MatchRoom({
   );
 }
 
+/** Same window the server keeps, so a line never scrolls off one and not the other. */
+const CHAT_MAX_LENGTH = 240;
+/** How close to the bottom still counts as "following along", in pixels. */
+const CHAT_STICK_PX = 48;
+
+const chatTime = (at: number) =>
+  new Date(at).toLocaleTimeString(undefined, { hour: "2-digit", minute: "2-digit" });
+
 function ChatBox({
   messages,
   draft,
@@ -1034,6 +1056,7 @@ function ChatBox({
   placeholder,
   t,
   names,
+  me,
   onPlayerClick
 }: {
   messages: NonNullable<State["match"]>["chat"];
@@ -1043,48 +1066,118 @@ function ChatBox({
   placeholder: string;
   t: (k: string, v?: Record<string, string | number>) => string;
   names: Record<string, any>;
+  me: string;
   onPlayerClick: (steamId: string, e: React.MouseEvent) => void;
 }) {
   const ref = useRef<HTMLDivElement>(null);
-  useEffect(() => {
-    ref.current?.scrollTo({ top: ref.current.scrollHeight });
+  // Whether the reader is at the bottom. Scrolling to the newest line
+  // unconditionally yanks the log out from under anyone who has scrolled up to
+  // read something, which in a lobby is usually the connect string.
+  const stuck = useRef(true);
+  const [unread, setUnread] = useState(0);
+  const seen = useRef(messages.length);
+
+  const toBottom = useCallback((behavior: ScrollBehavior = "auto") => {
+    const el = ref.current;
+    if (!el) return;
+    el.scrollTo({ top: el.scrollHeight, behavior });
+    stuck.current = true;
+    seen.current = messages.length;
+    setUnread(0);
   }, [messages.length]);
+
+  useEffect(() => {
+    if (stuck.current) {
+      toBottom();
+    } else {
+      setUnread(Math.max(0, messages.length - seen.current));
+    }
+  }, [messages.length, toBottom]);
+
+  const onScroll = () => {
+    const el = ref.current;
+    if (!el) return;
+    const atBottom = el.scrollHeight - el.scrollTop - el.clientHeight <= CHAT_STICK_PX;
+    stuck.current = atBottom;
+    if (atBottom) {
+      seen.current = messages.length;
+      setUnread(0);
+    }
+  };
+
+  const submit = (e: React.FormEvent) => {
+    e.preventDefault();
+    const text = draft.trim();
+    if (!text) return;
+    onSend(text);
+    setDraft("");
+    // Saying something is an unambiguous "I am reading this now".
+    stuck.current = true;
+  };
+
+  const left = CHAT_MAX_LENGTH - draft.length;
 
   return (
     <div className="rq-chat">
-      <div className="rq-chat-log" ref={ref}>
+      <div className="rq-chat-log" ref={ref} onScroll={onScroll}>
+        {messages.length === 0 && <p className="rq-chat-empty">{t("lobby.chatempty")}</p>}
         {messages.map((c, i) => {
-          const fromId = (c as any).from;
-          const disp = fromId ? (displayNameFor(fromId, names, { isBot: false }) ?? c.name ?? t("lobby.player")) : (c.name ?? t("lobby.player"));
+          const fromId = (c as any).from as string | undefined;
+          const disp = fromId
+            ? displayNameFor(fromId, names, { isBot: false }) ?? c.name ?? t("lobby.player")
+            : c.name ?? t("lobby.player");
+          // Runs of lines from one person show the name once. Six "evan:"
+          // prefixes down a 150px-tall log is mostly name and barely message.
+          const prev = messages[i - 1] as any;
+          const grouped =
+            prev && prev.from === fromId && c.at - prev.at < 60_000;
           return (
-            <p key={i}>
-              <strong 
-                onClick={(e) => fromId && onPlayerClick(fromId, e)}
-                style={{ cursor: fromId ? "pointer" : "default", textDecoration: fromId ? "underline" : "none" }}
-              >
-                {disp}
-              </strong>{" "}
-              {c.text}
+            <p
+              key={`${c.at}-${i}`}
+              className={`rq-chat-line${grouped ? " grouped" : ""}${fromId === me ? " mine" : ""}`}
+            >
+              {!grouped && (
+                <>
+                  <time className="rq-chat-at" dateTime={new Date(c.at).toISOString()}>
+                    {chatTime(c.at)}
+                  </time>
+                  <strong
+                    onClick={(e) => fromId && onPlayerClick(fromId, e)}
+                    role={fromId ? "button" : undefined}
+                    tabIndex={fromId ? 0 : undefined}
+                  >
+                    {disp}
+                  </strong>
+                </>
+              )}
+              <span className="rq-chat-text">{c.text}</span>
             </p>
           );
         })}
-        {messages.length === 0 && <p className="muted">{t("lobby.chatempty")}</p>}
       </div>
-      <form
-        onSubmit={(e) => {
-          e.preventDefault();
-          const text = draft.trim();
-          if (!text) return;
-          onSend(text);
-          setDraft("");
-        }}
-      >
+
+      {unread > 0 && (
+        <button type="button" className="rq-chat-jump" onClick={() => toBottom("smooth")}>
+          {unread} new ↓
+        </button>
+      )}
+
+      <form className="rq-chat-form" onSubmit={submit}>
         <input
           value={draft}
           onChange={(e) => setDraft(e.target.value)}
           placeholder={placeholder}
-          maxLength={240}
+          maxLength={CHAT_MAX_LENGTH}
         />
+        {/* Only once it is close enough to matter — a counter that is always
+            there is noise on a line nobody is near the limit of. */}
+        {left <= 40 && <span className="rq-chat-left">{left}</span>}
+        <button type="submit" disabled={!draft.trim()} aria-label={t("lobby.chatsend")}>
+          <svg viewBox="0 0 24 24" width="15" height="15" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+            <line x1="22" y1="2" x2="11" y2="13" />
+            <polygon points="22 2 15 22 11 13 2 9 22 2" />
+          </svg>
+        </button>
       </form>
     </div>
   );

@@ -1,11 +1,16 @@
 "use client";
 
-import React, { useEffect, useState } from "react";
+import React, { useEffect, useMemo, useRef, useState } from "react";
 import { useSocket } from "@/components/games/SocketProvider";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import { motion, AnimatePresence } from "framer-motion";
-import AvatarImage from "@/components/AvatarImage";
+import "./matchmaking.css";
+
+/** Below this many seconds the countdown stops being information and starts being a warning. */
+const URGENT_AT = 5;
+
+type Player = { steamId: string; name?: string; bot?: boolean; accepted?: boolean };
+type Team = { index?: number; name?: string; players: Player[] };
 
 export default function GlobalMatchmaking({ avatarPlayers = [] }: { avatarPlayers?: any[] }) {
   const { socket, isAuthed, steamId } = useSocket();
@@ -28,21 +33,17 @@ export default function GlobalMatchmaking({ avatarPlayers = [] }: { avatarPlayer
     return () => clearInterval(int);
   }, []);
 
+  const isFound = Boolean(state?.match && state.match.phase === "found");
+
   // Lock body scroll when match is found
   useEffect(() => {
-    const isFound = state?.match && state.match.phase === "found";
-    if (isFound) {
-      document.body.style.overflow = "hidden";
-    } else {
-      document.body.style.overflow = "";
-    }
+    document.body.style.overflow = isFound ? "hidden" : "";
     return () => { document.body.style.overflow = ""; };
-  }, [state?.match?.phase]);
+  }, [isFound]);
 
   if (!state || !state.party) return null;
   const isQueueing = state.party.queuedAt !== null;
-  const isFound = state.match && state.match.phase === "found";
-  
+
   const handlePlay = () => {
     if (!socket) return;
     setClicked(true);
@@ -54,207 +55,182 @@ export default function GlobalMatchmaking({ avatarPlayers = [] }: { avatarPlayer
   const elapsed = isQueueing ? Math.floor((now - state.party.queuedAt) / 1000) : 0;
   const formattedTime = `${Math.floor(elapsed / 60)}:${String(elapsed % 60).padStart(2, "0")}`;
 
-  const renderAcceptModal = () => {
-    if (!isFound) return null;
-    const acceptData = state.match.accept;
-    const timeLeft = acceptData ? Math.max(0, Math.ceil((acceptData.deadline - now) / 1000)) : 0;
-    
-    // Check if I have accepted
-    let iAccepted = false;
-    for (const t of state.match.teams) {
-      for (const p of t.players) {
-        if (p.steamId === steamId && p.accepted) iAccepted = true;
-      }
-    }
-
-    return (
-      <div style={{
-        position: "fixed", inset: 0, zIndex: 999999,
-        display: "flex", alignItems: "center", justifyContent: "center",
-        background: "rgba(0,0,0,0.85)", backdropFilter: "blur(12px)"
-      }}>
-        <motion.div 
-          initial={{ scale: 0.9, opacity: 0, y: 20 }}
-          animate={{ scale: 1, opacity: 1, y: 0 }}
-          transition={{ type: "spring", stiffness: 300, damping: 20 }}
-          style={{
-            background: "linear-gradient(135deg, var(--color-surface) 0%, rgba(30,30,40,0.95) 100%)",
-            padding: "32px",
-            borderRadius: "16px",
-            display: "flex", flexDirection: "column", alignItems: "center", gap: "24px",
-            border: "1px solid rgba(255,255,255,0.1)",
-            boxShadow: "0 20px 50px rgba(0,0,0,0.5), inset 0 0 0 1px rgba(255,255,255,0.05)",
-            position: "relative",
-            overflow: "hidden"
-          }}
-        >
-          <div style={{
-            position: "absolute", inset: 0, 
-            background: "radial-gradient(circle at 50% -20%, var(--color-accent), transparent 60%)", 
-            opacity: 0.15, pointerEvents: "none",
-            animation: "pulse 4s infinite alternate"
-          }} />
-          <h1 style={{ margin: 0, fontSize: "28px", color: "var(--color-accent)", textTransform: "uppercase", letterSpacing: "2px", zIndex: 1 }}>MATCH FOUND</h1>
-          <div style={{ fontSize: "56px", fontWeight: "bold", textShadow: "0 2px 10px rgba(0,0,0,0.5)", zIndex: 1 }}>{timeLeft}s</div>
-          <div style={{ fontSize: "16px", color: "var(--color-text-muted)", zIndex: 1 }}>
-            {acceptData?.done || 0} / {acceptData?.total || 0} Accepted
-          </div>
-          <div style={{ display: "flex", gap: "12px", marginTop: "8px", zIndex: 1 }}>
-            <button 
-              disabled={iAccepted}
-              onClick={() => socket?.emit("rq:match:accept")}
-              className={`btn ${iAccepted ? "btn-secondary" : "btn-primary"}`}
-              style={{
-                padding: "12px 36px",
-                fontSize: "18px",
-                cursor: iAccepted ? "not-allowed" : "pointer",
-                borderRadius: "8px",
-                fontWeight: "bold",
-                boxShadow: iAccepted ? "none" : "0 4px 15px rgba(0,0,0,0.4)"
-              }}
-            >
-              {iAccepted ? "ACCEPTED" : "ACCEPT"}
-            </button>
-            {!iAccepted && (
-              <button 
-                onClick={() => socket?.emit("rq:match:decline")}
-                className="btn btn-secondary"
-                style={{
-                  padding: "12px 24px",
-                  fontSize: "18px",
-                  borderRadius: "8px",
-                  cursor: "pointer",
-                  fontWeight: "bold",
-                  background: "rgba(255,255,255,0.05)"
-                }}
-              >
-                DECLINE
-              </button>
-            )}
-          </div>
-        </motion.div>
-      </div>
-    );
-  };
-
   return (
     <>
-      <div style={{
-        backgroundColor: "var(--color-accent)",
-        color: "var(--color-accent-foreground, #fff)",
-        padding: "12px var(--page-pad)",
-        display: "flex",
-        alignItems: "center",
-        justifyContent: "space-between",
-        height: "64px"
-      }}>
-        {/* Left: Avatars & Team Name */}
-        <div style={{ display: "flex", alignItems: "center", gap: "12px", width: "33%" }}>
-          <div style={{ display: "flex", marginLeft: "8px" }}>
-            {state.party.members.map((m: any, i: number) => {
+      <div className="mm-bar">
+        <div className="mm-bar-side">
+          <div className="mm-avatars">
+            {state.party.members.map((m: any) => {
               const p = avatarPlayers.find((ap) => ap.steamId === m.steamId);
               return (
-                <div key={m.steamId} style={{ 
-                  width: "36px", height: "36px", borderRadius: "50%", 
-                  marginLeft: i > 0 ? "-12px" : "0",
-                  border: "1px solid rgba(255,255,255,0.2)",
-                  background: "rgba(0,0,0,0.5)", overflow: "hidden",
-                  display: "flex", alignItems: "center", justifyContent: "center"
-                }}>
+                <div key={m.steamId} className="mm-avatar" title={m.name || undefined}>
                   {p?.avatarSrc ? (
-                    <img src={p.avatarSrc} alt={m.name || "Player"} style={{ width: "100%", height: "100%", objectFit: "cover" }} />
+                    <img src={p.avatarSrc} alt={m.name || "Player"} />
                   ) : (
-                    <span style={{ fontSize: "14px", fontWeight: "bold" }}>{(m.name || "?").charAt(0).toUpperCase()}</span>
+                    <span>{(m.name || "?").charAt(0).toUpperCase()}</span>
                   )}
                 </div>
               );
             })}
           </div>
-          {state.party.name && (
-            <span style={{ fontWeight: "bold", fontSize: "16px", textShadow: "0 1px 2px rgba(0,0,0,0.3)" }}>
-              {state.party.name}
-            </span>
-          )}
+          {state.party.name && <span className="mm-party-name">{state.party.name}</span>}
         </div>
 
-        {/* Center: Play/Timer Button */}
-        <div style={{ display: "flex", justifyContent: "center", width: "33%" }}>
+        <div className="mm-bar-centre">
           {!isQueueing ? (
-            <div style={{ position: "relative" }}>
-              {pathname === "/lobby" ? (
-                <button 
-                  onClick={handlePlay}
-                  style={{
-                    background: "var(--color-accent-foreground, #fff)",
-                    color: "var(--color-accent)",
-                    border: "none",
-                    padding: "8px 48px",
-                    borderRadius: "0px",
-                    fontWeight: "bold",
-                    fontSize: "16px",
-                    cursor: "pointer",
-                    position: "relative",
-                    zIndex: 2,
-                    transition: "transform 0.1s ease",
-                    transform: clicked ? "scale(0.95)" : "scale(1)",
-                    boxShadow: "0 4px 12px rgba(0,0,0,0.2)"
-                  }}>
-                  PLAY
-                </button>
-              ) : (
-                <Link href="/lobby"
-                  style={{
-                    background: "var(--color-accent-foreground, #fff)",
-                    color: "var(--color-accent)",
-                    border: "none",
-                    padding: "8px 48px",
-                    borderRadius: "0px",
-                    fontWeight: "bold",
-                    fontSize: "16px",
-                    textDecoration: "none",
-                    display: "inline-block",
-                    boxShadow: "0 4px 12px rgba(0,0,0,0.2)"
-                  }}>
-                  SEE LOBBY
-                </Link>
-              )}
-            </div>
+            pathname === "/lobby" ? (
+              <button
+                className="mm-cta"
+                onClick={handlePlay}
+                style={clicked ? { transform: "scale(0.97)" } : undefined}
+              >
+                Play
+              </button>
+            ) : (
+              <Link className="mm-cta" href="/lobby">See lobby</Link>
+            )
           ) : (
-            <button 
-              onClick={handleStop}
-              style={{
-                background: "rgba(0,0,0,0.2)",
-                color: "#fff",
-                border: "1px solid rgba(255,255,255,0.3)",
-                padding: "8px 32px",
-                borderRadius: "0px",
-                fontWeight: "bold",
-                fontSize: "16px",
-                cursor: "pointer",
-                display: "flex", alignItems: "center", gap: "8px"
-              }}>
-              <span style={{ width: "8px", height: "8px", borderRadius: "50%", background: "#ef4444", animation: "pulse 1.5s infinite" }} />
-              SEARCHING {formattedTime}
+            <button className="mm-searching" onClick={handleStop} title="Leave the queue">
+              <span className="mm-dot" />
+              Searching
+              <span className="mm-searching-time">{formattedTime}</span>
             </button>
           )}
         </div>
 
-        {/* Right: Empty, since SEE LOBBY is in the center */}
-        <div style={{ display: "flex", justifyContent: "flex-end", width: "33%" }}>
-        </div>
+        <div className="mm-bar-side end" />
       </div>
-      {renderAcceptModal()}
+
+      {isFound && (
+        <AcceptModal
+          match={state.match}
+          mode={state.party.mode}
+          me={steamId}
+          now={now}
+          onAccept={() => socket?.emit("rq:match:accept")}
+          onDecline={() => socket?.emit("rq:match:decline")}
+        />
+      )}
+
       {pathname !== "/lobby" && (
         <style dangerouslySetInnerHTML={{ __html: `
-          header nav a {
-            opacity: 0.4 !important;
-            transition: opacity 0.2s;
-          }
-          header nav a:hover {
-            opacity: 0.8 !important;
-          }
+          header nav a { opacity: 0.4 !important; transition: opacity 0.2s; }
+          header nav a:hover { opacity: 0.8 !important; }
         `}} />
       )}
     </>
+  );
+}
+
+/**
+ * The twenty seconds everyone in the lobby is looking at the same screen.
+ *
+ * Two things were missing and both are the same complaint — the modal asked you
+ * to wait without telling you what for. It now shows the clock draining as a bar
+ * (readable before the number is), and one mark per player split by side, so
+ * "3/6 accepted" has faces attached to it and a lobby can see who it is waiting
+ * on. After you accept, the buttons are replaced by the count you are waiting
+ * for rather than a dead greyed-out button.
+ */
+function AcceptModal({
+  match,
+  mode,
+  me,
+  now,
+  onAccept,
+  onDecline,
+}: {
+  match: { teams: Team[]; accept?: { deadline: number; total: number; done: number } | null };
+  mode?: string;
+  me?: string | null;
+  now: number;
+  onAccept: () => void;
+  onDecline: () => void;
+}) {
+  const accept = match.accept ?? null;
+  const secondsLeft = accept ? Math.max(0, Math.ceil((accept.deadline - now) / 1000)) : 0;
+
+  // The window's full length, remembered on first render: the server sends a
+  // deadline, not a duration, so without this the bar would start at whatever
+  // fraction was left when this component mounted.
+  const totalRef = useRef<number | null>(null);
+  if (accept && totalRef.current === null) {
+    totalRef.current = Math.max(1, Math.ceil((accept.deadline - now) / 1000));
+  }
+  const total = totalRef.current ?? 1;
+  const remaining = Math.min(100, Math.max(0, (secondsLeft / total) * 100));
+  const urgent = secondsLeft <= URGENT_AT;
+
+  const iAccepted = useMemo(
+    () => match.teams.some((t) => t.players.some((p) => p.steamId === me && p.accepted)),
+    [match.teams, me]
+  );
+
+  const done = accept?.done ?? 0;
+  const totalPlayers = accept?.total ?? 0;
+  const waitingOn = Math.max(0, totalPlayers - done);
+
+  return (
+    <div className="mm-scrim" role="dialog" aria-modal="true" aria-label="Match found">
+      <div className="mm-modal">
+        <div className="mm-drain">
+          <div
+            className={`mm-drain-fill${urgent ? " urgent" : ""}`}
+            style={{ width: `${remaining}%` }}
+          />
+        </div>
+
+        <div className="mm-modal-body">
+          <span className="mm-kicker">Ready up</span>
+          <h1 className="mm-title">Match found</h1>
+          {mode && <p className="mm-mode">{mode.toUpperCase()} · Competitive retakes</p>}
+
+          <div className={`mm-count${urgent ? " urgent" : ""}`} aria-live="off">
+            {secondsLeft}
+          </div>
+          <div className="mm-accepted" aria-live="polite">
+            {done} / {totalPlayers} accepted
+          </div>
+
+          <div className="mm-teams">
+            {match.teams.map((team, i) => (
+              <React.Fragment key={team.index ?? i}>
+                {i > 0 && <span className="mm-vs">VS</span>}
+                <div className="mm-team">
+                  {team.players.map((p) => (
+                    <span
+                      key={p.steamId}
+                      // Bots have nothing to accept, so they are always shown ready
+                      // rather than as a slot the lobby appears to be waiting on.
+                      className={[
+                        "mm-slot",
+                        p.accepted || p.bot ? "ready" : "",
+                        p.steamId === me ? "me" : "",
+                      ].filter(Boolean).join(" ")}
+                      title={`${p.name ?? "Player"}${p.bot ? " (bot)" : p.accepted ? " — ready" : " — waiting"}`}
+                    />
+                  ))}
+                </div>
+              </React.Fragment>
+            ))}
+          </div>
+
+          {iAccepted ? (
+            <div className="mm-waiting">
+              {waitingOn > 0 ? `Waiting for ${waitingOn} more` : "Starting…"}
+            </div>
+          ) : (
+            <div className="mm-actions">
+              <button className="mm-btn primary" onClick={onAccept} autoFocus>
+                Accept
+              </button>
+              <button className="mm-btn" onClick={onDecline}>
+                Decline
+              </button>
+            </div>
+          )}
+        </div>
+      </div>
+    </div>
   );
 }

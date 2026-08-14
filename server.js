@@ -286,23 +286,58 @@ io.on("connection", (socket) => {
   });
 
   // Lobby chat and direct messages
+  //
+  // The DM branch used to answer only to `{ type: 'direct', to }` while the
+  // friends sidebar sends `{ type: 'dm', targetSteamId }`. The names never
+  // matched, so no direct message was ever relayed and the sidebar covered for
+  // it by re-fetching the whole thread once a second, for every open chat, for
+  // as long as it stayed open. Both spellings are accepted here; the sidebar
+  // now relies on the relay and polls only as a slow safety net.
   socket.on("send_message", (data) => {
-    // data: { type: 'lobby' | 'direct', to: string, content: string }
-    if (data.type === 'direct') {
-      const targetSocket = connectedUsers.get(data.to);
-      if (targetSocket) {
-        io.to(targetSocket).emit("new_message", {
-          from: socket.steamId,
-          content: data.content,
-          type: 'direct'
-        });
-      }
-    } else if (data.type === 'lobby' && socket.lobbyId) {
+    if (!data || !socket.steamId) return;
+
+    const type = data.type === "dm" ? "direct" : data.type;
+
+    if (type === "direct") {
+      const to = String(data.targetSteamId ?? data.to ?? "");
+      const content = String(data.content ?? "").trim().slice(0, 2000);
+      if (!to || !content) return;
+
+      // The message is persisted by POST /api/messages before this fires, and
+      // its row id comes back with the response. Passing it through means both
+      // ends key off the same identity and neither has to guess whether the
+      // line it just drew is the same one it is now receiving.
+      const payload = {
+        id: data.id ?? null,
+        from: socket.steamId,
+        to,
+        content,
+        ts: Number(data.ts) || Date.now(),
+        type: "dm",
+      };
+
+      const targetSocket = connectedUsers.get(to);
+      if (targetSocket) io.to(targetSocket).emit("new_message", payload);
+      return;
+    }
+
+    if (type === "lobby" && socket.lobbyId) {
       io.to(`lobby_${socket.lobbyId}`).emit("new_message", {
         from: socket.steamId,
-        content: data.content,
-        type: 'lobby'
+        content: String(data.content ?? "").slice(0, 2000),
+        ts: Date.now(),
+        type: "lobby",
       });
+    }
+  });
+
+  // "X is typing" for direct messages. Relay only — nothing is stored, and a
+  // stale indicator costs nothing because the receiver expires it on a timer.
+  socket.on("dm_typing", (data) => {
+    if (!socket.steamId || !data?.targetSteamId) return;
+    const targetSocket = connectedUsers.get(String(data.targetSteamId));
+    if (targetSocket) {
+      io.to(targetSocket).emit("dm_typing", { from: socket.steamId });
     }
   });
 

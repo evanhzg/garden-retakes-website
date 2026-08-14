@@ -975,7 +975,10 @@ export default function InventorySimulator() {
       return;
     }
     const next = [...stickers];
-    next[slot] = { def: o.def, name: o.name, image: o.image, slot, wear: 0, x: SLOT_ANCHORS[slot].x, y: SLOT_ANCHORS[slot].y, rotation: 0 };
+    // Fall back to the last anchor rather than indexing off the end: the array
+    // is data, and a slot count that outgrows it must not throw.
+    const anchor = SLOT_ANCHORS[slot] ?? SLOT_ANCHORS[SLOT_ANCHORS.length - 1];
+    next[slot] = { def: o.def, name: o.name, image: o.image, slot, wear: 0, x: anchor.x, y: anchor.y, rotation: 0 };
     setStickers(next);
   };
   const removeSticker = (slot: number) => {

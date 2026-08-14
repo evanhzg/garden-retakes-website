@@ -175,12 +175,21 @@ export function defaultStickerSlots(): (PlacedSticker | null)[] {
   return Array.from({ length: STICKER_SLOTS }, () => null);
 }
 
-/** Default anchor positions for the sticker slots (percent of the stage). */
+/**
+ * Default anchor positions for the sticker slots (percent of the stage).
+ *
+ * One per slot, and CS2 has five — this had four, so applying a fifth sticker
+ * read `SLOT_ANCHORS[4].x` off the end of the array and threw. The slot could be
+ * filled from the 3D editor (which places by drag, not by anchor) but never from
+ * the quick "add sticker" path, which is why the fifth slot looked like it did
+ * not exist.
+ */
 export const SLOT_ANCHORS: { x: number; y: number }[] = [
-  { x: 24, y: 58 },
-  { x: 42, y: 58 },
-  { x: 60, y: 58 },
-  { x: 78, y: 58 },
+  { x: 20, y: 58 },
+  { x: 36, y: 58 },
+  { x: 52, y: 58 },
+  { x: 68, y: 58 },
+  { x: 84, y: 58 },
 ];
 
 export const M4A4 = 16;
@@ -332,6 +341,15 @@ type PluginSticker = {
   y?: number;
 };
 
+type PluginKeychain = {
+  def: number;
+  slot: number;
+  seed: number;
+  x?: number;
+  y?: number;
+  z?: number;
+};
+
 type PluginWeapon = {
   def: number;
   hash: string;
@@ -342,7 +360,23 @@ type PluginWeapon = {
   wear: number;
   uid: number;
   stickers: PluginSticker[];
-  keychains: any[];
+  keychains: PluginKeychain[];
+};
+
+/**
+ * An agent is a model and a set of patches, nothing else.
+ *
+ * Deliberately not a PluginWeapon: the plugin turns every field it is given
+ * into an econ attribute, so sending an agent a paint, a seed and a wear of
+ * zero writes three texture attributes onto an item that has no texture to
+ * override. Sending only what an agent has is both what the game expects and
+ * what the reference implementation does.
+ */
+type PluginAgent = {
+  def: number;
+  hash: string;
+  uid: number;
+  stickers: PluginSticker[];
 };
 
 export type EquippedV4 = {
@@ -351,35 +385,78 @@ export type EquippedV4 = {
   /** Keyed by engine team number: 2 = T, 3 = CT. */
   knives: Record<number, PluginWeapon>;
   gloves: Record<number, PluginWeapon>;
-  agents: Record<number, PluginWeapon>;
-  patches: Record<number, PluginWeapon>;
+  /**
+   * Per side, same team keys. An agent's patches ride along in its `stickers`
+   * array — that is where the game reads them from, because patches and
+   * stickers share the `sticker slot N id` econ attribute family. There is no
+   * separate `patches` map; the one that used to be here was always empty and
+   * the plugin has no field to receive it.
+   */
+  agents: Record<number, PluginAgent>;
 };
+
+/**
+ * Translates the website's stored ids into the ones the game expects.
+ *
+ * Passed in rather than imported because this module runs in the browser too
+ * and the catalog that knows the mapping is server-only. The route that serves
+ * the plugin supplies it; everything else gets the identity mapping, which is
+ * correct for a preview and cannot crash a client bundle.
+ */
+export type GameIdResolver = {
+  agentDef: (value: number) => number;
+  stickerDef: (value: number) => number;
+  keychainDef: (value: number) => number;
+};
+
+const IDENTITY_IDS: GameIdResolver = {
+  agentDef: (v) => v,
+  stickerDef: (v) => v,
+  keychainDef: (v) => v,
+};
+
+/** CS2 gives a weapon exactly one keychain, and it hangs in slot 0. */
+const KEYCHAIN_SLOT = 0;
 
 function econHash(item: InventoryItem): string {
   const sticker = item.stickers.map((s) => (s ? `${s.def}@${s.slot}` : "-")).join(",");
-  return `${item.weaponDef}_${item.paint}_${item.seed}_${item.wear}_${item.statTrak ? 1 : 0}_${sticker}_${item.uid}`;
+  const charm = item.charm ? `${item.charm.def}` : "-";
+  return `${item.weaponDef}_${item.paint}_${item.seed}_${item.wear}_${item.statTrak ? 1 : 0}_${sticker}_${charm}_${item.uid}`;
 }
 
-function toPluginWeapon(item: InventoryItem): PluginWeapon {
+function toPluginStickers(item: InventoryItem, ids: GameIdResolver): PluginSticker[] {
   const stickers: PluginSticker[] = [];
   item.stickers.forEach((s) => {
     if (!s) return;
-    const sticker: PluginSticker = { def: s.def, slot: s.slot, wear: s.wear };
+    const sticker: PluginSticker = { def: ids.stickerDef(s.def), slot: s.slot, wear: s.wear };
     if (s.rotation !== undefined) sticker.rotation = s.rotation;
     if (s.x !== undefined) sticker.x = s.x;
     if (s.y !== undefined) sticker.y = s.y;
     stickers.push(sticker);
   });
-  const keychains: any[] = [];
+  return stickers;
+}
+
+function toPluginWeapon(item: InventoryItem, ids: GameIdResolver): PluginWeapon {
+  const stickers = toPluginStickers(item, ids);
+
+  const keychains: PluginKeychain[] = [];
   if (item.charm) {
-    const c: any = { 
-      def: item.charm.def, 
-      slot: item.charm.slot ?? 0, 
-      seed: Math.floor((item.charm.wear || 0) * 100000) 
+    // The editor files the charm under slot 5 so it can share a slot picker
+    // with the five sticker slots. That is a UI number, not a game one: the
+    // game only has keychain slot 0, and `keychain slot 5 id` is an attribute
+    // that does not exist — which is why charms never showed up in game.
+    const c: PluginKeychain = {
+      def: ids.keychainDef(item.charm.def),
+      slot: KEYCHAIN_SLOT,
+      // Seed picks the charm's hanging pose. It is not a wear value; deriving
+      // it from `wear` meant every charm got seed 0, which is below the game's
+      // minimum of 1.
+      seed: charmSeed(item),
     };
     if (item.charm.x !== undefined) c.x = item.charm.x;
     if (item.charm.y !== undefined) c.y = item.charm.y;
-    if (item.charm.rotation !== undefined) c.z = item.charm.rotation; // Fallback mapping rotation to Z
+    if (item.charm.rotation !== undefined) c.z = item.charm.rotation;
     keychains.push(c);
   }
 
@@ -397,10 +474,26 @@ function toPluginWeapon(item: InventoryItem): PluginWeapon {
   };
 }
 
+/**
+ * A stable seed in the game's range for a charm.
+ *
+ * Stable so the charm does not re-pose every time the plugin re-reads the
+ * loadout, and derived from the item so two guns with the same charm do not
+ * hang it identically.
+ */
+function charmSeed(item: InventoryItem): number {
+  const base = (item.uid || 1) * 2654435761;
+  return (Math.abs(base) % 100000) + 1;
+}
+
 /** Build the plugin's equipped-items payload for a loadout (by id or name). */
-export function toEquippedV4(store: InventoryStore, loadoutRef?: string | null): EquippedV4 {
+export function toEquippedV4(
+  store: InventoryStore,
+  loadoutRef?: string | null,
+  ids: GameIdResolver = IDENTITY_IDS
+): EquippedV4 {
   const loadout = findLoadout(store, loadoutRef);
-  const result: EquippedV4 = { ctWeapons: {}, tWeapons: {}, knives: {}, gloves: {}, agents: {}, patches: {} };
+  const result: EquippedV4 = { ctWeapons: {}, tWeapons: {}, knives: {}, gloves: {}, agents: {} };
   if (!loadout) return result;
 
   const itemById = (id: string | undefined) =>
@@ -408,30 +501,70 @@ export function toEquippedV4(store: InventoryStore, loadoutRef?: string | null):
 
   for (const [def, itemId] of Object.entries(loadout.equippedCT)) {
     const item = itemById(itemId);
-    if (item) result.ctWeapons[Number(def)] = toPluginWeapon(item);
+    if (item) result.ctWeapons[Number(def)] = toPluginWeapon(item, ids);
   }
   for (const [def, itemId] of Object.entries(loadout.equippedT)) {
     const item = itemById(itemId);
-    if (item) result.tWeapons[Number(def)] = toPluginWeapon(item);
+    if (item) result.tWeapons[Number(def)] = toPluginWeapon(item, ids);
   }
 
   const knifeT = itemById(loadout.knifeT);
-  if (knifeT) result.knives[2] = toPluginWeapon(knifeT);
+  if (knifeT) result.knives[2] = toPluginWeapon(knifeT, ids);
   const knifeCT = itemById(loadout.knifeCT);
-  if (knifeCT) result.knives[3] = toPluginWeapon(knifeCT);
+  if (knifeCT) result.knives[3] = toPluginWeapon(knifeCT, ids);
 
   const glovesT = itemById(loadout.glovesT);
-  if (glovesT) result.gloves[2] = toPluginWeapon(glovesT);
+  if (glovesT) result.gloves[2] = toPluginWeapon(glovesT, ids);
   const glovesCT = itemById(loadout.glovesCT);
-  if (glovesCT) result.gloves[3] = toPluginWeapon(glovesCT);
+  if (glovesCT) result.gloves[3] = toPluginWeapon(glovesCT, ids);
 
-
+  // Both sides, both with their patches. An agent equipped on one side only is
+  // sent for that side only — the plugin falls back to the other side itself
+  // when the server is configured to.
   const agentT = itemById(loadout.agentT);
-  if (agentT) result.agents[2] = toPluginWeapon(agentT);
+  if (agentT) result.agents[2] = withPatches(agentT, loadout.equippedPatchesT, store, ids);
   const agentCT = itemById(loadout.agentCT);
-  if (agentCT) result.agents[3] = toPluginWeapon(agentCT);
+  if (agentCT) result.agents[3] = withPatches(agentCT, loadout.equippedPatchesCT, store, ids);
 
-  // Patches aren't currently bound to teams cleanly in PluginWeapon structure so we can just leave patches map empty or add if needed.
+  return result;
+}
 
+/**
+ * The agent, plus any patches recorded on the loadout rather than on the agent
+ * item itself.
+ *
+ * Patches normally live in the agent item's own `stickers` array, which is what
+ * the "Manage Patches" editor writes. The per-loadout `equippedPatches*` lists
+ * are an older shape that some stored loadouts still carry; reading both means
+ * a player who set their patches before the editor existed does not lose them,
+ * and the two can never double up because slots already filled by the agent are
+ * skipped.
+ */
+function withPatches(
+  agent: InventoryItem,
+  patchItemIds: string[] | undefined,
+  store: InventoryStore,
+  ids: GameIdResolver
+): PluginAgent {
+  const result: PluginAgent = {
+    // Agents are addressed by their item definition index, not by the cs2-lib
+    // item id the catalog and every saved loadout are keyed on.
+    def: ids.agentDef(agent.weaponDef),
+    hash: econHash(agent),
+    uid: agent.uid,
+    stickers: toPluginStickers(agent, ids),
+  };
+  if (!patchItemIds?.length) return result;
+
+  const used = new Set(result.stickers.map((s) => s.slot));
+  let slot = 0;
+  for (const patchId of patchItemIds) {
+    const patch = store.items.find((i) => i.id === patchId);
+    if (!patch) continue;
+    while (used.has(slot) && slot < STICKER_SLOTS) slot += 1;
+    if (slot >= STICKER_SLOTS) break;
+    used.add(slot);
+    result.stickers.push({ def: ids.stickerDef(patch.weaponDef), slot, wear: 0 });
+  }
   return result;
 }

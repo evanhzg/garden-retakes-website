@@ -1,4 +1,5 @@
 import { getSession } from "@/lib/auth";
+import { getLoadoutIcons } from "@/lib/economy";
 import RetakeLoadout from "@/components/retakes/RetakeLoadout";
 
 export const dynamic = "force-dynamic";
@@ -10,5 +11,7 @@ export const metadata = {
 };
 
 export default function Page() {
-  return <RetakeLoadout signedIn={Boolean(getSession())} />;
+  // Resolved here, on the server, from the same item catalog the inventory uses:
+  // the page then renders with its icons already in hand.
+  return <RetakeLoadout signedIn={Boolean(getSession())} icons={getLoadoutIcons()} />;
 }

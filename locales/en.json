@@ -2150,6 +2150,7 @@
   "lobby.copyconnect": "Copy connect",
   "lobby.launch": "Launch CS2",
   "lobby.chatempty": "Nobody has said anything yet.",
+  "lobby.chatsend": "Send",
   "lobby.chatplaceholder": "Message your match…",
   "lobby.notice.not_signed_in": "Sign in to use matchmaking.",
   "lobby.notice.not_leader": "Only the party leader can do that.",

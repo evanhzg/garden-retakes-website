@@ -2144,6 +2144,7 @@
   "lobby.copyconnect": "Copier connect",
   "lobby.launch": "Lancer CS2",
   "lobby.chatempty": "Personne n'a encore parlé.",
+  "lobby.chatsend": "Envoyer",
   "lobby.chatplaceholder": "Écris à ta partie…",
   "lobby.notice.not_signed_in": "Connecte-toi pour utiliser le matchmaking.",
   "lobby.notice.not_leader": "Seul le chef de groupe peut faire ça.",

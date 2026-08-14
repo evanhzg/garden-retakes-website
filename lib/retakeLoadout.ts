@@ -27,6 +27,54 @@ export const ITEMS = {
   SG553: 405, AWP: 406, AUG: 407, SSG08: 408, SCAR20: 409, G3SG1: 410,
 } as const;
 
+/**
+ * Our allocator ids are not the game's.
+ *
+ * `ITEMS` above are the allocator plugin's `CsItem` values, which is what the
+ * server reads and writes, so they have to stay. The CS2 item definition index
+ * is a different number for the same gun, and it is the key the item catalog
+ * (and therefore every icon on this site) is built on. This is the bridge.
+ *
+ * Kept next to `ITEMS` on purpose: a gun added to one list and not the other is
+ * then obviously missing rather than quietly icon-less.
+ */
+export const CS2_DEF: Record<number, number> = {
+  [200]: 1,  // Desert Eagle
+  [201]: 4,  // Glock-18
+  [202]: 61, // USP-S
+  [203]: 32, // P2000
+  [204]: 2,  // Dual Berettas
+  [205]: 30, // Tec-9
+  [206]: 36, // P250
+  [207]: 63, // CZ75-Auto
+  [208]: 3,  // Five-SeveN
+  [209]: 64, // R8 Revolver
+  [300]: 17, // MAC-10
+  [301]: 34, // MP9
+  [302]: 33, // MP7
+  [303]: 19, // P90
+  [304]: 23, // MP5-SD
+  [305]: 26, // PP-Bizon
+  [306]: 24, // UMP-45
+  [307]: 25, // XM1014
+  [308]: 35, // Nova
+  [309]: 27, // MAG-7
+  [310]: 29, // Sawed-Off
+  [311]: 14, // M249
+  [312]: 28, // Negev
+  [400]: 7,  // AK-47
+  [401]: 60, // M4A1-S
+  [402]: 16, // M4A4
+  [403]: 13, // Galil AR
+  [404]: 10, // FAMAS
+  [405]: 39, // SG 553
+  [406]: 9,  // AWP
+  [407]: 8,  // AUG
+  [408]: 40, // SSG 08
+  [409]: 38, // SCAR-20
+  [410]: 11, // G3SG1
+};
+
 export type Side = "T" | "CT";
 
 /** The plugin serialises the side as the CsTeam name, not the short form. */
@@ -150,6 +198,19 @@ export const isRole = (v: string): v is RoleId => ROLES.some((r) => r.id === v);
 
 export const UTILITY = ["smoke", "flash", "molotov", "he"] as const;
 export type UtilityId = (typeof UTILITY)[number];
+
+/**
+ * CS2 defs for the four grenades this page offers, per side.
+ *
+ * "Molotov" is the T spelling; the CT buys an incendiary. Same slot, same
+ * preference, different model — and showing a T molotov on the CT tab is the
+ * kind of small wrongness that makes a page look like it was not written by
+ * someone who plays.
+ */
+export const UTILITY_DEF: Record<Side, Record<UtilityId, number>> = {
+  T: { smoke: 45, flash: 43, molotov: 46, he: 44 },
+  CT: { smoke: 45, flash: 43, molotov: 48, he: 44 },
+};
 
 export const isUtility = (v: string): v is UtilityId =>
   (UTILITY as readonly string[]).includes(v);

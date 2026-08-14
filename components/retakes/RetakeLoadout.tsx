@@ -19,6 +19,18 @@ import {
 } from "@/lib/retakeLoadout";
 import "@/app/loadout/loadout.css";
 
+/**
+ * Icon URLs resolved on the server from the item catalog.
+ *
+ * Typed loosely on purpose — the shape comes from `getLoadoutIcons()` in a
+ * server-only module, and importing that type here would drag the catalog into
+ * the client bundle.
+ */
+type Icons = {
+  weapons: Record<number, string>;
+  utility: Record<Side, Record<string, string>>;
+};
+
 // Your competitive retakes loadout.
 //
 // Organised by round type rather than by weapon slot, because that is the
@@ -48,7 +60,40 @@ const ROUND_SLOTS: Record<RoundKind, Slot[]> = {
   full: ["FullBuyPrimary", "Secondary"],
 };
 
-export default function RetakeLoadoutPage({ signedIn }: { signedIn: boolean }) {
+/**
+ * A pick button's face: the item's icon, or its name when there is no icon.
+ *
+ * The old version hid the image on error and left the button completely empty,
+ * so a gun the icon source did not have was indistinguishable from no gun at
+ * all. A button on a settings page must always say what it does, so the name is
+ * the fallback rather than nothing.
+ */
+function PickIcon({ src, name }: { src?: string; name: string }) {
+  const [failed, setFailed] = useState(false);
+
+  if (!src || failed) {
+    return <span className="lo-pick-name">{name}</span>;
+  }
+
+  return (
+    <img
+      src={src}
+      alt={name}
+      className="lo-weapon-img"
+      loading="lazy"
+      draggable={false}
+      onError={() => setFailed(true)}
+    />
+  );
+}
+
+export default function RetakeLoadoutPage({
+  signedIn,
+  icons = { weapons: {}, utility: { T: {}, CT: {} } },
+}: {
+  signedIn: boolean;
+  icons?: Icons;
+}) {
   const { t } = useI18n();
   const [side, setSide] = useState<Side>("T");
   const [loadout, setLoadout] = useState<Loadout | null>(null);
@@ -226,17 +271,14 @@ export default function RetakeLoadoutPage({ signedIn }: { signedIn: boolean }) {
                             <button
                               key={o.id}
                               className={`lo-pick weapon ${value === o.id ? "on" : ""}`}
+                              aria-label={o.name}
+                              aria-pressed={value === o.id}
                               onClick={() => setWeapon(slot, o.id)}
                               onMouseEnter={(e) => setHoveredItem({ name: o.name, x: e.clientX, y: e.clientY })}
                               onMouseMove={(e) => setHoveredItem((prev) => (prev ? { ...prev, x: e.clientX, y: e.clientY } : null))}
                               onMouseLeave={() => setHoveredItem(null)}
                             >
-                              <img 
-                                src={`https://raw.githubusercontent.com/ChetdeJong/cs2-killfeed-generator/master/public/weapons/${o.name.toLowerCase().replace(/[^a-z0-9]/g, "")}.svg`} 
-                                alt={o.name} 
-                                className="lo-weapon-img"
-                                onError={(e) => { e.currentTarget.style.display = "none"; }}
-                              />
+                              <PickIcon src={icons.weapons[o.id]} name={o.name} />
                             </button>
                           ))}
                         </div>
@@ -249,22 +291,20 @@ export default function RetakeLoadoutPage({ signedIn }: { signedIn: boolean }) {
                     <div className="lo-picks">
                       {UTILITY.map((u) => {
                         const order = (loadout.utility[kind] ?? []).indexOf(u);
+                        const label = t(`utility.type.${u}`);
                         return (
                           <button
                             key={u}
                             className={`lo-pick util ${order >= 0 ? "on" : ""}`}
+                            aria-label={label}
+                            aria-pressed={order >= 0}
                             onClick={() => toggleUtility(kind, u)}
-                            onMouseEnter={(e) => setHoveredItem({ name: t(`utility.type.${u}`), x: e.clientX, y: e.clientY })}
+                            onMouseEnter={(e) => setHoveredItem({ name: label, x: e.clientX, y: e.clientY })}
                             onMouseMove={(e) => setHoveredItem((prev) => (prev ? { ...prev, x: e.clientX, y: e.clientY } : null))}
                             onMouseLeave={() => setHoveredItem(null)}
                           >
                             {order >= 0 && <span className="lo-order">{order + 1}</span>}
-                            <img 
-                              src={`https://raw.githubusercontent.com/ChetdeJong/cs2-killfeed-generator/master/public/weapons/${u.toLowerCase()}.svg`}
-                              alt={t(`utility.type.${u}`)}
-                              className="lo-weapon-img"
-                              onError={(e) => { e.currentTarget.style.display = "none"; }}
-                            />
+                            <PickIcon src={icons.utility[side]?.[u]} name={label} />
                           </button>
                         );
                       })}

@@ -51,6 +51,20 @@ const VETO_TURN_MS = 25_000;
 /** How long a completed match stays on screen before the lobby resets. */
 const READY_LINGER_MS = 15 * 60_000;
 
+/**
+ * Chat lines kept per match, and how fast one person may add to them.
+ *
+ * The log used to grow without a bound and be re-sent in full on every state
+ * push — which, since a chat message *is* a state push, made a long lobby send
+ * a linearly growing payload to everyone on every line typed. Keeping a window
+ * costs nothing: the client only ever draws the tail.
+ */
+const CHAT_HISTORY = 60;
+const CHAT_MAX_LENGTH = 240;
+const CHAT_MIN_GAP_MS = 500;
+const CHAT_BURST = 5;
+const CHAT_BURST_WINDOW_MS = 4_000;
+
 const STARTING_ELO = 1000;
 
 /**
@@ -103,6 +117,26 @@ function attachRetakesMatchmaking(io, { connectedUsers, loadRatings, prisma }) {
   // ------------------------------------------------------------------ helpers
 
   const socketFor = (steamId) => connectedUsers.get(String(steamId));
+
+  /** steamId -> timestamps of that player's recent chat lines. */
+  const chatHistory = new Map();
+
+  /**
+   * One line at a time, and no more than a short burst.
+   *
+   * A chat message triggers a full state push to every player in the match, so
+   * a loop typing into this event is a broadcast amplifier. The limit is loose
+   * enough that nobody typing normally will ever see it.
+   */
+  function allowChat(steamId) {
+    const at = now();
+    const recent = (chatHistory.get(steamId) ?? []).filter((t) => at - t < CHAT_BURST_WINDOW_MS);
+    if (recent.length > 0 && at - recent[recent.length - 1] < CHAT_MIN_GAP_MS) return false;
+    if (recent.length >= CHAT_BURST) return false;
+    recent.push(at);
+    chatHistory.set(steamId, recent);
+    return true;
+  }
 
   const emitTo = (steamId, event, payload) => {
     const sid = socketFor(steamId);
@@ -299,7 +333,15 @@ function attachRetakesMatchmaking(io, { connectedUsers, loadRatings, prisma }) {
           }
         : null,
       result: match.phase === "ready" ? { map: match.map, connect: match.connect, sides: match.teams.map((t) => t.side) } : null,
-      chat: match.chat.slice(-40),
+      // Team chat is filtered here, not in the browser.
+      //
+      // It used to be sent whole and hidden with a client-side filter, which is
+      // not hiding it: the other team's calls were sitting in every viewer's
+      // socket payload, one devtools panel away. A team channel that leaks is
+      // worse than no team channel, because people trust it.
+      chat: match.chat
+        .filter((c) => c.team == null || c.team === mine)
+        .slice(-CHAT_HISTORY),
     };
   }
 
@@ -900,15 +942,30 @@ function attachRetakesMatchmaking(io, { connectedUsers, loadRatings, prisma }) {
     socket.on("rq:chat", ({ text, teamOnly } = {}) => {
       const id = me();
       const match = matches.get(matchOf.get(id));
-      const body = String(text ?? "").slice(0, 240).trim();
+      // Trim first, then cut: trimming after the slice let 240 spaces through as
+      // a "message", and let a long line be cut mid-word for no reason.
+      const body = String(text ?? "").trim().slice(0, CHAT_MAX_LENGTH);
       if (!match || !body) return;
+
+      // Only people in the match may write to its log. Without this, anybody who
+      // knew the event name could post into a lobby they were not in.
       const from = match.teams.flatMap((t) => t.players).find((p) => p.steamId === id);
+      if (!from) return;
+
+      if (!allowChat(id)) {
+        return socket.emit("rq:notice", { kind: "error", code: "chat_rate_limited" });
+      }
+
       let teamIndex = null;
       if (teamOnly) {
-        const team = match.teams.find(t => t.players.some(p => p.steamId === id));
+        const team = match.teams.find((t) => t.players.some((p) => p.steamId === id));
         if (team) teamIndex = team.index !== undefined ? team.index : match.teams.indexOf(team);
       }
-      match.chat.push({ from: id, name: from?.name ?? null, text: body, at: now(), team: teamIndex });
+
+      match.chat.push({ from: id, name: from.name ?? null, text: body, at: now(), team: teamIndex });
+      if (match.chat.length > CHAT_HISTORY * 2) {
+        match.chat = match.chat.slice(-CHAT_HISTORY);
+      }
       syncMatch(match);
     });
 
@@ -916,6 +973,7 @@ function attachRetakesMatchmaking(io, { connectedUsers, loadRatings, prisma }) {
       const id = me();
       if (!id) return;
       invites.delete(id);
+      chatHistory.delete(id);
       const party = partyFor(id);
       if (!party) return;
 

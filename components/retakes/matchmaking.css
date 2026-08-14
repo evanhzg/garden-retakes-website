@@ -1,0 +1,223 @@
+/* The global matchmaking bar and the accept modal.
+ *
+ * Both used to be written as inline style objects, which is why they were the
+ * two surfaces on the site that ignored the design system: rounded corners and
+ * a soft gradient on a page built from sharp edges and one hot accent. They are
+ * stylesheets now, sizing off the same tokens as everything else, so a theme
+ * change or an accent change carries through instead of being re-specified.
+ *
+ * The accept window is one of the two moments the lobby CSS reserves drama for,
+ * so this is the loud one — but the loudness is a draining bar and a countdown,
+ * not decoration. Everything that moves collapses under reduce-motion.
+ */
+
+/* --- the bar -------------------------------------------------------------- */
+
+.mm-bar {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+  height: 64px;
+  padding: 0 var(--page-pad, 20px);
+  background: var(--color-accent);
+  color: #fff;
+  border-bottom: 2px solid color-mix(in srgb, #000 22%, transparent);
+}
+
+.mm-bar-side { display: flex; align-items: center; gap: 12px; flex: 1 1 0; min-width: 0; }
+.mm-bar-side.end { justify-content: flex-end; }
+.mm-bar-centre { display: flex; justify-content: center; flex: 0 0 auto; }
+
+.mm-avatars { display: flex; }
+.mm-avatar {
+  width: 34px; height: 34px;
+  display: grid; place-items: center;
+  overflow: hidden;
+  background: color-mix(in srgb, #000 45%, transparent);
+  border: 2px solid color-mix(in srgb, #fff 55%, transparent);
+  font-size: 13px; font-weight: 800;
+}
+.mm-avatar + .mm-avatar { margin-left: -10px; }
+.mm-avatar img { width: 100%; height: 100%; object-fit: cover; }
+
+.mm-party-name {
+  font-weight: 800; font-size: 15px;
+  letter-spacing: 0.02em;
+  overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
+}
+
+.mm-cta {
+  padding: 9px 44px;
+  border: 2px solid #fff;
+  background: #fff;
+  color: var(--color-accent);
+  font: inherit; font-weight: 800; font-size: 15px;
+  letter-spacing: 0.06em; text-transform: uppercase; text-decoration: none;
+  cursor: pointer;
+  transition: transform 0.1s ease, background 0.15s ease, color 0.15s ease;
+}
+.mm-cta:hover { background: transparent; color: #fff; }
+.mm-cta:active { transform: scale(0.97); }
+
+.mm-searching {
+  display: flex; align-items: center; gap: 10px;
+  padding: 9px 26px;
+  border: 2px solid color-mix(in srgb, #fff 55%, transparent);
+  background: color-mix(in srgb, #000 18%, transparent);
+  color: #fff; font: inherit; font-weight: 800; font-size: 15px;
+  letter-spacing: 0.06em; text-transform: uppercase;
+  cursor: pointer;
+}
+.mm-searching:hover { border-color: #fff; }
+.mm-searching-time { font-family: var(--font-mono); font-variant-numeric: tabular-nums; }
+
+.mm-dot {
+  width: 9px; height: 9px; border-radius: 50%;
+  background: #fff;
+  animation: mm-blink 1.4s ease-in-out infinite;
+}
+
+@keyframes mm-blink { 0%, 100% { opacity: 1; } 50% { opacity: 0.25; } }
+
+/* --- the accept modal ----------------------------------------------------- */
+
+.mm-scrim {
+  position: fixed; inset: 0; z-index: 999999;
+  display: grid; place-items: center;
+  padding: 20px;
+  background: color-mix(in srgb, #000 82%, transparent);
+  backdrop-filter: blur(10px);
+  -webkit-backdrop-filter: blur(10px);
+  animation: mm-scrim-in 0.16s ease-out;
+}
+
+.mm-modal {
+  position: relative;
+  width: min(460px, 100%);
+  background: var(--color-surface);
+  color: var(--color-text);
+  border: 2px solid var(--color-text);
+  box-shadow: 0 24px 70px rgb(0 0 0 / 0.55);
+  animation: mm-modal-in 0.22s cubic-bezier(0.2, 0.9, 0.25, 1);
+}
+
+/* The draining bar is the clock. It is the top edge of the panel so it reads
+   before the number does, and it is the only thing that changes colour. */
+.mm-drain {
+  height: 5px;
+  background: color-mix(in srgb, var(--color-text) 14%, transparent);
+}
+.mm-drain-fill {
+  height: 100%;
+  background: var(--color-accent);
+  transition: width 1s linear;
+}
+.mm-drain-fill.urgent { background: #e03a1c; }
+
+.mm-modal-body { padding: 26px 26px 24px; text-align: center; }
+
+.mm-kicker {
+  display: block;
+  font-size: 11px; font-weight: 800;
+  letter-spacing: 0.22em; text-transform: uppercase;
+  color: var(--color-accent);
+}
+
+.mm-title {
+  margin: 6px 0 2px;
+  font-size: clamp(26px, 5vw, 34px);
+  font-weight: 800; letter-spacing: -0.02em; line-height: 1.05;
+}
+
+.mm-mode { font-size: 13px; color: var(--muted); font-weight: 600; }
+
+.mm-count {
+  margin: 14px 0 4px;
+  font-family: var(--font-mono);
+  font-variant-numeric: tabular-nums;
+  font-size: clamp(48px, 12vw, 66px);
+  font-weight: 700; line-height: 1;
+  letter-spacing: -0.04em;
+}
+.mm-count.urgent { color: #e03a1c; }
+
+.mm-accepted {
+  font-size: 12px; font-weight: 700;
+  letter-spacing: 0.1em; text-transform: uppercase;
+  color: var(--muted);
+}
+
+/* Who has accepted, one mark per player, split by side. Without this the modal
+   asks you to wait without saying what for. */
+.mm-teams {
+  display: flex; align-items: center; justify-content: center;
+  gap: 18px; margin: 18px 0 22px;
+}
+.mm-team { display: flex; gap: 6px; }
+.mm-vs { font-size: 11px; font-weight: 800; letter-spacing: 0.12em; color: var(--muted); }
+
+.mm-slot {
+  width: 26px; height: 8px;
+  background: color-mix(in srgb, var(--color-text) 16%, transparent);
+  transition: background 0.2s ease;
+}
+.mm-slot.ready { background: var(--color-accent); }
+.mm-slot.me { outline: 2px solid var(--color-text); outline-offset: 2px; }
+
+.mm-actions { display: flex; gap: 10px; justify-content: center; }
+
+.mm-btn {
+  flex: 1 1 0;
+  padding: 13px 20px;
+  border: 2px solid var(--color-text);
+  background: transparent;
+  color: var(--color-text);
+  font: inherit; font-weight: 800; font-size: 15px;
+  letter-spacing: 0.08em; text-transform: uppercase;
+  cursor: pointer;
+  transition: background 0.15s ease, color 0.15s ease, transform 0.1s ease;
+}
+.mm-btn:hover:not(:disabled) { background: var(--color-text); color: var(--color-bg); }
+.mm-btn:active:not(:disabled) { transform: scale(0.985); }
+
+.mm-btn.primary {
+  border-color: var(--color-accent);
+  background: var(--color-accent);
+  color: #fff;
+}
+.mm-btn.primary:hover:not(:disabled) { background: transparent; color: var(--color-accent); }
+
+.mm-btn:disabled { cursor: default; opacity: 0.55; }
+
+/* Once you have accepted there is nothing left to press, so the buttons are
+   replaced by what you are actually waiting on. */
+.mm-waiting {
+  padding: 13px 20px;
+  border: 2px dashed color-mix(in srgb, var(--color-text) 40%, transparent);
+  font-size: 13px; font-weight: 800;
+  letter-spacing: 0.08em; text-transform: uppercase;
+  color: var(--muted);
+}
+
+@keyframes mm-scrim-in { from { opacity: 0; } to { opacity: 1; } }
+@keyframes mm-modal-in {
+  from { opacity: 0; transform: translateY(14px) scale(0.97); }
+  to { opacity: 1; transform: none; }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  html:not([data-motion="full"]) .mm-scrim,
+  html:not([data-motion="full"]) .mm-modal { animation: none; }
+  html:not([data-motion="full"]) .mm-dot { animation: none; }
+  html:not([data-motion="full"]) .mm-drain-fill { transition: none; }
+}
+html[data-motion="off"] .mm-scrim,
+html[data-motion="off"] .mm-modal { animation: none; }
+html[data-motion="off"] .mm-dot { animation: none; }
+html[data-motion="off"] .mm-drain-fill { transition: none; }
+
+@media (max-width: 720px) {
+  .mm-bar { gap: 10px; padding: 0 12px; }
+  .mm-party-name { display: none; }
+  .mm-cta { padding: 9px 24px; }
+}
