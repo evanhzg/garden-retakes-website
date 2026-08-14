@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useState } from "react";
+import MedalIcon from "@/components/profile/MedalIcon";
 
 // Medals under the name, beside the connections.
 //
@@ -43,11 +44,7 @@ export default function MedalCase({ steamId }: { steamId: string }) {
           style={{ ["--tint" as string]: m.colour }}
           data-title={`${m.name} — ${m.description}${m.note ? ` (${m.note})` : ""}`}
         >
-          {m.icon.startsWith("/") ? (
-            <img className="medal-image" src={m.icon} alt={m.name} style={{ width: "24px", height: "24px", borderRadius: "50%", verticalAlign: "middle" }} aria-hidden />
-          ) : (
-            <span className="medal-icon" aria-hidden>{m.icon}</span>
-          )}
+          <MedalIcon slug={m.slug} colour={m.colour} size={26} />
           <span className="medal-name">{m.name}</span>
         </span>
       ))}

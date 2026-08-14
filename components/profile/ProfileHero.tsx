@@ -7,6 +7,7 @@ import ProfileSettingsModal from "@/components/profile/ProfileSettingsModal";
 import FeaturedClip from "@/components/profile/FeaturedClip";
 import { ConnectionsBar } from "@/components/profile/Connections";
 import MedalCase from "@/components/profile/MedalCase";
+import RankLevelBadge from "@/components/profile/RankLevelBadge";
 import { M4A1S, M4A4, SIGNATURE_SLOTS, normaliseStore } from "@/lib/inventory";
 import type { InventoryItem, InventoryStore, Loadout, Side } from "@/lib/inventory";
 import { useI18n } from '@/components/I18nProvider';
@@ -179,7 +180,6 @@ export default function ProfileHero({
   const headline = [
     { label: "Rating", value: stats.rating.toFixed(2) },
     { label: "CS Rating", value: stats.isCalibrating ? "Calibrating" : (stats.elo ?? "—"), sub: stats.peakElo ? `peak ${stats.peakElo}` : undefined },
-    { label: "CR Rank", value: stats.crMatches && stats.crMatches < 10 ? "Calibrating" : (stats.crElo ?? "—"), sub: stats.crPeakElo ? `peak ${stats.crPeakElo}` : undefined },
     { label: "K/D", value: stats.kd.toFixed(2) },
     { label: "ADR", value: stats.adr.toFixed(0) },
   ];
@@ -290,6 +290,9 @@ export default function ProfileHero({
       </div>
 
       <div className="pro-headline">
+        <div className="pro-stat pro-stat-cr">
+          <RankLevelBadge elo={stats.crElo} matchesPlayed={stats.crMatches ?? 0} size={52} />
+        </div>
         {headline.map((h) => (
           <div key={h.label} className="pro-stat">
             <span className="num pro-stat-v">{h.value}</span>

@@ -372,8 +372,10 @@ model UserSettings {
 ///
 /// Weapons live in UserSettings above, because the allocator already reads that
 /// every buy round and a second copy here would be a settings page that does
-/// nothing. Role and utility preference have no in-game counterpart, so they
-/// are website-owned: your team can read them, the server cannot act on them.
+/// nothing. Utility preference has no in-game counterpart, so it stays
+/// website-owned: your team can read it, the server cannot act on it. Role is
+/// the global fallback the plugin reads when a player has no map-specific
+/// override in GardenMapRolePreference — see RE5-plugin's SpawnManager.
 model GardenRetakeLoadout {
   SteamId      BigInt   @id @db.UnsignedBigInt
   /// One of lib/retakeLoadout ROLES, or "" for none chosen.
@@ -386,6 +388,39 @@ model GardenRetakeLoadout {
   UpdatedAt    DateTime @default(now()) @updatedAt @db.DateTime(6)
 
   @@map("GardenRetakeLoadouts")
+}
+
+/// A role pick that only applies on one map, layered over the global
+/// GardenRetakeLoadout.RoleT/RoleCt fallback — e.g. "Anchor" on Mirage
+/// specifically means the A-site anchor spot, not the B one. Site only means
+/// anything for the roles that hold ground (anchor/rotator); null Site is a
+/// map-wide override with no site split. Read by RE5-plugin's SpawnManager to
+/// bias (never force) spawn placement in Competitive Retakes matches.
+model GardenMapRolePreference {
+  SteamId   BigInt   @db.UnsignedBigInt
+  /// de_ map name, e.g. "de_mirage".
+  Map       String   @db.VarChar(32)
+  /// "T" | "CT".
+  Side      String   @db.VarChar(2)
+  /// One of lib/retakeLoadout ROLES.
+  RoleId    String   @db.VarChar(16)
+  /// "A" | "B", or null for a map-wide (not site-specific) override.
+  Site      String?  @db.VarChar(1)
+  UpdatedAt DateTime @default(now()) @updatedAt @db.DateTime(6)
+
+  @@id([SteamId, Map, Side])
+  @@map("GardenMapRolePreferences")
+}
+
+/// Whether a player has already been walked through the matchmaking
+/// tutorial — kept separate from GardenRetakeLoadout so this table's one job
+/// stays obvious and a future "replay the tutorial" button has a single flag
+/// to flip, not a loadout field to repurpose.
+model GardenOnboardingState {
+  SteamId               BigInt  @id @db.UnsignedBigInt
+  SeenMatchmakingTutorial Boolean @default(false)
+
+  @@map("GardenOnboardingStates")
 }
 
 model WebFriendship {

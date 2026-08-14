@@ -11,6 +11,7 @@ import { FormCard, FormLine, useRosterForm, type RecentForm } from "./PlayerForm
 import LevelBadge from "./LevelBadge";
 import LiveGames from "./LiveGames";
 import PostMatchModal from "./PostMatchModal";
+import MatchmakingWalkthrough from "@/components/onboarding/MatchmakingWalkthrough";
 import { motion } from "framer-motion";
 import "@/app/lobby/retakes-lobby.css";
 
@@ -460,6 +461,7 @@ export default function RetakesLobby({ signedIn, lobbyId }: { signedIn: boolean,
 
   return (
     <div className="rq">
+      <MatchmakingWalkthrough signedIn={signedIn} />
       <section className="rq-hero">
         <span className="rq-kicker">{t("lobby.kicker")}</span>
         <h1>{t("lobby.title")}</h1>
@@ -674,7 +676,7 @@ export default function RetakesLobby({ signedIn, lobbyId }: { signedIn: boolean,
                 <span style={{ fontWeight: 'bold', fontSize: '14px', color: safeQueue ? 'var(--color-accent)' : 'var(--muted)', transition: 'color 0.2s' }}>Safe Queue</span>
               </label>
 
-              <div style={{ marginBottom: 24, padding: "16px", background: "color-mix(in srgb, var(--color-surface) 50%, transparent)", borderRadius: "8px", border: "1px solid var(--border)" }}>
+              <div data-tutorial="role-picker" style={{ marginBottom: 24, padding: "16px", background: "color-mix(in srgb, var(--color-surface) 50%, transparent)", borderRadius: "8px", border: "1px solid var(--border)" }}>
                  <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: "12px" }}>
                     <h3 style={{ margin: 0, fontSize: "16px" }}>Your Role</h3>
                     <div style={{ display: "flex", gap: "8px" }}>
@@ -744,6 +746,7 @@ export default function RetakesLobby({ signedIn, lobbyId }: { signedIn: boolean,
 
               <div style={{ display: "flex", gap: "12px", marginBottom: "24px" }}>
                 <button
+                  data-tutorial="queue-play"
                   className="btn btn-primary rq-play"
                   disabled={(!party?.isLeader && !match) || (conflicts.length > 0 && !match)}
                   onClick={() => {

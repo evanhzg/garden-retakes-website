@@ -1,7 +1,8 @@
 "use client";
 
 import { useCallback, useEffect, useMemo, useState } from "react";
-import { Crosshair, Ghost, Target, Anchor, RotateCcw, Mic } from "lucide-react";
+import { motion, AnimatePresence } from "framer-motion";
+import { Crosshair, Ghost, Target, Anchor, RotateCcw, Mic, Users, Package, StickyNote } from "lucide-react";
 import { useI18n } from "@/components/I18nProvider";
 import {
   DEFAULT_UTILITY,
@@ -17,6 +18,7 @@ import {
   type UtilityPrefs,
   type WeaponPrefs,
 } from "@/lib/retakeLoadout";
+import { MAPS } from "@/lib/utilityShared";
 import "@/app/loadout/loadout.css";
 
 /**
@@ -71,19 +73,152 @@ const ROUND_SLOTS: Record<RoundKind, Slot[]> = {
 function PickIcon({ src, name }: { src?: string; name: string }) {
   const [failed, setFailed] = useState(false);
 
-  if (!src || failed) {
-    return <span className="lo-pick-name">{name}</span>;
-  }
+  return (
+    <span className="lo-icon-chip">
+      {!src || failed ? (
+        <span className="lo-pick-name">{name}</span>
+      ) : (
+        <img
+          src={src}
+          alt={name}
+          className="lo-weapon-img"
+          loading="lazy"
+          draggable={false}
+          onError={() => setFailed(true)}
+        />
+      )}
+    </span>
+  );
+}
+
+const TABS = [
+  { id: "role", labelKey: "loadout.tab.role", Icon: Users },
+  { id: "loadout", labelKey: "loadout.tab.loadout", Icon: Package },
+  { id: "notes", labelKey: "loadout.tab.notes", Icon: StickyNote },
+] as const;
+type TabId = (typeof TABS)[number]["id"];
+
+/** Side accent, used as the tint behind every buy-menu-style icon chip. */
+const SIDE_TINT: Record<Side, string> = { T: "#e0a94a", CT: "#6aa9e0" };
+
+/** Only anchor/rotator hold a specific site — every other role is the same job map-wide. */
+const SITE_ROLES = new Set(["anchor", "rotator"]);
+const SITES = ["A", "B"] as const;
+
+type MapRole = { map: string; side: Side; roleId: string; site: "A" | "B" | null };
+
+/**
+ * Per-map role overrides, layered on top of the global role picked above.
+ *
+ * A separate table behind a separate endpoint, so it gets its own small save
+ * state rather than folding into the page's one dirty flag — most players
+ * will never touch this, and making every visitor's autosave wait on a table
+ * they don't use would be the wrong trade.
+ */
+function MapRoleOverrides({ side }: { side: Side }) {
+  const { t } = useI18n();
+  const [rows, setRows] = useState<MapRole[] | null>(null);
+  const [map, setMap] = useState("");
+  const [roleId, setRoleId] = useState("");
+  const [site, setSite] = useState<"A" | "B" | null>(null);
+  const [busy, setBusy] = useState(false);
+
+  useEffect(() => {
+    fetch("/api/loadout/map-role")
+      .then((r) => (r.ok ? r.json() : { rows: [] }))
+      .then((d) => setRows(d.rows ?? []))
+      .catch(() => setRows([]));
+  }, []);
+
+  const sideRoles = ROLES.filter((r) => r.side === side || r.side === "both");
+  const sideRows = (rows ?? []).filter((r) => r.side === side);
+
+  const save = async (m: string, s: Side, r: string, st: "A" | "B" | null) => {
+    setBusy(true);
+    try {
+      const res = await fetch("/api/loadout/map-role", {
+        method: "PUT",
+        headers: { "content-type": "application/json" },
+        body: JSON.stringify({ map: m, side: s, roleId: r, site: st }),
+      });
+      if (!res.ok) return;
+      setRows((prev) => {
+        const rest = (prev ?? []).filter((x) => !(x.map === m && x.side === s));
+        return r ? [...rest, { map: m, side: s, roleId: r, site: st }] : rest;
+      });
+    } finally {
+      setBusy(false);
+    }
+  };
+
+  const add = () => {
+    if (!map || !roleId) return;
+    save(map, side, roleId, SITE_ROLES.has(roleId) ? site : null);
+    setMap("");
+    setRoleId("");
+    setSite(null);
+  };
 
   return (
-    <img
-      src={src}
-      alt={name}
-      className="lo-weapon-img"
-      loading="lazy"
-      draggable={false}
-      onError={() => setFailed(true)}
-    />
+    <div className="lo-maproles">
+      <h3>{t("loadout.maprole.title")}</h3>
+      <p className="lo-hint">{t("loadout.maprole.hint")}</p>
+
+      {sideRows.length > 0 && (
+        <ul className="lo-maprole-list">
+          {sideRows.map((r) => (
+            <li key={r.map}>
+              <span className="lo-maprole-map">{MAPS[r.map]?.label ?? r.map}</span>
+              <span className="lo-maprole-role">
+                {t(`loadout.role.${r.roleId}`)}
+                {r.site && <span className="lo-maprole-site">{r.site}</span>}
+              </span>
+              <button
+                className="btn btn-ghost lo-maprole-remove"
+                disabled={busy}
+                onClick={() => save(r.map, side, "", null)}
+              >
+                {t("loadout.maprole.remove")}
+              </button>
+            </li>
+          ))}
+        </ul>
+      )}
+
+      <div className="lo-maprole-add">
+        <select value={map} onChange={(e) => setMap(e.target.value)} className="input">
+          <option value="">{t("loadout.maprole.pickmap")}</option>
+          {Object.entries(MAPS)
+            .filter(([id]) => !sideRows.some((r) => r.map === id))
+            .map(([id, m]) => (
+              <option key={id} value={id}>{m.label}</option>
+            ))}
+        </select>
+        <select value={roleId} onChange={(e) => setRoleId(e.target.value)} className="input">
+          <option value="">{t("loadout.maprole.pickrole")}</option>
+          {sideRoles.map((r) => (
+            <option key={r.id} value={r.id}>{t(`loadout.role.${r.id}`)}</option>
+          ))}
+        </select>
+        {roleId && SITE_ROLES.has(roleId) && (
+          <div className="lo-maprole-sites">
+            {SITES.map((s) => (
+              <button
+                key={s}
+                type="button"
+                className={`lo-maprole-sitebtn ${site === s ? "on" : ""}`}
+                onClick={() => setSite(site === s ? null : s)}
+              >
+                {s}
+              </button>
+            ))}
+          </div>
+        )}
+        <button className="btn btn-secondary" disabled={!map || !roleId || busy} onClick={add}>
+          {t("loadout.maprole.add")}
+        </button>
+      </div>
+    </div>
   );
 }
 
@@ -96,6 +231,7 @@ export default function RetakeLoadoutPage({
 }) {
   const { t } = useI18n();
   const [side, setSide] = useState<Side>("T");
+  const [tab, setTab] = useState<TabId>("role");
   const [loadout, setLoadout] = useState<Loadout | null>(null);
   const [saving, setSaving] = useState(false);
   const [dirty, setDirty] = useState(false);
@@ -184,7 +320,7 @@ export default function RetakeLoadoutPage({
   }
 
   return (
-    <div className="lo">
+    <div className="lo" style={{ ["--chip-tint" as string]: SIDE_TINT[side] }}>
       <section className="lo-hero">
         <span className="lo-kicker">{t("loadout.kicker")}</span>
         <h1>{t("loadout.title")}</h1>
@@ -209,7 +345,28 @@ export default function RetakeLoadoutPage({
         <p className="muted lo-loading">{t("loadout.loading")}</p>
       ) : (
         <>
-          <section className="lo-panel">
+          <div className="lo-tabs" role="tablist">
+            {TABS.map(({ id, labelKey, Icon }) => (
+              <button
+                key={id}
+                role="tab"
+                aria-selected={tab === id}
+                className={`lo-tab ${tab === id ? "on" : ""}`}
+                onClick={() => setTab(id)}
+              >
+                <Icon size={15} />
+                {t(labelKey)}
+                {id === "role" && loadout.isCaller && <span className="lo-tab-badge">C</span>}
+                {tab === id && (
+                  <motion.span className="lo-tab-underline" layoutId="lo-tab-underline" transition={{ type: "spring", stiffness: 400, damping: 32 }} />
+                )}
+              </button>
+            ))}
+          </div>
+
+          <AnimatePresence mode="wait">
+          {tab === "role" && (
+          <motion.section key="role" className="lo-panel" initial={{ opacity: 0, y: 6 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, y: -6 }} transition={{ duration: 0.15 }}>
             <header className="lo-panel-head">
               <h2>{t("loadout.role")}</h2>
               <span className="lo-tag web">{t("loadout.teamonly")}</span>
@@ -244,9 +401,13 @@ export default function RetakeLoadoutPage({
                 <span className="lo-role-desc">{t("loadout.role.caller.desc")}</span>
               </button>
             </div>
-          </section>
 
-          <section className="lo-panel">
+            <MapRoleOverrides side={side} />
+          </motion.section>
+          )}
+
+          {tab === "loadout" && (
+          <motion.section key="loadout" className="lo-panel" initial={{ opacity: 0, y: 6 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, y: -6 }} transition={{ duration: 0.15 }}>
             <header className="lo-panel-head">
               <h2>{t("loadout.weapons")}</h2>
               <span className="lo-tag game">{t("loadout.ingame")}</span>
@@ -313,9 +474,11 @@ export default function RetakeLoadoutPage({
                 </div>
               ))}
             </div>
-          </section>
+          </motion.section>
+          )}
 
-          <section className="lo-panel">
+          {tab === "notes" && (
+          <motion.section key="notes" className="lo-panel" initial={{ opacity: 0, y: 6 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, y: -6 }} transition={{ duration: 0.15 }}>
             <header className="lo-panel-head">
               <h2>{t("loadout.notes")}</h2>
               <span className="lo-tag web">{t("loadout.teamonly")}</span>
@@ -327,7 +490,9 @@ export default function RetakeLoadoutPage({
               placeholder={t("loadout.notesplaceholder")}
               onChange={(e) => patch((l) => ({ ...l, notes: e.target.value }))}
             />
-          </section>
+          </motion.section>
+          )}
+          </AnimatePresence>
 
           <div className="lo-save">
             <button className="btn btn-primary" onClick={save} disabled={saving || !dirty}>

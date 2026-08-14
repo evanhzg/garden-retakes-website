@@ -36,6 +36,38 @@
 .lo-sidetab.t.on { border-color: #e0a94a; background: color-mix(in srgb, #e0a94a 16%, transparent); }
 .lo-sidetab.ct.on { border-color: #6aa9e0; background: color-mix(in srgb, #6aa9e0 16%, transparent); }
 
+/* Section tabs — Role / Loadout / Notes each get the whole page instead of
+   fighting each other for scroll space. Weapons and their per-round utility
+   stay together in Loadout: that comparison (pistol vs half vs full, side by
+   side) is the one thing this page is actually for. */
+.lo-tabs {
+  position: relative;
+  display: flex; gap: 4px; justify-content: center;
+  margin-bottom: 24px; padding-bottom: 0;
+  border-bottom: 1px solid var(--lo-edge);
+}
+.lo-tab {
+  position: relative;
+  padding: 12px 22px; border: none; background: none;
+  color: var(--muted); font: inherit; font-weight: 800; font-size: 13.5px;
+  letter-spacing: 0.06em; text-transform: uppercase; cursor: pointer;
+  display: flex; align-items: center; gap: 8px;
+  transition: color 0.15s ease;
+}
+.lo-tab:hover { color: var(--color-text); }
+.lo-tab.on { color: var(--color-text); }
+.lo-tab-underline {
+  position: absolute; bottom: -1px; left: 0; right: 0; height: 2px;
+  background: var(--color-accent);
+  box-shadow: 0 0 10px color-mix(in srgb, var(--color-accent) 60%, transparent);
+}
+.lo-tab-badge {
+  display: inline-grid; place-items: center;
+  min-width: 16px; height: 16px; padding: 0 4px; border-radius: 999px;
+  background: color-mix(in srgb, var(--color-accent) 25%, transparent);
+  color: var(--color-accent); font-size: 9.5px; font-weight: 800;
+}
+
 .lo-panel {
   background: var(--lo-panel);
   background-image: linear-gradient(145deg, color-mix(in srgb, var(--color-text) 3%, transparent), transparent);
@@ -74,6 +106,36 @@
 .lo-role-name { font-size: 15px; font-weight: 800; display: flex; align-items: center; }
 .lo-role-desc { font-size: 12px; color: var(--muted); line-height: 1.4; opacity: 0.85; }
 
+/* Per-map role overrides, tucked below the global role grid — most players
+   never open this, so it stays quiet rather than competing with it. */
+.lo-maproles { margin-top: 28px; padding-top: 20px; border-top: 1px dashed var(--lo-edge); }
+.lo-maproles h3 { margin: 0 0 4px; font-size: 13px; font-weight: 800; letter-spacing: 0.06em; text-transform: uppercase; color: var(--muted); }
+.lo-maprole-list { list-style: none; margin: 12px 0; padding: 0; display: grid; gap: 6px; }
+.lo-maprole-list li {
+  display: flex; align-items: center; gap: 10px;
+  padding: 8px 12px; border-radius: 10px;
+  border: 1px solid var(--lo-edge);
+  background: color-mix(in srgb, var(--color-text) 2%, transparent);
+  font-size: 13px;
+}
+.lo-maprole-map { font-weight: 800; min-width: 100px; }
+.lo-maprole-role { display: flex; align-items: center; gap: 6px; color: var(--muted); flex: 1; }
+.lo-maprole-site {
+  display: inline-grid; place-items: center; width: 18px; height: 18px; border-radius: 5px;
+  background: color-mix(in srgb, var(--color-accent) 20%, transparent);
+  color: var(--color-accent); font-size: 10px; font-weight: 800;
+}
+.lo-maprole-remove { margin-left: auto; font-size: 12px; padding: 4px 10px; }
+.lo-maprole-add { display: flex; flex-wrap: wrap; align-items: center; gap: 8px; }
+.lo-maprole-add select { padding: 8px 10px; border-radius: 8px; min-width: 150px; }
+.lo-maprole-sites { display: flex; gap: 4px; }
+.lo-maprole-sitebtn {
+  width: 32px; height: 32px; border-radius: 8px;
+  border: 1.5px solid var(--lo-edge);
+  background: transparent; color: var(--color-text); font-weight: 800; cursor: pointer;
+}
+.lo-maprole-sitebtn.on { border-color: var(--color-accent); background: color-mix(in srgb, var(--color-accent) 18%, transparent); color: var(--color-accent); }
+
 .lo-rounds { display: grid; grid-template-columns: repeat(auto-fit, minmax(300px, 1fr)); gap: 16px; }
 .lo-round {
   padding: 20px; border-radius: 14px;
@@ -100,8 +162,34 @@
 .lo-pick:hover { transform: translateY(-1px); border-color: color-mix(in srgb, var(--color-accent) 55%, transparent); box-shadow: 0 4px 10px rgba(0,0,0,0.1); }
 .lo-pick.on { transform: translateY(-1px); border-color: var(--color-accent); background: color-mix(in srgb, var(--color-accent) 16%, transparent); box-shadow: 0 4px 12px color-mix(in srgb, var(--color-accent) 25%, transparent); }
 
-.lo-pick.weapon { display: flex; flex-direction: column; align-items: center; justify-content: center; padding: 10px 12px; min-width: 68px; min-height: 60px; gap: 6px; }
-.lo-weapon-img { width: 44px; height: auto; max-height: 34px; object-fit: contain; filter: drop-shadow(0 2px 4px rgba(0,0,0,0.5)); transition: transform 0.2s; }
+.lo-pick.weapon { display: flex; flex-direction: column; align-items: center; justify-content: center; padding: 10px 12px; min-width: 72px; min-height: 68px; gap: 8px; }
+
+/* Buy-menu style: a flat white silhouette on a tinted chip, the closest we can
+   get to CS2's own buy menu without a second icon asset pipeline — the site
+   only has full-colour skin renders, so the mono look is derived from those
+   with a filter rather than sourced from a new pack. Chip colour follows the
+   side accent already used on the T/CT tabs, so a Loadout tab full of weapons
+   still reads as "this side" at a glance. */
+.lo-icon-chip {
+  display: grid; place-items: center;
+  width: 52px; height: 52px; border-radius: 12px;
+  background: color-mix(in srgb, var(--chip-tint, var(--color-accent)) 16%, transparent);
+  border: 1px solid color-mix(in srgb, var(--chip-tint, var(--color-accent)) 30%, transparent);
+  transition: background 0.2s, border-color 0.2s, transform 0.2s;
+}
+.lo-pick.weapon:hover .lo-icon-chip,
+.lo-pick.util:hover .lo-icon-chip { transform: scale(1.08); }
+.lo-pick.on .lo-icon-chip {
+  background: color-mix(in srgb, var(--chip-tint, var(--color-accent)) 32%, transparent);
+  border-color: var(--chip-tint, var(--color-accent));
+}
+.lo-weapon-img {
+  width: 38px; height: auto; max-height: 28px; object-fit: contain;
+  /* brightness(0) flattens the render to black, invert(1) flips it to white —
+     together they turn any coloured skin/base render into a flat silhouette. */
+  filter: brightness(0) invert(1);
+  transition: transform 0.2s;
+}
 .lo-pick.weapon:hover .lo-weapon-img { transform: scale(1.1); }
 .lo-weapon-name { font-size: 10px; display: none; }
 
@@ -115,13 +203,16 @@
 }
 
 /* Utility is ordered, not just selected — the number is the preference rank. */
-.lo-pick.util { display: inline-flex; align-items: center; gap: 6px; min-height: 44px; }
-.lo-pick.util .lo-weapon-img { width: 26px; max-height: 30px; }
+.lo-pick.util { position: relative; display: inline-flex; align-items: center; gap: 8px; min-height: 44px; padding: 6px 12px 6px 6px; }
+.lo-pick.util .lo-icon-chip { width: 34px; height: 34px; border-radius: 9px; }
+.lo-pick.util .lo-weapon-img { width: 20px; max-height: 20px; }
 .lo-order {
+  position: absolute; top: 2px; left: 2px; z-index: 1;
   display: grid; place-items: center;
   width: 15px; height: 15px; border-radius: 50%;
   background: var(--color-accent); color: #fff;
   font-size: 9.5px; font-weight: 800;
+  box-shadow: 0 1px 4px rgba(0,0,0,0.4);
 }
 
 .lo-notes {
