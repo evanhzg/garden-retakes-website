@@ -1,13 +1,16 @@
+.page {
+  max-width: 1000px;
+  margin: 0 auto;
+  padding: 0 clamp(12px, 3vw, 28px) clamp(40px, 7vh, 90px);
+  position: relative;
+}
+
 .container {
-  min-height: 100vh;
   display: flex;
   flex-direction: column;
   align-items: center;
-  justify-content: center;
-  background: var(--color-bg);
   color: var(--color-text);
   font-family: var(--font-body);
-  padding: var(--space-8) var(--space-4);
   position: relative;
   overflow: hidden;
 }
@@ -227,4 +230,144 @@
   background: var(--color-surface);
   border-radius: var(--radius-md);
   border: 1px solid var(--color-divider);
+}
+
+/* ---- member count pill, shown even signed out ---- */
+.memberPill {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  padding: 7px 16px;
+  border-radius: 999px;
+  border: 1px solid var(--color-divider);
+  background: var(--color-surface);
+  font-size: 0.85rem;
+  font-weight: 700;
+  color: var(--muted);
+  margin-bottom: var(--space-4);
+}
+.memberPillDot {
+  width: 8px; height: 8px; border-radius: 50%;
+  background: #10b981;
+  box-shadow: 0 0 8px #10b981;
+}
+.memberPillCount {
+  color: var(--color-text);
+}
+
+/* ---- info cards: what it is / how it works / the rules ---- */
+.infoGrid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+  gap: var(--space-4);
+  margin: var(--space-8) 0;
+  width: 100%;
+  max-width: 960px;
+}
+.infoCard {
+  padding: var(--space-6);
+  border-radius: var(--radius-lg);
+  border: 1px solid var(--color-divider);
+  background: color-mix(in srgb, var(--color-surface) 70%, transparent);
+  text-align: left;
+}
+.infoCardIcon {
+  display: inline-grid;
+  place-items: center;
+  width: 40px; height: 40px;
+  border-radius: 12px;
+  background: color-mix(in srgb, var(--color-accent) 14%, transparent);
+  color: var(--color-accent);
+  margin-bottom: var(--space-3);
+}
+.infoCard h3 {
+  margin: 0 0 8px;
+  font-family: var(--font-heading);
+  font-size: 1.05rem;
+}
+.infoCard p, .infoCard li {
+  color: var(--muted);
+  font-size: 0.92rem;
+  line-height: 1.55;
+  margin: 0;
+}
+.infoCard ul {
+  margin: 0;
+  padding-left: 18px;
+  display: grid;
+  gap: 6px;
+}
+
+/* ---- your standing: status badge + score bars ---- */
+.standingPanel {
+  width: 100%;
+  max-width: 640px;
+  padding: var(--space-6);
+  border-radius: var(--radius-lg);
+  border: 1px solid var(--color-divider);
+  background: color-mix(in srgb, var(--color-surface) 60%, transparent);
+  backdrop-filter: blur(24px);
+  margin-bottom: var(--space-6);
+  text-align: left;
+}
+.standingHead {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: var(--space-4);
+}
+.standingHead h2 {
+  margin: 0;
+  font-family: var(--font-heading);
+  font-size: 1.15rem;
+}
+.statusBadge {
+  padding: 5px 14px;
+  border-radius: 999px;
+  font-size: 0.75rem;
+  font-weight: 800;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+}
+.statusBadge.active { color: #10b981; background: color-mix(in srgb, #10b981 15%, transparent); }
+.statusBadge.probing { color: #f59e0b; background: color-mix(in srgb, #f59e0b 15%, transparent); }
+.statusBadge.pending { color: var(--color-accent); background: color-mix(in srgb, var(--color-accent) 15%, transparent); }
+
+.scoreRow {
+  display: grid;
+  gap: 6px;
+  margin-bottom: var(--space-3);
+}
+.scoreRow:last-child { margin-bottom: 0; }
+.scoreLabel {
+  display: flex;
+  justify-content: space-between;
+  font-size: 0.85rem;
+  font-weight: 600;
+  color: var(--color-text);
+}
+.scoreLabel span:last-child { color: var(--muted); font-weight: 700; }
+.scoreTrack {
+  height: 8px;
+  border-radius: 999px;
+  background: color-mix(in srgb, var(--color-text) 10%, transparent);
+  overflow: hidden;
+}
+.scoreFill {
+  height: 100%;
+  border-radius: 999px;
+  background: var(--gradient);
+}
+
+.pendingBanner {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: var(--space-4);
+  border-radius: var(--radius-md);
+  background: color-mix(in srgb, var(--color-accent) 8%, transparent);
+  border: 1px solid color-mix(in srgb, var(--color-accent) 25%, transparent);
+  color: var(--color-text);
+  font-weight: 600;
+  font-size: 0.95rem;
 }

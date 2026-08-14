@@ -385,6 +385,10 @@ model GardenRetakeLoadout {
   /// { pistol: [...], half: [...], full: [...] } — ordered, first choice first.
   UtilityPrefs String?  @db.Text
   Notes        String?  @db.VarChar(300)
+  /// "Buy kevlar" preference for the cheap pistol-round buy (Glock/USP-S),
+  /// shown only when that gun is picked — team-only, same as role/notes.
+  KevlarPistolT  Boolean @default(false)
+  KevlarPistolCt Boolean @default(false)
   UpdatedAt    DateTime @default(now()) @updatedAt @db.DateTime(6)
 
   @@map("GardenRetakeLoadouts")

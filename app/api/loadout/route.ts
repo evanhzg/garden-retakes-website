@@ -33,6 +33,8 @@ async function read(steamId: bigint) {
     isCaller: loadout?.IsCaller ?? false,
     utility: loadout?.UtilityPrefs ? sanitiseUtilityPrefs(JSON.parse(loadout.UtilityPrefs)) : DEFAULT_UTILITY,
     notes: loadout?.Notes ?? "",
+    kevlarPistolT: loadout?.KevlarPistolT ?? false,
+    kevlarPistolCt: loadout?.KevlarPistolCt ?? false,
     updatedAt: loadout?.UpdatedAt ?? null,
   };
 }
@@ -60,7 +62,7 @@ export async function PUT(req: Request) {
   if (!session) return NextResponse.json({ error: "Sign in to save your loadout." }, { status: 401 });
   const steamId = BigInt(session.steamId);
 
-  let body: { weapons?: unknown; roleT?: unknown; roleCt?: unknown; isCaller?: unknown; utility?: unknown; notes?: unknown };
+  let body: { weapons?: unknown; roleT?: unknown; roleCt?: unknown; isCaller?: unknown; utility?: unknown; notes?: unknown; kevlarPistolT?: unknown; kevlarPistolCt?: unknown };
   try {
     body = await req.json();
   } catch {
@@ -73,6 +75,8 @@ export async function PUT(req: Request) {
   const roleCt = typeof body.roleCt === "string" && (body.roleCt === "" || isRole(body.roleCt)) ? body.roleCt : "";
   const isCaller = typeof body.isCaller === "boolean" ? body.isCaller : false;
   const notes = typeof body.notes === "string" ? body.notes.slice(0, 300) : "";
+  const kevlarPistolT = typeof body.kevlarPistolT === "boolean" ? body.kevlarPistolT : false;
+  const kevlarPistolCt = typeof body.kevlarPistolCt === "boolean" ? body.kevlarPistolCt : false;
 
   try {
     // Read-modify-write on the plugin's blob rather than replacing it: it also
@@ -96,6 +100,8 @@ export async function PUT(req: Request) {
           IsCaller: isCaller,
           UtilityPrefs: JSON.stringify(utility),
           Notes: notes,
+          KevlarPistolT: kevlarPistolT,
+          KevlarPistolCt: kevlarPistolCt,
         },
         update: {
           RoleT: roleT,
@@ -103,6 +109,8 @@ export async function PUT(req: Request) {
           IsCaller: isCaller,
           UtilityPrefs: JSON.stringify(utility),
           Notes: notes,
+          KevlarPistolT: kevlarPistolT,
+          KevlarPistolCt: kevlarPistolCt,
         },
       }),
     ]);

@@ -28,7 +28,6 @@ type NavLink = {
 // thin enough that surfacing them cost more attention than they returned. The
 // routes still exist and still resolve.
 const CS2_LINKS: NavLink[] = [
-  { href: "/", label: "Ladder", key: "nav.ladder", primary: true },
   { href: "/insights", label: "Insights", key: "nav.insights", primary: true },
   { href: "/stats", label: "Stats", key: "nav.stats", primary: true },
   { href: "/inventory", label: "Inventory", key: "nav.inventory", primary: true },
