@@ -10,6 +10,7 @@ import AdminOverview from "@/components/admin/AdminOverview";
 import CaptureSuggestions from "@/components/admin/CaptureSuggestions";
 import SafeQueue from "@/components/admin/SafeQueue";
 import MapManager from "@/components/admin/MapManager";
+import GameMaker from "@/components/admin/GameMaker";
 import { useI18n } from '@/components/I18nProvider';
 import { GAME_MODES, RETAKE_FLAVOURS } from "@/lib/gameModes";
 import { freezeDate, freezeLeft, isFrozen, type FreezePoll } from "@/lib/seasonFreeze";
@@ -40,7 +41,7 @@ type LogEntry = {
   detail: string | null;
 };
 
-type TabId = "overview" | "players" | "server" | "config" | "console" | "skins" | "demos" | "captures" | "log" | "season" | "safequeue" | "maps";
+type TabId = "overview" | "players" | "server" | "config" | "console" | "skins" | "demos" | "captures" | "log" | "season" | "safequeue" | "maps" | "gamemaker";
 
 /**
  * Sections, grouped.
@@ -77,6 +78,7 @@ const SECTIONS: {
       { id: "config", label: "Plugin config", icon: "⚙", hint: "Rankings, allocator, game rules", level: 2 },
       { id: "season", label: "Season", icon: "🏆", hint: "Season management, elo reset", level: 3 },
       { id: "console", label: "Console", icon: "❯", hint: "Raw RCON", level: 2 },
+      { id: "gamemaker", label: "Game Maker", icon: "✧", hint: "Spawns, strats and new mode pitches", level: 2 },
     ],
   },
   {
@@ -551,6 +553,8 @@ export default function AdminPanel({
         {tab === "safequeue" && canMod && <SafeQueue adminKey={adminKey} />}
 
         {tab === "maps" && canMod && <MapManager adminKey={adminKey} />}
+
+        {tab === "gamemaker" && canAdmin && <GameMaker adminKey={adminKey} />}
 
         {tab === "log" && (
           <div className="adm-scroll">

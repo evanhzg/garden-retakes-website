@@ -1026,3 +1026,151 @@ model WebReport {
   @@index([TargetId])
   @@map("WebReports")
 }
+
+// ---------------------------------------------------------------- Game Maker
+//
+// One authoring model behind four game modes. Duels arenas, Retakes site
+// setups, Executes strats and Fast Strat plays were four separate per-map JSON
+// files on the game server, each editable only through its own in-game admin
+// command and invisible to the website. They are all, structurally, the same
+// thing: a named group of positioned spawns, sometimes with utility attached.
+//
+// The database is the source of truth; the plugin reads it on map load and
+// writes a JSON snapshot beside its old files so a DB outage degrades to
+// "last known good" rather than "no spawns at all". Follows the GardenNade
+// precedent — plugin-authored coordinates living in the shared MySQL so the
+// website can render and edit them.
+
+/// A named group of spawns: a Duels arena, a Retakes site setup, an Executes
+/// strat, or a Fast Strat play. What varies between modes is which of the
+/// optional columns carry meaning, not the shape.
+model GmSet {
+  Id   Int    @id @default(autoincrement())
+  /// "duels" | "retakes" | "executes" | "faststrat"
+  Mode String @db.VarChar(16)
+  /// de_ map name, or a workshop map's resolved name.
+  Map  String @db.VarChar(64)
+  Name String @db.VarChar(64)
+
+  /// "A" | "B" — required by Retakes/Executes, deliberately null for Fast
+  /// Strat, where the two sides' picks need not concern the same site.
+  Site String? @db.VarChar(1)
+
+  /// Fast Strat only: "early" | "mid" | "end" — which part of the round this
+  /// play is for, with the timer that phase runs on.
+  Phase        String? @db.VarChar(8)
+  PhaseSeconds Int?
+
+  /// JSON string arrays. Roles this set concerns (Retakes: sniper/anchor/…)
+  /// and which round types it applies to (pistol/half/full).
+  Roles      String? @db.Text
+  RoundTypes String? @db.Text
+
+  /// Fast Strat draws its votable pool from these; Executes ignores it.
+  Votable Boolean @default(false)
+  /// 0 = never picked at random.
+  Weight  Int     @default(1)
+  /// Toggled from the website; the plugin skips inactive sets entirely.
+  Active  Boolean @default(true)
+
+  AddedBy   BigInt?  @db.UnsignedBigInt
+  CreatedAt DateTime @default(now()) @db.DateTime(6)
+  UpdatedAt DateTime @default(now()) @updatedAt @db.DateTime(6)
+
+  Spawns    GmSpawn[]
+  Utilities GmUtility[]
+
+  @@unique([Mode, Map, Name])
+  @@index([Mode, Map, Active])
+  @@map("GmSets")
+}
+
+/// One positioned spawn inside a set. `Type` is mode-specific and free-form on
+/// purpose — Duels wants "ak_only"/"close"/"long"/"awp_only", Retakes wants a
+/// role id — and pinning it to an enum here would mean a migration every time a
+/// mode grows a category.
+model GmSpawn {
+  Id    Int    @id @default(autoincrement())
+  SetId Int
+  /// "T" | "CT".
+  Side  String @db.VarChar(2)
+  Type  String @default("") @db.VarChar(32)
+  /// Free label, e.g. "A Site", "Long doors".
+  Label String @default("") @db.VarChar(48)
+
+  X     Float
+  Y     Float
+  Z     Float
+  Pitch Float @default(0)
+  Yaw   Float @default(0)
+
+  /// Duels pairs a T spawn against a CT spawn; same Pairing groups them.
+  Pairing Int?
+  /// T-side Retakes spawn that may plant.
+  CanPlant Boolean @default(false)
+  Active   Boolean @default(true)
+
+  Set GmSet @relation(fields: [SetId], references: [Id], onDelete: Cascade)
+
+  @@index([SetId, Side])
+  @@map("GmSpawns")
+}
+
+/// Utility belonging to a set.
+///
+/// Delivery is the real split between Executes and Fast Strat: an Execute
+/// throws its nades from a recorded lineup at round start, while a Fast Strat
+/// play starts with the smoke already sitting on the ground — the round opens
+/// mid-execute rather than watching one happen.
+model GmUtility {
+  Id    Int    @id @default(autoincrement())
+  SetId Int
+  /// "smoke" | "flash" | "he" | "molotov"
+  Type  String @db.VarChar(8)
+  /// "T" | "CT" — which side's lineup this was.
+  Team  String @db.VarChar(2)
+  /// "thrown" (fly the recorded lineup) | "grounded" (already deployed).
+  Delivery String @default("thrown") @db.VarChar(8)
+
+  X Float
+  Y Float
+  Z Float
+
+  /// Only meaningful when Delivery is "thrown".
+  VelX Float @default(0)
+  VelY Float @default(0)
+  VelZ Float @default(0)
+
+  DelaySeconds Float   @default(0)
+  Active       Boolean @default(true)
+
+  Set GmSet @relation(fields: [SetId], references: [Id], onDelete: Cascade)
+
+  @@index([SetId])
+  @@map("GmUtilities")
+}
+
+/// Mode Maker: a pitch for an entirely new game mode. Config and the node
+/// graph are JSON blobs rather than columns — the whole point of the tab is
+/// that the shape of an idea is not known in advance, and a schema that
+/// constrained it would defeat it.
+model GmModeProposal {
+  Id      Int    @id @default(autoincrement())
+  Slug    String @unique @db.VarChar(64)
+  Title   String @db.VarChar(96)
+  Summary String @default("") @db.VarChar(500)
+  /// "draft" | "review" | "accepted" | "shelved"
+  Status  String @default("draft") @db.VarChar(16)
+
+  /// Free-form settings the proposal wants (round length, team sizes, …).
+  Config String? @db.LongText
+  /// { nodes: [...], edges: [...] } for the canvas.
+  Graph  String? @db.LongText
+
+  AuthorSteamId BigInt?  @db.UnsignedBigInt
+  CreatedAt     DateTime @default(now()) @db.DateTime(6)
+  UpdatedAt     DateTime @default(now()) @updatedAt @db.DateTime(6)
+
+  @@index([Status])
+  @@map("GmModeProposals")
+}
