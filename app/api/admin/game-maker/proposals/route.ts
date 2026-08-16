@@ -15,6 +15,34 @@ const STATUSES = ["draft", "review", "accepted", "shelved"];
 const slugify = (s: string) =>
   s.toLowerCase().trim().replace(/[^a-z0-9]+/g, "-").replace(/^-|-$/g, "").slice(0, 64) || "untitled";
 
+/**
+ * A failed write is not a bad request.
+ *
+ * These handlers used to catch everything into a flat 400 "Could not create…",
+ * which is what a missing table looked like from the browser: the caller was
+ * told its own payload was wrong when the actual problem was that the schema
+ * had never been applied to the database. Server-side failures get a 500 and
+ * the real reason, so the next one is diagnosable from the response instead of
+ * from a guess.
+ */
+function writeFailure(err: unknown, action: string) {
+  const message = err instanceof Error ? err.message : String(err);
+  console.error(`[game-maker] ${action} failed:`, message);
+
+  // P2021/1146 = the table is not there. Almost always means the Game Maker
+  // schema has not been applied to this environment yet.
+  const missingTable = /does(n't| not) exist|P2021|1146/i.test(message);
+  return NextResponse.json(
+    {
+      error: missingTable
+        ? "The Game Maker tables are missing from this database — apply the schema (GmSets, GmSpawns, GmUtilities, GmModeProposals) and try again."
+        : `Could not ${action}.`,
+      detail: message.slice(0, 300),
+    },
+    { status: 500 }
+  );
+}
+
 function serialise(p: { AuthorSteamId: bigint | null; [k: string]: unknown }) {
   return { ...p, AuthorSteamId: p.AuthorSteamId?.toString() ?? null };
 }
@@ -62,8 +90,8 @@ export async function POST(req: Request) {
 
     await logAdminAction(ctx, "gamemaker.proposal.create", undefined, title);
     return NextResponse.json({ proposal: serialise(created) });
-  } catch {
-    return NextResponse.json({ error: "Could not create the proposal." }, { status: 400 });
+  } catch (err) {
+    return writeFailure(err, "create the proposal");
   }
 }
 
@@ -104,8 +132,8 @@ export async function PATCH(req: Request) {
   try {
     const updated = await prisma.gmModeProposal.update({ where: { Id: id }, data });
     return NextResponse.json({ proposal: serialise(updated) });
-  } catch {
-    return NextResponse.json({ error: "Could not update the proposal." }, { status: 400 });
+  } catch (err) {
+    return writeFailure(err, "update the proposal");
   }
 }
 
@@ -123,7 +151,7 @@ export async function DELETE(req: Request) {
     const removed = await prisma.gmModeProposal.delete({ where: { Id: id } });
     await logAdminAction(ctx, "gamemaker.proposal.delete", undefined, removed.Title);
     return NextResponse.json({ ok: true });
-  } catch {
-    return NextResponse.json({ error: "Could not delete the proposal." }, { status: 400 });
+  } catch (err) {
+    return writeFailure(err, "delete the proposal");
   }
 }

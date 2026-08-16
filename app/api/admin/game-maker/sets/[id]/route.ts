@@ -5,6 +5,31 @@ import { AdminLevel, getAdminContext, logAdminAction } from "@/lib/adminAuth";
 export const dynamic = "force-dynamic";
 export const runtime = "nodejs";
 
+/**
+ * A failed write is not a bad request.
+ *
+ * These handlers used to catch everything into a flat 400, which is what a
+ * missing table looked like from the browser: the caller was told its own
+ * payload was wrong when the actual problem was that the schema had never been
+ * applied to the database. Server-side failures get a 500 and the real reason.
+ */
+function writeFailure(err: unknown, action: string) {
+  const message = err instanceof Error ? err.message : String(err);
+  console.error(`[game-maker] ${action} failed:`, message);
+
+  const missingTable = /does(n't| not) exist|P2021|1146/i.test(message);
+  return NextResponse.json(
+    {
+      error: missingTable
+        ? "The Game Maker tables are missing from this database — apply the schema (GmSets, GmSpawns, GmUtilities, GmModeProposals) and try again."
+        : `Could not ${action}.`,
+      detail: message.slice(0, 300),
+    },
+    { status: 500 }
+  );
+}
+
+
 // PATCH/DELETE one set. Everything an admin edits after creation goes through
 // here — the user's requirement is that every option stays editable at any
 // time, so nothing on a set is create-only.
@@ -61,8 +86,8 @@ export async function PATCH(req: Request, { params }: { params: { id: string } }
         RoundTypes: updated.RoundTypes ? JSON.parse(updated.RoundTypes) : [],
       },
     });
-  } catch {
-    return NextResponse.json({ error: "Could not update the set." }, { status: 400 });
+  } catch (err) {
+    return writeFailure(err, "update the set");
   }
 }
 
@@ -81,7 +106,7 @@ export async function DELETE(req: Request, { params }: { params: { id: string } 
     const removed = await prisma.gmSet.delete({ where: { Id: id } });
     await logAdminAction(ctx, "gamemaker.set.delete", undefined, `${removed.Mode} ${removed.Map} "${removed.Name}"`);
     return NextResponse.json({ ok: true });
-  } catch {
-    return NextResponse.json({ error: "Could not delete the set." }, { status: 400 });
+  } catch (err) {
+    return writeFailure(err, "delete the set");
   }
 }

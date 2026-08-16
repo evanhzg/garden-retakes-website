@@ -121,11 +121,29 @@ export async function POST(req: Request) {
     await logAdminAction(ctx, "gamemaker.set.create", undefined, `${body.mode} ${map} "${name}"`);
     return NextResponse.json({ set: serialise(created) });
   } catch (err) {
+    const message = err instanceof Error ? err.message : String(err);
+
     // The unique index is (Mode, Map, Name) — a duplicate name inside one mode
-    // and map is the realistic collision here.
-    const message = err instanceof Error && err.message.includes("Unique")
-      ? "A set with that name already exists on this map."
-      : "Could not create the set.";
-    return NextResponse.json({ error: message }, { status: 400 });
+    // and map really is the caller's problem, so that one stays a 400.
+    if (/Unique|P2002/i.test(message)) {
+      return NextResponse.json(
+        { error: "A set with that name already exists on this map." },
+        { status: 400 }
+      );
+    }
+
+    // Everything else is ours, not theirs. This used to collapse into the same
+    // 400, which is how a missing table came back looking like a bad payload.
+    console.error("[game-maker] create the set failed:", message);
+    const missingTable = /does(n't| not) exist|P2021|1146/i.test(message);
+    return NextResponse.json(
+      {
+        error: missingTable
+          ? "The Game Maker tables are missing from this database — apply the schema (GmSets, GmSpawns, GmUtilities, GmModeProposals) and try again."
+          : "Could not create the set.",
+        detail: message.slice(0, 300),
+      },
+      { status: 500 }
+    );
   }
 }

@@ -5,6 +5,31 @@ import { AdminLevel, getAdminContext, logAdminAction } from "@/lib/adminAuth";
 export const dynamic = "force-dynamic";
 export const runtime = "nodejs";
 
+/**
+ * A failed write is not a bad request.
+ *
+ * These handlers used to catch everything into a flat 400, which is what a
+ * missing table looked like from the browser: the caller was told its own
+ * payload was wrong when the actual problem was that the schema had never been
+ * applied to the database. Server-side failures get a 500 and the real reason.
+ */
+function writeFailure(err: unknown, action: string) {
+  const message = err instanceof Error ? err.message : String(err);
+  console.error(`[game-maker] ${action} failed:`, message);
+
+  const missingTable = /does(n't| not) exist|P2021|1146/i.test(message);
+  return NextResponse.json(
+    {
+      error: missingTable
+        ? "The Game Maker tables are missing from this database — apply the schema (GmSets, GmSpawns, GmUtilities, GmModeProposals) and try again."
+        : `Could not ${action}.`,
+      detail: message.slice(0, 300),
+    },
+    { status: 500 }
+  );
+}
+
+
 // Spawns inside a set. Created either from the website (typed coordinates, or
 // a named placeholder an admin positions in game later) or by the plugin's
 // Maker mode posting the admin's own feet.
@@ -53,8 +78,8 @@ export async function POST(req: Request) {
 
     await logAdminAction(ctx, "gamemaker.spawn.create", undefined, `set#${setId} ${body.side} ${created.Label}`);
     return NextResponse.json({ spawn: created });
-  } catch {
-    return NextResponse.json({ error: "Could not create the spawn (does the set exist?)." }, { status: 400 });
+  } catch (err) {
+    return writeFailure(err, "create the spawn");
   }
 }
 
@@ -95,8 +120,8 @@ export async function PATCH(req: Request) {
     const updated = await prisma.gmSpawn.update({ where: { Id: id }, data });
     await logAdminAction(ctx, "gamemaker.spawn.update", undefined, `#${id}`);
     return NextResponse.json({ spawn: updated });
-  } catch {
-    return NextResponse.json({ error: "Could not update the spawn." }, { status: 400 });
+  } catch (err) {
+    return writeFailure(err, "update the spawn");
   }
 }
 
@@ -114,7 +139,7 @@ export async function DELETE(req: Request) {
     await prisma.gmSpawn.delete({ where: { Id: id } });
     await logAdminAction(ctx, "gamemaker.spawn.delete", undefined, `#${id}`);
     return NextResponse.json({ ok: true });
-  } catch {
-    return NextResponse.json({ error: "Could not delete the spawn." }, { status: 400 });
+  } catch (err) {
+    return writeFailure(err, "delete the spawn");
   }
 }
