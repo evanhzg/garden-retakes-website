@@ -208,6 +208,14 @@ export type Lineup = {
   thumb: string | null;
   /** In-game stills: where you stand, what you aim at, where it landed. */
   shots: { stand: string | null; aim: string | null; result: string | null };
+  /**
+   * The arc the grenade actually flew, as [x, y, z, t] world-space samples.
+   *
+   * Recorded by the server during capture. Null on lineups captured before
+   * this existed and on anything imported, so every consumer has to cope with
+   * its absence rather than assume it.
+   */
+  path?: [number, number, number, number][] | null;
   verified: boolean;
   source: string;
 };

@@ -11110,3 +11110,23 @@ body.overlay-open .socket-status-banner {
 /* The flight path drawn on the radar. Sits under the pins so a marker is
    never hidden by the curve that points at it. */
 .util-arc { position: absolute; inset: 0; width: 100%; height: 100%; pointer-events: none; z-index: 1; overflow: visible; }
+
+/* The side view of a recorded throw: how high it went, and where along the
+   flight. The radar shows the route from above, which says nothing about
+   whether it clears a wall — and clearing the wall is usually the lineup. */
+.util-profile { margin: 0 0 14px; }
+.util-profile figcaption {
+  display: flex; align-items: baseline; justify-content: space-between; gap: 10px;
+  font-size: 11px; font-weight: 800; letter-spacing: 0.06em; text-transform: uppercase;
+  color: var(--muted); margin-bottom: 5px;
+}
+.util-profile figcaption .muted { font-weight: 600; letter-spacing: 0; text-transform: none; font-size: 11.5px; }
+.util-profile svg {
+  display: block; width: 100%; height: 74px;
+  border-radius: 8px;
+  background: color-mix(in srgb, var(--color-text) 4%, transparent);
+}
+.util-profile-ground {
+  stroke: color-mix(in srgb, var(--color-text) 22%, transparent);
+  stroke-width: 0.4; stroke-dasharray: 2 2;
+}

@@ -2293,5 +2293,7 @@
   "lobby.server.reason.map_timeout": "Le serveur n’a jamais fini de charger la carte choisie.",
   "lobby.server.reason.plugin_refused": "Le serveur a chargé la carte mais a refusé le match. Un admin doit regarder.",
   "lobby.server.reason.abandoned": "Le match a été annulé avant que le serveur soit prêt.",
-  "lobby.server.reason.unknown": "Un problème est survenu au moment de transmettre le match au serveur."
+  "lobby.server.reason.unknown": "Un problème est survenu au moment de transmettre le match au serveur.",
+  "utility.profile.title": "Trajectoire",
+  "utility.profile.stats": "{peak}u de haut · {seconds}s"
 }

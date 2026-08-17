@@ -2305,5 +2305,7 @@
   "lobby.server.reason.map_timeout": "The server never finished loading the map that was picked.",
   "lobby.server.reason.plugin_refused": "The server loaded the map but would not accept the match. An admin needs to look at this one.",
   "lobby.server.reason.abandoned": "The match was cancelled before the server was ready.",
-  "lobby.server.reason.unknown": "Something went wrong handing the match to the server."
+  "lobby.server.reason.unknown": "Something went wrong handing the match to the server.",
+  "utility.profile.title": "Flight",
+  "utility.profile.stats": "{peak}u up · {seconds}s"
 }

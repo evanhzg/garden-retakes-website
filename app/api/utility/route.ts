@@ -43,7 +43,31 @@ export async function GET(req: Request) {
     shots: { stand: r.ShotStand, aim: r.ShotAim, result: r.ShotResult },
     verified: r.Verified,
     source: r.Source,
+    // Parsed here rather than in the browser: it is stored as compact JSON to
+    // keep the column small, and every consumer wants the points.
+    path: parsePath(r.Path),
   }));
 
   return NextResponse.json({ lineups });
+}
+
+/**
+ * The recorded arc, as [[x,y,z,t],…].
+ *
+ * Tolerant on purpose — a malformed or truncated column should cost the page
+ * its flight animation, not its lineup list.
+ */
+function parsePath(raw: string | null): [number, number, number, number][] | null {
+  if (!raw) return null;
+  try {
+    const parsed = JSON.parse(raw);
+    if (!Array.isArray(parsed)) return null;
+    const points = parsed.filter(
+      (p): p is [number, number, number, number] =>
+        Array.isArray(p) && p.length === 4 && p.every((n) => typeof n === "number" && Number.isFinite(n))
+    );
+    return points.length >= 2 ? points : null;
+  } catch {
+    return null;
+  }
 }

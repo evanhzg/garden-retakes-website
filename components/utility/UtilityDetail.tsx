@@ -350,6 +350,8 @@ export default function UtilityDetail({
         <p className="util-noshot">{t("utility.noshots")}</p>
       )}
 
+      <FlightProfile lineup={lineup} />
+
       {lineup.clipUrl && (
         <video className="util-clip" src={lineup.clipUrl} poster={lineup.thumb ?? undefined} muted loop playsInline controls style={{ width: "100%", borderRadius: 8, display: "block" }} />
       )}
@@ -562,5 +564,73 @@ export default function UtilityDetail({
         </div>
       )}
     </div>
+  );
+}
+
+/**
+ * The side view: how high the grenade went, and where along the flight.
+ *
+ * The radar shows the route from above, which says nothing about whether a
+ * throw clears a wall — and clearing the wall is usually the whole lineup. This
+ * is the one thing the recorded arc can show that no screenshot can, so it goes
+ * next to the screenshots rather than hidden behind a tab.
+ *
+ * Nothing renders when there is no recorded path: everything captured before
+ * the server started recording arcs, and everything imported, has none.
+ */
+function FlightProfile({ lineup }: { lineup: Lineup }) {
+  const { t } = useI18n();
+  const path = lineup.path;
+  if (!path || path.length < 2) return null;
+
+  const [x0, y0, z0] = path[0];
+  // Distance travelled along the ground, so the horizontal axis is "how far",
+  // not "how long" — a lob and a run-up take different times over the same gap.
+  let travelled = 0;
+  const points = path.map(([x, y, z], i) => {
+    if (i > 0) {
+      const [px, py] = path[i - 1];
+      travelled += Math.hypot(x - px, y - py);
+    }
+    return { d: travelled, h: z - z0, t: path[i][3] };
+  });
+
+  const maxD = Math.max(travelled, 1);
+  const heights = points.map((p) => p.h);
+  const minH = Math.min(0, ...heights);
+  const maxH = Math.max(1, ...heights);
+  const span = maxH - minH;
+
+  const W = 100;
+  const H = 34;
+  const plot = points.map((p) => ({
+    x: (p.d / maxD) * W,
+    y: H - ((p.h - minH) / span) * (H - 4) - 2,
+  }));
+
+  const line = plot.map((p, i) => `${i === 0 ? "M" : "L"} ${p.x.toFixed(2)} ${p.y.toFixed(2)}`).join(" ");
+  const ground = H - ((0 - minH) / span) * (H - 4) - 2;
+  const peak = Math.round(Math.max(...heights));
+  const seconds = path[path.length - 1][3];
+  const colour = UTIL_COLOUR[lineup.utility] ?? "#ccc";
+
+  return (
+    <figure className="util-profile">
+      <figcaption>
+        {t("utility.profile.title")}
+        <span className="muted">
+          {t("utility.profile.stats", { peak, seconds: seconds.toFixed(1) })}
+        </span>
+      </figcaption>
+      <svg viewBox={`0 0 ${W} ${H}`} preserveAspectRatio="none" role="img"
+        aria-label={t("utility.profile.stats", { peak, seconds: seconds.toFixed(1) })}>
+        {/* Release height, so the rise and the drop are both readable against it. */}
+        <line x1="0" y1={ground} x2={W} y2={ground} className="util-profile-ground" />
+        <path d={`${line} L ${W} ${H} L 0 ${H} Z`} fill={colour} opacity={0.14} />
+        <path d={line} stroke={colour} fill="none" strokeWidth={0.9} strokeLinejoin="round" />
+        <circle cx={plot[0].x} cy={plot[0].y} r={1.4} fill={colour} />
+        <circle cx={plot[plot.length - 1].x} cy={plot[plot.length - 1].y} r={1.4} fill={colour} />
+      </svg>
+    </figure>
   );
 }

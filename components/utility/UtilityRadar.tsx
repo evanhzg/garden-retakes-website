@@ -208,10 +208,47 @@ export default function UtilityRadar({
               same doorway stay tellable apart. */}
           {(() => {
             const shown = selected ?? lineups.find((l) => l.id === hovered) ?? null;
-            if (!shown?.land) return null;
+            if (!shown) return null;
+
+            const colour = UTIL_COLOUR[shown.utility] ?? "#ccc";
+
+            // The arc the grenade actually flew, when the server recorded it.
+            // Everything before that fix — and everything imported — has only
+            // two points, so it still gets a bowed curve rather than a straight
+            // line, which at least keeps two lineups landing in the same
+            // doorway tellable apart.
+            const flown = (shown.path ?? [])
+              .map(([x, y]) => worldToPercent(cfg, x, y))
+              .filter((p): p is { left: number; top: number } => p !== null);
+
+            if (flown.length >= 2) {
+              const d = flown
+                .map((p, i) => `${i === 0 ? "M" : "L"} ${p.left} ${p.top}`)
+                .join(" ");
+              return (
+                <svg className="util-arc" viewBox="0 0 100 100" preserveAspectRatio="none" aria-hidden>
+                  <path
+                    d={d}
+                    stroke={colour}
+                    strokeWidth={0.5 / zoom}
+                    strokeLinecap="round"
+                    strokeLinejoin="round"
+                    fill="none"
+                  />
+                  {/* A dot running the route, so the direction of travel is
+                      obvious without an arrowhead that would be a pixel wide. */}
+                  <circle r={0.8 / zoom} fill={colour}>
+                    <animateMotion dur="2.2s" repeatCount="indefinite" path={d} />
+                  </circle>
+                </svg>
+              );
+            }
+
+            if (!shown.land) return null;
             const from = worldToPercent(cfg, shown.stand.x, shown.stand.y);
             const to = worldToPercent(cfg, shown.land.x, shown.land.y);
             if (!from || !to) return null;
+
             const [dx, dy] = [to.left - from.left, to.top - from.top];
             const bow = 0.16;
             const cx = (from.left + to.left) / 2 - dy * bow;
@@ -220,7 +257,7 @@ export default function UtilityRadar({
               <svg className="util-arc" viewBox="0 0 100 100" preserveAspectRatio="none" aria-hidden>
                 <path
                   d={`M ${from.left} ${from.top} Q ${cx} ${cy} ${to.left} ${to.top}`}
-                  stroke={UTIL_COLOUR[shown.utility] ?? "#ccc"}
+                  stroke={colour}
                   // Counter-scaled like the pins: a line that thickens with the
                   // zoom becomes a stripe across the callout it is describing.
                   strokeWidth={0.5 / zoom}

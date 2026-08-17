@@ -779,6 +779,14 @@ model GardenNade {
   /// still usable but less exact, and the tab should say which it is.
   MarkedStand    Boolean  @default(false)
 
+  /// The arc the grenade actually flew: [[x,y,z,t],…], decimated server-side.
+  ///
+  /// Recorded during capture, because it is the one preview a dedicated server
+  /// can produce — screenshots need a rendering client, and the shape of a
+  /// throw is the thing a still can never show and people watch nade videos
+  /// for. Null on anything captured before this existed, or imported.
+  Path           String?  @db.Text
+
   @@index([Map])
   @@index([Map, Area])
   @@index([NeedsShots])
@@ -809,6 +817,9 @@ model GardenNadeDraft {
   /// True when !lineup mark set the stand point; false when it fell back to
   /// the last grounded position before the jump.
   MarkedStand Boolean  @default(false)
+  /// Filled in a couple of seconds after the rest of the row: the draft is
+  /// written when the grenade leaves the hand, the arc when it stops flying.
+  Path        String?  @db.Text
   CapturedAt  DateTime @default(now()) @db.DateTime(6)
 
   @@map("GardenNadeDrafts")
