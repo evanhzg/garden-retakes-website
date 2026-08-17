@@ -2299,5 +2299,11 @@
   "utility.throwhint": "How to throw it",
   "utility.empty": "Nothing recorded on this map yet. Arm a capture in game with !lineup arm and throw.",
   "utility.fact.runup": "Run-up",
-  "utility.runupnote": "The position below is where the run starts, not where you throw from."
+  "utility.runupnote": "The position below is where the run starts, not where you throw from.",
+  "lobby.server.reason.rcon_unconfigured": "The match service has no address for the game server, so nothing was ever sent. This is a configuration problem on our side, not yours.",
+  "lobby.server.reason.rcon_error": "The game server did not answer. It may be restarting.",
+  "lobby.server.reason.map_timeout": "The server never finished loading the map that was picked.",
+  "lobby.server.reason.plugin_refused": "The server loaded the map but would not accept the match. An admin needs to look at this one.",
+  "lobby.server.reason.abandoned": "The match was cancelled before the server was ready.",
+  "lobby.server.reason.unknown": "Something went wrong handing the match to the server."
 }

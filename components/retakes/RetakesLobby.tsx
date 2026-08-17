@@ -1021,7 +1021,13 @@ function MatchRoom({
                 ) : match.result.server?.state === "failed" ? (
                   <div className="rq-server-failed" role="alert">
                     <strong>{t("lobby.server.failed")}</strong>
-                    <p>{t("lobby.server.failedblurb")}</p>
+                    {/* The reason in words, not just the slug. `rcon_error` is
+                        a thing to report; "the server did not answer" is a
+                        thing to act on, and the two failures a player can do
+                        something about — the wrong map, a server still
+                        loading — read completely differently from the two they
+                        cannot. The slug stays underneath for the bug report. */}
+                    <p>{t(`lobby.server.reason.${match.result.server.error ?? "unknown"}`)}</p>
                     <code>
                       {match.result.server.step ?? "?"} · {match.result.server.error ?? "?"}
                     </code>

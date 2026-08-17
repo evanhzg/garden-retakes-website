@@ -808,7 +808,14 @@ function attachRetakesMatchmaking(io, { connectedUsers, loadRatings, prisma }) {
           if (buffer.length < 4 + size) break;
           const id = buffer.readInt32LE(4);
           const type = buffer.readInt32LE(8);
-          const str = buffer.toString("utf8", 12, buffer.length - 2);
+          // 4 + size - 2, not buffer.length - 2: `size` bounds *this* packet,
+          // and two RCON packets routinely arrive in one TCP chunk — a reply
+          // and the terminator that follows it always do. Reading to the end of
+          // the buffer swallowed every following packet's raw header bytes into
+          // this one's text, so `status` came back as the map list with binary
+          // spliced through it. lib/rcon.ts, the same client one file over, has
+          // always sliced this correctly.
+          const str = buffer.subarray(12, 4 + size - 2).toString("utf8");
           buffer = buffer.subarray(4 + size);
 
           if (id === -1) return done(new Error("RCON Auth Failed"));
