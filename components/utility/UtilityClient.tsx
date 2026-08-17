@@ -1,22 +1,64 @@
 "use client";
 
 import { useCallback, useEffect, useMemo, useState } from "react";
-import { useI18n } from '@/components/I18nProvider';
+import { useI18n } from "@/components/I18nProvider";
 import {
   MAPS,
   POOLS,
   UTILITIES,
+  UTIL_COLOUR,
+  THROW_TYPES,
+  THROW_SHORT,
+  THROW_LABEL,
+  PURPOSE_LABEL,
   levelFor,
   playableMaps,
   radarUrl,
-  UTIL_COLOUR,
   compareLineups,
   matchesQuery,
-  THROW_SHORT,
+  hasShots,
   type Lineup,
 } from "@/lib/utilityShared";
 import UtilityRadar from "./UtilityRadar";
 import UtilityDetail from "./UtilityDetail";
+
+// The lineup browser.
+//
+// Three columns, in the order a question gets narrowed: what you are looking
+// for (the rail), where it is (the stage), which one it is (the list). The rail
+// is a rail rather than a row of dropdowns because the counts beside each
+// option are half the value — "there are no molotovs on this map" is an answer,
+// and a closed dropdown cannot give it.
+//
+// Every count is faceted: it shows what you would get if you ticked that one
+// option, with the rest of the filters still applied. Counting the unfiltered
+// set instead produces the familiar and useless rail where every number stays
+// the same and several of them lead to an empty list.
+
+type Filters = {
+  search: string;
+  utility: Set<string>;
+  throwType: Set<string>;
+  team: string;
+  purpose: string;
+  area: string;
+  withShots: boolean;
+  showUnverified: boolean;
+};
+
+const EMPTY: Filters = {
+  search: "",
+  utility: new Set(),
+  throwType: new Set(),
+  team: "",
+  purpose: "",
+  area: "",
+  withShots: false,
+  showUnverified: false,
+};
+
+/** How close a lineup has to land to a clicked point to count as an answer. */
+const FIND_RADIUS = 300;
 
 export default function UtilityPage({ signedIn }: { signedIn: boolean }) {
   const { t } = useI18n();
@@ -28,47 +70,44 @@ export default function UtilityPage({ signedIn }: { signedIn: boolean }) {
   const [selected, setSelected] = useState<Lineup | null>(null);
   const [hovered, setHovered] = useState<number | null>(null);
   const [level, setLevel] = useState("default");
-  
-  const [search, setSearch] = useState("");
-  const [utilFilter, setUtilFilter] = useState<string>("");
-  const [areaFilter, setAreaFilter] = useState<string>("");
-  const [showUnverified, setShowUnverified] = useState(false);
-  
-  const [viewMode, setViewMode] = useState<"map" | "list">("list");
+  const [stage, setStage] = useState<"map" | "list">("map");
+
+  const [f, setF] = useState<Filters>(EMPTY);
   const [findMode, setFindMode] = useState(false);
   const [findAt, setFindAt] = useState<{ x: number; y: number } | null>(null);
 
   const [testing, setTesting] = useState(false);
-  const [favorites, setFavorites] = useState<number[]>([]);
+  const [favourites, setFavourites] = useState<number[]>([]);
   const [note, setNote] = useState<{ kind: "ok" | "err"; text: string } | null>(null);
-
-  useEffect(() => {
-    if (typeof window !== "undefined") {
-      const params = new URLSearchParams(window.location.search);
-      const m = params.get("map");
-      if (m && MAPS[m]) setMap(m);
-      const v = params.get("view");
-      if (v === "map" || v === "list") setViewMode(v);
-    }
-  }, []);
-
-  useEffect(() => {
-    try {
-      const saved = localStorage.getItem("favorites");
-      if (saved) setFavorites(JSON.parse(saved));
-    } catch {}
-  }, []);
-
-  const toggleFavorite = (id: number) => {
-    setFavorites(prev => {
-      const next = prev.includes(id) ? prev.filter(x => x !== id) : [...prev, id];
-      try { localStorage.setItem("favorites", JSON.stringify(next)); } catch {}
-      return next;
-    });
-  };
 
   const cfg = MAPS[map];
   const levels = cfg?.levels ?? null;
+
+  useEffect(() => {
+    const params = new URLSearchParams(window.location.search);
+    const m = params.get("map");
+    if (m && MAPS[m]) setMap(m);
+    const v = params.get("view");
+    if (v === "map" || v === "list") setStage(v);
+    try {
+      const saved = localStorage.getItem("favorites");
+      if (saved) setFavourites(JSON.parse(saved));
+    } catch {
+      /* private mode */
+    }
+  }, []);
+
+  const toggleFavourite = (id: number) => {
+    setFavourites((prev) => {
+      const next = prev.includes(id) ? prev.filter((x) => x !== id) : [...prev, id];
+      try {
+        localStorage.setItem("favorites", JSON.stringify(next));
+      } catch {
+        /* private mode */
+      }
+      return next;
+    });
+  };
 
   const load = useCallback(async () => {
     setLineups(null);
@@ -86,74 +125,120 @@ export default function UtilityPage({ signedIn }: { signedIn: boolean }) {
     load();
   }, [load]);
 
+  // A filter set for one map means nothing on the next — areas are per-map, and
+  // a level called "lower" does not exist everywhere.
   useEffect(() => {
     setLevel("default");
-    setAreaFilter("");
+    setF((prev) => ({ ...prev, area: "" }));
     setFindAt(null);
     setFindMode(false);
   }, [map]);
-  
+
+  // Deep link into one lineup, once its map has loaded.
   useEffect(() => {
-    if (typeof window !== "undefined" && lineups) {
-      const params = new URLSearchParams(window.location.search);
-      const id = params.get("lineup");
-      if (id) {
-        const l = lineups.find((x) => x.id === Number(id));
-        if (l) setSelected(l);
-      }
-    }
+    if (!lineups) return;
+    const id = new URLSearchParams(window.location.search).get("lineup");
+    if (!id) return;
+    const l = lineups.find((x) => x.id === Number(id));
+    if (l) setSelected(l);
   }, [lineups]);
+
+  const writeParams = (patch: Record<string, string | null>) => {
+    const params = new URLSearchParams(window.location.search);
+    for (const [k, v] of Object.entries(patch)) {
+      if (v === null) params.delete(k);
+      else params.set(k, v);
+    }
+    window.history.replaceState(null, "", `?${params.toString()}`);
+  };
 
   const handleSelect = (l: Lineup | null) => {
     setSelected(l);
-    if (typeof window !== "undefined") {
-      const params = new URLSearchParams(window.location.search);
-      if (l) params.set("lineup", l.id.toString());
-      else params.delete("lineup");
-      window.history.pushState(null, "", "?" + params.toString());
-    }
+    writeParams({ lineup: l ? String(l.id) : null });
   };
 
-  const handleViewMode = (v: "map" | "list") => {
-    setViewMode(v);
-    if (typeof window !== "undefined") {
-      const params = new URLSearchParams(window.location.search);
-      params.set("view", v);
-      window.history.replaceState(null, "", "?" + params.toString());
-    }
+  const handleStage = (v: "map" | "list") => {
+    setStage(v);
+    writeParams({ view: v });
+  };
+
+  const handleMap = (id: string) => {
+    setMap(id);
+    writeParams({ map: id, lineup: null });
   };
 
   const handleUpdate = (updated: Lineup) => {
-    setLineups(prev => prev ? prev.map(l => l.id === updated.id ? updated : l) : null);
+    setLineups((prev) => (prev ? prev.map((l) => (l.id === updated.id ? updated : l)) : null));
     setSelected(updated);
   };
 
-  const visible = useMemo(() => {
-    if (!lineups || !cfg) return [];
-    return lineups.filter((l) => {
-      if (!showUnverified && !l.verified) return false;
-      if (utilFilter && l.utility !== utilFilter) return false;
-      if (areaFilter && l.area !== areaFilter) return false;
-      if (levels && levelFor(cfg, l.stand.z) !== level) return false;
-      if (search && !matchesQuery(l, search)) return false;
-      if (findAt && l.land) {
-        const dx = l.land.x - findAt.x;
-        const dy = l.land.y - findAt.y;
-        if (Math.hypot(dx, dy) > 300) return false;
-      } else if (findAt && !l.land) {
-        return false;
+  /**
+   * One predicate, with the ability to skip a facet.
+   *
+   * `skip` is what makes the counts honest: counting "smoke" means asking how
+   * many lineups pass every filter *except* the utility one and are smokes.
+   */
+  const passes = useCallback(
+    (l: Lineup, skip?: keyof Filters | "find" | "level") => {
+      if (!cfg) return false;
+      if (skip !== "showUnverified" && !f.showUnverified && !l.verified) return false;
+      if (skip !== "utility" && f.utility.size && !f.utility.has(l.utility)) return false;
+      if (skip !== "throwType" && f.throwType.size && !f.throwType.has(l.throwType)) return false;
+      if (skip !== "team" && f.team && l.team !== f.team) return false;
+      if (skip !== "purpose" && f.purpose && l.purpose !== f.purpose) return false;
+      if (skip !== "area" && f.area && l.area !== f.area) return false;
+      if (skip !== "withShots" && f.withShots && !hasShots(l)) return false;
+      if (skip !== "search" && f.search && !matchesQuery(l, f.search)) return false;
+      if (skip !== "level" && levels && levelFor(cfg, l.stand.z) !== level) return false;
+      if (skip !== "find" && findAt) {
+        if (!l.land) return false;
+        if (Math.hypot(l.land.x - findAt.x, l.land.y - findAt.y) > FIND_RADIUS) return false;
       }
       return true;
-    }).sort(compareLineups);
-  }, [lineups, cfg, showUnverified, utilFilter, areaFilter, levels, level, search, findAt]);
+    },
+    [cfg, f, levels, level, findAt]
+  );
+
+  const visible = useMemo(
+    () => (lineups ?? []).filter((l) => passes(l)).sort(compareLineups),
+    [lineups, passes]
+  );
+
+  const count = useCallback(
+    (facet: keyof Filters, match: (l: Lineup) => boolean) =>
+      (lineups ?? []).filter((l) => passes(l, facet) && match(l)).length,
+    [lineups, passes]
+  );
 
   const areas = useMemo(() => {
-    const set = new Map<string, number>();
-    for (const l of visible) set.set(l.area || "—", (set.get(l.area || "—") ?? 0) + 1);
-    return Array.from(set.entries()).sort((a, b) => a[0].localeCompare(b[0]));
-  }, [visible]);
+    const tally = new Map<string, number>();
+    for (const l of lineups ?? []) {
+      if (!passes(l, "area")) continue;
+      tally.set(l.area, (tally.get(l.area) ?? 0) + 1);
+    }
+    return Array.from(tally.entries()).sort((a, b) => a[0].localeCompare(b[0]));
+  }, [lineups, passes]);
 
-  const unverifiedCount = (lineups ?? []).filter((l) => !l.verified).length;
+  const unverified = (lineups ?? []).filter((l) => !l.verified).length;
+  const withPictures = (lineups ?? []).filter(hasShots).length;
+  const active =
+    f.utility.size + f.throwType.size +
+    Number(Boolean(f.team)) + Number(Boolean(f.purpose)) + Number(Boolean(f.area)) +
+    Number(f.withShots) + Number(Boolean(f.search)) + Number(Boolean(findAt));
+
+  const toggleIn = (key: "utility" | "throwType", id: string) =>
+    setF((prev) => {
+      const next = new Set(prev[key]);
+      if (next.has(id)) next.delete(id);
+      else next.add(id);
+      return { ...prev, [key]: next };
+    });
+
+  const clearAll = () => {
+    setF({ ...EMPTY, showUnverified: f.showUnverified });
+    setFindAt(null);
+    setFindMode(false);
+  };
 
   const testLineup = async (lineup: Lineup) => {
     if (testing) return;
@@ -168,7 +253,7 @@ export default function UtilityPage({ signedIn }: { signedIn: boolean }) {
       const json = await res.json();
       setNote(res.ok ? { kind: "ok", text: json.message ?? "Set up." } : { kind: "err", text: json.error ?? "Failed." });
     } catch {
-      setNote({ kind: "err", text: "Could not reach the server." });
+      setNote({ kind: "err", text: t("utility.unreachable") });
     } finally {
       setTesting(false);
     }
@@ -182,20 +267,16 @@ export default function UtilityPage({ signedIn }: { signedIn: boolean }) {
   const shownMaps = maps.filter(([, c]) => c.pools.includes(pool));
 
   return (
-    <div style={{ display: "flex", flexDirection: "column", height: "calc(100vh - 64px)", overflow: "hidden" }}>
-      <section className="pro-hero" style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-end", flexWrap: "wrap", gap: "1rem", paddingBottom: "1rem" }}>
+    <div className="ux">
+      <header className="ux-hero">
         <div>
           <span className="kicker">{t("auto.utilityclient.utility")}</span>
-          <h1 style={{ fontSize: "clamp(28px, 4.2vw, 48px)", letterSpacing: "-0.025em", margin: "10px 0 6px" }}>
-            {t("auto.utilityclient.lineups")}
-          </h1>
-          <p className="muted" style={{ maxWidth: "60ch", margin: 0 }}>
-            {t("auto.utilityclient.every_saved_smoke_flash_molly")}
-          </p>
+          <h1>{t("utility.title")}</h1>
+          <p className="muted">{t("auto.utilityclient.every_saved_smoke_flash_molly")}</p>
         </div>
-        
-        <div style={{ display: "flex", flexDirection: "column", gap: "12px", alignItems: "flex-end" }}>
-          <div className="util-pools">
+
+        <div className="ux-mapping">
+          <div className="ux-pools">
             {POOLS.map((p) => (
               <button
                 key={p.id}
@@ -203,250 +284,378 @@ export default function UtilityPage({ signedIn }: { signedIn: boolean }) {
                 onClick={() => {
                   setPool(p.id);
                   const first = maps.find(([, c]) => c.pools.includes(p.id));
-                  if (first && !MAPS[map]?.pools.includes(p.id)) setMap(first[0]);
+                  if (first && !MAPS[map]?.pools.includes(p.id)) handleMap(first[0]);
                 }}
               >
                 {p.label}
               </button>
             ))}
           </div>
-          <div className="util-maps">
+          <div className="ux-maps">
             {shownMaps.map(([id, c]) => (
-              <button key={id} className={`util-map ${map === id ? "active" : ""}`} onClick={() => setMap(id)}>
+              <button key={id} className={`ux-map ${map === id ? "on" : ""}`} onClick={() => handleMap(id)}>
                 {c.label}
               </button>
             ))}
           </div>
         </div>
-      </section>
+      </header>
 
-      <section className="pro-section" style={{ flex: 1, display: "flex", flexDirection: "column", minHeight: 0, paddingBottom: 0 }}>
-        <div style={{ display: "flex", justifyContent: "flex-end", alignItems: "center", marginBottom: "1rem" }}>
-          <div className="util-maps" style={{ flexWrap: "nowrap" }}>
-            <button className={`util-map ${viewMode === "map" ? "active" : ""}`} onClick={() => handleViewMode("map")}>{t("utility.view.map")}</button>
-            <button className={`util-map ${viewMode === "list" ? "active" : ""}`} onClick={() => handleViewMode("list")}>{t("utility.view.list")}</button>
-          </div>
-        </div>
+      <div className="ux-layout">
+        {/* ----------------------------------------------------- filter rail */}
+        <aside className="ux-rail">
+          <input
+            className="input ux-search"
+            type="search"
+            placeholder={t("utility.searchplaceholder")}
+            value={f.search}
+            onChange={(e) => setF({ ...f, search: e.target.value })}
+          />
 
-        <div className="util-layout" style={{ flex: 1, minHeight: 0, display: "flex", gap: "20px" }}>
-          <div className="util-mapwrap" style={{ flex: 1, display: "flex", flexDirection: "column", minHeight: 0, overflow: "hidden" }}>
-            {levels && (
-              <div className="util-levels" role="group" aria-label={t("auto.utilityclient.level")}>
-                {levels.map((l) => (
-                  <button key={l.name} className={`chip ${level === l.name ? "active" : ""}`} onClick={() => setLevel(l.name)}>
-                    {l.name === "default" ? "Upper" : "Lower"}
-                  </button>
-                ))}
-              </div>
-            )}
-
-            {cfg && viewMode === "map" && (
-              <UtilityRadar
-                cfg={cfg}
-                radar={radarUrl(map, level)}
-                lineups={visible}
-                selected={selected}
-                hovered={hovered}
-                findMode={findMode}
-                findAt={findAt}
-                onHover={setHovered}
-                onSelect={setSelected}
-                onFind={(pos) => { setFindAt(pos); setFindMode(false); }}
-                label={`${cfg.label} radar`}
-              />
-            )}
-
-            {viewMode === "list" && (
-              <div style={{ flex: 1, display: "grid", gridTemplateColumns: "repeat(auto-fill, minmax(220px, 1fr))", gap: "1rem", alignContent: "flex-start", overflowY: "auto", paddingRight: "0.5rem" }}>
-                {visible.map((l) => {
-                  const src = l.shots.result || l.shots.aim;
-                  return (
-                    <button 
-                      key={l.id} 
-                      className={`util-card ${selected?.id === l.id ? "active" : ""}`}
-                      style={{ 
-                        border: selected?.id === l.id ? "2px solid var(--color-accent)" : "1px solid color-mix(in srgb, var(--color-text) 15%, transparent)", 
-                        borderRadius: "8px", 
-                        overflow: "hidden", 
-                        textAlign: "left", 
-                        background: "color-mix(in srgb, var(--color-bg) 50%, #000)", 
-                        cursor: "pointer",
-                        transition: "all 0.2s ease",
-                        display: "flex",
-                        flexDirection: "column",
-                        padding: 0
-                      }}
-                      onClick={() => handleSelect(l)}
-                    >
-                      {src ? (
-                        <div style={{ overflow: "hidden" }}>
-                          {/* eslint-disable-next-line @next/next/no-img-element */}
-                          <img 
-                            src={src} 
-                            alt={l.name} 
-                            style={{ width: "100%", aspectRatio: "16/9", objectFit: "cover", display: "block", borderBottom: "1px solid color-mix(in srgb, var(--color-text) 10%, transparent)", transition: "transform 0.3s ease", transformOrigin: "center" }} 
-                            loading="lazy" 
-                            onMouseEnter={e => e.currentTarget.style.transform = "scale(3)"}
-                            onMouseLeave={e => e.currentTarget.style.transform = "scale(1)"}
-                          />
-                        </div>
-                      ) : (
-                        <span style={{ width: "100%", aspectRatio: "16/9", background: "color-mix(in srgb, var(--color-text) 5%, transparent)", display: "flex", alignItems: "center", justifyContent: "center", color: "var(--muted)", borderBottom: "1px solid color-mix(in srgb, var(--color-text) 10%, transparent)" }}>{t("utility.noimage")}</span>
-                      )}
-                      <span style={{ padding: "0.75rem", display: "block" }}>
-                        <span style={{ display: "flex", alignItems: "center", gap: "0.5rem", marginBottom: "0.25rem" }}>
-                          <span className="util-row-dot" style={{ background: UTIL_COLOUR[l.utility] }} />
-                          <span style={{ fontWeight: 600, fontSize: "0.95rem" }}>{l.name}</span>
-                        </span>
-                        <span style={{ fontSize: "0.8rem", color: "var(--muted)", display: "block" }}>
-                          {l.area} • {l.throwType === "standing" ? "Standing" : THROW_SHORT[l.throwType] ?? l.throwType}
-                        </span>
-                      </span>
-                    </button>
-                  );
-                })}
-              </div>
-            )}
-
-            <div className="util-legend">
-              {UTILITIES.map((u) => (
+          <div className="ux-facet">
+            <h3>{t("utility.facet.grenade")}</h3>
+            {UTILITIES.map((u) => {
+              const n = count("utility", (l) => l.utility === u.id);
+              return (
                 <button
                   key={u.id}
-                  className={`util-legend-item ${utilFilter === u.id ? "on" : ""}`}
+                  className={`ux-opt ${f.utility.has(u.id) ? "on" : ""} ${n === 0 ? "empty" : ""}`}
                   style={{ ["--tint" as string]: UTIL_COLOUR[u.id] }}
-                  onClick={() => setUtilFilter(utilFilter === u.id ? "" : u.id)}
+                  disabled={n === 0 && !f.utility.has(u.id)}
+                  onClick={() => toggleIn("utility", u.id)}
                 >
-                  <span className="util-legend-dot" /> {u.label}
+                  <span className="ux-opt-dot" />
+                  <span className="ux-opt-label">{t(`utility.type.${u.id}`)}</span>
+                  <span className="ux-opt-n">{n}</span>
+                </button>
+              );
+            })}
+          </div>
+
+          <div className="ux-facet">
+            <h3>{t("utility.facet.throw")}</h3>
+            {THROW_TYPES.map((ty) => {
+              const n = count("throwType", (l) => l.throwType === ty.id);
+              if (n === 0 && !f.throwType.has(ty.id)) return null;
+              return (
+                <button
+                  key={ty.id}
+                  className={`ux-opt ${f.throwType.has(ty.id) ? "on" : ""}`}
+                  onClick={() => toggleIn("throwType", ty.id)}
+                  title={ty.hint}
+                >
+                  <span className="ux-opt-label">{ty.label}</span>
+                  <span className="ux-opt-n">{n}</span>
+                </button>
+              );
+            })}
+          </div>
+
+          <div className="ux-facet">
+            <h3>{t("utility.facet.side")}</h3>
+            <div className="ux-seg">
+              {[
+                { id: "", label: t("utility.side.any") },
+                { id: "T", label: "T" },
+                { id: "CT", label: "CT" },
+              ].map((s) => (
+                <button
+                  key={s.id || "any"}
+                  className={`ux-segbtn ${f.team === s.id ? "on" : ""} ${s.id.toLowerCase()}`}
+                  onClick={() => setF({ ...f, team: s.id })}
+                >
+                  {s.label}
                 </button>
               ))}
             </div>
           </div>
 
-          <aside className="util-side">
-            {note && (
-              <div className={`skin-note ${note.kind === "ok" ? "skin-note-ok" : "skin-note-error"}`} style={{ marginBottom: "1rem" }}>
-                <span>{note.text}</span>
+          <div className="ux-facet">
+            <h3>{t("utility.facet.purpose")}</h3>
+            <div className="ux-chips">
+              {Object.entries(PURPOSE_LABEL).map(([id, label]) => {
+                const n = count("purpose", (l) => l.purpose === id);
+                if (n === 0) return null;
+                return (
+                  <button
+                    key={id}
+                    className={`chip ${f.purpose === id ? "active" : ""}`}
+                    onClick={() => setF({ ...f, purpose: f.purpose === id ? "" : id })}
+                  >
+                    {label} <span className="num">{n}</span>
+                  </button>
+                );
+              })}
+            </div>
+          </div>
+
+          {areas.length > 1 && (
+            <div className="ux-facet">
+              <h3>{t("utility.facet.area")}</h3>
+              <div className="ux-chips">
+                {areas.map(([a, n]) => (
+                  <button
+                    key={a || "none"}
+                    className={`chip ${f.area === a ? "active" : ""}`}
+                    onClick={() => setF({ ...f, area: f.area === a ? "" : a })}
+                  >
+                    {a || "—"} <span className="num">{n}</span>
+                  </button>
+                ))}
               </div>
-            )}
-            
-            {selected ? (
-              <UtilityDetail
-                lineup={selected}
-                signedIn={signedIn}
-                favourite={favorites.includes(selected.id)}
-                testing={testing}
-                onBack={() => handleSelect(null)}
-                onTest={testLineup}
-                onToggleFavourite={toggleFavorite}
-                onNote={handleNote}
-                onUpdate={handleUpdate}
+            </div>
+          )}
+
+          <div className="ux-facet">
+            <button
+              className={`ux-find ${findMode ? "arming" : ""} ${findAt ? "on" : ""}`}
+              onClick={() => {
+                if (findAt) {
+                  setFindAt(null);
+                  setFindMode(false);
+                } else {
+                  setFindMode((m) => !m);
+                  handleStage("map");
+                }
+              }}
+            >
+              {findAt
+                ? t("utility.find.clear")
+                : findMode
+                  ? t("utility.find.arming")
+                  : t("utility.find.start")}
+            </button>
+            <p className="ux-findhint">{t("utility.find.hint")}</p>
+          </div>
+
+          <div className="ux-facet">
+            <label className="util-toggle">
+              <input
+                type="checkbox"
+                checked={f.withShots}
+                onChange={(e) => setF({ ...f, withShots: e.target.checked })}
               />
-            ) : (
-              <div className="util-list">
-                <div className="util-list-head">
-                  <h2>{cfg?.label}</h2>
-                  <span className="muted num">{visible.length}</span>
-                </div>
+              {t("utility.filter.withpictures", { n: withPictures })}
+            </label>
+            {unverified > 0 && (
+              <label className="util-toggle">
+                <input
+                  type="checkbox"
+                  checked={f.showUnverified}
+                  onChange={(e) => setF({ ...f, showUnverified: e.target.checked })}
+                />
+                {t("utility.filter.unverified", { n: unverified })}
+              </label>
+            )}
+          </div>
 
-                <div className="util-search" style={{ marginBottom: "1rem", display: "flex", gap: "0.5rem", flexDirection: "column" }}>
-                  <input
-                    type="text"
-                    placeholder="Search lineups..."
-                    value={search}
-                    onChange={(e) => setSearch(e.target.value)}
-                    className="input"
-                    style={{ width: "100%", padding: "0.5rem", background: "var(--bg-elevated)", border: "1px solid var(--border)", borderRadius: "6px", color: "var(--fg)" }}
-                  />
-                  <div style={{ display: "flex", gap: "0.5rem" }}>
-                    <button 
-                      className={`btn ${findMode ? "btn-primary" : "btn-secondary"}`}
-                      onClick={() => {
-                        if (findMode) {
-                          setFindMode(false);
-                        } else {
-                          setFindMode(true);
-                          setFindAt(null);
-                        }
-                      }}
-                      style={{ flex: 1 }}
-                    >
-                      {findMode ? "Click radar to find" : findAt ? "Target locked" : "Find by target"}
-                    </button>
-                    {findAt && (
-                      <button className="btn btn-ghost" onClick={() => setFindAt(null)}>Clear</button>
-                    )}
-                  </div>
-                </div>
+          {active > 0 && (
+            <button className="btn btn-ghost ux-clear" onClick={clearAll}>
+              {t("utility.filter.clear", { n: active })}
+            </button>
+          )}
+        </aside>
 
-                {unverifiedCount > 0 && (
-                  <label className="util-toggle">
-                    <input type="checkbox" checked={showUnverified} onChange={(e) => setShowUnverified(e.target.checked)} />
-                    {t("auto.utilityclient.show")} {unverifiedCount} {t("auto.utilityclient.unverified")}
-                  </label>
-                )}
-
-                {areas.length > 1 && (
-                  <div className="util-areas">
-                    <button className={`chip ${areaFilter === "" ? "active" : ""}`} onClick={() => setAreaFilter("")}>
-                      {t("auto.utilityclient.all")}
-                    </button>
-                    {areas.map(([a, n]) => (
-                      <button
-                        key={a}
-                        className={`chip ${areaFilter === a ? "active" : ""}`}
-                        onClick={() => setAreaFilter(areaFilter === a ? "" : a)}
-                      >
-                        {a} <span className="num">{n}</span>
-                      </button>
-                    ))}
-                  </div>
-                )}
-
-                {lineups === null ? (
-                  <p className="muted">{t("auto.utilityclient.loading")}</p>
-                ) : visible.length === 0 ? (
-                  <p className="empty-hint">
-                    {t("auto.utilityclient.nothing_saved_here_yet_record")} <code>{t("auto.utilityclient._prac_nade")}</code>.
-                  </p>
-                ) : (
-                  <ul>
-                    {visible.map((l) => {
-                      const src = l.shots.result || l.shots.aim;
-                      return (
-                        <li key={l.id}>
-                          <button
-                            className={`util-row ${hovered === l.id ? "hot" : ""}`}
-                            style={{ display: "flex", alignItems: "center", gap: "10px", padding: "6px 8px", width: "100%", textAlign: "left", borderRadius: "6px", border: "none", background: "transparent", cursor: "pointer" }}
-                            onMouseEnter={() => setHovered(l.id)}
-                            onMouseLeave={() => setHovered(null)}
-                            onClick={() => handleSelect(l)}
-                          >
-                            {src ? (
-                              /* eslint-disable-next-line @next/next/no-img-element */
-                              <img src={src} alt="" style={{ width: "48px", height: "32px", objectFit: "cover", borderRadius: "4px" }} loading="lazy" />
-                            ) : (
-                              <span style={{ width: "48px", height: "32px", background: "color-mix(in srgb, var(--color-text) 5%, transparent)", borderRadius: "4px", display: "flex", alignItems: "center", justifyContent: "center", fontSize: "10px", color: "var(--muted)" }}>No img</span>
-                            )}
-                            <div style={{ display: "flex", flexDirection: "column", overflow: "hidden" }}>
-                              <span className="util-row-name" style={{ display: "flex", alignItems: "center", gap: "6px" }}>
-                                <span className="util-row-dot" style={{ background: UTIL_COLOUR[l.utility] }} />
-                                {l.name}
-                                {!l.verified && <span className="util-row-flag" title={t("auto.utilityclient.position_not_on_the_map")}>?</span>}
-                              </span>
-                              <span className="util-row-throw">{l.throwType === "standing" ? "" : THROW_SHORT[l.throwType] ?? l.throwType}</span>
-                            </div>
-                          </button>
-                        </li>
-                      );
-                    })}
-                  </ul>
-                )}
+        {/* --------------------------------------------------------- stage */}
+        <section className="ux-stage">
+          <div className="ux-stagebar">
+            {levels && (
+              <div className="ux-levels" role="group" aria-label={t("auto.utilityclient.level")}>
+                {levels.map((l) => (
+                  <button
+                    key={l.name}
+                    className={`chip ${level === l.name ? "active" : ""}`}
+                    onClick={() => setLevel(l.name)}
+                  >
+                    {l.name === "default" ? t("utility.level.upper") : t("utility.level.lower")}
+                  </button>
+                ))}
               </div>
             )}
-          </aside>
-        </div>
-      </section>
+            <span className="ux-count">
+              {lineups === null
+                ? t("auto.utilityclient.loading")
+                : t("utility.showing", { n: visible.length, total: lineups.length })}
+            </span>
+            <div className="ux-viewtabs" role="tablist">
+              <button
+                role="tab"
+                aria-selected={stage === "map"}
+                className={`ux-viewtab ${stage === "map" ? "on" : ""}`}
+                onClick={() => handleStage("map")}
+              >
+                {t("utility.view.map")}
+              </button>
+              <button
+                role="tab"
+                aria-selected={stage === "list"}
+                className={`ux-viewtab ${stage === "list" ? "on" : ""}`}
+                onClick={() => handleStage("list")}
+              >
+                {t("utility.view.gallery")}
+              </button>
+            </div>
+          </div>
+
+          {cfg && stage === "map" && (
+            <UtilityRadar
+              cfg={cfg}
+              radar={radarUrl(map, level)}
+              lineups={visible}
+              selected={selected}
+              hovered={hovered}
+              findMode={findMode}
+              findAt={findAt}
+              onHover={setHovered}
+              onSelect={handleSelect}
+              onFind={(pos) => {
+                setFindAt(pos);
+                setFindMode(false);
+              }}
+              label={`${cfg.label} radar`}
+            />
+          )}
+
+          {stage === "list" && (
+            <div className="ux-gallery">
+              {visible.map((l) => (
+                <GalleryCard
+                  key={l.id}
+                  lineup={l}
+                  active={selected?.id === l.id}
+                  favourite={favourites.includes(l.id)}
+                  noImage={t("utility.noimage")}
+                  onSelect={() => handleSelect(l)}
+                  onHover={setHovered}
+                />
+              ))}
+              {lineups !== null && visible.length === 0 && (
+                <p className="empty-hint">{t("utility.nomatch")}</p>
+              )}
+            </div>
+          )}
+        </section>
+
+        {/* ------------------------------------------------- list / detail */}
+        <aside className="ux-side">
+          {note && (
+            <div className={`skin-note ${note.kind === "ok" ? "skin-note-ok" : "skin-note-error"} ux-note`}>
+              <span>{note.text}</span>
+            </div>
+          )}
+
+          {selected ? (
+            <UtilityDetail
+              lineup={selected}
+              signedIn={signedIn}
+              favourite={favourites.includes(selected.id)}
+              testing={testing}
+              onBack={() => handleSelect(null)}
+              onTest={testLineup}
+              onToggleFavourite={toggleFavourite}
+              onNote={handleNote}
+              onUpdate={handleUpdate}
+            />
+          ) : (
+            <div className="util-list">
+              <div className="util-list-head">
+                <h2>{cfg?.label}</h2>
+                <span className="muted num">{visible.length}</span>
+              </div>
+
+              {lineups === null ? (
+                <p className="muted">{t("auto.utilityclient.loading")}</p>
+              ) : visible.length === 0 ? (
+                <p className="empty-hint">
+                  {active > 0 ? t("utility.nomatch") : t("utility.empty")}
+                </p>
+              ) : (
+                <ul>
+                  {visible.map((l) => (
+                    <li key={l.id}>
+                      <button
+                        className={`ux-row ${hovered === l.id ? "hot" : ""}`}
+                        onMouseEnter={() => setHovered(l.id)}
+                        onMouseLeave={() => setHovered(null)}
+                        onClick={() => handleSelect(l)}
+                      >
+                        <Thumb lineup={l} />
+                        <span className="ux-row-text">
+                          <span className="ux-row-name">
+                            <span className="util-row-dot" style={{ background: UTIL_COLOUR[l.utility] }} />
+                            {l.name}
+                            {favourites.includes(l.id) && <span className="ux-row-star">★</span>}
+                            {!l.verified && (
+                              <span className="util-row-flag" title={t("auto.utilityclient.position_not_on_the_map")}>?</span>
+                            )}
+                          </span>
+                          <span className="ux-row-meta">
+                            {l.area}
+                            {l.area && THROW_SHORT[l.throwType] ? " · " : ""}
+                            {THROW_SHORT[l.throwType]}
+                          </span>
+                        </span>
+                      </button>
+                    </li>
+                  ))}
+                </ul>
+              )}
+            </div>
+          )}
+        </aside>
+      </div>
     </div>
   );
 }
 
+/**
+ * The thumbnail on a list row.
+ *
+ * Result before aim: at 48px the aim shot is a wall with an invisible crosshair
+ * on it, while the result is a smoke, which is recognisable at any size.
+ */
+function Thumb({ lineup }: { lineup: Lineup }) {
+  const src = lineup.shots.result || lineup.shots.aim || lineup.thumb;
+  if (!src) return <span className="ux-thumb empty" aria-hidden />;
+  // eslint-disable-next-line @next/next/no-img-element
+  return <img className="ux-thumb" src={src} alt="" loading="lazy" />;
+}
+
+function GalleryCard({
+  lineup, active, favourite, noImage, onSelect, onHover,
+}: {
+  lineup: Lineup;
+  active: boolean;
+  favourite: boolean;
+  noImage: string;
+  onSelect: () => void;
+  onHover: (id: number | null) => void;
+}) {
+  const src = lineup.shots.result || lineup.shots.aim || lineup.thumb;
+  return (
+    <button
+      className={`ux-card ${active ? "on" : ""}`}
+      onClick={onSelect}
+      onMouseEnter={() => onHover(lineup.id)}
+      onMouseLeave={() => onHover(null)}
+    >
+      <span className="ux-card-shot">
+        {src ? (
+          // eslint-disable-next-line @next/next/no-img-element
+          <img src={src} alt="" loading="lazy" />
+        ) : (
+          <span className="ux-card-noshot">{noImage}</span>
+        )}
+        <span className="ux-card-util" style={{ ["--tint" as string]: UTIL_COLOUR[lineup.utility] }} />
+        {favourite && <span className="ux-card-star">★</span>}
+      </span>
+      <span className="ux-card-body">
+        <span className="ux-card-name">{lineup.name}</span>
+        <span className="ux-card-meta">
+          {lineup.area || "—"}
+          {THROW_LABEL[lineup.throwType] ? ` · ${THROW_LABEL[lineup.throwType]}` : ""}
+        </span>
+      </span>
+    </button>
+  );
+}

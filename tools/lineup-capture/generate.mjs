@@ -25,6 +25,11 @@
  *   node tools/lineup-capture/generate.mjs                 # every map with lineups
  *   node tools/lineup-capture/generate.mjs --map de_mirage
  *   node tools/lineup-capture/generate.mjs --all           # include unverified
+ *   node tools/lineup-capture/generate.mjs --map de_mirage --pending
+ *
+ * `--pending` is the one the Game Maker's capture queue hands you: only the
+ * lineups still flagged NeedsShots. Without it a second run re-photographs
+ * every lineup on the map to add the three that were validated this week.
  */
 
 import fs from "node:fs";
@@ -177,6 +182,7 @@ async function main() {
   const args = process.argv.slice(2);
   const only = args.includes("--map") ? args[args.indexOf("--map") + 1] : null;
   const includeUnverified = args.includes("--all");
+  const pendingOnly = args.includes("--pending");
 
   const prisma = new PrismaClient();
   try {
@@ -187,9 +193,10 @@ async function main() {
       params.push(only);
     }
     if (!includeUnverified) where.push("Verified = 1");
+    if (pendingOnly) where.push("NeedsShots = 1");
     const sql =
       `SELECT Id, Map, Name, Area, Utility, Purpose, Team, ThrowType, ClickType, ` +
-      `StandX, StandY, StandZ, Pitch, Yaw, Verified FROM GardenNades ` +
+      `StandX, StandY, StandZ, Pitch, Yaw, Verified, NeedsShots FROM GardenNades ` +
       (where.length ? `WHERE ${where.join(" AND ")} ` : "") +
       // Grouped by area so consecutive shots are near each other: it keeps the
       // teleports short and makes a half-finished run still cover whole areas.
@@ -197,7 +204,11 @@ async function main() {
 
     const rows = await prisma.$queryRawUnsafe(sql, ...params);
     if (rows.length === 0) {
-      console.error("No lineups matched.");
+      console.error(
+        pendingOnly
+          ? "Nothing pending — every lineup that matched already has its shots."
+          : "No lineups matched."
+      );
       process.exitCode = 1;
       return;
     }
@@ -224,6 +235,7 @@ async function main() {
         map,
         generatedFrom: "GardenNades",
         includeUnverified,
+        pendingOnly,
         count: list.length,
         lineups: list.map((r, i) => ({
           index: i,
@@ -234,6 +246,7 @@ async function main() {
           throwType: r.ThrowType,
           clickType: r.ClickType,
           verified: Boolean(r.Verified),
+          needsShots: Boolean(r.NeedsShots),
           stand: { x: Number(r.StandX), y: Number(r.StandY), z: Number(r.StandZ) },
           view: { pitch: Number(r.Pitch), yaw: Number(r.Yaw) },
         })),

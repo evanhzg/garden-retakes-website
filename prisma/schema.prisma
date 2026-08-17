@@ -723,8 +723,15 @@ model GardenNade {
   Purpose        String   @default("default") @db.VarChar(16)
   /// T | CT | "" when it works for either side.
   Team           String   @default("") @db.VarChar(2)
-  /// standing | jump | step-jump | run | crouch
-  ThrowType      String   @default("standing") @db.VarChar(16)
+  /// stand | crouch | walk | jump | w-jump | step-jump | 2step-jump |
+  /// run-jump | crouch-jump. Canonical list lives in lib/utilityShared.ts and
+  /// is mirrored in the plugin's UtilityModule.ThrowTypes.
+  ///
+  /// run-jump (an actual run-up from A to B) and w-jump (forward and jump
+  /// pressed together, no step taken) are deliberately separate: they are
+  /// different throws that land differently, and the old single "run" could
+  /// not tell them apart.
+  ThrowType      String   @default("stand") @db.VarChar(16)
   /// left | right | both — left is a normal throw, right is the short lob.
   ClickType      String   @default("left") @db.VarChar(8)
   /// Where you stand, and where you look.
@@ -759,9 +766,52 @@ model GardenNade {
   ShotAim        String?  @db.VarChar(500)
   ShotResult     String?  @db.VarChar(500)
 
+  /// Set on rows whose throw type was guessed by the taxonomy migration rather
+  /// than recorded. Surfaces in the Maker tab so a guess can be confirmed or
+  /// corrected instead of quietly standing as fact.
+  NeedsReview    Boolean  @default(false)
+  /// Waiting for the three stills. Drives the capture queue — screenshots need
+  /// a rendering client (see tools/lineup-capture), so this is a queue rather
+  /// than something the server can satisfy itself.
+  NeedsShots     Boolean  @default(true)
+  /// Whether the stand position came from an explicit !lineup mark rather than
+  /// the last-grounded fallback. A run-up lineup recorded without a mark is
+  /// still usable but less exact, and the tab should say which it is.
+  MarkedStand    Boolean  @default(false)
+
   @@index([Map])
   @@index([Map, Area])
+  @@index([NeedsShots])
   @@map("GardenNades")
+}
+
+/// The lineup currently being captured, one row per admin.
+///
+/// Keyed by SteamId rather than autoincrement on purpose: throwing again
+/// replaces the pending capture instead of stacking a second one, which is
+/// exactly the "re-throw overwrites until you Validate" behaviour. Validating
+/// promotes it into GardenNades and deletes the row.
+model GardenNadeDraft {
+  SteamId     BigInt   @id @db.UnsignedBigInt
+  Map         String   @db.VarChar(64)
+  Utility     String   @default("smoke") @db.VarChar(16)
+  Team        String   @default("") @db.VarChar(2)
+  ThrowType   String   @default("stand") @db.VarChar(16)
+  ClickType   String   @default("left") @db.VarChar(8)
+  StandX      Float
+  StandY      Float
+  StandZ      Float
+  Pitch       Float
+  Yaw         Float
+  LandX       Float?
+  LandY       Float?
+  LandZ       Float?
+  /// True when !lineup mark set the stand point; false when it fell back to
+  /// the last grounded position before the jump.
+  MarkedStand Boolean  @default(false)
+  CapturedAt  DateTime @default(now()) @db.DateTime(6)
+
+  @@map("GardenNadeDrafts")
 }
 
 /// A `/clip` mark from the game server, waiting for the pipeline to cut it.

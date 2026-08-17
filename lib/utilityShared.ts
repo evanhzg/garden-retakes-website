@@ -108,25 +108,49 @@ export const weaponFor = (utility: string): string =>
  * The wording is the one every lineup site uses, because someone arriving from
  * cs2util or csnades should not have to work out that our "step-jump" is their
  * "run + jump throw".
+ *
+ * run-jump and w-jump are deliberately separate. A run-up from A to B and
+ * "press W and jump together, no step taken" are different throws that land
+ * differently — the old taxonomy had one "run" for both, and its label read
+ * "Run + jump throw", which is why every row that used it is flagged for
+ * review rather than silently assumed.
+ *
+ * This list is the canonical one; UtilityModule.ThrowTypes in the plugin
+ * mirrors it, and a value added on one side without the other is rejected at
+ * capture time rather than stored as something nothing can render.
  */
-export const THROW_LABEL: Record<string, string> = {
-  standing: "Standing throw",
-  crouch: "Crouch throw",
-  walk: "Walk throw",
-  run: "Run throw",
-  jump: "Jump throw",
-  "step-jump": "Run + jump throw",
-};
+export const THROW_TYPES = [
+  { id: "stand", label: "Standing throw", short: "", hint: "Still, feet planted." },
+  { id: "crouch", label: "Crouch throw", short: "Crouch", hint: "Held crouch while you throw." },
+  { id: "walk", label: "Walk throw", short: "Walk", hint: "Shift-walking into the throw." },
+  { id: "jump", label: "Jump throw", short: "Jump", hint: "Jump from standing, no movement key." },
+  { id: "w-jump", label: "W + jump throw", short: "W+Jump", hint: "Forward and jump pressed together — no step taken." },
+  { id: "step-jump", label: "Step + jump throw", short: "Step+Jump", hint: "One step, then jumpthrow." },
+  { id: "2step-jump", label: "Two-step jump throw", short: "2Step+Jump", hint: "Two steps, then jumpthrow." },
+  { id: "run-jump", label: "Running jump throw", short: "Run+Jump", hint: "A real run-up from A to B, then jumpthrow." },
+  { id: "crouch-jump", label: "Crouch jump throw", short: "Crouch+Jump", hint: "Crouch into the jump." },
+] as const;
+
+export type ThrowTypeId = (typeof THROW_TYPES)[number]["id"];
+
+export const THROW_LABEL: Record<string, string> = Object.fromEntries(
+  THROW_TYPES.map((t) => [t.id, t.label])
+);
 
 /** The compact form, for a badge on a list row where there is no space. */
-export const THROW_SHORT: Record<string, string> = {
-  standing: "",
-  crouch: "Crouch",
-  walk: "Walk",
-  run: "Run",
-  jump: "Jump",
-  "step-jump": "Run+Jump",
-};
+export const THROW_SHORT: Record<string, string> = Object.fromEntries(
+  THROW_TYPES.map((t) => [t.id, t.short])
+);
+
+/** What the throw actually asks you to do, since the names only half say. */
+export const THROW_HINT: Record<string, string> = Object.fromEntries(
+  THROW_TYPES.map((t) => [t.id, t.hint])
+);
+
+/** Throws that involve leaving the ground, and so need a marked start point. */
+export const RUNUP_THROWS = new Set<string>([
+  "w-jump", "step-jump", "2step-jump", "run-jump",
+]);
 
 export const CLICK_LABEL: Record<string, string> = {
   left: "Left click",

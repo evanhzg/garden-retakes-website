@@ -163,9 +163,13 @@ async function main() {
       return;
     }
 
+    // Clearing NeedsShots here is what empties the Game Maker's capture queue.
+    // It belongs on the same statement as the paths: a lineup whose row says it
+    // has shots but whose queue flag is still set would be photographed again
+    // on the next --pending run, forever.
     for (const u of updates) {
       await prisma.$executeRawUnsafe(
-        "UPDATE GardenNades SET ShotAim = ?, ShotResult = ? WHERE Id = ?",
+        "UPDATE GardenNades SET ShotAim = ?, ShotResult = ?, NeedsShots = 0 WHERE Id = ?",
         u.aim,
         u.result,
         u.id

@@ -261,3 +261,144 @@
   width: 100%; min-height: 34px; resize: none;
 }
 .mm-node-body:focus { outline: none; }
+
+/* ------------------------------------------------------------ Utility tab */
+
+/* Two columns: the radar is the reference you keep looking at, the side rail
+   is what changes. On a narrow screen the rail goes under the radar rather
+   than beside it, because a squeezed radar is useless for placing a point. */
+
+.gm-blurb code { background: color-mix(in srgb, var(--color-text) 8%, transparent); padding: 1px 5px; border-radius: 4px; font-size: 0.92em; }
+
+.gm-chip.warn { background: color-mix(in srgb, #e0a94a 20%, transparent); color: #e0a94a; }
+.gm-chip.shots { background: color-mix(in srgb, #6aa9e0 20%, transparent); color: #6aa9e0; }
+.gm-chip.warn, .gm-chip.shots { display: inline-flex; align-items: center; gap: 4px; }
+
+.gmu-top { display: flex; flex-wrap: wrap; gap: 14px; align-items: end; justify-content: space-between; margin-bottom: 16px; }
+.gmu-stats { display: flex; flex-wrap: wrap; gap: 6px; align-items: center; }
+.gmu-refresh { padding: 5px 8px; color: var(--muted); }
+
+.gmu-split { display: grid; grid-template-columns: 1fr minmax(290px, 360px); gap: 20px; align-items: start; }
+@media (max-width: 980px) { .gmu-split { grid-template-columns: 1fr; } }
+
+.gmu-radar-pane {
+  border: 1px solid var(--gm-edge); border-radius: 14px; padding: 12px;
+  background: color-mix(in srgb, var(--color-text) 2%, transparent);
+}
+.gmu-radar {
+  position: relative; aspect-ratio: 1; width: 100%;
+  border-radius: 10px; overflow: hidden; cursor: crosshair;
+  background: color-mix(in srgb, var(--color-text) 4%, transparent);
+}
+.gmu-radar img { width: 100%; height: 100%; object-fit: contain; display: block; user-select: none; }
+.gmu-arcs { position: absolute; inset: 0; width: 100%; height: 100%; pointer-events: none; }
+
+/* Pins are absolutely placed by percentage, so the translate has to undo the
+   half-size itself — a transform-origin cannot do it for a variable size. */
+.gmu-pin {
+  position: absolute; transform: translate(-50%, -50%);
+  width: 13px; height: 13px; border-radius: 50%; padding: 0;
+  border: 2px solid var(--color-bg);
+  background: var(--pin, #888);
+  cursor: pointer;
+  transition: width 0.12s ease, height 0.12s ease, box-shadow 0.12s ease;
+}
+.gmu-pin:hover { width: 17px; height: 17px; }
+.gmu-pin.on { width: 18px; height: 18px; box-shadow: 0 0 0 3px color-mix(in srgb, var(--pin, #888) 40%, transparent); }
+.gmu-pin.review { border-color: #e0a94a; }
+
+/* The capture reads as live: a pulsing stand point and a solid landing pin,
+   both in the same green as its dashed arc. */
+.gmu-pin.draft { pointer-events: none; }
+.gmu-pin.draft.stand {
+  width: 15px; height: 15px; background: #6fcf7f;
+  animation: gmu-pulse 1.7s ease-out infinite;
+}
+.gmu-pin.draft.land {
+  width: 20px; height: 20px; background: #6fcf7f; color: #08130b;
+  display: grid; place-items: center; border-radius: 50% 50% 50% 0;
+  transform: translate(-50%, -100%) rotate(-45deg);
+}
+.gmu-pin.draft.land svg { transform: rotate(45deg); }
+@keyframes gmu-pulse {
+  0% { box-shadow: 0 0 0 0 color-mix(in srgb, #6fcf7f 65%, transparent); }
+  100% { box-shadow: 0 0 0 14px transparent; }
+}
+
+.gmu-side { display: grid; gap: 14px; }
+
+.gmu-draft, .gmu-edit, .gmu-waiting {
+  border: 1px solid var(--gm-edge); border-radius: 14px; padding: 16px;
+  background: color-mix(in srgb, var(--color-text) 2%, transparent);
+}
+.gmu-draft { display: grid; gap: 11px; border-color: color-mix(in srgb, #6fcf7f 45%, transparent); }
+.gmu-draft-head { display: flex; align-items: center; justify-content: space-between; gap: 10px; }
+.gmu-live { display: inline-flex; align-items: center; gap: 7px; font-size: 11px; font-weight: 900; letter-spacing: 0.08em; text-transform: uppercase; color: #6fcf7f; }
+.gmu-dot { width: 7px; height: 7px; border-radius: 50%; background: #6fcf7f; animation: gmu-pulse 1.7s ease-out infinite; }
+
+.gmu-provenance { margin: 0; font-size: 12px; line-height: 1.5; color: var(--muted); }
+.gmu-coords {
+  display: flex; flex-wrap: wrap; gap: 4px 14px;
+  font-size: 11.5px; font-variant-numeric: tabular-nums; color: var(--muted);
+  padding-bottom: 4px; border-bottom: 1px dashed var(--gm-edge);
+}
+
+.gmu-row { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
+.gmu-row .gm-field { min-width: 0; }
+.gmu-hint { margin: -3px 0 0; font-size: 11.5px; line-height: 1.45; color: var(--muted); }
+.gmu-warn {
+  display: flex; align-items: start; gap: 6px; margin: 0;
+  padding: 8px 10px; border-radius: 9px;
+  background: color-mix(in srgb, #e0a94a 12%, transparent);
+  color: #e0a94a; font-size: 11.5px; line-height: 1.45; font-weight: 600;
+}
+.gmu-warn svg { flex: none; margin-top: 1px; }
+.gmu-notes { min-height: 58px; resize: vertical; font-size: 13px; }
+.gmu-actions { display: flex; gap: 8px; align-items: center; }
+.gmu-actions .btn-primary { flex: 1; justify-content: center; }
+
+.gmu-waiting { display: grid; gap: 6px; place-items: center; text-align: center; padding: 32px 18px; color: var(--muted); }
+.gmu-waiting p { margin: 0; font-size: 13px; line-height: 1.5; }
+.gmu-waiting code { background: color-mix(in srgb, var(--color-text) 8%, transparent); padding: 1px 5px; border-radius: 4px; }
+
+.gmu-edit { display: grid; gap: 10px; }
+.gmu-edit-head { display: flex; align-items: center; justify-content: space-between; gap: 10px; }
+.gmu-edit-head h4 { margin: 0; font-size: 14px; }
+
+.gmu-queue { margin-top: 22px; padding-top: 18px; border-top: 1px dashed var(--gm-edge); }
+.gmu-queue h4 { display: flex; align-items: center; gap: 7px; margin: 0 0 6px; font-size: 12px; font-weight: 800; letter-spacing: 0.08em; text-transform: uppercase; color: var(--muted); }
+.gmu-queue-list { list-style: none; margin: 0; padding: 0; display: grid; gap: 6px; }
+.gmu-queue-list li {
+  display: flex; align-items: center; gap: 10px; flex-wrap: wrap;
+  padding: 9px 12px; border-radius: 10px;
+  border: 1px solid var(--gm-edge);
+  background: color-mix(in srgb, var(--color-text) 2%, transparent);
+}
+.gmu-queue-map { font-weight: 700; font-size: 13px; min-width: 120px; }
+.gmu-cmd {
+  flex: 1; min-width: 220px; font-size: 11.5px; color: var(--muted);
+  background: color-mix(in srgb, var(--color-text) 6%, transparent);
+  padding: 4px 8px; border-radius: 6px; overflow-x: auto; white-space: nowrap;
+}
+
+.gmu-queue-list li.on { border-color: color-mix(in srgb, var(--color-accent) 55%, transparent); }
+.gmu-queue-map {
+  border: none; background: none; padding: 0;
+  font: inherit; font-weight: 700; font-size: 13px; min-width: 120px;
+  color: var(--color-text); text-align: left; cursor: pointer;
+}
+.gmu-queue-map:hover { color: var(--color-accent); }
+.gmu-cmds { display: grid; gap: 4px; flex: 1; min-width: 260px; }
+.gmu-cmd {
+  display: flex; align-items: center; gap: 8px; width: 100%;
+  padding: 5px 9px; border-radius: 7px;
+  border: 1px solid transparent;
+  background: color-mix(in srgb, var(--color-text) 6%, transparent);
+  color: var(--muted); font: inherit; text-align: left; cursor: pointer;
+  transition: border-color 0.15s ease, color 0.15s ease;
+}
+.gmu-cmd:hover { border-color: var(--gm-edge); color: var(--color-text); }
+.gmu-cmd.copied { border-color: #6fcf7f; color: #6fcf7f; }
+.gmu-cmd-label { font-size: 9.5px; font-weight: 900; letter-spacing: 0.06em; text-transform: uppercase; opacity: 0.75; flex: none; }
+.gmu-cmd code { flex: 1; min-width: 0; font-size: 11.5px; overflow-x: auto; white-space: nowrap; }
+.gmu-cmd svg { flex: none; }

@@ -10,6 +10,8 @@ import {
   PURPOSE_LABEL,
   TEAM_LABEL,
   THROW_LABEL,
+  THROW_HINT,
+  RUNUP_THROWS,
   UTIL_COLOUR,
   setposFor,
   type Lineup,
@@ -355,7 +357,12 @@ export default function UtilityDetail({
       <dl className="util-facts">
         <div>
           <dt>{t("utility.fact.movement")}</dt>
-          <dd>{THROW_LABEL[lineup.throwType] ?? lineup.throwType}</dd>
+          <dd>
+            {THROW_LABEL[lineup.throwType] ?? lineup.throwType}
+            {THROW_HINT[lineup.throwType] && (
+              <span className="muted"> — {THROW_HINT[lineup.throwType]}</span>
+            )}
+          </dd>
         </div>
         <div>
           <dt>{t("utility.fact.button")}</dt>
@@ -364,6 +371,12 @@ export default function UtilityDetail({
             {CLICK_HINT[lineup.clickType] && <span className="muted"> — {CLICK_HINT[lineup.clickType]}</span>}
           </dd>
         </div>
+        {RUNUP_THROWS.has(lineup.throwType) && (
+          <div>
+            <dt>{t("utility.fact.runup")}</dt>
+            <dd className="muted">{t("utility.runupnote")}</dd>
+          </div>
+        )}
         <div>
           <dt>{t("utility.fact.standat")}</dt>
           <dd className="num">

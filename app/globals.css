@@ -10952,3 +10952,161 @@ body.overlay-open .socket-status-banner {
 .util-lightbox,
 .rq-takeover { z-index: 1200; }
 .heatmap-container { width: 100%; }
+
+/* ==========================================================================
+   Lineups — the rebuilt /utility browser.
+
+   Three columns: what you are looking for, where it is, which one it is. The
+   rail is fixed-width and the stage takes the slack, because the radar is the
+   thing that benefits from every pixel and a filter list does not.
+   ========================================================================== */
+
+/* The page ground and the top band come from the site's own hero rhythm — the
+   browser is a page like any other, not a full-bleed app view. */
+.ux { display: flex; flex-direction: column; gap: 18px; padding-bottom: 40px; }
+
+.ux-hero {
+  display: flex; flex-wrap: wrap; gap: 20px; align-items: flex-end; justify-content: space-between;
+  padding: clamp(28px, 5vw, 56px) 0 0;
+}
+.ux-hero h1 { font-size: clamp(28px, 4.2vw, 48px); letter-spacing: -0.025em; margin: 10px 0 6px; }
+.ux-hero p { max-width: 60ch; margin: 0; }
+.ux-mapping { display: flex; flex-direction: column; gap: 10px; align-items: flex-end; }
+.ux-pools { display: flex; gap: 8px; flex-wrap: wrap; }
+.ux-maps { display: flex; gap: 6px; flex-wrap: wrap; justify-content: flex-end; }
+.ux-map {
+  padding: 6px 13px; border-radius: 999px;
+  border: 1.5px solid color-mix(in srgb, var(--color-text) 15%, transparent);
+  background: transparent; color: var(--color-text);
+  font: inherit; font-size: 12.5px; font-weight: 700; cursor: pointer;
+  transition: border-color 0.15s ease, background 0.15s ease, color 0.15s ease;
+}
+.ux-map:hover { border-color: var(--color-accent); }
+.ux-map.on { background: var(--btn-primary-bg); color: var(--btn-primary-ink); border-color: transparent; }
+
+.ux-layout {
+  display: grid;
+  grid-template-columns: 220px minmax(0, 1fr) minmax(320px, 380px);
+  gap: 20px; align-items: start;
+}
+@media (max-width: 1200px) { .ux-layout { grid-template-columns: 200px minmax(0, 1fr); } .ux-side { grid-column: 1 / -1; } }
+@media (max-width: 780px) { .ux-layout { grid-template-columns: 1fr; } .ux-side { grid-column: auto; } }
+
+/* ----------------------------------------------------------- filter rail */
+
+.ux-rail {
+  display: grid; gap: 16px; align-content: start;
+  position: sticky; top: 84px;
+  max-height: calc(100vh - 100px); overflow-y: auto;
+  padding-right: 4px;
+}
+.ux-search { width: 100%; }
+.ux-facet { display: grid; gap: 3px; }
+.ux-facet h3 {
+  margin: 0 0 4px; font-size: 10.5px; font-weight: 800;
+  letter-spacing: 0.09em; text-transform: uppercase; color: var(--muted);
+}
+
+/* One row per option, with its count. The count is the point — it is what
+   turns the rail from a set of controls into a summary of the map. */
+.ux-opt {
+  display: flex; align-items: center; gap: 8px; width: 100%;
+  padding: 5px 8px; border-radius: 7px;
+  border: 1px solid transparent; background: transparent;
+  color: var(--color-text); font: inherit; font-size: 12.5px; text-align: left; cursor: pointer;
+  transition: background 0.12s ease, color 0.12s ease;
+}
+.ux-opt:hover:not(:disabled) { background: color-mix(in srgb, var(--color-text) 8%, transparent); }
+.ux-opt.on { background: color-mix(in srgb, var(--tint, var(--color-accent)) 16%, transparent); border-color: color-mix(in srgb, var(--tint, var(--color-accent)) 55%, transparent); }
+.ux-opt:disabled { opacity: 0.35; cursor: default; }
+.ux-opt-dot { width: 9px; height: 9px; border-radius: 50%; background: var(--tint); flex: none; }
+.ux-opt-label { flex: 1; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.ux-opt-n { font-size: 11px; color: var(--muted); font-variant-numeric: tabular-nums; }
+.ux-opt.on .ux-opt-n { color: inherit; }
+
+.ux-seg { display: flex; gap: 4px; }
+.ux-segbtn {
+  flex: 1; padding: 5px 0; border-radius: 7px;
+  border: 1.5px solid color-mix(in srgb, var(--color-text) 14%, transparent);
+  background: transparent; color: var(--muted);
+  font: inherit; font-size: 12px; font-weight: 800; cursor: pointer;
+}
+.ux-segbtn.on { color: var(--color-text); border-color: var(--color-accent); background: color-mix(in srgb, var(--color-accent) 14%, transparent); }
+.ux-segbtn.t.on { border-color: #e0a94a; background: color-mix(in srgb, #e0a94a 18%, transparent); color: #e0a94a; }
+.ux-segbtn.ct.on { border-color: #6aa9e0; background: color-mix(in srgb, #6aa9e0 18%, transparent); color: #6aa9e0; }
+
+.ux-chips { display: flex; flex-wrap: wrap; gap: 5px; }
+.ux-chips .chip { font-size: 11.5px; padding: 3px 9px; }
+
+.ux-find {
+  width: 100%; padding: 8px 12px; border-radius: 9px;
+  border: 1.5px dashed color-mix(in srgb, var(--color-accent) 45%, transparent);
+  background: transparent; color: var(--color-accent);
+  font: inherit; font-size: 12.5px; font-weight: 700; cursor: pointer;
+}
+.ux-find.arming { border-style: solid; background: var(--color-accent); color: var(--btn-primary-ink); }
+.ux-find.on { border-style: solid; background: color-mix(in srgb, var(--color-accent) 16%, transparent); }
+.ux-findhint { margin: 6px 0 0; font-size: 11px; line-height: 1.45; color: var(--muted); }
+
+.ux-clear { justify-self: start; padding-inline: 0; font-size: 12.5px; }
+
+/* ---------------------------------------------------------------- stage */
+
+.ux-stage { display: flex; flex-direction: column; gap: 12px; min-width: 0; }
+.ux-stagebar { display: flex; align-items: center; gap: 12px; flex-wrap: wrap; }
+.ux-levels { display: flex; gap: 6px; }
+.ux-count { flex: 1; font-size: 12px; color: var(--muted); font-variant-numeric: tabular-nums; }
+.ux-viewtabs {
+  display: flex; gap: 2px; padding: 2px; border-radius: 999px;
+  background: color-mix(in srgb, var(--color-text) 8%, transparent);
+}
+.ux-viewtab {
+  padding: 5px 14px; border-radius: 999px; border: none; background: transparent;
+  color: var(--muted); font: inherit; font-size: 12px; font-weight: 800; cursor: pointer;
+}
+.ux-viewtab.on { background: var(--color-bg); color: var(--color-text); }
+
+.ux-gallery {
+  display: grid; grid-template-columns: repeat(auto-fill, minmax(210px, 1fr));
+  gap: 14px; align-content: start;
+}
+.ux-card {
+  display: flex; flex-direction: column; padding: 0; overflow: hidden;
+  border-radius: 12px; border: 1.5px solid color-mix(in srgb, var(--color-text) 13%, transparent);
+  background: color-mix(in srgb, var(--color-text) 3%, transparent);
+  color: var(--color-text); font: inherit; text-align: left; cursor: pointer;
+  transition: border-color 0.15s ease, transform 0.15s ease;
+}
+.ux-card:hover { border-color: color-mix(in srgb, var(--color-accent) 55%, transparent); transform: translateY(-2px); }
+.ux-card.on { border-color: var(--color-accent); }
+.ux-card-shot { position: relative; display: block; aspect-ratio: 16 / 9; overflow: hidden; background: color-mix(in srgb, var(--color-text) 6%, transparent); }
+.ux-card-shot img { width: 100%; height: 100%; object-fit: cover; display: block; transition: transform 0.35s ease; }
+.ux-card:hover .ux-card-shot img { transform: scale(1.06); }
+.ux-card-noshot { display: grid; place-items: center; height: 100%; font-size: 11.5px; color: var(--muted); }
+.ux-card-util { position: absolute; left: 9px; top: 9px; width: 10px; height: 10px; border-radius: 50%; background: var(--tint); box-shadow: 0 0 0 2px rgb(0 0 0 / 0.45); }
+.ux-card-star { position: absolute; right: 8px; top: 6px; color: #e8d24a; font-size: 14px; text-shadow: 0 1px 3px rgb(0 0 0 / 0.6); }
+.ux-card-body { display: grid; gap: 3px; padding: 10px 12px 12px; }
+.ux-card-name { font-size: 13.5px; font-weight: 700; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.ux-card-meta { font-size: 11.5px; color: var(--muted); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+
+/* ------------------------------------------------------------ side list */
+
+.ux-side { position: sticky; top: 84px; max-height: calc(100vh - 100px); overflow-y: auto; min-width: 0; }
+.ux-note { margin-bottom: 12px; }
+
+.ux-row {
+  display: flex; align-items: center; gap: 10px; width: 100%;
+  padding: 6px 8px; border-radius: 8px; border: none; background: transparent;
+  color: var(--color-text); font: inherit; text-align: left; cursor: pointer;
+}
+.ux-row:hover, .ux-row.hot { background: color-mix(in srgb, var(--color-text) 9%, transparent); }
+.ux-thumb { width: 52px; height: 34px; object-fit: cover; border-radius: 5px; flex: none; }
+.ux-thumb.empty { display: block; background: color-mix(in srgb, var(--color-text) 6%, transparent); }
+.ux-row-text { display: grid; gap: 1px; min-width: 0; }
+.ux-row-name { display: flex; align-items: center; gap: 6px; font-size: 13.5px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.ux-row-star { color: #e8d24a; font-size: 11px; }
+.ux-row-meta { font-size: 11px; color: var(--muted); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+
+/* The flight path drawn on the radar. Sits under the pins so a marker is
+   never hidden by the curve that points at it. */
+.util-arc { position: absolute; inset: 0; width: 100%; height: 100%; pointer-events: none; z-index: 1; overflow: visible; }

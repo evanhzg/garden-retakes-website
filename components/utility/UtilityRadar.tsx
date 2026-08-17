@@ -200,6 +200,37 @@ export default function UtilityRadar({
             );
           })}
 
+          {/* The flight, for whichever lineup is open or under the cursor.
+              A landing dot on its own says where a grenade ends up but not
+              which of forty pins threw it, which on a map like Mirage is the
+              only question the dot is being asked. The curve answers it, and
+              bows away from the straight line so two lineups that land in the
+              same doorway stay tellable apart. */}
+          {(() => {
+            const shown = selected ?? lineups.find((l) => l.id === hovered) ?? null;
+            if (!shown?.land) return null;
+            const from = worldToPercent(cfg, shown.stand.x, shown.stand.y);
+            const to = worldToPercent(cfg, shown.land.x, shown.land.y);
+            if (!from || !to) return null;
+            const [dx, dy] = [to.left - from.left, to.top - from.top];
+            const bow = 0.16;
+            const cx = (from.left + to.left) / 2 - dy * bow;
+            const cy = (from.top + to.top) / 2 + dx * bow;
+            return (
+              <svg className="util-arc" viewBox="0 0 100 100" preserveAspectRatio="none" aria-hidden>
+                <path
+                  d={`M ${from.left} ${from.top} Q ${cx} ${cy} ${to.left} ${to.top}`}
+                  stroke={UTIL_COLOUR[shown.utility] ?? "#ccc"}
+                  // Counter-scaled like the pins: a line that thickens with the
+                  // zoom becomes a stripe across the callout it is describing.
+                  strokeWidth={0.5 / zoom}
+                  strokeDasharray={`${1.6 / zoom} ${1.1 / zoom}`}
+                  fill="none"
+                />
+              </svg>
+            );
+          })()}
+
           {/* Where the open lineup lands, when it was recorded with a landing spot. */}
           {selected?.land &&
             (() => {

@@ -4,6 +4,7 @@ import { useCallback, useEffect, useMemo, useState } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import { Swords, Crosshair, Bomb, Zap, Sparkles, Plus, Trash2, ChevronRight } from "lucide-react";
 import ModeMaker from "@/components/admin/ModeMaker";
+import GameMakerUtility from "@/components/admin/GameMakerUtility";
 import "@/app/admin/game-maker.css";
 
 // Game Maker — one authoring surface for the four modes whose spawns and
@@ -175,23 +176,24 @@ const STOCK_MAPS = [
 
 type CatalogMap = { Id: number; Mode: string; MapName: string; WorkshopId: string | null };
 
-const TABS: { id: ModeId | "modemaker"; label: string }[] = [
+const TABS: { id: ModeId | "utility" | "modemaker"; label: string }[] = [
   { id: "duels", label: "Duels" },
   { id: "retakes", label: "Retakes" },
   { id: "executes", label: "Executes" },
   { id: "faststrat", label: "Fast Strat" },
+  { id: "utility", label: "Utility" },
   { id: "modemaker", label: "Mode Maker" },
 ];
 
 export default function GameMaker({ adminKey }: { adminKey?: string }) {
-  const [tab, setTab] = useState<ModeId | "modemaker">("duels");
+  const [tab, setTab] = useState<ModeId | "utility" | "modemaker">("duels");
 
   return (
     <div className="gm">
       <div className="gm-tabs" role="tablist">
         {TABS.map((t) => {
-          const spec = t.id !== "modemaker" ? MODE_SPEC[t.id] : null;
-          const Icon = spec?.icon ?? Sparkles;
+          const spec = t.id !== "modemaker" && t.id !== "utility" ? MODE_SPEC[t.id] : null;
+          const Icon = spec?.icon ?? (t.id === "utility" ? Crosshair : Sparkles);
           return (
             <button
               key={t.id}
@@ -217,6 +219,10 @@ export default function GameMaker({ adminKey }: { adminKey?: string }) {
         {tab === "modemaker" ? (
           <motion.div key="modemaker" initial={{ opacity: 0, y: 6 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, y: -6 }} transition={{ duration: 0.15 }}>
             <ModeMaker adminKey={adminKey} />
+          </motion.div>
+        ) : tab === "utility" ? (
+          <motion.div key="utility" initial={{ opacity: 0, y: 6 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, y: -6 }} transition={{ duration: 0.15 }}>
+            <GameMakerUtility adminKey={adminKey} />
           </motion.div>
         ) : (
           <motion.div key={tab} initial={{ opacity: 0, y: 6 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, y: -6 }} transition={{ duration: 0.15 }}>
