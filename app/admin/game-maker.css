@@ -402,3 +402,43 @@
 .gmu-cmd-label { font-size: 9.5px; font-weight: 900; letter-spacing: 0.06em; text-transform: uppercase; opacity: 0.75; flex: none; }
 .gmu-cmd code { flex: 1; min-width: 0; font-size: 11.5px; overflow-x: auto; white-space: nowrap; }
 .gmu-cmd svg { flex: none; }
+
+/* Test in game. Sits in the detail header beside Active/Delete, because it is
+   the same kind of thing: something you do to the set you are looking at. */
+.gm-test { display: flex; align-items: center; gap: 6px; flex-wrap: wrap; }
+.gm-testbtn {
+  display: inline-flex; align-items: center; gap: 5px;
+  padding: 6px 13px; border-radius: 999px;
+  border: 1.5px solid color-mix(in srgb, #6fcf7f 55%, transparent);
+  background: color-mix(in srgb, #6fcf7f 14%, transparent);
+  color: #6fcf7f; font: inherit; font-size: 12px; font-weight: 800; cursor: pointer;
+}
+.gm-testbtn:hover:not(:disabled) { background: color-mix(in srgb, #6fcf7f 24%, transparent); }
+.gm-testbtn:disabled { opacity: 0.5; cursor: default; }
+.gm-testbtn.ghost { border-color: var(--gm-edge); background: transparent; color: var(--muted); }
+.gm-testbtn.ghost:hover:not(:disabled) { color: var(--color-text); border-color: color-mix(in srgb, var(--color-text) 30%, transparent); }
+.gm-testnote { font-size: 11.5px; font-weight: 600; max-width: 34ch; line-height: 1.35; }
+.gm-testnote.ok { color: #6fcf7f; }
+.gm-testnote.bad { color: #ef4444; }
+
+/* ----------------------------------------------------------- Defender tab */
+
+.gmd-list {
+  list-style: none; margin: 16px 0 0; padding: 0;
+  display: grid; grid-template-columns: repeat(auto-fill, minmax(260px, 1fr)); gap: 12px;
+}
+.gmd-list li {
+  display: grid; gap: 8px;
+  padding: 14px 16px; border-radius: 14px;
+  border: 1.5px solid var(--gm-edge);
+  background: color-mix(in srgb, var(--color-text) 2%, transparent);
+}
+.gmd-list li.blocked { opacity: 0.72; border-style: dashed; }
+.gmd-head { display: flex; align-items: center; gap: 8px; }
+.gmd-name { flex: 1; min-width: 0; font-weight: 800; font-size: 14px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.gmd-meta { display: flex; gap: 14px; font-size: 11.5px; color: var(--muted); }
+.gmd-state { display: flex; align-items: start; gap: 5px; margin: 0; font-size: 11.5px; line-height: 1.4; font-weight: 600; }
+.gmd-state svg { flex: none; margin-top: 1px; }
+.gmd-state.ok { color: #6fcf7f; }
+.gmd-state.bad { color: #e0a94a; }
+.gmd .gm-chip { display: inline-flex; align-items: center; gap: 4px; }

@@ -2,9 +2,10 @@
 
 import { useCallback, useEffect, useMemo, useState } from "react";
 import { motion, AnimatePresence } from "framer-motion";
-import { Swords, Crosshair, Bomb, Zap, Sparkles, Plus, Trash2, ChevronRight } from "lucide-react";
+import { Swords, Crosshair, Bomb, Zap, Sparkles, Plus, Trash2, ChevronRight, Bot, Users, Shield } from "lucide-react";
 import ModeMaker from "@/components/admin/ModeMaker";
 import GameMakerUtility from "@/components/admin/GameMakerUtility";
+import GameMakerDefender from "@/components/admin/GameMakerDefender";
 import "@/app/admin/game-maker.css";
 
 // Game Maker — one authoring surface for the four modes whose spawns and
@@ -176,24 +177,34 @@ const STOCK_MAPS = [
 
 type CatalogMap = { Id: number; Mode: string; MapName: string; WorkshopId: string | null };
 
-const TABS: { id: ModeId | "utility" | "modemaker"; label: string }[] = [
+type ExtraTab = "utility" | "defender" | "modemaker";
+
+const TABS: { id: ModeId | ExtraTab; label: string }[] = [
   { id: "duels", label: "Duels" },
   { id: "retakes", label: "Retakes" },
   { id: "executes", label: "Executes" },
   { id: "faststrat", label: "Fast Strat" },
+  { id: "defender", label: "Defender" },
   { id: "utility", label: "Utility" },
   { id: "modemaker", label: "Mode Maker" },
 ];
 
+const EXTRA_ICON: Record<ExtraTab, typeof Swords> = {
+  utility: Crosshair,
+  defender: Shield,
+  modemaker: Sparkles,
+};
+
+const isExtra = (id: ModeId | ExtraTab): id is ExtraTab => id in EXTRA_ICON;
+
 export default function GameMaker({ adminKey }: { adminKey?: string }) {
-  const [tab, setTab] = useState<ModeId | "utility" | "modemaker">("duels");
+  const [tab, setTab] = useState<ModeId | ExtraTab>("duels");
 
   return (
     <div className="gm">
       <div className="gm-tabs" role="tablist">
         {TABS.map((t) => {
-          const spec = t.id !== "modemaker" && t.id !== "utility" ? MODE_SPEC[t.id] : null;
-          const Icon = spec?.icon ?? (t.id === "utility" ? Crosshair : Sparkles);
+          const Icon = isExtra(t.id) ? EXTRA_ICON[t.id] : MODE_SPEC[t.id].icon;
           return (
             <button
               key={t.id}
@@ -223,6 +234,10 @@ export default function GameMaker({ adminKey }: { adminKey?: string }) {
         ) : tab === "utility" ? (
           <motion.div key="utility" initial={{ opacity: 0, y: 6 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, y: -6 }} transition={{ duration: 0.15 }}>
             <GameMakerUtility adminKey={adminKey} />
+          </motion.div>
+        ) : tab === "defender" ? (
+          <motion.div key="defender" initial={{ opacity: 0, y: 6 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, y: -6 }} transition={{ duration: 0.15 }}>
+            <GameMakerDefender adminKey={adminKey} />
           </motion.div>
         ) : (
           <motion.div key={tab} initial={{ opacity: 0, y: 6 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, y: -6 }} transition={{ duration: 0.15 }}>
@@ -500,6 +515,7 @@ function ModeEditor({ mode, adminKey }: { mode: ModeId; adminKey?: string }) {
               <header className="gm-detail-head">
                 <h3>{selected.Name}</h3>
                 <div className="gm-detail-actions">
+                  <TestButtons mode={mode} setId={selected.Id} adminKey={adminKey} />
                   <button
                     className={`gm-toggle ${selected.Active ? "on" : ""}`}
                     onClick={() => patchSet(selected.Id, { active: !selected.Active })}
@@ -715,4 +731,49 @@ function renameKeys(patch: Record<string, unknown>): Record<string, unknown> {
     out[k.charAt(0).toUpperCase() + k.slice(1)] = v;
   }
   return out;
+}
+
+/**
+ * Play this set on the real server, now.
+ *
+ * Two buttons rather than one because the two ways of filling a server answer
+ * different questions: bots tell you the round *runs*, and only people tell you
+ * whether it is any good. Collapsing them into one button means always getting
+ * the wrong one of those.
+ */
+function TestButtons({ mode, setId, adminKey }: { mode: ModeId; setId: number; adminKey?: string }) {
+  const [busy, setBusy] = useState<"bots" | "wait" | null>(null);
+  const [note, setNote] = useState<{ ok: boolean; text: string } | null>(null);
+
+  const run = async (fill: "bots" | "wait") => {
+    if (busy) return;
+    setBusy(fill);
+    setNote(null);
+    try {
+      const res = await fetch(`/api/admin/game-maker/test?${adminKey ? `key=${encodeURIComponent(adminKey)}` : ""}`, {
+        method: "POST",
+        headers: { "content-type": "application/json" },
+        body: JSON.stringify({ mode, id: setId, fill }),
+      });
+      const json = await res.json();
+      setNote({ ok: res.ok && json.ok !== false, text: json.message ?? json.error ?? "Done." });
+    } catch {
+      setNote({ ok: false, text: "Could not reach the server." });
+    } finally {
+      setBusy(null);
+      setTimeout(() => setNote(null), 6000);
+    }
+  };
+
+  return (
+    <div className="gm-test">
+      <button className="gm-testbtn" disabled={busy !== null} onClick={() => run("wait")} title="Open warmup and wait for people">
+        <Users size={13} /> {busy === "wait" ? "Starting…" : "Test"}
+      </button>
+      <button className="gm-testbtn ghost" disabled={busy !== null} onClick={() => run("bots")} title="Fill with bots and start now">
+        <Bot size={13} /> {busy === "bots" ? "…" : "Bots"}
+      </button>
+      {note && <span className={`gm-testnote ${note.ok ? "ok" : "bad"}`}>{note.text}</span>}
+    </div>
+  );
 }
