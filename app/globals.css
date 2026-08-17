@@ -11172,3 +11172,30 @@ body.overlay-open .socket-status-banner {
   font-size: 12.5px; font-weight: 700; text-decoration: none; color: var(--color-text);
 }
 .ux-outlinks a:hover { border-color: var(--color-accent); color: var(--color-accent); }
+
+/* The radar's frame.
+ *
+ * This used to be a size container (`container-type: size`) whose child was
+ * capped at `min(100cqi, 100cqb)`. That works only while something above it
+ * gives it a definite height — the old page was a `height: calc(100vh - 64px)`
+ * column, and every ancestor passed that down with `flex: 1; min-height: 0`.
+ *
+ * The rebuilt page is an ordinary grid that scrolls with the document, so
+ * nothing declares a height any more. A size container with no definite block
+ * size resolves `100cqb` to zero, so the radar was capped at zero pixels tall
+ * and vanished — while the image itself was fine, which is why the links worked
+ * and the page did not.
+ *
+ * No container queries now: the stage column has a definite width, and
+ * `aspect-ratio` turns that into a height. The viewport cap stops a very wide
+ * screen from producing a radar taller than the window. */
+.util-radarbox {
+  display: flex;
+  justify-content: center;
+  min-width: 0;
+}
+.util-radarbox > .util-radar {
+  width: 100%;
+  max-width: min(100%, 74vh);
+  margin: 0 auto;
+}
