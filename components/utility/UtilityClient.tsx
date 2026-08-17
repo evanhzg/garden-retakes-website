@@ -11,6 +11,8 @@ import {
   THROW_SHORT,
   THROW_LABEL,
   PURPOSE_LABEL,
+  SOURCE_KINDS,
+  SOURCE_LABEL,
   levelFor,
   playableMaps,
   radarUrl,
@@ -42,6 +44,7 @@ type Filters = {
   team: string;
   purpose: string;
   area: string;
+  sourceKind: string;
   withShots: boolean;
   showUnverified: boolean;
 };
@@ -53,6 +56,7 @@ const EMPTY: Filters = {
   team: "",
   purpose: "",
   area: "",
+  sourceKind: "",
   withShots: false,
   showUnverified: false,
 };
@@ -70,7 +74,7 @@ export default function UtilityPage({ signedIn }: { signedIn: boolean }) {
   const [selected, setSelected] = useState<Lineup | null>(null);
   const [hovered, setHovered] = useState<number | null>(null);
   const [level, setLevel] = useState("default");
-  const [stage, setStage] = useState<"map" | "list">("map");
+  const [stage, setStage] = useState<"map" | "list" | "resources">("map");
 
   const [f, setF] = useState<Filters>(EMPTY);
   const [findMode, setFindMode] = useState(false);
@@ -88,7 +92,7 @@ export default function UtilityPage({ signedIn }: { signedIn: boolean }) {
     const m = params.get("map");
     if (m && MAPS[m]) setMap(m);
     const v = params.get("view");
-    if (v === "map" || v === "list") setStage(v);
+    if (v === "map" || v === "list" || v === "resources") setStage(v);
     try {
       const saved = localStorage.getItem("favorites");
       if (saved) setFavourites(JSON.parse(saved));
@@ -157,7 +161,7 @@ export default function UtilityPage({ signedIn }: { signedIn: boolean }) {
     writeParams({ lineup: l ? String(l.id) : null });
   };
 
-  const handleStage = (v: "map" | "list") => {
+  const handleStage = (v: "map" | "list" | "resources") => {
     setStage(v);
     writeParams({ view: v });
   };
@@ -187,6 +191,7 @@ export default function UtilityPage({ signedIn }: { signedIn: boolean }) {
       if (skip !== "team" && f.team && l.team !== f.team) return false;
       if (skip !== "purpose" && f.purpose && l.purpose !== f.purpose) return false;
       if (skip !== "area" && f.area && l.area !== f.area) return false;
+      if (skip !== "sourceKind" && f.sourceKind && (l.sourceKind ?? "ingame") !== f.sourceKind) return false;
       if (skip !== "withShots" && f.withShots && !hasShots(l)) return false;
       if (skip !== "search" && f.search && !matchesQuery(l, f.search)) return false;
       if (skip !== "level" && levels && levelFor(cfg, l.stand.z) !== level) return false;
@@ -224,6 +229,7 @@ export default function UtilityPage({ signedIn }: { signedIn: boolean }) {
   const active =
     f.utility.size + f.throwType.size +
     Number(Boolean(f.team)) + Number(Boolean(f.purpose)) + Number(Boolean(f.area)) +
+    Number(Boolean(f.sourceKind)) +
     Number(f.withShots) + Number(Boolean(f.search)) + Number(Boolean(findAt));
 
   const toggleIn = (key: "utility" | "throwType", id: string) =>
@@ -345,6 +351,25 @@ export default function UtilityPage({ signedIn }: { signedIn: boolean }) {
                   title={ty.hint}
                 >
                   <span className="ux-opt-label">{ty.label}</span>
+                  <span className="ux-opt-n">{n}</span>
+                </button>
+              );
+            })}
+          </div>
+
+          <div className="ux-facet">
+            <h3>{t("utility.facet.source")}</h3>
+            {SOURCE_KINDS.map((src) => {
+              const n = count("sourceKind", (l) => (l.sourceKind ?? "ingame") === src.id);
+              if (n === 0 && f.sourceKind !== src.id) return null;
+              return (
+                <button
+                  key={src.id}
+                  className={`ux-opt ${f.sourceKind === src.id ? "on" : ""}`}
+                  title={src.hint}
+                  onClick={() => setF({ ...f, sourceKind: f.sourceKind === src.id ? "" : src.id })}
+                >
+                  <span className="ux-opt-label">{src.label}</span>
                   <span className="ux-opt-n">{n}</span>
                 </button>
               );
@@ -494,6 +519,14 @@ export default function UtilityPage({ signedIn }: { signedIn: boolean }) {
               >
                 {t("utility.view.gallery")}
               </button>
+              <button
+                role="tab"
+                aria-selected={stage === "resources"}
+                className={`ux-viewtab ${stage === "resources" ? "on" : ""}`}
+                onClick={() => handleStage("resources")}
+              >
+                {t("utility.view.resources")}
+              </button>
             </div>
           </div>
 
@@ -513,6 +546,16 @@ export default function UtilityPage({ signedIn }: { signedIn: boolean }) {
                 setFindMode(false);
               }}
               label={`${cfg.label} radar`}
+            />
+          )}
+
+          {stage === "resources" && (
+            <Resources
+              lineups={visible}
+              map={map}
+              selectedId={selected?.id ?? null}
+              onSelect={handleSelect}
+              onHover={setHovered}
             />
           )}
 
@@ -657,5 +700,104 @@ function GalleryCard({
         </span>
       </span>
     </button>
+  );
+}
+
+/**
+ * The Resources tab: lineups grouped by where they land, ranked by how often
+ * they are actually thrown.
+ *
+ * This is the view mined lineups need and the gallery cannot give them. A mined
+ * lineup has no screenshot and no callout — a demo does not record what anyone
+ * calls a place — so a grid of picture cards shows a grid of grey boxes. What it
+ * does have is a count, and that count is the whole value: a smoke thrown in
+ * eleven professional matches is one worth learning, and one thrown once is
+ * somebody improvising.
+ *
+ * Where a map has nothing for a grenade type, the empty state points outward
+ * rather than pretending the gap is not there.
+ */
+function Resources({
+  lineups, map, selectedId, onSelect, onHover,
+}: {
+  lineups: Lineup[];
+  map: string;
+  selectedId: number | null;
+  onSelect: (l: Lineup) => void;
+  onHover: (id: number | null) => void;
+}) {
+  const { t } = useI18n();
+
+  const groups = useMemo(() => {
+    const byArea = new Map<string, Lineup[]>();
+    for (const l of lineups) {
+      const key = l.area || t("utility.resources.unsorted");
+      (byArea.get(key) ?? byArea.set(key, []).get(key)!).push(l);
+    }
+
+    return Array.from(byArea.entries())
+      .map(([area, list]) => ({
+        area,
+        list: [...list].sort((a, b) => (b.popularity ?? 0) - (a.popularity ?? 0)),
+        // Groups with the most-thrown lineup in them come first, so the top of
+        // the page is the part of the map people actually use utility on.
+        peak: Math.max(...list.map((l) => l.popularity ?? 0)),
+      }))
+      .sort((a, b) => b.peak - a.peak || a.area.localeCompare(b.area));
+  }, [lineups, t]);
+
+  if (groups.length === 0) {
+    return (
+      <div className="ux-resources-empty">
+        <p>{t("utility.resources.none")}</p>
+        <p className="muted">{t("utility.resources.elsewhere")}</p>
+        <div className="ux-outlinks">
+          <a href={`https://csnades.gg/${map.replace(/^de_/, "")}`} target="_blank" rel="noreferrer noopener">
+            csnades.gg
+          </a>
+          <a href={`https://www.cs2util.com/${map.replace(/^de_/, "")}`} target="_blank" rel="noreferrer noopener">
+            cs2util.com
+          </a>
+        </div>
+      </div>
+    );
+  }
+
+  return (
+    <div className="ux-resources">
+      {groups.map((group) => (
+        <section key={group.area}>
+          <h3>{group.area}</h3>
+          <ul>
+            {group.list.map((l) => (
+              <li key={l.id}>
+                <button
+                  className={`ux-res ${selectedId === l.id ? "on" : ""}`}
+                  onClick={() => onSelect(l)}
+                  onMouseEnter={() => onHover(l.id)}
+                  onMouseLeave={() => onHover(null)}
+                >
+                  <span className="ux-res-dot" style={{ background: UTIL_COLOUR[l.utility] }} />
+                  <span className="ux-res-body">
+                    <span className="ux-res-name">{l.name}</span>
+                    <span className="ux-res-meta">
+                      {THROW_LABEL[l.throwType] ?? l.throwType}
+                      {l.sourceLabel ? ` · ${l.sourceLabel}` : ""}
+                    </span>
+                  </span>
+                  {l.popularity ? (
+                    <span className="ux-res-count" title={t("utility.resources.seen", { n: l.popularity })}>
+                      ×{l.popularity}
+                    </span>
+                  ) : (
+                    <span className="ux-res-count muted">{SOURCE_LABEL[l.sourceKind ?? "ingame"]}</span>
+                  )}
+                </button>
+              </li>
+            ))}
+          </ul>
+        </section>
+      ))}
+    </div>
   );
 }

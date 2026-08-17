@@ -173,6 +173,28 @@ export const PURPOSE_LABEL: Record<string, string> = {
   trick: "Trick",
 };
 
+/**
+ * The four provenances, in the order the rail lists them.
+ *
+ * Ours first because they are the ones with pictures; mined next because there
+ * are the most of them; imported last because it means "somebody handed us a
+ * file" and says nothing about whether the lineup is any good.
+ */
+export const SOURCE_KINDS = [
+  { id: "ingame", label: "Ours", hint: "Captured on our own server." },
+  { id: "demo", label: "Pro demos", hint: "Mined from professional matches, ranked by how often they are thrown." },
+  { id: "community", label: "Community", hint: "Captured by players and checked by an admin." },
+  { id: "import", label: "Imported", hint: "From a file somebody supplied." },
+] as const;
+
+export const SOURCE_LABEL: Record<string, string> = Object.fromEntries(
+  SOURCE_KINDS.map((s) => [s.id, s.label])
+);
+
+export const SOURCE_HINT: Record<string, string> = Object.fromEntries(
+  SOURCE_KINDS.map((s) => [s.id, s.hint])
+);
+
 export const TEAM_LABEL: Record<string, string> = {
   T: "Terrorist",
   CT: "Counter-Terrorist",
@@ -218,6 +240,18 @@ export type Lineup = {
   path?: [number, number, number, number][] | null;
   verified: boolean;
   source: string;
+  /**
+   * Where this lineup came from: ingame | demo | community | import.
+   *
+   * `source` existed before this and nothing ever rendered it, so the page
+   * distinguished `verified` instead and the two were correlated only by the
+   * importer's convention. This is the one the Source facet filters on.
+   */
+  sourceKind?: string;
+  /** Human-readable credit, e.g. "NAVI vs G2, IEM Katowice 2026". */
+  sourceLabel?: string | null;
+  /** How often a mined lineup was seen. Null on anything not mined. */
+  popularity?: number | null;
 };
 
 /** Does this lineup have any picture at all to show? */

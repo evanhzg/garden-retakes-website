@@ -2307,5 +2307,11 @@
   "lobby.server.reason.abandoned": "The match was cancelled before the server was ready.",
   "lobby.server.reason.unknown": "Something went wrong handing the match to the server.",
   "utility.profile.title": "Flight",
-  "utility.profile.stats": "{peak}u up · {seconds}s"
+  "utility.profile.stats": "{peak}u up · {seconds}s",
+  "utility.facet.source": "Source",
+  "utility.view.resources": "Resources",
+  "utility.resources.unsorted": "Unsorted",
+  "utility.resources.seen": "Thrown {n} times in the demos we mined",
+  "utility.resources.none": "Nothing here for this map and these filters yet.",
+  "utility.resources.elsewhere": "Our own set is still growing. These sites have covered this map for years — worth a look while we catch up:"
 }

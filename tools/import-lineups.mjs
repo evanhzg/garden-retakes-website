@@ -73,14 +73,30 @@ function teamOf(name) {
   return "";
 }
 
-/** "Step-Jumpthrow" → step-jump; the page shows this as an instruction. */
+/**
+ * "Step-Jumpthrow" → step-jump; the page shows this as an instruction.
+ *
+ * These must be values from the canonical THROW_TYPES in lib/utilityShared.ts.
+ * This function used to return "standing" and "run", neither of which survived
+ * the taxonomy migration — so every row it wrote rendered with a blank throw
+ * label and was silently dropped by the throw facet in the filter rail, because
+ * the facet only counts ids it knows.
+ *
+ * Ordering matters: "run" has to be tested before "jump", or a "running
+ * jumpthrow" resolves to a plain jump throw, which is a different throw and
+ * lands somewhere else.
+ */
 function throwTypeOf(raw) {
   const t = (raw ?? "").toLowerCase();
-  if (t.includes("step")) return "step-jump";
-  if (t.includes("jump")) return "jump";
-  if (t.includes("run")) return "run";
+  if (t.includes("crouch") && t.includes("jump")) return "crouch-jump";
   if (t.includes("crouch")) return "crouch";
-  return "standing";
+  if (t.includes("2 step") || t.includes("2step") || t.includes("two step")) return "2step-jump";
+  if (t.includes("run")) return "run-jump";
+  if (t.includes("step")) return "step-jump";
+  if (t.includes("w+") || t.includes("w jump") || t.includes("wjump")) return "w-jump";
+  if (t.includes("jump")) return "jump";
+  if (t.includes("walk")) return "walk";
+  return "stand";
 }
 
 function clickTypeOf(raw) {
@@ -179,13 +195,29 @@ async function main() {
     process.exit(1);
   }
   const replace = process.argv.includes("--replace");
-  const rows = JSON.parse(fs.readFileSync(src, "utf8"));
+  // Two shapes reach here now: a bare array (the original hand-supplied
+  // export) and the demo miner's file, which wraps its clustered result in
+  // `lineups` alongside the raw throws it was clustered from.
+  const parsed = JSON.parse(fs.readFileSync(src, "utf8"));
+  const rows = Array.isArray(parsed) ? parsed : (parsed.lineups ?? []);
+  if (!Array.isArray(rows) || rows.length === 0) {
+    console.error(`${src} holds no lineups.`);
+    process.exit(1);
+  }
   const overviews = JSON.parse(fs.readFileSync(path.join(ROOT, "data", "mapOverviews.json"), "utf8"));
 
   const testers = new Map();
   const testerFor = (map) => {
     if (!testers.has(map)) testers.set(map, radarAlphaTester(map));
     return testers.get(map);
+  };
+
+  /** The landing point, when the export carries one. */
+  const landOf = (row) => {
+    const [lx, ly, lz] = nums(row.land);
+    return [lx, ly, lz].every(Number.isFinite)
+      ? { LandX: lx, LandY: ly, LandZ: lz }
+      : {};
   };
 
   const prepared = [];
@@ -229,6 +261,18 @@ async function main() {
       Yaw: yaw,
       Verified: verified,
       Source: "import",
+      // Mined rows carry their own provenance; a hand-supplied file is just an
+      // import. Either way the page can now say which, where Source alone was
+      // written and never read.
+      SourceKind: row.source_kind === "demo" ? "demo" : "import",
+      SourceLabel: Array.isArray(row.sources) && row.sources.length
+        ? row.sources.slice(0, 3).join(", ").slice(0, 200)
+        : null,
+      Popularity: Number.isInteger(row.popularity) ? row.popularity : null,
+      // A mined lineup has a recorded landing point and an arc; it does not
+      // need the screenshot queue to consider it unfinished.
+      NeedsShots: row.source_kind !== "demo",
+      ...landOf(row),
     });
   }
 

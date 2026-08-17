@@ -752,7 +752,30 @@ model GardenNade {
   /// lineups are checked against the radar, recorded ones are true by definition.
   Verified       Boolean  @default(true)
   /// ingame | import
+  ///
+  /// Kept for the rows that predate SourceKind. New writers set both; anything
+  /// reading provenance should read SourceKind, which is the one with values
+  /// the page actually distinguishes.
   Source         String   @default("ingame") @db.VarChar(16)
+
+  /// ingame | demo | community | import — where this lineup came from.
+  ///
+  /// Source existed and nothing in the UI ever read it, so the page
+  /// distinguished Verified instead and the two were correlated only by the
+  /// importer's convention. This is the one the Resources tab filters on.
+  SourceKind     String   @default("ingame") @db.VarChar(16)
+
+  /// Human-readable credit, e.g. "NAVI vs G2, IEM Katowice 2026".
+  SourceLabel    String?  @db.VarChar(200)
+
+  /// Where it came from, when there is somewhere to point at.
+  SourceUrl      String?  @db.VarChar(500)
+
+  /// How many times a mined lineup was seen across the demos it came from.
+  ///
+  /// The ordering that makes a mined set useful: eleven sightings is a lineup
+  /// the pros rely on, one is somebody improvising. Null on anything not mined.
+  Popularity     Int?
   AddedBySteamId BigInt?  @db.UnsignedBigInt
   CreatedAt      DateTime @default(now()) @db.DateTime(6)
   /// The three stills every lineup site publishes, captured in game by

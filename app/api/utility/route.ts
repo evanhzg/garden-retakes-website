@@ -43,6 +43,9 @@ export async function GET(req: Request) {
     shots: { stand: r.ShotStand, aim: r.ShotAim, result: r.ShotResult },
     verified: r.Verified,
     source: r.Source,
+    sourceKind: r.SourceKind ?? "ingame",
+    sourceLabel: r.SourceLabel,
+    popularity: r.Popularity,
     // Parsed here rather than in the browser: it is stored as compact JSON to
     // keep the column small, and every consumer wants the points.
     path: parsePath(r.Path),

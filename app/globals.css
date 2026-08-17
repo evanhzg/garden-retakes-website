@@ -11130,3 +11130,45 @@ body.overlay-open .socket-status-banner {
   stroke: color-mix(in srgb, var(--color-text) 22%, transparent);
   stroke-width: 0.4; stroke-dasharray: 2 2;
 }
+
+/* ------------------------------------------------------- Resources tab */
+
+/* Mined lineups have no screenshot and no callout — a demo does not record what
+   anyone calls a place — so a grid of picture cards would be a grid of grey
+   boxes. What they do have is a count, and the count is the whole value. */
+.ux-resources { display: grid; gap: 20px; align-content: start; }
+.ux-resources section h3 {
+  margin: 0 0 8px; font-size: 11px; font-weight: 800;
+  letter-spacing: 0.09em; text-transform: uppercase; color: var(--muted);
+}
+.ux-resources ul { list-style: none; margin: 0; padding: 0; display: grid; gap: 4px; }
+
+.ux-res {
+  display: flex; align-items: center; gap: 10px; width: 100%;
+  padding: 8px 11px; border-radius: 9px;
+  border: 1.5px solid transparent;
+  background: color-mix(in srgb, var(--color-text) 3%, transparent);
+  color: var(--color-text); font: inherit; text-align: left; cursor: pointer;
+  transition: border-color 0.15s ease, background 0.15s ease;
+}
+.ux-res:hover { background: color-mix(in srgb, var(--color-text) 8%, transparent); }
+.ux-res.on { border-color: var(--color-accent); }
+.ux-res-dot { width: 9px; height: 9px; border-radius: 50%; flex: none; }
+.ux-res-body { display: grid; gap: 1px; flex: 1; min-width: 0; }
+.ux-res-name { font-size: 13.5px; font-weight: 600; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.ux-res-meta { font-size: 11px; color: var(--muted); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.ux-res-count {
+  flex: none; font-size: 12px; font-weight: 800; font-variant-numeric: tabular-nums;
+  color: var(--color-accent);
+}
+.ux-res-count.muted { color: var(--muted); font-weight: 600; font-size: 11px; }
+
+.ux-resources-empty { display: grid; gap: 8px; place-items: center; text-align: center; padding: 48px 20px; }
+.ux-resources-empty p { margin: 0; max-width: 52ch; line-height: 1.5; }
+.ux-outlinks { display: flex; gap: 10px; margin-top: 6px; }
+.ux-outlinks a {
+  padding: 7px 15px; border-radius: 999px;
+  border: 1.5px solid color-mix(in srgb, var(--color-text) 16%, transparent);
+  font-size: 12.5px; font-weight: 700; text-decoration: none; color: var(--color-text);
+}
+.ux-outlinks a:hover { border-color: var(--color-accent); color: var(--color-accent); }

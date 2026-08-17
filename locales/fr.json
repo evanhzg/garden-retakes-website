@@ -2295,5 +2295,11 @@
   "lobby.server.reason.abandoned": "Le match a été annulé avant que le serveur soit prêt.",
   "lobby.server.reason.unknown": "Un problème est survenu au moment de transmettre le match au serveur.",
   "utility.profile.title": "Trajectoire",
-  "utility.profile.stats": "{peak}u de haut · {seconds}s"
+  "utility.profile.stats": "{peak}u de haut · {seconds}s",
+  "utility.facet.source": "Origine",
+  "utility.view.resources": "Ressources",
+  "utility.resources.unsorted": "Non classés",
+  "utility.resources.seen": "Lancé {n} fois dans les démos analysées",
+  "utility.resources.none": "Rien ici pour cette carte avec ces filtres.",
+  "utility.resources.elsewhere": "Notre collection s’étoffe encore. Ces sites couvrent cette carte depuis des années :"
 }
