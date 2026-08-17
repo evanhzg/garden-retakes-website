@@ -110,10 +110,18 @@ const PRESET = [
 const CLEANUP = [
   "ent_fire smokegrenade_projectile kill",
   "ent_fire molotov_projectile kill",
+  // The CT incendiary is a different class from the T molotov, and it was
+  // missing — so a lineup captured after an incendiary was photographed through
+  // the previous one's fire. The plugin's UtilityCleanup carries the same list
+  // and a test fails if the two drift apart again.
+  "ent_fire incgrenade_projectile kill",
   "ent_fire flashbang_projectile kill",
   "ent_fire hegrenade_projectile kill",
   "ent_fire decoy_projectile kill",
   "ent_fire inferno kill",
+  // A CS:GO entity, harmless to fire at in CS2 where the smoke volume is the
+  // projectile itself. Kept because the cost is one no-op console line and the
+  // alternative is rediscovering that the hard way.
   "ent_fire env_particlesmokegrenade kill",
 ].join("; ");
 
