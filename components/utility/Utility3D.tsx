@@ -17,6 +17,9 @@ import {
   type MapMesh,
   type PathSample,
 } from "@/lib/utility3d";
+import { CollisionIndex } from "@/lib/mapCollision";
+import { endpointError, resimulate, type SimResult } from "@/lib/grenadeSim";
+import { floodFire, floodSmoke, SMOKE_VOXEL, type VoxelField } from "@/lib/smokeSim";
 
 /**
  * The utility page in three dimensions.
@@ -181,6 +184,42 @@ function Arc({
   );
 }
 
+/**
+ * A smoke or a fire, as the cells the flood fill reached.
+ *
+ * Instanced boxes rather than marching cubes. Both are honest renderings of the
+ * same voxel set; boxes say plainly that this is a voxel fill, which is what
+ * CS2 itself is doing, and a smoothed surface would imply a precision the model
+ * does not have. It also draws thousands of cells in one call.
+ */
+function Volume({ field, colour, opacity }: { field: VoxelField; colour: string; opacity: number }) {
+  const ref = useRef<THREE.InstancedMesh>(null);
+
+  useEffect(() => {
+    const mesh = ref.current;
+    if (!mesh) return;
+
+    const matrix = new THREE.Matrix4();
+    field.cells.forEach((cell, i) => {
+      matrix.setPosition(cell[0], cell[1], cell[2]);
+      mesh.setMatrixAt(i, matrix);
+    });
+    mesh.instanceMatrix.needsUpdate = true;
+    mesh.count = field.cells.length;
+  }, [field]);
+
+  if (field.cells.length === 0) return null;
+
+  return (
+    <instancedMesh ref={ref} args={[undefined, undefined, field.cells.length]}>
+      {/* Slightly larger than the cell so neighbours meet rather than leaving a
+          grid of seams, which reads as holes in the smoke. */}
+      <boxGeometry args={[field.voxel * 1.05, field.voxel * 1.05, field.voxel * 1.05]} />
+      <meshLambertMaterial color={colour} transparent opacity={opacity} depthWrite={false} />
+    </instancedMesh>
+  );
+}
+
 /** The moving dot, at the position the recording says it was at time t. */
 function Projectile({ path, t }: { path: PathSample[]; t: number }) {
   const ref = useRef<THREE.Mesh>(null);
@@ -253,10 +292,22 @@ export default function Utility3D({
   const [mesh, setMesh] = useState<MapMesh | null>(null);
   const [t, setT] = useState(0);
   const [playing, setPlaying] = useState(false);
+  const [showVolume, setShowVolume] = useState(false);
+  const [showSim, setShowSim] = useState(false);
+  const [working, setWorking] = useState(false);
+  const [physics, setPhysics] = useState<{
+    field: VoxelField | null;
+    sim: SimResult | null;
+    error: number | null;
+  }>({ field: null, sim: null, error: null });
 
   // A new map's mesh is a different mesh; keeping the old one would frame the
   // camera on the previous map.
   useEffect(() => setMesh(null), [map]);
+
+  // The spatial index, built once per mesh. Everything in phase two asks it the
+  // same question — does this line hit anything — so it is worth building.
+  const world = useMemo(() => (mesh ? new CollisionIndex(mesh) : null), [mesh]);
 
   const drawable = useMemo(
     () =>
@@ -300,6 +351,55 @@ export default function Utility3D({
     setT(0);
     setPlaying(false);
   }, [selectedId]);
+
+  // Physics runs on demand and off the render path.
+  //
+  // A flood fill is tens of thousands of raycasts and an arc is a thousand
+  // integration steps; doing either inside a render would drop frames on the
+  // scene it is meant to improve. Deferred a frame so the "working" state
+  // paints first — the alternative is a UI that freezes and then jumps, which
+  // reads as a crash.
+  useEffect(() => {
+    if (!world || !selected || (!showVolume && !showSim)) {
+      setPhysics({ field: null, sim: null, error: null });
+      return;
+    }
+
+    let cancelled = false;
+    setWorking(true);
+
+    const handle = setTimeout(() => {
+      if (cancelled) return;
+
+      const end = selected.path[selected.path.length - 1];
+      const at: [number, number, number] = [end[0], end[1], end[2]];
+      const utility = selected.lineup.utility;
+
+      // A molotov is a surface spread; everything else is a volume. Flashes and
+      // HE have no lasting shape at all, so there is nothing to show for them.
+      const field = !showVolume
+        ? null
+        : utility === "molly"
+          ? floodFire(at, world)
+          : utility === "smoke"
+            ? floodSmoke(at, world)
+            : null;
+
+      const sim = showSim ? resimulate(selected.path, world) : null;
+      const error = sim ? endpointError(sim, selected.path) : null;
+
+      if (!cancelled) {
+        setPhysics({ field, sim, error });
+        setWorking(false);
+      }
+    }, 16);
+
+    return () => {
+      cancelled = true;
+      clearTimeout(handle);
+      setWorking(false);
+    };
+  }, [world, selected, showVolume, showSim]);
 
   const bounds = useMemo(() => {
     if (mesh) return mesh.bounds;
@@ -356,6 +456,25 @@ export default function Utility3D({
         ))}
 
         {selected && <Projectile path={selected.path} t={t} />}
+
+        {physics.field && (
+          <Volume
+            field={physics.field}
+            colour={selected?.lineup.utility === "molly" ? "#ff7043" : "#e8eaed"}
+            opacity={selected?.lineup.utility === "molly" ? 0.45 : 0.3}
+          />
+        )}
+
+        {physics.sim && physics.sim.path.length >= 2 && (
+          <Line
+            points={physics.sim.path.map((p) => new THREE.Vector3(p[0], p[1], p[2]))}
+            color="#4ade80"
+            lineWidth={2.5}
+            dashed
+            dashSize={24}
+            gapSize={16}
+          />
+        )}
       </Canvas>
 
       <div className="ux3d-bar">
@@ -391,9 +510,32 @@ export default function Utility3D({
           </span>
         )}
 
+        {selected && world && (
+          <>
+            <label className="ux3d-toggle">
+              <input type="checkbox" checked={showVolume} onChange={(e) => setShowVolume(e.target.checked)} />
+              Volume
+            </label>
+            <label className="ux3d-toggle">
+              <input type="checkbox" checked={showSim} onChange={(e) => setShowSim(e.target.checked)} />
+              Simulate
+            </label>
+            {working && <span className="muted">working…</span>}
+            {physics.error !== null && (
+              // The number that says whether the simulator is right. Shown
+              // rather than hidden: a simulated arc drawn next to a recorded one
+              // with no measure of the gap between them invites you to believe
+              // whichever looks better.
+              <span className={`ux3d-error ${physics.error < 48 ? "good" : ""}`}>
+                sim off by {physics.error.toFixed(0)}u
+              </span>
+            )}
+          </>
+        )}
+
         {!mesh && (
           <span className="ux3d-note muted">
-            Radar floor — no map geometry exported for {map} yet.
+            Radar floor — no map geometry for {map} yet, so no physics either.
           </span>
         )}
       </div>

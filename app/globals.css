@@ -11298,6 +11298,18 @@ body.overlay-open .socket-status-banner {
 .ux3d-bar input[type="range"] { flex: 1 1 200px; min-width: 140px; }
 .ux3d-time { font-variant-numeric: tabular-nums; font-weight: 700; white-space: nowrap; }
 .ux3d-note { margin-left: auto; font-size: 12px; }
+.ux3d-toggle {
+  display: flex; align-items: center; gap: 6px;
+  font-size: 12px; font-weight: 700; white-space: nowrap;
+}
+/* The endpoint error, which is the simulator being right or not. Green only
+   under 48 units — about a third of a smoke, close enough to be the same one. */
+.ux3d-error {
+  font-variant-numeric: tabular-nums; font-weight: 700; font-size: 12px;
+  padding: 2px 8px; border-radius: 999px; white-space: nowrap;
+  background: color-mix(in srgb, #f59e0b 22%, transparent);
+}
+.ux3d-error.good { background: color-mix(in srgb, #22c55e 22%, transparent); }
 .ux3d-empty {
   display: grid; place-items: center; min-height: 320px; padding: 24px;
   border-radius: 12px; text-align: center;
