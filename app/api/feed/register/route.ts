@@ -29,6 +29,8 @@ type Incoming = {
   /** A /clip mark: hidden until named. */
   unlisted?: boolean;
   sessionId?: string;
+  /** The map the clip was cut on. The request always knew; the clip did not. */
+  map?: string | null;
 };
 
 const isHttps = (u: string) => {
@@ -100,6 +102,10 @@ export async function POST(req: Request) {
       // are detected plays with real titles and go straight up.
       Unlisted: c.unlisted === true,
       SessionId: typeof c.sessionId === "string" ? c.sessionId.slice(0, 64) : null,
+      // Kept as data rather than as words inside the title. A pipeline title
+      // reads "Round 7 - de_mirage", which is unfilterable and disappears the
+      // moment somebody renames their clip to something they like.
+      Map: typeof c.map === "string" ? c.map.slice(0, 64) : null,
     };
 
     const existing = await prisma.feedClip.findUnique({ where: { ExternalId: c.id } });

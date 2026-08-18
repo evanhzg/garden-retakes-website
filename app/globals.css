@@ -11209,3 +11209,73 @@ body.overlay-open .socket-status-banner {
   max-width: min(100%, 74vh);
   margin: 0 auto;
 }
+
+/* ---------------------------------------------------------------- /clips ---
+   The /clip queue as a table you can act on. Replaces a ninety-line modal that
+   was entirely inline styles and could show a map name and a status word. */
+.clips-page { display: grid; gap: 16px; }
+.clips-head { display: flex; align-items: flex-start; justify-content: space-between; gap: 16px; flex-wrap: wrap; }
+.clips-head h2 { margin: 0 0 4px; }
+.clips-head p { margin: 0; font-size: 13px; }
+.clips-allbox { display: flex; align-items: center; gap: 7px; font-size: 13px; font-weight: 600; white-space: nowrap; }
+
+.clips-filters { display: flex; gap: 12px; align-items: center; flex-wrap: wrap; }
+.clips-chips { display: flex; gap: 6px; flex-wrap: wrap; }
+.clips-chip-n { opacity: 0.55; font-variant-numeric: tabular-nums; margin-left: 3px; }
+.clips-select {
+  padding: 6px 10px; border-radius: 8px; font-size: 13px; font-weight: 600;
+  border: 1.5px solid var(--color-divider); background: var(--color-surface); color: inherit;
+}
+
+.clips-bulk {
+  display: flex; align-items: center; gap: 8px; flex-wrap: wrap;
+  padding: 9px 13px; border-radius: 10px;
+  background: color-mix(in srgb, var(--color-accent, #6ea8fe) 12%, transparent);
+  font-size: 13px; font-weight: 700;
+}
+
+.clips-error {
+  margin: 0; padding: 9px 13px; border-radius: 10px; font-size: 13px;
+  background: color-mix(in srgb, #ef4444 14%, transparent);
+  /* Wraps rather than truncates: the message names which rows failed and why,
+     and a reason you cannot read is the same as no reason. */
+  overflow-wrap: anywhere;
+}
+.clips-empty { padding: 28px 4px; text-align: center; }
+
+/* The table scrolls inside its own box. On a phone this has nine columns and
+   the page itself must not slide sideways to accommodate them. */
+.clips-tablewrap { overflow-x: auto; border-radius: 10px; border: 1.5px solid var(--color-divider); }
+.clips-table { width: 100%; border-collapse: collapse; font-size: 13px; }
+.clips-table th, .clips-table td { padding: 9px 11px; text-align: left; white-space: nowrap; }
+.clips-table thead th {
+  font-size: 10px; font-weight: 800; letter-spacing: 0.08em; text-transform: uppercase;
+  color: var(--muted); border-bottom: 1.5px solid var(--color-divider);
+}
+.clips-table tbody tr + tr td { border-top: 1px solid color-mix(in srgb, var(--color-divider) 60%, transparent); }
+.clips-table tbody tr.on { background: color-mix(in srgb, var(--color-accent, #6ea8fe) 9%, transparent); }
+.clips-tick { width: 34px; }
+.clips-map { font-weight: 700; }
+.clips-round { font-variant-numeric: tabular-nums; font-weight: 700; }
+.clips-when { font-variant-numeric: tabular-nums; }
+/* The one column that may be long, so it is the one allowed to wrap. */
+.clips-title { white-space: normal; min-width: 200px; }
+.clips-note {
+  font-size: 11px; opacity: 0.7; max-width: 240px;
+  overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
+}
+.clips-flag {
+  margin-left: 6px; padding: 1px 6px; border-radius: 999px; font-size: 10px; font-weight: 800;
+  text-transform: uppercase; letter-spacing: 0.06em;
+  background: color-mix(in srgb, var(--color-text) 12%, transparent);
+}
+
+.clips-status { font-weight: 700; }
+.clips-status.is-done { color: #22c55e; }
+.clips-status.is-failed { color: #ef4444; }
+.clips-status.is-processing { color: #f59e0b; }
+.clips-status.is-cancelled { opacity: 0.55; text-decoration: line-through; }
+
+.clips-actions { display: flex; gap: 4px; justify-content: flex-end; }
+.clips-actions .btn { padding: 4px 9px; font-size: 12px; }
+.clips-actions .btn.danger { color: #ef4444; }

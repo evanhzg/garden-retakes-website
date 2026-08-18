@@ -209,8 +209,8 @@ model GardenWebProfile {
   /// avoids writing a row per player per event.
   NotifSeenAtUtc DateTime? @db.DateTime(6)
 
-    AllstarUsername String?   @db.VarChar(64)
-  AllstarSync     Boolean   @default(true)
+  AllstarUsername String? @db.VarChar(64)
+  AllstarSync     Boolean @default(true)
 
   @@map("GardenWebProfiles")
 }
@@ -377,19 +377,19 @@ model UserSettings {
 /// the global fallback the plugin reads when a player has no map-specific
 /// override in GardenMapRolePreference — see RE5-plugin's SpawnManager.
 model GardenRetakeLoadout {
-  SteamId      BigInt   @id @db.UnsignedBigInt
+  SteamId        BigInt   @id @db.UnsignedBigInt
   /// One of lib/retakeLoadout ROLES, or "" for none chosen.
-  RoleT        String   @default("") @db.VarChar(16)
-  RoleCt       String   @default("") @db.VarChar(16)
-  IsCaller     Boolean  @default(false)
+  RoleT          String   @default("") @db.VarChar(16)
+  RoleCt         String   @default("") @db.VarChar(16)
+  IsCaller       Boolean  @default(false)
   /// { pistol: [...], half: [...], full: [...] } — ordered, first choice first.
-  UtilityPrefs String?  @db.Text
-  Notes        String?  @db.VarChar(300)
+  UtilityPrefs   String?  @db.Text
+  Notes          String?  @db.VarChar(300)
   /// "Buy kevlar" preference for the cheap pistol-round buy (Glock/USP-S),
   /// shown only when that gun is picked — team-only, same as role/notes.
-  KevlarPistolT  Boolean @default(false)
-  KevlarPistolCt Boolean @default(false)
-  UpdatedAt    DateTime @default(now()) @updatedAt @db.DateTime(6)
+  KevlarPistolT  Boolean  @default(false)
+  KevlarPistolCt Boolean  @default(false)
+  UpdatedAt      DateTime @default(now()) @updatedAt @db.DateTime(6)
 
   @@map("GardenRetakeLoadouts")
 }
@@ -421,7 +421,7 @@ model GardenMapRolePreference {
 /// stays obvious and a future "replay the tutorial" button has a single flag
 /// to flip, not a loadout field to repurpose.
 model GardenOnboardingState {
-  SteamId               BigInt  @id @db.UnsignedBigInt
+  SteamId                 BigInt  @id @db.UnsignedBigInt
   SeenMatchmakingTutorial Boolean @default(false)
 
   @@map("GardenOnboardingStates")
@@ -638,6 +638,12 @@ model FeedClip {
   Unlisted    Boolean           @default(false)
   /// Which play session it came from, for per-session compilations.
   SessionId   String?           @db.VarChar(64)
+  /// The map the clip was cut on.
+  ///
+  /// The request has always carried this and publishing dropped it, so the map
+  /// survived only as words inside a machine-written title — unfilterable, and
+  /// gone entirely once somebody renamed their clip.
+  Map         String?           @db.VarChar(64)
   /// Comma-separated ids from the fixed tag list in lib/feedShared.
   Tags        String            @default("") @db.VarChar(200)
   Comments    FeedClipComment[]
@@ -712,17 +718,17 @@ model FeedDemo {
 /// the website reads them — the same route the heatmaps already take, rather
 /// than shipping JSON files off the game server over FTP.
 model GardenNade {
-  Id             Int      @id @default(autoincrement())
-  Map            String   @db.VarChar(64)
-  Name           String   @db.VarChar(120)
+  Id        Int     @id @default(autoincrement())
+  Map       String  @db.VarChar(64)
+  Name      String  @db.VarChar(120)
   /// Callout the throw is *from*, so several Long lineups stay distinguishable.
-  Area           String   @default("") @db.VarChar(64)
+  Area      String  @default("") @db.VarChar(64)
   /// smoke | flash | molotov | he | decoy
-  Utility        String   @default("smoke") @db.VarChar(16)
+  Utility   String  @default("smoke") @db.VarChar(16)
   /// default | execute | retake | postplant | trick
-  Purpose        String   @default("default") @db.VarChar(16)
+  Purpose   String  @default("default") @db.VarChar(16)
   /// T | CT | "" when it works for either side.
-  Team           String   @default("") @db.VarChar(2)
+  Team      String  @default("") @db.VarChar(2)
   /// stand | crouch | walk | jump | w-jump | step-jump | 2step-jump |
   /// run-jump | crouch-jump. Canonical list lives in lib/utilityShared.ts and
   /// is mirrored in the plugin's UtilityModule.ThrowTypes.
@@ -731,45 +737,45 @@ model GardenNade {
   /// pressed together, no step taken) are deliberately separate: they are
   /// different throws that land differently, and the old single "run" could
   /// not tell them apart.
-  ThrowType      String   @default("stand") @db.VarChar(16)
+  ThrowType String  @default("stand") @db.VarChar(16)
   /// left | right | both — left is a normal throw, right is the short lob.
-  ClickType      String   @default("left") @db.VarChar(8)
+  ClickType String  @default("left") @db.VarChar(8)
   /// Where you stand, and where you look.
-  StandX         Float
-  StandY         Float
-  StandZ         Float
-  Pitch          Float
-  Yaw            Float
+  StandX    Float
+  StandY    Float
+  StandZ    Float
+  Pitch     Float
+  Yaw       Float
   /// Where it lands. Null when the lineup was recorded without one.
-  LandX          Float?
-  LandY          Float?
-  LandZ          Float?
-  Notes          String?  @db.VarChar(500)
+  LandX     Float?
+  LandY     Float?
+  LandZ     Float?
+  Notes     String? @db.VarChar(500)
   /// Filled in later by the clip pipeline.
-  ClipUrl        String?  @db.VarChar(500)
-  Thumb          String?  @db.VarChar(500)
+  ClipUrl   String? @db.VarChar(500)
+  Thumb     String? @db.VarChar(500)
   /// False when the stand position does not sit on playable geometry — imported
   /// lineups are checked against the radar, recorded ones are true by definition.
-  Verified       Boolean  @default(true)
+  Verified  Boolean @default(true)
   /// ingame | import
   ///
   /// Kept for the rows that predate SourceKind. New writers set both; anything
   /// reading provenance should read SourceKind, which is the one with values
   /// the page actually distinguishes.
-  Source         String   @default("ingame") @db.VarChar(16)
+  Source    String  @default("ingame") @db.VarChar(16)
 
   /// ingame | demo | community | import — where this lineup came from.
   ///
   /// Source existed and nothing in the UI ever read it, so the page
   /// distinguished Verified instead and the two were correlated only by the
   /// importer's convention. This is the one the Resources tab filters on.
-  SourceKind     String   @default("ingame") @db.VarChar(16)
+  SourceKind String @default("ingame") @db.VarChar(16)
 
   /// Human-readable credit, e.g. "NAVI vs G2, IEM Katowice 2026".
-  SourceLabel    String?  @db.VarChar(200)
+  SourceLabel String? @db.VarChar(200)
 
   /// Where it came from, when there is somewhere to point at.
-  SourceUrl      String?  @db.VarChar(500)
+  SourceUrl String? @db.VarChar(500)
 
   /// How many times a mined lineup was seen across the demos it came from.
   ///
@@ -792,15 +798,15 @@ model GardenNade {
   /// Set on rows whose throw type was guessed by the taxonomy migration rather
   /// than recorded. Surfaces in the Maker tab so a guess can be confirmed or
   /// corrected instead of quietly standing as fact.
-  NeedsReview    Boolean  @default(false)
+  NeedsReview Boolean @default(false)
   /// Waiting for the three stills. Drives the capture queue — screenshots need
   /// a rendering client (see tools/lineup-capture), so this is a queue rather
   /// than something the server can satisfy itself.
-  NeedsShots     Boolean  @default(true)
+  NeedsShots  Boolean @default(true)
   /// Whether the stand position came from an explicit !lineup mark rather than
   /// the last-grounded fallback. A run-up lineup recorded without a mark is
   /// still usable but less exact, and the tab should say which it is.
-  MarkedStand    Boolean  @default(false)
+  MarkedStand Boolean @default(false)
 
   /// The arc the grenade actually flew: [[x,y,z,t],…], decimated server-side.
   ///
@@ -808,7 +814,7 @@ model GardenNade {
   /// can produce — screenshots need a rendering client, and the shape of a
   /// throw is the thing a still can never show and people watch nade videos
   /// for. Null on anything captured before this existed, or imported.
-  Path           String?  @db.Text
+  Path String? @db.Text
 
   @@index([Map])
   @@index([Map, Area])
@@ -864,6 +870,12 @@ model GardenClipRequest {
   SessionId   String    @db.VarChar(64)
   /// Server tick when /clip was typed; the clip ends here.
   Tick        Int
+  /// The round being played when /clip was typed, one-based.
+  ///
+  /// Stamped by the plugin, which knows it at that moment; reconstructing it
+  /// from Tick afterwards needs the round boundaries out of the demo. Null on
+  /// every row written before this column existed — zero would be a claim.
+  Round       Int?
   /// How far back from Tick to start.
   DurationSec Int       @default(15)
   /// pending -> processing -> done | failed
@@ -1029,12 +1041,12 @@ model GardenCompetitiveRating {
 }
 
 model GardenSafeStatus {
-  SteamId       BigInt   @id
-  Status        String   @db.VarChar(16) // "PROBING", "ACTIVE", "REJECTED", "BANNED", "NONE"
-  SafeScore     Float    @default(50.0)
-  ToxicityScore Float    @default(50.0)
-  TeamplayScore Float    @default(50.0)
-  CommScore     Float    @default(50.0)
+  SteamId       BigInt @id
+  Status        String @db.VarChar(16) // "PROBING", "ACTIVE", "REJECTED", "BANNED", "NONE"
+  SafeScore     Float  @default(50.0)
+  ToxicityScore Float  @default(50.0)
+  TeamplayScore Float  @default(50.0)
+  CommScore     Float  @default(50.0)
 
   @@map("GardenSafeStatuses")
 }
@@ -1054,8 +1066,8 @@ model GardenSafeRequest {
 }
 
 model GardenMatchVote {
-  Id            Int      @id @default(autoincrement())
-  MatchId       String   @db.VarChar(64)
+  Id            Int    @id @default(autoincrement())
+  MatchId       String @db.VarChar(64)
   VoterSteamId  BigInt
   TargetSteamId BigInt
   Toxicity      Int
@@ -1189,7 +1201,7 @@ model GmSpawn {
   Yaw   Float @default(0)
 
   /// Duels pairs a T spawn against a CT spawn; same Pairing groups them.
-  Pairing Int?
+  Pairing  Int?
   /// T-side Retakes spawn that may plant.
   CanPlant Boolean @default(false)
   Active   Boolean @default(true)
@@ -1207,12 +1219,12 @@ model GmSpawn {
 /// play starts with the smoke already sitting on the ground — the round opens
 /// mid-execute rather than watching one happen.
 model GmUtility {
-  Id    Int    @id @default(autoincrement())
-  SetId Int
+  Id       Int    @id @default(autoincrement())
+  SetId    Int
   /// "smoke" | "flash" | "he" | "molotov"
-  Type  String @db.VarChar(8)
+  Type     String @db.VarChar(8)
   /// "T" | "CT" — which side's lineup this was.
-  Team  String @db.VarChar(2)
+  Team     String @db.VarChar(2)
   /// "thrown" (fly the recorded lineup) | "grounded" (already deployed).
   Delivery String @default("thrown") @db.VarChar(8)
 

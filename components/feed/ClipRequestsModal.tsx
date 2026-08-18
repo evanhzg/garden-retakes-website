@@ -8,11 +8,13 @@ import { formatDistanceToNow } from "date-fns";
 type ClipRequest = {
   id: number;
   map: string;
+  round: number | null;
   sessionId: string;
   durationSec: number;
   status: string;
   note: string | null;
   clipId: number | null;
+  clipTitle: string | null;
   createdAt: string;
 };
 
@@ -52,7 +54,12 @@ export default function ClipRequestsModal({ onClose }: { onClose: () => void }) 
       <div className="pro-modal-card" onClick={(e) => e.stopPropagation()} style={{ maxWidth: 600 }}>
         <div className="pro-modal-head">
           <h2 id="clip-requests-title">Your /clip Requests</h2>
-          <button className="btn btn-secondary" onClick={onClose}>{t("auto.uploadclipmodal.close")}</button>
+          <div style={{ display: "flex", gap: 8 }}>
+            {/* Renaming, retrying, cancelling and deleting live on /clips. This
+                modal is a glance from the feed, not a second copy of that. */}
+            <a className="btn btn-secondary" href="/clips">Manage</a>
+            <button className="btn btn-secondary" onClick={onClose}>{t("auto.uploadclipmodal.close")}</button>
+          </div>
         </div>
         <div className="pro-panel" style={{ padding: 0, minHeight: 100 }}>
           {loading ? (
@@ -65,18 +72,27 @@ export default function ClipRequestsModal({ onClose }: { onClose: () => void }) 
                 <div key={req.id} style={{ padding: "16px 20px", background: "var(--color-surface)", display: "flex", justifyContent: "space-between", alignItems: "center", gap: 16 }}>
                   <div>
                     <div style={{ fontWeight: 600, fontSize: 16, marginBottom: 4 }}>
-                      {req.map}
+                      {req.clipTitle || req.map}
                     </div>
-                    <div className="muted" style={{ fontSize: 13, display: "flex", gap: 8, alignItems: "center" }}>
+                    <div className="muted" style={{ fontSize: 13, display: "flex", gap: 8, alignItems: "center", flexWrap: "wrap" }}>
+                      {/* Round, map and length. All three were already known —
+                          the round is now stamped by the plugin and the duration
+                          was being returned by the API and simply not shown. */}
+                      {req.round !== null && <span>Round {req.round}</span>}
+                      {req.round !== null && <span>&bull;</span>}
+                      <span>{req.map}</span>
+                      <span>&bull;</span>
+                      <span>{req.durationSec}s</span>
+                      <span>&bull;</span>
                       <span>{req.status === "pending" ? "Waiting to be processed" : req.status === "processing" ? "Processing..." : req.status === "done" ? "Ready" : req.status}</span>
                       <span>&bull;</span>
                       <span>{formatDistanceToNow(new Date(req.createdAt), { addSuffix: true })}</span>
                     </div>
                   </div>
                   {req.status === "done" && req.clipId ? (
-                    <button className="btn btn-primary" style={{ fontSize: 13, padding: "6px 12px" }}>
-                      Publish
-                    </button>
+                    <a className="btn btn-primary" style={{ fontSize: 13, padding: "6px 12px" }} href={`/feed?clip=${req.clipId}`}>
+                      Watch
+                    </a>
                   ) : null}
                 </div>
               ))}
