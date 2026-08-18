@@ -287,3 +287,190 @@ export function matchesQuery(l: Lineup, q: string): boolean {
     (l.notes ?? "").toLowerCase().includes(needle)
   );
 }
+
+// ---------------------------------------------------------------- clustering
+
+/**
+ * How close two throws have to start to count as the same spot.
+ *
+ * A player is 32 units wide and can shuffle a little without the lineup
+ * changing, so this is generous enough to fold "the same corner" together and
+ * tight enough to keep two genuinely different stances apart. It is bigger than
+ * the plugin's own StandRadius (64) on purpose: that one dedupes repeats of a
+ * single lineup, where this groups *different* lineups thrown from one place.
+ */
+export const STAND_CLUSTER_RADIUS = 96;
+
+/** How far a cluster will look for a name to borrow before giving up. */
+const NAME_BORROW_RADIUS = 512;
+
+export type LineupCluster = {
+  /** Stable key for React, derived from the cluster's centre. */
+  key: string;
+  /** The callout, when any lineup in the cluster has one. Empty otherwise. */
+  area: string;
+  /**
+   * The nearest callout on the map when this cluster has none of its own.
+   *
+   * Rendered as "near X". Deliberately not presented as the cluster's own name:
+   * a demo does not record what anyone calls a place, and a group labelled with
+   * a callout it is only close to would be wrong rather than vague.
+   */
+  nearArea: string;
+  /** Centre of the spot, for the radar. */
+  stand: { x: number; y: number; z: number };
+  list: Lineup[];
+  /** The most-thrown lineup in the group, which is what orders the page. */
+  peak: number;
+};
+
+const distanceSquared = (
+  a: { x: number; y: number; z: number },
+  b: { x: number; y: number; z: number },
+) => (a.x - b.x) ** 2 + (a.y - b.y) ** 2 + (a.z - b.z) ** 2;
+
+/**
+ * Group lineups by where you stand to throw them.
+ *
+ * This is the fix for a list where every mined lineup was its own group. Mined
+ * names are `"T smoke (-1234, 567)"`; the importer's areaOf could not parse that
+ * shape and returned the whole string, so Area became the unique name and one
+ * lineup per group was the arithmetic result. Grouping by position instead of by
+ * a parsed string cannot have that failure mode — two throws from one corner are
+ * one row whatever they happen to be called.
+ *
+ * Single-pass greedy clustering against cluster centres. Not k-means and not
+ * meant to be: the input is at most a few hundred lineups on one map, the
+ * clusters are genuinely well separated (you either stand somewhere or you do
+ * not), and a deterministic result matters more than an optimal one because this
+ * ordering is what somebody learns the page by.
+ */
+export function clusterByStand(
+  lineups: Lineup[],
+  radius: number = STAND_CLUSTER_RADIUS,
+): LineupCluster[] {
+  const r2 = radius * radius;
+
+  type Bucket = { centre: { x: number; y: number; z: number }; list: Lineup[] };
+  const buckets: Bucket[] = [];
+
+  // Sorted first so the result does not depend on the order rows arrived in.
+  // Most-thrown first means the busiest spot in an area seeds its cluster, and
+  // the strays attach to it rather than the other way round.
+  const ordered = [...lineups].sort(
+    (a, b) =>
+      (b.popularity ?? 0) - (a.popularity ?? 0) ||
+      a.stand.x - b.stand.x ||
+      a.stand.y - b.stand.y ||
+      a.id - b.id,
+  );
+
+  for (const lineup of ordered) {
+    let best: Bucket | null = null;
+    let bestDistance = r2;
+
+    for (const bucket of buckets) {
+      const d = distanceSquared(bucket.centre, lineup.stand);
+      if (d <= bestDistance) {
+        best = bucket;
+        bestDistance = d;
+      }
+    }
+
+    if (best) {
+      // Running mean, so a cluster's centre is the middle of what is in it
+      // rather than wherever its first member happened to stand.
+      const n = best.list.length;
+      best.centre = {
+        x: (best.centre.x * n + lineup.stand.x) / (n + 1),
+        y: (best.centre.y * n + lineup.stand.y) / (n + 1),
+        z: (best.centre.z * n + lineup.stand.z) / (n + 1),
+      };
+      best.list.push(lineup);
+    } else {
+      buckets.push({ centre: { ...lineup.stand }, list: [lineup] });
+    }
+  }
+
+  const clusters: LineupCluster[] = buckets.map((bucket) => ({
+    key: `${Math.round(bucket.centre.x)}_${Math.round(bucket.centre.y)}_${Math.round(bucket.centre.z)}`,
+    area: commonArea(bucket.list),
+    nearArea: "",
+    stand: bucket.centre,
+    list: [...bucket.list].sort(
+      (a, b) =>
+        (b.popularity ?? 0) - (a.popularity ?? 0) ||
+        Number(hasShots(b)) - Number(hasShots(a)) ||
+        a.utility.localeCompare(b.utility) ||
+        a.name.localeCompare(b.name),
+    ),
+    peak: Math.max(0, ...bucket.list.map((l) => l.popularity ?? 0)),
+  }));
+
+  // A cluster with no callout borrows the nearest one that has it — a mined
+  // lineup thrown from the same corner as a captured one should read as that
+  // corner rather than as nothing.
+  const named = clusters.filter((c) => c.area);
+  for (const cluster of clusters) {
+    if (cluster.area) continue;
+
+    let nearest = "";
+    let nearestDistance = NAME_BORROW_RADIUS * NAME_BORROW_RADIUS;
+    for (const candidate of named) {
+      const d = distanceSquared(candidate.stand, cluster.stand);
+      if (d < nearestDistance) {
+        nearest = candidate.area;
+        nearestDistance = d;
+      }
+    }
+    cluster.nearArea = nearest;
+  }
+
+  return clusters.sort(
+    (a, b) =>
+      b.peak - a.peak ||
+      b.list.length - a.list.length ||
+      (a.area || a.nearArea || "~").localeCompare(b.area || b.nearArea || "~"),
+  );
+}
+
+/** The callout most of a cluster agrees on, ignoring the ones that have none. */
+function commonArea(list: Lineup[]): string {
+  const tally = new Map<string, number>();
+  for (const l of list) {
+    if (!l.area) continue;
+    tally.set(l.area, (tally.get(l.area) ?? 0) + 1);
+  }
+
+  let best = "";
+  let bestCount = 0;
+  for (const [area, count] of Array.from(tally)) {
+    // Ties break alphabetically rather than by iteration order, so the label
+    // does not change when the same data is loaded twice.
+    if (count > bestCount || (count === bestCount && area.localeCompare(best) < 0)) {
+      best = area;
+      bestCount = count;
+    }
+  }
+  return best;
+}
+
+/**
+ * A name a mined lineup can be shown under.
+ *
+ * The miner names lineups `"<team> <utility> (<x>, <y>)"` because a demo gives
+ * it nothing else to go on — nobody records what a place is called. Those
+ * coordinates are the lineup's identity and worth keeping, but they are not
+ * worth being the first thing you read in a list of forty of them. Where the
+ * name is that shape, this returns the readable half and leaves the coordinates
+ * to the radar, which is the thing that can actually show you a position.
+ */
+export function displayLineupName(lineup: Lineup): string {
+  const coordinateName = /^(.*?)\s*\(\s*-?\d+(?:\.\d+)?\s*,\s*-?\d+(?:\.\d+)?\s*\)\s*$/.exec(
+    lineup.name,
+  );
+  if (!coordinateName) return lineup.name;
+
+  const readable = coordinateName[1].trim();
+  return readable || lineup.name;
+}

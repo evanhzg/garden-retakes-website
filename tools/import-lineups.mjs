@@ -59,11 +59,50 @@ function utilityOf(name) {
  * "T Spawn to Connector Smoke" → area "T Spawn".
  * The half before "to" is where you throw *from*, which is what groups the list
  * and what makes several Long lineups tellable apart.
+ *
+ * Returns "" rather than guessing when the name is not that shape. This is the
+ * bug that made the utility list unreadable: mined lineups are named
+ * `"T smoke (-1234, 567)"`, which has no trailing utility word to strip and no
+ * " to " to split on, so `from` came back as the entire unique name and Area
+ * became it. Every mined lineup was therefore its own area — its own group in
+ * Resources, its own chip in the facet, its own bucket in the sort. One row per
+ * group was arithmetic, not a design decision.
+ *
+ * An empty area is honest: a demo does not record what anyone calls a place.
+ * The page groups those by where you stand instead (clusterByStand), which is
+ * information we actually have.
  */
 function areaOf(name) {
+  // "<anything> (<x>, <y>)" — the miner's own naming, which carries no callout.
+  if (/\(\s*-?\d+(?:\.\d+)?\s*,\s*-?\d+(?:\.\d+)?\s*\)\s*$/.test(name)) return "";
+
   const withoutType = name.replace(/\s+(smoke|flash|molly|molotov|he|decoy)\s*$/i, "");
   const [from] = withoutType.split(/\s+to\s+/i);
-  return (from ?? "").replace(/\s+instant$/i, "").trim().slice(0, 64);
+  const area = (from ?? "").replace(/\s+instant$/i, "").trim().slice(0, 64);
+
+  // A "callout" that is the whole name is not a callout — it is the name with
+  // nothing parsed out of it, which is what grouped one lineup per group.
+  if (area.toLowerCase() === name.trim().toLowerCase()) return "";
+
+  return area;
+}
+
+/** An explicit utility field, when it names one we know. */
+function normaliseUtility(value) {
+  const v = String(value ?? "").toLowerCase().trim();
+  if (!v) return null;
+  if (v === "smoke") return "smoke";
+  if (v === "flash" || v === "flashbang") return "flash";
+  if (v === "molly" || v === "molotov" || v === "incendiary" || v === "fire") return "molly";
+  if (v === "he" || v === "hegrenade" || v === "frag") return "he";
+  if (v === "decoy") return "decoy";
+  return null;
+}
+
+/** An explicit team field, when it names one. */
+function normaliseTeam(value) {
+  const v = String(value ?? "").toUpperCase().trim();
+  return v === "T" || v === "CT" ? v : null;
 }
 
 function teamOf(name) {
@@ -248,10 +287,16 @@ async function main() {
     prepared.push({
       Map: map,
       Name: String(row.name ?? "Lineup").slice(0, 120),
-      Area: areaOf(String(row.name ?? "")),
-      Utility: utilityOf(String(row.name ?? "")),
+      // Explicit fields win over anything parsed out of the name. The mined
+      // export has carried `utility` and `team` on every record all along and
+      // this read them back out of the display string instead — which worked
+      // only because the display string was built from them, and would have
+      // broken the moment either changed. `area` is read the same way for a
+      // hand-written file that bothers to supply one.
+      Area: String(row.area ?? "").trim().slice(0, 64) || areaOf(String(row.name ?? "")),
+      Utility: normaliseUtility(row.utility) ?? utilityOf(String(row.name ?? "")),
       Purpose: /instant/i.test(row.name ?? "") ? "default" : "execute",
-      Team: teamOf(String(row.name ?? "")),
+      Team: normaliseTeam(row.team) ?? teamOf(String(row.name ?? "")),
       ThrowType: throwTypeOf(row.throw_type),
       ClickType: clickTypeOf(row.click_type),
       StandX: sx,

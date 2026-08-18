@@ -16,7 +16,9 @@ import {
   levelFor,
   playableMaps,
   radarUrl,
+  clusterByStand,
   compareLineups,
+  displayLineupName,
   matchesQuery,
   hasShots,
   type Lineup,
@@ -219,6 +221,10 @@ export default function UtilityPage({ signedIn }: { signedIn: boolean }) {
     const tally = new Map<string, number>();
     for (const l of lineups ?? []) {
       if (!passes(l, "area")) continue;
+      // Lineups with no callout do not get a chip. They used to get one each,
+      // because Area was the whole of their unique name — a facet with forty
+      // one-result chips in it is a facet nobody can use.
+      if (!l.area) continue;
       tally.set(l.area, (tally.get(l.area) ?? 0) + 1);
     }
     return Array.from(tally.entries()).sort((a, b) => a[0].localeCompare(b[0]));
@@ -626,7 +632,7 @@ export default function UtilityPage({ signedIn }: { signedIn: boolean }) {
                         <span className="ux-row-text">
                           <span className="ux-row-name">
                             <span className="util-row-dot" style={{ background: UTIL_COLOUR[l.utility] }} />
-                            {l.name}
+                            {displayLineupName(l)}
                             {favourites.includes(l.id) && <span className="ux-row-star">★</span>}
                             {!l.verified && (
                               <span className="util-row-flag" title={t("auto.utilityclient.position_not_on_the_map")}>?</span>
@@ -728,23 +734,15 @@ function Resources({
 }) {
   const { t } = useI18n();
 
-  const groups = useMemo(() => {
-    const byArea = new Map<string, Lineup[]>();
-    for (const l of lineups) {
-      const key = l.area || t("utility.resources.unsorted");
-      (byArea.get(key) ?? byArea.set(key, []).get(key)!).push(l);
-    }
-
-    return Array.from(byArea.entries())
-      .map(([area, list]) => ({
-        area,
-        list: [...list].sort((a, b) => (b.popularity ?? 0) - (a.popularity ?? 0)),
-        // Groups with the most-thrown lineup in them come first, so the top of
-        // the page is the part of the map people actually use utility on.
-        peak: Math.max(...list.map((l) => l.popularity ?? 0)),
-      }))
-      .sort((a, b) => b.peak - a.peak || a.area.localeCompare(b.area));
-  }, [lineups, t]);
+  // Grouped by where you stand, not by the Area string.
+  //
+  // Area came from parsing the lineup's name, and mined names are
+  // "T smoke (-1234, 567)" — a shape the parser could not read, so it returned
+  // the whole unique name and every mined lineup became its own group. That is
+  // the messy list: forty headings, one row each, for throws that all come from
+  // the same three corners. Position is information a demo actually gives us,
+  // and two throws from one corner are one row whatever they are called.
+  const groups = useMemo(() => clusterByStand(lineups), [lineups]);
 
   if (groups.length === 0) {
     return (
@@ -766,8 +764,21 @@ function Resources({
   return (
     <div className="ux-resources">
       {groups.map((group) => (
-        <section key={group.area}>
-          <h3>{group.area}</h3>
+        <section key={group.key}>
+          <h3>
+            {group.area || (
+              <span className="muted">
+                {group.nearArea
+                  ? t("utility.resources.near", { area: group.nearArea })
+                  : t("utility.resources.spot")}
+              </span>
+            )}
+            {group.list.length > 1 && (
+              <span className="ux-res-groupcount">
+                {t("utility.resources.count", { n: group.list.length })}
+              </span>
+            )}
+          </h3>
           <ul>
             {group.list.map((l) => (
               <li key={l.id}>
@@ -779,7 +790,7 @@ function Resources({
                 >
                   <span className="ux-res-dot" style={{ background: UTIL_COLOUR[l.utility] }} />
                   <span className="ux-res-body">
-                    <span className="ux-res-name">{l.name}</span>
+                    <span className="ux-res-name">{displayLineupName(l)}</span>
                     <span className="ux-res-meta">
                       {THROW_LABEL[l.throwType] ?? l.throwType}
                       {l.sourceLabel ? ` · ${l.sourceLabel}` : ""}

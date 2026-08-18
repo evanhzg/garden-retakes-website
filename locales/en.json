@@ -2313,5 +2313,8 @@
   "utility.resources.unsorted": "Unsorted",
   "utility.resources.seen": "Thrown {n} times in the demos we mined",
   "utility.resources.none": "Nothing here for this map and these filters yet.",
-  "utility.resources.elsewhere": "Our own set is still growing. These sites have covered this map for years — worth a look while we catch up:"
+  "utility.resources.elsewhere": "Our own set is still growing. These sites have covered this map for years — worth a look while we catch up:",
+  "utility.resources.near": "near {area}",
+  "utility.resources.spot": "Unmarked spot",
+  "utility.resources.count": "{n} lineups"
 }

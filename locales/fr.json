@@ -2301,5 +2301,8 @@
   "utility.resources.unsorted": "Non classés",
   "utility.resources.seen": "Lancé {n} fois dans les démos analysées",
   "utility.resources.none": "Rien ici pour cette carte avec ces filtres.",
-  "utility.resources.elsewhere": "Notre collection s’étoffe encore. Ces sites couvrent cette carte depuis des années :"
+  "utility.resources.elsewhere": "Notre collection s’étoffe encore. Ces sites couvrent cette carte depuis des années :",
+  "utility.resources.near": "près de {area}",
+  "utility.resources.spot": "Position sans nom",
+  "utility.resources.count": "{n} lineups"
 }

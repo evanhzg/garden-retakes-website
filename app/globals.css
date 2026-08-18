@@ -11140,6 +11140,16 @@ body.overlay-open .socket-status-banner {
 .ux-resources section h3 {
   margin: 0 0 8px; font-size: 11px; font-weight: 800;
   letter-spacing: 0.09em; text-transform: uppercase; color: var(--muted);
+  /* The heading now carries a count on the right. Baseline-aligned rather than
+     centred so the count reads as an annotation on the name, not a second name. */
+  display: flex; align-items: baseline; gap: 8px;
+}
+/* A group with no callout of its own says so quietly — "near Long" is a guess
+   from the nearest named spot and should not look like the spot's actual name. */
+.ux-resources section h3 .muted { font-weight: 700; opacity: 0.72; text-transform: none; letter-spacing: 0.04em; }
+.ux-res-groupcount {
+  margin-left: auto; font-weight: 700; font-size: 10px;
+  letter-spacing: 0.04em; text-transform: none; opacity: 0.6;
 }
 .ux-resources ul { list-style: none; margin: 0; padding: 0; display: grid; gap: 4px; }
 
