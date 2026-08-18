@@ -259,6 +259,24 @@ async function main() {
       : {};
   };
 
+  /**
+   * The recorded arc, when the export carries one.
+   *
+   * Stored as the same JSON string the plugin writes for a captured lineup —
+   * [[x,y,z,t],…] — so the page has one shape to read rather than two, and
+   * validated element by element because a NaN in a path is a tube that
+   * vanishes rather than an error anybody sees.
+   */
+  const pathOf = (row) => {
+    if (!Array.isArray(row.path)) return {};
+
+    const clean = row.path
+      .filter((p) => Array.isArray(p) && p.length >= 4 && p.slice(0, 4).every(Number.isFinite))
+      .map((p) => p.slice(0, 4).map((n) => Math.round(n * 1000) / 1000));
+
+    return clean.length >= 2 ? { Path: JSON.stringify(clean) } : {};
+  };
+
   const prepared = [];
   const skipped = [];
 
@@ -318,6 +336,7 @@ async function main() {
       // need the screenshot queue to consider it unfinished.
       NeedsShots: row.source_kind !== "demo",
       ...landOf(row),
+      ...pathOf(row),
     });
   }
 
