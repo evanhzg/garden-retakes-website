@@ -1,6 +1,6 @@
 "use client";
 
-import { useCallback, useEffect, useMemo, useState } from "react";
+import { Suspense, lazy, useCallback, useEffect, useMemo, useState } from "react";
 import { useI18n } from "@/components/I18nProvider";
 import {
   MAPS,
@@ -66,6 +66,13 @@ const EMPTY: Filters = {
 /** How close a lineup has to land to a clicked point to count as an answer. */
 const FIND_RADIUS = 300;
 
+/**
+ * three.js, the R3F reconciler and drei are a few hundred kilobytes, and most
+ * visits to this page never open the 3D tab. Split out so they are downloaded
+ * by the people who ask for them.
+ */
+const Utility3D = lazy(() => import("@/components/utility/Utility3D"));
+
 export default function UtilityPage({ signedIn }: { signedIn: boolean }) {
   const { t } = useI18n();
 
@@ -76,7 +83,7 @@ export default function UtilityPage({ signedIn }: { signedIn: boolean }) {
   const [selected, setSelected] = useState<Lineup | null>(null);
   const [hovered, setHovered] = useState<number | null>(null);
   const [level, setLevel] = useState("default");
-  const [stage, setStage] = useState<"map" | "list" | "resources">("map");
+  const [stage, setStage] = useState<"map" | "3d" | "list" | "resources">("map");
 
   const [f, setF] = useState<Filters>(EMPTY);
   const [findMode, setFindMode] = useState(false);
@@ -163,7 +170,7 @@ export default function UtilityPage({ signedIn }: { signedIn: boolean }) {
     writeParams({ lineup: l ? String(l.id) : null });
   };
 
-  const handleStage = (v: "map" | "list" | "resources") => {
+  const handleStage = (v: "map" | "3d" | "list" | "resources") => {
     setStage(v);
     writeParams({ view: v });
   };
@@ -519,6 +526,17 @@ export default function UtilityPage({ signedIn }: { signedIn: boolean }) {
               </button>
               <button
                 role="tab"
+                aria-selected={stage === "3d"}
+                className={`ux-viewtab ${stage === "3d" ? "on" : ""}`}
+                onClick={() => handleStage("3d")}
+                // Only where there is calibration to place things against;
+                // a 3D tab that opens on nothing is worse than no tab.
+                disabled={!cfg?.scale}
+              >
+                {t("utility.view.3d")}
+              </button>
+              <button
+                role="tab"
                 aria-selected={stage === "list"}
                 className={`ux-viewtab ${stage === "list" ? "on" : ""}`}
                 onClick={() => handleStage("list")}
@@ -553,6 +571,21 @@ export default function UtilityPage({ signedIn }: { signedIn: boolean }) {
               }}
               label={`${cfg.label} radar`}
             />
+          )}
+
+          {stage === "3d" && (
+            // Loaded on demand. three.js and the R3F reconciler are a large
+            // chunk of JavaScript, and most visits to this page never open
+            // the 3D tab — making everyone download it would be a real cost
+            // paid for an occasional feature.
+            <Suspense fallback={<div className="ux3d-empty"><p className="muted">Loading the 3D view…</p></div>}>
+              <Utility3D
+                map={map}
+                lineups={visible}
+                selectedId={selected?.id ?? null}
+                onSelect={handleSelect}
+              />
+            </Suspense>
           )}
 
           {stage === "resources" && (

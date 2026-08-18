@@ -2304,5 +2304,6 @@
   "utility.resources.elsewhere": "Notre collection s’étoffe encore. Ces sites couvrent cette carte depuis des années :",
   "utility.resources.near": "près de {area}",
   "utility.resources.spot": "Position sans nom",
-  "utility.resources.count": "{n} lineups"
+  "utility.resources.count": "{n} lineups",
+  "utility.view.3d": "3D"
 }

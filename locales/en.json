@@ -2316,5 +2316,6 @@
   "utility.resources.elsewhere": "Our own set is still growing. These sites have covered this map for years — worth a look while we catch up:",
   "utility.resources.near": "near {area}",
   "utility.resources.spot": "Unmarked spot",
-  "utility.resources.count": "{n} lineups"
+  "utility.resources.count": "{n} lineups",
+  "utility.view.3d": "3D"
 }

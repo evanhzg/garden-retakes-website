@@ -11279,3 +11279,27 @@ body.overlay-open .socket-status-banner {
 .clips-actions { display: flex; gap: 4px; justify-content: flex-end; }
 .clips-actions .btn { padding: 4px 9px; font-size: 12px; }
 .clips-actions .btn.danger { color: #ef4444; }
+
+/* ------------------------------------------------------------- 3D viewer ---
+   A radar shows where a smoke lands and can never show the arc that got it
+   there, which is the whole content of a lineup. */
+.ux3d { display: grid; grid-template-rows: 1fr auto; gap: 10px; min-height: 420px; }
+/* An explicit height, not a percentage: the canvas measures its parent, and a
+   parent sized by its children is a circular measurement that collapses to
+   zero. This is the bug that made the 2D radars invisible; not repeating it. */
+.ux3d > div:first-child, .ux3d canvas { border-radius: 12px; }
+.ux3d > div:first-child { height: min(68vh, 720px); background: #0d0f13; overflow: hidden; }
+
+.ux3d-bar {
+  display: flex; align-items: center; gap: 12px; flex-wrap: wrap;
+  padding: 9px 13px; border-radius: 10px; font-size: 13px;
+  background: color-mix(in srgb, var(--color-text) 4%, transparent);
+}
+.ux3d-bar input[type="range"] { flex: 1 1 200px; min-width: 140px; }
+.ux3d-time { font-variant-numeric: tabular-nums; font-weight: 700; white-space: nowrap; }
+.ux3d-note { margin-left: auto; font-size: 12px; }
+.ux3d-empty {
+  display: grid; place-items: center; min-height: 320px; padding: 24px;
+  border-radius: 12px; text-align: center;
+  background: color-mix(in srgb, var(--color-text) 3%, transparent);
+}

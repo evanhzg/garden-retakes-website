@@ -1,15 +1,16 @@
 {
   "topTeams": [
-    "Spirit",
-    "Falcons",
-    "MOUZ",
-    "FURIA",
-    "Natus Vincere",
-    "Vitality",
-    "9z",
-    "Legacy",
     "FaZe",
-    "FUT"
+    "NAVI",
+    "Vitality",
+    "MOUZ",
+    "G2",
+    "Spirit",
+    "Virtus.pro",
+    "Astralis",
+    "Complexity",
+    "HEROIC"
   ],
-  "updatedAt": 1787017693256
+  "updatedAt": 1787073601203,
+  "isFallback": true
 }
