@@ -1515,6 +1515,29 @@ export default function InventorySimulator() {
                 <strong>{activeLoadout.name}</strong>
               </div>
               <div className="inv4-board-actions">
+                <button 
+                  className="btn btn-primary" 
+                  title="Equip in-game" 
+                  onClick={async (e) => {
+                    const btn = e.currentTarget;
+                    const orig = btn.innerText;
+                    btn.innerText = "Equipping...";
+                    btn.disabled = true;
+                    try {
+                      await fetch("/api/inventory", { method: "POST", body: JSON.stringify(store) }); // Ensure latest is saved
+                      const res = await fetch("/api/loadout/equip-rcon", { method: "POST" });
+                      if (!res.ok) throw new Error(await res.text());
+                      btn.innerText = "Equipped!";
+                      setTimeout(() => { btn.innerText = orig; btn.disabled = false; }, 2000);
+                    } catch (err: any) {
+                      showToast(err.message);
+                      btn.innerText = orig;
+                      btn.disabled = false;
+                    }
+                  }}
+                >
+                  Equip In-Game
+                </button>
                 <button className="btn btn-ghost" title={t("auto.inventorysimulator.rename")} onClick={() => renameLoadout(activeLoadout)}>{t("auto.inventorysimulator.rename")}</button>
                 <button className={`btn btn-ghost ${activeLoadout.favorite ? 'on' : ''}`} title="Favorite" onClick={() => toggleFavoriteLoadout(activeLoadout)}>
                   {activeLoadout.favorite ? '★' : '☆'}
