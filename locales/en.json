@@ -2325,5 +2325,7 @@
   "social.friends.addFriend": "Add friend",
   "social.friends.inviteCopied": "Invite link copied.",
   "lobby.join_server": "Join the server",
-  "auto.adminpanel.action_failed": "That action failed."
+  "auto.adminpanel.action_failed": "That action failed.",
+  "feed.hero.label": "Featured clips",
+  "feed.hero.kicker": "Worth watching"
 }

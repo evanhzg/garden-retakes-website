@@ -5,6 +5,7 @@ import ClipModal from "@/components/feed/ClipModal";
 import type { Clip } from "@/components/feed/ClipCard";
 import type { Variant } from "@/components/feed/VideoPlayer";
 import { useI18n } from '@/components/I18nProvider';
+import { clipVariants } from "@/lib/feedShared";
 
 // The player's best clip, on their profile hero.
 //
@@ -70,19 +71,10 @@ export default function FeaturedClip({ steamId }: { steamId: string }) {
     );
   }
 
-  const variants: Variant[] = (() => {
-    if (clip.variants) {
-      try {
-        const parsed = JSON.parse(clip.variants) as Variant[];
-        if (Array.isArray(parsed) && parsed.length) return parsed;
-      } catch {
-        /* fall through */
-      }
-    }
-    if (clip.kind === "upload") return [{ name: t("profile.featuredClip.source"), height: 0, url: `/api/feed/video/${encodeURIComponent(clip.source)}` }];
-    if (clip.kind === "r2") return [{ name: t("profile.featuredClip.source"), height: 0, url: clip.source }];
-    return [];
-  })();
+  // Shared. The inlined copy this replaces did not know about "allstar", so an
+  // Allstar clip rendered here with no sources at all.
+  const variants: Variant[] = clipVariants(
+    clip.kind, clip.source, clip.variants, t("profile.featuredClip.source"));
 
   return (
     <>

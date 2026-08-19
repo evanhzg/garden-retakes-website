@@ -8,15 +8,112 @@
  */
 
 export type FeedRange = "day" | "week" | "month" | "all";
-export type FeedSort = "new" | "likes" | "comments";
+export type FeedSort = "new" | "likes" | "comments" | "hot";
 
 export const isRange = (v: string): v is FeedRange => ["day", "week", "month", "all"].includes(v);
-export const isSort = (v: string): v is FeedSort => ["new", "likes", "comments"].includes(v);
+export const isSort = (v: string): v is FeedSort => ["new", "likes", "comments", "hot"].includes(v);
 
 /** Start of the window for a range, or null for all-time. */
 export function rangeStart(range: FeedRange): Date | null {
   const days = range === "day" ? 1 : range === "week" ? 7 : range === "month" ? 30 : 0;
   return days ? new Date(Date.now() - days * 86_400_000) : null;
+}
+
+/** One playable rendition of a clip. Mirrors VideoPlayer's own Variant. */
+export type ClipVariant = { name: string; height: number; url: string };
+
+/**
+ * The playable sources for a clip, in the browser.
+ *
+ * `lib/feedClip.ts` has `variantsOf`, but that module is `server-only` — it
+ * imports Prisma — so no client component can call it. Three of them had
+ * therefore each inlined their own copy of this logic, and the copies had
+ * already drifted: the profile's featured card did not know about `allstar`,
+ * so an Allstar clip would render there with no sources at all.
+ *
+ * One copy, on the browser-safe side of the fence, which is what this module is
+ * for.
+ */
+export function clipVariants(
+  kind: string,
+  source: string,
+  raw: string | null | undefined,
+  sourceLabel = "Source",
+): ClipVariant[] {
+  if (raw) {
+    try {
+      const parsed = JSON.parse(raw) as ClipVariant[];
+      if (Array.isArray(parsed) && parsed.length) return parsed;
+    } catch {
+      // Fall through to the single-source form.
+    }
+  }
+
+  if (kind === "upload") {
+    return [{ name: sourceLabel, height: 0, url: `/api/feed/video/${encodeURIComponent(source)}` }];
+  }
+  // r2 and allstar both hold a direct https URL in Source.
+  if (kind === "r2" || kind === "allstar") {
+    return [{ name: sourceLabel, height: 0, url: source }];
+  }
+
+  // YouTube plays through its own embed, and anything unknown has nothing we
+  // can hand to a <video>.
+  return [];
+}
+
+/**
+ * How good a clip is, for choosing what leads the feed.
+ *
+ * Reaction, decayed by age. Likes lead and comments break ties, which is the
+ * formula the profile page already used for its featured clip
+ * (components/profile/FeaturedClip.tsx) — promoted here so one definition of
+ * "best" serves the whole site rather than each page inventing its own.
+ *
+ * The decay is the part that page did not need and the feed does. Without it
+ * the most-liked clip of all time holds the hero for ever, and a hero that
+ * never changes stops being looked at. A half-life means a very good old clip
+ * and a good new one can trade places, which is what makes the top of the page
+ * worth revisiting.
+ */
+export const HERO_HALF_LIFE_DAYS = 10;
+
+export function clipScore(
+  clip: { likes: number; comments: number; createdAt: string },
+  now: number = Date.now(),
+): number {
+  const raw = clip.likes * 3 + clip.comments;
+  if (raw <= 0) return 0;
+
+  const ageDays = Math.max(0, (now - new Date(clip.createdAt).getTime()) / 86_400_000);
+  // Guard against a clip dated in the future — a clock skew on the pipeline
+  // box should not hand it the hero seat permanently.
+  return raw * Math.pow(0.5, ageDays / HERO_HALF_LIFE_DAYS);
+}
+
+/**
+ * The clips the hero shows: the best one, then the runners-up beside it.
+ *
+ * Returns nothing at all rather than a weak lead when no clip has any
+ * reaction — a hero promoting a clip nobody has watched is worse than the page
+ * simply starting at the grid.
+ */
+export function pickHero<T extends { likes: number; comments: number; createdAt: string }>(
+  clips: T[],
+  runnersUp = 4,
+  now: number = Date.now(),
+): { featured: T; rest: T[] } | null {
+  const scored = clips
+    .map((clip) => ({ clip, score: clipScore(clip, now) }))
+    .filter((s) => s.score > 0)
+    .sort((a, b) => b.score - a.score);
+
+  if (scored.length === 0) return null;
+
+  return {
+    featured: scored[0].clip,
+    rest: scored.slice(1, 1 + runnersUp).map((s) => s.clip),
+  };
 }
 
 /**

@@ -4,6 +4,7 @@ import { useCallback, useEffect, useRef, useState } from "react";
 import ClipCard, { type Clip } from "@/components/feed/ClipCard";
 import UploadClipModal from "@/components/feed/UploadClipModal";
 import ClipRequestsModal from "@/components/feed/ClipRequestsModal";
+import FeedHero from "@/components/feed/FeedHero";
 import { useI18n } from '@/components/I18nProvider';
 import { CLIP_TAGS } from "@/lib/feedShared";
 
@@ -222,6 +223,13 @@ export default function FeedClient({ signedIn, isAdmin = false }: { signedIn: bo
           )}
         </div>
       </section>
+
+      {/* The lead clip, above the filters — a page about video that opened
+          with none on it was the thing to fix. Clips only; the CS2 updates tab
+          has nothing to feature. */}
+      {tab === "clips" && (
+        <FeedHero clips={clips ?? []} loading={clips === null} signedIn={signedIn} />
+      )}
 
       <section className="pro-section">
         <div className="pro-tabs" role="tablist" aria-label={t("auto.feedclient.feed")}>

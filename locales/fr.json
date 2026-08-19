@@ -2325,5 +2325,7 @@
   "loadout.role.lurker": "Lurker",
   "loadout.role.lurker.desc": "Joue seul pour couper les rotations et prendre le flanc.",
   "loadout.role.rifler": "Rifler",
-  "loadout.role.rifler.desc": "Premier dans la fumée. Échange de l'espace contre de l'information."
+  "loadout.role.rifler.desc": "Premier dans la fumée. Échange de l'espace contre de l'information.",
+  "feed.hero.label": "Clips à la une",
+  "feed.hero.kicker": "À voir"
 }

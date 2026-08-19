@@ -7,7 +7,7 @@ import ClipModal from "@/components/feed/ClipModal";
 import ClipEditor from "@/components/feed/ClipEditor";
 import ShareMenu from "@/components/feed/ShareMenu";
 import CommentBox, { CommentBody } from "@/components/feed/CommentBox";
-import { tagColour, tagLabel } from "@/lib/feedShared";
+import { clipVariants, tagColour, tagLabel } from "@/lib/feedShared";
 import { useI18n } from '@/components/I18nProvider';
 import type { Variant } from "@/components/feed/VideoPlayer";
 
@@ -132,23 +132,9 @@ export default function ClipCard({
   const [count, setCount] = useState(clip.comments);
   const [posting, setPosting] = useState(false);
 
-  const variants: Variant[] = (() => {
-    if (clip.variants) {
-      try {
-        const parsed = JSON.parse(clip.variants) as Variant[];
-        if (Array.isArray(parsed) && parsed.length) return parsed;
-      } catch {
-        // Fall through to the single-source form below.
-      }
-    }
-    if (clip.kind === "upload") {
-      return [{ name: "Source", height: 0, url: `/api/feed/video/${encodeURIComponent(clip.source)}` }];
-    }
-    if (clip.kind === "r2" || clip.kind === "allstar") {
-      return [{ name: "Source", height: 0, url: clip.source }];
-    }
-    return [];
-  })();
+  // Shared with the hero and the profile card, which had each grown their own
+  // copy of this — and drifted.
+  const variants: Variant[] = clipVariants(clip.kind, clip.source, clip.variants);
 
   // Best rendition, and only for something we host — a YouTube clip is not
   // ours to hand out, and linking one as a "download" would just 404.

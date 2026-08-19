@@ -11315,3 +11315,100 @@ body.overlay-open .socket-status-banner {
   border-radius: 12px; text-align: center;
   background: color-mix(in srgb, var(--color-text) 3%, transparent);
 }
+
+/* --------------------------------------------------------------- feed hero ---
+   The feed opened with a heading and a paragraph — a page about video with no
+   video on it. One clip playing, four beside it, above the filters. */
+.feed-hero {
+  display: grid;
+  grid-template-columns: minmax(0, 2.1fr) minmax(240px, 1fr);
+  gap: var(--space-3);
+  margin-bottom: var(--space-6);
+  align-items: stretch;
+}
+/* Reserved while the feed loads, so the filters and grid do not jump down the
+   page a moment after somebody has started reading them. */
+.feed-hero.is-skeleton {
+  display: block;
+  min-height: 320px;
+  border: 1px solid var(--color-divider);
+  background: color-mix(in srgb, var(--color-text) 3%, transparent);
+}
+
+.feed-hero-main {
+  position: relative;
+  display: block;
+  padding: 0;
+  border: 1px solid var(--color-divider);
+  background: #000;
+  overflow: hidden;
+  cursor: pointer;
+  min-height: 280px;
+  text-align: left;
+}
+.feed-hero-video,
+.feed-hero-poster {
+  display: block;
+  width: 100%;
+  height: 100%;
+  min-height: 280px;
+  object-fit: cover;
+  background: #0d0f13 center/cover no-repeat;
+}
+.feed-hero-poster { display: grid; place-items: center; }
+.feed-hero-play { font-size: 46px; opacity: 0.75; color: #fff; }
+
+/* Over the video, so the title is readable whatever the frame under it is. */
+.feed-hero-meta {
+  position: absolute;
+  inset: auto 0 0 0;
+  display: grid;
+  gap: 3px;
+  padding: 40px var(--space-4) var(--space-4);
+  background: linear-gradient(to top, rgb(0 0 0 / 0.85), rgb(0 0 0 / 0));
+  color: #fff;
+}
+.feed-hero-kicker {
+  font-size: 10px; font-weight: 800; letter-spacing: 0.12em;
+  text-transform: uppercase; color: var(--color-accent-400);
+}
+.feed-hero-title {
+  font-family: var(--font-heading); font-weight: var(--font-heading-weight);
+  font-size: clamp(18px, 2.4vw, 28px); line-height: 1.15;
+  /* Two lines then ellipsis: a long machine-written title should not push the
+     byline off the bottom of the gradient. */
+  display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical;
+  overflow: hidden;
+}
+.feed-hero-sub { display: flex; gap: 10px; font-size: 12px; opacity: 0.82; flex-wrap: wrap; }
+.feed-hero-stat { font-variant-numeric: tabular-nums; }
+
+.feed-hero-rest { list-style: none; margin: 0; padding: 0; display: grid; gap: var(--space-2); align-content: start; }
+.feed-hero-side {
+  display: flex; align-items: center; gap: 10px; width: 100%;
+  padding: 6px; text-align: left; cursor: pointer;
+  border: 1px solid var(--color-divider);
+  background: var(--color-surface);
+}
+.feed-hero-side:hover { border-color: var(--color-accent); }
+.feed-hero-thumb {
+  flex: 0 0 84px; height: 50px;
+  background: #0d0f13 center/cover no-repeat;
+  display: grid; place-items: center; color: #fff; opacity: 0.9;
+}
+.feed-hero-side-text { display: grid; gap: 2px; min-width: 0; }
+.feed-hero-side-title {
+  font-weight: 700; font-size: 13px;
+  white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
+}
+.feed-hero-side-sub { font-size: 11px; color: var(--muted); }
+
+/* Stacked on a phone: side-by-side at this width makes both halves too small
+   to be worth showing. */
+@media (max-width: 900px) {
+  .feed-hero { grid-template-columns: 1fr; }
+  .feed-hero-rest { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+}
+@media (max-width: 640px) {
+  .feed-hero-rest { grid-template-columns: 1fr; }
+}
