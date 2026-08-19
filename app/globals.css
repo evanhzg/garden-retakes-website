@@ -5714,6 +5714,18 @@ html { scroll-behavior: smooth; }
 }
 .inv4-progress-label { font-size: 12px; white-space: nowrap; color: color-mix(in srgb, var(--color-text) 70%, transparent); }
 
+/* This season's kills — the player's, not any one gun's. Sits next to the
+   completeness meter because both answer "where am I", and reads quietly:
+   the number is the part worth looking at, so it is the only part in the
+   accent colour. */
+.inv4-season { display: flex; align-items: baseline; gap: 6px; white-space: nowrap; }
+.inv4-season-name {
+  font-size: 11px; letter-spacing: 0.06em; text-transform: uppercase;
+  color: color-mix(in srgb, var(--color-text) 55%, transparent);
+}
+.inv4-season-kills { font-weight: 800; font-size: 14px; color: var(--color-accent); }
+.inv4-season-unit { font-size: 12px; color: color-mix(in srgb, var(--color-text) 70%, transparent); }
+
 .inv4-borrow { display: flex; gap: var(--space-2); }
 .inv4-borrow .input { width: 130px; }
 
@@ -7919,6 +7931,12 @@ header .avatar-sm { width: 34px; height: 34px; }
 .inv4-preview-cell:not(.has-skin) img { opacity: 0.45; filter: grayscale(1); }
 .inv4-preview-name { font-size: 11px; font-weight: 700; }
 .inv4-preview-skin { font-size: 10px; color: var(--muted); }
+/* StatTrak, and what it has counted this season. Only ever on an item that is
+   actually StatTrak, so its absence means something. */
+.inv4-preview-st {
+  font-size: 10px; font-weight: 800; letter-spacing: 0.04em;
+  color: var(--color-accent);
+}
 
 .inv4-skin-equip {
   margin-top: 4px;

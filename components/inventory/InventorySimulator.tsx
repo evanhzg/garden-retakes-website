@@ -50,6 +50,19 @@ type Catalog = Record<string, WeaponEntry[]>;
 type Session = { authenticated: boolean; steamId?: string; name?: string | null; avatar?: string | null; adminLevel?: number };
 type SkinSort = "name" | "quality" | "newest" | "fav";
 
+/**
+ * GET /api/stattrak — this season's counters.
+ *
+ * `itemKills` is keyed by the item's plugin uid, as a string, because that is
+ * what JSON object keys are. Only items with at least one kill appear.
+ */
+type SeasonStats = {
+  season: string | null;
+  seasonId: number | null;
+  seasonKills: number;
+  itemKills: Record<string, number>;
+};
+
 /** One tile on the equipped board. */
 type BoardSlot = {
   key: string;
@@ -379,6 +392,17 @@ export default function InventorySimulator() {
   const [collectionFilter, setCollectionFilter] = useState("");
   const [favOnly, setFavOnly] = useState(false);
 
+  /**
+   * This season's StatTrak figures, or null until they load (and for a signed-out
+   * visitor, who has no season to speak of).
+   *
+   * Two numbers that answer different questions. `itemKills` is per item — what
+   * CS2 paints on the side of the gun. `seasonKills` is the player's kills with
+   * anything, StatTrak or not, which is the one no weapon can show: a kill with
+   * a plain gun leaves no counter behind anywhere.
+   */
+  const [seasonStats, setSeasonStats] = useState<SeasonStats | null>(null);
+
   const [radioModalOpen, setRadioModalOpen] = useState<WeaponEntry | null>(null);
   // Config for the slot being edited
   const [wear, setWear] = useState(0.02);
@@ -456,6 +480,13 @@ export default function InventorySimulator() {
         } catch {
           setStore(loadStore());
         }
+        // Separate from the store on purpose: this changes on every kill, where
+        // the store only changes when somebody edits a loadout. A failure here
+        // costs the counters and nothing else, so it is swallowed.
+        fetch("/api/stattrak")
+          .then((r) => (r.ok ? r.json() : null))
+          .then((s: SeasonStats | null) => setSeasonStats(s))
+          .catch(() => {});
       } else {
         setStore(loadStore());
       }
@@ -603,6 +634,22 @@ export default function InventorySimulator() {
       return itemById((s === "t" ? loadout.equippedT : loadout.equippedCT)[def]);
     },
     [activeLoadout, itemById]
+  );
+
+  /**
+   * Kills with one item this season, or null when there is nothing to show.
+   *
+   * Null rather than 0 for a non-StatTrak item, because "this gun has killed
+   * nobody" and "this gun does not count" are different things and only one of
+   * them is worth a badge. A StatTrak item with no kills yet does get one — it
+   * is counting, it just has not started.
+   */
+  const killsFor = useCallback(
+    (item: InventoryItem | undefined): number | null => {
+      if (!item?.statTrak || !seasonStats) return null;
+      return seasonStats.itemKills[String(item.uid)] ?? 0;
+    },
+    [seasonStats]
   );
 
   // For the chooser head / sticker stage: resolve knife/gloves without def check
@@ -1444,6 +1491,19 @@ export default function InventorySimulator() {
         </div>
 
         <div className="inv4-bar-right">
+          {/* How the season is going. Not a StatTrak number: this counts the
+              player, with anything they picked up, which is the figure no
+              weapon can show. */}
+          {seasonStats?.season && (
+            <div className="inv4-season" title={`${seasonStats.season} — ${seasonStats.seasonKills}`}>
+              <span className="inv4-season-name">{seasonStats.season}</span>
+              <span className="inv4-season-kills num">{seasonStats.seasonKills.toLocaleString()}</span>
+              <span className="inv4-season-unit">
+                {t("auto.inventorysimulator.season_kills")} {t("auto.inventorysimulator.season_this")}
+              </span>
+            </div>
+          )}
+
           <div className="inv4-progress" title={`${completeness.filled} of ${completeness.total} signature slots`}>
             <div className="inv4-progress-track">
               <div className="inv4-progress-fill" style={{ width: `${completeness.pct}%` }} />
@@ -1679,6 +1739,20 @@ export default function InventorySimulator() {
                         <span className="inv4-slot-skin">
                           {slot.item ? skinLabel(slot.item.skinName) : "Default"}
                         </span>
+                        {(() => {
+                          const kills = killsFor(slot.item);
+                          if (kills === null) return null;
+                          return (
+                            <span className="inv4-slot-meta">
+                              <span className="inv4-tag-st">
+                                ST{" "}
+                                {kills > 0
+                                  ? kills.toLocaleString()
+                                  : t("auto.inventorysimulator.stattrak_none")}
+                              </span>
+                            </span>
+                          );
+                        })()}
                       </span>
                     </button>
                     {renderContext(`board-${slot.key}`)}
@@ -1766,6 +1840,11 @@ export default function InventorySimulator() {
                             <img src={item?.image ?? w.image} alt={w.name} loading="lazy" />
                             <span className="inv4-preview-name">{isSingleSlot && !item ? c : w.name}</span>
                             <span className="inv4-preview-skin">{item ? skinLabel(item.skinName) : "—"}</span>
+                            {(() => {
+                              const kills = killsFor(item);
+                              if (kills === null) return null;
+                              return <span className="inv4-preview-st">ST {kills.toLocaleString()}</span>;
+                            })()}
                           </button>
                         );
                       })}
