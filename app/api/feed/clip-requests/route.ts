@@ -72,11 +72,10 @@ export async function GET(req: Request) {
   return NextResponse.json({
     mine: !asModerator,
     requests: rows.map((r) => ({
-      id: r.Id,
+      id: r.Id.toString(),
       map: r.Map,
       round: r.Round,
       sessionId: r.SessionId,
-      round: r.Round,
       durationSec: r.DurationSec,
       status: r.Status,
       note: r.Note,
