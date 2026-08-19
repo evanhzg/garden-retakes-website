@@ -21,6 +21,25 @@ async function fetchProfile(steamId: string): Promise<{ name?: string; avatar?: 
   }
 }
 
+/**
+ * Where we are willing to send someone after login.
+ *
+ * This was `incoming.get("returnTo") || "/"`, concatenated straight onto the
+ * origin — so `?returnTo=//evil.com` produced `https://retakes.fr//evil.com`,
+ * which is protocol-relative and takes the browser off the site entirely. That
+ * is an open redirect through a genuine Steam login: the URL is ours, the login
+ * is real, and the page you land on is somebody else's. Exactly the shape a
+ * phishing link wants.
+ *
+ * A single leading slash, and no backslash — browsers normalise `/\` to `//`,
+ * so allowing it would reopen the same hole one character along.
+ */
+function safeReturnTo(raw: string | null): string {
+  if (!raw || !raw.startsWith("/")) return "/";
+  if (raw.startsWith("//") || raw.startsWith("/\\")) return "/";
+  return raw;
+}
+
 export async function GET(request: Request) {
   const origin = process.env.SITE_URL ?? new URL(request.url).origin;
   const incoming = new URL(request.url).searchParams;
@@ -39,7 +58,7 @@ export async function GET(request: Request) {
   const claimedId = incoming.get("openid.claimed_id") ?? "";
   const match = claimedId.match(CLAIMED_ID_RE);
 
-  const returnTo = incoming.get("returnTo") || "/";
+  const returnTo = safeReturnTo(incoming.get("returnTo"));
 
   if (!verifyText.includes("is_valid:true") || !match) {
     return NextResponse.redirect(`${origin}${returnTo === "/" ? "/inventory" : returnTo}?auth=failed`);

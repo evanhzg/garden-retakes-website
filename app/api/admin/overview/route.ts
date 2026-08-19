@@ -1,7 +1,7 @@
 import { NextResponse } from "next/server";
 import { prisma, getActiveSeason } from "@/lib/db";
 import { AdminLevel, getAdminContext } from "@/lib/adminAuth";
-import { rconExec } from "@/lib/rcon";
+import { serverSnapshot } from "@/lib/liveSnapshot";
 
 export const dynamic = "force-dynamic";
 export const runtime = "nodejs";
@@ -58,24 +58,18 @@ export async function GET(req: Request) {
     ranked?: boolean;
     competitive?: boolean;
   } = { map: null, mode: null, players: null };
-  try {
-    // css_gstatus answers in JSON. The old approach pattern-matched a localised
-    // sentence out of css_gamemode, so the answer vanished whenever the wording
-    // changed.
-    const raw = await rconExec("css_gstatus");
-    const json = /\{[^}]*\}/.exec(raw)?.[0];
-    if (json) {
-      const p = JSON.parse(json) as { map?: string; mode?: string; players?: number; ranked?: boolean; competitive?: boolean };
-      live = {
-        map: p.map ?? null,
-        mode: p.mode ?? null,
-        players: typeof p.players === "number" ? p.players : null,
-        ranked: Boolean(p.ranked),
-        competitive: Boolean(p.competitive),
-      };
-    }
-  } catch {
-    // Server unreachable — the board still works, it just cannot highlight.
+  // Through the shared snapshot: this route and /api/server/live both wanted
+  // the same answer and each ran its own RCON command for it. One command,
+  // cached for a few seconds, serves both — and anything that polls later.
+  const snapshot = await serverSnapshot();
+  if (snapshot.online) {
+    live = {
+      map: snapshot.map,
+      mode: snapshot.mode,
+      players: snapshot.players,
+      ranked: snapshot.ranked,
+      competitive: snapshot.competitive,
+    };
   }
 
   const now = new Date();

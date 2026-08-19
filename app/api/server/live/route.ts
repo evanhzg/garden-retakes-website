@@ -1,5 +1,5 @@
 import { NextResponse } from "next/server";
-import { rconExec } from "@/lib/rcon";
+import { serverSnapshot } from "@/lib/liveSnapshot";
 
 export const dynamic = "force-dynamic";
 export const runtime = "nodejs";
@@ -8,28 +8,20 @@ export const runtime = "nodejs";
 //
 // Public — it is the same thing anyone learns by connecting — and it never
 // returns RCON output verbatim, only the parsed fields.
+//
+// Reads through the shared snapshot rather than running its own RCON command.
+// This route fires on every homepage view, so one command per visitor was one
+// command too many; the cache collapses a burst into a single conversation
+// with the game server.
 
 export async function GET() {
-  try {
-    const raw = await rconExec("css_gstatus");
-    const json = /\{[^}]*\}/.exec(raw)?.[0];
-    if (!json) return NextResponse.json({ online: false });
-    const p = JSON.parse(json) as {
-      map?: string;
-      mode?: string;
-      players?: number;
-      ranked?: boolean;
-      competitive?: boolean;
-    };
-    return NextResponse.json({
-      online: true,
-      map: p.map ?? null,
-      mode: p.mode ?? null,
-      players: p.players ?? 0,
-      ranked: Boolean(p.ranked),
-      competitive: Boolean(p.competitive),
-    });
-  } catch {
-    return NextResponse.json({ online: false });
-  }
+  const s = await serverSnapshot();
+  return NextResponse.json({
+    online: s.online,
+    map: s.map,
+    mode: s.mode,
+    players: s.players,
+    ranked: s.ranked,
+    competitive: s.competitive,
+  });
 }
