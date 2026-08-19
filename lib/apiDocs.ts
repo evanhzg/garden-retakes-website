@@ -192,7 +192,7 @@ export const DOC_SECTIONS: DocSection[] = [
       {
         method: "GET",
         path: "/api/equipped/v4/{steamid}.json",
-        summary: "EquippedV4Response — every equipped item for both sides (weapons/knives/gloves/agents/music/pin + stickers/wear/seed).",
+        summary: "EquippedV4Response — every equipped item for both sides (weapons/knives/gloves/agents/music/pin + stickers/wear/seed), with this season's StatTrak count on each item plus the player's season kills.",
         auth: AUTH_KINDS.none,
         params: [
           { name: "steamid", in: "path", type: "string", required: true, description: "SteamID64" },
@@ -202,10 +202,29 @@ export const DOC_SECTIONS: DocSection[] = [
       {
         method: "GET",
         path: "/api/loadouts/{steamid}.json",
-        summary: "Loadout names + which one is active (feeds !loadouts in game).",
+        summary: "Loadout names, which one is active, and the player's season kills (feeds !loadouts and the in-game loadout menu).",
         auth: AUTH_KINDS.none,
         params: [{ name: "steamid", in: "path", type: "string", required: true, description: "SteamID64" }],
-        responseExample: `{ "loadouts": [ { "name": "green", "active": true }, { "name": "tournament", "active": false } ] }`,
+        responseExample: `{ "season": "Season 5", "seasonKills": 412, "loadouts": [ { "name": "green", "active": true }, { "name": "tournament", "active": false } ] }`,
+      },
+      {
+        method: "POST",
+        path: "/api/increment-item-stattrak",
+        summary: "Add one kill to an item's StatTrak counter for the running season (called by the plugin on every kill with a StatTrak item, and on MVP for a StatTrak music kit).",
+        auth: AUTH_KINDS.apikey,
+        params: [
+          { name: "apiKey", in: "body", type: "string", required: true, description: "INVSIM_API_KEY" },
+          { name: "userId", in: "body", type: "string", required: true, description: "SteamID64" },
+          { name: "targetUid", in: "body", type: "number", required: true, description: "The item's plugin-facing uid" },
+        ],
+        responseExample: `{ "ok": true, "season": "Season 5", "seasonId": 5, "kills": 143, "seasonKills": 412 }`,
+      },
+      {
+        method: "GET",
+        path: "/api/stattrak",
+        summary: "Your StatTrak figures for the running season: kills per item, and your kills with anything.",
+        auth: AUTH_KINDS.session,
+        responseExample: `{ "season": "Season 5", "seasonId": 5, "seasonKills": 412, "itemKills": { "7": 143, "12": 61 } }`,
       },
       {
         method: "POST",

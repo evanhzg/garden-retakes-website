@@ -1,6 +1,7 @@
 import { NextResponse } from "next/server";
 import { prisma } from "@/lib/db";
 import { normaliseStore, toEquippedV4, type GameIdResolver, type InventoryStore } from "@/lib/inventory";
+import { statTrakSummary } from "@/lib/stattrak";
 import {
   toGameAgentDef,
   toGameKeychainDef,
@@ -28,6 +29,11 @@ const GAME_IDS: GameIdResolver = {
 // Returns the player's loadout (active one, or the ?loadout= name/id override)
 // in the plugin's exact econ-item shape, including per-side weapons, knives,
 // gloves and agents (with their patches).
+//
+// StatTrak counts come from this season's counters rather than being sent as
+// zero, which is what they were until the counters existed — every gun's kill
+// count was rebuilt from nothing on each fetch, so no kill survived a
+// reconnect, a map change or an `!ws`.
 export async function GET(
   request: Request,
   { params }: { params: { steamid: string } }
@@ -47,7 +53,15 @@ export async function GET(
 
   try {
     const store = normaliseStore(JSON.parse(row.Data) as InventoryStore);
-    return NextResponse.json(toEquippedV4(store, loadoutRef, GAME_IDS));
+    const stats = await statTrakSummary(BigInt(steamId));
+    return NextResponse.json({
+      ...toEquippedV4(store, loadoutRef, GAME_IDS, stats.itemKills),
+      // Extra keys the plugin's model ignores when it does not know them, so
+      // this is safe to send to an old build. The plugin reads them to tell a
+      // player how their season is going without a second request.
+      season: stats.seasonName,
+      seasonKills: stats.seasonKills,
+    });
   } catch {
     return NextResponse.json({});
   }

@@ -1270,3 +1270,26 @@ model GmModeProposal {
   @@index([Status])
   @@map("GmModeProposals")
 }
+
+/// One StatTrak counter: a player's kills with one item, in one season.
+///
+/// Season-scoped on purpose. A counter that never resets is one nobody can
+/// catch up with, and it makes a knife carried since season 1 incomparable to
+/// anything a new player owns. The row is created by the first kill of the
+/// season with that item, so an item that crosses a season boundary starts
+/// again without anything having to run a reset.
+model GardenStatTrakCount {
+  Id       BigInt @id @default(autoincrement())
+  SeasonId Int
+  SteamId  BigInt @db.UnsignedBigInt
+  /// The plugin-facing item id — `InventoryStore.items[].uid`, which is what
+  /// the increment POST sends back as `targetUid`. Not the cs2-lib item id.
+  Uid      Int
+  Kills    Int    @default(0)
+
+  UpdatedAt DateTime @default(now()) @updatedAt @db.DateTime(6)
+
+  @@unique([SeasonId, SteamId, Uid])
+  @@index([SeasonId, SteamId])
+  @@map("GardenStatTrakCounts")
+}

@@ -454,7 +454,33 @@ function toPluginStickers(item: InventoryItem, ids: GameIdResolver): PluginStick
   return stickers;
 }
 
-function toPluginWeapon(item: InventoryItem, ids: GameIdResolver): PluginWeapon {
+/**
+ * uid → kills with that item this season.
+ *
+ * Passed in rather than read here, because this module also runs in the
+ * browser, where there is no database — and because the count belongs to a
+ * season, which is a thing the inventory store knows nothing about.
+ */
+export type StatTrakCounts = Record<number, number>;
+
+/**
+ * What to send as an item's StatTrak value.
+ *
+ * -1 means "this item is not StatTrak" to the plugin, which is a different
+ * thing from a StatTrak item that has not killed anything yet. That second case
+ * used to be the only case: this was a literal 0, so every counter was rebuilt
+ * from nothing on each inventory fetch and no kill ever survived a reconnect.
+ */
+function statTrakValue(item: InventoryItem, counts?: StatTrakCounts): number {
+  if (!item.statTrak) return -1;
+  return counts?.[item.uid] ?? 0;
+}
+
+function toPluginWeapon(
+  item: InventoryItem,
+  ids: GameIdResolver,
+  counts?: StatTrakCounts
+): PluginWeapon {
   const stickers = toPluginStickers(item, ids);
 
   const keychains: PluginKeychain[] = [];
@@ -483,7 +509,7 @@ function toPluginWeapon(item: InventoryItem, ids: GameIdResolver): PluginWeapon 
     nametag: item.nameTag ?? "",
     paint: item.paint,
     seed: item.seed,
-    stattrak: item.statTrak ? 0 : -1,
+    stattrak: statTrakValue(item, counts),
     wear: item.wear,
     uid: item.uid,
     stickers,
@@ -507,7 +533,8 @@ function charmSeed(item: InventoryItem): number {
 export function toEquippedV4(
   store: InventoryStore,
   loadoutRef?: string | null,
-  ids: GameIdResolver = IDENTITY_IDS
+  ids: GameIdResolver = IDENTITY_IDS,
+  counts?: StatTrakCounts
 ): EquippedV4 {
   const loadout = findLoadout(store, loadoutRef);
   const result: EquippedV4 = { ctWeapons: {}, tWeapons: {}, knives: {}, gloves: {}, agents: {} };
@@ -518,22 +545,22 @@ export function toEquippedV4(
 
   for (const [def, itemId] of Object.entries(loadout.equippedCT)) {
     const item = itemById(itemId);
-    if (item) result.ctWeapons[Number(def)] = toPluginWeapon(item, ids);
+    if (item) result.ctWeapons[Number(def)] = toPluginWeapon(item, ids, counts);
   }
   for (const [def, itemId] of Object.entries(loadout.equippedT)) {
     const item = itemById(itemId);
-    if (item) result.tWeapons[Number(def)] = toPluginWeapon(item, ids);
+    if (item) result.tWeapons[Number(def)] = toPluginWeapon(item, ids, counts);
   }
 
   const knifeT = itemById(loadout.knifeT);
-  if (knifeT) result.knives[2] = toPluginWeapon(knifeT, ids);
+  if (knifeT) result.knives[2] = toPluginWeapon(knifeT, ids, counts);
   const knifeCT = itemById(loadout.knifeCT);
-  if (knifeCT) result.knives[3] = toPluginWeapon(knifeCT, ids);
+  if (knifeCT) result.knives[3] = toPluginWeapon(knifeCT, ids, counts);
 
   const glovesT = itemById(loadout.glovesT);
-  if (glovesT) result.gloves[2] = toPluginWeapon(glovesT, ids);
+  if (glovesT) result.gloves[2] = toPluginWeapon(glovesT, ids, counts);
   const glovesCT = itemById(loadout.glovesCT);
-  if (glovesCT) result.gloves[3] = toPluginWeapon(glovesCT, ids);
+  if (glovesCT) result.gloves[3] = toPluginWeapon(glovesCT, ids, counts);
 
   // Both sides, both with their patches. An agent equipped on one side only is
   // sent for that side only — the plugin falls back to the other side itself
@@ -552,7 +579,7 @@ export function toEquippedV4(
     result.musicKit = {
       def: ids.musicKitDef(musicKit.weaponDef),
       uid: musicKit.uid,
-      stattrak: musicKit.statTrak ? 0 : -1,
+      stattrak: statTrakValue(musicKit, counts),
     };
   }
 
