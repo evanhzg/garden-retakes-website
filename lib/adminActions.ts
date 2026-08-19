@@ -1,6 +1,6 @@
 import { prisma } from "@/lib/db";
 import { rconExec } from "@/lib/rcon";
-import { AdminContext, AdminLevel, logAdminAction } from "@/lib/adminAuth";
+import { AdminContext, AdminLevel, canTargetByName, logAdminAction } from "@/lib/adminAuth";
 import { isGameMode } from "@/lib/gameModes";
 
 // W2: admin panel actions. Design principle — the WEBSITE owns persistence
@@ -17,6 +17,25 @@ const LEVEL_WORD: Record<number, string> = {
   [AdminLevel.Admin]: "admin",
   [AdminLevel.Owner]: "owner",
 };
+
+/**
+ * A player name that is safe to put on an RCON command line.
+ *
+ * `css_gkick ${name}` interpolated the raw string, and the Source console
+ * separates commands with `;` — so a name (or a typed search string) could
+ * carry a second command along with it, which the server runs as console.
+ * changeMap already validates its argument; these did not.
+ *
+ * Quoted, and anything that could end the quote or start another command is
+ * refused rather than stripped: silently kicking a different player than the
+ * one that was asked for is worse than an error.
+ */
+function safePlayerArg(name: string): string | null {
+  const trimmed = name.trim();
+  if (!trimmed || trimmed.length > 64) return null;
+  if (/["';\n\r\\]/.test(trimmed)) return null;
+  return `"${trimmed}"`;
+}
 
 /** Fire a plugin command over RCON, swallowing "server unreachable" errors. */
 async function tryRcon(command: string): Promise<string | null> {
@@ -39,7 +58,14 @@ async function resolveName(steamId: bigint): Promise<string> {
 
 export async function kickPlayer(ctx: AdminContext, name: string): Promise<ActionResult> {
   if (!name.trim()) return { ok: false, message: "No player name." };
-  const out = await tryRcon(`css_gkick ${name}`);
+
+  const arg = safePlayerArg(name);
+  if (!arg) return { ok: false, message: "That name cannot be used as a target." };
+
+  const allowed = await canTargetByName(ctx, name);
+  if (!allowed.ok) return { ok: false, message: allowed.error };
+
+  const out = await tryRcon(`css_gkick ${arg}`);
   await logAdminAction(ctx, "kick", { name }, "web");
   return out === null
     ? { ok: false, message: "Server unreachable — could not kick." }
@@ -48,7 +74,14 @@ export async function kickPlayer(ctx: AdminContext, name: string): Promise<Actio
 
 export async function slayPlayer(ctx: AdminContext, name: string): Promise<ActionResult> {
   if (!name.trim()) return { ok: false, message: "No player name." };
-  const out = await tryRcon(`css_gslay ${name}`);
+
+  const arg = safePlayerArg(name);
+  if (!arg) return { ok: false, message: "That name cannot be used as a target." };
+
+  const allowed = await canTargetByName(ctx, name);
+  if (!allowed.ok) return { ok: false, message: allowed.error };
+
+  const out = await tryRcon(`css_gslay ${arg}`);
   await logAdminAction(ctx, "slay", { name }, "web");
   return out === null
     ? { ok: false, message: "Server unreachable — could not slay." }

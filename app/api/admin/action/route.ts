@@ -1,6 +1,6 @@
 import { NextResponse } from "next/server";
 import { prisma } from "@/lib/db";
-import { AdminLevel, getAdminContext } from "@/lib/adminAuth";
+import { AdminLevel, canTarget, getAdminContext } from "@/lib/adminAuth";
 import {
   banPlayer,
   changeGameMode,
@@ -32,6 +32,26 @@ const REQUIRED: Record<string, number> = {
   toggleDemoMode: AdminLevel.Owner,
 };
 
+/**
+ * Which body field names the player an action acts on.
+ *
+ * `kick` and `slay` are absent because they take a display name, not a
+ * SteamID — `kickPlayer(ctx, name)` interpolates it straight into
+ * `css_gkick <name>`. That cannot be gated by immunity without resolving the
+ * name to an identity first, and it is also why those two should move to
+ * SteamID targeting: a partial name match from a fuzzy player list is how you
+ * kick the wrong person, and it is a command-injection surface besides.
+ * Tracked rather than silently half-fixed.
+ */
+const TARGETS_A_PLAYER: Record<string, string | undefined> = {
+  ban: "steamId",
+  unban: "steamId",
+  setName: "steamId",
+  clearName: "steamId",
+  setRole: "steamId",
+  removeRole: "steamId",
+};
+
 export async function POST(req: Request) {
   let body: Record<string, unknown>;
   try {
@@ -53,6 +73,25 @@ export async function POST(req: Request) {
 
   const str = (k: string) => (typeof body[k] === "string" ? (body[k] as string) : "");
   const num = (k: string) => (Number.isFinite(Number(body[k])) ? Number(body[k]) : 0);
+
+  // The immunity gate.
+  //
+  // The level check above asks whether the actor is senior enough for the
+  // COMMAND. Nothing asked whether they outrank the PERSON, so a Moderator
+  // could kick or slay an Owner — the same hole the plugin had until
+  // AdminTargeting.CanTarget closed it, and one that cannot be caught further
+  // down because RCON arrives at the game server with no identity and is
+  // treated as console, which outranks everyone.
+  //
+  // Keyed on SteamID, so it covers the actions that carry one. `kick` and
+  // `slay` take a NAME, which is a separate problem noted below.
+  const targeted = TARGETS_A_PLAYER[type];
+  if (targeted) {
+    const allowed = await canTarget(ctx, str(targeted));
+    if (!allowed.ok) {
+      return NextResponse.json({ error: allowed.error }, { status: 403 });
+    }
+  }
 
   let result: ActionResult;
   switch (type) {
