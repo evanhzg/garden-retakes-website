@@ -2092,7 +2092,7 @@ export default function InventorySimulator() {
       {share && (
         <div className="inv4-modal" role="dialog" aria-modal="true" aria-labelledby="inv-share-title" onClick={() => setShare(null)}>
           <div className="inv4-modal-card" onClick={(e) => e.stopPropagation()}>
-            <h2 id="inv-share-title">{t("auto.inventorysimulator.share")}{share.name}”</h2>
+            <h2 id="inv-share-title">{t("auto.inventorysimulator.share")} “{share.name}”</h2>
             <p className="muted" style={{ fontSize: 13 }}>
               {t("auto.inventorysimulator.anyone_with_this_key_can_borro")}
                                       </p>

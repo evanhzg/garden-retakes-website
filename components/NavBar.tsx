@@ -36,20 +36,20 @@ const CS2_LINKS: NavLink[] = [
   { href: "/live", label: "Live", key: "nav.live", isLive: true, primary: true },
   { href: "/lobby", label: "Matchmaking", key: "nav.lobby", primary: true },
   { href: "/safe-place", label: "Safe Place", key: "nav.safe_place", primary: true },
-  { href: "/compare", label: "Compare" },
-  { href: "/duels", label: "Duels" },
-  { href: "/request-skin", label: "Request skin" },
-  { href: "/docs", label: "Docs" },
-  { href: "/commands", label: "Commands" },
-  { href: "/roadmap", label: "Roadmap" },
+  { href: "/compare", label: "Compare", key: "nav.compare" },
+  { href: "/duels", label: "Duels", key: "nav.duels" },
+  { href: "/request-skin", label: "Request skin", key: "nav.requestSkin" },
+  { href: "/docs", label: "Docs", key: "nav.docs" },
+  { href: "/commands", label: "Commands", key: "nav.commands" },
+  { href: "/roadmap", label: "Roadmap", key: "nav.roadmap" },
   { href: "/games", label: "Games", key: "nav.games", isSection: true },
   { href: "/admin", label: "Admin", key: "nav.admin", adminOnly: true },
 ];
 
 const GAMES_LINKS: NavLink[] = [
-  { href: "/games", label: "Games Hub", primary: true },
-  { href: "/games/ladder", label: "Ladder", primary: true },
-  { href: "/games/roadmap", label: "Roadmap" },
+  { href: "/games", label: "Games Hub", key: "nav.gamesHub", primary: true },
+  { href: "/games/ladder", label: "Ladder", key: "nav.ladder", primary: true },
+  { href: "/games/roadmap", label: "Roadmap", key: "nav.roadmap" },
   { href: "/", label: "CS2", isSection: true },
 ];
 
