@@ -76,6 +76,7 @@ export async function GET(req: Request) {
       map: r.Map,
       round: r.Round,
       sessionId: r.SessionId,
+      round: r.Round,
       durationSec: r.DurationSec,
       status: r.Status,
       note: r.Note,
