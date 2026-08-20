@@ -446,6 +446,83 @@ function translate(
   return byId.get(value) ?? value;
 }
 
+/**
+ * Put a wear value inside the range its skin actually allows.
+ *
+ * Every skin has a wearMin and a wearMax — a Factory New-only finish might start
+ * at 0.06, not 0 — and cs2-lib asserts on anything outside them. Its own
+ * accessor is `wear ?? wearMin ?? 0`, so an absent wear means *the minimum for
+ * that skin*, never zero.
+ *
+ * The cstrike importer stored `?? 0`, which is out of range for most finishes,
+ * and the game is then asked to paint a weapon at a wear its material has no
+ * variant for. Clamping here rather than only fixing the importer is deliberate:
+ * it repairs inventories already saved, without anybody re-importing.
+ *
+ * Returns the wear unchanged for anything that has no wear at all (vanilla
+ * finishes, agents, music kits) — there is nothing to clamp to.
+ */
+export function clampWear(skinId: number, wear: number): number {
+  ensureLoaded();
+  const item = CS2Economy.items.get(skinId);
+  if (!item?.hasWear()) return wear;
+
+  const min = item.wearMin ?? 0;
+  const max = item.wearMax ?? 1;
+  if (!Number.isFinite(wear)) return min;
+  return Math.min(max, Math.max(min, wear));
+}
+
+/**
+ * Drop sticker and charm placements the game cannot use.
+ *
+ * A placement offset is in the game's own units, roughly -0.6..0.6 depending on
+ * the weapon, and cs2-lib asserts against each skin's own bounds. The website's
+ * editor stores something else entirely: x and y as a percentage of the 2D
+ * preview stage, which is what the field is documented as and what it is drawn
+ * with. Those two have been going down the same wire — a sticker dragged on the
+ * site arrives in game as x=24, y=58 against a range of x[-0.57, 0.49] — which
+ * is exactly what "stickers randomly placed on the weapon" is.
+ *
+ * Out-of-range values are dropped rather than clamped. Clamping 58 to 0.34 is
+ * still the wrong place, just a legal one; dropping it lets the game centre the
+ * sticker in its slot, which is where it belongs far more often than an edge.
+ * Imported items are unaffected — cs2-lib gives those real offsets and they
+ * validate.
+ *
+ * The editor storing game-space coordinates is the real fix and a bigger one.
+ * Until then this is the difference between stickers being wrong and stickers
+ * being scattered.
+ */
+export function sanitisePlacement(
+  skinId: number,
+  placement: { x?: number; y?: number; rotation?: number },
+  kind: "sticker" | "charm"
+): void {
+  ensureLoaded();
+  const item = CS2Economy.items.get(skinId);
+  if (!item) return;
+
+  const [xMin, xMax, yMin, yMax] = kind === "sticker"
+    ? [item.getMinimumStickerOffsetX(), item.getMaximumStickerOffsetX(),
+       item.getMinimumStickerOffsetY(), item.getMaximumStickerOffsetY()]
+    : [item.getMinimumKeychainOffsetX(), item.getMaximumKeychainOffsetX(),
+       item.getMinimumKeychainOffsetY(), item.getMaximumKeychainOffsetY()];
+
+  const outside = (v: number | undefined, min?: number, max?: number) =>
+    v !== undefined && (!Number.isFinite(v) || (min !== undefined && v < min) || (max !== undefined && v > max));
+
+  if (outside(placement.x, xMin, xMax)) placement.x = undefined;
+  if (outside(placement.y, yMin, yMax)) placement.y = undefined;
+
+  // The game takes -180..180. The editor's rotation happens to share that range,
+  // so this only catches something genuinely broken.
+  if (placement.rotation !== undefined
+      && (!Number.isFinite(placement.rotation) || Math.abs(placement.rotation) > 180)) {
+    placement.rotation = undefined;
+  }
+}
+
 export const toGameAgentDef = (value: number): number => {
   const maps = ensureIdMaps();
   return translate(value, maps.agentDefById, maps.agentDefs);

@@ -112,7 +112,11 @@ export async function POST(request: Request) {
         paint: economyItem.index ?? 0,
         image: economyItem.getImage(),
         rarity: economyItem.rarity ?? "",
-        wear: csItem.wear ?? 0,
+        // cs2-lib reads an absent wear as the skin's minimum, not as zero —
+        // its own accessor is `wear ?? wearMin ?? 0`, and validateWear asserts
+        // the value is at least wearMin. Storing 0 put most imported items
+        // below their own floor.
+        wear: csItem.wear ?? economyItem.wearMin ?? 0,
         seed: csItem.seed ?? 1,
         statTrak: csItem.statTrak !== undefined,
         nameTag: csItem.nameTag ?? "",

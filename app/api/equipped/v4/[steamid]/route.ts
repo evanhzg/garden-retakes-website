@@ -3,6 +3,8 @@ import { prisma } from "@/lib/db";
 import { normaliseStore, toEquippedV4, type GameIdResolver, type InventoryStore } from "@/lib/inventory";
 import { statTrakSummary } from "@/lib/stattrak";
 import {
+  clampWear,
+  sanitisePlacement,
   toGameAgentDef,
   toGameKeychainDef,
   toGameMusicKitDef,
@@ -53,6 +55,28 @@ export async function GET(
 
   try {
     const store = normaliseStore(JSON.parse(row.Data) as InventoryStore);
+
+    // Put every wear inside the range its own skin allows, on the way out.
+    //
+    // A skin's wear runs between its wearMin and wearMax — a Factory New-only
+    // finish starts at 0.06, not 0 — and cs2-lib treats an absent wear as the
+    // minimum for that skin rather than zero. The cstrike importer stored zero,
+    // so most imported items ask the game to paint a weapon at a wear its
+    // material has no variant for. Clamping here fixes every inventory already
+    // saved; the importer is fixed too, but that only helps future imports.
+    for (const item of store.items) {
+      item.wear = clampWear(item.skinId, item.wear);
+
+      // And drop placements in the wrong coordinate system. The editor stores
+      // sticker x/y as a percentage of its 2D preview stage; the game wants its
+      // own offsets. Sending one as the other is what puts stickers at random
+      // points on a weapon.
+      for (const sticker of item.stickers) {
+        if (sticker) sanitisePlacement(item.skinId, sticker, "sticker");
+      }
+      if (item.charm) sanitisePlacement(item.skinId, item.charm, "charm");
+    }
+
     const stats = await statTrakSummary(BigInt(steamId));
     return NextResponse.json({
       ...toEquippedV4(store, loadoutRef, GAME_IDS, stats.itemKills),
