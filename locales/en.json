@@ -2330,5 +2330,6 @@
   "lobby.join_server": "Join the server",
   "auto.adminpanel.action_failed": "That action failed.",
   "feed.hero.label": "Featured clips",
-  "feed.hero.kicker": "Worth watching"
+  "feed.hero.kicker": "Worth watching",
+  "inventory.editor.needSkin": "Pick a skin for this slot first — a sticker needs something to sit on."
 }

@@ -14,13 +14,21 @@
  *   `./foo`      — extensionless relative imports. TypeScript allows them;
  *                  node's ESM resolver requires the extension.
  *
- * Node 23+ strips the types itself, so nothing else is needed and no dependency
- * is involved.
+ * And the types themselves. This used to say "Node 23+ strips them, so no
+ * dependency is involved", which was true of the machine it was written on and
+ * of nothing else: a Node built without TypeScript support answers `.mts` with
+ * ERR_UNKNOWN_FILE_EXTENSION, or ERR_NO_TYPESCRIPT if you ask it to strip them,
+ * and every one of these tests fails before its first assertion. That is how
+ * the whole suite came to be silently unrunnable. It now transpiles with the
+ * TypeScript the repository already depends on, and only when node cannot do it
+ * — so a node that can keeps doing it, and one that cannot stops being a reason
+ * the tests do not run.
  */
 import { pathToFileURL } from "node:url";
-import { existsSync } from "node:fs";
+import { existsSync, readFileSync } from "node:fs";
 import { fileURLToPath } from "node:url";
 import path from "node:path";
+import ts from "typescript";
 
 const ROOT = pathToFileURL(path.resolve(import.meta.dirname, "..") + path.sep).href;
 
@@ -61,5 +69,42 @@ export async function load(url, context, next) {
   if (url.endsWith(".json") && !context.importAttributes?.type) {
     return next(url, { ...context, importAttributes: { ...context.importAttributes, type: "json" } });
   }
+
+  // Query and hash stripped first: rcon.test.mts imports
+  // `@/lib/rcon.ts?<random>` to defeat the module cache between cases, so the
+  // extension is not at the end of the URL and an anchored test misses it.
+  const filePath = url.split("?")[0].split("#")[0];
+
+  if (/\.(m?ts|tsx)$/.test(filePath)) {
+    // Let node have first refusal: where it can strip types, its own
+    // implementation is the one these files were written against.
+    try {
+      return await next(url, context);
+    } catch (err) {
+      if (err?.code !== "ERR_UNKNOWN_FILE_EXTENSION" && err?.code !== "ERR_NO_TYPESCRIPT") {
+        throw err;
+      }
+    }
+
+    const source = readFileSync(fileURLToPath(filePath), "utf8");
+    const { outputText } = ts.transpileModule(source, {
+      fileName: fileURLToPath(filePath),
+      compilerOptions: {
+        target: ts.ScriptTarget.ES2022,
+        // ESM out, always: these run as modules and import each other as
+        // modules, and CommonJS output would break at the first `import`.
+        module: ts.ModuleKind.ESNext,
+        moduleResolution: ts.ModuleResolutionKind.Bundler,
+        jsx: ts.JsxEmit.ReactJSX,
+        // Types only — no downlevelling, no helpers, nothing that would make
+        // the code under test differ from the code that ships.
+        isolatedModules: true,
+        verbatimModuleSyntax: false,
+      },
+    });
+
+    return { format: "module", source: outputText, shortCircuit: true };
+  }
+
   return next(url, context);
 }

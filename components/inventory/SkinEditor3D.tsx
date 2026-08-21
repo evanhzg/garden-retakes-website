@@ -18,6 +18,15 @@ type SkinEditor3DProps = {
   nameTag: string;
   initialStickers: (PlacedSticker | null)[];
   initialCharm: PlacedSticker | null;
+  /**
+   * The hanging pose the game will actually use for this item's charm.
+   *
+   * Passed in rather than computed here because it is derived from the owned
+   * item's uid (`charmSeed` in lib/inventory.ts), which this component does not
+   * have. Without it the preview pinned the seed at 1 and showed a pose no
+   * player would ever see.
+   */
+  charmSeed?: number;
   onSave: (stickers: (PlacedSticker | null)[], charm: PlacedSticker | null) => void;
   onClose: () => void;
 };
@@ -33,6 +42,7 @@ export default function SkinEditor3D({
   itemKind,
   initialStickers,
   initialCharm,
+  charmSeed,
   onSave,
   onClose
 }: SkinEditor3DProps) {
@@ -125,7 +135,17 @@ export default function SkinEditor3D({
     if (charm) {
       const econItem = allCharms.find(i => i.name === charm.name || i.def === charm.def);
       if (econItem) {
-        vKeychains[0] = { id: econItem.id, seed: 1 };
+        // Seed and placement both come from the charm, not from constants. The
+        // seed was pinned at 1 here while the game is sent one derived from the
+        // item's uid, so the pose in this preview was never the pose a player
+        // saw — the preview was showing a charm nobody owns.
+        vKeychains[0] = {
+          id: econItem.id,
+          seed: charmSeed ?? 1,
+          x: charm.x,
+          y: charm.y,
+          z: charm.z ?? charm.rotation,
+        };
       }
     }
 
@@ -138,7 +158,7 @@ export default function SkinEditor3D({
       stickers: vStickers,
       keychains: vKeychains
     };
-  }, [skinId, wear, seed, statTrak, nameTag, stickers, charm, allStickers, allCharms]);
+  }, [skinId, wear, seed, statTrak, nameTag, stickers, charm, charmSeed, allStickers, allCharms]);
 
   useEffect(() => {
     if (api && syncToApi.current) {
@@ -203,6 +223,22 @@ export default function SkinEditor3D({
           });
         }
         return changed ? newStickers : cur;
+      });
+
+      // The same sync for the charm, which this handler used to skip entirely.
+      //
+      // That omission is why a charm was always in its default spot in game: the
+      // only charm control is "Random Position", which asks the viewer to move
+      // it, and with nothing reading the result back the new position lived in
+      // the preview and nowhere else. Applying a charm writes no placement
+      // either, so a charm reached the game with no offsets at all and the game
+      // did the only thing it could — put it where it puts an unplaced one.
+      setCharm((cur) => {
+        if (!cur) return cur;
+        const k = state.item.keychains?.[0];
+        if (!k) return cur;
+        if (cur.x === k.x && cur.y === k.y && cur.z === k.z) return cur;
+        return { ...cur, x: k.x, y: k.y, z: k.z };
       });
     });
     return off;

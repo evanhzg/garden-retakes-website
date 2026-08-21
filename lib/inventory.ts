@@ -25,10 +25,26 @@ export type PlacedSticker = {
   slot: number;
   /** Scratch/wear 0 (pristine) .. 1 (fully scratched). */
   wear: number;
-  /** Position as a percentage of the 2D stage (website preview only). */
+  /**
+   * Where it sits on the weapon.
+   *
+   * Either the game's own offsets (what the 3D editor and a cstrike.app import
+   * produce) or a percentage of the 2D preview stage (older saved data). The
+   * two are told apart and reconciled on the way to the game — see
+   * `sanitisePlacement` in lib/economy.ts. Absent means "wherever the game
+   * puts an unplaced one", which is a real and reachable state, not a gap.
+   */
   x?: number;
   y?: number;
   rotation?: number;
+  /**
+   * Charms only: the third axis, which a sticker lying flat on a surface does
+   * not have. Kept separate from `rotation` because it is a position and not an
+   * angle — they were the same field until the charm gained a real placement,
+   * and reading a depth out of something called "rotation" is how that stayed
+   * invisible.
+   */
+  z?: number;
 };
 
 export type InventoryItem = {
@@ -499,7 +515,11 @@ function toPluginWeapon(
     };
     if (item.charm.x !== undefined) c.x = item.charm.x;
     if (item.charm.y !== undefined) c.y = item.charm.y;
-    if (item.charm.rotation !== undefined) c.z = item.charm.rotation;
+    // `z` is the field; `rotation` is where the third axis used to be smuggled
+    // before charms had a real placement, so older saved charms still carry it
+    // there and are read back rather than reset.
+    const z = item.charm.z ?? item.charm.rotation;
+    if (z !== undefined) c.z = z;
     keychains.push(c);
   }
 
@@ -524,7 +544,7 @@ function toPluginWeapon(
  * loadout, and derived from the item so two guns with the same charm do not
  * hang it identically.
  */
-function charmSeed(item: InventoryItem): number {
+export function charmSeed(item: InventoryItem): number {
   const base = (item.uid || 1) * 2654435761;
   return (Math.abs(base) % 100000) + 1;
 }

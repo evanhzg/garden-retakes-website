@@ -12,10 +12,10 @@ import {
   M4A4,
   PlacedSticker,
   SIGNATURE_SLOTS,
-  SLOT_ANCHORS,
   Side,
   TOTAL_SIGNATURE_SLOTS,
   Team,
+  charmSeed,
   defaultStickerSlots,
   defaultStore,
   emptyLoadout,
@@ -442,8 +442,6 @@ export default function InventorySimulator() {
   const [shareBusy, setShareBusy] = useState(false);
   const [copied, setCopied] = useState<string | null>(null);
 
-  const stageRef = useRef<HTMLDivElement>(null);
-  const dragSlot = useRef<number | null>(null);
   const saveTimer = useRef<number | null>(null);
 
   const showToast = useCallback((m: string) => {
@@ -770,6 +768,46 @@ export default function InventorySimulator() {
     [side, slotItemForChooser, writeUrl]
   );
 
+  /**
+   * Write the sticker editor's result into the saved inventory.
+   *
+   * Without this, Save did nothing that outlived the page. The editor's output
+   * went into `stickers`/`charm`, which are builder scratch state — the
+   * debounced save watches `store` and nothing else, so closing the editor
+   * fired no request, and the next `openWeapon` read the untouched store back
+   * over the top. Stickers only ever survived by accident, when the player
+   * happened to re-equip the skin afterwards and `equipSkin` carried them along.
+   *
+   * Editing targets the item already in the slot, so there is nothing to write
+   * to when the slot is empty — a sticker needs a skin to sit on. Saying so is
+   * better than silently discarding the work a second time.
+   */
+  const commitStickerEdit = useCallback(
+    (nextStickers: (PlacedSticker | null)[], nextCharm: PlacedSticker | null) => {
+      if (!weapon) return;
+
+      const target = slotItemForChooser(weapon.def, builderKind, side);
+      if (!target) {
+        showToast(t("inventory.editor.needSkin"));
+        return;
+      }
+
+      setStore((cur) => ({
+        ...cur,
+        items: cur.items.map((i) =>
+          i.id === target.id
+            ? {
+                ...i,
+                stickers: supportsStickers ? nextStickers : defaultStickerSlots(),
+                charm: supportsCharms ? nextCharm : null,
+              }
+            : i
+        ),
+      }));
+    },
+    [weapon, slotItemForChooser, builderKind, side, supportsStickers, supportsCharms, showToast, t]
+  );
+
   const closeChooser = useCallback(() => {
     setWeapon(null);
     setSkinSearch("");
@@ -1049,46 +1087,13 @@ export default function InventorySimulator() {
     }));
   };
 
-  // ---------- Stickers ----------
-  const addSticker = (o: StickerOption) => {
-    const slot = stickers.findIndex((s) => s === null);
-    if (slot === -1) {
-      showToast("All sticker slots full");
-      return;
-    }
-    const next = [...stickers];
-    // Fall back to the last anchor rather than indexing off the end: the array
-    // is data, and a slot count that outgrows it must not throw.
-    const anchor = SLOT_ANCHORS[slot] ?? SLOT_ANCHORS[SLOT_ANCHORS.length - 1];
-    next[slot] = { def: o.def, name: o.name, image: o.image, slot, wear: 0, x: anchor.x, y: anchor.y, rotation: 0 };
-    setStickers(next);
-  };
-  const removeSticker = (slot: number) => {
-    const next = [...stickers];
-    next[slot] = null;
-    setStickers(next);
-  };
-  const onStickerDown = (slot: number) => (e: React.PointerEvent) => {
-    dragSlot.current = slot;
-    (e.target as HTMLElement).setPointerCapture?.(e.pointerId);
-    e.preventDefault();
-  };
-  const onStageMove = (e: React.PointerEvent) => {
-    if (dragSlot.current === null || !stageRef.current) return;
-    const rect = stageRef.current.getBoundingClientRect();
-    const x = Math.min(95, Math.max(5, ((e.clientX - rect.left) / rect.width) * 100));
-    const y = Math.min(92, Math.max(8, ((e.clientY - rect.top) / rect.height) * 100));
-    setStickers((cur) => {
-      const s = dragSlot.current;
-      if (s === null || !cur[s]) return cur;
-      const n = [...cur];
-      n[s] = { ...n[s]!, x, y };
-      return n;
-    });
-  };
-  const endDrag = () => {
-    dragSlot.current = null;
-  };
+  // The 2D sticker stage that used to live here — addSticker, removeSticker,
+  // onStickerDown, onStageMove, endDrag and stageRef — is gone. It was
+  // unreferenced by any JSX, so it was dead in the shipped page, and it wrote
+  // to the same builder-scratch `stickers` state that never reached the store,
+  // so wiring it back up would have reintroduced the bug it looked like a fix
+  // for. It was also the only caller of SLOT_ANCHORS, which is why those
+  // percentage coordinates looked like a live code path when they were not.
 
   // ---------- Loadouts ----------
   const addLoadout = () => {
@@ -1249,7 +1254,10 @@ export default function InventorySimulator() {
     return Array.from(set).sort();
   }, [skins]);
 
-  const currentSkinId = weapon ? slotItemForChooser(weapon.def, builderKind, side)?.skinId : undefined;
+  // The owned item the editor is pointed at. Its uid decides the charm's
+  // hanging pose, which the editor cannot work out for itself.
+  const editorItem = weapon ? slotItemForChooser(weapon.def, builderKind, side) : undefined;
+  const currentSkinId = editorItem?.skinId;
 
   const shownSkins = useMemo(() => {
     let list = skins.filter((s) => skinLabel(s.name).toLowerCase().includes(skinSearch.toLowerCase()));
@@ -1370,13 +1378,18 @@ export default function InventorySimulator() {
         )}
         {supportsStickers && !isMusicKit && (
           <button className="inv4-context-btn" onClick={() => {
+            // Equip first, THEN open the chooser, THEN the editor — and never
+            // openWeapon after equipping in the same tick.
+            //
+            // The old order ran openWeapon last, which re-read the slot from a
+            // store that setState had not flushed yet and reset `stickers` to
+            // the pre-equip value. So the editor opened showing the stickers of
+            // whatever was equipped a moment ago, and saving wrote those back.
             if (contextMenu.boardSlot) {
               openBoardSlot(contextMenu.boardSlot, contextMenu.side);
             } else {
+              if (!weapon && contextMenu.weapon) openWeapon(contextMenu.weapon);
               equipSkin(contextMenu.skin, contextMenu.side, true, contextMenu.weapon);
-            }
-            if (!weapon && contextMenu.weapon) {
-              openWeapon(contextMenu.weapon);
             }
             setEditor3dOpen(true);
             setContextMenu(null);
@@ -2242,9 +2255,11 @@ export default function InventorySimulator() {
           nameTag={nameTag}
           initialStickers={stickers}
           initialCharm={charm}
+          charmSeed={editorItem ? charmSeed(editorItem) : undefined}
           onSave={(newStickers, newCharm) => {
             setStickers(newStickers);
             setCharm(newCharm);
+            commitStickerEdit(newStickers, newCharm);
             setEditor3dOpen(false);
           }}
           onClose={() => setEditor3dOpen(false)}
