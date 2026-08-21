@@ -2331,5 +2331,10 @@
   "loadout.role.rifler.desc": "Premier dans la fumée. Échange de l'espace contre de l'information.",
   "feed.hero.label": "Clips à la une",
   "feed.hero.kicker": "À voir",
-  "inventory.editor.needSkin": "Choisis d'abord un skin pour cet emplacement — un sticker doit se poser sur quelque chose."
+  "inventory.editor.needSkin": "Choisis d'abord un skin pour cet emplacement — un sticker doit se poser sur quelque chose.",
+  "inventory.rail.allTypes": "Tous les types",
+  "inventory.import.label": "Clé d'emprunt ou lien cstrike.app",
+  "inventory.import.placeholder": "Clé d'emprunt ou lien cstrike.app",
+  "inventory.import.fromKey": "Emprunter",
+  "inventory.import.fromCstrike": "Importer"
 }

@@ -2331,5 +2331,10 @@
   "auto.adminpanel.action_failed": "That action failed.",
   "feed.hero.label": "Featured clips",
   "feed.hero.kicker": "Worth watching",
-  "inventory.editor.needSkin": "Pick a skin for this slot first — a sticker needs something to sit on."
+  "inventory.editor.needSkin": "Pick a skin for this slot first — a sticker needs something to sit on.",
+  "inventory.rail.allTypes": "All types",
+  "inventory.import.label": "Borrow key or cstrike.app link",
+  "inventory.import.placeholder": "Borrow key or cstrike.app link",
+  "inventory.import.fromKey": "Borrow",
+  "inventory.import.fromCstrike": "Import"
 }

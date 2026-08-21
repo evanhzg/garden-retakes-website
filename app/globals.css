@@ -5819,19 +5819,8 @@ html { scroll-behavior: smooth; }
 }
 .inv4-rarity-dot { width: 7px; height: 7px; border-radius: 50%; flex: none; }
 
-.inv4-boardside { margin-bottom: var(--space-4); }
-.inv4-boardside-head {
-  display: flex; align-items: center; gap: 10px;
-  margin: 0 0 var(--space-2); font-size: 13px;
-}
-.inv4-boardside-count { font-size: 11px; color: color-mix(in srgb, var(--color-text) 55%, transparent); }
 /* The side you are browsing is the one the board highlights, so the two halves
    of the screen never disagree about which side you are editing. */
-.inv4-boardside.focused .inv4-boardside-head::after {
-  content: "editing";
-  font-size: 10px; letter-spacing: 0.1em; text-transform: uppercase;
-  color: var(--color-accent);
-}
 
 .inv4-slots { list-style: none; margin: 0; padding: 0; display: grid; gap: 4px; }
 .inv4-slot {
@@ -5879,12 +5868,6 @@ html { scroll-behavior: smooth; }
 }
 .inv4-tag-st { color: var(--color-accent); font-weight: 700; }
 
-.inv4-m4 { display: flex; align-items: center; gap: 6px; margin-top: var(--space-2); flex-wrap: wrap; }
-.inv4-m4-label {
-  font-size: 10px; letter-spacing: 0.09em; text-transform: uppercase;
-  color: color-mix(in srgb, var(--color-text) 55%, transparent);
-}
-.inv4-m4 .chip { padding: 4px 10px; font-size: 12px; }
 
 /* ---- browse column ---- */
 .inv4-browse { display: flex; flex-direction: column; min-height: 0; min-width: 0; }
@@ -5900,8 +5883,6 @@ html { scroll-behavior: smooth; }
 }
 .inv4-sidebtn + .inv4-sidebtn { border-left: 1px solid var(--color-divider); }
 .inv4-sidebtn.active { background: var(--color-accent); color: var(--color-bg); }
-.inv4-cats { display: flex; gap: 6px; flex-wrap: wrap; }
-.inv4-cats .chip { padding: 5px 12px; font-size: 12px; }
 
 .inv4-weapons {
   flex: 1; min-height: 0; overflow: visible;
@@ -5936,18 +5917,8 @@ html { scroll-behavior: smooth; }
 .inv4-chooser-head-right { margin-left: auto; display: flex; gap: var(--space-2); }
 .inv4-filters { display: flex; gap: var(--space-2); flex-wrap: wrap; }
 .inv4-filters .input { width: auto; min-width: 130px; }
-.inv4-config {
-  display: flex; gap: var(--space-4); flex-wrap: wrap; align-items: flex-end;
-  padding: var(--space-3); background: var(--color-surface);
-  border: 1px solid var(--color-divider);
-}
-.inv4-config > label { display: grid; gap: 4px; font-size: 11px; letter-spacing: 0.06em; text-transform: uppercase; color: color-mix(in srgb, var(--color-text) 60%, transparent); }
-.inv4-config > label strong, .inv4-config > label em { text-transform: none; letter-spacing: 0; color: var(--color-text); }
-.inv4-config .input { width: 120px; }
-.inv4-config input[type="range"] { width: 190px; accent-color: var(--color-accent); }
 .inv4-cfg-toggle { display: flex !important; flex-direction: row !important; align-items: center; gap: 6px; }
 .inv4-cfg-toggle input { accent-color: var(--color-accent); }
-.inv4-stickers { display: grid; gap: var(--space-3); }
 
 .inv4-skins {
   flex: 1; min-height: 0; overflow: visible;
@@ -6144,8 +6115,6 @@ html { scroll-behavior: smooth; }
 }
 @media (max-width: 560px) {
   .inv4-share-row { grid-template-columns: minmax(0, 1fr); }
-  .inv4-config { gap: var(--space-3); }
-  .inv4-config input[type="range"] { width: 100%; }
 }
 
 /* ═══════════════════════════════════════════════════════════════════════════
@@ -6421,7 +6390,6 @@ body.inv-fullscreen .inv4 {
 /* The browse column's controls stay put; only the results move. */
 .inv4-chooser-head,
 .inv4-filters,
-.inv4-config { flex: none; }
 
 @media (max-width: 1000px) {
   /* Stacked layout scrolls the page again, so undo the containment. */
@@ -7798,17 +7766,11 @@ header .avatar-sm { width: 34px; height: 34px; }
 
 .inv4-board,
 .inv4-browse,
-.inv4-boardside {
-  background: var(--color-bg);
-  border: 1px solid var(--color-divider);
-  border-radius: 12px;
-}
 /* The board already carries a divider against the browser; two lines side by
    side read as a seam. */
 .inv4-board { border-right: 1px solid var(--color-divider); }
 
 .inv4-board-head,
-.inv4-boardside-head,
 .inv4-chooser-head {
   background: color-mix(in srgb, var(--color-text) 4%, var(--color-surface));
   border-bottom: 1px solid var(--color-divider);
@@ -7894,14 +7856,7 @@ header .avatar-sm { width: 34px; height: 34px; }
   overflow-y: hidden;
   padding-bottom: 4px;
 }
-.inv4-boardside { flex: 1 1 0; min-width: min(420px, 78vw); }
-.inv4-boardside .inv4-slots {
-  display: grid;
-  grid-template-columns: repeat(auto-fill, minmax(128px, 1fr));
-  gap: 2px;
-}
 /* Rows became cells, so the slot art leads and the text sits under it. */
-.inv4-boardside .inv4-slots > li > * { flex-direction: column; text-align: center; }
 
 /* ---- the whole-loadout preview ---- */
 .inv4-preview { flex: 1; min-height: 0; overflow-y: auto; display: grid; gap: var(--space-4); align-content: start; }
@@ -8337,7 +8292,6 @@ header .avatar-sm { width: 34px; height: 34px; }
 
 
 .inv4-browse { padding: clamp(12px, 1.6vw, 18px); }
-.inv4-boardside { padding: 10px; }
 
 .pro-hero,
 .pro-section { padding: clamp(16px, 2.2vw, 28px); }
@@ -9412,16 +9366,14 @@ body.inv-fullscreen .main-content > main.container { flex: none; }
    directly above. These restate the chain in one place so a later change to
    any single rule cannot half-break it again.
 
-   .inv4-stickers is the exception rather than a restatement: it is a flex
-   child of the chooser with no flex of its own, so it was shrinking along with
-   everything else instead of the skin grid taking the pressure. */
+   (.inv4-stickers was listed here as the exception — a flex child of the
+   chooser with no flex of its own. Its markup is gone, and so is it.) */
 .inv4-body,
 .inv4-browse,
 .inv4-chooser,
 .inv4-weapons,
 .inv4-skins,
 .inv4-preview { min-height: 0; }
-.inv4-stickers { flex: none; }
 
 /* A scrollbar down the middle of a wall of skin tiles is noise, and this
    column is already framed by its own surface — the edge says where it ends.
@@ -9714,7 +9666,6 @@ body.inv-fullscreen .main-content > main.container { flex: none; }
   .inv4-slot { padding: 10px 8px; }
   .inv4 .input,
   .inv4 select.input { min-height: 40px; }
-  .inv4-config input[type="range"] { min-height: 40px; }
 
   /* The loadout colour was an 18px dot — a target roughly a quarter the area of
      a fingertip — and there are eight of them in a row. At 40px they wrap onto
@@ -9840,8 +9791,6 @@ body.inv-fullscreen .main-content > main.container { flex: none; }
   /* Wear, seed and name tag were a wrapping row of fixed-width fields, which at
      this width is already a column — just one with ragged edges and a stray
      field sharing a line. Made into one honestly. */
-  .inv4-config { flex-direction: column; align-items: stretch; }
-  .inv4-config .input { width: 100%; }
 
   /* margin-left:auto pushed this group to the far edge, which is right when it
      shares a line with the weapon name and wrong once it has wrapped onto a
@@ -10335,7 +10284,6 @@ body.inv-fullscreen .main-content > main.container { flex: none; }
   .admin-toast, .toast-item { max-width: calc(100vw - 24px); }
 
   /* The board rail's per-side minimum is wider than a phone. */
-  .inv4-boardside { min-width: 0; }
 }
 
 /* The season-vote controls sit with the season line they act on. */

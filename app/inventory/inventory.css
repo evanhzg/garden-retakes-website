@@ -1,0 +1,162 @@
+/*
+ * The inventory page's own stylesheet.
+ *
+ * globals.css is 11k lines and holds every page's styles; the inventory's were
+ * spread across five separate blocks of it, which is why a change to the rail
+ * meant reading all five to find out what else touched it. Per-page files are
+ * already the pattern elsewhere (app/loadout/loadout.css, app/docs/docs.css),
+ * so new inventory rules land here.
+ *
+ * The existing .inv4-* blocks are still in globals.css. Moving them is a
+ * mechanical but risky edit — they rely on being *later* in the file than the
+ * base .btn and .chip rules, and lifting them out changes the cascade — so it
+ * is deliberately not bundled with a behaviour change. This file is imported
+ * after globals, so anything here wins.
+ *
+ * Tokens (--color-*, --space-*, --radius-*) come from globals.css:12-90.
+ */
+
+/* ---------- the weapon-type rail ---------- */
+
+/*
+ * The rail is the page's only weapon-type control now, so it has to look like
+ * navigation rather than like a list of counts. The icon is what makes a row
+ * scannable — nine text labels of similar length all read the same at a glance.
+ */
+.inv4-type {
+  display: flex;
+  align-items: center;
+  gap: var(--space-2);
+}
+
+.inv4-type-icon {
+  flex: none;
+  opacity: 0.55;
+  transition: opacity 120ms ease, color 120ms ease;
+}
+
+.inv4-type:hover .inv4-type-icon,
+.inv4-type.open .inv4-type-icon {
+  opacity: 1;
+}
+
+.inv4-type.open .inv4-type-icon {
+  color: var(--color-accent);
+}
+
+.inv4-type-name {
+  flex: 1 1 auto;
+  text-align: left;
+}
+
+/* The count is secondary information and should never out-shout the name. */
+.inv4-type-count {
+  flex: none;
+  opacity: 0.6;
+  font-size: 12px;
+}
+
+/* ---------- "where am I" in the browse bar ---------- */
+
+/*
+ * What replaced the second row of type chips. It is a label, not a control —
+ * styled so nobody tries to click it looking for the thing the chips used to do.
+ */
+.inv4-topbar-where {
+  display: flex;
+  align-items: center;
+  gap: var(--space-2);
+  padding-inline: var(--space-2);
+  color: var(--color-text);
+  min-width: 0;
+}
+
+.inv4-topbar-where strong {
+  font-family: var(--font-heading);
+  letter-spacing: 0.01em;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.inv4-topbar-where svg {
+  flex: none;
+  opacity: 0.6;
+}
+
+/* ---------- the skin drawer ---------- */
+
+/*
+ * Skins open OVER the weapon grid instead of replacing it.
+ *
+ * The grid underneath stays mounted, which is the whole point: closing this
+ * costs nothing and puts the page back exactly as it was, where the old
+ * three-way pane switch rebuilt the grid from scratch and lost your scroll
+ * position every time.
+ *
+ * Absolutely positioned inside .inv4-browse, which is already a positioned
+ * containing block for the context menu.
+ */
+.inv4-browse {
+  position: relative;
+}
+
+.inv4-drawer {
+  position: absolute;
+  inset: 0;
+  z-index: 3;
+  display: flex;
+  flex-direction: column;
+  background: var(--color-bg);
+  box-shadow: var(--shadow-lg);
+  animation: inv4-drawer-in 140ms ease-out;
+}
+
+@keyframes inv4-drawer-in {
+  from {
+    opacity: 0;
+    transform: translateY(8px);
+  }
+  to {
+    opacity: 1;
+    transform: none;
+  }
+}
+
+/*
+ * The drawer slides; a reduced-motion reader gets it without the movement
+ * rather than without the drawer.
+ */
+@media (prefers-reduced-motion: reduce) {
+  .inv4-drawer {
+    animation: none;
+  }
+}
+
+/* On a narrow screen there is no room to overlay anything: the drawer becomes
+   the page, which is what a phone wants anyway. */
+@media (max-width: 1000px) {
+  .inv4-drawer {
+    position: static;
+    box-shadow: none;
+    animation: none;
+  }
+}
+
+/* ---------- icons inside buttons ---------- */
+
+/*
+ * Every .btn in this page can now carry a glyph. Without this they sit on the
+ * text baseline and push the label off-centre.
+ */
+.inv4-bar .btn,
+.inv4-board-actions .btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.inv4-bar .btn svg,
+.inv4-board-actions .btn svg {
+  flex: none;
+}

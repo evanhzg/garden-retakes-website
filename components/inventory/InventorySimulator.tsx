@@ -29,6 +29,7 @@ import {
   skinKey,
 } from "@/lib/inventory";
 import { useI18n } from '@/components/I18nProvider';
+import InventoryIcon, { categoryIconId } from "@/components/inventory/InventoryIcon";
 import { importSnapshot, type LoadoutSnapshot } from "@/lib/share";
 import SkinEditor3D from "./SkinEditor3D";
 import agentAudioMapping from "@/lib/agent_audio_mapping.json";
@@ -77,6 +78,17 @@ type BoardSlot = {
 };
 
 const CATEGORY_ORDER = ["Rifles", "Snipers", "SMGs", "Pistols", "Heavy", "Knives", "Gloves", "Agents", "Music Kits"];
+
+/**
+ * The rail's first entry: every type on one page.
+ *
+ * This is what the "Preview" button used to be. Preview was a third copy of
+ * the type list — a whole browse mode, reached by a button labelled as though
+ * it previewed the thing you were editing, which force-closed whatever you had
+ * open. As a row in the rail it is just another view of the same list, in the
+ * one place the page keeps its type controls.
+ */
+const ALL_TYPES = "All types";
 const SIDES: Side[] = ["t", "ct"];
 
 function wearLabel(wear: number): string {
@@ -376,7 +388,6 @@ export default function InventorySimulator() {
   const [catalog, setCatalog] = useState<Catalog | null>(null);
   const [category, setCategory] = useState("Rifles");
   /** Whole-loadout view instead of the store. Closes any open type. */
-  const [previewMode, setPreviewMode] = useState(false);
   /** Which weapon type the loadout rail has open. Null = all collapsed. */
   const [openBoardType, setOpenBoardType] = useState<string | null>(null);
   const [side, setSide] = useState<Side>("t");
@@ -525,8 +536,10 @@ export default function InventorySimulator() {
       const s = q.get("side");
       if (s === "t" || s === "ct") setSide(s);
       const c = q.get("cat");
-      if (c && CATEGORY_ORDER.includes(c)) setCategory(c);
-      setPreviewMode(q.get("view") === "preview");
+      if (c === ALL_TYPES || (c && CATEGORY_ORDER.includes(c))) setCategory(c);
+      // ?view=preview is retired. An old link still means "show me
+      // everything", which is now a category rather than a mode.
+      else if (q.get("view") === "preview") setCategory(ALL_TYPES);
       const lo = q.get("lo");
       if (lo) setStore((cur) => (cur.loadouts.some((l) => l.id === lo) ? { ...cur, activeLoadoutId: lo } : cur));
 
@@ -888,40 +901,66 @@ export default function InventorySimulator() {
     );
   }, [side, boardT, boardCT, catalog]);
 
+  /**
+   * Which of the two imports the pasted text is.
+   *
+   * The submit handler used to work this out inline and the button just said
+   * "Get", so one field silently dispatched to two unrelated code paths and a
+   * mistyped borrow key looked like a rejected key rather than a wrong kind of
+   * input. Deciding it once, here, is what lets the button say so.
+   */
+  const importSource: "cstrike" | "key" =
+    importKey.includes("cstrike.app") || importKey.trim().startsWith("[") ? "cstrike" : "key";
+
+  /**
+   * The rail's rows: every catalog type, with how much of it is equipped.
+   *
+   * Off CATEGORY_ORDER and not off `boardGroups`, so the list does not change
+   * shape as you equip things — a rail whose rows come and go is a rail you
+   * have to re-read every time you look at it.
+   */
+  const railTypes = useMemo(() => {
+    const counts = new Map(boardGroups.map(([group, slots]) => [group, slots]));
+    return CATEGORY_ORDER.map((group) => {
+      const slots = counts.get(group) ?? [];
+      return {
+        group,
+        filled: slots.filter((s) => s.item).length,
+        total: slots.length,
+      };
+    });
+  }, [boardGroups]);
+
   const chooseSide = (s: Side) => {
     setSide(s);
     writeUrl({ side: s });
   };
+  /**
+   * Show a weapon type. That is the whole of it.
+   *
+   * It used to end with `openWeapon(catalog[c][0])` — so clicking "Rifles" did
+   * not show you the rifles, it threw you straight into the AK-47's skin list,
+   * fired a fetch for it, and turned its own button inactive (the active test
+   * was `category === c && !weapon`). Clicking the same button again toggled
+   * back out. The control was a hidden two-state toggle whose states were
+   * "AK-47's skins" and "all rifles", and neither was the thing it was labelled
+   * with. That is the jump that made the page feel like it was fighting you.
+   *
+   * Picking an actual weapon is now the only thing that opens skins, and it
+   * opens them over the grid rather than instead of it — see `weapon` in the
+   * render.
+   */
   const chooseCategory = (c: string) => {
-    // Clicking the open type closes it; clicking another swaps to it. Two types
-    // open at once would put two skin lists on the page with no way to tell
-    // which one an equip belonged to.
-    if (c === category && weapon) {
-      setWeapon(null);
-      writeUrl({ w: null });
-      return;
-    }
     setCategory(c);
-    setPreviewMode(false);
-    const first = catalog?.[c]?.[0];
-    if (first) {
-      openWeapon(first, { push: false });
-      writeUrl({ cat: c, view: null });
-    } else {
-      setWeapon(null);
-      writeUrl({ cat: c, w: null, view: null });
-    }
+    setWeapon(null);
+    writeUrl({ cat: c, w: null });
   };
 
-  const togglePreview = () => {
-    setPreviewMode((on) => {
-      const next = !on;
-      // Preview is the whole loadout at once, so an open type would be a second
-      // answer to the same question.
-      if (next) setWeapon(null);
-      writeUrl({ view: next ? "preview" : null, w: null });
-      return next;
-    });
+  /** Every type at once — the rail's first entry, and no longer a mode. */
+  const chooseAllTypes = () => {
+    setCategory(ALL_TYPES);
+    setWeapon(null);
+    writeUrl({ cat: ALL_TYPES, w: null });
   };
 
   // Escape backs out of the chooser; T / C flip sides. Skipped while a text
@@ -1526,31 +1565,18 @@ export default function InventorySimulator() {
                                       </span>
           </div>
 
-          <button
-            className={`btn ${previewMode ? "btn-primary" : "btn-secondary"}`}
-            onClick={togglePreview}
-            title={t("auto.inventorysimulator.see_the_whole_loadout_at_once")}
-            aria-pressed={previewMode}
-          >
-            {t("auto.inventorysimulator.preview")}
-          </button>
-
-          <button
-            className={`btn ${chooserTab === 'inventory' ? "btn-primary" : "btn-secondary"}`}
-            onClick={() => {
-              if (chooserTab !== 'inventory') {
-                setChooserTab('inventory');
-                setWeapon(catalog ? catalog["Rifles"][0] : null); // Open chooser implicitly if not open
-              } else {
-                setChooserTab('catalog');
-                closeChooser();
-              }
-            }}
-          >
-            Vault
-          </button>
+          {/*
+            Preview and Vault used to live here and neither did what it said.
+            Preview was a browse mode — a third copy of the weapon-type list —
+            that force-closed whatever you had open; it is a row in the rail
+            now. Vault was not a view at all: it flipped the chooser's tab and,
+            needing somewhere to render, quietly opened the AK-47, so the header
+            read "AK-47 / T slot" while you looked at your own crafts. It is a
+            tab inside the drawer, where the thing it switches actually is.
+          */}
 
           <button className="btn btn-secondary" disabled={shareBusy || !activeLoadout} onClick={() => activeLoadout && shareLoadout(activeLoadout)}>
+            <InventoryIcon id="share" size={16} />
             {t("common.share")}
           </button>
 
@@ -1558,22 +1584,31 @@ export default function InventorySimulator() {
             className="inv4-borrow"
             onSubmit={(e) => {
               e.preventDefault();
-              if (importKey.includes("cstrike.app") || importKey.startsWith("[")) { importCstrike(importKey); } else { importByKey(importKey); }
+              if (importSource === "cstrike") { importCstrike(importKey); } else { importByKey(importKey); }
             }}
           >
-            <label className="sr-only" htmlFor="inv-borrow">{t("auto.inventorysimulator.borrow_key")}</label>
+            <label className="sr-only" htmlFor="inv-borrow">{t("inventory.import.label")}</label>
             <input
               id="inv-borrow"
               className="input"
-              placeholder="Borrow key or cstrike.app link"
+              placeholder={t("inventory.import.placeholder")}
               value={importKey}
               // removed max length for cstrike json payloads
               spellCheck={false}
               onChange={(e) => setImportKey(e.target.value)}
             />
+            {/*
+              One field still takes two unrelated things, because that is what
+              people paste — but it now says which one it saw before it runs.
+              "Get" gave no clue that it branched, so pasting the wrong sort of
+              string failed in a way that looked like the key was bad.
+            */}
             <button className="btn btn-secondary" type="submit" disabled={shareBusy || !importKey.trim()}>
-              {t("auto.inventorysimulator.get")}
-                                      </button>
+              <InventoryIcon id="import" size={16} />
+              {importSource === "cstrike"
+                ? t("inventory.import.fromCstrike")
+                : t("inventory.import.fromKey")}
+            </button>
           </form>
         </div>
       </header>
@@ -1689,24 +1724,48 @@ export default function InventorySimulator() {
 
           {/* Only this inner wrapper scrolls, so the loadout name, colours and
               rarity chips above stay put while the slot list moves. */}
-          {/* One row of types for the side you are on. Both sides at once was
-              two lists of the same eight slots, and the only place the
-              difference actually matters is Preview. Types stay closed until
-              you open one, so the rail is a rail and not a second store. */}
+          {/*
+            The one weapon-type control on the page.
+
+            There were two. This rail opened a list of equipped slots, and a row
+            of chips in the right-hand pane changed what you were browsing —
+            same nine labels, two visual languages, two state variables, and only
+            one of them in the URL. Nothing said they were different questions,
+            so answering one and expecting the other was the normal experience.
+
+            Selecting a type here now does both: it opens that type's slots and
+            it points the browser at that type. Built from CATEGORY_ORDER rather
+            than from what happens to be equipped, so a type you own nothing in
+            is still reachable — off `boardGroups` it simply vanished from the
+            page until you equipped something, which you could not do without it.
+          */}
           <div className="inv4-board-scroll">
             <div className="inv4-types">
-              {boardGroups.map(([group, slots]) => {
-                const filled = slots.filter((x) => x.item).length;
-                const open = openBoardType === group;
+              <button
+                className={`inv4-type ${category === ALL_TYPES ? "open" : ""}`}
+                onClick={chooseAllTypes}
+                aria-pressed={category === ALL_TYPES}
+              >
+                <InventoryIcon id="alltypes" size={18} className="inv4-type-icon" />
+                <span className="inv4-type-name">{t("inventory.rail.allTypes")}</span>
+                <span className="inv4-type-count num">{completeness.filled}/{completeness.total}</span>
+              </button>
+
+              {railTypes.map(({ group, filled, total }) => {
+                const open = category === group;
                 return (
                   <button
                     key={group}
                     className={`inv4-type ${open ? "open" : ""}`}
-                    onClick={() => setOpenBoardType(open ? null : group)}
-                    aria-expanded={open}
+                    onClick={() => {
+                      chooseCategory(group);
+                      setOpenBoardType(group);
+                    }}
+                    aria-pressed={open}
                   >
+                    <InventoryIcon id={categoryIconId(group)} size={18} className="inv4-type-icon" />
                     <span className="inv4-type-name">{group}</span>
-                    <span className="inv4-type-count num">{filled}/{slots.length}</span>
+                    <span className="inv4-type-count num">{filled}/{total}</span>
                   </button>
                 );
               })}
@@ -1786,16 +1845,20 @@ export default function InventorySimulator() {
                 </button>
               ))}
             </div>
-            <div className="inv4-cats">
-              {(catalog ? CATEGORY_ORDER.filter((c) => catalog[c]?.length) : CATEGORY_ORDER).map((c) => (
-                <button key={c} className={`chip ${category === c && !weapon ? "active" : ""}`} onClick={() => chooseCategory(c)}>
-                  {c}
-                </button>
-              ))}
+            {/* The second weapon-type control lived here. It is gone — the
+                rail on the left is the only one now. What is left in this bar
+                is the side switch and the name of what you are looking at, so
+                the bar answers "where am I" instead of asking again. */}
+            <div className="inv4-topbar-where">
+              <InventoryIcon
+                id={category === ALL_TYPES ? "alltypes" : categoryIconId(category)}
+                size={18}
+              />
+              <strong>{category === ALL_TYPES ? t("inventory.rail.allTypes") : category}</strong>
             </div>
           </div>
 
-          {previewMode ? (
+          {category === ALL_TYPES ? (
             !catalog ? (
               <p className="empty-hint">{t("auto.inventorysimulator.loading")}</p>
             ) : (
@@ -1843,7 +1906,8 @@ export default function InventorySimulator() {
                             className={`inv4-preview-cell ${item ? "has-skin" : ""}`}
                             style={item?.rarity ? ({ "--rarity": item.rarity } as React.CSSProperties) : undefined}
                             onClick={() => {
-                              setPreviewMode(false);
+                              // Stays on All types: opening a skin list no
+                              // longer costs you the view you opened it from.
                               if (w.forceSide) chooseSide(w.forceSide as Side);
                               if (isSingleSlot) chooseCategory(c); else openWeapon(w);
                             }}
@@ -1866,7 +1930,7 @@ export default function InventorySimulator() {
                 )})}
               </div>
             )
-          ) : !weapon ? (
+          ) : (
             !catalog ? (
               <p className="empty-hint">{t("auto.inventorysimulator.loading")}</p>
             ) : (
@@ -1891,7 +1955,6 @@ export default function InventorySimulator() {
                           setContextMenu({ id: `weapon-${w.def}`, skin: itemSkin, weapon: w, side });
                           return;
                         }
-                        setPreviewMode(false);
                         openWeapon(w);
                       }}
                       onContextMenu={(e) => {
@@ -1922,8 +1985,22 @@ export default function InventorySimulator() {
                 })}
               </div>
             )
-          ) : (
-            <div className="inv4-chooser">
+          )}
+
+          {/*
+            The skin list, over the grid rather than instead of it.
+
+            The right pane used to be a three-way exclusive switch — preview,
+            weapons, or chooser — so every move unmounted what you were looking
+            at and mounted something else. Closing a skin list rebuilt the whole
+            grid and threw your scroll position away, which is most of why
+            moving around here felt like being shoved.
+
+            The grid above stays mounted underneath. Closing this is instant and
+            puts you back exactly where you were.
+          */}
+          {weapon && (
+            <div className="inv4-chooser inv4-drawer" role="dialog" aria-label={weapon.name}>
               <div className="inv4-chooser-head">
                 <button className="btn btn-secondary" onClick={closeChooser}>← {category}</button>
                 <strong>{weapon.name}</strong>
@@ -1996,25 +2073,13 @@ export default function InventorySimulator() {
                     }}>Fav Selected ({selectedSkins.size})</button>
                   </div>
 
-                  <div className="inv4-config" style={{ display: 'none' }}>
-                    <label>
-                      {t("auto.inventorysimulator.wear")} <strong>{wear.toFixed(3)}</strong> <em>{wearLabel(wear)}</em>
-                      <input type="range" min={0} max={1} step={0.001} value={wear} onChange={(e) => setWear(Number(e.target.value))} />
-                    </label>
-                    <label>
-                      {t("auto.inventorysimulator.seed")}
-                      <input className="input" type="number" min={0} max={1000} value={seed} onChange={(e) => setSeed(Math.max(0, Math.min(1000, Number(e.target.value) || 0)))} />
-                    </label>
-                    <label>
-                      {t("auto.inventorysimulator.name_tag")}
-                      <input className="input" maxLength={20} value={nameTag} placeholder={t("auto.inventorysimulator.none")} onChange={(e) => setNameTag(e.target.value)} />
-                    </label>
-                    {supportsStatTrak && (
-                      <label className="inv4-cfg-toggle">
-                        <input type="checkbox" checked={statTrak} onChange={(e) => setStatTrak(e.target.checked)} /> {t("auto.inventorysimulator.stattrak")}
-                      </label>
-                    )}
-                  </div>
+                  {/* The wear/seed/name-tag panel used to be here, hidden with
+                      display:none since it moved into the context menu. Markup
+                      that renders nothing still costs a reader the time to work
+                      out that it renders nothing, so it is gone along with its
+                      .inv4-config rules. The controls themselves live on in the
+                      context menu — see renderContext. */}
+
 
                   {skinsLoading ? (
                     <p className="empty-hint">{t("auto.inventorysimulator.loading_skins")}</p>
