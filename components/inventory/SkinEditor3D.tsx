@@ -3,10 +3,16 @@
 import React, { useEffect, useState, useMemo, useRef } from "react";
 import { createPortal } from "react-dom";
 import { Viewer } from "@/lib/viewer/viewer-component";
-import { ViewerApi } from "@/lib/viewer/viewer-api";
-import { CS2Economy } from "@ianlucas/cs2-lib";
-import { ViewerItemInput } from "@/lib/viewer/viewer";
-import { PlacedSticker, STICKER_SLOTS, ItemKind } from "@/lib/inventory";
+// Types only, and spelled as such.
+//
+// `import { ViewerApi }` for a type still emits a runtime import, so every one
+// of these was dragging a module into the client graph to satisfy an
+// annotation. CS2Economy was the worst of it: imported, never referenced, and
+// pulling the whole of @ianlucas/cs2-lib along behind it. STICKER_SLOTS was
+// unused too.
+import type { ViewerApi } from "@/lib/viewer/viewer-api";
+import type { ViewerItemInput } from "@/lib/viewer/viewer";
+import type { PlacedSticker, ItemKind } from "@/lib/inventory";
 import { useI18n } from '@/components/I18nProvider';
 
 type SkinEditor3DProps = {

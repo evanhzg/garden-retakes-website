@@ -1,3 +1,19 @@
+"use client";
+
+// This file uses useState/useEffect/useRef, so it is a Client Component, and
+// saying so is not optional here.
+//
+// Without the directive Next treats it as a Server Component on a COLD
+// compile, the module fails to build, the page's client chunk is never
+// produced, and the client reference resolves to undefined — which React
+// reports as "Element type is invalid ... got: undefined" from somewhere that
+// names none of this. /inventory had been 500ing in production on exactly
+// that since at least 7 August.
+//
+// It only ever worked in dev because an incremental recompile re-enters the
+// module with the graph already built, which is why editing any file "fixed"
+// the page and restarting broke it again. Inheriting client-ness from an
+// importer is not something to rely on for a module that owns hooks.
 /*---------------------------------------------------------------------------------------------
  *  Copyright (c) Ian Lucas. All rights reserved.
  *  Licensed under the MIT License. See License.txt in the project root for license information.

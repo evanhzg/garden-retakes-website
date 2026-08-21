@@ -1,6 +1,7 @@
 "use client";
 
 import { createPortal } from "react-dom";
+import dynamic from "next/dynamic";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import {
   InventoryItem,
@@ -31,7 +32,19 @@ import {
 import { useI18n } from '@/components/I18nProvider';
 import InventoryIcon, { categoryIconId } from "@/components/inventory/InventoryIcon";
 import { importSnapshot, type LoadoutSnapshot } from "@/lib/share";
-import SkinEditor3D from "./SkinEditor3D";
+// Loaded on demand, and never on the server.
+//
+// This is what /inventory had been 500ing on. The editor pulls in the 3D
+// viewer, which pulls in @ianlucas/cs2-lib for its `instanceof` checks, and
+// that chain would not build into the page's client chunk on a COLD compile —
+// so the client reference for this whole page resolved to `undefined` and React
+// reported "Element type is invalid ... got: undefined" from a stack that names
+// none of it. Warm rebuilds succeeded, which is why it looked fine in dev after
+// any edit and died on every restart and every deploy.
+//
+// It has no business being server-rendered regardless: it is a modal wrapping a
+// remote iframe, opened by a click, and `ssr: false` says so.
+const SkinEditor3D = dynamic(() => import("./SkinEditor3D"), { ssr: false });
 import agentAudioMapping from "@/lib/agent_audio_mapping.json";
 import agentVoicesV2 from "@/data/agent_voices_v2.json";
 
