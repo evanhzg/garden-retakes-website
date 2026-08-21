@@ -474,26 +474,72 @@ export function clampWear(skinId: number, wear: number): number {
 }
 
 /**
- * Drop sticker and charm placements the game cannot use.
+ * Put sticker and charm placements into the units the game reads.
  *
  * A placement offset is in the game's own units, roughly -0.6..0.6 depending on
  * the weapon, and cs2-lib asserts against each skin's own bounds. The website's
- * editor stores something else entirely: x and y as a percentage of the 2D
- * preview stage, which is what the field is documented as and what it is drawn
- * with. Those two have been going down the same wire — a sticker dragged on the
- * site arrives in game as x=24, y=58 against a range of x[-0.57, 0.49] — which
- * is exactly what "stickers randomly placed on the weapon" is.
+ * editor stores something else: x and y as a percentage of the 2D preview
+ * stage, which is what the field is documented as and what it is drawn with.
+ * Both have been going down the same wire — a sticker dragged on the site
+ * arrives in game as x=24, y=58 against a range of x[-0.57, 0.49].
  *
- * Out-of-range values are dropped rather than clamped. Clamping 58 to 0.34 is
- * still the wrong place, just a legal one; dropping it lets the game centre the
- * sticker in its slot, which is where it belongs far more often than an edge.
- * Imported items are unaffected — cs2-lib gives those real offsets and they
- * validate.
+ * This used to *drop* anything out of range, on the grounds that a legal wrong
+ * place is no better than an illegal one. That is true as far as it goes, and it
+ * is why every charm has been hanging in its default spot and every quick-added
+ * sticker has been centred: the anchors the "add sticker" path writes (x 20, 36,
+ * 52, 68, 84 — SLOT_ANCHORS) are percentages by construction, so they were
+ * dropped every single time, for everybody.
  *
- * The editor storing game-space coordinates is the real fix and a bigger one.
- * Until then this is the difference between stickers being wrong and stickers
- * being scattered.
+ * So convert instead. A percentage is mapped linearly onto the skin's own
+ * offset range, which puts the sticker where the editor showed it rather than
+ * where the game guesses. Values already inside the range are left alone —
+ * imported items and anything the 3D editor placed by drag are already in game
+ * space — and anything that is neither is still dropped.
+ *
+ * <b>One thing here is unverified.</b> The stage's y grows downward and the
+ * game's may not. If stickers come out mirrored top-to-bottom, flip
+ * Y_GROWS_DOWNWARD; nothing else needs to change.
  */
+
+/**
+ * Whether the editor's y axis points the same way as the game's.
+ *
+ * The editor measures y down from the top of its preview stage. Whether the
+ * game's offset does the same has not been checked against a weapon in a
+ * server, so it is one named constant rather than a buried sign.
+ */
+const Y_GROWS_DOWNWARD = true;
+
+/**
+ * One coordinate, from whatever the editor stored into what the game reads.
+ *
+ * Returns undefined only when the value is neither a legal game offset nor a
+ * plausible percentage, which is the case the old drop-everything behaviour was
+ * actually right about.
+ */
+function toGameOffset(
+  value: number | undefined,
+  min: number | undefined,
+  max: number | undefined,
+  invert = false
+): number | undefined {
+  if (value === undefined || !Number.isFinite(value)) return undefined;
+  if (min === undefined || max === undefined) return undefined;
+
+  // Already in the game's units: an imported item, or one the 3D editor placed
+  // by dragging in game space.
+  if (value >= min && value <= max) return value;
+
+  // A percentage of the preview stage. 0 is the left/top edge, 100 the
+  // right/bottom, so the midpoint of the range is the middle of the weapon.
+  if (value >= 0 && value <= 100) {
+    const t = invert && Y_GROWS_DOWNWARD ? 1 - value / 100 : value / 100;
+    const mapped = min + t * (max - min);
+    return Math.min(max, Math.max(min, mapped));
+  }
+
+  return undefined;
+}
 export function sanitisePlacement(
   skinId: number,
   placement: { x?: number; y?: number; rotation?: number },
@@ -509,11 +555,8 @@ export function sanitisePlacement(
     : [item.getMinimumKeychainOffsetX(), item.getMaximumKeychainOffsetX(),
        item.getMinimumKeychainOffsetY(), item.getMaximumKeychainOffsetY()];
 
-  const outside = (v: number | undefined, min?: number, max?: number) =>
-    v !== undefined && (!Number.isFinite(v) || (min !== undefined && v < min) || (max !== undefined && v > max));
-
-  if (outside(placement.x, xMin, xMax)) placement.x = undefined;
-  if (outside(placement.y, yMin, yMax)) placement.y = undefined;
+  placement.x = toGameOffset(placement.x, xMin, xMax);
+  placement.y = toGameOffset(placement.y, yMin, yMax, true);
 
   // The game takes -180..180. The editor's rotation happens to share that range,
   // so this only catches something genuinely broken.
