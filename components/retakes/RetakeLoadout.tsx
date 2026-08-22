@@ -2,21 +2,18 @@
 
 import { useCallback, useEffect, useMemo, useState } from "react";
 import { motion, AnimatePresence } from "framer-motion";
-import { Crosshair, Ghost, Target, Anchor, RotateCcw, Mic, Users, Package, StickyNote, Ban, X, ShieldPlus, type LucideIcon } from "lucide-react";
+import { Crosshair, Ghost, Target, Anchor, RotateCcw, Mic, Users, Package, StickyNote, Ban, X, type LucideIcon } from "lucide-react";
 import { useI18n } from "@/components/I18nProvider";
+import BundlePicker from "@/components/retakes/BundlePicker";
+import MapPreferences from "@/components/retakes/MapPreferences";
+import RetakesIcon from "@/components/retakes/RetakesIcon";
+import { RETAKES_MAPS, mapName } from "@/lib/maps";
 import {
-  DEFAULT_UTILITY,
-  ITEMS,
   ROLES,
-  ROUND_KINDS,
-  SLOTS,
-  UTILITY,
-  choicesFor,
+  SLOT_FOR_ROUND,
+  type BundleSelection,
   type RoundKind,
   type Side,
-  type Slot,
-  type UtilityId,
-  type UtilityPrefs,
   type WeaponPrefs,
 } from "@/lib/retakeLoadout";
 import "@/app/loadout/loadout.css";
@@ -48,37 +45,26 @@ type Icons = {
 // better than implying the server is quietly ignoring you.
 
 type Loadout = {
+  /** The choice. Armour, grenades and the kit are read out of it server-side. */
+  bundles: BundleSelection;
+  /** Guns picked outside a bundle; they layer over it rather than replacing it. */
   weapons: WeaponPrefs;
   roleT: string;
   roleCt: string;
   isCaller: boolean;
-  utility: UtilityPrefs;
   notes: string;
-  kevlarPistolT: boolean;
-  kevlarPistolCt: boolean;
 };
 
 const EMPTY: Loadout = {
+  bundles: {},
   weapons: {},
   roleT: "",
   roleCt: "",
   isCaller: false,
-  utility: DEFAULT_UTILITY,
   notes: "",
-  kevlarPistolT: false,
-  kevlarPistolCt: false,
-};
-
-const ROUND_SLOTS: Record<RoundKind, Slot[]> = {
-  pistol: ["PistolRound"],
-  half: ["HalfBuyPrimary", "Secondary"],
-  full: ["FullBuyPrimary", "Secondary"],
 };
 
 const SIDES: Side[] = ["T", "CT"];
-
-/** Side accent, used as the tint behind every buy-menu-style icon chip. */
-const SIDE_TINT: Record<Side, string> = { T: "#e0a94a", CT: "#6aa9e0" };
 
 const ROLE_ICON: Record<string, LucideIcon> = {
   sniper: Crosshair,
@@ -88,42 +74,16 @@ const ROLE_ICON: Record<string, LucideIcon> = {
   rotator: RotateCcw,
 };
 
-/** The cheap pistol-round buy for each side — the one a kevlar toggle makes sense next to. */
-const CHEAP_PISTOL: Record<Side, number> = { T: ITEMS.Glock, CT: ITEMS.USPS };
-
 /**
- * A pick button's face: the item's icon, or its name when there is no icon.
- *
- * The old version hid the image on error and left the button completely empty,
- * so a gun the icon source did not have was indistinguishable from no gun at
- * all. A button on a settings page must always say what it does, so the name is
- * the fallback rather than nothing.
+ * `glyph` is one of the hand-drawn set, `Icon` a lucide fallback for the two
+ * jobs nothing in that set covers — the existing rule of thumb, not a second
+ * icon system.
  */
-function PickIcon({ src, name }: { src?: string; name: string }) {
-  const [failed, setFailed] = useState(false);
-
-  return (
-    <span className="lo-icon-chip">
-      {!src || failed ? (
-        <span className="lo-pick-name">{name}</span>
-      ) : (
-        <img
-          src={src}
-          alt={name}
-          className="lo-weapon-img"
-          loading="lazy"
-          draggable={false}
-          onError={() => setFailed(true)}
-        />
-      )}
-    </span>
-  );
-}
-
 const TABS = [
-  { id: "role", labelKey: "loadout.tab.role", Icon: Users },
-  { id: "loadout", labelKey: "loadout.tab.loadout", Icon: Package },
-  { id: "notes", labelKey: "loadout.tab.notes", Icon: StickyNote },
+  { id: "loadout", labelKey: "loadout.tab.loadout", glyph: "loadout", Icon: Package },
+  { id: "maps", labelKey: "loadout.tab.maps", glyph: "maps", Icon: null },
+  { id: "role", labelKey: "loadout.tab.role", glyph: null, Icon: Users },
+  { id: "notes", labelKey: "loadout.tab.notes", glyph: null, Icon: StickyNote },
 ] as const;
 type TabId = (typeof TABS)[number]["id"];
 
@@ -133,24 +93,8 @@ const SITES = ["A", "B"] as const;
 
 type MapRole = { map: string; side: Side; roleId: string; site: "A" | "B" | null };
 
-/**
- * The ten-map competitive pool, mirrored from RetakesLobby's own MAP_LABEL —
- * duplicated rather than imported, the same trade that file already made:
- * a client component pulling from another page's component would drag its
- * whole socket-driven lobby bundle along for one lookup table.
- */
-const MAP_POOL: { id: string; label: string }[] = [
-  { id: "de_mirage", label: "Mirage" },
-  { id: "de_inferno", label: "Inferno" },
-  { id: "de_nuke", label: "Nuke" },
-  { id: "de_overpass", label: "Overpass" },
-  { id: "de_vertigo", label: "Vertigo" },
-  { id: "de_ancient", label: "Ancient" },
-  { id: "de_anubis", label: "Anubis" },
-  { id: "de_dust2", label: "Dust II" },
-  { id: "de_train", label: "Train" },
-  { id: "de_cache", label: "Cache" },
-];
+/** The pool, as the map-role grid wants it. One table, in lib/maps. */
+const MAP_POOL = RETAKES_MAPS.map((id) => ({ id, label: mapName(id) }));
 
 /** Every selectable option for one side inside the bubble: a role, optionally split into its sites. */
 type RoleOption = { roleId: string; site: "A" | "B" | null; label: string };
@@ -348,7 +292,12 @@ function RoleColumn({
   const roles = useMemo(() => ROLES.filter((r) => r.side === side || r.side === "both"), [side]);
 
   return (
-    <div className="lo-side-col" style={{ ["--chip-tint" as string]: SIDE_TINT[side] }}>
+    // The tint used to be a hex written out here. It is a token now, so this
+    // side and every other T/CT surface on the site move together.
+    <div
+      className="lo-side-col"
+      style={{ ["--chip-tint" as string]: `var(--color-team-${side.toLowerCase()})` }}
+    >
       <span className={`lo-side-col-label ${side.toLowerCase()}`}>{t(`loadout.side.${side}`)}</span>
       <div className="lo-roles">
         {roles.map((r) => {
@@ -392,7 +341,6 @@ export default function RetakeLoadoutPage({
   const [saving, setSaving] = useState(false);
   const [dirty, setDirty] = useState(false);
   const [note, setNote] = useState<{ kind: "ok" | "err"; text: string } | null>(null);
-  const [hoveredItem, setHoveredItem] = useState<{ name: string; x: number; y: number } | null>(null);
 
   useEffect(() => {
     if (!signedIn) return;
@@ -402,14 +350,12 @@ export default function RetakeLoadoutPage({
         setLoadout(
           d
             ? {
-                weapons: d.weapons,
+                bundles: d.bundles ?? {},
+                weapons: d.weapons ?? {},
                 roleT: d.roleT,
                 roleCt: d.roleCt,
                 isCaller: d.isCaller ?? false,
-                utility: d.utility,
                 notes: d.notes,
-                kevlarPistolT: d.kevlarPistolT ?? false,
-                kevlarPistolCt: d.kevlarPistolCt ?? false,
               }
             : EMPTY
         )
@@ -428,21 +374,30 @@ export default function RetakeLoadoutPage({
     setDirty(true);
   }, []);
 
-  const setWeapon = (side: Side, slot: Slot, itemId: number | null) =>
-    patch((l) => ({
-      ...l,
-      weapons: {
-        ...l.weapons,
-        [side]: { ...(l.weapons[side] ?? {}), [slot]: itemId ?? undefined },
-      },
-    }));
-
-  /** Click to add, click again to remove; order is the preference order. */
-  const toggleUtility = (kind: RoundKind, id: UtilityId) =>
+  /** Choose (or clear) the option one side takes for one round type. */
+  const setBundle = (side: Side, kind: RoundKind, bundleId: string | null) =>
     patch((l) => {
-      const current = l.utility[kind] ?? [];
-      const next = current.includes(id) ? current.filter((x) => x !== id) : [...current, id];
-      return { ...l, utility: { ...l.utility, [kind]: next } };
+      const forSide = { ...(l.bundles[side] ?? {}) };
+      if (bundleId) forSide[kind] = bundleId;
+      else delete forSide[kind];
+      return { ...l, bundles: { ...l.bundles, [side]: forSide } };
+    });
+
+  /**
+   * A gun chosen outside any option.
+   *
+   * Layered over the option rather than replacing it: swapping the rifle in
+   * "Rifle + full util" for an AUG should keep the armour and the grenades,
+   * because that is what swapping one gun means. Clearing it hands the slot
+   * back to whatever the option asked for.
+   */
+  const setWeaponOverride = (side: Side, kind: RoundKind, itemId: number | null) =>
+    patch((l) => {
+      const slot = SLOT_FOR_ROUND[kind];
+      const forSide = { ...(l.weapons[side] ?? {}) };
+      if (itemId === null) delete forSide[slot];
+      else forSide[slot] = itemId;
+      return { ...l, weapons: { ...l.weapons, [side]: forSide } };
     });
 
   const save = async () => {
@@ -460,14 +415,12 @@ export default function RetakeLoadoutPage({
         setNote({ kind: "err", text: json.error ?? t("loadout.savefailed") });
       } else {
         setLoadout({
-          weapons: json.weapons,
+          bundles: json.bundles ?? {},
+          weapons: json.weapons ?? {},
           roleT: json.roleT,
           roleCt: json.roleCt,
           isCaller: json.isCaller ?? false,
-          utility: json.utility,
           notes: json.notes,
-          kevlarPistolT: json.kevlarPistolT ?? false,
-          kevlarPistolCt: json.kevlarPistolCt ?? false,
         });
         setDirty(false);
         setNote({ kind: "ok", text: t("loadout.saved") });
@@ -507,7 +460,7 @@ export default function RetakeLoadoutPage({
       ) : (
         <>
           <div className="lo-tabs" role="tablist">
-            {TABS.map(({ id, labelKey, Icon }) => (
+            {TABS.map(({ id, labelKey, glyph, Icon }) => (
               <button
                 key={id}
                 role="tab"
@@ -515,7 +468,7 @@ export default function RetakeLoadoutPage({
                 className={`lo-tab ${tab === id ? "on" : ""}`}
                 onClick={() => setTab(id)}
               >
-                <Icon size={15} />
+                {glyph ? <RetakesIcon id={glyph} size={15} /> : Icon ? <Icon size={15} /> : null}
                 {t(labelKey)}
                 {id === "role" && loadout.isCaller && <span className="lo-tab-badge">C</span>}
                 {tab === id && (
@@ -562,90 +515,23 @@ export default function RetakeLoadoutPage({
             </header>
             <p className="lo-hint">{t("loadout.weaponhint")}</p>
 
-            <div className="lo-rounds">
-              {ROUND_KINDS.map((kind) => (
-                <div key={kind} className="lo-round">
-                  <h3>{t(`loadout.round.${kind}`)}</h3>
-                  <p className="lo-round-sub">{t(`loadout.round.${kind}.sub`)}</p>
+            <BundlePicker
+              selection={loadout.bundles}
+              weapons={loadout.weapons}
+              weaponIcons={icons.weapons}
+              onPick={setBundle}
+              onWeapon={setWeaponOverride}
+            />
+          </motion.section>
+          )}
 
-                  <div className="lo-side-grid">
-                    {SIDES.map((side) => (
-                      <div key={side} className="lo-side-col" style={{ ["--chip-tint" as string]: SIDE_TINT[side] }}>
-                        <span className={`lo-side-col-label ${side.toLowerCase()}`}>{t(`loadout.side.${side}`)}</span>
-
-                        {ROUND_SLOTS[kind].map((slot) => {
-                          const meta = SLOTS.find((s) => s.id === slot)!;
-                          const options = choicesFor(slot, side);
-                          const value = loadout.weapons[side]?.[slot] ?? null;
-                          return (
-                            <div key={slot} className="lo-slot">
-                              <span className="lo-slot-label">{t(meta.labelKey)}</span>
-                              <div className="lo-picks">
-                                {options.map((o) => (
-                                  <button
-                                    key={o.id}
-                                    className={`lo-pick weapon ${value === o.id ? "on" : ""}`}
-                                    aria-label={o.name}
-                                    aria-pressed={value === o.id}
-                                    onClick={() => setWeapon(side, slot, o.id)}
-                                    onMouseEnter={(e) => setHoveredItem({ name: o.name, x: e.clientX, y: e.clientY })}
-                                    onMouseMove={(e) => setHoveredItem((prev) => (prev ? { ...prev, x: e.clientX, y: e.clientY } : null))}
-                                    onMouseLeave={() => setHoveredItem(null)}
-                                  >
-                                    <PickIcon src={icons.weapons[o.id]} name={o.name} />
-                                  </button>
-                                ))}
-                              </div>
-                            </div>
-                          );
-                        })}
-
-                        {kind === "pistol" && loadout.weapons[side]?.PistolRound === CHEAP_PISTOL[side] && (
-                          <button
-                            className={`lo-kevlar ${(side === "T" ? loadout.kevlarPistolT : loadout.kevlarPistolCt) ? "on" : ""}`}
-                            onClick={() =>
-                              patch((l) =>
-                                side === "T"
-                                  ? { ...l, kevlarPistolT: !l.kevlarPistolT }
-                                  : { ...l, kevlarPistolCt: !l.kevlarPistolCt }
-                              )
-                            }
-                          >
-                            <ShieldPlus size={15} />
-                            {t("loadout.kevlar")}
-                          </button>
-                        )}
-
-                        <div className="lo-slot">
-                          <span className="lo-slot-label">{t("loadout.utility")}</span>
-                          <div className="lo-picks">
-                            {UTILITY.map((u) => {
-                              const order = (loadout.utility[kind] ?? []).indexOf(u);
-                              const label = t(`utility.type.${u}`);
-                              return (
-                                <button
-                                  key={u}
-                                  className={`lo-pick util ${order >= 0 ? "on" : ""}`}
-                                  aria-label={label}
-                                  aria-pressed={order >= 0}
-                                  onClick={() => toggleUtility(kind, u)}
-                                  onMouseEnter={(e) => setHoveredItem({ name: label, x: e.clientX, y: e.clientY })}
-                                  onMouseMove={(e) => setHoveredItem((prev) => (prev ? { ...prev, x: e.clientX, y: e.clientY } : null))}
-                                  onMouseLeave={() => setHoveredItem(null)}
-                                >
-                                  {order >= 0 && <span className="lo-order">{order + 1}</span>}
-                                  <PickIcon src={icons.utility[side]?.[u]} name={label} />
-                                </button>
-                              );
-                            })}
-                          </div>
-                        </div>
-                      </div>
-                    ))}
-                  </div>
-                </div>
-              ))}
-            </div>
+          {tab === "maps" && (
+          <motion.section key="maps" className="lo-panel" initial={{ opacity: 0, y: 6 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, y: -6 }} transition={{ duration: 0.15 }}>
+            <header className="lo-panel-head">
+              <h2>{t("loadout.maps.title")}</h2>
+              <span className="lo-tag game">{t("loadout.ingame")}</span>
+            </header>
+            <MapPreferences />
           </motion.section>
           )}
 
@@ -677,11 +563,6 @@ export default function RetakeLoadoutPage({
         </>
       )}
 
-      {hoveredItem && (
-        <div style={{ position: "fixed", top: hoveredItem.y + 15, left: hoveredItem.x + 15, background: "rgba(0,0,0,0.85)", color: "white", padding: "6px 10px", borderRadius: "6px", pointerEvents: "none", zIndex: 9999, fontSize: "14px", fontWeight: "bold", border: "1px solid rgba(255,255,255,0.1)", whiteSpace: "nowrap" }}>
-          {hoveredItem.name}
-        </div>
-      )}
     </div>
   );
 }

@@ -209,8 +209,10 @@
   font-size: 11px; font-weight: 800; letter-spacing: 0.08em; text-transform: uppercase;
   border: 1.5px solid var(--lo-edge);
 }
-.lo-side-col-label.t { color: #e0a94a; border-color: color-mix(in srgb, #e0a94a 45%, transparent); background: color-mix(in srgb, #e0a94a 12%, transparent); }
-.lo-side-col-label.ct { color: #6aa9e0; border-color: color-mix(in srgb, #6aa9e0 45%, transparent); background: color-mix(in srgb, #6aa9e0 12%, transparent); }
+/* A third pair of team colours used to live here — #e0a94a and #6aa9e0, near
+   but not equal to the two pairs in globals.css. They are tokens now. */
+.lo-side-col-label.t { color: var(--color-team-t); border-color: color-mix(in srgb, var(--color-team-t) 45%, transparent); background: color-mix(in srgb, var(--color-team-t) 12%, transparent); }
+.lo-side-col-label.ct { color: var(--color-team-ct); border-color: color-mix(in srgb, var(--color-team-ct) 45%, transparent); background: color-mix(in srgb, var(--color-team-ct) 12%, transparent); }
 
 .lo-rounds { display: grid; grid-template-columns: repeat(auto-fit, minmax(520px, 1fr)); gap: 16px; }
 .lo-round {
@@ -316,3 +318,194 @@
 .lo-note { font-size: 13px; font-weight: 600; }
 .lo-note.ok { color: #6fcf7f; }
 .lo-note.err { color: #e08a6a; }
+
+/* ─────────────────────────────────────────────────────────────────────────
+   Options, not eight dropdowns.
+
+   Each card is one answer for one round type, and the bubble in its corner
+   says which side it is the answer for. The card's colour is the readout:
+   amber for T, blue for CT, and split down the middle for both — which a
+   player recognises before they have read a word of it, and which is the
+   whole reason this is one grid rather than two side tabs.
+   ───────────────────────────────────────────────────────────────────────── */
+
+.lo-bundles { display: grid; gap: 18px; }
+
+.lo-bundle-round {
+  position: relative;
+  padding: 20px; border-radius: 14px;
+  border: 1px solid var(--lo-edge);
+  background: color-mix(in srgb, var(--color-text) 2%, transparent);
+}
+
+.lo-bundle-head { display: flex; align-items: flex-start; justify-content: space-between; gap: 12px; margin-bottom: 16px; }
+.lo-bundle-head h3 { display: flex; align-items: center; gap: 8px; margin: 0 0 4px; font-size: 16px; }
+.lo-bundle-head p { margin: 0; font-size: 12px; color: var(--muted); }
+
+.lo-bundle-status {
+  flex-shrink: 0;
+  padding: 4px 12px; border-radius: 999px;
+  font-size: 10px; font-weight: 800; letter-spacing: 0.08em; text-transform: uppercase;
+  border: 1.5px solid var(--lo-edge); color: var(--muted);
+}
+.lo-bundle-status.on {
+  color: var(--color-accent);
+  border-color: color-mix(in srgb, var(--color-accent) 45%, transparent);
+  background: color-mix(in srgb, var(--color-accent) 10%, transparent);
+}
+
+.lo-bundle-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(168px, 1fr)); gap: 10px; }
+
+.lo-bundle {
+  position: relative;
+  display: flex; flex-direction: column; align-items: flex-start; gap: 8px;
+  padding: 14px 12px 12px; border-radius: 12px;
+  border: 1.5px solid var(--lo-edge);
+  background: var(--color-bg);
+  color: var(--color-text);
+  text-align: left; cursor: pointer;
+  transition: border-color 0.14s, transform 0.14s, background 0.18s;
+}
+.lo-bundle:hover { transform: translateY(-1px); border-color: color-mix(in srgb, var(--color-text) 28%, transparent); }
+.lo-bundle:disabled { opacity: 0.45; cursor: not-allowed; transform: none; }
+
+.lo-bundle-name { font-weight: 700; font-size: 13px; line-height: 1.25; }
+
+.lo-bundle-kit { display: flex; align-items: center; gap: 6px; flex-wrap: wrap; color: var(--muted); }
+.lo-bundle-bare { font-size: 11px; letter-spacing: 0.04em; text-transform: uppercase; }
+
+.lo-bundle-ctonly {
+  font-size: 9px; font-weight: 800; letter-spacing: 0.1em; text-transform: uppercase;
+  color: var(--color-team-ct);
+}
+
+/* The bubble: empty and outlined when unset, filled with the side when not. */
+.lo-bundle-bubble {
+  position: absolute; top: 8px; right: 8px;
+  min-width: 26px; height: 20px; padding: 0 6px;
+  display: inline-flex; align-items: center; justify-content: center;
+  border-radius: 999px; border: 1.5px solid var(--lo-edge);
+  font-size: 9px; font-weight: 800; letter-spacing: 0.06em;
+  background: var(--color-bg);
+}
+
+.lo-bundle-t {
+  border-color: color-mix(in srgb, var(--color-team-t) 60%, transparent);
+  background: color-mix(in srgb, var(--color-team-t) 16%, var(--color-bg));
+}
+.lo-bundle-ct {
+  border-color: color-mix(in srgb, var(--color-team-ct) 60%, transparent);
+  background: color-mix(in srgb, var(--color-team-ct) 16%, var(--color-bg));
+}
+/* Both: a hard split rather than a blend, so it never reads as a third colour. */
+.lo-bundle-both {
+  border-color: color-mix(in srgb, var(--color-text) 34%, transparent);
+  background: linear-gradient(
+    100deg,
+    color-mix(in srgb, var(--color-team-t) 16%, var(--color-bg)) 0 50%,
+    color-mix(in srgb, var(--color-team-ct) 16%, var(--color-bg)) 50% 100%
+  );
+}
+.lo-bundle-t .lo-bundle-bubble { color: var(--color-team-t); border-color: color-mix(in srgb, var(--color-team-t) 60%, transparent); }
+.lo-bundle-ct .lo-bundle-bubble { color: var(--color-team-ct); border-color: color-mix(in srgb, var(--color-team-ct) 60%, transparent); }
+.lo-bundle-both .lo-bundle-bubble { color: var(--color-text); }
+
+/* Everything else, behind one control, opening over the grid rather than
+   replacing it — the grid stays mounted so closing is instant. */
+.lo-bundle-other {
+  margin-top: 14px;
+  display: inline-flex; align-items: center; gap: 8px;
+  padding: 7px 14px; border-radius: 999px;
+  border: 1.5px dashed var(--lo-edge);
+  background: transparent; color: var(--muted);
+  font-size: 12px; font-weight: 700; cursor: pointer;
+}
+.lo-bundle-other:hover { color: var(--color-text); border-color: color-mix(in srgb, var(--color-text) 30%, transparent); }
+.lo-bundle-other-count {
+  min-width: 18px; height: 18px; padding: 0 5px;
+  display: inline-flex; align-items: center; justify-content: center;
+  border-radius: 999px; font-size: 10px; font-weight: 800;
+  background: var(--color-accent); color: #fff;
+}
+
+.lo-bundle-drawer {
+  position: absolute; inset: 0; z-index: 3;
+  overflow-y: auto;
+  padding: 20px; border-radius: 14px;
+  border: 1.5px solid color-mix(in srgb, var(--color-accent) 40%, transparent);
+  background: var(--lo-panel);
+  box-shadow: 0 18px 50px rgba(0, 0, 0, 0.4);
+}
+.lo-bundle-drawer-head { position: relative; margin-bottom: 16px; padding-right: 32px; }
+.lo-bundle-drawer-head h4 { margin: 0 0 4px; font-size: 14px; }
+.lo-bundle-drawer-head p { margin: 0; font-size: 12px; color: var(--muted); }
+.lo-bundle-drawer-close {
+  position: absolute; top: -4px; right: -4px;
+  width: 28px; height: 28px; display: grid; place-items: center;
+  border-radius: 999px; border: 1px solid var(--lo-edge);
+  background: transparent; color: var(--muted); cursor: pointer;
+}
+
+.lo-bundle-drawer-side { margin-bottom: 16px; }
+.lo-bundle-drawer-side.side-T { --drawer-tint: var(--color-team-t); }
+.lo-bundle-drawer-side.side-CT { --drawer-tint: var(--color-team-ct); }
+.lo-bundle-drawer-label {
+  display: inline-block; margin-bottom: 8px;
+  padding: 3px 12px; border-radius: 999px;
+  font-size: 11px; font-weight: 800; letter-spacing: 0.08em; text-transform: uppercase;
+  color: var(--drawer-tint);
+  border: 1.5px solid color-mix(in srgb, var(--drawer-tint) 45%, transparent);
+  background: color-mix(in srgb, var(--drawer-tint) 12%, transparent);
+}
+.lo-bundle-drawer-guns { display: flex; flex-wrap: wrap; gap: 6px; }
+.lo-bundle-drawer-note { display: block; margin-top: 8px; font-size: 11px; color: var(--muted); }
+
+.lo-gun {
+  display: inline-flex; align-items: center; gap: 6px;
+  padding: 6px 11px; border-radius: 8px;
+  border: 1.5px solid var(--lo-edge);
+  background: var(--color-bg); color: var(--color-text);
+  font-size: 12px; cursor: pointer;
+}
+.lo-gun img { height: 16px; width: auto; }
+.lo-gun:hover { border-color: color-mix(in srgb, var(--color-text) 30%, transparent); }
+.lo-gun.on {
+  border-color: color-mix(in srgb, var(--drawer-tint, var(--color-accent)) 65%, transparent);
+  background: color-mix(in srgb, var(--drawer-tint, var(--color-accent)) 16%, var(--color-bg));
+}
+
+/* ───────────────────────────────── map preferences ───────────────────── */
+
+.lo-maps-count {
+  display: inline-flex; align-items: center; gap: 7px;
+  margin-bottom: 14px;
+  font-size: 11px; font-weight: 800; letter-spacing: 0.08em; text-transform: uppercase;
+  color: var(--muted);
+}
+
+.lo-maps-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(180px, 1fr)); gap: 10px; }
+
+.lo-map {
+  position: relative;
+  padding: 0; border-radius: 12px; overflow: hidden;
+  border: 1.5px solid var(--lo-edge);
+  background: var(--color-bg); color: var(--color-text);
+  cursor: pointer; text-align: left;
+  transition: border-color 0.14s, transform 0.14s;
+}
+.lo-map:hover { transform: translateY(-1px); border-color: color-mix(in srgb, var(--color-text) 28%, transparent); }
+.lo-map img { display: block; width: 100%; aspect-ratio: 16 / 9; object-fit: cover; }
+.lo-map-name { display: block; padding: 9px 12px; font-size: 12px; font-weight: 700; }
+
+/* Dropped reads as struck through rather than merely dimmer: at a glance,
+   "off" and "this screenshot is a dark one" are the same thing. */
+.lo-map.dropped { border-color: color-mix(in srgb, var(--color-accent) 55%, transparent); }
+.lo-map.dropped img { filter: grayscale(1) brightness(0.45); }
+.lo-map-dropped {
+  position: absolute; inset: 0 0 auto; height: 56.25%;
+  display: grid; place-items: center;
+  color: var(--color-accent);
+  pointer-events: none;
+}
+
+.lo-maps-save { margin-top: 16px; }
