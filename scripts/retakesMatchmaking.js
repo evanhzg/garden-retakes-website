@@ -1156,26 +1156,20 @@ function attachRetakesMatchmaking(
       await waitForMap(match);
 
       const rosters = match.teams.map(rosterIds);
+      const botCounts = match.teams.map((t) => t.players.filter((p) => p.bot).length);
 
-      // A rated match needs two rosters of real accounts. The training queue
-      // fills with bots, which have no SteamID64 to name, so there is nothing
-      // for the plugin to build a competitive match out of — and asking it to
-      // anyway would have it refuse, quietly, while this went on to hand out a
-      // connect string for a match that never started. Training gets the map
-      // and the address, and says so.
-      if (rosters.some((ids) => ids.length === 0)) {
-        // Straight to ready rather than through setStep: "training" is not one
-        // of the steps the lobby draws pips for, and flashing an unknown one
-        // would render its missing translation key.
-        console.log(
-          `[retakes ${match.id}] bots on a side — map only, no competitive match`
-        );
-        match.connect = CONNECT_ADDRESS;
-        match.server = { state: "ready", step: null, error: null, competitive: false };
-        syncMatch(match);
-        return;
-      }
-
+      // This used to stop here.
+      //
+      // A side filled with bots has no SteamID64 to put on a roster, so there
+      // was nothing to build a competitive match out of, and rather than have
+      // the plugin refuse quietly this handed out the map and the address and
+      // called it done. Which meant the one queue a person could try alone was
+      // the one queue that started no match, ran no rounds and proved nothing.
+      //
+      // css_cr_bots is the other half: a team is a full team however it is
+      // filled, and the plugin holds the count and the sides for both kinds of
+      // player. A testing match now goes through exactly the same commands a
+      // real one does, which is the entire point of having one.
       setStep("roster");
       await rconStep(match.id, "css_cr_reset");
       for (let i = 0; i < match.teams.length; i++) {
@@ -1184,6 +1178,10 @@ function attachRetakesMatchmaking(
           ...rosters[i],
         ];
         await rconStep(match.id, args.join(" "));
+
+        if (botCounts[i] > 0) {
+          await rconStep(match.id, `css_cr_bots ${i} ${botCounts[i]}`);
+        }
       }
       await rconStep(match.id, `css_cr_side 0 ${match.teams[0].side === "T" ? "T" : "CT"}`);
 
@@ -1204,7 +1202,11 @@ function attachRetakesMatchmaking(
 
       match.connect = CONNECT_ADDRESS;
       match.server = { state: "ready", step: null, error: null, competitive: true };
-      console.log(`[retakes ${match.id}] live on ${match.map} — ${CONNECT_ADDRESS}`);
+      const bots = botCounts[0] + botCounts[1];
+      console.log(
+        `[retakes ${match.id}] live on ${match.map} — ${CONNECT_ADDRESS}` +
+        (bots > 0 ? ` (${botCounts[0]}/${botCounts[1]} bots)` : "")
+      );
       syncMatch(match);
     } catch (err) {
       // No connect string, and the lobby is told so. A party sent to a server
