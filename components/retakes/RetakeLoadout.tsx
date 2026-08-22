@@ -293,7 +293,7 @@ function MapRoleOverrides() {
               onClick={() => setOpenMap(m.id)}
             >
               <span className="lo-mapcard-art">
-                <img src={`/maps/${m.id}.png`} alt="" loading="lazy" draggable={false} />
+                <img src={`/maps/${m.id}.webp`} alt="" loading="lazy" draggable={false} />
                 {Icon && (
                   <span className="lo-mapcard-badge">
                     <span className="lo-mapcard-badge-icon">

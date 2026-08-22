@@ -142,7 +142,9 @@ export default function HeatmapClient({ users }: { users: any[] }) {
           )}
           <div style={{ position: 'absolute', inset: 0, zIndex: 0 }}>
             <Image
-              src={`/maps/${map.id}.png`}
+              // A radar, deliberately: this is a top-down plot with points
+              // burned onto it, and /maps is photographs of the map now.
+              src={`/radars/${map.id}.png`}
               alt={map.name}
               fill
               style={{ objectFit: 'contain', opacity: 0.7, mixBlendMode: 'screen', pointerEvents: 'none' }}

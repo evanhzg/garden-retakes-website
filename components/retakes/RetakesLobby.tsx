@@ -988,7 +988,7 @@ function MatchRoom({
             <div className="rq-ready">
               <div className="rq-ready-map">
                 {/* eslint-disable-next-line @next/next/no-img-element */}
-                <img src={`/maps/${match.result.map}.png`} alt={mapName(match.result.map)} />
+                <img src={`/maps/${match.result.map}.webp`} alt={mapName(match.result.map)} />
                 <span className="rq-ready-name">{mapName(match.result.map)}</span>
               </div>
               <div className="rq-sides">
@@ -1066,7 +1066,7 @@ function MatchRoom({
                       onClick={() => onBan(m)}
                     >
                       {/* eslint-disable-next-line @next/next/no-img-element */}
-                      <img src={`/maps/${m}.png`} alt="" loading="lazy" />
+                      <img src={`/maps/${m}.webp`} alt="" loading="lazy" />
                       <span className="rq-map-name">{mapName(m)}</span>
                       {ban && (
                         <span className="rq-map-ban">

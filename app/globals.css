@@ -19,6 +19,14 @@
   --color-accent-2: #e15b47;
   --color-divider: color-mix(in srgb, #201e1d 40%, transparent);
 
+  /* The two sides. Not part of the Modernist ramp — these are the game's
+     colours, not ours, and a player reads them faster than any label. They were
+     written out by hand in four places before they were tokens; anything
+     showing a side should read these, and tint with color-mix rather than
+     inventing a lighter one. */
+  --color-team-t: #f59e0b;
+  --color-team-ct: #3b82f6;
+
   --color-neutral-100: #f8f4f4;
   --color-neutral-200: #eae7e7;
   --color-neutral-300: #d7d3d3;
@@ -99,6 +107,11 @@
   --color-accent: #ff4a28;
   --color-accent-2: #ef6853;
   --color-divider: color-mix(in srgb, #f3f2f2 28%, transparent);
+
+  /* The amber carries onto a dark ground unchanged; the blue does not — #3b82f6
+     goes muddy against #1a1918 and stops reading as CT at a glance. */
+  --color-team-t: #f5a623;
+  --color-team-ct: #4f93ff;
 
   --color-neutral-100: #2d2b2b;
   --color-neutral-200: #383535;
@@ -1223,11 +1236,11 @@ tbody tr:hover {
 }
 
 .item-card .sub.team-ct {
-  color: #3b82f6;
+  color: var(--color-team-ct);
 }
 
 .item-card .sub.team-t {
-  color: #f59e0b;
+  color: var(--color-team-t);
 }
 
 @media (max-width: 640px) {
@@ -2854,11 +2867,11 @@ body {
 }
 
 .wr-team.team-ct {
-  color: #3b82f6;
+  color: var(--color-team-ct);
 }
 
 .wr-team.team-t {
-  color: #f59e0b;
+  color: var(--color-team-t);
 }
 
 /* Editor (center) */

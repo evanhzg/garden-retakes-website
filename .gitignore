@@ -33,3 +33,7 @@ data/avatars/
 # Source2Viewer CLI — 50 MB of native binaries, fetched per-platform (tools/extract-radars.mjs)
 tools/bin/
 .aider*
+
+# .NET build output for tools/map-screenshots
+tools/map-screenshots/bin/
+tools/map-screenshots/obj/
