@@ -389,9 +389,43 @@ model GardenRetakeLoadout {
   /// shown only when that gun is picked — team-only, same as role/notes.
   KevlarPistolT  Boolean  @default(false)
   KevlarPistolCt Boolean  @default(false)
+  /// Which bundle is chosen for each side and round type — the loadout picker's
+  /// source of truth, and the only field it writes directly:
+  /// { "T": { "pistol": "<id>", "half": "<id>", "full": "<id>" }, "CT": {...} }
+  ///
+  /// Everything below is derived from it on save, and gets its own column so the
+  /// game server can read a preference without parsing JSON in SQL. The weapon
+  /// half of a bundle is not here at all — it is written through to
+  /// UserSettings.WeaponPreferences, which the allocator plugin has always read
+  /// and still owns.
+  Bundles        String?  @db.Text
+  KevlarForceT   Boolean  @default(false)
+  KevlarForceCt  Boolean  @default(false)
+  KevlarFullT    Boolean  @default(false)
+  KevlarFullCt   Boolean  @default(false)
+  /// Defuse kit, CT only — there is nothing for a T to defuse.
+  KitForceCt     Boolean  @default(false)
+  KitFullCt      Boolean  @default(false)
   UpdatedAt      DateTime @default(now()) @updatedAt @db.DateTime(6)
 
   @@map("GardenRetakeLoadouts")
+}
+
+/// Maps a player never wants to be sent to. Up to four of the ten, and it is a
+/// preference rather than a veto: the matchmaker pairs two parties only when
+/// what both captains allow still leaves enough maps to run a veto on, and
+/// widens what counts as enough the longer they have waited.
+///
+/// Saved per account so it is set once and pre-fills the lobby, where a captain
+/// can adjust it for one queue without writing the change back.
+model GardenMapPreference {
+  SteamId   BigInt   @id @db.UnsignedBigInt
+  /// JSON string[] of de_ map names. At most four; longer lists are trimmed on
+  /// read, so a row left over from a wider pool cannot quietly empty it.
+  Excluded  String   @default("[]") @db.Text
+  UpdatedAt DateTime @default(now()) @updatedAt @db.DateTime(6)
+
+  @@map("GardenMapPreferences")
 }
 
 /// A role pick that only applies on one map, layered over the global
@@ -423,6 +457,11 @@ model GardenMapRolePreference {
 model GardenOnboardingState {
   SteamId                 BigInt  @id @db.UnsignedBigInt
   SeenMatchmakingTutorial Boolean @default(false)
+  /// Whether the player has been through the loadout picker. False for
+  /// everybody the day this ships, which is the point: the picker is new, the
+  /// bundles it writes did not exist before it, and a row saying "already set"
+  /// would mean a player never sees the thing that sets them.
+  CompletedRetakeSetup    Boolean @default(false)
 
   @@map("GardenOnboardingStates")
 }

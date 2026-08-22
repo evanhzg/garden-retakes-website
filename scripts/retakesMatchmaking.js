@@ -25,51 +25,69 @@
 const BOT_FILL_MS = 15_000;
 
 /**
- * The three queues.
+ * A queue is a size and two switches, not a name.
  *
- * They are queues, not game modes: all three are retakes on the same map pool,
- * and what separates them is who you are matched with. `bots` is the only one
- * allowed to invent players — a training queue exists so one person can walk
- * the whole flow end to end without five strangers, which is also why it is the
- * small one.
+ * It used to be three hard-coded queues — `bots`, `classic`, `premium` — where
+ * `bots` was 2v2 and the other two were 3v3, so "how many of us" and "who am I
+ * matched against" were the same choice and you could not have one without the
+ * other. Wanting a 2v2 premium game meant wanting a queue that did not exist.
+ *
+ * So the three became a size (`duo`/`trio`) and two modifiers:
+ *
+ *   testing — bots fill every slot nobody human took. The only way bots ever
+ *             enter a match, and it is a decision rather than a timeout.
+ *   premium — a tighter rating band. Entitlement-gated: see isPremium().
+ *
+ * Testing ignores premium rather than multiplying with it. A queue that fills
+ * itself with robots after fifteen seconds has no rating band worth tightening,
+ * and carrying the flag anyway would split a queue that is already one party.
  *
  * `band` is how far apart two parties may be rated, widening the longer the
  * party at the head of the queue has waited: `base` points at zero seconds,
- * plus `widen` per second, and never more than `base + max` in total. Premium
- * is the same game as classic with a tighter band and a slower widen — it takes
- * longer to fill and the lobby it fills with is closer together. That band is
- * the only thing separating the two, and it is meant to be tuned here.
+ * plus `widen` per second, and never more than `base + max` in total. That band
+ * is the only thing premium changes, and it is meant to be tuned here.
  */
-const QUEUES = {
-  bots: {
-    id: "bots",
-    label: "Bot Training",
-    teamSize: 2,
-    pool: "retakes",
-    /** The only queue that may fill empty slots with bots. */
-    bots: true,
-    botFillMs: BOT_FILL_MS,
-    band: { base: 400, widen: 40, max: 1600 },
-  },
-  classic: {
-    id: "classic",
-    label: "Classic Competitive",
-    teamSize: 3,
-    pool: "retakes",
-    bots: false,
-    botFillMs: null,
-    band: { base: 100, widen: 12, max: 900 },
-  },
-  premium: {
-    id: "premium",
-    label: "Premium Competitive",
-    teamSize: 3,
-    pool: "retakes",
-    bots: false,
-    botFillMs: null,
-    band: { base: 50, widen: 5, max: 300 },
-  },
+const SIZES = {
+  duo: { id: "duo", teamSize: 2 },
+  trio: { id: "trio", teamSize: 3 },
 };
+
+const BANDS = {
+  classic: { base: 100, widen: 12, max: 900 },
+  premium: { base: 50, widen: 5, max: 300 },
+  testing: { base: 400, widen: 40, max: 1600 },
+};
+
+/** The key a party's queue is stored and looked up under. */
+const queueKey = (size, premium, testing) =>
+  testing ? `${size}:test` : `${size}:${premium ? "premium" : "classic"}`;
+
+function buildQueues() {
+  const out = {};
+  for (const size of Object.values(SIZES)) {
+    for (const [premium, testing] of [[false, false], [true, false], [false, true]]) {
+      const id = queueKey(size.id, premium, testing);
+      out[id] = {
+        id,
+        size: size.id,
+        teamSize: size.teamSize,
+        premium,
+        testing,
+        pool: "retakes",
+        /** Only a testing queue may invent players. */
+        bots: testing,
+        botFillMs: testing ? BOT_FILL_MS : null,
+        band: BANDS[testing ? "testing" : premium ? "premium" : "classic"],
+        label: testing
+          ? `Testing ${size.teamSize}v${size.teamSize}`
+          : `${size.teamSize}v${size.teamSize}${premium ? " Premium" : ""}`,
+      };
+    }
+  }
+  return out;
+}
+
+const QUEUES = buildQueues();
 
 /**
  * Team sizes have to be ones the game server will accept.
@@ -96,9 +114,29 @@ for (const q of Object.values(QUEUES)) {
 }
 
 /** What a party is set to before anyone chooses. */
-const DEFAULT_QUEUE = "classic";
+const DEFAULT_SIZE = "trio";
+const DEFAULT_QUEUE = queueKey(DEFAULT_SIZE, false, false);
 
 const isQueueId = (id) => typeof id === "string" && Object.hasOwn(QUEUES, id);
+
+/**
+ * Queue names written into RetakesLobbies.Mode before this file had queues.
+ *
+ * Rows outlive schemes. `ensureParty` already fell back to the default for
+ * anything it did not recognise, which is safe but silently drops a party into
+ * 3v3 when the link they followed said 2v2 — so the ones with an obvious
+ * successor get it, and only the genuinely unknown fall back.
+ */
+const LEGACY_QUEUES = {
+  "2v2": queueKey("duo", false, false),
+  "3v3": queueKey("trio", false, false),
+  bots: queueKey("duo", false, true),
+  classic: queueKey("trio", false, false),
+  premium: queueKey("trio", true, false),
+};
+
+const resolveQueueId = (mode) =>
+  isQueueId(mode) ? mode : (LEGACY_QUEUES[mode] ?? DEFAULT_QUEUE);
 
 /**
  * Where the finished match tells people to connect.
@@ -110,7 +148,8 @@ const isQueueId = (id) => typeof id === "string" && Object.hasOwn(QUEUES, id);
 const CONNECT_ADDRESS = process.env.RETAKES_CONNECT_ADDRESS || "adrien.gamergod.net:26541";
 
 // Active duty plus Overpass, Train and Vertigo — the ten maps the site has
-// calibrated radars and art for, which is the same list.
+// calibrated radars and art for, which is the same list. Adding one here means
+// adding a screenshot too; see tools/map-screenshots.
 const MAP_POOLS = {
   retakes: [
     "de_ancient", "de_anubis", "de_cache", "de_dust2", "de_inferno",
@@ -118,10 +157,65 @@ const MAP_POOLS = {
   ],
 };
 
+/**
+ * A stored exclusion list, made safe to use.
+ *
+ * Trimmed rather than trusted: the row outlives the pool it was written
+ * against, so a player who dropped four maps that have since left the rotation
+ * must not end up excluding nothing, and one written when the cap was higher
+ * must not empty the pool. Order is the pool's, so two lists compare and
+ * display the same way whatever order they were clicked in.
+ */
+function sanitiseExcluded(input, pool) {
+  const raw = Array.isArray(input) ? input : [];
+  const wanted = new Set(raw.filter((m) => typeof m === "string"));
+  return pool.filter((m) => wanted.has(m)).slice(0, MAX_EXCLUDED_MAPS);
+}
+
+/** What one party will play, in pool order. */
+const allowedMaps = (pool, excluded) => pool.filter((m) => !excluded.includes(m));
+
 const BOT_NAMES = [
   "f0rest", "GeT_RiGhT", "s1mple", "dev1ce", "ZywOo", "NiKo", "kennyS",
   "coldzera", "olofmeister", "dupreeh", "electronic", "sh1ro", "m0NESY",
 ];
+
+/**
+ * Whether an account may turn Premium on.
+ *
+ * True for everyone today, deliberately and temporarily: the tighter band is
+ * built and the button is real, and the subscription that gates it is not. This
+ * is the one place that changes when it is — so the gate exists from the start
+ * and nothing else has to learn about it later.
+ *
+ * Mirrors isPremium() in lib/premium.ts. A copy rather than an import for the
+ * same reason effectiveElo below is one: this file is CommonJS on the socket
+ * server and that one is TypeScript in the Next build.
+ */
+// eslint-disable-next-line no-unused-vars
+const isPremium = (_steamId) => true;
+
+/**
+ * Map preferences, and what they cost.
+ *
+ * A captain may drop up to four of the ten. Both captains' drops are honoured —
+ * a map either of them refused is not in the veto — which with two captains at
+ * four each could leave two maps out of ten, and two maps is not a veto.
+ *
+ * So the preference is a *matchmaking* constraint rather than a filter applied
+ * after the fact: two parties are only paired when what they both allow is
+ * still big enough to run a veto on. That floor relaxes the longer the party at
+ * the head of the queue has waited, exactly as the rating band does, so a
+ * fussy captain waits longer instead of never matching.
+ */
+const MAX_EXCLUDED_MAPS = 4;
+const VETO_POOL_FLOOR = 5;
+const VETO_POOL_FLOOR_MIN = 3;
+const VETO_POOL_RELAX_MS = 30_000;
+
+/** How many maps a lobby must share, given how long the head of the queue has waited. */
+const requiredPoolSize = (msWaiting) =>
+  Math.max(VETO_POOL_FLOOR_MIN, VETO_POOL_FLOOR - Math.floor(Math.max(0, msWaiting) / VETO_POOL_RELAX_MS));
 
 /** How long everyone has to accept a found match. */
 const ACCEPT_MS = 20_000;
@@ -180,7 +274,10 @@ const STATUS_POLL_LIMIT = 30;
 const now = () => Date.now();
 const uid = (prefix) => `${prefix}_${Math.random().toString(36).slice(2, 10)}`;
 
-function attachRetakesMatchmaking(io, { connectedUsers, loadRatings, prisma }) {
+function attachRetakesMatchmaking(
+  io,
+  { connectedUsers, loadRatings, loadMapPrefs, saveMapPrefs, loadSetupState, prisma }
+) {
   /** partyId -> party */
   const parties = new Map();
   /** steamId -> partyId */
@@ -275,10 +372,10 @@ function attachRetakesMatchmaking(io, { connectedUsers, loadRatings, prisma }) {
             leader: String(steamId),
             name: null,
             members: [{ steamId: String(steamId), name: name ?? null, ready: true, elo: STARTING_ELO, matches: 0 }],
-            // Rows written before the queues existed carry the old `2v2`/`3v3`
-            // labels. Those are not queues any more, so they read as the
-            // default rather than as a queue nobody can join.
-            queue: isQueueId(dbLobby.Mode) ? dbLobby.Mode : DEFAULT_QUEUE,
+            // Rows outlive naming schemes — `2v2`, `bots`, `classic` were all
+            // written into this column at some point. The ones with an obvious
+            // successor get it; see LEGACY_QUEUES.
+            queue: resolveQueueId(dbLobby.Mode),
             queuedAt: null,
             createdAt: now(),
           };
@@ -320,6 +417,65 @@ function attachRetakesMatchmaking(io, { connectedUsers, loadRatings, prisma }) {
   /** A party can never hold more people than a whole team. */
   const partyCapacity = (party) => queueOf(party).teamSize;
 
+  /** The pool the party's queue draws from. */
+  const poolOf = (party) => MAP_POOLS[queueOf(party).pool];
+
+  /**
+   * The captain's saved map preference, pulled in once so the lobby opens
+   * already showing it. Never fatal: a party whose preference could not be read
+   * excludes nothing, which is the same position as a player who has set none.
+   */
+  async function refreshMapPrefs(party) {
+    if (typeof loadMapPrefs !== "function" || !party) return;
+    // Only the captain's, because only the captain's counts — a member's
+    // preference applies in whatever lobby they are the captain of.
+    if (party.mapsTouched) return;
+    try {
+      const rows = await loadMapPrefs([party.leader]);
+      party.excludedMaps = sanitiseExcluded(rows?.[party.leader], poolOf(party));
+    } catch {
+      // Left as it was.
+    }
+  }
+
+  /** What the lobby draws: the whole pool, and which of it the captain dropped. */
+  function mapStateFor(party) {
+    const pool = poolOf(party);
+    const excluded = sanitiseExcluded(party.excludedMaps ?? [], pool);
+    return {
+      pool,
+      excluded,
+      max: MAX_EXCLUDED_MAPS,
+      /** True once someone changed it in this lobby, so Save can offer itself. */
+      touched: Boolean(party.mapsTouched),
+    };
+  }
+
+  /** Maps every one of these parties is willing to play, in pool order. */
+  function sharedMaps(parties_, pool) {
+    return pool.filter((map) =>
+      parties_.every((p) => !sanitiseExcluded(p.excludedMaps ?? [], pool).includes(map))
+    );
+  }
+
+  /**
+   * Who in this party has not been through the loadout picker.
+   *
+   * Fails open. If the lookup is not wired or the database is unreachable, a
+   * party that cannot be checked queues — an outage should not lock everyone
+   * out of the game, and the server has defaults for every round type.
+   */
+  async function membersWithoutLoadout(party) {
+    if (typeof loadSetupState !== "function" || !party) return [];
+    try {
+      const ids = party.members.map((m) => m.steamId);
+      const rows = await loadSetupState(ids);
+      return ids.filter((sid) => rows?.[sid] !== true);
+    } catch {
+      return [];
+    }
+  }
+
   function leaveQueue(party, reason) {
     if (!party?.queuedAt) return;
     const q = queues.get(party.queue);
@@ -354,12 +510,19 @@ function attachRetakesMatchmaking(io, { connectedUsers, loadRatings, prisma }) {
     const cfg = party ? queueOf(party) : null;
 
     return {
-      queues: Object.values(QUEUES).map((q) => ({
-        id: q.id,
-        label: q.label,
-        teamSize: q.teamSize,
-        bots: q.bots,
-      })),
+      // The three buttons and the toggle, as state rather than as a list of
+      // queue names: the client renders Testing / 2VS / 3VS and a Premium
+      // toggle, and never has to know that those compose into a queue key.
+      modes: {
+        sizes: Object.values(SIZES).map((s) => ({ id: s.id, teamSize: s.teamSize })),
+        size: cfg?.size ?? DEFAULT_SIZE,
+        premium: cfg?.premium ?? false,
+        testing: cfg?.testing ?? false,
+        /** Everyone, for now — see isPremium. */
+        premiumAvailable: isPremium(id),
+        /** Bots fill the empty slots, so a testing queue never waits on people. */
+        botFillMs: BOT_FILL_MS,
+      },
       party: party && {
         id: party.id,
         leader: party.leader,
@@ -371,6 +534,9 @@ function attachRetakesMatchmaking(io, { connectedUsers, loadRatings, prisma }) {
         elo: partyElo(party),
         queuedAt: party.queuedAt,
         queueReason: party.queueReason ?? null,
+        safeQueue: Boolean(party.safeQueue),
+        /** Pre-filled from the captain's saved preference; see mapStateFor. */
+        maps: mapStateFor(party),
       },
       invite: invite && { partyId: invite.partyId, from: invite.from, fromName: invite.fromName, at: invite.at },
       // What the search is doing right now. Separate from `party.queue`, which
@@ -499,15 +665,29 @@ function attachRetakesMatchmaking(io, { connectedUsers, loadRatings, prisma }) {
     const head = q.map((pid) => parties.get(pid)).find(Boolean);
     if (!head) return;
 
-    const waited = (now() - (head.queuedAt ?? now())) / 1000;
+    const waitedMs = now() - (head.queuedAt ?? now());
+    const waited = waitedMs / 1000;
     const tolerance = acceptableGap(cfg, waited);
     const anchor = partyElo(head);
+    const pool = MAP_POOLS[cfg.pool];
+    // How many maps this lobby has to end up sharing. Relaxes with the wait,
+    // like the rating band, so two fussy captains eventually meet.
+    const minPool = requiredPoolSize(waitedMs);
 
     const candidates = q
       .map((pid) => parties.get(pid))
       .filter((party) => party && party.id !== head.id)
       .map((party) => ({ party, distance: Math.abs(partyElo(party) - anchor) }))
       .filter((c) => c.distance <= tolerance)
+      // Safe queue is opt-in on both sides or neither. It does not widen with
+      // the wait: the point of asking for it is that it is not traded away.
+      .filter((c) => Boolean(c.party.safeQueue) === Boolean(head.safeQueue))
+      // A party whose captain has dropped maps this one needs is not a
+      // candidate, however close their rating. Checked pairwise against the
+      // head first as a cheap filter; the whole set is checked again below,
+      // because three parties can each agree with the head and not with
+      // each other.
+      .filter((c) => sharedMaps([head, c.party], pool).length >= minPool)
       .sort((a, b) => a.distance - b.distance)
       .map((c) => c.party);
 
@@ -516,13 +696,14 @@ function attachRetakesMatchmaking(io, { connectedUsers, loadRatings, prisma }) {
     for (const party of candidates) {
       if (total === needed) break;
       if (total + party.members.length > needed) continue;
+      if (sharedMaps([...chosen, party], pool).length < minPool) continue;
       chosen.push(party);
       total += party.members.length;
     }
     if (total !== needed) return;
 
     for (const p of chosen) leaveQueue(p, "matched");
-    startMatch(queueId, chosen, []);
+    startMatch(queueId, chosen, [], sharedMaps(chosen, pool));
     syncQueue(queueId);
   }
 
@@ -540,19 +721,22 @@ function attachRetakesMatchmaking(io, { connectedUsers, loadRatings, prisma }) {
     if (!cfg.bots) return;
     const needed = cfg.teamSize * 2;
     const humans = party.members.length;
-    const pool = BOT_NAMES.slice().sort(() => Math.random() - 0.5);
-    const bots = pool.slice(0, needed - humans).map((name) => ({
+    const names = BOT_NAMES.slice().sort(() => Math.random() - 0.5);
+    const bots = names.slice(0, needed - humans).map((name) => ({
       steamId: uid("bot"),
       name,
       bot: true,
       accepted: true,
     }));
     leaveQueue(party, "bots");
-    startMatch(party.queue, [party], bots);
+    // One party, so its own preference is the whole constraint — and it is
+    // honoured here as it would be in a real lobby, rather than the testing
+    // queue being the one place a dropped map can still come up.
+    startMatch(party.queue, [party], bots, sharedMaps([party], MAP_POOLS[cfg.pool]));
     syncQueue(party.queue);
   }
 
-  function startMatch(queueId, partiesIn, bots) {
+  function startMatch(queueId, partiesIn, bots, mapPool) {
     const cfg = QUEUES[queueId];
     const id = uid("m");
 
@@ -607,7 +791,10 @@ function attachRetakesMatchmaking(io, { connectedUsers, loadRatings, prisma }) {
     }
     if (teams[0].name === teams[1].name) teams[1].name = `${teams[1].name} 2`;
 
-    const pool = MAP_POOLS[cfg.pool].slice();
+    // What both captains left standing. Falls back to the whole pool only if a
+    // caller passed nothing — never to an empty veto, which would leave the
+    // match with no map to land on.
+    const pool = (mapPool?.length ? mapPool : MAP_POOLS[cfg.pool]).slice();
     const match = {
       id,
       queue: queueId,
@@ -1103,21 +1290,88 @@ function attachRetakesMatchmaking(io, { connectedUsers, loadRatings, prisma }) {
       const mine = party.members.find((m) => m.steamId === id);
       if (mine && data?.name) mine.name = data.name;
       push();
-      // Ratings arrive a moment later; the lobby renders without them rather
-      // than waiting on a database round trip to show a party of one.
-      refreshRatings(party).then(() => syncParty(party));
+      // Ratings and the captain's map preference arrive a moment later; the
+      // lobby renders without them rather than waiting on a database round
+      // trip to show a party of one.
+      Promise.all([refreshRatings(party), refreshMapPrefs(party)]).then(() => syncParty(party));
     });
 
-    socket.on("rq:party:queue", ({ queue } = {}) => {
+    /**
+     * The mode buttons: a size, and the two toggles beside it.
+     *
+     * Takes the three separately rather than a queue id, because that is what
+     * the buttons are — pressing Premium should not require the client to know
+     * which of six queue keys "3v3, premium, not testing" spells. A raw `queue`
+     * is still accepted so an older tab does not break mid-session.
+     */
+    socket.on("rq:party:queue", ({ size, premium, testing, queue } = {}) => {
       const id = me();
       const party = partyFor(id);
-      if (!party || party.leader !== id || !isQueueId(queue)) return;
-      if (party.members.length > QUEUES[queue].teamSize) {
+      if (!party || party.leader !== id) return;
+
+      const current = queueOf(party);
+      let next;
+      if (isQueueId(queue)) {
+        next = queue;
+      } else {
+        const wantSize = Object.hasOwn(SIZES, size) ? size : current.size;
+        const wantTesting = testing ?? current.testing;
+        const wantPremium = premium ?? current.premium;
+        // Checked here as well as in the UI: a button that is not rendered is
+        // not a permission, and this event arrives straight off a socket.
+        if (wantPremium && !wantTesting && !isPremium(id)) {
+          return socket.emit("rq:notice", { kind: "error", code: "premium_locked" });
+        }
+        next = queueKey(wantSize, wantPremium, wantTesting);
+      }
+
+      if (!isQueueId(next)) return;
+      if (party.members.length > QUEUES[next].teamSize) {
         return socket.emit("rq:notice", { kind: "error", code: "party_too_big" });
       }
       leaveQueue(party, "queue_changed");
-      party.queue = queue;
+      party.queue = next;
       syncParty(party);
+    });
+
+    /**
+     * Maps the captain will not be sent to, for this lobby.
+     *
+     * `save` writes it back to the account as the new default; without it the
+     * change lives as long as the lobby does. Adjusting for one queue and
+     * having that silently become your permanent preference is the kind of
+     * thing you only notice three matches later.
+     */
+    socket.on("rq:party:maps", async ({ excluded, save } = {}) => {
+      const id = me();
+      const party = partyFor(id);
+      if (!party || party.leader !== id) return;
+
+      const pool = poolOf(party);
+      const wanted = Array.isArray(excluded) ? excluded : [];
+      if (wanted.length > MAX_EXCLUDED_MAPS) {
+        return socket.emit("rq:notice", {
+          kind: "error",
+          code: "too_many_maps_excluded",
+          max: MAX_EXCLUDED_MAPS,
+        });
+      }
+
+      party.excludedMaps = sanitiseExcluded(wanted, pool);
+      party.mapsTouched = true;
+      // Changing what you will play mid-search would mean the queue you are in
+      // was joined under different terms.
+      leaveQueue(party, "maps_changed");
+      syncParty(party);
+
+      if (save && typeof saveMapPrefs === "function") {
+        try {
+          await saveMapPrefs(id, party.excludedMaps);
+          socket.emit("rq:notice", { kind: "ok", code: "maps_saved" });
+        } catch {
+          socket.emit("rq:notice", { kind: "error", code: "maps_save_failed" });
+        }
+      }
     });
 
     socket.on("rq:party:name", ({ name } = {}) => {
@@ -1138,7 +1392,12 @@ function attachRetakesMatchmaking(io, { connectedUsers, loadRatings, prisma }) {
       if (party.members.length >= partyCapacity(party)) {
         return socket.emit("rq:notice", { kind: "error", code: "party_full" });
       }
-      if (partyOf.get(target) === party.id) return;
+      // Answered rather than swallowed. The invite list filters party members
+      // out before it renders, so reaching this is either a stale list or
+      // somebody driving the socket by hand — and both deserve to be told.
+      if (partyOf.get(target) === party.id) {
+        return socket.emit("rq:notice", { kind: "error", code: "already_in_party" });
+      }
       if (!socketFor(target)) return socket.emit("rq:notice", { kind: "error", code: "friend_offline" });
 
       const inviterName = party.members.find((m) => m.steamId === id)?.name ?? null;
@@ -1198,7 +1457,7 @@ function attachRetakesMatchmaking(io, { connectedUsers, loadRatings, prisma }) {
       push();
     });
 
-    socket.on("rq:queue:join", ({ queue } = {}) => {
+    socket.on("rq:queue:join", async ({ queue, safeQueue } = {}) => {
       const id = me();
       const party = partyFor(id);
       if (!party) return;
@@ -1209,6 +1468,29 @@ function attachRetakesMatchmaking(io, { connectedUsers, loadRatings, prisma }) {
           return socket.emit("rq:notice", { kind: "error", code: "party_too_big" });
         }
         party.queue = queue;
+      }
+
+      // The safe-queue toggle used to be sent and never read — the handler
+      // destructured `{ queue }` and dropped the rest, so a checkbox people
+      // were ticking did nothing at all. It now matches like with like: a party
+      // that asked for it is only ever paired with another that did.
+      //
+      // That is weaker than gating on GardenSafeStatus, which is where this
+      // should end up; opting in is at least a signal, and a control that acts
+      // on it beats one that lies.
+      party.safeQueue = Boolean(safeQueue);
+
+      // Nobody queues without a loadout. Checked here and not only in the UI: a
+      // disabled button is a courtesy, not a gate, and the round type a player
+      // never chose for is the one the server has to invent an answer for.
+      const unset = await membersWithoutLoadout(party);
+      if (unset.length > 0) {
+        return socket.emit("rq:notice", {
+          kind: "error",
+          code: "loadout_unset",
+          who: unset,
+          mine: unset.includes(id),
+        });
       }
 
       // Queue first, then re-read the ratings. Waiting on the database before
@@ -1342,4 +1624,24 @@ function attachRetakesMatchmaking(io, { connectedUsers, loadRatings, prisma }) {
   };
 }
 
-module.exports = { attachRetakesMatchmaking, QUEUES, DEFAULT_QUEUE, MAP_POOLS };
+module.exports = {
+  attachRetakesMatchmaking,
+  QUEUES,
+  SIZES,
+  DEFAULT_QUEUE,
+  DEFAULT_SIZE,
+  MAP_POOLS,
+  // Pure, and the parts most worth pinning: a queue key that stops round-
+  // tripping, an exclusion list that empties a pool, or a floor that never
+  // relaxes are all silent in review and obvious in a lobby.
+  queueKey,
+  resolveQueueId,
+  sanitiseExcluded,
+  allowedMaps,
+  requiredPoolSize,
+  effectiveElo,
+  acceptableGap,
+  MAX_EXCLUDED_MAPS,
+  VETO_POOL_FLOOR,
+  VETO_POOL_FLOOR_MIN,
+};

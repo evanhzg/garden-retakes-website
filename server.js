@@ -237,6 +237,62 @@ attachRetakesMatchmaking(io, {
       rows.map((r) => [r.SteamId.toString(), { elo: r.Elo, matches: r.MatchesPlayed }])
     );
   },
+
+  /**
+   * Maps these players never want to be sent to.
+   *
+   * Same shape as loadRatings: absent means "has set none", which is the honest
+   * reading of a missing row and the one that excludes nothing.
+   */
+  async loadMapPrefs(steamIds) {
+    const ids = (steamIds || []).filter((id) => /^\d{5,20}$/.test(String(id)));
+    if (ids.length === 0) return {};
+    const rows = await prisma.gardenMapPreference.findMany({
+      where: { SteamId: { in: ids.map((id) => BigInt(id)) } },
+      select: { SteamId: true, Excluded: true },
+    });
+    return Object.fromEntries(
+      rows.map((r) => {
+        let parsed = [];
+        try {
+          parsed = JSON.parse(r.Excluded || "[]");
+        } catch {
+          // A row we cannot read excludes nothing, rather than being a reason
+          // the lobby fails to open.
+        }
+        return [r.SteamId.toString(), Array.isArray(parsed) ? parsed : []];
+      })
+    );
+  },
+
+  /** Make this lobby's map choice the account's default. */
+  async saveMapPrefs(steamId, excluded) {
+    if (!/^\d{5,20}$/.test(String(steamId))) return;
+    const Excluded = JSON.stringify(Array.isArray(excluded) ? excluded : []);
+    await prisma.gardenMapPreference.upsert({
+      where: { SteamId: BigInt(steamId) },
+      create: { SteamId: BigInt(steamId), Excluded },
+      update: { Excluded },
+    });
+  },
+
+  /**
+   * Who has been through the loadout picker.
+   *
+   * A missing row means no, which is what everybody is on the day this ships —
+   * see GardenOnboardingStates.CompletedRetakeSetup.
+   */
+  async loadSetupState(steamIds) {
+    const ids = (steamIds || []).filter((id) => /^\d{5,20}$/.test(String(id)));
+    if (ids.length === 0) return {};
+    const rows = await prisma.gardenOnboardingState.findMany({
+      where: { SteamId: { in: ids.map((id) => BigInt(id)) } },
+      select: { SteamId: true, CompletedRetakeSetup: true },
+    });
+    return Object.fromEntries(
+      rows.map((r) => [r.SteamId.toString(), r.CompletedRetakeSetup === true])
+    );
+  },
 });
 
 io.on("connection", (socket) => {
