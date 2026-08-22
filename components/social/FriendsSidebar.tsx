@@ -5,6 +5,7 @@ import { useSocket } from "@/components/games/SocketProvider";
 import { useRouter } from "next/navigation";
 import PlayerBubble from "./PlayerBubble";
 import AvatarImage from "@/components/AvatarImage";
+import AvatarStatus from "@/components/social/AvatarStatus";
 import { useToast } from "@/components/Toast";
 import { MessageSquare, UserPlus, Gamepad2, Eye, Users, Mail, Send, ChevronLeft, X } from "lucide-react";
 import { useI18n } from "@/components/I18nProvider";
@@ -405,10 +406,13 @@ export default function FriendsSidebar() {
   const renderFriendRow = (f: Friend, isOnline: boolean) => (
     <div key={f.id} className={`friend-item${isOnline ? "" : " offline-item"}`}>
       <div className="friend-info">
-        <span className="friend-avatar">
-          <AvatarImage steamId={f.friendId} src={f.avatarUrl} alt={f.name} />
-          <i className={`status-dot ${isOnline ? "online" : "offline"}`} />
-        </span>
+        <AvatarStatus
+          steamId={f.friendId}
+          name={f.name}
+          src={f.avatarUrl}
+          presence={isOnline ? "online" : "offline"}
+          size={34}
+        />
         <PlayerBubble steamId={f.friendId} name={f.name} isFriend>
           <div className="friend-lines">
             <span className="friend-name">{f.name}</span>
@@ -453,13 +457,58 @@ export default function FriendsSidebar() {
 
   return (
     <>
-      <button className="friends-toggle-btn" onClick={() => setIsOpen(!isOpen)}>
-        <Users size={16} />
-        {t("social.friends.toggleBtn")}
-        {(pendingRequests.length > 0 || totalUnread > 0) && (
-          <span className="notification-badge">{pendingRequests.length + totalUnread}</span>
-        )}
-      </button>
+      {/* The rail, collapsed.
+       *
+       * This used to be a pill in the bottom-right corner that said "Friends"
+       * and a number, so the only way to know whether anybody was around was to
+       * open the panel and look. The rail says it without being asked: rounded
+       * avatars down the right edge, a presence dot on each, and the expand
+       * control at the top rather than a button at the bottom.
+       *
+       * Hidden entirely while an overlay owns the screen — the accept window
+       * and the loadout gate both cover the page, and this is position:fixed. */}
+      <div className={`friends-rail ${isOpen ? "hidden" : ""}`}>
+        <button
+          className="friends-rail-expand"
+          onClick={() => setIsOpen(true)}
+          aria-label={t("social.friends.toggleBtn")}
+          title={t("social.friends.toggleBtn")}
+        >
+          <ChevronLeft size={16} />
+          {(pendingRequests.length > 0 || totalUnread > 0) && (
+            <span className="notification-badge">{pendingRequests.length + totalUnread}</span>
+          )}
+        </button>
+
+        <div className="friends-rail-list">
+          {onlineFriends.slice(0, 12).map((f) => (
+            <button
+              key={f.id}
+              className="friends-rail-friend"
+              onClick={() => {
+                setIsOpen(true);
+                openThread(f.friendId);
+              }}
+              title={f.name}
+              aria-label={f.name}
+            >
+              <AvatarStatus
+                steamId={f.friendId}
+                name={f.name}
+                src={f.avatarUrl}
+                presence="online"
+                size={34}
+              />
+              {(unread[f.friendId] ?? 0) > 0 && <span className="dot-badge" />}
+            </button>
+          ))}
+          {onlineFriends.length === 0 && (
+            <span className="friends-rail-none" title={t("social.friends.noneOnline")}>
+              <Users size={16} />
+            </span>
+          )}
+        </div>
+      </div>
 
       <div className={`friends-sidebar ${isOpen ? "open" : ""}`}>
         <div className="friends-header">

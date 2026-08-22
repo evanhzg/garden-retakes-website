@@ -318,6 +318,7 @@ export default function RetakesLobby({ signedIn, lobbyId }: { signedIn: boolean,
 
   const partyForms = useRosterForm(party?.members.map((m: any) => m.steamId) ?? []);
 
+
   // Both takeovers cover the screen, so the friends launcher has to stand down
   // — it is position:fixed and mounted app-wide, and was otherwise floating on
   // top of the accept timer.
@@ -412,6 +413,11 @@ export default function RetakesLobby({ signedIn, lobbyId }: { signedIn: boolean,
     [friends, online]
   );
   const inPartyIds = useMemo(() => new Set((party?.members ?? []).map((m) => m.steamId)), [party]);
+  /** Friends who are online and not already in the party. */
+  const invitable = useMemo(
+    () => onlineFriends.filter((f) => !inPartyIds.has(f.friendId)),
+    [onlineFriends, inPartyIds]
+  );
 
   const conflicts = useMemo(() => {
      if (!party) return [];
@@ -692,13 +698,24 @@ export default function RetakesLobby({ signedIn, lobbyId }: { signedIn: boolean,
             />
           )}
 
+          {/* Somebody already in the party is not someone to invite. They used
+              to be listed here anyway with the button greyed out and "In party"
+              on it, which is the same person twice on one panel — they are in
+              the members list directly above. The server refuses the invite
+              too; see already_in_party in rq:party:invite. */}
           <h3 className="rq-subhead">{t("lobby.invitefriends")}</h3>
-          {onlineFriends.length === 0 ? (
-            <p className="rq-hint">{friends.length === 0 ? t("lobby.nofriends") : t("lobby.nofriendsonline")}</p>
+          {invitable.length === 0 ? (
+            <p className="rq-hint">
+              {friends.length === 0
+                ? t("lobby.nofriends")
+                : onlineFriends.length === 0
+                  ? t("lobby.nofriendsonline")
+                  : t("lobby.allfriendsinparty")}
+            </p>
           ) : (
             <ul className="rq-friends">
-              {onlineFriends.map((f) => {
-                const already = inPartyIds.has(f.friendId) || pendingInvites.some(inv => inv.id === f.friendId);
+              {invitable.map((f) => {
+                const already = pendingInvites.some(inv => inv.id === f.friendId);
                 const full = (party?.members.length ?? 1) + pendingInvites.length >= (party?.capacity ?? 2);
                 return (
                   <li key={f.friendId}>
@@ -714,7 +731,7 @@ export default function RetakesLobby({ signedIn, lobbyId }: { signedIn: boolean,
                          setPendingInvites(p => [...p, { id: f.friendId, name: f.name, expiresAt: Date.now() + 10000 }]);
                       }}
                     >
-                      {already ? t("lobby.inparty") : t("lobby.invite")}
+                      {already ? t("lobby.invited") : t("lobby.invite")}
                     </button>
                   </li>
                 );

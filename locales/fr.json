@@ -2438,5 +2438,7 @@
   "lobby.alert.found": "Match trouvé",
   "lobby.alert.foundBody": "Acceptez avant la fin du compte à rebours.",
   "lobby.alert.ready": "Votre serveur est prêt",
-  "lobby.alert.readyBody": "{map} — connectez-vous."
+  "lobby.alert.readyBody": "{map} — connectez-vous.",
+  "social.friends.noneOnline": "Personne en ligne",
+  "lobby.allfriendsinparty": "Tous vos amis en ligne sont déjà dans votre groupe."
 }
