@@ -1,65 +1,88 @@
 -- Competitive retakes: the loadout picker's storage, and map preferences.
 --
--- Idempotent, and safe to run against a database that already has some of it:
--- every statement is IF NOT EXISTS, and the ALTERs go through a procedure
--- because MySQL has no ADD COLUMN IF NOT EXISTS.
+-- Idempotent, and safe to run twice: the table is IF NOT EXISTS, and each
+-- column add is guarded against information_schema.
+--
+-- Written without DELIMITER or a stored procedure on purpose. MySQL has no
+-- ADD COLUMN IF NOT EXISTS, and the usual workaround is a procedure — but
+-- DELIMITER is a directive of the `mysql` command-line client, not SQL, so a
+-- file that uses it can only be applied by that one tool. These statements go
+-- through a driver as well, which is how tools/apply-sql.mjs runs them.
 
 -- ---------------------------------------------------------------- bundles
 --
--- The loadout page stopped offering four weapon dropdowns and started offering
--- a handful of named bundles per round type — "Default + Kevlar", "Rifle +
--- Kit" — each picked for T, for CT, or for both. `Bundles` is what the picker
--- writes and reads back: the choice itself, as
+-- The loadout page stopped offering four weapon dropdowns per side and started
+-- offering a handful of named options per round type — "Default + Kevlar",
+-- "Rifle + Kit" — each picked for T, for CT, or for both. `Bundles` is what the
+-- picker writes and reads back: the choice itself, as
 --
 --   { "T": { "pistol": "<id>", "half": "<id>", "full": "<id>" }, "CT": { ... } }
 --
--- The columns beside it are derived from that choice on save. They exist as
--- columns rather than as fields inside the JSON so the game server can read a
--- preference with a plain SELECT instead of parsing JSON in SQL — the same
--- reason KevlarPistolT/Ct already were.
+-- The columns beside it are derived from that choice on save. They are columns
+-- rather than fields inside the JSON so the game server can read a preference
+-- with a plain SELECT instead of parsing JSON in SQL — the same reason
+-- KevlarPistolT/Ct already were.
 --
--- The weapon half of a bundle is deliberately not here. It is written through
+-- The weapon half of an option is deliberately not here. It is written through
 -- to UserSettings.WeaponPreferences, which the allocator plugin has read every
--- buy round since long before this table existed and still owns.
+-- buy round since long before this table existed, and still owns.
 
-DROP PROCEDURE IF EXISTS `garden_add_column`;
-DELIMITER //
-CREATE PROCEDURE `garden_add_column`(
-  IN tbl VARCHAR(64), IN col VARCHAR(64), IN spec VARCHAR(255)
-)
-BEGIN
-  IF NOT EXISTS (
-    SELECT 1 FROM information_schema.COLUMNS
-    WHERE TABLE_SCHEMA = DATABASE() AND TABLE_NAME = tbl AND COLUMN_NAME = col
-  ) THEN
-    SET @ddl = CONCAT('ALTER TABLE `', tbl, '` ADD COLUMN `', col, '` ', spec);
-    PREPARE stmt FROM @ddl; EXECUTE stmt; DEALLOCATE PREPARE stmt;
-  END IF;
-END //
-DELIMITER ;
+SET @add := (SELECT IF(COUNT(*) > 0, 'SELECT 1',
+  'ALTER TABLE `GardenRetakeLoadouts` ADD COLUMN `Bundles` TEXT NULL')
+  FROM information_schema.COLUMNS
+  WHERE TABLE_SCHEMA = DATABASE() AND TABLE_NAME = 'GardenRetakeLoadouts' AND COLUMN_NAME = 'Bundles');
+PREPARE s FROM @add; EXECUTE s; DEALLOCATE PREPARE s;
 
-CALL garden_add_column('GardenRetakeLoadouts', 'Bundles',       'TEXT NULL');
-CALL garden_add_column('GardenRetakeLoadouts', 'KevlarForceT',  'TINYINT(1) NOT NULL DEFAULT 0');
-CALL garden_add_column('GardenRetakeLoadouts', 'KevlarForceCt', 'TINYINT(1) NOT NULL DEFAULT 0');
-CALL garden_add_column('GardenRetakeLoadouts', 'KevlarFullT',   'TINYINT(1) NOT NULL DEFAULT 0');
-CALL garden_add_column('GardenRetakeLoadouts', 'KevlarFullCt',  'TINYINT(1) NOT NULL DEFAULT 0');
--- CT only: there is nothing for a T to defuse.
-CALL garden_add_column('GardenRetakeLoadouts', 'KitForceCt',    'TINYINT(1) NOT NULL DEFAULT 0');
-CALL garden_add_column('GardenRetakeLoadouts', 'KitFullCt',     'TINYINT(1) NOT NULL DEFAULT 0');
+SET @add := (SELECT IF(COUNT(*) > 0, 'SELECT 1',
+  'ALTER TABLE `GardenRetakeLoadouts` ADD COLUMN `KevlarForceT` TINYINT(1) NOT NULL DEFAULT 0')
+  FROM information_schema.COLUMNS
+  WHERE TABLE_SCHEMA = DATABASE() AND TABLE_NAME = 'GardenRetakeLoadouts' AND COLUMN_NAME = 'KevlarForceT');
+PREPARE s FROM @add; EXECUTE s; DEALLOCATE PREPARE s;
 
--- ------------------------------------------------------------ the gate
+SET @add := (SELECT IF(COUNT(*) > 0, 'SELECT 1',
+  'ALTER TABLE `GardenRetakeLoadouts` ADD COLUMN `KevlarForceCt` TINYINT(1) NOT NULL DEFAULT 0')
+  FROM information_schema.COLUMNS
+  WHERE TABLE_SCHEMA = DATABASE() AND TABLE_NAME = 'GardenRetakeLoadouts' AND COLUMN_NAME = 'KevlarForceCt');
+PREPARE s FROM @add; EXECUTE s; DEALLOCATE PREPARE s;
+
+SET @add := (SELECT IF(COUNT(*) > 0, 'SELECT 1',
+  'ALTER TABLE `GardenRetakeLoadouts` ADD COLUMN `KevlarFullT` TINYINT(1) NOT NULL DEFAULT 0')
+  FROM information_schema.COLUMNS
+  WHERE TABLE_SCHEMA = DATABASE() AND TABLE_NAME = 'GardenRetakeLoadouts' AND COLUMN_NAME = 'KevlarFullT');
+PREPARE s FROM @add; EXECUTE s; DEALLOCATE PREPARE s;
+
+SET @add := (SELECT IF(COUNT(*) > 0, 'SELECT 1',
+  'ALTER TABLE `GardenRetakeLoadouts` ADD COLUMN `KevlarFullCt` TINYINT(1) NOT NULL DEFAULT 0')
+  FROM information_schema.COLUMNS
+  WHERE TABLE_SCHEMA = DATABASE() AND TABLE_NAME = 'GardenRetakeLoadouts' AND COLUMN_NAME = 'KevlarFullCt');
+PREPARE s FROM @add; EXECUTE s; DEALLOCATE PREPARE s;
+
+-- CT only, both of these: there is nothing for a T to defuse.
+SET @add := (SELECT IF(COUNT(*) > 0, 'SELECT 1',
+  'ALTER TABLE `GardenRetakeLoadouts` ADD COLUMN `KitForceCt` TINYINT(1) NOT NULL DEFAULT 0')
+  FROM information_schema.COLUMNS
+  WHERE TABLE_SCHEMA = DATABASE() AND TABLE_NAME = 'GardenRetakeLoadouts' AND COLUMN_NAME = 'KitForceCt');
+PREPARE s FROM @add; EXECUTE s; DEALLOCATE PREPARE s;
+
+SET @add := (SELECT IF(COUNT(*) > 0, 'SELECT 1',
+  'ALTER TABLE `GardenRetakeLoadouts` ADD COLUMN `KitFullCt` TINYINT(1) NOT NULL DEFAULT 0')
+  FROM information_schema.COLUMNS
+  WHERE TABLE_SCHEMA = DATABASE() AND TABLE_NAME = 'GardenRetakeLoadouts' AND COLUMN_NAME = 'KitFullCt');
+PREPARE s FROM @add; EXECUTE s; DEALLOCATE PREPARE s;
+
+-- ------------------------------------------------------------------ the gate
 --
 -- False for everybody the day this ships, and that is the point rather than an
--- oversight: the picker is new, the bundles it writes did not exist before it,
+-- oversight: the picker is new, the options it writes did not exist before it,
 -- and a row that already said "set" would mean a player never sees the thing
 -- that sets them.
-CALL garden_add_column(
-  'GardenOnboardingStates', 'CompletedRetakeSetup', 'TINYINT(1) NOT NULL DEFAULT 0'
-);
+SET @add := (SELECT IF(COUNT(*) > 0, 'SELECT 1',
+  'ALTER TABLE `GardenOnboardingStates` ADD COLUMN `CompletedRetakeSetup` TINYINT(1) NOT NULL DEFAULT 0')
+  FROM information_schema.COLUMNS
+  WHERE TABLE_SCHEMA = DATABASE() AND TABLE_NAME = 'GardenOnboardingStates' AND COLUMN_NAME = 'CompletedRetakeSetup');
+PREPARE s FROM @add; EXECUTE s; DEALLOCATE PREPARE s;
 
-DROP PROCEDURE IF EXISTS `garden_add_column`;
-
--- -------------------------------------------------------- map preferences
+-- ---------------------------------------------------------- map preferences
 --
 -- Up to four of the ten maps a player never wants to be sent to. A preference,
 -- not a veto: the matchmaker pairs two parties only when what both captains
