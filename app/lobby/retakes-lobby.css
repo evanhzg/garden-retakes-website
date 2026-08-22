@@ -39,6 +39,9 @@
   color: var(--color-accent);
 }
 
+/* The signed-out screen. Not to be confused with .rq-setup further down, which
+   is the loadout gate — both were briefly called .rq-gate, and the one added
+   second silently restyled this one. */
 .rq-gate { text-align: center; padding: clamp(60px, 18vh, 160px) 0; }
 .rq-gate h1 { font-size: clamp(30px, 5vw, 52px); margin: 10px 0 10px; letter-spacing: -0.03em; }
 .rq-gate p { max-width: 48ch; margin: 0 auto 24px; }
@@ -649,3 +652,272 @@ html[data-motion="off"] .rq-server-pip.now { animation: none; }
 .rq-premade.p2 { color: #cf7fd8; }
 .rq-premade.p3 { color: #6fcf7f; }
 .rq-solo { margin-left: 6px; font-size: 11px; color: var(--muted); }
+
+/* ─────────────────────────────────────────────────────────────────────────
+   The rail, and what it replaced.
+
+   Two things used to sit where this does. Above the page: a pair of buttons
+   ("Lobby", "Live Games") styled inline, with no tablist and no keyboard
+   semantics. To the right: a third of the width given to a card that listed
+   the four steps of matchmaking — describing the thing it was sitting next to
+   — and linked out to three pages that are tabs on this one now.
+
+   The pattern is the inventory rebuild's weapon-type rail, because it is the
+   one this site already has and the one people here have already learned.
+   ───────────────────────────────────────────────────────────────────────── */
+
+.rq-shell {
+  display: grid;
+  grid-template-columns: minmax(0, 200px) minmax(0, 1fr);
+  gap: 20px;
+  align-items: start;
+}
+
+.rq-rail {
+  position: sticky; top: 88px;
+  display: flex; flex-direction: column; gap: 2px;
+  padding: 8px;
+  border: 1px solid var(--border);
+  background: color-mix(in srgb, var(--color-text) 3%, transparent);
+}
+
+.rq-rail-row {
+  display: flex; align-items: center; gap: 10px;
+  width: 100%; padding: 10px 12px;
+  border: none; background: transparent; color: var(--color-text);
+  font: inherit; font-size: 13px; font-weight: 600;
+  text-align: left; cursor: pointer;
+  transition: background 0.14s, color 0.14s;
+}
+.rq-rail-icon { opacity: 0.55; flex-shrink: 0; transition: opacity 0.14s, color 0.14s; }
+.rq-rail-row:hover .rq-rail-icon { opacity: 1; }
+.rq-rail-row:hover { background: color-mix(in srgb, var(--color-text) 5%, transparent); }
+
+.rq-rail-row.on { background: color-mix(in srgb, var(--color-accent) 12%, transparent); }
+.rq-rail-row.on .rq-rail-icon { opacity: 1; color: var(--color-accent); }
+.rq-rail-row.on .rq-rail-name { color: var(--color-accent); }
+
+.rq-rail-row.locked { opacity: 0.5; cursor: not-allowed; }
+
+.rq-rail-name { flex: 1; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.rq-rail-count {
+  flex-shrink: 0; min-width: 20px; padding: 1px 6px;
+  border-radius: 999px; font-size: 11px; font-weight: 700;
+  text-align: center; opacity: 0.6;
+  background: color-mix(in srgb, var(--color-text) 10%, transparent);
+}
+
+/* The play tab keeps its two columns; the third is gone. */
+.rq-shell .rq-grid { grid-template-columns: minmax(0, 300px) minmax(0, 1fr); }
+
+.rq-tabpanel { padding: 24px; }
+
+@media (max-width: 900px) {
+  .rq-shell { grid-template-columns: 1fr; }
+  .rq-rail {
+    position: static;
+    flex-direction: row; overflow-x: auto;
+  }
+  .rq-rail-row { width: auto; white-space: nowrap; }
+  .rq-shell .rq-grid { grid-template-columns: 1fr; }
+}
+
+/* ───────────────────────── what you are queueing for ──────────────────── */
+
+.rq-modes { margin-top: 8px; }
+.rq-mode-row { display: grid; grid-template-columns: repeat(auto-fit, minmax(140px, 1fr)); gap: 8px; }
+
+.rq-mode {
+  display: flex; flex-direction: column; align-items: flex-start; gap: 4px;
+  padding: 14px; border-radius: 12px;
+  border: 1.5px solid var(--border);
+  background: var(--color-bg); color: var(--color-text);
+  cursor: pointer; text-align: left;
+  transition: border-color 0.14s, background 0.14s, transform 0.14s;
+}
+.rq-mode:hover:not(:disabled) { transform: translateY(-1px); }
+.rq-mode:disabled { opacity: 0.45; cursor: not-allowed; }
+.rq-mode-name { font-weight: 800; font-size: 13px; letter-spacing: 0.04em; }
+.rq-mode-name.big { font-size: 20px; letter-spacing: -0.01em; }
+.rq-mode-sub { font-size: 11px; color: var(--muted); }
+
+.rq-mode.on {
+  border-color: color-mix(in srgb, var(--color-accent) 70%, transparent);
+  background: color-mix(in srgb, var(--color-accent) 10%, var(--color-bg));
+}
+.rq-mode.on .rq-mode-name { color: var(--color-accent); }
+
+/* Testing is a mode you can see is on from across the room. */
+.rq-mode.on.testing {
+  border-color: color-mix(in srgb, var(--color-team-t) 70%, transparent);
+  background: color-mix(in srgb, var(--color-team-t) 12%, var(--color-bg));
+}
+.rq-mode.on.testing .rq-mode-name { color: var(--color-team-t); }
+
+/* A real button that changes on toggle, not a checkbox. */
+.rq-mode-toggles { display: flex; flex-wrap: wrap; gap: 8px; margin-top: 10px; }
+.rq-toggle {
+  display: inline-flex; align-items: center; gap: 7px;
+  padding: 8px 14px; border-radius: 999px;
+  border: 1.5px solid var(--border);
+  background: transparent; color: var(--muted);
+  font-size: 12px; font-weight: 700; cursor: pointer;
+  transition: border-color 0.14s, background 0.14s, color 0.14s;
+}
+.rq-toggle:disabled { opacity: 0.4; cursor: not-allowed; }
+.rq-toggle:hover:not(:disabled) { color: var(--color-text); }
+.rq-toggle.on {
+  color: var(--color-accent);
+  border-color: color-mix(in srgb, var(--color-accent) 60%, transparent);
+  background: color-mix(in srgb, var(--color-accent) 12%, transparent);
+}
+.rq-toggle.premium.on {
+  color: #d9a516;
+  border-color: color-mix(in srgb, #d9a516 60%, transparent);
+  background: color-mix(in srgb, #d9a516 14%, transparent);
+}
+
+.rq-actions { display: flex; gap: 12px; margin: 20px 0 8px; }
+.rq-actions .rq-play { flex: 1; display: inline-flex; align-items: center; justify-content: center; gap: 8px; }
+.rq-actions .btn-secondary { display: inline-flex; align-items: center; gap: 7px; }
+
+.rq-loadout-tab { display: flex; flex-wrap: wrap; align-items: center; gap: 12px; }
+.rq-loadout-tab .rq-hint { flex-basis: 100%; margin: 0 0 4px; font-size: 13px; color: var(--muted); }
+.rq-loadout-tab .btn { display: inline-flex; align-items: center; gap: 7px; }
+
+/* ──────────────────────────── the loadout gate ────────────────────────── */
+
+.rq-setup-scrim {
+  position: fixed; inset: 0; z-index: 60;
+  display: grid; place-items: center;
+  padding: 20px;
+  background: color-mix(in srgb, #000 62%, transparent);
+  backdrop-filter: blur(3px);
+}
+.rq-setup {
+  width: min(920px, 100%); max-height: min(88vh, 900px);
+  display: flex; flex-direction: column;
+  border: 1px solid var(--border);
+  background: var(--color-bg);
+  box-shadow: 0 30px 80px rgba(0, 0, 0, 0.55);
+}
+.rq-setup-head {
+  display: flex; align-items: flex-start; justify-content: space-between; gap: 16px;
+  padding: 22px 24px 16px;
+  border-bottom: 1px solid var(--border);
+}
+.rq-setup-head h2 { margin: 6px 0 6px; font-size: clamp(18px, 2.4vw, 24px); letter-spacing: -0.02em; }
+.rq-setup-head p { margin: 0; max-width: 62ch; font-size: 13px; }
+.rq-setup-kicker {
+  font-size: 11px; font-weight: 800; letter-spacing: 0.16em; text-transform: uppercase;
+  color: var(--color-accent);
+}
+.rq-setup-close {
+  flex-shrink: 0; width: 30px; height: 30px;
+  display: grid; place-items: center;
+  border: 1px solid var(--border); background: transparent;
+  color: var(--muted); cursor: pointer;
+}
+
+.rq-setup-steps {
+  display: flex; gap: 6px; margin: 0; padding: 14px 24px;
+  list-style: none; border-bottom: 1px solid var(--border);
+}
+.rq-setup-steps button {
+  display: inline-flex; align-items: center; gap: 7px;
+  padding: 7px 14px; border-radius: 999px;
+  border: 1.5px solid var(--border);
+  background: transparent; color: var(--muted);
+  font: inherit; font-size: 12px; font-weight: 700; cursor: pointer;
+}
+.rq-setup-steps li.on button { color: var(--color-accent); border-color: color-mix(in srgb, var(--color-accent) 55%, transparent); }
+.rq-setup-steps li.done button { color: var(--color-text); }
+
+.rq-setup-body { flex: 1; min-height: 0; overflow-y: auto; padding: 20px 24px; }
+.rq-setup-error { margin: 0; padding: 0 24px 8px; color: var(--color-accent); font-size: 13px; }
+.rq-setup-foot {
+  display: flex; justify-content: space-between; gap: 12px;
+  padding: 16px 24px; border-top: 1px solid var(--border);
+}
+
+/* ───────────────────────────── matches and live ───────────────────────── */
+
+.rq-empty { padding: 32px 0; text-align: center; }
+.rq-empty-state { padding: 48px 20px; text-align: center; color: var(--muted); }
+.rq-empty-state h3 { margin: 14px 0 6px; font-size: 16px; color: var(--color-text); }
+.rq-empty-state p { margin: 0 auto; max-width: 44ch; font-size: 13px; }
+
+.rq-matches { list-style: none; margin: 0; padding: 0; display: grid; gap: 8px; }
+.rq-match { border: 1px solid var(--border); }
+.rq-match-row {
+  display: grid; align-items: center; gap: 14px;
+  grid-template-columns: 96px minmax(0, 1fr) auto auto auto;
+  width: 100%; padding: 10px 14px 10px 0;
+  border: none; background: transparent; color: var(--color-text);
+  font: inherit; text-align: left; cursor: pointer;
+}
+.rq-match-map { width: 96px; height: 54px; object-fit: cover; display: block; }
+.rq-match-where { display: flex; flex-direction: column; gap: 2px; min-width: 0; }
+.rq-match-where strong { font-size: 14px; }
+.rq-match-where .muted { font-size: 11px; }
+
+.rq-match-score { font-family: var(--font-mono); font-size: 17px; font-weight: 700; }
+.rq-match-score .sep { opacity: 0.4; margin: 0 4px; }
+.rq-match.win .rq-match-score .us { color: #43a047; }
+.rq-match.loss .rq-match-score .us { color: var(--color-accent); }
+
+.rq-match-outcome {
+  padding: 3px 10px; border-radius: 999px;
+  font-size: 10px; font-weight: 800; letter-spacing: 0.08em; text-transform: uppercase;
+  border: 1.5px solid var(--border); color: var(--muted);
+}
+.rq-match-outcome.win { color: #43a047; border-color: color-mix(in srgb, #43a047 45%, transparent); }
+.rq-match-outcome.loss { color: var(--color-accent); border-color: color-mix(in srgb, var(--color-accent) 45%, transparent); }
+
+.rq-match-elo { font-family: var(--font-mono); font-size: 13px; font-weight: 700; min-width: 44px; text-align: right; }
+.rq-match-elo.up { color: #43a047; }
+.rq-match-elo.down { color: var(--color-accent); }
+
+.rq-match-detail {
+  display: grid; grid-template-columns: 1fr 1fr; gap: 20px;
+  padding: 14px; border-top: 1px solid var(--border);
+  background: color-mix(in srgb, var(--color-text) 3%, transparent);
+}
+.rq-match-detail h4 { margin: 0 0 8px; font-size: 11px; letter-spacing: 0.1em; text-transform: uppercase; color: var(--muted); }
+.rq-match-detail ul { list-style: none; margin: 0; padding: 0; display: grid; gap: 3px; font-size: 12px; font-family: var(--font-mono); }
+.rq-match-detail li.me { color: var(--color-accent); font-weight: 700; }
+
+.rq-live-head { display: flex; align-items: center; gap: 16px; margin-bottom: 18px; }
+.rq-live-map { width: 128px; height: 72px; object-fit: cover; }
+.rq-live-head h3 { margin: 0 0 2px; font-size: 17px; }
+.rq-live-head p { margin: 0; font-size: 12px; }
+.rq-live-score { margin-left: auto; font-family: var(--font-mono); font-size: 26px; font-weight: 800; }
+.rq-live-score .t { color: var(--color-team-t); }
+.rq-live-score .ct { color: var(--color-team-ct); }
+.rq-live-score .sep { opacity: 0.35; margin: 0 6px; }
+.rq-live-stale {
+  padding: 3px 10px; border-radius: 999px;
+  font-size: 10px; font-weight: 800; letter-spacing: 0.08em; text-transform: uppercase;
+  border: 1.5px solid color-mix(in srgb, var(--color-accent) 45%, transparent);
+  color: var(--color-accent);
+}
+
+.rq-live-teams { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; }
+.rq-live-team h4 { margin: 0 0 8px; font-size: 12px; letter-spacing: 0.08em; text-transform: uppercase; }
+.rq-live-team.side-T h4 { color: var(--color-team-t); }
+.rq-live-team.side-CT h4 { color: var(--color-team-ct); }
+.rq-live-team table { width: 100%; border-collapse: collapse; font-size: 12px; }
+.rq-live-team th {
+  text-align: right; padding: 4px 6px; font-size: 10px; letter-spacing: 0.06em;
+  text-transform: uppercase; color: var(--muted); font-weight: 700;
+}
+.rq-live-team th:first-child, .rq-live-team td:first-child { text-align: left; }
+.rq-live-team td { padding: 5px 6px; text-align: right; font-family: var(--font-mono); border-top: 1px solid var(--border); }
+.rq-live-team td:first-child { font-family: var(--font-body); }
+
+@media (max-width: 760px) {
+  .rq-live-teams, .rq-match-detail { grid-template-columns: 1fr; }
+  .rq-match-row { grid-template-columns: 72px minmax(0, 1fr) auto; }
+  .rq-match-map { width: 72px; height: 40px; }
+  .rq-match-outcome, .rq-match-elo { display: none; }
+}

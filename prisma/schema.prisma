@@ -305,6 +305,11 @@ model CrMatch {
   Result       String
   EloDeltaA    Int
   EloDeltaB    Int
+  /// The website's own id for the match, echoed back by the game server — it is
+  /// the argument to `css_cr_go`. Empty for a match started in game with !cr,
+  /// which has no website lobby behind it. The column has been on the table
+  /// since the plugin started writing it; this model had drifted without it.
+  MatchId      String   @default("") @db.VarChar(64)
 
   @@index([SeasonId])
   @@map("CrMatches")
