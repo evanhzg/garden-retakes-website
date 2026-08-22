@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useState } from "react";
+import { useSocket } from "@/components/games/SocketProvider";
 import { useI18n } from "@/components/I18nProvider";
 import RetakesIcon from "@/components/retakes/RetakesIcon";
 import { mapImage, mapName } from "@/lib/maps";
@@ -14,25 +15,33 @@ import { mapImage, mapName } from "@/lib/maps";
  * this tab on ours.
  */
 type LivePlayer = {
-  steamId?: string;
-  name?: string;
-  team?: number | string;
-  kills?: number;
-  deaths?: number;
-  assists?: number;
-  damage?: number;
-  rating?: number;
-  elo?: number;
+  SteamId?: string;
+  Name?: string;
+  /** "A"/"B" in a competitive match, the raw team number otherwise. */
+  Team?: string;
+  /** 2 = T, 3 = CT. The reliable one for a bot, which has no roster. */
+  TeamNum?: number;
+  IsBot?: boolean;
+  Kills?: number;
+  Deaths?: number;
+  Assists?: number;
+  Damage?: number;
+  Elo?: number;
 };
 
 type Live = {
-  map?: string;
-  mode?: string;
-  teams?: { name?: string; score?: number; side?: string }[];
-  score?: { t?: number; ct?: number };
-  players?: LivePlayer[];
-  round?: number;
-  maxRounds?: number;
+  Map?: string;
+  Mode?: string;
+  IsCr?: boolean;
+  IsRanked?: boolean;
+  TeamAName?: string;
+  TeamBName?: string;
+  ScoreA?: number;
+  ScoreB?: number;
+  WinPredictionA?: string;
+  WinPredictionB?: string;
+  Players?: LivePlayer[];
+  HeadToHead?: { KillerName?: string; VictimName?: string; Kills?: number }[];
 };
 
 const num = (v: unknown) => (typeof v === "number" && Number.isFinite(v) ? v : 0);
@@ -51,8 +60,19 @@ const num = (v: unknown) => (typeof v === "number" && Number.isFinite(v) ? v : 0
  */
 export default function LiveTab() {
   const { t } = useI18n();
+  const { socket } = useSocket();
   const [state, setState] = useState<{ live: Live | null; stale?: boolean; ageMs?: number } | null>(null);
 
+  /**
+   * Two sources for one scoreline, and that is on purpose.
+   *
+   * The game server pushes over the socket as things happen, and writes the
+   * same payload into WebLiveMatches every three seconds regardless. The socket
+   * is the fast path; the row is the one that still works when the plugin's
+   * connection is down, the socket server restarted, or this tab was opened
+   * before any round ended. Polling continues either way at a rate that costs
+   * nothing, and whichever arrives last wins — they are the same object.
+   */
   useEffect(() => {
     let active = true;
 
@@ -69,6 +89,21 @@ export default function LiveTab() {
     return () => { active = false; clearInterval(timer); };
   }, []);
 
+  useEffect(() => {
+    if (!socket) return;
+
+    const onLive = (payload: { state?: Live; at?: number } | null) => {
+      if (!payload?.state) return;
+      setState({ live: payload.state, stale: false, ageMs: 0 });
+    };
+
+    socket.on("rq:live:state", onLive);
+    // Whatever the server last said, for a tab that opened mid-match.
+    socket.emit("rq:live:get");
+
+    return () => { socket.off("rq:live:state", onLive); };
+  }, [socket]);
+
   if (state === null) return <p className="muted rq-empty">{t("lobby.live.loading")}</p>;
 
   const live = state.live;
@@ -82,30 +117,35 @@ export default function LiveTab() {
     );
   }
 
-  const teams = live.teams ?? [];
-  const players = live.players ?? [];
-  const byTeam = (index: number) =>
-    players.filter((p) => {
-      const raw = p.team;
-      if (typeof raw === "number") return raw === index || raw === index + 2;
-      return String(raw ?? "").toUpperCase() === (index === 0 ? "T" : "CT");
-    });
+  const players = live.Players ?? [];
+
+  /**
+   * Who is on which side.
+   *
+   * A competitive match labels people by roster ("A"/"B"); everything else, and
+   * every bot, carries the engine's team number instead. Both are read, because
+   * a testing match has one of each on the same scoreboard.
+   */
+  const byTeam = (index: number) => {
+    const roster = index === 0 ? "A" : "B";
+    const teamNum = index === 0 ? 2 : 3;
+    return players.filter((p) =>
+      p.Team === roster || num(p.TeamNum) === teamNum
+    );
+  };
 
   return (
     <div className="rq-live">
       <header className="rq-live-head">
-        {live.map && <img src={mapImage(live.map)} alt="" className="rq-live-map" />}
+        {live.Map && <img src={mapImage(live.Map)} alt="" className="rq-live-map" />}
         <div>
-          <h3>{live.map ? mapName(live.map) : t("lobby.live.unknownMap")}</h3>
-          <p className="muted">
-            {live.mode ?? ""}
-            {live.round ? ` · ${t("lobby.live.round", { n: live.round, max: live.maxRounds ?? "?" })}` : ""}
-          </p>
+          <h3>{live.Map ? mapName(live.Map) : t("lobby.live.unknownMap")}</h3>
+          <p className="muted">{live.Mode ?? ""}</p>
         </div>
         <div className="rq-live-score">
-          <span className="t">{num(teams[0]?.score ?? live.score?.t)}</span>
+          <span className="t">{num(live.ScoreA)}</span>
           <span className="sep">–</span>
-          <span className="ct">{num(teams[1]?.score ?? live.score?.ct)}</span>
+          <span className="ct">{num(live.ScoreB)}</span>
         </div>
         {state.stale && (
           <span className="rq-live-stale" title={t("lobby.live.staleHint")}>
@@ -117,7 +157,10 @@ export default function LiveTab() {
       <div className="rq-live-teams">
         {[0, 1].map((i) => (
           <div key={i} className={`rq-live-team side-${i === 0 ? "T" : "CT"}`}>
-            <h4>{teams[i]?.name ?? t(`loadout.side.${i === 0 ? "T" : "CT"}`)}</h4>
+            <h4>
+              {(i === 0 ? live.TeamAName : live.TeamBName) ||
+                t(`loadout.side.${i === 0 ? "T" : "CT"}`)}
+            </h4>
             <table>
               <thead>
                 <tr>
@@ -130,12 +173,15 @@ export default function LiveTab() {
               </thead>
               <tbody>
                 {byTeam(i).map((p, n) => (
-                  <tr key={p.steamId ?? `${i}-${n}`}>
-                    <td>{p.name ?? p.steamId ?? "—"}</td>
-                    <td>{num(p.kills)}</td>
-                    <td>{num(p.deaths)}</td>
-                    <td>{num(p.assists)}</td>
-                    <td>{num(p.damage)}</td>
+                  <tr key={p.SteamId && p.SteamId !== "0" ? p.SteamId : `${i}-${n}`}>
+                    <td>
+                      {p.Name ?? p.SteamId ?? "—"}
+                      {p.IsBot && <span className="rq-live-bot">{t("lobby.live.bot")}</span>}
+                    </td>
+                    <td>{num(p.Kills)}</td>
+                    <td>{num(p.Deaths)}</td>
+                    <td>{num(p.Assists)}</td>
+                    <td>{num(p.Damage)}</td>
                   </tr>
                 ))}
               </tbody>

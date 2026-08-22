@@ -295,6 +295,17 @@ function attachRetakesMatchmaking(
   /** matchId -> timeout */
   const matchTimers = new Map();
 
+  /**
+   * The last live state the game server pushed, and when.
+   *
+   * The server also writes this into WebLiveMatches every three seconds, and
+   * /api/match/live reads that row — so this is a latency improvement rather
+   * than a source of truth. Held in memory on purpose: it is worth nothing the
+   * moment the process restarts, which is exactly when the row is worth
+   * something.
+   */
+  let liveState = null;
+
   // ------------------------------------------------------------------ helpers
 
   const socketFor = (steamId) => connectedUsers.get(String(steamId));
@@ -1558,6 +1569,44 @@ function attachRetakesMatchmaking(
         return socket.emit("rq:notice", { kind: "error", code: "not_your_turn" });
       }
       applySide(match, match.turn, side === "T" ? "T" : "CT", false);
+    });
+
+    /**
+     * The game server's live scoreline.
+     *
+     * Not a player event: this comes from the CS2 plugin over the same shared
+     * secret the website already trusts it with for skins and StatTrak. The key
+     * is checked on every message rather than once at connect, because a socket
+     * has no session and treating the first message as authentication would
+     * make every later one free.
+     *
+     * Fanned out to everybody: what is being played on the one server is not
+     * private — anybody can connect and look — and it is what the Live tab
+     * draws.
+     */
+    socket.on("rq:live", (payload = {}) => {
+      const key = process.env.INVSIM_API_KEY;
+      if (!key || payload?.apiKey !== key) {
+        return;
+      }
+
+      let state = payload.state;
+      if (typeof state === "string") {
+        try {
+          state = JSON.parse(state);
+        } catch {
+          return;
+        }
+      }
+      if (!state || typeof state !== "object") return;
+
+      liveState = { state, at: now() };
+      io.emit("rq:live:state", liveState);
+    });
+
+    /** Whatever the server last said, for a tab that just opened. */
+    socket.on("rq:live:get", () => {
+      socket.emit("rq:live:state", liveState);
     });
 
     socket.on("rq:chat", ({ text, teamOnly } = {}) => {

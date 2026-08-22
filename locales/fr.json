@@ -2440,5 +2440,6 @@
   "lobby.alert.ready": "Votre serveur est prêt",
   "lobby.alert.readyBody": "{map} — connectez-vous.",
   "social.friends.noneOnline": "Personne en ligne",
-  "lobby.allfriendsinparty": "Tous vos amis en ligne sont déjà dans votre groupe."
+  "lobby.allfriendsinparty": "Tous vos amis en ligne sont déjà dans votre groupe.",
+  "lobby.live.bot": "BOT"
 }

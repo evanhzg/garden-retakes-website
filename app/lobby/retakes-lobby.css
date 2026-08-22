@@ -943,3 +943,16 @@ html[data-motion="off"] .rq-server-pip.now { animation: none; }
   font-family: var(--font-mono); font-size: 13px;
   user-select: all;
 }
+
+/* A bot on the live scoreboard. Marked rather than hidden: in a testing match
+   the question being asked is which side everybody is on, and that includes
+   the ones that are not people. */
+.rq-live-bot {
+  margin-left: 7px;
+  padding: 1px 6px;
+  border-radius: 999px;
+  border: 1px solid var(--border);
+  font-size: 9px; font-weight: 800; letter-spacing: 0.08em;
+  color: var(--muted);
+  vertical-align: middle;
+}
