@@ -328,6 +328,8 @@ export default function FriendsSidebar() {
     if (!steamId || !socket) return;
 
     let lobbyId = "";
+    /** Which lobby you are inviting them to — they are different pages. */
+    let kind: "retakes" | "games" = "retakes";
     const match = window.location.pathname.match(/\/games\/lobby\/([a-zA-Z0-9]+)/);
     if (!match) {
       const rlMatch = window.location.pathname.match(/\/lobby\/([a-zA-Z0-9-]+)/);
@@ -348,13 +350,14 @@ export default function FriendsSidebar() {
       }
     } else {
       lobbyId = match[1];
+      kind = "games";
     }
 
     try {
       const res = await fetch("/api/friends/invite", {
         method: "POST",
         headers: { "Content-Type": "application/json", Authorization: `Bearer ${steamId}` },
-        body: JSON.stringify({ targetSteamId: friendId, lobbyId }),
+        body: JSON.stringify({ targetSteamId: friendId, lobbyId, kind }),
       });
       if (!res.ok) return;
       const data = await res.json();

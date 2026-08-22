@@ -33,8 +33,8 @@
   letter-spacing: 0.04em; cursor: pointer;
   transition: border-color 0.15s ease, background 0.15s ease;
 }
-.lo-sidetab.t.on { border-color: #e0a94a; background: color-mix(in srgb, #e0a94a 16%, transparent); }
-.lo-sidetab.ct.on { border-color: #6aa9e0; background: color-mix(in srgb, #6aa9e0 16%, transparent); }
+.lo-sidetab.t.on { border-color: var(--color-team-t); background: color-mix(in srgb, var(--color-team-t) 16%, transparent); }
+.lo-sidetab.ct.on { border-color: var(--color-team-ct); background: color-mix(in srgb, var(--color-team-ct) 16%, transparent); }
 
 /* Section tabs — Role / Loadout / Notes each get the whole page instead of
    fighting each other for scroll space. Weapons and their per-round utility

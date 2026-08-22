@@ -9,7 +9,7 @@ export async function POST(request: Request) {
     if (!steamIdHeader) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
 
     const steamId = BigInt(steamIdHeader);
-    const { targetSteamId, lobbyId, password } = await request.json();
+    const { targetSteamId, lobbyId, password, kind } = await request.json();
 
     if (!targetSteamId || !lobbyId) {
       return NextResponse.json({ error: "Missing required fields" }, { status: 400 });
@@ -30,8 +30,16 @@ export async function POST(request: Request) {
 
     if (!friendship) return NextResponse.json({ error: "Not friends" }, { status: 403 });
 
-    let actionUrl = `/games/lobby/${lobbyId}`;
-    if (password) {
+    // Two different lobbies live on this site and this route serves both. It
+    // used to build /games/lobby/<id> unconditionally, so a competitive retakes
+    // invite sent whoever accepted it to the mini-game hub — a page with no
+    // party of that id on it, which reads as an invite that expired.
+    //
+    // `kind` defaults to the mini-game path, which is what every existing
+    // caller meant when it did not say.
+    const retakes = kind === "retakes";
+    let actionUrl = retakes ? `/lobby/${lobbyId}` : `/games/lobby/${lobbyId}`;
+    if (password && !retakes) {
       actionUrl += `?password=${encodeURIComponent(password)}`;
     }
 

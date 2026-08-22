@@ -6,6 +6,7 @@ import { useSocket } from "@/components/games/SocketProvider";
 import { useI18n } from "@/components/I18nProvider";
 import { ROLES, DEFAULT_UTILITY, type Side } from "@/lib/retakeLoadout";
 import { mapImage, mapName } from "@/lib/maps";
+import { notify, playMatchFound, playServerReady, primeNotifications } from "@/lib/matchAlert";
 import { useOverlay } from "@/lib/useOverlay";
 import { usePlayerNames, displayNameFor } from "@/components/games/hooks";
 import { FormCard, FormLine, useRosterForm, type RecentForm } from "./PlayerForm";
@@ -284,6 +285,35 @@ export default function RetakesLobby({ signedIn, lobbyId }: { signedIn: boolean,
   useEffect(() => {
     if (!match) setHideMatchRoom(false);
   }, [match?.id]);
+
+  /**
+   * The two moments worth interrupting somebody for, and neither had a sound.
+   *
+   * Keyed on the transition rather than the state: `rq:state` is a full
+   * snapshot pushed on every change in the lobby, so reacting to the value
+   * would fire the chime on every chat message for as long as the match
+   * stayed ready.
+   */
+  const alerted = useRef<{ found?: string; ready?: string }>({});
+  useEffect(() => {
+    if (!match) return;
+
+    if (match.phase === "found" && alerted.current.found !== match.id) {
+      alerted.current.found = match.id;
+      playMatchFound();
+      notify(t("lobby.alert.found"), t("lobby.alert.foundBody"), "rq-found");
+    }
+
+    if (match.result?.server?.state === "ready" && alerted.current.ready !== match.id) {
+      alerted.current.ready = match.id;
+      playServerReady();
+      notify(
+        t("lobby.alert.ready"),
+        t("lobby.alert.readyBody", { map: mapName(match.result.map) }),
+        "rq-ready"
+      );
+    }
+  }, [match?.id, match?.phase, match?.result?.server?.state, t]);
   const now = useNow(Boolean(state?.search || match));
 
   const partyForms = useRosterForm(party?.members.map((m: any) => m.steamId) ?? []);
@@ -799,6 +829,10 @@ export default function RetakesLobby({ signedIn, lobbyId }: { signedIn: boolean,
                       setGateOpen(true);
                       return;
                     }
+                    // Asked here rather than on mount: a prompt that appears
+                    // the moment a page loads is the one everybody dismisses,
+                    // and a dismissed prompt cannot be asked again.
+                    primeNotifications();
                     send("rq:queue:join", { safeQueue });
                   }}
                 >
@@ -1060,18 +1094,22 @@ function MatchRoom({
                   confirmed it is on the map and has taken the roster. */}
               <div className="rq-connect-wrapper" style={{ minHeight: "80px", display: "flex", alignItems: "center", justifyContent: "center" }}>
                 {match.result.connect ? (
+                  /* Connect first and biggest. Everything else on this screen
+                     is over — the veto is decided, the server has taken the
+                     roster — and the only thing left to do is join. */
                   <div className="rq-connect">
-                    <code>connect {match.result.connect}</code>
-                    <div className="rq-connect-buttons">
+                    <a className="btn btn-primary rq-connect-go" href={`steam://connect/${match.result.connect}`}>
+                      <RetakesIcon id="connect" size={18} />
+                      {t("lobby.join_server")}
+                    </a>
+                    <div className="rq-connect-ip">
+                      <code>connect {match.result.connect}</code>
                       <button
-                        className="btn"
+                        className="btn btn-ghost"
                         onClick={() => navigator.clipboard?.writeText(`connect ${match.result!.connect}`)}
                       >
                         {t("lobby.copyconnect")}
                       </button>
-                      <a className="btn btn-secondary" href={`steam://connect/${match.result.connect}`}>
-                        {t("lobby.join_server")}
-                      </a>
                     </div>
                   </div>
                 ) : match.result.server?.state === "failed" ? (

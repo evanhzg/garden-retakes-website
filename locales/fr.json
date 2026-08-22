@@ -2434,5 +2434,9 @@
   "lobby.notice.too_many_maps_excluded": "Vous ne pouvez retirer que quatre cartes.",
   "lobby.notice.maps_saved": "Enregistré comme préférence de cartes par défaut.",
   "lobby.notice.maps_save_failed": "Impossible d'enregistrer vos préférences de cartes.",
-  "lobby.notice.loadout_unset": "Chaque membre du groupe doit définir son équipement avant de lancer la recherche."
+  "lobby.notice.loadout_unset": "Chaque membre du groupe doit définir son équipement avant de lancer la recherche.",
+  "lobby.alert.found": "Match trouvé",
+  "lobby.alert.foundBody": "Acceptez avant la fin du compte à rebours.",
+  "lobby.alert.ready": "Votre serveur est prêt",
+  "lobby.alert.readyBody": "{map} — connectez-vous."
 }

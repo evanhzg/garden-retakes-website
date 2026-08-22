@@ -2434,5 +2434,9 @@
   "lobby.notice.too_many_maps_excluded": "You can only drop four maps.",
   "lobby.notice.maps_saved": "Saved as your default map preference.",
   "lobby.notice.maps_save_failed": "Could not save your map preferences.",
-  "lobby.notice.loadout_unset": "Everyone in the party needs a loadout before you can queue."
+  "lobby.notice.loadout_unset": "Everyone in the party needs a loadout before you can queue.",
+  "lobby.alert.found": "Match found",
+  "lobby.alert.foundBody": "Accept before the timer runs out.",
+  "lobby.alert.ready": "Your server is ready",
+  "lobby.alert.readyBody": "{map} — connect now."
 }

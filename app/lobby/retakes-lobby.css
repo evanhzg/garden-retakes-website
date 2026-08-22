@@ -14,8 +14,10 @@
   --rq-radius: var(--radius);
   --rq-panel: var(--panel);
   --rq-edge: var(--border);
-  --rq-ct: #6aa9e0;
-  --rq-t: #e0a94a;
+  /* A fourth pair of team colours used to be written out here. They are
+     tokens now, so every T/CT surface on the site moves together. */
+  --rq-ct: var(--color-team-ct);
+  --rq-t: var(--color-team-t);
   max-width: 1240px;
   margin: 0 auto;
   padding: 0 clamp(12px, 3vw, 28px) clamp(40px, 7vh, 90px);
@@ -50,19 +52,17 @@
 
 /* --- layout --------------------------------------------------------------- */
 
+/* Two columns, not three. The third was a card describing the page it sat on;
+   its content is the rail on the left now. */
 .rq-grid {
   display: grid;
-  grid-template-columns: minmax(0, 300px) minmax(0, 1fr) minmax(0, 260px);
+  grid-template-columns: minmax(0, 300px) minmax(0, 1fr);
   gap: 18px;
   align-items: start;
 }
 @media (max-width: 1080px) {
-  .rq-grid { grid-template-columns: minmax(0, 1fr) minmax(0, 300px); }
-  .rq-main { order: -1; grid-column: 1 / -1; }
-}
-@media (max-width: 760px) {
   .rq-grid { grid-template-columns: minmax(0, 1fr); }
-  .rq-main { grid-column: auto; }
+  .rq-main { order: -1; }
 }
 
 .rq-panel {
@@ -920,4 +920,26 @@ html[data-motion="off"] .rq-server-pip.now { animation: none; }
   .rq-match-row { grid-template-columns: 72px minmax(0, 1fr) auto; }
   .rq-match-map { width: 72px; height: 40px; }
   .rq-match-outcome, .rq-match-elo { display: none; }
+}
+
+/* The connect block, once the server has taken the roster.
+
+   Everything else on that screen is over — the veto is decided, the sides are
+   picked — so the only thing left to do gets the size. The IP sits under it as
+   a fallback for anyone whose steam:// handler does not fire. */
+.rq-connect { display: flex; flex-direction: column; align-items: center; gap: 12px; }
+
+.rq-connect-go {
+  display: inline-flex; align-items: center; gap: 10px;
+  padding: 16px 40px;
+  font-size: 17px; font-weight: 800; letter-spacing: 0.02em;
+}
+
+.rq-connect-ip { display: flex; align-items: center; gap: 10px; flex-wrap: wrap; justify-content: center; }
+.rq-connect-ip code {
+  padding: 7px 12px;
+  border: 1px solid var(--border);
+  background: color-mix(in srgb, var(--color-text) 5%, transparent);
+  font-family: var(--font-mono); font-size: 13px;
+  user-select: all;
 }
