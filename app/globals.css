@@ -7608,6 +7608,14 @@ html[data-motion="off"] .main-content { scroll-behavior: auto; }
    area, which reads as content cut off rather than content ending. */
 .main-content > main {
   padding-bottom: clamp(48px, 7vh, 96px);
+
+  /* And it takes whatever the footer does not, so a page with little on it
+     still puts the footer on the bottom edge instead of halfway up with the
+     ground showing beneath it. Grow, never shrink: this column scrolls, so a
+     main that is taller than the viewport must overflow into the scroll rather
+     than be squeezed to fit. /inventory opts out below — it sizes its
+     workspace against the viewport itself. */
+  flex: 1 0 auto;
 }
 
 .nav-more-item {
@@ -11391,3 +11399,37 @@ body.overlay-open .socket-status-banner {
 @media (max-width: 640px) {
   .feed-hero-rest { grid-template-columns: 1fr; }
 }
+
+/* ── socket status pill ──────────────────────────────────────────────────
+   Sits over the page, under the header. Written in Tailwind originally, in a
+   project that has never had Tailwind — so it was a static block at the end of
+   <body>, which is the app shell's flex column, and it took 31px of height on
+   every page. That is what held the footer off the bottom of the screen.
+
+   pointer-events: none because it is a readout that can appear over whatever
+   you were about to click. */
+.sock-banner {
+  position: fixed;
+  /* Clear of the 80px header, the same way .rq-rail clears it. */
+  top: 92px;
+  left: 50%;
+  transform: translateX(-50%);
+  z-index: 300;
+  display: flex; align-items: center; gap: 9px;
+  padding: 9px 16px;
+  border-radius: 999px;
+  border: 1px solid var(--border);
+  background: color-mix(in srgb, var(--panel) 92%, transparent);
+  backdrop-filter: blur(8px);
+  box-shadow: var(--shadow-lg);
+  font-size: 13px; font-weight: 600;
+  pointer-events: none;
+  max-width: calc(100vw - 32px);
+}
+/* Amber while it waits, green once it is up. The amber is the T token, which
+   is the site's amber; there is no green token to reach for. */
+.sock-banner.connecting { color: var(--color-team-t); }
+.sock-banner.connected { color: #4ade80; }
+
+.sock-banner-spin { animation: gr-spin 0.9s linear infinite; }
+html[data-motion="off"] .sock-banner-spin { animation: none; }

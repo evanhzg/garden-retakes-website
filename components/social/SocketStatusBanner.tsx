@@ -6,6 +6,20 @@ import { motion, AnimatePresence } from "framer-motion";
 import { useI18n } from '@/components/I18nProvider';
 import { Wifi, Loader2 } from "lucide-react";
 
+/**
+ * Whether the socket is up, as a pill over the top of the page.
+ *
+ * It was written in Tailwind — `fixed top-6 left-1/2 -translate-x-1/2 z-[100]`
+ * and a dozen more — and this project has never had Tailwind installed. Every
+ * one of those classes was inert, so the pill was not fixed, not centred, not
+ * round and not coloured: it was a plain static block at the end of <body>,
+ * which is a flex column. It therefore took 31px of the app shell's height on
+ * every page, pushing the scroll container up by exactly that much and leaving
+ * a strip of empty background under the footer. That strip is the whole reason
+ * the footer never sat at the bottom.
+ *
+ * Real classes now, in globals.css with everything else.
+ */
 export default function SocketStatusBanner() {
     const { t } = useI18n();
 
@@ -21,7 +35,7 @@ export default function SocketStatusBanner() {
       wasDisconnected.current = true;
       setStatus("connecting");
       setCooldown(60); // Reset to 60s
-      
+
       interval = setInterval(() => {
         setCooldown((prev) => {
           if (prev <= 1) {
@@ -52,21 +66,19 @@ export default function SocketStatusBanner() {
           initial={{ y: -100, opacity: 0 }}
           animate={{ y: 0, opacity: 1 }}
           exit={{ y: -100, opacity: 0, transition: { duration: 0.2 } }}
-          className={`fixed top-6 left-1/2 -translate-x-1/2 z-[100] px-5 py-2.5 rounded-full flex items-center gap-3 shadow-lg font-medium backdrop-blur-md border ${
-            status === "connecting" 
-              ? "bg-amber-500/10 border-amber-500/20 text-amber-200 shadow-amber-500/5" 
-              : "bg-emerald-500/10 border-emerald-500/20 text-emerald-200 shadow-emerald-500/5"
-          }`}
+          className={`sock-banner ${status}`}
+          role="status"
+          aria-live="polite"
         >
           {status === "connecting" ? (
             <>
-              <Loader2 className="w-4 h-4 animate-spin text-amber-400" />
-              <span className="text-sm">{t("auto.socketstatusbanner.waking_up_game_server")}{cooldown}{t("auto.socketstatusbanner.s")}</span>
+              <Loader2 size={15} className="sock-banner-spin" aria-hidden />
+              <span>{t("auto.socketstatusbanner.waking_up_game_server")}{cooldown}{t("auto.socketstatusbanner.s")}</span>
             </>
           ) : (
             <>
-              <Wifi className="w-4 h-4 text-emerald-400" />
-              <span className="text-sm">{t("auto.socketstatusbanner.sockets_up_server_is_online")}</span>
+              <Wifi size={15} aria-hidden />
+              <span>{t("auto.socketstatusbanner.sockets_up_server_is_online")}</span>
             </>
           )}
         </motion.div>
