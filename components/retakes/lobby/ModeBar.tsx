@@ -28,6 +28,10 @@ export type Modes = {
  * Premium is a real button that changes on toggle rather than a checkbox. It is
  * off for a testing queue and says so: a lobby that fills with bots after
  * fifteen seconds has no rating band worth tightening.
+ *
+ * `inline` puts the sizes and the toggles on one line instead of two stacked
+ * blocks. That is how the lobby uses it now — one row of options directly under
+ * the queue button, which is where every lobby worth copying keeps them.
  */
 export default function ModeBar({
   modes,
@@ -36,6 +40,7 @@ export default function ModeBar({
   safeQueue,
   onSafeQueue,
   onChange,
+  inline,
 }: {
   modes: Modes;
   canChange: boolean;
@@ -43,6 +48,7 @@ export default function ModeBar({
   safeQueue: boolean;
   onSafeQueue: (on: boolean) => void;
   onChange: (next: { size?: string; premium?: boolean; testing?: boolean }) => void;
+  inline?: boolean;
 }) {
   const { t } = useI18n();
 
@@ -50,7 +56,7 @@ export default function ModeBar({
   const currentSize = sizeOf(modes.size);
 
   return (
-    <div className="rq-modes">
+    <div className={`rq-modes ${inline ? "inline" : ""}`}>
       <div className="rq-mode-row" role="group" aria-label={t("lobby.mode.label")}>
         {/* Testing first, as listed — it is the one you reach for to try the
             flow, and putting it after the sizes buried it. */}

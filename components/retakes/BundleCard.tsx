@@ -13,27 +13,30 @@ import type { Bundle, Side } from "@/lib/retakeLoadout";
  * underneath it — so setting up a loadout meant visiting every section twice,
  * once per side, and most people want the same thing on both.
  *
- * Selection cycles through the bubble rather than being a pair of checkboxes:
- * unset → T → CT → both → unset. Four states on one target, and the card's
- * colour is the readout — amber for T, blue for CT, and split down the middle
- * for both, which is a thing a player recognises before they have read a word
- * of it.
+ * Clicking opens the side menu; it does not cycle. Cycling made "both" — the
+ * answer most people give — cost three clicks through two states they did not
+ * mean, and nothing about a card that toggles says it has four positions. The
+ * card is now a target that opens the same T / CT / Both menu the inventory
+ * puts on a skin.
  *
  * A bundle no side can take is not rendered; a bundle only CT can take (the
- * ones with a defuse kit in them) renders with its T half disabled rather than
- * missing, because a card that silently refuses half its bubble is worse than
- * one that says why.
+ * ones with a defuse kit in them) renders with its T option disabled rather
+ * than missing, because a card that silently refuses half its menu is worse
+ * than one that says why.
  */
 export default function BundleCard({
   bundle,
   sides,
-  onCycle,
+  onOpen,
+  open,
   disabled,
 }: {
   bundle: Bundle;
   /** Which sides currently have this bundle selected. */
   sides: Side[];
-  onCycle: () => void;
+  /** Hands back the card itself so the menu can be anchored to — and track — it. */
+  onOpen: (el: HTMLElement) => void;
+  open?: boolean;
   disabled?: boolean;
 }) {
   const { t } = useI18n();
@@ -57,10 +60,11 @@ export default function BundleCard({
   return (
     <button
       type="button"
-      className={`lo-bundle lo-bundle-${state}`}
-      onClick={onCycle}
+      className={`lo-bundle lo-bundle-${state} ${open ? "open" : ""}`}
+      onClick={(e) => onOpen(e.currentTarget)}
       disabled={disabled}
-      aria-pressed={state !== "none"}
+      aria-haspopup="menu"
+      aria-expanded={Boolean(open)}
       // The colour carries the side, so the side has to be in the accessible
       // name too — otherwise a screen reader gets "Default + Kevlar" four
       // times and no way to tell which is which.

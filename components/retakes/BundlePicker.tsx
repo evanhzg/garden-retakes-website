@@ -6,6 +6,7 @@ import { X } from "lucide-react";
 import { useI18n } from "@/components/I18nProvider";
 import RetakesIcon from "@/components/retakes/RetakesIcon";
 import BundleCard from "@/components/retakes/BundleCard";
+import SideBubble, { type SideChoice } from "@/components/retakes/SideBubble";
 import {
   ROUND_KINDS,
   SLOT_FOR_ROUND,
@@ -18,6 +19,11 @@ import {
   type Side,
   type WeaponPrefs,
 } from "@/lib/retakeLoadout";
+
+// The stylesheet travels with the component. It used to be imported only by
+// the loadout page, so every one of these rendered unstyled inside the lobby
+// — the first-run gate and the lobby's own map tab both mount it.
+import "@/app/loadout/loadout.css";
 
 const SIDES: Side[] = ["T", "CT"];
 
@@ -36,7 +42,9 @@ const SIDES: Side[] = ["T", "CT"];
  *
  * `round` renders one section instead of all three, which is how the lobby's
  * setup gate walks somebody through pistol, force and full one screen at a time
- * without a second copy of any of this.
+ * without a second copy of any of this. The gate is not a second design — it is
+ * this component with one section showing, which is the only way the two stay
+ * identical without anybody remembering to keep them so.
  */
 export default function BundlePicker({
   selection,
@@ -57,35 +65,39 @@ export default function BundlePicker({
 }) {
   const { t } = useI18n();
   const [drawer, setDrawer] = useState<RoundKind | null>(null);
+  /** The card whose side menu is open, and the element to hang it off. */
+  const [menu, setMenu] = useState<{ kind: RoundKind; bundleId: string; el: HTMLElement } | null>(null);
 
   const rounds = round ? [round] : ROUND_KINDS;
 
-  /** unset → T → CT → both → unset, on one target. */
-  const cycle = (kind: RoundKind, bundleId: string) => {
-    const has = (side: Side) => selection[side]?.[kind] === bundleId;
-    const canT = bundleById(bundleId)?.weapon.T !== undefined;
+  /** Which sides a card currently holds, as the menu states it. */
+  const choiceOf = (kind: RoundKind, bundleId: string): SideChoice => {
+    const hasT = selection.T?.[kind] === bundleId;
+    const hasCt = selection.CT?.[kind] === bundleId;
+    if (hasT && hasCt) return "both";
+    if (hasT) return "T";
+    if (hasCt) return "CT";
+    return null;
+  };
 
-    if (!has("T") && !has("CT")) {
-      // A CT-only bundle skips the T step rather than offering a state it
-      // cannot enter and silently doing nothing.
-      if (canT) onPick("T", kind, bundleId);
-      else onPick("CT", kind, bundleId);
-      return;
-    }
-    if (has("T") && !has("CT")) {
-      onPick("T", kind, null);
-      onPick("CT", kind, bundleId);
-      return;
-    }
-    if (!has("T") && has("CT")) {
-      if (canT) onPick("T", kind, bundleId);
-      else {
-        onPick("CT", kind, null);
-      }
-      return;
-    }
-    onPick("T", kind, null);
-    onPick("CT", kind, null);
+  /**
+   * Set a card to exactly the sides picked, rather than nudging it one step on.
+   *
+   * Every side is written on every pick, including the ones being taken away:
+   * choosing T on a card that was on both has to clear CT, or the menu would
+   * say T while the card stayed split. A side landing on this card also leaves
+   * whichever card had it, which the data model does for free — one bundle per
+   * side per round.
+   */
+  const apply = (kind: RoundKind, bundleId: string, choice: SideChoice) => {
+    const wantT = choice === "T" || choice === "both";
+    const wantCt = choice === "CT" || choice === "both";
+    const held = choiceOf(kind, bundleId);
+    const hadT = held === "T" || held === "both";
+    const hadCt = held === "CT" || held === "both";
+
+    if (wantT !== hadT) onPick("T", kind, wantT ? bundleId : null);
+    if (wantCt !== hadCt) onPick("CT", kind, wantCt ? bundleId : null);
   };
 
   return (
@@ -124,7 +136,12 @@ export default function BundlePicker({
                   key={b.id}
                   bundle={b}
                   sides={SIDES.filter((s) => selection[s]?.[kind] === b.id)}
-                  onCycle={() => cycle(kind, b.id)}
+                  open={menu?.kind === kind && menu?.bundleId === b.id}
+                  onOpen={(el) =>
+                    setMenu((m) =>
+                      m?.kind === kind && m?.bundleId === b.id ? null : { kind, bundleId: b.id, el }
+                    )
+                  }
                 />
               ))}
             </div>
@@ -205,6 +222,19 @@ export default function BundlePicker({
           </section>
         );
       })}
+
+      {menu && (
+        <SideBubble
+          anchor={menu.el}
+          value={choiceOf(menu.kind, menu.bundleId)}
+          title={t(bundleById(menu.bundleId)?.labelKey ?? "")}
+          subtitle={t(`loadout.round.${menu.kind}`)}
+          allowT={bundleById(menu.bundleId)?.weapon.T !== undefined}
+          allowCt={bundleById(menu.bundleId)?.weapon.CT !== undefined}
+          onPick={(choice) => apply(menu.kind, menu.bundleId, choice)}
+          onClose={() => setMenu(null)}
+        />
+      )}
     </div>
   );
 }

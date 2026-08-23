@@ -1,41 +1,29 @@
 "use client";
 
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
-import { Crosshair, Ghost, Target as TargetIcon, Anchor, RotateCcw, Mic } from "lucide-react";
 import { useSocket } from "@/components/games/SocketProvider";
 import { useI18n } from "@/components/I18nProvider";
-import { ROLES, DEFAULT_UTILITY, type Side } from "@/lib/retakeLoadout";
-import { mapImage, mapName } from "@/lib/maps";
+import { DEFAULT_UTILITY, isRoleUnique, type Side } from "@/lib/retakeLoadout";
+import { mapName } from "@/lib/maps";
 import { notify, playMatchFound, playServerReady, primeNotifications } from "@/lib/matchAlert";
 import { useOverlay } from "@/lib/useOverlay";
 import { usePlayerNames, displayNameFor } from "@/components/games/hooks";
 import { FormCard, FormLine, useRosterForm, type RecentForm } from "./PlayerForm";
 import LevelBadge from "./LevelBadge";
+import SafeShield from "./SafeShield";
 import MapPreferences from "./MapPreferences";
 import LobbyRail, { type LobbyTab } from "./lobby/LobbyRail";
 import ModeBar from "./lobby/ModeBar";
 import MatchesTab from "./lobby/MatchesTab";
 import LiveTab from "./lobby/LiveTab";
 import LoadoutGate from "./lobby/LoadoutGate";
+import PartyStage from "./lobby/PartyStage";
+import { claimKey, type RoleClaims } from "./lobby/RolePicker";
 import RetakesIcon from "./RetakesIcon";
 import MatchmakingWalkthrough from "@/components/onboarding/MatchmakingWalkthrough";
 import { motion } from "framer-motion";
 import "@/app/lobby/retakes-lobby.css";
 
-function SafeShield({ score, probation }: { score: number; probation: boolean }) {
-  let color = "#888";
-  if (probation) color = "#888";
-  else if (score >= 90) color = "#FFD700";
-  else if (score >= 60) color = "#4A90E2";
-  else color = "#E0533A";
-
-  return (
-    <svg style={{ width: '14px', height: '14px', marginLeft: '6px', flexShrink: 0, verticalAlign: 'middle' }} viewBox="0 0 24 24" fill="none" stroke={color} strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-      <title>{`Safe Score: ${probation ? 'Probation' : score}`}</title>
-      <path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z" fill={color} fillOpacity="0.2" />
-    </svg>
-  );
-}
 
 // Competitive matchmaking: party, queue, accept, veto, connect.
 //
@@ -181,7 +169,6 @@ export default function RetakesLobby({ signedIn, lobbyId }: { signedIn: boolean,
   const [friends, setFriends] = useState<Friend[]>([]);
   const [online, setOnline] = useState<string[]>([]);
   const [notice, setNotice] = useState<{ kind: string; text: string } | null>(null);
-  const [avatarPlayers, setAvatarPlayers] = useState<{ steamId: string, name: string, avatarSrc?: string }[]>([]);
   const [safeScores, setSafeScores] = useState<{ steamId: string, score: number, probation: boolean }[]>([]);
   const [tab, setTab] = useState<LobbyTab>("play");
   const [safeQueue, setSafeQueue] = useState(false);
@@ -198,9 +185,7 @@ export default function RetakesLobby({ signedIn, lobbyId }: { signedIn: boolean,
   const [pendingInvites, setPendingInvites] = useState<{ id: string, name: string, expiresAt: number }[]>([]);
   const [reportOpen, setReportOpen] = useState(false);
   const [reportText, setReportText] = useState("");
-  const [openPartyCard, setOpenPartyCard] = useState<{ steamId: string; rect: DOMRect } | null>(null);
   const [partyLoadouts, setPartyLoadouts] = useState<Record<string, { roleT: string, roleCt: string, isCaller: boolean, weapons: any, utility: any, notes: string }>>({});
-  const [sideTab, setSideTab] = useState<Side>("T");
   const [savingRole, setSavingRole] = useState(false);
 
   const allIds = useMemo(() => {
@@ -228,20 +213,13 @@ export default function RetakesLobby({ signedIn, lobbyId }: { signedIn: boolean,
       // into a .catch() on every party change, so the avatars were always the
       // fallback letter and the safety shield never appeared once.
       //
-      // /api/avatars is a GET taking a comma list and answering with a map,
-      // not a POST answering with an array. And /api/safe-queue/status answers
-      // for the signed-in account only, which cannot draw a shield beside
-      // somebody else — hence /api/safe-queue/scores.
-      fetch("/api/avatars?ids=" + ids.join(","))
-        .then((r) => (r.ok ? r.json() : {}))
-        .then((map: Record<string, string>) => {
-          if (!active) return;
-          setAvatarPlayers(
-            ids.map((id: string) => ({ steamId: id, name: "", avatarSrc: map?.[id] }))
-          );
-        })
-        .catch(() => {});
-
+      // The avatar fetch that used to sit here wrote to a `avatarPlayers` state
+      // nothing ever read — the faces come from usePlayerNames, which already
+      // fetches them once for the whole screen. It was a request per party
+      // change for a value that was thrown away.
+      //
+      // /api/safe-queue/status answers for the signed-in account only, which
+      // cannot draw a shield beside somebody else — hence the /scores route.
       fetch("/api/safe-queue/scores?ids=" + ids.join(","))
         .then((r) => (r.ok ? r.json() : {}))
         .then((map: Record<string, { score: number; probation: boolean }>) => {
@@ -419,28 +397,90 @@ export default function RetakesLobby({ signedIn, lobbyId }: { signedIn: boolean,
     [onlineFriends, inPartyIds]
   );
 
-  const conflicts = useMemo(() => {
-     if (!party) return [];
-     const res: string[] = [];
-     const max1T = ["sniper", "lurker"];
-     const max1Ct = ["sniper", "anchor"];
-     let callers = 0;
-     const tRoles = new Map<string, number>();
-     const ctRoles = new Map<string, number>();
-     
-     party.members.forEach(m => {
-        const l = partyLoadouts[m.steamId];
-        if (!l) return;
-        if (l.isCaller) callers++;
-        if (l.roleT) tRoles.set(l.roleT, (tRoles.get(l.roleT) ?? 0) + 1);
-        if (l.roleCt) ctRoles.set(l.roleCt, (ctRoles.get(l.roleCt) ?? 0) + 1);
-     });
-     
-     if (callers > 1) res.push("Max 1 Caller per team");
-     max1T.forEach(r => { if ((tRoles.get(r) ?? 0) > 1) res.push(`Max 1 ${r} (T)`); });
-     max1Ct.forEach(r => { if ((ctRoles.get(r) ?? 0) > 1) res.push(`Max 1 ${r} (CT)`); });
-     return res;
-  }, [party, partyLoadouts]);
+  /**
+   * Who has claimed what, and where that is not allowed.
+   *
+   * One pass produces all three, because they are the same walk over the party:
+   * `claims` is what the role bubble greys out, `callers` is the mic, and
+   * `conflicts` is what stops the queue. Which roles may only be held once is
+   * `isRoleUnique` — it used to be two string arrays written out here, so the
+   * lobby and the roles themselves could disagree about the rule, and adding a
+   * sixth role meant remembering to come back to this memo.
+   *
+   * The two that are not capped are on purpose: a retake wants more than one
+   * rifler and more than one rotator, and blocking those would be blocking the
+   * normal answer.
+   */
+  const { claims, callers, conflicts } = useMemo(() => {
+    const claims: RoleClaims = {};
+    const callers: string[] = [];
+    const conflicts: string[] = [];
+    if (!party) return { claims, callers, conflicts };
+
+    party.members.forEach((m) => {
+      const l = partyLoadouts[m.steamId];
+      if (!l) return;
+      const who =
+        m.steamId === steamId
+          ? "you"
+          : displayNameFor(m.steamId, names, { isBot: false }) ?? m.name ?? t("lobby.player");
+      if (l.isCaller) callers.push(who);
+      (["T", "CT"] as Side[]).forEach((side) => {
+        const id = side === "T" ? l.roleT : l.roleCt;
+        if (!id) return;
+        const key = claimKey(side, id);
+        (claims[key] ??= []).push(who);
+      });
+    });
+
+    if (callers.length > 1) conflicts.push(t("lobby.role.conflictCaller"));
+    Object.entries(claims).forEach(([key, held]) => {
+      const [side, id] = key.split(":");
+      if (held.length > 1 && isRoleUnique(id)) {
+        conflicts.push(
+          t("lobby.role.conflictRole", {
+            role: t(`loadout.role.${id}`),
+            side: t(`loadout.side.${side}`),
+          })
+        );
+      }
+    });
+
+    return { claims, callers, conflicts };
+  }, [party, partyLoadouts, steamId, names, t]);
+
+
+  /**
+   * The party as seats, with you in one of them even before the socket answers.
+   *
+   * `rq:state` decides who is in the party, and until it lands `party` is null.
+   * Falling back to an empty list drew a stage of nothing but empty slots while
+   * the header beside it already said 1/2 — the count and the seats disagreeing
+   * about whether you exist. You are always in your own party, so the fallback
+   * is a seat for you rather than one fewer gap.
+   */
+  const seats = useMemo(() => {
+    const members =
+      party?.members ??
+      (steamId ? [{ steamId, name: null as string | null, ready: false } as Member] : []);
+
+    return members.map((m) => ({
+      steamId: m.steamId,
+      name: displayNameFor(m.steamId, names, { isBot: false }) ?? m.name ?? t("lobby.player"),
+      avatar: names[m.steamId]?.avatar ?? undefined,
+      leader: party ? m.steamId === party.leader : true,
+      me: m.steamId === steamId,
+      elo: m.elo,
+      matches: m.matches,
+      safe: safeScores.find((x) => x.steamId === m.steamId),
+      form: partyForms[m.steamId],
+      role: {
+        roleT: partyLoadouts[m.steamId]?.roleT ?? "",
+        roleCt: partyLoadouts[m.steamId]?.roleCt ?? "",
+        isCaller: partyLoadouts[m.steamId]?.isCaller ?? false,
+      },
+    }));
+  }, [party, steamId, names, safeScores, partyForms, partyLoadouts, t]);
 
   const updateMyLoadout = async (changes: any) => {
     if (!steamId || savingRole) return;
@@ -567,26 +607,22 @@ export default function RetakesLobby({ signedIn, lobbyId }: { signedIn: boolean,
           locked={loadoutSet === false ? { play: t("lobby.gate.locked") } : undefined}
         />
 
-      <div className="rq-grid" style={{ display: tab === "play" ? "grid" : "none" }}>
-        {/* ------------------------------------------------------------ party */}
-        <aside className="panel rq-party">
-          <header className="rq-panel-head" style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
-            <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-               <h2>{t("lobby.party")}</h2>
-               <span className="rq-count">
-                 {party?.members.length ?? 1}/{party?.capacity ?? 2}
-               </span>
-            </div>
-            <button className="btn btn-ghost" onClick={() => setReportOpen(true)} style={{ color: 'var(--color-danger)', fontSize: '12px', padding: '4px 8px' }}>
-               Report Lobby
-            </button>
-          </header>
-
-          {party && (party.members.length >= Math.ceil(party.capacity * (2/3))) && (
-            <div style={{ padding: "0 16px", marginBottom: "16px", display: "flex", alignItems: "center", gap: "8px" }}>
-              <span style={{ fontSize: "12px", color: "var(--color-text-muted)", textTransform: "uppercase" }}>Team Name:</span>
-              {editingName ? (
-                <input 
+      {/* ---------------------------------------------------- the stage ---
+          Players in the middle, the button under them, the options in a row
+          under that. It was a 300px column of names on the left and a panel of
+          controls on the right, which put the least prominent element of the
+          page on the thing the page is for. */}
+      <div className="rq-stage" style={{ display: tab === "play" ? "flex" : "none" }}>
+        <div className="rq-stage-head">
+          <div className="rq-stage-id">
+            <h2>{t("lobby.party")}</h2>
+            <span className="rq-count">
+              {party?.members.length ?? 1}/{party?.capacity ?? 2}
+            </span>
+            {party && party.members.length >= Math.ceil(party.capacity * (2 / 3)) && (
+              editingName ? (
+                <input
+                  className="rq-stage-nameinput"
                   autoFocus
                   value={draftName}
                   onChange={(e) => setDraftName(e.target.value)}
@@ -600,285 +636,184 @@ export default function RetakesLobby({ signedIn, lobbyId }: { signedIn: boolean,
                       if (draftName !== party.name) send("rq:party:name", { name: draftName });
                     }
                   }}
-                  style={{ background: "transparent", border: "none", borderBottom: "1px solid var(--color-accent)", color: "#fff", outline: "none", fontSize: "14px", fontWeight: "bold", width: "120px" }}
                 />
               ) : (
-                <span style={{ fontSize: "14px", fontWeight: "bold", cursor: party.isLeader ? "pointer" : "default" }} onClick={() => {
-                  if (party.isLeader) {
+                <button
+                  type="button"
+                  className="rq-stage-name"
+                  disabled={!party.isLeader}
+                  onClick={() => {
+                    if (!party.isLeader) return;
                     setDraftName(party.name || "");
                     setEditingName(true);
-                  }
-                }}>
-                  {party.name || "Unnamed"} {party.isLeader && <span style={{ opacity: 0.5, fontSize: "12px", marginLeft: "4px" }}>✎</span>}
-                </span>
-              )}
-            </div>
-          )}
-
-          <ul className="rq-members">
-            {(party?.members ?? []).map((m) => {
-              const avatarUrl = names[m.steamId]?.avatar;
-              const displayName = displayNameFor(m.steamId, names, { isBot: false }) ?? m.name ?? t("lobby.player");
-              return (
-              <li 
-                key={m.steamId} 
-                className={m.steamId === steamId ? "me" : ""}
-                onMouseEnter={(e) => setOpenPartyCard({ steamId: m.steamId, rect: e.currentTarget.getBoundingClientRect() })}
-                onMouseLeave={() => setOpenPartyCard((o) => (o?.steamId === m.steamId ? null : o))}
-              >
-                <span className="rq-avatar" aria-hidden style={{ overflow: "hidden" }}>
-                  {avatarUrl ? (
-                    <img src={avatarUrl} style={{ width: "100%", height: "100%", objectFit: "cover" }} />
-                  ) : (
-                    displayName.slice(0, 1).toUpperCase()
-                  )}
-                </span>
-                <span className="rq-member-name">
-                  {displayName}
-                  {m.steamId === party?.leader && <span className="rq-crown" title={t("lobby.leader")}>★</span>}
-                  {(() => {
-                    const ss = safeScores.find(s => s.steamId === m.steamId);
-                    if (ss) return <SafeShield score={ss.score} probation={ss.probation} />;
-                    return null;
-                  })()}
-                  {partyLoadouts[m.steamId]?.isCaller && <span title="Caller"><Mic size={14} style={{ marginLeft: 4, color: "var(--color-accent)" }} /></span>}
-                  {partyLoadouts[m.steamId]?.roleT && <span style={{ marginLeft: 6, opacity: 0.7 }} title={`T: ${partyLoadouts[m.steamId].roleT}`}>
-                     {partyLoadouts[m.steamId].roleT === 'sniper' && <Crosshair size={14} />}
-                     {partyLoadouts[m.steamId].roleT === 'lurker' && <Ghost size={14} />}
-                     {partyLoadouts[m.steamId].roleT === 'rifler' && <TargetIcon size={14} />}
-                  </span>}
-                  {partyLoadouts[m.steamId]?.roleCt && <span style={{ marginLeft: 4, opacity: 0.7 }} title={`CT: ${partyLoadouts[m.steamId].roleCt}`}>
-                     {partyLoadouts[m.steamId].roleCt === 'sniper' && <Crosshair size={14} />}
-                     {partyLoadouts[m.steamId].roleCt === 'anchor' && <Anchor size={14} />}
-                     {partyLoadouts[m.steamId].roleCt === 'rotator' && <RotateCcw size={14} />}
-                  </span>}
-                </span>
-                <span style={{ display: 'inline-flex', alignItems: 'center', gap: '8px' }}>
-                  <FormLine form={partyForms[m.steamId]} />
-                  <LevelBadge elo={m.elo} matches={m.matches} size="sm" />
-                </span>
-                {party?.isLeader && m.steamId !== steamId && (
-                  <button
-                    className="rq-kick"
-                    onClick={() => send("rq:party:kick", { steamId: m.steamId })}
-                    aria-label={t("lobby.kick")}
-                  >
-                    ✕
-                  </button>
-                )}
-              </li>
-            );})}
-            {pendingInvites.map((inv) => (
-              <li key={`inv-${inv.id}`} className="empty pending-invite" style={{ opacity: 0.7 }}>
-                 <span className="rq-avatar ghost" aria-hidden>+</span>
-                 <span className="rq-member-name muted">Inviting {inv.name}... ({(Math.max(0, inv.expiresAt - Date.now()) / 1000).toFixed(0)}s)</span>
-              </li>
-            ))}
-            {Array.from({ length: Math.max(0, (party?.capacity ?? 2) - (party?.members.length ?? 1) - pendingInvites.length) }).map((_, i) => (
-              <li key={`slot-${i}`} className="empty" onClick={() => {
-                  navigator.clipboard.writeText(`${window.location.origin}/lobby/${lobbyId}`);
-                  alert("Lobby invite link copied!");
-              }} style={{ cursor: "pointer" }}>
-                <span className="rq-avatar ghost" aria-hidden>
-                  +
-                </span>
-                <span className="rq-member-name muted">{t("lobby.emptyslot")} - Click to copy link</span>
-              </li>
-            ))}
-          </ul>
-
-          {party && !party.isLeader && <p className="rq-hint">{t("lobby.leaderqueues")}</p>}
-
-          {openPartyCard && (
-            <FormCard
-              form={partyForms[openPartyCard.steamId]}
-              name={displayNameFor(openPartyCard.steamId, names, { isBot: false }) ?? party?.members.find((m) => m.steamId === openPartyCard.steamId)?.name ?? "—"}
-              anchor={openPartyCard.rect}
-              onClose={() => setOpenPartyCard(null)}
-            />
-          )}
-
-          {/* Somebody already in the party is not someone to invite. They used
-              to be listed here anyway with the button greyed out and "In party"
-              on it, which is the same person twice on one panel — they are in
-              the members list directly above. The server refuses the invite
-              too; see already_in_party in rq:party:invite. */}
-          <h3 className="rq-subhead">{t("lobby.invitefriends")}</h3>
-          {invitable.length === 0 ? (
-            <p className="rq-hint">
-              {friends.length === 0
-                ? t("lobby.nofriends")
-                : onlineFriends.length === 0
-                  ? t("lobby.nofriendsonline")
-                  : t("lobby.allfriendsinparty")}
-            </p>
-          ) : (
-            <ul className="rq-friends">
-              {invitable.map((f) => {
-                const already = pendingInvites.some(inv => inv.id === f.friendId);
-                const full = (party?.members.length ?? 1) + pendingInvites.length >= (party?.capacity ?? 2);
-                return (
-                  <li key={f.friendId}>
-                    <span className="rq-avatar sm" aria-hidden>
-                      {f.name.slice(0, 1).toUpperCase()}
-                    </span>
-                    <span className="rq-member-name">{f.name}</span>
-                    <button
-                      className="btn btn-secondary rq-invite"
-                      disabled={already || full || !party?.isLeader}
-                      onClick={() => {
-                         send("rq:party:invite", { steamId: f.friendId, name: f.name });
-                         setPendingInvites(p => [...p, { id: f.friendId, name: f.name, expiresAt: Date.now() + 10000 }]);
-                      }}
-                    >
-                      {already ? t("lobby.invited") : t("lobby.invite")}
-                    </button>
-                  </li>
-                );
-              })}
-            </ul>
-          )}
-        </aside>
-
-        {/* ------------------------------------------------------------- queue */}
-        <main className="panel rq-main">
-          {search ? (
-            <div className="rq-searching">
-              <div className="rq-radar" aria-hidden>
-                <span />
-                <span />
-                <span />
-              </div>
-              <h2>{t("lobby.searching")}</h2>
-              <div className="rq-timer">{clock(now - search.since)}</div>
-              <p className="muted">
-                {t("lobby.inqueue", { n: search.searching, mode: queueName(t, search.queue, search.label) })}
-              </p>
-              {search.bots ? (
-                /* Said plainly rather than pretending a full lobby is imminent:
-                   in the training queue the honest answer is always bots. */
-                <p className="rq-botfill">
-                  {botIn > 0 ? t("lobby.botfillin", { n: botIn }) : t("lobby.botfillnow")}
-                </p>
-              ) : (
-                <>
-                  {/* No bots are coming to this one. What it is waiting for is
-                      people, so it says how many and how many it has. */}
-                  <p className="rq-waiting">
-                    {t("lobby.waitingplayers", { n: search.searching, needed: search.needed })}
-                  </p>
-                  {waitedLong && <p className="rq-waiting hint">{t("lobby.waitinglong")}</p>}
-                </>
-              )}
-              <button className="btn btn-ghost" onClick={() => send("rq:queue:leave")}>
-                {t("lobby.cancel")}
-              </button>
-            </div>
-          ) : (
-            <>
-
-              <div data-tutorial="role-picker" style={{ marginBottom: 24, padding: "16px", background: "color-mix(in srgb, var(--color-surface) 50%, transparent)", borderRadius: "8px", border: "1px solid var(--border)" }}>
-                 <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: "12px" }}>
-                    <h3 style={{ margin: 0, fontSize: "16px" }}>Your Role</h3>
-                    <div style={{ display: "flex", gap: "8px" }}>
-                       <button className={`btn btn-sm ${sideTab === 'T' ? 'btn-primary' : 'btn-ghost'}`} onClick={() => setSideTab("T")} style={{ padding: "4px 8px", fontSize: "12px" }}>T Side</button>
-                       <button className={`btn btn-sm ${sideTab === 'CT' ? 'btn-primary' : 'btn-ghost'}`} onClick={() => setSideTab("CT")} style={{ padding: "4px 8px", fontSize: "12px" }}>CT Side</button>
-                    </div>
-                 </div>
-                 <div style={{ display: "flex", flexWrap: "wrap", gap: "8px" }}>
-                    {ROLES.filter(r => r.side === sideTab || r.side === "both").map(r => {
-                       const active = sideTab === "T" ? partyLoadouts[steamId!]?.roleT === r.id : partyLoadouts[steamId!]?.roleCt === r.id;
-                       return (
-                         <button key={r.id} onClick={() => updateMyLoadout({ [sideTab === 'T' ? 'roleT' : 'roleCt']: active ? "" : r.id })} style={{ display: "flex", alignItems: "center", gap: "6px", padding: "6px 12px", background: active ? "var(--color-accent)" : "var(--bg-elevated)", color: active ? "#fff" : "var(--fg)", border: "none", borderRadius: "4px", cursor: "pointer", fontSize: "13px", fontWeight: 600 }}>
-                           {r.id === 'sniper' && <Crosshair size={14} />}
-                           {r.id === 'lurker' && <Ghost size={14} />}
-                           {r.id === 'rifler' && <TargetIcon size={14} />}
-                           {r.id === 'anchor' && <Anchor size={14} />}
-                           {r.id === 'rotator' && <RotateCcw size={14} />}
-                           {r.id.charAt(0).toUpperCase() + r.id.slice(1)}
-                         </button>
-                       );
-                    })}
-                 </div>
-                 <label style={{ display: "flex", alignItems: "center", gap: "8px", marginTop: "16px", cursor: "pointer", fontSize: "14px", fontWeight: "bold" }}>
-                   <input type="checkbox" checked={partyLoadouts[steamId!]?.isCaller || false} onChange={e => updateMyLoadout({ isCaller: e.target.checked })} style={{ width: 16, height: 16, accentColor: "var(--color-accent)" }} />
-                   <Mic size={16} /> I am the Caller
-                 </label>
-              </div>
-
-              {conflicts.length > 0 && party?.isLeader && (
-                <div style={{ marginBottom: 16, padding: "12px", background: "rgba(224, 83, 58, 0.1)", border: "1px solid #E0533A", borderRadius: "8px", color: "#E0533A", fontSize: "14px" }}>
-                   <strong>Role Conflict:</strong>
-                   <ul style={{ margin: "4px 0 0", paddingLeft: "20px" }}>
-                     {conflicts.map((c, i) => <li key={i}>{c}</li>)}
-                   </ul>
-                </div>
-              )}
-
-              {/* ------------------------------------------- what you play */}
-              <ModeBar
-                modes={modes}
-                canChange={Boolean(party?.isLeader) && !match}
-                partySize={party?.members.length ?? 1}
-                safeQueue={party?.safeQueue ?? safeQueue}
-                onSafeQueue={(on) => setSafeQueue(on)}
-                onChange={(next) => send("rq:party:queue", next)}
-              />
-
-              <div className="rq-actions">
-                <button
-                  data-tutorial="queue-play"
-                  className="btn btn-primary rq-play"
-                  disabled={
-                    match
-                      ? false
-                      : !party?.isLeader || conflicts.length > 0 || loadoutSet === false
-                  }
-                  onClick={() => {
-                    // A live match is never behind the loadout gate: the point
-                    // of the button then is to get back to the game, and the
-                    // loadout was already settled when the queue was joined.
-                    if (match) {
-                      setHideMatchRoom(false);
-                      return;
-                    }
-                    if (loadoutSet === false) {
-                      setGateOpen(true);
-                      return;
-                    }
-                    // Asked here rather than on mount: a prompt that appears
-                    // the moment a page loads is the one everybody dismisses,
-                    // and a dismissed prompt cannot be asked again.
-                    primeNotifications();
-                    send("rq:queue:join", { safeQueue });
                   }}
                 >
-                  {match ? (
-                    <>
-                      <RetakesIcon id="matchroom" size={16} />
-                      {t("lobby.matchroom")}
-                    </>
-                  ) : conflicts.length > 0 ? (
-                    t("lobby.fixroles")
-                  ) : loadoutSet === false ? (
-                    t("lobby.setloadout")
-                  ) : (
-                    t("lobby.findmatch")
-                  )}
+                  {party.name || t("lobby.stage.unnamed")}
+                  {party.isLeader && <span aria-hidden>✎</span>}
                 </button>
+              )
+            )}
+          </div>
 
-                {party && party.members.length > 1 && !match && (
-                  <button className="btn btn-secondary" onClick={() => send("rq:party:leave")}>
-                    <RetakesIcon id="leave" size={15} />
-                    {t("lobby.leaveparty")}
-                  </button>
+          <button type="button" className="rq-stage-report" onClick={() => setReportOpen(true)}>
+            {t("lobby.stage.report")}
+          </button>
+        </div>
+
+        <PartyStage
+          seats={seats}
+          capacity={party?.capacity ?? 2}
+          pending={pendingInvites}
+          claims={claims}
+          callers={callers}
+          canKick={Boolean(party?.isLeader)}
+          canInvite={Boolean(party?.isLeader)}
+          invitable={invitable.map((f) => ({ friendId: f.friendId, name: f.name }))}
+          noFriendsNote={
+            friends.length === 0
+              ? t("lobby.nofriends")
+              : onlineFriends.length === 0
+                ? t("lobby.nofriendsonline")
+                : t("lobby.allfriendsinparty")
+          }
+          onRole={(next) => updateMyLoadout(next)}
+          onKick={(id) => send("rq:party:kick", { steamId: id })}
+          onInvite={(f) => {
+            send("rq:party:invite", { steamId: f.friendId, name: f.name });
+            setPendingInvites((p) => [
+              ...p,
+              { id: f.friendId, name: f.name, expiresAt: Date.now() + 10000 },
+            ]);
+          }}
+          onCopyLink={() =>
+            navigator.clipboard.writeText(`${window.location.origin}/lobby/${lobbyId}`)
+          }
+        />
+
+        {party && !party.isLeader && <p className="rq-hint">{t("lobby.leaderqueues")}</p>}
+
+        {/* The queue is blocked, so the reason is next to the button that is
+            refusing rather than in a panel elsewhere. Shown to everyone: the
+            person who has to change a role is usually not the captain. */}
+        {conflicts.length > 0 && (
+          <div className="rq-conflict" role="alert">
+            <strong>{t("lobby.role.conflictTitle")}</strong>
+            <ul>
+              {conflicts.map((c, i) => (
+                <li key={i}>{c}</li>
+              ))}
+            </ul>
+          </div>
+        )}
+
+        {search ? (
+          <div className="rq-searching">
+            <div className="rq-radar" aria-hidden>
+              <span />
+              <span />
+              <span />
+            </div>
+            <h2>{t("lobby.searching")}</h2>
+            <div className="rq-timer">{clock(now - search.since)}</div>
+            <p className="muted">
+              {t("lobby.inqueue", { n: search.searching, mode: queueName(t, search.queue, search.label) })}
+            </p>
+            {search.bots ? (
+              /* Said plainly rather than pretending a full lobby is imminent:
+                 in the training queue the honest answer is always bots. */
+              <p className="rq-botfill">
+                {botIn > 0 ? t("lobby.botfillin", { n: botIn }) : t("lobby.botfillnow")}
+              </p>
+            ) : (
+              <>
+                {/* No bots are coming to this one. What it is waiting for is
+                    people, so it says how many and how many it has. */}
+                <p className="rq-waiting">
+                  {t("lobby.waitingplayers", { n: search.searching, needed: search.needed })}
+                </p>
+                {waitedLong && <p className="rq-waiting hint">{t("lobby.waitinglong")}</p>}
+              </>
+            )}
+            <button className="btn btn-ghost" onClick={() => send("rq:queue:leave")}>
+              {t("lobby.cancel")}
+            </button>
+          </div>
+        ) : (
+          <>
+            <div className="rq-actions">
+              <button
+                data-tutorial="queue-play"
+                className="btn btn-primary rq-play"
+                disabled={
+                  match
+                    ? false
+                    : !party?.isLeader || conflicts.length > 0 || loadoutSet === false
+                }
+                onClick={() => {
+                  // A live match is never behind the loadout gate: the point
+                  // of the button then is to get back to the game, and the
+                  // loadout was already settled when the queue was joined.
+                  if (match) {
+                    setHideMatchRoom(false);
+                    return;
+                  }
+                  if (loadoutSet === false) {
+                    setGateOpen(true);
+                    return;
+                  }
+                  // Asked here rather than on mount: a prompt that appears
+                  // the moment a page loads is the one everybody dismisses,
+                  // and a dismissed prompt cannot be asked again.
+                  primeNotifications();
+                  send("rq:queue:join", { safeQueue });
+                }}
+              >
+                {match ? (
+                  <>
+                    <RetakesIcon id="matchroom" size={16} />
+                    {t("lobby.matchroom")}
+                  </>
+                ) : conflicts.length > 0 ? (
+                  t("lobby.fixroles")
+                ) : loadoutSet === false ? (
+                  t("lobby.setloadout")
+                ) : (
+                  t("lobby.findmatch")
                 )}
-              </div>
+              </button>
 
-              <p className="rq-online">{t("lobby.onlinenow", { n: state?.online ?? 0 })}</p>
-            </>
-          )}
-        </main>
+              {party && party.members.length > 1 && !match && (
+                <button className="btn btn-secondary" onClick={() => send("rq:party:leave")}>
+                  <RetakesIcon id="leave" size={15} />
+                  {t("lobby.leaveparty")}
+                </button>
+              )}
+            </div>
+
+            {/* Everything you can change about the queue, on one line under
+                the button, and the maps you never want on the next. */}
+            <ModeBar
+              modes={modes}
+              canChange={Boolean(party?.isLeader) && !match}
+              partySize={party?.members.length ?? 1}
+              safeQueue={party?.safeQueue ?? safeQueue}
+              onSafeQueue={(on) => setSafeQueue(on)}
+              onChange={(next) => send("rq:party:queue", next)}
+              inline
+            />
+
+            <div className="rq-stage-maps">
+              <MapPreferences
+                variant="row"
+                value={party?.maps?.excluded ?? []}
+                busy={!party?.isLeader}
+                onChange={(excluded) => send("rq:party:maps", { excluded })}
+              />
+            </div>
+
+            <p className="rq-online">{t("lobby.onlinenow", { n: state?.online ?? 0 })}</p>
+          </>
+        )}
       </div>
 
       {tab === "loadout" && (

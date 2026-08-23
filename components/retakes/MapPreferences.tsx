@@ -5,6 +5,11 @@ import { useI18n } from "@/components/I18nProvider";
 import RetakesIcon from "@/components/retakes/RetakesIcon";
 import { MAX_EXCLUDED_MAPS, RETAKES_MAPS, mapImage, mapName, sanitiseExcludedMaps } from "@/lib/maps";
 
+// The stylesheet travels with the component. It used to be imported only by
+// the loadout page, so every one of these rendered unstyled inside the lobby
+// — the first-run gate and the lobby's own map tab both mount it.
+import "@/app/loadout/loadout.css";
+
 /**
  * Maps you never want to be sent to.
  *
@@ -22,17 +27,24 @@ import { MAX_EXCLUDED_MAPS, RETAKES_MAPS, mapImage, mapName, sanitiseExcludedMap
  * captain adjusts for one queue there and the change is not written back unless
  * they ask. Left uncontrolled, it loads and saves the account default itself,
  * which is how the loadout page uses it.
+ *
+ * `variant="row"` is the same control laid out as one scrolling strip, for the
+ * lobby, where it is the last row under the queue button rather than a page of
+ * its own. Same limit, same refusal, same state — a second component would have
+ * been a second place for the cap to drift.
  */
 export default function MapPreferences({
   value,
   onChange,
   onSave,
   busy,
+  variant = "grid",
 }: {
   value?: string[];
   onChange?: (excluded: string[]) => void;
   onSave?: (excluded: string[]) => void;
   busy?: boolean;
+  variant?: "grid" | "row";
 } = {}) {
   const { t } = useI18n();
   const controlled = value !== undefined;
@@ -93,16 +105,30 @@ export default function MapPreferences({
     }
   }
 
+  const row = variant === "row";
+
   return (
-    <div className="lo-maps">
-      <p className="lo-hint">{t("loadout.maps.help", { max: MAX_EXCLUDED_MAPS })}</p>
+    <div className={`lo-maps ${row ? "lo-maps-inline" : ""}`}>
+      {row ? (
+        <div className="lo-maps-rowhead">
+          <span className="lo-maps-count">
+            <RetakesIcon id="maps" size={14} />
+            {t("loadout.maps.remaining", { n: excluded.length, max: MAX_EXCLUDED_MAPS })}
+          </span>
+          <span className="lo-maps-rowhint">{t("loadout.maps.rowHelp")}</span>
+        </div>
+      ) : (
+        <>
+          <p className="lo-hint">{t("loadout.maps.help", { max: MAX_EXCLUDED_MAPS })}</p>
 
-      <div className="lo-maps-count">
-        <RetakesIcon id="maps" size={15} />
-        {t("loadout.maps.remaining", { n: excluded.length, max: MAX_EXCLUDED_MAPS })}
-      </div>
+          <div className="lo-maps-count">
+            <RetakesIcon id="maps" size={15} />
+            {t("loadout.maps.remaining", { n: excluded.length, max: MAX_EXCLUDED_MAPS })}
+          </div>
+        </>
+      )}
 
-      <div className="lo-maps-grid" aria-busy={!loaded || saving || busy}>
+      <div className={row ? "lo-maps-row" : "lo-maps-grid"} aria-busy={!loaded || saving || busy}>
         {RETAKES_MAPS.map((map) => {
           const dropped = excluded.includes(map);
           return (
@@ -120,7 +146,7 @@ export default function MapPreferences({
               <span className="lo-map-name">{mapName(map)}</span>
               {dropped && (
                 <span className="lo-map-dropped">
-                  <RetakesIcon id="ban" size={22} />
+                  <RetakesIcon id="ban" size={row ? 16 : 22} />
                 </span>
               )}
             </button>

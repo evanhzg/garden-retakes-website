@@ -183,16 +183,31 @@ export const itemName = (id: number | null | undefined): string | null => {
  * actually exist when four people walk onto a site with the bomb down.
  */
 export const ROLES = [
-  { id: "sniper", side: "both" as const },
-  { id: "lurker", side: "T" as const },
-  { id: "rifler", side: "T" as const },
-  { id: "anchor", side: "CT" as const },
-  { id: "rotator", side: "CT" as const },
+  { id: "sniper", side: "both" as const, unique: true },
+  { id: "lurker", side: "T" as const, unique: true },
+  { id: "rifler", side: "T" as const, unique: false },
+  { id: "anchor", side: "CT" as const, unique: true },
+  { id: "rotator", side: "CT" as const, unique: false },
 ] as const;
 
 export type RoleId = (typeof ROLES)[number]["id"];
 
 export const isRole = (v: string): v is RoleId => ROLES.some((r) => r.id === v);
+
+/** The roles one side can take. `both` roles appear in each column. */
+export const rolesFor = (side: Side) => ROLES.filter((r) => r.side === side || r.side === "both");
+
+/**
+ * Whether two people in the same party may both claim this role.
+ *
+ * Only two of the five may not: a second sniper is a second AWP nobody can
+ * afford, and a second lurker or a second anchor is the same body in the same
+ * place. Riflers and rotators are the jobs a retake wants more than one of, so
+ * they are deliberately not capped — the lobby used to hard-code both lists in
+ * a `conflicts` memo, which is why this now lives beside the roles themselves.
+ */
+export const isRoleUnique = (id: string): boolean =>
+  ROLES.find((r) => r.id === id)?.unique ?? false;
 
 // ----------------------------------------------------------------- utility
 

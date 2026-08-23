@@ -2,11 +2,12 @@
 
 import { useCallback, useEffect, useMemo, useState } from "react";
 import { motion, AnimatePresence } from "framer-motion";
-import { Crosshair, Ghost, Target, Anchor, RotateCcw, Mic, Users, Package, StickyNote, Ban, X, type LucideIcon } from "lucide-react";
+import { Mic, Users, Package, StickyNote, Ban, X } from "lucide-react";
 import { useI18n } from "@/components/I18nProvider";
 import BundlePicker from "@/components/retakes/BundlePicker";
 import MapPreferences from "@/components/retakes/MapPreferences";
 import RetakesIcon from "@/components/retakes/RetakesIcon";
+import { ROLE_ICON } from "@/components/retakes/roleIcons";
 import { RETAKES_MAPS, mapName } from "@/lib/maps";
 import {
   ROLES,
@@ -65,14 +66,6 @@ const EMPTY: Loadout = {
 };
 
 const SIDES: Side[] = ["T", "CT"];
-
-const ROLE_ICON: Record<string, LucideIcon> = {
-  sniper: Crosshair,
-  lurker: Ghost,
-  rifler: Target,
-  anchor: Anchor,
-  rotator: RotateCcw,
-};
 
 /**
  * `glyph` is one of the hand-drawn set, `Icon` a lucide fallback for the two

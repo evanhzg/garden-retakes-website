@@ -52,18 +52,9 @@
 
 /* --- layout --------------------------------------------------------------- */
 
-/* Two columns, not three. The third was a card describing the page it sat on;
-   its content is the rail on the left now. */
-.rq-grid {
-  display: grid;
-  grid-template-columns: minmax(0, 300px) minmax(0, 1fr);
-  gap: 18px;
-  align-items: start;
-}
-@media (max-width: 1080px) {
-  .rq-grid { grid-template-columns: minmax(0, 1fr); }
-  .rq-main { order: -1; }
-}
+/* The play tab's two-column grid — a party column beside a queue panel — is
+   gone; it is .rq-stage now, a single centred column. See the bottom of this
+   file. */
 
 .rq-panel {
   background: var(--rq-panel);
@@ -80,17 +71,9 @@
 
 /* --- party ---------------------------------------------------------------- */
 
-.rq-members, .rq-friends, .rq-roster { list-style: none; margin: 0; padding: 0; display: grid; gap: 6px; }
-
-.rq-members > li, .rq-friends > li {
-  display: flex; align-items: center; gap: 10px;
-  padding: 8px 10px;
-  border-radius: 10px;
-  background: color-mix(in srgb, var(--color-text) 4%, transparent);
-  border: 1px solid transparent;
-}
-.rq-members > li.me { border-color: color-mix(in srgb, var(--color-accent) 45%, transparent); }
-.rq-members > li.empty { background: none; border: 1px dashed var(--rq-edge); }
+/* .rq-members and .rq-friends went with the party column. The roster in the
+   match room is the last list that wants this shape. */
+.rq-roster { list-style: none; margin: 0; padding: 0; display: grid; gap: 6px; }
 
 .rq-avatar {
   flex: none;
@@ -116,65 +99,10 @@
 .rq-kick:hover { background: color-mix(in srgb, #e0533a 25%, transparent); color: var(--color-text); }
 .rq-invite { padding: 5px 12px; font-size: 12px; }
 
-/* --- queue picker --------------------------------------------------------- */
+/* --- the queue button ----------------------------------------------------- */
 
-.rq-main {
-  display: flex; flex-direction: column; align-items: center;
-  text-align: center;
-  padding: clamp(22px, 4vh, 40px) 18px;
-  min-height: 380px; justify-content: center;
-}
-.rq-choose { margin: 0 0 12px; font-size: 13px; font-weight: 700; letter-spacing: 0.12em; text-transform: uppercase; color: var(--muted); }
-
-/* Three queues, one card each.
- *
- * The team size is set in the mono face because it is a figure, and the
- * selected card is the only thing on this panel wearing the accent — which is
- * how the page answers "which queue am I in" without a second label saying so. */
-.rq-queues {
-  display: grid;
-  grid-template-columns: repeat(3, minmax(0, 1fr));
-  gap: 12px;
-  width: 100%; max-width: 660px;
-  margin: 0 0 20px;
-}
-@media (max-width: 620px) { .rq-queues { grid-template-columns: minmax(0, 1fr); } }
-
-.rq-queue {
-  display: grid; gap: 4px; align-content: start;
-  padding: 16px 14px;
-  border: 2px solid var(--rq-edge);
-  border-radius: 0;
-  background: transparent;
-  color: var(--color-text);
-  font: inherit; text-align: left; cursor: pointer;
-  transition: border-color 0.15s ease, background 0.15s ease;
-}
-.rq-queue:hover:not(:disabled) { border-color: var(--color-accent); }
-.rq-queue.on {
-  border-color: var(--color-accent);
-  background: color-mix(in srgb, var(--color-accent) 12%, transparent);
-}
-.rq-queue:disabled { cursor: not-allowed; opacity: 0.45; }
-
-.rq-queue-size {
-  font-family: var(--font-mono);
-  font-variant-numeric: tabular-nums;
-  font-size: 22px; font-weight: 700; line-height: 1; letter-spacing: -0.02em;
-}
-.rq-queue.on .rq-queue-size { color: var(--color-accent); }
-.rq-queue-label { font-size: 13.5px; font-weight: 800; }
-.rq-queue-sub { font-size: 11.5px; color: var(--muted); line-height: 1.35; }
-.rq-queue-sub.warn { color: var(--color-accent); font-weight: 700; }
-
-/* Said in words as well, right above the button that acts on it. */
-.rq-queue-current {
-  margin: 0 0 14px;
-  font-size: 12px; font-weight: 700;
-  letter-spacing: 0.14em; text-transform: uppercase;
-  color: var(--muted);
-}
-.rq-queue-current strong { color: var(--color-text); }
+/* The .rq-queue cards this section used to hold went when ModeBar replaced
+   them; nothing had referenced them since. */
 
 .rq-play {
   padding: 16px 56px;
@@ -707,9 +635,6 @@ html[data-motion="off"] .rq-server-pip.now { animation: none; }
   background: color-mix(in srgb, var(--color-text) 10%, transparent);
 }
 
-/* The play tab keeps its two columns; the third is gone. */
-.rq-shell .rq-grid { grid-template-columns: minmax(0, 300px) minmax(0, 1fr); }
-
 .rq-tabpanel { padding: 24px; }
 
 @media (max-width: 900px) {
@@ -719,7 +644,6 @@ html[data-motion="off"] .rq-server-pip.now { animation: none; }
     flex-direction: row; overflow-x: auto;
   }
   .rq-rail-row { width: auto; white-space: nowrap; }
-  .rq-shell .rq-grid { grid-template-columns: 1fr; }
 }
 
 /* ───────────────────────── what you are queueing for ──────────────────── */
@@ -955,4 +879,343 @@ html[data-motion="off"] .rq-server-pip.now { animation: none; }
   font-size: 9px; font-weight: 800; letter-spacing: 0.08em;
   color: var(--muted);
   vertical-align: middle;
+}
+
+/* ─────────────────────────────────────────────────────────────────────────
+   The stage: players in the middle, the button under them, the options in a
+   row under that. Replaces the two-column grid, which put the party — the
+   thing the page is about — in the narrowest element on screen.
+   ───────────────────────────────────────────────────────────────────────── */
+
+.rq-stage {
+  flex-direction: column;
+  align-items: center;
+  gap: 18px;
+  padding: clamp(18px, 3.5vh, 32px) clamp(14px, 3vw, 28px) clamp(22px, 4vh, 36px);
+  background: var(--rq-panel);
+  border: 1px solid var(--rq-edge);
+  border-radius: var(--rq-radius);
+}
+
+.rq-stage-head {
+  width: 100%;
+  display: flex; align-items: center; justify-content: space-between; gap: 12px;
+  flex-wrap: wrap;
+}
+.rq-stage-id { display: flex; align-items: center; gap: 10px; min-width: 0; }
+.rq-stage-id h2 {
+  margin: 0; font-size: 13px; font-weight: 700;
+  letter-spacing: 0.12em; text-transform: uppercase; color: var(--muted);
+}
+.rq-stage-name {
+  display: inline-flex; align-items: center; gap: 6px;
+  padding: 4px 10px; border-radius: 999px;
+  border: 1px solid var(--rq-edge); background: transparent;
+  color: var(--color-text); font-size: 13px; font-weight: 700;
+  cursor: pointer; max-width: 220px;
+  overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
+}
+.rq-stage-name:disabled { cursor: default; opacity: 0.85; }
+.rq-stage-name span { opacity: 0.5; font-size: 11px; }
+.rq-stage-nameinput {
+  background: transparent; border: 0;
+  border-bottom: 1px solid var(--color-accent);
+  color: var(--color-text); outline: none;
+  font-size: 14px; font-weight: 700; width: 140px;
+}
+.rq-stage-report {
+  border: 1px solid transparent; background: none;
+  color: var(--muted); font-size: 11.5px; font-weight: 600;
+  padding: 4px 8px; border-radius: 8px; cursor: pointer;
+}
+.rq-stage-report:hover { color: #e0533a; border-color: color-mix(in srgb, #e0533a 40%, transparent); }
+
+/* --- seats ---------------------------------------------------------------- */
+
+.rq-stage-party { width: 100%; }
+
+.rq-seats {
+  list-style: none; margin: 0; padding: 0;
+  display: flex; flex-wrap: wrap; justify-content: center;
+  gap: clamp(12px, 2.5vw, 28px);
+}
+
+.rq-seat {
+  position: relative;
+  display: flex; flex-direction: column; align-items: center; gap: 7px;
+  width: clamp(96px, 13vw, 128px);
+  text-align: center;
+}
+
+.rq-seat-face {
+  position: relative;
+  width: clamp(60px, 7vw, 76px); aspect-ratio: 1;
+  border-radius: 50%;
+  display: grid; place-items: center;
+  background: linear-gradient(140deg,
+    color-mix(in srgb, var(--color-accent) 70%, transparent),
+    color-mix(in srgb, var(--color-accent) 25%, transparent));
+  border: 2px solid transparent;
+  transition: border-color 0.16s;
+}
+.rq-seat-face img {
+  width: 100%; height: 100%; border-radius: 50%;
+  object-fit: cover; display: block;
+}
+.rq-seat-initial { color: #fff; font-weight: 800; font-size: 22px; }
+.rq-seat.me .rq-seat-face { border-color: var(--color-accent); }
+
+.rq-seat-face.ghost {
+  background: none;
+  border: 2px dashed var(--rq-edge);
+}
+.rq-seat-face.ghost .rq-seat-initial { color: var(--muted); }
+
+.rq-seat-crown {
+  position: absolute; top: -6px; right: -2px;
+  color: var(--color-accent); font-size: 14px;
+  text-shadow: 0 1px 3px rgba(0, 0, 0, 0.6);
+}
+.rq-seat-kick {
+  position: absolute; top: -4px; left: -4px;
+  width: 20px; height: 20px; padding: 0;
+  display: grid; place-items: center;
+  border: 1px solid var(--rq-edge); border-radius: 50%;
+  background: var(--color-bg); color: var(--muted);
+  cursor: pointer; opacity: 0; transition: opacity 0.14s, color 0.14s;
+}
+.rq-seat:hover .rq-seat-kick, .rq-seat-kick:focus-visible { opacity: 1; }
+.rq-seat-kick:hover { color: #e0533a; border-color: color-mix(in srgb, #e0533a 55%, transparent); }
+
+.rq-seat-name {
+  display: flex; align-items: center; justify-content: center; gap: 2px;
+  max-width: 100%;
+  font-size: 13px; font-weight: 700;
+  overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
+}
+.rq-seat-meta { display: flex; align-items: center; justify-content: center; gap: 6px; font-size: 11px; }
+.rq-seat-meta.muted { color: var(--muted); }
+.rq-seat.pending { opacity: 0.65; }
+
+.rq-seat-add {
+  width: clamp(60px, 7vw, 76px); aspect-ratio: 1;
+  display: grid; place-items: center;
+  border: 2px dashed var(--rq-edge); border-radius: 50%;
+  background: transparent; color: var(--muted);
+  cursor: pointer; transition: color 0.16s, border-color 0.16s;
+}
+.rq-seat-add:hover:not(:disabled) { color: var(--color-accent); border-color: color-mix(in srgb, var(--color-accent) 55%, transparent); }
+.rq-seat-add:disabled { cursor: not-allowed; opacity: 0.5; }
+
+/* --- the invite popover, hung off the first empty seat -------------------- */
+
+.rq-invitepop {
+  position: absolute; top: calc(100% + 10px); left: 50%;
+  transform: translateX(-50%);
+  z-index: 60;
+  width: 258px; padding: 12px;
+  border-radius: 14px;
+  border: 1px solid var(--rq-edge);
+  background: var(--color-bg);
+  box-shadow: 0 18px 44px rgba(0, 0, 0, 0.42);
+  text-align: left;
+}
+.rq-invitepop-head { display: flex; align-items: center; justify-content: space-between; margin-bottom: 10px; }
+.rq-invitepop-head strong { font-size: 12px; letter-spacing: 0.08em; text-transform: uppercase; color: var(--muted); }
+.rq-invitepop-head button { border: 0; background: none; color: var(--muted); cursor: pointer; display: grid; place-items: center; }
+.rq-invitepop-empty { margin: 0 0 10px; font-size: 12px; color: var(--muted); }
+.rq-invitepop-list { list-style: none; margin: 0 0 10px; padding: 0; display: grid; gap: 6px; max-height: 220px; overflow-y: auto; }
+.rq-invitepop-list > li { display: flex; align-items: center; gap: 8px; }
+.rq-invitepop-link {
+  width: 100%;
+  display: flex; align-items: center; justify-content: center; gap: 7px;
+  padding: 8px; border-radius: 10px;
+  border: 1px dashed var(--rq-edge); background: transparent;
+  color: var(--muted); font-size: 12px; font-weight: 600; cursor: pointer;
+}
+.rq-invitepop-link:hover { color: var(--color-text); border-color: color-mix(in srgb, var(--color-text) 30%, transparent); }
+
+/* --- role pips, under the face ------------------------------------------- */
+
+.rq-roles { display: flex; align-items: center; justify-content: center; gap: 5px; }
+
+.rq-rolepip {
+  position: relative;
+  display: inline-flex; align-items: center; gap: 3px;
+  padding: 3px 7px 3px 5px;
+  border-radius: 999px;
+  border: 1.5px solid var(--rq-edge);
+  background: color-mix(in srgb, var(--color-text) 4%, transparent);
+  color: var(--muted);
+  cursor: pointer; transition: border-color 0.14s, color 0.14s, background 0.14s;
+}
+.rq-rolepip:disabled { cursor: default; }
+.rq-rolepip-side { font-size: 8.5px; font-weight: 800; letter-spacing: 0.06em; }
+.rq-rolepip-dash { font-size: 12px; line-height: 1; width: 15px; text-align: center; }
+
+.rq-rolepip.set.t { color: var(--rq-t); border-color: color-mix(in srgb, var(--rq-t) 55%, transparent); background: color-mix(in srgb, var(--rq-t) 14%, transparent); }
+.rq-rolepip.set.ct { color: var(--rq-ct); border-color: color-mix(in srgb, var(--rq-ct) 55%, transparent); background: color-mix(in srgb, var(--rq-ct) 14%, transparent); }
+.rq-rolepip.caller { color: var(--color-accent); border-color: color-mix(in srgb, var(--color-accent) 55%, transparent); background: color-mix(in srgb, var(--color-accent) 12%, transparent); padding: 3px 5px; }
+.rq-rolepip:not(:disabled):hover { border-color: color-mix(in srgb, var(--color-text) 34%, transparent); }
+
+/* A clash is the reason the queue button is dead, so it is marked where the
+   clash is rather than only in the message underneath. */
+.rq-rolepip.clash {
+  color: #e0533a;
+  border-color: #e0533a;
+  background: color-mix(in srgb, #e0533a 14%, transparent);
+}
+
+/* --- the role bubble ------------------------------------------------------ */
+
+.rq-rolebubble-scrim { position: fixed; inset: 0; z-index: 3000; background: transparent; }
+
+.rq-rolebubble {
+  position: fixed;
+  width: min(392px, calc(100vw - 24px));
+  padding: 14px;
+  border-radius: 18px;
+  border: 1px solid var(--rq-edge);
+  background: var(--color-bg);
+  background-image: linear-gradient(160deg, color-mix(in srgb, var(--color-accent) 7%, transparent), transparent 60%);
+  box-shadow: 0 22px 54px rgba(0, 0, 0, 0.48);
+}
+.rq-rolebubble::after {
+  content: "";
+  position: absolute;
+  left: clamp(16px, var(--tail), calc(100% - 16px));
+  width: 11px; height: 11px; margin-left: -5.5px;
+  background: var(--color-bg);
+  border: 1px solid var(--rq-edge);
+  transform: rotate(45deg);
+}
+.rq-rolebubble.above::after { bottom: -6.5px; border-top: 0; border-left: 0; }
+.rq-rolebubble.below::after { top: -6.5px; border-bottom: 0; border-right: 0; }
+
+.rq-rolebubble-head { display: grid; gap: 2px; margin-bottom: 12px; }
+.rq-rolebubble-head strong { font-size: 13px; font-weight: 800; }
+.rq-rolebubble-head span { font-size: 11px; color: var(--muted); }
+
+.rq-rolebubble-cols { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
+.rq-rolebubble-col { display: grid; gap: 6px; align-content: start; }
+.rq-rolebubble-side {
+  font-size: 10px; font-weight: 800; letter-spacing: 0.1em; text-transform: uppercase;
+  padding-bottom: 5px; border-bottom: 1.5px solid var(--rq-edge);
+}
+.rq-rolebubble-col.t .rq-rolebubble-side { color: var(--rq-t); border-color: color-mix(in srgb, var(--rq-t) 45%, transparent); }
+.rq-rolebubble-col.ct .rq-rolebubble-side { color: var(--rq-ct); border-color: color-mix(in srgb, var(--rq-ct) 45%, transparent); }
+
+.rq-rolebubble-option {
+  display: flex; align-items: center; gap: 7px;
+  padding: 8px 9px; border-radius: 10px;
+  border: 1.5px solid var(--rq-edge);
+  background: color-mix(in srgb, var(--color-text) 3%, transparent);
+  color: var(--color-text);
+  font-size: 12px; font-weight: 700; text-align: left;
+  cursor: pointer; transition: border-color 0.14s, background 0.14s;
+}
+.rq-rolebubble-name { flex: 1; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.rq-rolebubble-option:hover { border-color: color-mix(in srgb, var(--color-text) 32%, transparent); }
+.rq-rolebubble-col.t .rq-rolebubble-option.on { border-color: color-mix(in srgb, var(--rq-t) 65%, transparent); background: color-mix(in srgb, var(--rq-t) 16%, transparent); color: var(--rq-t); }
+.rq-rolebubble-col.ct .rq-rolebubble-option.on { border-color: color-mix(in srgb, var(--rq-ct) 65%, transparent); background: color-mix(in srgb, var(--rq-ct) 16%, transparent); color: var(--rq-ct); }
+.rq-rolebubble-option.none { color: var(--muted); border-style: dashed; }
+.rq-rolebubble-option.clash { border-color: #e0533a; background: color-mix(in srgb, #e0533a 14%, transparent); color: #e0533a; }
+
+/* Held by somebody else. Dimmed, not disabled — two people have to be able to
+   swap without one of them clearing first. */
+.rq-rolebubble-option.taken:not(.on) { opacity: 0.55; }
+.rq-rolebubble-taken {
+  flex: none; min-width: 16px; height: 16px; padding: 0 4px;
+  display: inline-grid; place-items: center; border-radius: 999px;
+  background: color-mix(in srgb, #e0533a 22%, transparent);
+  color: #e0533a; font-size: 9px; font-weight: 800;
+}
+.rq-rolebubble-many { flex: none; color: var(--muted); font-size: 12px; line-height: 1; }
+
+.rq-rolebubble-caller {
+  margin-top: 10px; width: 100%;
+  display: grid; grid-template-columns: auto auto 1fr; align-items: center; gap: 7px;
+  padding: 9px 10px; border-radius: 10px;
+  border: 1.5px dashed var(--rq-edge);
+  background: transparent; color: var(--muted);
+  font-size: 12px; font-weight: 700; text-align: left; cursor: pointer;
+}
+.rq-rolebubble-caller span { font-weight: 500; font-size: 11px; opacity: 0.75; }
+.rq-rolebubble-caller.on {
+  border-style: solid; border-color: color-mix(in srgb, var(--color-accent) 60%, transparent);
+  background: color-mix(in srgb, var(--color-accent) 12%, transparent);
+  color: var(--color-accent);
+}
+.rq-rolebubble-caller.clash { border-color: #e0533a; background: color-mix(in srgb, #e0533a 14%, transparent); color: #e0533a; }
+
+/* --- the three-second detail card ---------------------------------------- */
+
+.rq-roledetail {
+  position: fixed; z-index: 3100;
+  width: min(288px, calc(100vw - 24px));
+  padding: 14px;
+  border-radius: 16px;
+  border: 1px solid var(--rq-edge);
+  background: var(--color-bg);
+  box-shadow: 0 22px 54px rgba(0, 0, 0, 0.5);
+  pointer-events: none;
+}
+.rq-roledetail header { display: flex; align-items: center; gap: 10px; margin-bottom: 9px; }
+.rq-roledetail header div { display: grid; gap: 1px; min-width: 0; }
+.rq-roledetail header strong { font-size: 14px; font-weight: 800; }
+.rq-roledetail header span { font-size: 10px; font-weight: 700; letter-spacing: 0.08em; text-transform: uppercase; color: var(--muted); }
+.rq-roledetail-icon {
+  flex: none; width: 34px; height: 34px;
+  display: grid; place-items: center; border-radius: 10px;
+  border: 1.5px solid var(--rq-edge);
+}
+.rq-roledetail-icon.t { color: var(--rq-t); border-color: color-mix(in srgb, var(--rq-t) 50%, transparent); background: color-mix(in srgb, var(--rq-t) 12%, transparent); }
+.rq-roledetail-icon.ct { color: var(--rq-ct); border-color: color-mix(in srgb, var(--rq-ct) 50%, transparent); background: color-mix(in srgb, var(--rq-ct) 12%, transparent); }
+.rq-roledetail p { margin: 0 0 10px; font-size: 12.5px; line-height: 1.5; color: var(--color-text); }
+.rq-roledetail footer {
+  padding-top: 9px; border-top: 1px solid var(--rq-edge);
+  font-size: 11px; font-weight: 700; color: var(--muted);
+}
+.rq-roledetail footer.unique { color: var(--color-accent); }
+
+/* --- what blocks the queue ------------------------------------------------ */
+
+.rq-conflict {
+  width: min(560px, 100%);
+  padding: 12px 14px; border-radius: 12px;
+  border: 1px solid #e0533a;
+  background: color-mix(in srgb, #e0533a 10%, transparent);
+  color: #e0533a; font-size: 13px; text-align: left;
+}
+.rq-conflict strong { display: block; margin-bottom: 4px; font-size: 12px; letter-spacing: 0.06em; text-transform: uppercase; }
+.rq-conflict ul { margin: 0; padding-left: 18px; }
+
+/* --- the button and the options under it ---------------------------------- */
+
+.rq-stage .rq-actions { width: min(520px, 100%); margin: 4px 0 0; }
+.rq-stage .rq-play { padding: 15px 20px; font-size: 16px; font-weight: 800; }
+.rq-stage .rq-searching { width: 100%; }
+.rq-stage .rq-online { margin: 0; }
+
+/* One line of options, not two stacked blocks. */
+.rq-modes.inline {
+  width: 100%;
+  margin-top: 0;
+  display: flex; flex-wrap: wrap; align-items: stretch; justify-content: center;
+  gap: 8px;
+}
+.rq-modes.inline .rq-mode-row {
+  display: flex; flex-wrap: wrap; justify-content: center; gap: 8px;
+  grid-template-columns: none;
+}
+.rq-modes.inline .rq-mode { min-width: 118px; }
+.rq-modes.inline .rq-mode-toggles { margin-top: 0; align-items: stretch; }
+.rq-modes.inline .rq-toggle { align-self: stretch; }
+
+.rq-stage-maps { width: 100%; }
+
+@media (max-width: 720px) {
+  .rq-seats { gap: 12px; }
+  .rq-seat { width: 84px; }
+  .rq-rolebubble-cols { grid-template-columns: 1fr; }
 }

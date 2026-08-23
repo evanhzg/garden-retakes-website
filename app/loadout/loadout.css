@@ -509,3 +509,142 @@
 }
 
 .lo-maps-save { margin-top: 16px; }
+
+/* ─────────────────────────────────────────────────────────────────────────
+   The side menu — "who is this for", as four targets rather than one that
+   cycles. Anchored to whatever opened it and portalled to <body>, so it is
+   not clipped by the loadout gate's scrolling body.
+   ───────────────────────────────────────────────────────────────────────── */
+
+.lo-sidebubble-scrim {
+  position: fixed; inset: 0; z-index: 3000;
+  /* No wash over the page: the card behind is the thing being described, and
+     dimming it hides the very colour the menu is about to change. */
+  background: transparent;
+}
+
+.lo-sidebubble {
+  position: fixed;
+  width: 236px;
+  padding: 12px;
+  border-radius: 16px;
+  border: 1px solid var(--lo-edge);
+  background: var(--color-bg);
+  background-image: linear-gradient(160deg, color-mix(in srgb, var(--color-accent) 7%, transparent), transparent 60%);
+  box-shadow: 0 20px 48px rgba(0, 0, 0, 0.45);
+}
+
+/* The tail points back at the card, and keeps pointing at it when the bubble
+   has been clamped against a viewport edge. */
+.lo-sidebubble::after {
+  content: "";
+  position: absolute;
+  left: clamp(14px, var(--tail), calc(100% - 14px));
+  width: 10px; height: 10px;
+  margin-left: -5px;
+  background: var(--color-bg);
+  border: 1px solid var(--lo-edge);
+  transform: rotate(45deg);
+}
+.lo-sidebubble.above::after { bottom: -6px; border-top: 0; border-left: 0; }
+.lo-sidebubble.below::after { top: -6px; border-bottom: 0; border-right: 0; }
+
+.lo-sidebubble-head { display: grid; gap: 2px; margin-bottom: 10px; padding: 0 2px; }
+.lo-sidebubble-head strong { font-size: 13px; font-weight: 800; line-height: 1.2; }
+.lo-sidebubble-head span {
+  font-size: 10px; font-weight: 700; letter-spacing: 0.1em; text-transform: uppercase;
+  color: var(--muted);
+}
+
+.lo-sidebubble-options { display: grid; gap: 6px; }
+
+.lo-sidebubble-option {
+  display: flex; align-items: center; gap: 9px;
+  padding: 9px 11px; border-radius: 10px;
+  border: 1.5px solid var(--lo-edge);
+  background: color-mix(in srgb, var(--color-text) 3%, transparent);
+  color: var(--color-text);
+  font-size: 12.5px; font-weight: 700; text-align: left;
+  cursor: pointer; transition: border-color 0.14s, background 0.14s;
+}
+.lo-sidebubble-option:disabled { opacity: 0.35; cursor: not-allowed; }
+.lo-sidebubble-option:hover:not(:disabled) { border-color: color-mix(in srgb, var(--color-text) 30%, transparent); }
+
+/* The same three colours the cards wear, so the menu and its result match. */
+.lo-sidebubble-tag {
+  flex: none; min-width: 34px; padding: 0 6px; height: 20px;
+  display: inline-flex; align-items: center; justify-content: center;
+  border-radius: 999px; border: 1.5px solid var(--lo-edge);
+  font-size: 9px; font-weight: 800; letter-spacing: 0.06em;
+}
+.lo-sidebubble-option.t .lo-sidebubble-tag { color: var(--color-team-t); border-color: color-mix(in srgb, var(--color-team-t) 60%, transparent); }
+.lo-sidebubble-option.ct .lo-sidebubble-tag { color: var(--color-team-ct); border-color: color-mix(in srgb, var(--color-team-ct) 60%, transparent); }
+
+.lo-sidebubble-option.t.on {
+  border-color: color-mix(in srgb, var(--color-team-t) 60%, transparent);
+  background: color-mix(in srgb, var(--color-team-t) 16%, var(--color-bg));
+}
+.lo-sidebubble-option.ct.on {
+  border-color: color-mix(in srgb, var(--color-team-ct) 60%, transparent);
+  background: color-mix(in srgb, var(--color-team-ct) 16%, var(--color-bg));
+}
+.lo-sidebubble-option.both.on {
+  border-color: color-mix(in srgb, var(--color-text) 34%, transparent);
+  background: linear-gradient(
+    100deg,
+    color-mix(in srgb, var(--color-team-t) 16%, var(--color-bg)) 0 50%,
+    color-mix(in srgb, var(--color-team-ct) 16%, var(--color-bg)) 50% 100%
+  );
+}
+
+.lo-sidebubble-clear {
+  margin-top: 8px; width: 100%;
+  display: flex; align-items: center; justify-content: center; gap: 7px;
+  padding: 8px; border-radius: 10px;
+  border: 1.5px dashed var(--lo-edge);
+  background: transparent; color: var(--muted);
+  font-size: 11.5px; font-weight: 700; cursor: pointer;
+  transition: color 0.14s, border-color 0.14s;
+}
+.lo-sidebubble-clear:hover { color: var(--color-text); border-color: color-mix(in srgb, var(--color-text) 30%, transparent); }
+/* "Nobody" is the current state far more often than it is the thing you came
+   to click, so being current makes it solid rather than bright — a full-contrast
+   ring here out-shouted the three answers above it. */
+.lo-sidebubble-clear.on {
+  border-style: solid;
+  border-color: color-mix(in srgb, var(--color-text) 18%, transparent);
+  background: color-mix(in srgb, var(--color-text) 4%, transparent);
+}
+
+/* The card that opened it keeps a ring, so it is obvious which one you are
+   answering when the bubble is over a grid of near-identical cards. */
+.lo-bundle.open {
+  border-color: var(--color-accent);
+  box-shadow: 0 0 0 3px color-mix(in srgb, var(--color-accent) 22%, transparent);
+}
+
+/* The map preferences as one strip, for the lobby — the same control the
+   loadout page shows as a grid, laid out as the last row under the queue
+   button. Scrolls sideways rather than wrapping, so the row stays a row. */
+.lo-maps-inline { margin: 0; }
+.lo-maps-rowhead {
+  display: flex; align-items: center; justify-content: center;
+  flex-wrap: wrap; gap: 8px 12px; margin-bottom: 9px;
+}
+.lo-maps-inline .lo-maps-count { margin: 0; }
+.lo-maps-rowhint { font-size: 11.5px; color: var(--muted); }
+
+.lo-maps-row {
+  display: flex; gap: 8px;
+  overflow-x: auto;
+  padding-bottom: 6px;
+  scrollbar-width: thin;
+  justify-content: center;
+}
+/* Once there are more maps than fit, centring would hide the first one behind
+   the scroll origin — so it only centres while everything is visible. */
+.lo-maps-row > * { flex: 0 0 auto; }
+
+.lo-maps-row .lo-map { width: 118px; }
+.lo-maps-row .lo-map img { aspect-ratio: 16 / 10; }
+.lo-maps-row .lo-map-name { padding: 6px 8px; font-size: 11px; }
