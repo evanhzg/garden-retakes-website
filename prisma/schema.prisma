@@ -1488,6 +1488,10 @@ model TournamentTeamMember {
   IsCaptain   Boolean   @default(false)
   /// invited | accepted | declined | removed
   Status      String    @default("invited") @db.VarChar(16)
+  /// Roles are per side, because sides swap at halftime and a player carries one
+  /// on each — a single column would mean somebody is a planter on CT.
+  RoleT       String?   @db.VarChar(24)
+  RoleCt      String?   @db.VarChar(24)
   InvitedAt   DateTime  @default(now()) @db.DateTime(6)
   RespondedAt DateTime? @db.DateTime(6)
 

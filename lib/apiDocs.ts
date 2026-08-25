@@ -285,6 +285,25 @@ export const DOC_SECTIONS: DocSection[] = [
         auth: AUTH_KINDS.session,
       },
       {
+        method: "GET",
+        path: "/api/admin/servers",
+        summary: "The server registry, for the setup page. Never returns an RCON password at any level — no screen needs to show one, and a field that is never sent cannot leak.",
+        auth: AUTH_KINDS.admin,
+      },
+      {
+        method: "POST",
+        path: "/api/admin/servers",
+        summary:
+          "Manage servers: add / update / delete / test / release / seed-from-env. OWNER only, because these rows hold RCON passwords and RCON is total control of a game server. 'test' proves the whole path in one command and reports whether the tournament plugin answered.",
+        auth: AUTH_KINDS.admin,
+      },
+      {
+        method: "GET",
+        path: "/api/admin/tournaments/list",
+        summary: "Every tournament with its stages and match counts, for the setup page. Includes drafts, which the public list hides.",
+        auth: AUTH_KINDS.admin,
+      },
+      {
         method: "POST",
         path: "/api/admin/tournaments",
         summary:

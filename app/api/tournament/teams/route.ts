@@ -12,8 +12,13 @@ export const runtime = "nodejs";
 // person who took it. A captain inviting somebody, and that somebody accepting,
 // are two different people's decisions and both are recorded.
 
+const CT_ROLES = ["roamer", "frontrunner", "awper", "backup"];
+const T_ROLES = ["planter", "sniper", "rifler"];
+
 type Body = {
-  action?: "create" | "invite" | "accept" | "decline" | "leave" | "kick" | "rename";
+  action?: "create" | "invite" | "accept" | "decline" | "leave" | "kick" | "rename" | "role";
+  roleT?: string | null;
+  roleCt?: string | null;
   tournamentId?: number;
   teamId?: number;
   name?: string;
@@ -222,6 +227,44 @@ export async function POST(req: Request) {
       }
     }
 
+    case "role": {
+      // A player sets their own; a captain may set anyone's on their team. Both
+      // are legitimate — a captain building a team sheet before everybody has
+      // logged in is the normal case, not an exception.
+      if (!body.teamId) return NextResponse.json({ error: "teamId?" }, { status: 400 });
+
+      const team = await prisma.tournamentTeam.findUnique({ where: { Id: body.teamId } });
+      if (!team) return NextResponse.json({ error: "No such team." }, { status: 404 });
+
+      const target = body.steamId && /^\d{17}$/.test(body.steamId) ? BigInt(body.steamId) : me;
+
+      if (target !== me && team.CaptainSteamId !== me) {
+        return NextResponse.json({ error: "Only the captain can set someone else's role." }, { status: 403 });
+      }
+
+      const roleT = (body.roleT ?? "").trim();
+      const roleCt = (body.roleCt ?? "").trim();
+
+      if (roleT && !T_ROLES.includes(roleT)) {
+        return NextResponse.json({ error: `'${roleT}' is not a T role.` }, { status: 400 });
+      }
+
+      if (roleCt && !CT_ROLES.includes(roleCt)) {
+        return NextResponse.json({ error: `'${roleCt}' is not a CT role.` }, { status: 400 });
+      }
+
+      const updated = await prisma.tournamentTeamMember.updateMany({
+        where: { TeamId: team.Id, SteamId: target },
+        data: { RoleT: roleT || null, RoleCt: roleCt || null },
+      });
+
+      if (updated.count === 0) {
+        return NextResponse.json({ error: "They are not on that team." }, { status: 400 });
+      }
+
+      return NextResponse.json({ ok: true });
+    }
+
     default:
       return NextResponse.json({ error: "Unknown action." }, { status: 400 });
   }
@@ -281,6 +324,8 @@ export async function GET(req: Request) {
           steamId: x.SteamId.toString(),
           status: x.Status,
           isCaptain: x.IsCaptain,
+          roleT: x.RoleT,
+          roleCt: x.RoleCt,
         })),
       },
     })),

@@ -11,7 +11,16 @@ import "./register.css";
 // accepts. Both halves are recorded, which is what makes a roster something you
 // can point at when somebody says they were never asked.
 
-type Member = { steamId: string; status: string; isCaptain: boolean };
+type Member = {
+  steamId: string;
+  status: string;
+  isCaptain: boolean;
+  roleT: string | null;
+  roleCt: string | null;
+};
+
+const CT_ROLES = ["frontrunner", "backup", "roamer", "awper"];
+const T_ROLES = ["planter", "rifler", "sniper"];
 
 type Membership = {
   status: string;
@@ -138,6 +147,51 @@ export default function Register({
                   <code>{x.steamId}</code>
                   {x.isCaptain && <span className="chip">{t("register.captain")}</span>}
                   <span className={`rg-status ${x.status}`}>{x.status}</span>
+
+                  {/* A player sets their own; a captain sets anybody's. Building
+                      a team sheet before everyone has logged in is the normal
+                      case, not an exception. */}
+                  {(mine.isCaptain || x.steamId === me) && x.status === "accepted" && (
+                    <>
+                      <select
+                        value={x.roleT ?? ""}
+                        disabled={busy}
+                        onChange={(e) =>
+                          act({
+                            action: "role",
+                            teamId: mine.team.id,
+                            steamId: x.steamId,
+                            roleT: e.target.value,
+                            roleCt: x.roleCt ?? "",
+                          })
+                        }
+                      >
+                        <option value="">{t("register.noRoleT")}</option>
+                        {T_ROLES.map((r) => (
+                          <option key={r} value={r}>{r}</option>
+                        ))}
+                      </select>
+
+                      <select
+                        value={x.roleCt ?? ""}
+                        disabled={busy}
+                        onChange={(e) =>
+                          act({
+                            action: "role",
+                            teamId: mine.team.id,
+                            steamId: x.steamId,
+                            roleT: x.roleT ?? "",
+                            roleCt: e.target.value,
+                          })
+                        }
+                      >
+                        <option value="">{t("register.noRoleCt")}</option>
+                        {CT_ROLES.map((r) => (
+                          <option key={r} value={r}>{r}</option>
+                        ))}
+                      </select>
+                    </>
+                  )}
 
                   {mine.isCaptain && !x.isCaptain && (
                     <button

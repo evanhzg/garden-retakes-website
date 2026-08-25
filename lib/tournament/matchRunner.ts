@@ -102,13 +102,25 @@ export async function startMatch(matchId: number): Promise<StartResult> {
     await execOnServer(server.id, `css_t_team 0 ${slug(teamA.Name)} ${rosterA.join(" ")}`);
     await execOnServer(server.id, `css_t_team 1 ${slug(teamB.Name)} ${rosterB.join(" ")}`);
 
-    // Roles are not sent yet.
+    // Roles, per player and per side.
     //
-    // The plugin accepts css_t_role per player and per side, and falls back to
-    // the side's generalist for anybody it was not told about — so a match with
-    // no roles set plays correctly, it just plays without the specialisms. That
-    // is the right failure while the tournament loadout page does not exist:
-    // sending a role somebody never chose would be worse than sending none.
+    // Only sent for players who actually chose one. The plugin falls back to the
+    // side's generalist for anybody it was not told about, so a half-filled team
+    // sheet plays correctly — and sending a role nobody picked would be worse
+    // than sending none.
+    for (const team of [teamA, teamB]) {
+      for (const member of team.Members) {
+        const steamId = member.SteamId.toString();
+
+        if (member.RoleT) {
+          await execOnServer(server.id, `css_t_role ${steamId} T ${member.RoleT}`);
+        }
+
+        if (member.RoleCt) {
+          await execOnServer(server.id, `css_t_role ${steamId} CT ${member.RoleCt}`);
+        }
+      }
+    }
 
     // Sides. A picked map arrives already settled by the veto; only a decider or
     // a BO1 knifes for it — and that distinction is exactly the null below.
