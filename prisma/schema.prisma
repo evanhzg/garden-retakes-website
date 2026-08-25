@@ -1412,3 +1412,266 @@ model TournamentMakerSession {
   @@index([ServerId, EndedAt])
   @@map("TournamentMakerSessions")
 }
+
+/// A tournament. Stages hold the format; this holds the identity.
+model Tournament {
+  Id           Int       @id @default(autoincrement())
+  Slug         String    @unique(map: "UX_Tournaments_Slug") @db.VarChar(64)
+  Name         String    @db.VarChar(128)
+  Description  String?   @db.Text
+  /// draft | registration | live | finished | cancelled
+  State        String    @default("draft") @db.VarChar(16)
+  TeamSize     Int       @default(3) @db.TinyInt
+  MaxTeams     Int       @default(16)
+  OwnerSteamId BigInt?   @db.UnsignedBigInt
+  StartsAt     DateTime? @db.DateTime(6)
+  Config       String?   @db.Text
+  CreatedAt    DateTime  @default(now()) @db.DateTime(6)
+  UpdatedAt    DateTime  @default(now()) @updatedAt @db.DateTime(6)
+
+  Stages     TournamentStage[]
+  Teams      TournamentTeam[]
+  Matches    TournamentMatch[]
+  Maps       TournamentMap[]
+  Spectators TournamentSpectator[]
+
+  @@map("Tournaments")
+}
+
+/// One phase of a tournament. The difference between a swiss and a group phase
+/// is settings rather than structure, so the rules live in Config rather than in
+/// columns that would be null for every other kind.
+model TournamentStage {
+  Id           Int     @id @default(autoincrement())
+  TournamentId Int
+  Name         String  @db.VarChar(64)
+  /// group | swiss | single | double
+  Kind         String  @default("single") @db.VarChar(16)
+  Ordinal      Int     @default(0)
+  BestOf       Int     @default(1) @db.TinyInt
+  /// A final usually differs from the rest of its stage — BO1 groups, BO3
+  /// playoffs, BO5 final — and a column is cheaper than a rule to remember.
+  FinalBestOf  Int?    @db.TinyInt
+  Config       String? @db.Text
+  State        String  @default("pending") @db.VarChar(16)
+
+  Tournament Tournament        @relation(fields: [TournamentId], references: [Id], onDelete: Cascade)
+  Matches    TournamentMatch[]
+
+  @@index([TournamentId, Ordinal])
+  @@map("TournamentStages")
+}
+
+model TournamentTeam {
+  Id             Int      @id @default(autoincrement())
+  TournamentId   Int
+  Name           String   @db.VarChar(64)
+  Tag            String?  @db.VarChar(8)
+  CaptainSteamId BigInt   @db.UnsignedBigInt
+  Seed           Int?
+  /// pending | accepted | withdrawn | disqualified
+  Status         String   @default("pending") @db.VarChar(16)
+  CreatedAt      DateTime @default(now()) @db.DateTime(6)
+
+  Tournament Tournament             @relation(fields: [TournamentId], references: [Id], onDelete: Cascade)
+  Members    TournamentTeamMember[]
+
+  @@unique([TournamentId, Name], map: "UX_TournamentTeams_Name")
+  @@index([TournamentId])
+  @@map("TournamentTeams")
+}
+
+model TournamentTeamMember {
+  Id          Int       @id @default(autoincrement())
+  TeamId      Int
+  SteamId     BigInt    @db.UnsignedBigInt
+  IsCaptain   Boolean   @default(false)
+  /// invited | accepted | declined | removed
+  Status      String    @default("invited") @db.VarChar(16)
+  InvitedAt   DateTime  @default(now()) @db.DateTime(6)
+  RespondedAt DateTime? @db.DateTime(6)
+
+  Team TournamentTeam @relation(fields: [TeamId], references: [Id], onDelete: Cascade)
+
+  @@unique([TeamId, SteamId], map: "UX_TournamentTeamMembers")
+  @@index([SteamId])
+  @@map("TournamentTeamMembers")
+}
+
+/// One match. NextMatchId and LoserNextMatchId are the bracket: a tree as
+/// forward pointers rather than a second table, which is also what makes a
+/// double-elimination loser's bracket nothing more than a second pointer.
+model TournamentMatch {
+  Id               Int       @id @default(autoincrement())
+  TournamentId     Int
+  StageId          Int
+  /// The string handed to the plugin's css_t_go, and the join back from
+  /// everything the game reports. The seam between the two halves of the system.
+  MatchKey         String    @unique(map: "UX_TournamentMatches_Key") @db.VarChar(64)
+  Round            Int       @default(1)
+  Slot             Int       @default(0)
+  BestOf           Int       @default(1) @db.TinyInt
+  TeamAId          Int?
+  TeamBId          Int?
+  ScoreA           Int       @default(0)
+  ScoreB           Int       @default(0)
+  /// pending | veto | ready | live | finished | forfeit
+  State            String    @default("pending") @db.VarChar(16)
+  WinnerTeamId     Int?
+  ServerId         Int?
+  NextMatchId      Int?
+  NextSlot         Int?      @db.TinyInt
+  LoserNextMatchId Int?
+  LoserNextSlot    Int?      @db.TinyInt
+  ScheduledAt      DateTime? @db.DateTime(6)
+  StartedAt        DateTime? @db.DateTime(6)
+  EndedAt          DateTime? @db.DateTime(6)
+
+  Tournament Tournament             @relation(fields: [TournamentId], references: [Id], onDelete: Cascade)
+  Stage      TournamentStage        @relation(fields: [StageId], references: [Id], onDelete: Cascade)
+  Maps       TournamentMatchMap[]
+  Veto       TournamentVetoAction[]
+
+  @@index([StageId, Round, Slot])
+  @@index([TournamentId, State])
+  @@map("TournamentMatches")
+}
+
+model TournamentMatchMap {
+  Id                 Int     @id @default(autoincrement())
+  MatchId            Int
+  Ordinal            Int     @default(0)
+  Map                String  @db.VarChar(64)
+  PickedByTeamId     Int?
+  SideChosenByTeamId Int?
+  /// The side team A starts on, or null when a knife round decides it. That null
+  /// is what the plugin reads to choose between css_t_side and css_t_knife.
+  StartSideTeamA     String? @db.VarChar(2)
+  IsDecider          Boolean @default(false)
+  ScoreA             Int     @default(0)
+  ScoreB             Int     @default(0)
+  WinnerTeamId       Int?
+  DemoFile           String? @db.VarChar(160)
+  State              String  @default("pending") @db.VarChar(16)
+
+  Match TournamentMatch @relation(fields: [MatchId], references: [Id], onDelete: Cascade)
+
+  @@unique([MatchId, Ordinal], map: "UX_TournamentMatchMaps")
+  @@index([MatchId])
+  @@map("TournamentMatchMaps")
+}
+
+/// Who banned or picked what, in order. A veto is the part of a tournament that
+/// gets argued about afterwards, and the site can only settle it if it remembers.
+model TournamentVetoAction {
+  Id      Int      @id @default(autoincrement())
+  MatchId Int
+  Ordinal Int
+  TeamId  Int?
+  /// ban | pick | side
+  Kind    String   @db.VarChar(8)
+  Map     String?  @db.VarChar(64)
+  Side    String?  @db.VarChar(2)
+  /// Whether a turn ran out and the system chose. An auto-pick that looks
+  /// deliberate is a support conversation nobody can resolve.
+  WasAuto Boolean  @default(false)
+  ActedAt DateTime @default(now()) @db.DateTime(6)
+
+  Match TournamentMatch @relation(fields: [MatchId], references: [Id], onDelete: Cascade)
+
+  @@unique([MatchId, Ordinal], map: "UX_TournamentVetoActions")
+  @@index([MatchId])
+  @@map("TournamentVetoActions")
+}
+
+model TournamentMap {
+  Id           Int    @id @default(autoincrement())
+  TournamentId Int
+  Map          String @db.VarChar(64)
+  Ordinal      Int    @default(0)
+
+  Tournament Tournament @relation(fields: [TournamentId], references: [Id], onDelete: Cascade)
+
+  @@unique([TournamentId, Map], map: "UX_TournamentMaps")
+  @@map("TournamentMaps")
+}
+
+model TournamentPlayerStat {
+  Id            Int      @id @default(autoincrement())
+  MatchId       Int
+  MapId         Int?
+  SteamId       BigInt   @db.UnsignedBigInt
+  TeamId        Int?
+  Kills         Int      @default(0)
+  Deaths        Int      @default(0)
+  Assists       Int      @default(0)
+  Headshots     Int      @default(0)
+  Damage        Int      @default(0)
+  UtilityDamage Int      @default(0)
+  EntryKills    Int      @default(0)
+  EntryDeaths   Int      @default(0)
+  Clutches      Int      @default(0)
+  RoundsPlayed  Int      @default(0)
+  KastRounds    Int      @default(0)
+  Rating        Float    @default(0)
+  UpdatedAt     DateTime @default(now()) @updatedAt @db.DateTime(6)
+
+  @@unique([MatchId, MapId, SteamId], map: "UX_TournamentPlayerStats")
+  @@index([SteamId])
+  @@map("TournamentPlayerStats")
+}
+
+/// The servers a tournament can run on — what replaces the single
+/// RCON_HOST/PORT/PASSWORD triple read from the environment.
+model GameServer {
+  Id             Int      @id @default(autoincrement())
+  Name           String   @db.VarChar(64)
+  Host           String   @db.VarChar(128)
+  Port           Int      @default(27015)
+  RconPassword   String   @db.VarChar(128)
+  ConnectAddress String?  @db.VarChar(160)
+  GotvAddress    String?  @db.VarChar(160)
+  /// idle | busy | offline | disabled
+  Status         String   @default("idle") @db.VarChar(16)
+  CurrentMatchId Int?
+  IsTournament   Boolean  @default(true)
+  UpdatedAt      DateTime @default(now()) @updatedAt @db.DateTime(6)
+
+  @@index([Status])
+  @@map("GameServers")
+}
+
+/// Casters allowed onto a tournament server. The roster is the allowlist for
+/// players; without this, a free-camera server is one anybody can watch from
+/// inside.
+model TournamentSpectator {
+  Id           Int      @id @default(autoincrement())
+  TournamentId Int
+  SteamId      BigInt   @db.UnsignedBigInt
+  Name         String?  @db.VarChar(64)
+  AddedAt      DateTime @default(now()) @db.DateTime(6)
+
+  Tournament Tournament @relation(fields: [TournamentId], references: [Id], onDelete: Cascade)
+
+  @@unique([TournamentId, SteamId], map: "UX_TournamentSpectators")
+  @@map("TournamentSpectators")
+}
+
+/// A player asking for an admin, raised on the owner's page and in the desktop
+/// app.
+model TournamentAlert {
+  Id        Int       @id @default(autoincrement())
+  MatchKey  String    @db.VarChar(64)
+  Map       String?   @db.VarChar(64)
+  SteamId   BigInt    @db.UnsignedBigInt
+  Name      String?   @db.VarChar(64)
+  Team      String?   @db.VarChar(64)
+  Score     String?   @db.VarChar(16)
+  Reason    String?   @db.VarChar(240)
+  CreatedAt DateTime  @default(now()) @db.DateTime(6)
+  AckedAt   DateTime? @db.DateTime(6)
+  AckedBy   BigInt?   @db.UnsignedBigInt
+
+  @@index([AckedAt, CreatedAt])
+  @@map("TournamentAlerts")
+}

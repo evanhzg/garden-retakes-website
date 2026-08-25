@@ -41,13 +41,22 @@ function packet(id: number, type: number, body: string): Buffer {
   return buf;
 }
 
-function connectAndRun(command: string): Promise<string> {
+/** Where to send a command. The environment triple is the default target. */
+export type RconTarget = { host: string; port: number; password: string };
+
+export function envTarget(): RconTarget {
   const host = process.env.RCON_HOST;
   const port = Number.parseInt(process.env.RCON_PORT ?? "27015", 10);
   const password = process.env.RCON_PASSWORD;
   if (!host || !password) {
     throw new Error("RCON is not configured (RCON_HOST / RCON_PASSWORD).");
   }
+
+  return { host, port, password };
+}
+
+function connectAndRun(command: string, target?: RconTarget): Promise<string> {
+  const { host, port, password } = target ?? envTarget();
 
   return new Promise((resolve, reject) => {
     const socket = net.createConnection({ host, port, timeout: 8000 });
@@ -111,30 +120,58 @@ function connectAndRun(command: string): Promise<string> {
  * ordering is FIFO for free and a rejection cannot break the chain for whoever
  * is behind it (the `catch` resets the tail to a resolved promise).
  */
-let tail: Promise<unknown> = Promise.resolve();
-let depth = 0;
+/**
+ * One conversation per SERVER, rather than one globally.
+ *
+ * Six parallel matches means six servers, and a single global chain would make
+ * them wait on each other — a slow server would stall a match on a healthy one,
+ * and a dead server would stall all six. Keyed per target, so each queue is
+ * independent and a server that stops answering only refuses its own commands.
+ */
+const queues = new Map<string, { tail: Promise<unknown>; depth: number }>();
 
 /** Refuse rather than queue forever when the server has stopped answering. */
 const MAX_DEPTH = 12;
 
-export async function rconExec(command: string): Promise<string> {
-  if (depth >= MAX_DEPTH) {
-    throw new Error("RCON is busy — too many commands are already queued.");
+const keyOf = (t: RconTarget) => `${t.host}:${t.port}`;
+
+function queueFor(key: string) {
+  let queue = queues.get(key);
+  if (!queue) {
+    queue = { tail: Promise.resolve(), depth: 0 };
+    queues.set(key, queue);
+  }
+  return queue;
+}
+
+/** Sends to a specific server. */
+export async function rconExecOn(target: RconTarget, command: string): Promise<string> {
+  const key = keyOf(target);
+  const queue = queueFor(key);
+
+  if (queue.depth >= MAX_DEPTH) {
+    throw new Error(`RCON is busy on ${key} — too many commands are already queued.`);
   }
 
-  depth++;
-  const run = tail.then(
-    () => connectAndRun(command),
-    () => connectAndRun(command),
+  queue.depth++;
+  const run = queue.tail.then(
+    () => connectAndRun(command, target),
+    () => connectAndRun(command, target),
   );
-  tail = run.catch(() => {});
+  queue.tail = run.catch(() => {});
 
   try {
     return await run;
   } finally {
-    depth--;
+    queue.depth--;
   }
 }
 
+/** Sends to the server named by the environment — everything that predates the registry. */
+export async function rconExec(command: string): Promise<string> {
+  return rconExecOn(envTarget(), command);
+}
+
 /** How many commands are waiting, for the health endpoint and the tests. */
-export const rconQueueDepth = () => depth;
+export const rconQueueDepth = (target?: RconTarget) =>
+  queues.get(keyOf(target ?? { host: process.env.RCON_HOST ?? "", port: Number.parseInt(process.env.RCON_PORT ?? "27015", 10), password: "" }))?.depth ?? 0;
