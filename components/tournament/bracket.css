@@ -1,0 +1,92 @@
+/* A bracket.
+   Columns of boxes with the spacing doubling each round — grid does that
+   natively, which is why there is no library here. */
+
+.br {
+  display: flex;
+  gap: var(--space-6);
+  align-items: stretch;
+  /* Brackets get wide. This is the one place on the site that scrolls
+     sideways, and it scrolls inside itself rather than taking the page with it. */
+  overflow-x: auto;
+  padding-bottom: var(--space-3);
+}
+
+.br-round {
+  display: flex;
+  flex-direction: column;
+  justify-content: space-around;
+  gap: calc(var(--space-3) * var(--gap-mult, 1));
+  min-width: 200px;
+}
+
+.br-round-name {
+  margin: 0 0 var(--space-2);
+  font-size: 12px;
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+  color: var(--muted);
+}
+
+.br-match {
+  position: relative;
+  border: 1px solid var(--border);
+  background: var(--panel);
+}
+
+.br-match.live {
+  border-color: var(--color-accent);
+  box-shadow: inset 3px 0 0 var(--color-accent);
+}
+
+.br-row {
+  display: flex;
+  align-items: center;
+  gap: var(--space-2);
+  padding: 7px 10px;
+}
+
+.br-row + .br-row {
+  border-top: 1px solid var(--border);
+}
+
+.br-row.won {
+  font-weight: 700;
+}
+
+/* Losing rows recede rather than disappear — a bracket is read as much for who
+   went out as for who went through. */
+.br-row.lost {
+  color: var(--muted);
+}
+
+.br-name {
+  flex: 1;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.br-name.pending {
+  color: var(--muted);
+  font-style: italic;
+}
+
+.br-score {
+  font-family: var(--font-mono);
+  font-size: 13px;
+  min-width: 1.5em;
+  text-align: right;
+}
+
+.br-bo {
+  position: absolute;
+  top: -9px;
+  right: 6px;
+  padding: 0 5px;
+  background: var(--bg);
+  color: var(--muted);
+  font-size: 10px;
+  font-family: var(--font-mono);
+  letter-spacing: 0.04em;
+}

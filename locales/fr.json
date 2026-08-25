@@ -2483,5 +2483,21 @@
   "maker.plantSpot": "Point de pose",
   "maker.nothingHere": "Rien de créé ici pour l'instant.",
   "maker.variantCount": "{n} variantes",
-  "maker.failed": "Cela n'a pas fonctionné."
+  "maker.failed": "Cela n'a pas fonctionné.",
+  "tournaments.eyebrow": "Compétitif",
+  "tournaments.title": "Tournois",
+  "tournaments.blurb": "Retakes compétitifs en 3v3, joués en bracket.",
+  "tournaments.none": "Aucun tournoi pour l'instant.",
+  "tournaments.name": "Tournoi",
+  "tournaments.format": "Format",
+  "tournaments.teams": "Équipes",
+  "tournaments.team": "Équipe",
+  "tournaments.state": "État",
+  "tournaments.seed": "Tête de série",
+  "tournaments.players": "Joueurs",
+  "tournaments.noTeams": "Aucune équipe inscrite.",
+  "tournaments.pool": "Pool de cartes",
+  "tournaments.played": "Joués",
+  "tournaments.won": "Gagnés",
+  "tournaments.diff": "Diff"
 }

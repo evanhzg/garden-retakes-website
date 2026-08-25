@@ -1,0 +1,89 @@
+import "./bracket.css";
+
+// A bracket, as CSS grid.
+//
+// No library: a bracket is columns of boxes with the vertical spacing doubling
+// each round, which grid does natively and a dependency would do the same way
+// with more to go wrong. The connecting lines are borders on pseudo-elements
+// rather than SVG, so they follow the boxes when the text wraps.
+
+export type BracketMatch = {
+  id: number;
+  round: number;
+  slot: number;
+  bestOf: number;
+  state: string;
+  teamA: { id: number; name: string } | null;
+  teamB: { id: number; name: string } | null;
+  scoreA: number;
+  scoreB: number;
+  winnerTeamId: number | null;
+};
+
+export default function Bracket({ matches }: { matches: BracketMatch[] }) {
+  if (matches.length === 0) {
+    return null;
+  }
+
+  const rounds = Array.from(new Set(matches.map((m) => m.round))).sort((a, b) => a - b);
+  const lastRound = rounds[rounds.length - 1];
+
+  return (
+    <div className="br" role="table" aria-label="Bracket">
+      {rounds.map((round) => {
+        const inRound = matches.filter((m) => m.round === round).sort((a, b) => a.slot - b.slot);
+
+        return (
+          <div key={round} className="br-round" style={{ "--gap-mult": 2 ** (round - 1) } as React.CSSProperties}>
+            <h4 className="br-round-name">
+              {round === lastRound ? "Final" : round === lastRound - 1 ? "Semi-finals" : `Round ${round}`}
+            </h4>
+
+            {inRound.map((match) => (
+              <div
+                key={match.id}
+                className={`br-match ${match.state === "live" ? "live" : ""}`}
+              >
+                <Row
+                  team={match.teamA}
+                  score={match.scoreA}
+                  won={match.winnerTeamId !== null && match.winnerTeamId === match.teamA?.id}
+                  decided={match.winnerTeamId !== null}
+                />
+                <Row
+                  team={match.teamB}
+                  score={match.scoreB}
+                  won={match.winnerTeamId !== null && match.winnerTeamId === match.teamB?.id}
+                  decided={match.winnerTeamId !== null}
+                />
+
+                {match.bestOf > 1 && <span className="br-bo">BO{match.bestOf}</span>}
+              </div>
+            ))}
+          </div>
+        );
+      })}
+    </div>
+  );
+}
+
+function Row({
+  team,
+  score,
+  won,
+  decided,
+}: {
+  team: { id: number; name: string } | null;
+  score: number;
+  won: boolean;
+  decided: boolean;
+}) {
+  return (
+    <div className={`br-row ${won ? "won" : decided ? "lost" : ""}`}>
+      {/* An empty slot is a match still waiting on a feeder, which is a
+          different thing from a bye and should not read as a team called "TBD". */}
+      <span className={`br-name ${team ? "" : "pending"}`}>{team?.name ?? "—"}</span>
+      <span className="br-score">{decided || score > 0 ? score : ""}</span>
+    </div>
+  );
+}

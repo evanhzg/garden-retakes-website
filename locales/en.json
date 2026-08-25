@@ -2483,5 +2483,21 @@
   "maker.plantSpot": "Plant spot",
   "maker.nothingHere": "Nothing authored here yet.",
   "maker.variantCount": "{n} variants",
-  "maker.failed": "That did not work."
+  "maker.failed": "That did not work.",
+  "tournaments.eyebrow": "Competitive",
+  "tournaments.title": "Tournaments",
+  "tournaments.blurb": "3v3 competitive retakes, run as a bracket.",
+  "tournaments.none": "No tournaments yet.",
+  "tournaments.name": "Tournament",
+  "tournaments.format": "Format",
+  "tournaments.teams": "Teams",
+  "tournaments.team": "Team",
+  "tournaments.state": "State",
+  "tournaments.seed": "Seed",
+  "tournaments.players": "Players",
+  "tournaments.noTeams": "No teams have registered yet.",
+  "tournaments.pool": "Map pool",
+  "tournaments.played": "Played",
+  "tournaments.won": "Won",
+  "tournaments.diff": "Diff"
 }
