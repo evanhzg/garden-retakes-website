@@ -1,0 +1,117 @@
+/* Captain registration. */
+
+.rg {
+  margin-top: var(--space-4);
+}
+
+.rg-notice {
+  padding: var(--space-2) var(--space-3);
+  border-left: 3px solid var(--color-accent);
+  background: var(--bg-soft);
+  font-size: 13px;
+}
+
+.rg-invites {
+  margin-bottom: var(--space-4);
+  padding: var(--space-3);
+  border: 2px solid var(--color-accent);
+  background: var(--bg-soft);
+}
+
+.rg-invites h3 {
+  margin: 0 0 var(--space-2);
+  font-size: 14px;
+}
+
+.rg-invite {
+  display: flex;
+  align-items: center;
+  gap: var(--space-2);
+  padding: var(--space-2) 0;
+}
+
+.rg-invite strong {
+  flex: 1;
+}
+
+.rg-team h3 {
+  display: flex;
+  align-items: center;
+  gap: var(--space-2);
+  margin: 0 0 var(--space-3);
+}
+
+.rg-members {
+  list-style: none;
+  margin: 0 0 var(--space-3);
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.rg-members li {
+  display: flex;
+  align-items: center;
+  gap: var(--space-2);
+  padding: 6px 8px;
+  background: var(--bg-soft);
+}
+
+.rg-members code {
+  font-family: var(--font-mono);
+  font-size: 12px;
+  flex: 1;
+}
+
+.rg-status {
+  font-size: 11px;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  color: var(--muted);
+}
+
+/* An invitation nobody has answered is the usual reason a roster is short, so
+   it is the one status worth colouring. */
+.rg-status.invited {
+  color: var(--color-team-t);
+}
+
+.rg-status.accepted {
+  color: #4ade80;
+}
+
+.rg-count {
+  font-size: 13px;
+}
+
+.rg-form {
+  display: flex;
+  gap: var(--space-2);
+  flex-wrap: wrap;
+  align-items: center;
+}
+
+.rg-form input {
+  flex: 1;
+  min-width: 200px;
+  padding: 8px 10px;
+  border: 1px solid var(--border);
+  background: var(--panel);
+  color: var(--text);
+}
+
+.rg-tag {
+  flex: none !important;
+  min-width: 0 !important;
+  width: 90px;
+}
+
+.rg-small {
+  padding: 3px 8px;
+  font-size: 11px;
+}
+
+.rg-leave {
+  margin-top: var(--space-3);
+}

@@ -1,0 +1,79 @@
+/* The per-match admin panel.
+   Used while a match is live and somebody is waiting, so the controls are
+   grouped by what you are trying to do rather than by what they call. */
+
+.ma {
+  border: 1px solid var(--border);
+  background: var(--panel);
+  padding: var(--space-3);
+}
+
+.ma-head {
+  display: flex;
+  align-items: center;
+  gap: var(--space-2);
+  flex-wrap: wrap;
+  padding-bottom: var(--space-3);
+  border-bottom: 1px solid var(--border);
+  margin-bottom: var(--space-3);
+}
+
+.ma-key {
+  font-family: var(--font-mono);
+  font-size: 12px;
+  color: var(--muted);
+  margin-left: auto;
+}
+
+.ma-group {
+  display: flex;
+  align-items: center;
+  gap: var(--space-2);
+  flex-wrap: wrap;
+  padding: var(--space-2) 0;
+}
+
+.ma-group + .ma-group {
+  border-top: 1px dashed var(--border);
+}
+
+.ma-group h4 {
+  margin: 0;
+  min-width: 96px;
+  font-size: 12px;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  color: var(--muted);
+}
+
+.ma-group input {
+  width: 72px;
+  padding: 6px 8px;
+  border: 1px solid var(--border);
+  background: var(--bg-soft);
+  color: var(--text);
+  font-family: var(--font-mono);
+}
+
+/* Awarding a match by hand cannot be undone from here, so it does not sit next
+   to the buttons somebody presses every round. */
+.ma-danger {
+  border-top: 2px solid var(--color-accent);
+  margin-top: var(--space-2);
+}
+
+.ma-danger h4 {
+  color: var(--color-accent);
+}
+
+.ma-log {
+  margin: var(--space-3) 0 0;
+  padding: var(--space-2);
+  max-height: 220px;
+  overflow: auto;
+  background: var(--bg-soft);
+  border-left: 3px solid var(--border);
+  font-family: var(--font-mono);
+  font-size: 12px;
+  white-space: pre-wrap;
+}

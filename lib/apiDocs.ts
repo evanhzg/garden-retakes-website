@@ -251,6 +251,48 @@ export const DOC_SECTIONS: DocSection[] = [
       },
       {
         method: "POST",
+        path: "/api/tournament/ingest",
+        summary:
+          "The tournament plugin reporting a match: going_live, round_end, map_end, match_end, player_stats. Idempotent on (matchKey, seq) — the plugin sends fire-and-forget, so a retry after a timeout must not score a round twice. Every event carries the whole score rather than a delta, so a dropped one is repaired by the next.",
+        auth: AUTH_KINDS.apikey,
+      },
+      {
+        method: "POST",
+        path: "/api/tournament/admin-call",
+        summary:
+          "A player typed .admin. The row is written before anyone is notified: a failed emit still leaves an alert on the page, a failed write loses the call. GET ?key= lists open calls for the owner's page and the desktop app.",
+        auth: AUTH_KINDS.apikey,
+      },
+      {
+        method: "POST",
+        path: "/api/tournament/demo",
+        summary:
+          "A match's demo has finished recording. Records that the file exists, not that it is downloadable — it is still on the game server at this point.",
+        auth: AUTH_KINDS.apikey,
+      },
+      {
+        method: "GET",
+        path: "/api/tournament/live",
+        summary: "Every match being played, for the live wall. Public, because it feeds a stream overlay — and it never returns an RCON password.",
+        auth: AUTH_KINDS.none,
+        params: [{ name: "t", in: "query", type: "string", description: "Tournament slug; omit for all" }],
+      },
+      {
+        method: "POST",
+        path: "/api/tournament/teams",
+        summary:
+          "Captains registering: create / invite / accept / decline / kick / leave / rename. Session-only and never keyed — every action has to be attributable to the person who took it. GET ?tournamentId= returns your own team and invitations.",
+        auth: AUTH_KINDS.session,
+      },
+      {
+        method: "POST",
+        path: "/api/admin/tournaments",
+        summary:
+          "Running a tournament: create, add-stage, set-pool, generate, start, state, admin. 'generate' builds a stage's matches and refuses if it already has any — generating twice doubles a bracket in a way that is hard to see and impossible to play. 'admin' passes a command through to whichever server a match is on.",
+        auth: AUTH_KINDS.admin,
+      },
+      {
+        method: "POST",
         path: "/api/tournament/maker/variants",
         summary:
           "The tournament plugin reporting what an admin just placed or shot in a Maker session. Sends the whole variant list rather than a diff, so it replaces rather than appends and a dropped message costs nothing.",

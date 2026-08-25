@@ -1,0 +1,288 @@
+import { NextResponse } from "next/server";
+import { prisma } from "@/lib/db";
+import { getSession } from "@/lib/auth";
+
+export const dynamic = "force-dynamic";
+export const runtime = "nodejs";
+
+// Captains registering their own teams.
+//
+// Session-authenticated, never by key: this is the one part of the tournament
+// system ordinary players touch, and every action has to be attributable to the
+// person who took it. A captain inviting somebody, and that somebody accepting,
+// are two different people's decisions and both are recorded.
+
+type Body = {
+  action?: "create" | "invite" | "accept" | "decline" | "leave" | "kick" | "rename";
+  tournamentId?: number;
+  teamId?: number;
+  name?: string;
+  tag?: string;
+  steamId?: string;
+};
+
+export async function POST(req: Request) {
+  const session = getSession();
+  if (!session) {
+    return NextResponse.json({ error: "Sign in with Steam first." }, { status: 401 });
+  }
+
+  let body: Body;
+  try {
+    body = await req.json();
+  } catch {
+    return NextResponse.json({ error: "Malformed JSON." }, { status: 400 });
+  }
+
+  const me = BigInt(session.steamId);
+
+  switch (body.action) {
+    case "create": {
+      if (!body.tournamentId) return NextResponse.json({ error: "tournamentId?" }, { status: 400 });
+
+      const tournament = await prisma.tournament.findUnique({ where: { Id: body.tournamentId } });
+      if (!tournament) return NextResponse.json({ error: "No such tournament." }, { status: 404 });
+
+      if (tournament.State !== "registration") {
+        return NextResponse.json({ error: "Registration is closed." }, { status: 400 });
+      }
+
+      const name = (body.name ?? "").trim();
+      if (name.length < 2) {
+        return NextResponse.json({ error: "That name is too short." }, { status: 400 });
+      }
+
+      // One team per person per tournament. Without this a captain can register
+      // twice and take a slot from somebody, which only shows up when the
+      // bracket is generated and is painful to unpick then.
+      const already = await prisma.tournamentTeamMember.findFirst({
+        where: { SteamId: me, Team: { TournamentId: tournament.Id, Status: { not: "withdrawn" } } },
+        include: { Team: true },
+      });
+
+      if (already) {
+        return NextResponse.json(
+          { error: `You are already in ${already.Team.Name}.` },
+          { status: 400 },
+        );
+      }
+
+      const full = await prisma.tournamentTeam.count({
+        where: { TournamentId: tournament.Id, Status: { not: "withdrawn" } },
+      });
+
+      if (full >= tournament.MaxTeams) {
+        return NextResponse.json({ error: "The tournament is full." }, { status: 400 });
+      }
+
+      try {
+        const team = await prisma.tournamentTeam.create({
+          data: {
+            TournamentId: tournament.Id,
+            Name: name.slice(0, 64),
+            Tag: (body.tag ?? "").trim().slice(0, 8) || null,
+            CaptainSteamId: me,
+            Members: {
+              create: { SteamId: me, IsCaptain: true, Status: "accepted", RespondedAt: new Date() },
+            },
+          },
+        });
+
+        return NextResponse.json({ ok: true, teamId: team.Id });
+      } catch {
+        // The unique index on (tournament, name) is the real guard; this is the
+        // message somebody reads when they hit it.
+        return NextResponse.json({ error: "A team already has that name." }, { status: 400 });
+      }
+    }
+
+    case "invite": {
+      const team = await captainOf(body.teamId, me);
+      if ("error" in team) return team.error;
+
+      const steamId = (body.steamId ?? "").trim();
+      if (!/^\d{17}$/.test(steamId)) {
+        return NextResponse.json({ error: "That is not a SteamID64." }, { status: 400 });
+      }
+
+      const tournament = await prisma.tournament.findUnique({
+        where: { Id: team.value.TournamentId },
+      });
+
+      const size = await prisma.tournamentTeamMember.count({
+        where: { TeamId: team.value.Id, Status: { in: ["invited", "accepted"] } },
+      });
+
+      // Room for a substitute, but not for a second team hiding inside one.
+      const cap = (tournament?.TeamSize ?? 3) + 2;
+      if (size >= cap) {
+        return NextResponse.json({ error: `A team may hold ${cap} players.` }, { status: 400 });
+      }
+
+      const elsewhere = await prisma.tournamentTeamMember.findFirst({
+        where: {
+          SteamId: BigInt(steamId),
+          Status: "accepted",
+          Team: { TournamentId: team.value.TournamentId },
+        },
+      });
+
+      if (elsewhere) {
+        return NextResponse.json({ error: "They are already on a team." }, { status: 400 });
+      }
+
+      await prisma.tournamentTeamMember.upsert({
+        where: { TeamId_SteamId: { TeamId: team.value.Id, SteamId: BigInt(steamId) } },
+        create: { TeamId: team.value.Id, SteamId: BigInt(steamId), Status: "invited" },
+        update: { Status: "invited", RespondedAt: null },
+      });
+
+      return NextResponse.json({ ok: true });
+    }
+
+    case "accept":
+    case "decline": {
+      if (!body.teamId) return NextResponse.json({ error: "teamId?" }, { status: 400 });
+
+      const membership = await prisma.tournamentTeamMember.findUnique({
+        where: { TeamId_SteamId: { TeamId: body.teamId, SteamId: me } },
+      });
+
+      if (!membership || membership.Status !== "invited") {
+        return NextResponse.json({ error: "You have no invitation to that team." }, { status: 400 });
+      }
+
+      await prisma.tournamentTeamMember.update({
+        where: { Id: membership.Id },
+        data: {
+          Status: body.action === "accept" ? "accepted" : "declined",
+          RespondedAt: new Date(),
+        },
+      });
+
+      return NextResponse.json({ ok: true });
+    }
+
+    case "kick": {
+      const team = await captainOf(body.teamId, me);
+      if ("error" in team) return team.error;
+
+      const steamId = (body.steamId ?? "").trim();
+      if (BigInt(steamId || "0") === me) {
+        return NextResponse.json({ error: "A captain cannot kick themselves." }, { status: 400 });
+      }
+
+      await prisma.tournamentTeamMember.updateMany({
+        where: { TeamId: team.value.Id, SteamId: BigInt(steamId) },
+        data: { Status: "removed", RespondedAt: new Date() },
+      });
+
+      return NextResponse.json({ ok: true });
+    }
+
+    case "leave": {
+      if (!body.teamId) return NextResponse.json({ error: "teamId?" }, { status: 400 });
+
+      const team = await prisma.tournamentTeam.findUnique({ where: { Id: body.teamId } });
+
+      // A captain leaving would orphan the team, so it withdraws instead —
+      // explicit, and visible to everybody else on it.
+      if (team?.CaptainSteamId === me) {
+        await prisma.tournamentTeam.update({
+          where: { Id: team.Id },
+          data: { Status: "withdrawn" },
+        });
+
+        return NextResponse.json({ ok: true, withdrew: true });
+      }
+
+      await prisma.tournamentTeamMember.updateMany({
+        where: { TeamId: body.teamId, SteamId: me },
+        data: { Status: "removed", RespondedAt: new Date() },
+      });
+
+      return NextResponse.json({ ok: true });
+    }
+
+    case "rename": {
+      const team = await captainOf(body.teamId, me);
+      if ("error" in team) return team.error;
+
+      const name = (body.name ?? "").trim();
+      if (name.length < 2) return NextResponse.json({ error: "That name is too short." }, { status: 400 });
+
+      try {
+        await prisma.tournamentTeam.update({
+          where: { Id: team.value.Id },
+          data: { Name: name.slice(0, 64), Tag: (body.tag ?? "").trim().slice(0, 8) || null },
+        });
+        return NextResponse.json({ ok: true });
+      } catch {
+        return NextResponse.json({ error: "A team already has that name." }, { status: 400 });
+      }
+    }
+
+    default:
+      return NextResponse.json({ error: "Unknown action." }, { status: 400 });
+  }
+}
+
+/** The team, if this person captains it. Everything else is somebody else's team. */
+async function captainOf(teamId: number | undefined, me: bigint) {
+  if (!teamId) {
+    return { error: NextResponse.json({ error: "teamId?" }, { status: 400 }) };
+  }
+
+  const team = await prisma.tournamentTeam.findUnique({ where: { Id: teamId } });
+
+  if (!team) {
+    return { error: NextResponse.json({ error: "No such team." }, { status: 404 }) };
+  }
+
+  if (team.CaptainSteamId !== me) {
+    return { error: NextResponse.json({ error: "Only the captain can do that." }, { status: 403 }) };
+  }
+
+  return { value: team };
+}
+
+/** A player's own team and invitations, for the registration page. */
+export async function GET(req: Request) {
+  const session = getSession();
+  if (!session) {
+    return NextResponse.json({ error: "Sign in with Steam first." }, { status: 401 });
+  }
+
+  const url = new URL(req.url);
+  const tournamentId = Number(url.searchParams.get("tournamentId"));
+
+  if (!Number.isInteger(tournamentId)) {
+    return NextResponse.json({ error: "tournamentId?" }, { status: 400 });
+  }
+
+  const me = BigInt(session.steamId);
+
+  const memberships = await prisma.tournamentTeamMember.findMany({
+    where: { SteamId: me, Team: { TournamentId: tournamentId } },
+    include: { Team: { include: { Members: true } } },
+  });
+
+  return NextResponse.json({
+    steamId: session.steamId,
+    memberships: memberships.map((m) => ({
+      status: m.Status,
+      isCaptain: m.IsCaptain,
+      team: {
+        id: m.Team.Id,
+        name: m.Team.Name,
+        tag: m.Team.Tag,
+        status: m.Team.Status,
+        members: m.Team.Members.map((x) => ({
+          steamId: x.SteamId.toString(),
+          status: x.Status,
+          isCaptain: x.IsCaptain,
+        })),
+      },
+    })),
+  });
+}

@@ -1,0 +1,110 @@
+/* The live wall.
+   Read at a glance from across a room, not studied — so the numbers are large,
+   the leader is obvious, and nothing else competes for attention. */
+
+.lw {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+  gap: var(--space-4);
+  margin-top: var(--space-4);
+}
+
+.lw-card {
+  border: 2px solid var(--border);
+  background: var(--panel);
+  padding: var(--space-3);
+}
+
+.lw-card.live {
+  border-color: var(--color-accent);
+}
+
+.lw-head {
+  display: flex;
+  align-items: center;
+  gap: var(--space-2);
+  margin-bottom: var(--space-3);
+  font-size: 12px;
+  color: var(--muted);
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+}
+
+.lw-map {
+  font-weight: 700;
+}
+
+.lw-bo,
+.lw-warm {
+  padding: 1px 6px;
+  border: 1px solid var(--border);
+  font-size: 10px;
+}
+
+.lw-warm {
+  border-color: var(--color-team-t);
+  color: var(--color-team-t);
+}
+
+.lw-teams {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+
+.lw-team {
+  display: flex;
+  align-items: baseline;
+  gap: var(--space-3);
+  padding: 6px 8px;
+  background: var(--bg-soft);
+}
+
+/* Whoever is ahead on the map. The single most useful thing on the card. */
+.lw-team.leading {
+  background: color-mix(in srgb, var(--color-accent) 14%, var(--bg-soft));
+}
+
+.lw-name {
+  flex: 1;
+  font-weight: 700;
+  font-size: 18px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.lw-maps {
+  font-family: var(--font-mono);
+  font-size: 14px;
+  color: var(--muted);
+  min-width: 1.2em;
+  text-align: right;
+}
+
+.lw-rounds {
+  font-family: var(--font-mono);
+  font-size: 30px;
+  line-height: 1;
+  min-width: 1.6em;
+  text-align: right;
+}
+
+.lw-stale {
+  padding: var(--space-2) var(--space-3);
+  border-left: 3px solid var(--color-team-t);
+  background: var(--bg-soft);
+  color: var(--color-team-t);
+  font-size: 13px;
+}
+
+/* On a projector or a second monitor the cards can afford to be larger. */
+@media (min-width: 1600px) {
+  .lw-name {
+    font-size: 22px;
+  }
+
+  .lw-rounds {
+    font-size: 40px;
+  }
+}
