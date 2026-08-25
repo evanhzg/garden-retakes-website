@@ -309,7 +309,7 @@ model CrMatch {
   /// the argument to `css_cr_go`. Empty for a match started in game with !cr,
   /// which has no website lobby behind it. The column has been on the table
   /// since the plugin started writing it; this model had drifted without it.
-  MatchId      String   @default("") @db.VarChar(64)
+  MatchId      String    @default("") @db.VarChar(64)
 
   @@index([SeasonId])
   @@map("CrMatches")
@@ -1126,12 +1126,18 @@ model GardenMatchVote {
 }
 
 model GardenMap {
-  Id         Int      @id @default(autoincrement())
-  Mode       String   @db.VarChar(32)
-  MapName    String   @db.VarChar(64)
-  ImageUrl   String?  @db.VarChar(255)
-  WorkshopId String?  @db.VarChar(64)
-  CreatedAt  DateTime @default(now()) @db.DateTime(6)
+  Id              Int      @id @default(autoincrement())
+  Mode            String   @db.VarChar(32)
+  MapName         String   @db.VarChar(64)
+  ImageUrl        String?  @db.VarChar(255)
+  WorkshopId      String?  @db.VarChar(64)
+  /// What a person should see, when it differs from the file name — "Dust II"
+  /// rather than "de_dust2". Null falls back to the file name.
+  DisplayName     String?  @db.VarChar(64)
+  /// Whether a tournament may use this map. Off by default, so adding a map to
+  /// the ladder's cycle does not silently make it vetoable in a bracket.
+  TournamentReady Boolean  @default(false)
+  CreatedAt       DateTime @default(now()) @db.DateTime(6)
 
   @@index([Mode])
   @@map("GardenMaps")
@@ -1336,4 +1342,73 @@ model GardenStatTrakCount {
   @@unique([SeasonId, SteamId, Uid])
   @@index([SeasonId, SteamId])
   @@map("GardenStatTrakCounts")
+}
+
+/// A tournament spawn: what a position is, as opposed to where it is.
+///
+/// The Maker tool has two halves. The website owns the name, the role and which
+/// site and side a spawn serves; the plugin owns the coordinates, because those
+/// are decided by standing in them. Positions arrive from the plugin as they are
+/// placed — see app/api/tournament/maker/variants.
+///
+/// This is not what the game reads. The plugin's own tournament_spawns/<map>.json
+/// stays the file a round is placed from; this is the record of what was authored
+/// and the thing GENERATE writes that file from.
+model TournamentSpawn {
+  Id           Int      @id @default(autoincrement())
+  Map          String   @db.VarChar(64)
+  Name         String   @db.VarChar(64)
+  RoleId       String   @db.VarChar(24)
+  /// 0 = A, 1 = B, matching the plugin's Bombsite enum.
+  Bombsite     Int      @db.TinyInt
+  /// 2 = T, 3 = CT, matching CS2's own team numbers.
+  Team         Int      @db.TinyInt
+  CanBePlanter Boolean  @default(false)
+  Sort         Int      @default(100)
+  CreatedBy    BigInt?  @db.UnsignedBigInt
+  CreatedAt    DateTime @default(now()) @db.DateTime(6)
+  UpdatedAt    DateTime @default(now()) @updatedAt @db.DateTime(6)
+
+  Variants TournamentSpawnVariant[]
+
+  @@unique([Map, Bombsite, Team, Name], map: "UX_TournamentSpawns")
+  @@index([Map])
+  @@map("TournamentSpawns")
+}
+
+/// One way to stand in a position. Several variants of one spawn are what stop
+/// two players who chose the same place ending up inside each other.
+model TournamentSpawnVariant {
+  Id        Int      @id @default(autoincrement())
+  SpawnId   Int
+  X         Float
+  Y         Float
+  Z         Float
+  Yaw       Float    @default(0)
+  /// Stored rather than derived on read: an admin pastes these into a console to
+  /// stand where the variant is, and a rounding difference between the page and
+  /// the game is the kind of discrepancy nobody thinks to question.
+  SetPos    String   @db.VarChar(96)
+  ViewPos   String   @db.VarChar(96)
+  CreatedAt DateTime @default(now()) @db.DateTime(6)
+
+  Spawn TournamentSpawn @relation(fields: [SpawnId], references: [Id], onDelete: Cascade)
+
+  @@index([SpawnId])
+  @@map("TournamentSpawnVariants")
+}
+
+/// Which server somebody is authoring on, so the page knows where to send
+/// SELECT IN-GAME and GENERATE.
+model TournamentMakerSession {
+  Id        Int       @id @default(autoincrement())
+  ServerId  Int       @default(1)
+  SpawnId   Int
+  SteamId   BigInt    @db.UnsignedBigInt
+  Map       String    @db.VarChar(64)
+  StartedAt DateTime  @default(now()) @db.DateTime(6)
+  EndedAt   DateTime? @db.DateTime(6)
+
+  @@index([ServerId, EndedAt])
+  @@map("TournamentMakerSessions")
 }

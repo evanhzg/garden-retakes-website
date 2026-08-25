@@ -250,6 +250,13 @@ export const DOC_SECTIONS: DocSection[] = [
         auth: AUTH_KINDS.apikey,
       },
       {
+        method: "POST",
+        path: "/api/tournament/maker/variants",
+        summary:
+          "The tournament plugin reporting what an admin just placed or shot in a Maker session. Sends the whole variant list rather than a diff, so it replaces rather than appends and a dropped message costs nothing.",
+        auth: AUTH_KINDS.apikey,
+      },
+      {
         method: "GET",
         path: "/api/loadout/borrow/{key}",
         summary: "Preview a shared loadout by its share-key.",
@@ -307,6 +314,23 @@ export const DOC_SECTIONS: DocSection[] = [
         auth: AUTH_KINDS.admin,
         params: [
           { name: "q", in: "query", type: "string", description: "Name/SteamID filter" },
+          { name: "key", in: "query", type: "string", description: "Alternative to the session (INVSIM_API_KEY)" },
+        ],
+      },
+      {
+        method: "POST",
+        path: "/api/admin/maker",
+        summary:
+          "Tournament Spawn Maker: start authoring a spawn in game (action omitted), write the placed variants to the map (generate), or abandon the session (end). Drives css_t_maker* over RCON. A start needs a Steam session — the server has to know who is placing.",
+        auth: AUTH_KINDS.admin,
+      },
+      {
+        method: "GET",
+        path: "/api/admin/maker/spawns",
+        summary: "Tournament spawns authored on a map, with every variant's setpos/viewpos. Polled by the Maker page while a session is open. DELETE ?id= removes a spawn and its variants.",
+        auth: AUTH_KINDS.admin,
+        params: [
+          { name: "map", in: "query", type: "string", description: "e.g. de_mirage" },
           { name: "key", in: "query", type: "string", description: "Alternative to the session (INVSIM_API_KEY)" },
         ],
       },

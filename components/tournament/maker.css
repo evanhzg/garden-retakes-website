@@ -1,0 +1,204 @@
+/* The Maker tool.
+   Plain semantic classes and the site's own tokens — this project has no
+   Tailwind, so a class that is not defined here does nothing at all. */
+
+.mk-maps {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(220px, 1fr));
+  gap: var(--space-4);
+  margin-top: var(--space-4);
+}
+
+.mk-map {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-2);
+  padding: 0;
+  border: 2px solid var(--border);
+  background: var(--panel);
+  color: var(--text);
+  cursor: pointer;
+  text-align: left;
+}
+
+.mk-map:hover {
+  border-color: var(--color-accent);
+}
+
+.mk-map img,
+.mk-map-blank {
+  display: block;
+  width: 100%;
+  aspect-ratio: 16 / 9;
+  object-fit: cover;
+  background: var(--bg-soft);
+}
+
+.mk-map-name {
+  display: flex;
+  align-items: center;
+  gap: var(--space-2);
+  padding: 0 var(--space-3) var(--space-3);
+  font-weight: 700;
+}
+
+/* A map with spawns already authored. */
+.mk-ready {
+  color: #4ade80;
+  font-size: 12px;
+}
+
+.mk-bar {
+  display: flex;
+  align-items: center;
+  gap: var(--space-3);
+  flex-wrap: wrap;
+  margin: var(--space-4) 0;
+}
+
+.mk-live {
+  padding: 2px 10px;
+  border: 1px solid var(--color-accent);
+  color: var(--color-accent);
+  font-size: 12px;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+}
+
+.mk-notice {
+  padding: var(--space-3);
+  border-left: 3px solid var(--color-accent);
+  background: var(--bg-soft);
+  font-family: var(--font-mono);
+  font-size: 13px;
+  white-space: pre-wrap;
+}
+
+.mk-new {
+  display: flex;
+  gap: var(--space-2);
+  flex-wrap: wrap;
+  align-items: center;
+  padding: var(--space-3);
+  border: 1px solid var(--border);
+  background: var(--bg-soft);
+}
+
+.mk-new input[type="text"],
+.mk-new input:not([type]),
+.mk-new select {
+  padding: 8px 10px;
+  border: 1px solid var(--border);
+  background: var(--panel);
+  color: var(--text);
+}
+
+.mk-new input:not([type]) {
+  min-width: 220px;
+  flex: 1;
+}
+
+.mk-check {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 13px;
+}
+
+.mk-sections {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(320px, 1fr));
+  gap: var(--space-4);
+  margin-top: var(--space-4);
+}
+
+.mk-section h3 {
+  margin: 0 0 var(--space-2);
+  font-size: 14px;
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+  color: var(--muted);
+}
+
+.mk-empty {
+  font-size: 13px;
+  margin: 0;
+}
+
+.mk-spawn {
+  border: 1px solid var(--border);
+  background: var(--panel);
+  padding: var(--space-3);
+  margin-bottom: var(--space-2);
+}
+
+/* The one being authored right now. */
+.mk-spawn.active {
+  border-color: var(--color-accent);
+  box-shadow: inset 3px 0 0 var(--color-accent);
+}
+
+.mk-spawn-head {
+  display: flex;
+  align-items: center;
+  gap: var(--space-2);
+  flex-wrap: wrap;
+}
+
+/* The role's colour, matching the cubes in game so the two read as one thing. */
+.mk-dot {
+  width: 10px;
+  height: 10px;
+  flex: none;
+}
+
+.mk-tag {
+  padding: 1px 6px;
+  border: 1px solid var(--color-team-t);
+  color: var(--color-team-t);
+  font-size: 11px;
+  text-transform: uppercase;
+}
+
+.mk-count {
+  margin-left: auto;
+  font-family: var(--font-mono);
+  font-size: 12px;
+  color: var(--muted);
+}
+
+.mk-small {
+  padding: 4px 10px;
+  font-size: 12px;
+}
+
+.mk-variants {
+  margin: var(--space-2) 0 0;
+  padding-left: var(--space-4);
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.mk-variants li {
+  font-size: 12px;
+}
+
+.mk-variants code {
+  font-family: var(--font-mono);
+  margin-right: var(--space-2);
+  /* These are meant to be selected and pasted into a console, so they must not
+     wrap mid-coordinate. */
+  white-space: nowrap;
+}
+
+@media (max-width: 640px) {
+  .mk-sections {
+    grid-template-columns: 1fr;
+  }
+
+  .mk-variants code {
+    white-space: normal;
+  }
+}
