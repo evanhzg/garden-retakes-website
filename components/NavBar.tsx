@@ -35,6 +35,10 @@ const CS2_LINKS: NavLink[] = [
   { href: "/utility", label: "Utility", key: "nav.utility", primary: true },
   { href: "/live", label: "Live", key: "nav.live", isLive: true, primary: true },
   { href: "/lobby", label: "Matchmaking", key: "nav.lobby", primary: true },
+  // Deliberately absent from `hiddenInDemo` below. A demo is shown to somebody
+  // being pitched an event, and the tournament pages are most of what there is
+  // to show them.
+  { href: "/tournaments", label: "Tournaments", key: "nav.tournaments", primary: true },
   { href: "/safe-place", label: "Safe Place", key: "nav.safe_place", primary: true },
   { href: "/compare", label: "Compare", key: "nav.compare" },
   { href: "/duels", label: "Duels", key: "nav.duels" },

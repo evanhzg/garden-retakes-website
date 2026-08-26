@@ -1,0 +1,333 @@
+/* The command reference.
+
+   Density is the whole design goal here: somebody scanning for a command reads
+   the monospace column and nothing else, so that column is left-aligned, fixed
+   in width on wide screens, and everything else is arranged around it. */
+
+.cmd {
+  display: grid;
+  gap: var(--space-4);
+}
+
+/* ---------------------------------------------------------------- controls */
+
+.cmd-controls {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: var(--space-2);
+  position: sticky;
+  /* Under the site header, which is sticky at 0. */
+  top: 0;
+  z-index: 5;
+  padding: var(--space-3) 0;
+  background: var(--color-bg);
+  border-bottom: 1px solid var(--color-divider);
+}
+
+.cmd-search {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  flex: 1 1 260px;
+  min-width: 220px;
+  padding: 0 10px;
+  border: 1px solid var(--color-divider);
+  background: var(--color-surface);
+  color: var(--color-text-muted);
+}
+
+.cmd-search:focus-within {
+  border-color: var(--color-accent);
+}
+
+.cmd-search-input {
+  flex: 1;
+  border: 0;
+  outline: none;
+  background: none;
+  color: var(--color-text);
+  font: inherit;
+  padding: 9px 0;
+}
+
+/* Safari draws its own clear button on type=search, which would sit next to
+   ours saying the same thing twice. */
+.cmd-search-input::-webkit-search-decoration,
+.cmd-search-input::-webkit-search-cancel-button {
+  -webkit-appearance: none;
+}
+
+.cmd-clear {
+  border: 0;
+  background: none;
+  color: var(--color-text-muted);
+  cursor: pointer;
+  font-size: 18px;
+  line-height: 1;
+  padding: 0 2px;
+}
+
+.cmd-clear:hover {
+  color: var(--color-accent);
+}
+
+.cmd-kbd {
+  padding: 1px 6px;
+  border: 1px solid var(--color-divider);
+  font-family: var(--font-mono);
+  font-size: 11px;
+  color: var(--color-text-muted);
+}
+
+.cmd-prefix,
+.cmd-levels {
+  display: flex;
+  gap: 0;
+}
+
+.cmd-prefix-btn,
+.cmd-level-btn {
+  border: 1px solid var(--color-divider);
+  background: var(--color-surface);
+  color: var(--color-text-muted);
+  cursor: pointer;
+  font: inherit;
+  font-size: 12px;
+  letter-spacing: 0.03em;
+  padding: 8px 12px;
+}
+
+.cmd-prefix-btn + .cmd-prefix-btn,
+.cmd-level-btn + .cmd-level-btn {
+  border-left: 0;
+}
+
+.cmd-prefix-btn code {
+  font-size: 11px;
+  opacity: 0.75;
+}
+
+.cmd-prefix-btn:hover,
+.cmd-level-btn:hover {
+  color: var(--color-text);
+}
+
+.cmd-prefix-btn.on,
+.cmd-level-btn.on {
+  background: var(--color-text);
+  color: var(--color-bg);
+  border-color: var(--color-text);
+}
+
+/* -------------------------------------------------------------------- tabs */
+
+.cmd-tabs {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 4px;
+}
+
+.cmd-tab {
+  display: inline-flex;
+  align-items: center;
+  gap: 7px;
+  padding: 8px 13px;
+  border: 1px solid transparent;
+  border-bottom: 2px solid transparent;
+  background: none;
+  color: var(--color-text-muted);
+  cursor: pointer;
+  font: inherit;
+  font-size: 13px;
+}
+
+.cmd-tab:hover {
+  color: var(--color-text);
+}
+
+.cmd-tab.on {
+  color: var(--color-text);
+  border-bottom-color: var(--color-accent);
+}
+
+.cmd-tab-n {
+  font-size: 11px;
+  opacity: 0.6;
+}
+
+.cmd-resultline {
+  margin: 0;
+  font-size: 13px;
+}
+
+/* ------------------------------------------------------------------ groups */
+
+.cmd-groups {
+  display: grid;
+  gap: var(--space-5);
+}
+
+.cmd-group-head {
+  display: flex;
+  align-items: baseline;
+  gap: var(--space-2);
+  flex-wrap: wrap;
+  padding-bottom: 6px;
+  border-bottom: 1px solid var(--color-divider);
+}
+
+.cmd-group-head h3 {
+  margin: 0;
+  font-size: 15px;
+  letter-spacing: 0.02em;
+}
+
+.cmd-group-modes {
+  font-size: 11px;
+  text-transform: uppercase;
+  letter-spacing: 0.07em;
+  color: var(--color-text-muted);
+}
+
+.cmd-group-blurb {
+  margin: 8px 0 0;
+  font-size: 13px;
+  max-width: 68ch;
+}
+
+.cmd-list {
+  list-style: none;
+  margin: var(--space-2) 0 0;
+  padding: 0;
+}
+
+/* The row. On a wide screen the name is a fixed column so every command starts
+   at the same x — that alignment is what makes the list scannable, and it is
+   the first thing to go when the name is allowed to size itself. */
+.cmd-item {
+  display: grid;
+  grid-template-columns: minmax(0, 260px) 1fr;
+  gap: var(--space-3);
+  align-items: baseline;
+  padding: 9px 6px;
+  border-bottom: 1px solid color-mix(in srgb, var(--color-divider) 55%, transparent);
+}
+
+.cmd-item:hover {
+  background: color-mix(in srgb, var(--color-text) 4%, transparent);
+}
+
+.cmd-name {
+  display: flex;
+  align-items: baseline;
+  gap: 7px;
+  flex-wrap: wrap;
+  border: 0;
+  background: none;
+  padding: 0;
+  margin: 0;
+  cursor: pointer;
+  text-align: left;
+  font: inherit;
+  color: inherit;
+}
+
+.cmd-name code {
+  font-family: var(--font-mono);
+  font-size: 13.5px;
+  color: var(--color-accent);
+  white-space: nowrap;
+}
+
+.cmd-name:hover code {
+  text-decoration: underline;
+  text-underline-offset: 3px;
+}
+
+.cmd-args {
+  font-family: var(--font-mono);
+  font-size: 12px;
+  color: var(--color-text-muted);
+}
+
+.cmd-copied {
+  font-size: 11px;
+  color: var(--color-text-muted);
+}
+
+.cmd-body {
+  display: grid;
+  gap: 4px;
+}
+
+.cmd-desc {
+  margin: 0;
+  font-size: 13.5px;
+  line-height: 1.5;
+}
+
+.cmd-meta {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 8px;
+}
+
+.cmd-aliases {
+  font-family: var(--font-mono);
+  font-size: 11.5px;
+  color: var(--color-text-muted);
+}
+
+.cmd-tag {
+  padding: 1px 7px;
+  border: 1px solid var(--color-divider);
+  font-size: 10.5px;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  color: var(--color-text-muted);
+}
+
+/* Levels are the one thing here worth colour: they are the difference between
+   a command you can use and one that will tell you off. */
+.cmd-tag.lvl-mod,
+.cmd-level-btn.lvl-mod.on {
+  border-color: #3b82f6;
+  color: #3b82f6;
+}
+
+.cmd-tag.lvl-admin,
+.cmd-level-btn.lvl-admin.on {
+  border-color: #f59e0b;
+  color: #f59e0b;
+}
+
+.cmd-tag.lvl-owner,
+.cmd-level-btn.lvl-owner.on {
+  border-color: var(--color-accent);
+  color: var(--color-accent);
+}
+
+.cmd-level-btn.lvl-mod.on,
+.cmd-level-btn.lvl-admin.on,
+.cmd-level-btn.lvl-owner.on {
+  background: none;
+}
+
+.cmd-tag-console {
+  font-family: var(--font-mono);
+  text-transform: none;
+  letter-spacing: 0;
+}
+
+@media (max-width: 720px) {
+  .cmd-item {
+    grid-template-columns: 1fr;
+    gap: 4px;
+  }
+
+  .cmd-controls {
+    position: static;
+  }
+}

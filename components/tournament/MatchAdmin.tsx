@@ -2,6 +2,8 @@
 
 import { useCallback, useState } from "react";
 import { useI18n } from "@/components/I18nProvider";
+import MatchBubble from "./MatchBubble";
+import type { MatchPreview } from "@/lib/tournament/preview";
 import "./matchadmin.css";
 
 // The per-match panel.
@@ -18,9 +20,11 @@ type Props = {
   teamB: string;
   state: string;
   adminKey?: string;
+  /** The series, for the hover bubble on the header. */
+  preview?: MatchPreview | null;
 };
 
-export default function MatchAdmin({ matchId, matchKey, teamA, teamB, state, adminKey }: Props) {
+export default function MatchAdmin({ matchId, matchKey, teamA, teamB, state, adminKey, preview }: Props) {
   const { t } = useI18n();
   const [log, setLog] = useState<string[]>([]);
   const [busy, setBusy] = useState(false);
@@ -58,13 +62,18 @@ export default function MatchAdmin({ matchId, matchKey, teamA, teamB, state, adm
 
   return (
     <div className="ma">
-      <header className="ma-head">
-        <strong>{teamA}</strong>
-        <span className="muted">v</span>
-        <strong>{teamB}</strong>
-        <code className="ma-key">{matchKey}</code>
-        <span className="chip">{state}</span>
-      </header>
+      {/* The bubble hangs off the header rather than the whole card: the card
+          is full of buttons, and something that follows the cursor across them
+          is a distraction exactly when the panel is being used under pressure. */}
+      <MatchBubble preview={preview ?? null} teamA={teamA} teamB={teamB}>
+        <header className="ma-head">
+          <strong>{teamA}</strong>
+          <span className="muted">v</span>
+          <strong>{teamB}</strong>
+          <code className="ma-key">{matchKey}</code>
+          <span className="chip">{state}</span>
+        </header>
+      </MatchBubble>
 
       <div className="ma-group">
         <h4>{t("matchAdmin.match")}</h4>

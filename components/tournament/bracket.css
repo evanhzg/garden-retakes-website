@@ -90,3 +90,10 @@
   font-family: var(--font-mono);
   letter-spacing: 0.04em;
 }
+
+/* The hover target. A wrapper rather than the box itself, so the box keeps its
+   own border and the pointer area matches what is drawn. */
+.br-slot {
+  position: relative;
+  cursor: default;
+}

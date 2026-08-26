@@ -1434,8 +1434,39 @@ model Tournament {
   Matches    TournamentMatch[]
   Maps       TournamentMap[]
   Spectators TournamentSpectator[]
+  Organizers TournamentOrganizer[]
 
   @@map("Tournaments")
+}
+
+/// May create tournaments. Deliberately not a fourth GardenAdmins level — that
+/// column is a ladder used for immunity, and an organizer is a different job
+/// rather than a rung on it. See lib/tournamentRoles.ts.
+model GardenOrganizer {
+  SteamId        BigInt   @id @db.UnsignedBigInt
+  Name           String?  @db.VarChar(64)
+  AddedBySteamId BigInt?  @db.UnsignedBigInt
+  AddedAt        DateTime @default(now()) @db.DateTime(6)
+
+  @@map("GardenOrganizers")
+}
+
+/// Who may manage one tournament. Several per event, which is why it is a table
+/// and not a column on Tournaments.
+model TournamentOrganizer {
+  Id           Int      @id @default(autoincrement())
+  TournamentId Int
+  SteamId      BigInt   @db.UnsignedBigInt
+  Name         String?  @db.VarChar(64)
+  /// The one who created it. The last organizer cannot be removed.
+  IsCreator    Boolean  @default(false)
+  AddedAt      DateTime @default(now()) @db.DateTime(6)
+
+  Tournament Tournament @relation(fields: [TournamentId], references: [Id], onDelete: Cascade)
+
+  @@unique([TournamentId, SteamId], map: "UX_TournamentOrganizers")
+  @@index([SteamId])
+  @@map("TournamentOrganizers")
 }
 
 /// One phase of a tournament. The difference between a swiss and a group phase
@@ -1531,10 +1562,11 @@ model TournamentMatch {
   StartedAt        DateTime? @db.DateTime(6)
   EndedAt          DateTime? @db.DateTime(6)
 
-  Tournament Tournament             @relation(fields: [TournamentId], references: [Id], onDelete: Cascade)
-  Stage      TournamentStage        @relation(fields: [StageId], references: [Id], onDelete: Cascade)
-  Maps       TournamentMatchMap[]
-  Veto       TournamentVetoAction[]
+  Tournament  Tournament             @relation(fields: [TournamentId], references: [Id], onDelete: Cascade)
+  Stage       TournamentStage        @relation(fields: [StageId], references: [Id], onDelete: Cascade)
+  Maps        TournamentMatchMap[]
+  Veto        TournamentVetoAction[]
+  PlayerStats TournamentPlayerStat[]
 
   @@index([StageId, Round, Slot])
   @@index([TournamentId, State])
@@ -1619,6 +1651,12 @@ model TournamentPlayerStat {
   KastRounds    Int      @default(0)
   Rating        Float    @default(0)
   UpdatedAt     DateTime @default(now()) @updatedAt @db.DateTime(6)
+
+  /// Declared so a stat line can be filtered and grouped by its tournament —
+  /// the profile and the tournament stats tab both ask that question. As
+  /// elsewhere in this schema there is no database-level foreign key; the
+  /// relation is what Prisma joins on.
+  Match TournamentMatch @relation(fields: [MatchId], references: [Id], onDelete: Cascade)
 
   @@unique([MatchId, MapId, SteamId], map: "UX_TournamentPlayerStats")
   @@index([SteamId])

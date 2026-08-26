@@ -1,9 +1,10 @@
 import Link from "next/link";
 import { notFound } from "next/navigation";
-import { AdminLevel, getAdminContext, levelName } from "@/lib/adminAuth";
+import { canManage, getTournamentContext } from "@/lib/tournamentAuth";
 import { prisma } from "@/lib/db";
 import { getT } from "@/lib/serverI18n";
 import MatchAdmin from "@/components/tournament/MatchAdmin";
+import { previewsForTournament } from "@/lib/tournament/preview";
 
 export const dynamic = "force-dynamic";
 
@@ -15,20 +16,22 @@ export default async function TournamentAdminPage({
   searchParams: { key?: string };
 }) {
   const t = getT();
-  const ctx = await getAdminContext(searchParams.key);
+  const ctx = await getTournamentContext(searchParams.key);
 
-  if (ctx.level < AdminLevel.Admin) {
+  const id = Number(params.id);
+  if (!Number.isInteger(id)) notFound();
+
+  // Checked against THIS tournament rather than against a level: an organizer
+  // runs their own events and nobody else's, an admin runs all of them.
+  if (!(await canManage(ctx, id))) {
     return (
       <section className="panel">
         <div className="empty-hint">
-          <p style={{ margin: 0 }}>{t("maker.adminsOnly")}</p>
+          <p style={{ margin: 0 }}>{t("setup.notYours")}</p>
         </div>
       </section>
     );
   }
-
-  const id = Number(params.id);
-  if (!Number.isInteger(id)) notFound();
 
   const tournament = await prisma.tournament.findUnique({
     where: { Id: id },
@@ -40,10 +43,13 @@ export default async function TournamentAdminPage({
 
   if (!tournament) notFound();
 
-  const matches = await prisma.tournamentMatch.findMany({
-    where: { TournamentId: id },
-    orderBy: [{ Round: "asc" }, { Slot: "asc" }],
-  });
+  const [matches, previews] = await Promise.all([
+    prisma.tournamentMatch.findMany({
+      where: { TournamentId: id },
+      orderBy: [{ Round: "asc" }, { Slot: "asc" }],
+    }),
+    previewsForTournament(id),
+  ]);
 
   const teamName = new Map(tournament.Teams.map((x) => [x.Id, x.Name]));
 
@@ -56,7 +62,7 @@ export default async function TournamentAdminPage({
       <section className="panel">
         <div className="admin-head">
           <h2>{tournament.Name}</h2>
-          <span className="role-badge">{levelName(ctx.level)}</span>
+          <span className="role-badge">{ctx.roleName}</span>
         </div>
 
         <p className="muted">
@@ -94,6 +100,7 @@ export default async function TournamentAdminPage({
                 teamB={match.TeamBId ? teamName.get(match.TeamBId) ?? "?" : "—"}
                 state={match.State}
                 adminKey={searchParams.key}
+                preview={previews.get(match.Id) ?? null}
               />
             ))}
           </div>

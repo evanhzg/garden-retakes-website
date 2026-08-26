@@ -2,51 +2,9 @@
    Plain semantic classes and the site's own tokens — this project has no
    Tailwind, so a class that is not defined here does nothing at all. */
 
-.mk-maps {
-  display: grid;
-  grid-template-columns: repeat(auto-fill, minmax(220px, 1fr));
-  gap: var(--space-4);
-  margin-top: var(--space-4);
-}
-
-.mk-map {
-  display: flex;
-  flex-direction: column;
-  gap: var(--space-2);
-  padding: 0;
-  border: 2px solid var(--border);
-  background: var(--panel);
-  color: var(--text);
-  cursor: pointer;
-  text-align: left;
-}
-
-.mk-map:hover {
-  border-color: var(--color-accent);
-}
-
-.mk-map img,
-.mk-map-blank {
-  display: block;
-  width: 100%;
-  aspect-ratio: 16 / 9;
-  object-fit: cover;
-  background: var(--bg-soft);
-}
-
-.mk-map-name {
-  display: flex;
-  align-items: center;
-  gap: var(--space-2);
-  padding: 0 var(--space-3) var(--space-3);
-  font-weight: 700;
-}
-
-/* A map with spawns already authored. */
-.mk-ready {
-  color: #4ade80;
-  font-size: 12px;
-}
+/* The map grid used to live here. It is the shared MapPicker now — see
+   components/admin/MapPicker.tsx — so that choosing a map is the same control
+   in the Spawn Maker and in the Game Maker rather than two that look alike. */
 
 .mk-bar {
   display: flex;
@@ -201,4 +159,31 @@
   .mk-variants code {
     white-space: normal;
   }
+}
+
+/* How much of one quarter of the map is done: spawns / variants. */
+.mk-section-n {
+  margin-left: auto;
+  font-family: var(--font-mono);
+  font-size: 11px;
+  font-weight: 400;
+  color: var(--color-text-muted);
+}
+
+.mk-section h3 {
+  display: flex;
+  align-items: baseline;
+  gap: 6px;
+}
+
+/* Removing a spawn. Not styled as a primary danger button — it sits in a row
+   of small controls and shouting would make the row hard to read. */
+.mk-danger {
+  padding: 3px 9px;
+  line-height: 1;
+}
+
+.mk-danger:hover:not(:disabled) {
+  border-color: var(--color-accent);
+  color: var(--color-accent);
 }

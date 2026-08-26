@@ -46,6 +46,34 @@ export default async function MakerPage({
     orderBy: [{ TournamentReady: "desc" }, { MapName: "asc" }],
   });
 
+  // How much has been authored on each. "Which map should I work on next" is
+  // the question the map list is really being asked, and a grid of identical
+  // tiles cannot answer it. Two aggregates rather than a query per map.
+  const spawnCounts = await prisma.tournamentSpawn.groupBy({
+    by: ["Map"],
+    _count: { _all: true },
+  });
+  const spawnsPerMap = new Map(spawnCounts.map((r) => [r.Map, r._count._all]));
+
+  const variantCounts = await prisma.tournamentSpawnVariant.groupBy({
+    by: ["SpawnId"],
+    _count: { _all: true },
+  });
+  const spawnOwners = variantCounts.length
+    ? await prisma.tournamentSpawn.findMany({
+        where: { Id: { in: variantCounts.map((v) => v.SpawnId) } },
+        select: { Id: true, Map: true },
+      })
+    : [];
+  const mapOfSpawn = new Map(spawnOwners.map((s) => [s.Id, s.Map]));
+
+  const variantsPerMap = new Map<string, number>();
+  for (const row of variantCounts) {
+    const map = mapOfSpawn.get(row.SpawnId);
+    if (!map) continue;
+    variantsPerMap.set(map, (variantsPerMap.get(map) ?? 0) + row._count._all);
+  }
+
   return (
     <section className="panel">
       <div className="admin-head">
@@ -57,6 +85,17 @@ export default async function MakerPage({
         {t("maker.intro")}
       </p>
 
+      {/* Said here rather than left to be worked out. Two spawn editors exist
+          and they write to different places: this one to the tournament
+          plugin's own files, the Game Maker's Retakes tab to the live retakes
+          server. Editing the wrong one looks like it worked. */}
+      <p className="muted" style={{ marginTop: -6, fontSize: 13 }}>
+        {t("maker.notRetakes")}{" "}
+        <Link href={`/admin${searchParams.key ? `?key=${searchParams.key}&` : "?"}tab=gamemaker`}>
+          {t("maker.gameMakerLink")}
+        </Link>
+      </p>
+
       <MakerTool
         adminKey={searchParams.key}
         maps={maps.map((m) => ({
@@ -65,6 +104,8 @@ export default async function MakerPage({
           displayName: m.DisplayName ?? m.MapName,
           imageUrl: m.ImageUrl,
           ready: m.TournamentReady,
+          spawns: spawnsPerMap.get(m.MapName) ?? 0,
+          variants: variantsPerMap.get(m.MapName) ?? 0,
         }))}
       />
 

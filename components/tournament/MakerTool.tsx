@@ -2,6 +2,7 @@
 
 import { useCallback, useEffect, useMemo, useState } from "react";
 import { useI18n } from "@/components/I18nProvider";
+import MapPicker from "@/components/admin/MapPicker";
 import "./maker.css";
 
 // The Maker tool.
@@ -17,6 +18,9 @@ type MapRow = {
   displayName: string;
   imageUrl: string | null;
   ready: boolean;
+  /** How much is already authored — the reason to pick one map over another. */
+  spawns: number;
+  variants: number;
 };
 
 type Variant = {
@@ -139,6 +143,32 @@ export default function MakerTool({
     [adminKey, load, t],
   );
 
+  /**
+   * Removing a spawn. The endpoint existed and nothing called it, so a spawn
+   * created by a typo was permanent — and the unique key is (map, site, side,
+   * name), which means the same typo could not be corrected by re-creating it
+   * either.
+   */
+  const remove = useCallback(
+    async (spawn: Spawn) => {
+      const params = new URLSearchParams({ id: String(spawn.id) });
+      if (adminKey) params.set("key", adminKey);
+
+      setBusy(true);
+      try {
+        const res = await fetch(`/api/admin/maker/spawns?${params}`, { method: "DELETE" });
+        const data = await res.json();
+        if (!res.ok || data.ok === false) setNotice(data.error ?? t("maker.failed"));
+        await load();
+      } catch (err) {
+        setNotice(String(err));
+      } finally {
+        setBusy(false);
+      }
+    },
+    [adminKey, load, t],
+  );
+
   const roles = draft.team === 2 ? T_ROLES : CT_ROLES;
 
   // A role from the other side stays selected when the side is switched, which
@@ -160,26 +190,25 @@ export default function MakerTool({
   }, [spawns]);
 
   if (!map) {
+    // The same picker the Game Maker uses, so choosing a map is one gesture
+    // across both tools. What differs is the note under each name: here it is
+    // how much has been authored, which is what decides where to start.
     return (
-      <div className="mk-maps">
-        {maps.map((m) => (
-          <button key={m.id} className="mk-map" onClick={() => setMap(m.mapName)}>
-            {m.imageUrl ? (
-              <img src={m.imageUrl} alt="" loading="lazy" />
-            ) : (
-              <span className="mk-map-blank" aria-hidden />
-            )}
-            <span className="mk-map-name">
-              {m.displayName}
-              {m.ready && <span className="mk-ready" title={t("maker.ready")}>●</span>}
-            </span>
-          </button>
-        ))}
-
-        {maps.length === 0 && (
-          <p className="muted">{t("maker.noMaps")}</p>
-        )}
-      </div>
+      <MapPicker
+        maps={maps.map((m) => ({
+          name: m.mapName,
+          label: m.displayName,
+          image: m.imageUrl,
+          ready: m.ready,
+          note:
+            m.spawns === 0
+              ? t("maker.nothingAuthored")
+              : t("maker.authored", { spawns: String(m.spawns), variants: String(m.variants) }),
+        }))}
+        value=""
+        onChange={setMap}
+        emptyHint={t("maker.noMaps")}
+      />
     );
   }
 
@@ -275,6 +304,13 @@ export default function MakerTool({
               {section.bombsite === 0 ? t("maker.siteA") : t("maker.siteB")}
               {" · "}
               {section.team === 2 ? "T" : "CT"}
+              {/* The count says whether this quarter of the map is done, which
+                  is the thing you are actually tracking while authoring. */}
+              <span className="mk-section-n">
+                {grouped[section.key].length}
+                {" / "}
+                {grouped[section.key].reduce((n, s) => n + s.variants.length, 0)}
+              </span>
             </h3>
 
             {grouped[section.key].length === 0 && (
@@ -310,6 +346,16 @@ export default function MakerTool({
                     }
                   >
                     {t("maker.selectInGame")}
+                  </button>
+
+                  <button
+                    className="btn mk-small mk-danger"
+                    disabled={busy}
+                    title={t("maker.deleteSpawn")}
+                    aria-label={`${t("maker.deleteSpawn")}: ${spawn.name}`}
+                    onClick={() => remove(spawn)}
+                  >
+                    ×
                   </button>
                 </div>
 

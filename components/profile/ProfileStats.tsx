@@ -4,6 +4,7 @@ import { useState } from "react";
 import { useI18n } from "@/components/I18nProvider";
 import FaceitPanel from "@/components/profile/FaceitPanel";
 import ClipsPanel from "@/components/profile/ClipsPanel";
+import TournamentPanel from "@/components/profile/TournamentPanel";
 
 // The profile was one long column of eight stacked panels — you scrolled past
 // per-side and per-map to reach anything. The same data now sits behind tabs,
@@ -40,12 +41,13 @@ export type DayEntry = {
   maps: { map: string; summary: Summary }[];
 };
 
-type Tab = "form" | "maps" | "sessions" | "clips" | "faceit" | "details";
+type Tab = "form" | "maps" | "sessions" | "tournaments" | "clips" | "faceit" | "details";
 
 const TABS: { id: Tab }[] = [
   { id: "form" },
   { id: "maps" },
   { id: "sessions" },
+  { id: "tournaments" },
   { id: "clips" },
   { id: "faceit" },
   { id: "details" },
@@ -107,6 +109,7 @@ export default function ProfileStats({
         {tab === "form" && <FormPanel total={total} bySide={bySide} recentRatings={recentRatings} maxRecent={maxRecent} />}
         {tab === "maps" && <MapsPanel byMap={byMap} />}
         {tab === "sessions" && <SessionsPanel byDay={byDay} openDay={openDay} setOpenDay={setOpenDay} />}
+        {tab === "tournaments" && <TournamentPanel steamId={steamId} />}
         {tab === "clips" && <ClipsPanel steamId={steamId} signedIn={signedIn} />}
         {tab === "faceit" && <FaceitPanel steamId={steamId} />}
         {tab === "details" && <DetailsPanel total={total} />}

@@ -6,6 +6,7 @@ import { Swords, Crosshair, Bomb, Zap, Sparkles, Plus, Trash2, ChevronRight, Bot
 import ModeMaker from "@/components/admin/ModeMaker";
 import GameMakerUtility from "@/components/admin/GameMakerUtility";
 import GameMakerDefender from "@/components/admin/GameMakerDefender";
+import MapPicker, { type PickerMap } from "@/components/admin/MapPicker";
 import "@/app/admin/game-maker.css";
 
 // Game Maker — one authoring surface for the four modes whose spawns and
@@ -97,10 +98,17 @@ const MODE_SPEC: Record<ModeId, {
 　  ],
   },
   retakes: {
-    label: "Competitive Retakes",
+    // Named "Competitive Retakes" until now, which was the wrong name twice
+    // over: these are the spawns the public retakes server uses for every
+    // flavour of retakes, casual and ranked included — and "Competitive
+    // Retakes" is the tournament format, whose spawns are authored somewhere
+    // else entirely. Editing here expecting the tournament to change was a
+    // mistake the label invited.
+    label: "Retakes",
     icon: Crosshair,
     setNoun: "site setup",
-    blurb: "Spawns grouped per bombsite. Tag a spawn with the role meant to hold it and the round types it applies to — the plugin biases placement toward them.",
+    blurb:
+      "Spawns for the live retakes server — casual, ranked and CR alike. Grouped per bombsite; tag a spawn with the role meant to hold it and the round types it applies to, and the plugin biases placement toward them. The 3v3 tournament format has its own spawns: those are authored in the Spawn Maker, not here.",
     usesSite: true,
     usesPhase: false,
     usesUtility: false,
@@ -175,7 +183,7 @@ const STOCK_MAPS = [
   "de_ancient", "de_anubis", "de_dust2", "de_train", "de_cache",
 ];
 
-type CatalogMap = { Id: number; Mode: string; MapName: string; WorkshopId: string | null };
+type CatalogMap = { Id: number; Mode: string; MapName: string; WorkshopId: string | null; ImageUrl?: string | null };
 
 type ExtraTab = "utility" | "defender" | "modemaker";
 
@@ -252,7 +260,6 @@ export default function GameMaker({ adminKey }: { adminKey?: string }) {
 function ModeEditor({ mode, adminKey }: { mode: ModeId; adminKey?: string }) {
   const spec = MODE_SPEC[mode];
   const [map, setMap] = useState(STOCK_MAPS[0]);
-  const [customMap, setCustomMap] = useState("");
   const [catalog, setCatalog] = useState<CatalogMap[]>([]);
   const [sets, setSets] = useState<GmSet[] | null>(null);
   const [selectedId, setSelectedId] = useState<number | null>(null);
@@ -290,10 +297,31 @@ function ModeEditor({ mode, adminKey }: { mode: ModeId; adminKey?: string }) {
       .catch(() => setCatalog([]));
   }, [qs]);
 
-  const workshopMaps = useMemo(
-    () => catalog.filter((m) => m.MapName && !STOCK_MAPS.includes(m.MapName)),
-    [catalog]
-  );
+  /**
+   * The stock pool plus whatever the catalog has registered, de-duplicated.
+   *
+   * Built from both because neither alone is the list: the catalog knows about
+   * workshop maps and nothing else, and the stock pool is playable whether or
+   * not anybody ever registered it.
+   */
+  const pickerMaps: PickerMap[] = useMemo(() => {
+    const byName = new Map<string, PickerMap>();
+
+    for (const name of STOCK_MAPS) {
+      byName.set(name, { name, note: name });
+    }
+
+    for (const m of catalog) {
+      if (!m.MapName) continue;
+      byName.set(m.MapName, {
+        name: m.MapName,
+        image: (m as CatalogMap & { ImageUrl?: string | null }).ImageUrl ?? null,
+        note: m.WorkshopId ? `workshop ${m.WorkshopId}` : m.MapName,
+      });
+    }
+
+    return Array.from(byName.values()).sort((a, b) => a.name.localeCompare(b.name));
+  }, [catalog]);
 
   const selected = useMemo(() => sets?.find((s) => s.Id === selectedId) ?? null, [sets, selectedId]);
 
@@ -422,42 +450,25 @@ function ModeEditor({ mode, adminKey }: { mode: ModeId; adminKey?: string }) {
     <div className="gm-editor">
       <p className="gm-blurb">{spec.blurb}</p>
 
-      <div className="gm-maprow">
-        <label className="gm-field">
-          <span>Map</span>
-          <select
-            className="input"
-            value={STOCK_MAPS.includes(map) || workshopMaps.some((w) => w.MapName === map) ? map : "__custom"}
-            onChange={(e) => {
-              if (e.target.value === "__custom") { setMap(customMap.trim()); } else { setMap(e.target.value); }
-            }}
-          >
-            <optgroup label="Stock">
-              {STOCK_MAPS.map((m) => <option key={m} value={m}>{m}</option>)}
-            </optgroup>
-            {workshopMaps.length > 0 && (
-              <optgroup label="Workshop">
-                {workshopMaps.map((m) => (
-                  <option key={m.Id} value={m.MapName}>
-                    {m.MapName}{m.WorkshopId ? ` (${m.WorkshopId})` : ""}
-                  </option>
-                ))}
-              </optgroup>
-            )}
-            <option value="__custom">Other / type a name…</option>
-          </select>
-        </label>
-        <label className="gm-field">
-          <span>Any other map name</span>
-          <input
-            className="input"
-            placeholder="e.g. de_cbble"
-            value={customMap}
-            onChange={(e) => setCustomMap(e.target.value)}
-            onBlur={() => { if (customMap.trim()) setMap(customMap.trim()); }}
-          />
-        </label>
-      </div>
+      {/* Was a <select> of ten names plus a free-text field that only applied
+          on blur. Pictures instead: a workshop map's file name says nothing
+          about which map it is, and that is the one you most need to recognise. */}
+      <MapPicker
+        maps={pickerMaps}
+        value={map}
+        onChange={setMap}
+        allowCustom
+        emptyHint="No maps registered — add one in the Maps tab."
+      />
+
+      {mode === "retakes" && (
+        <p className="gm-crosslink">
+          These are the live retakes server&rsquo;s spawns.{" "}
+          <a href={`/admin/maker${adminKey ? `?key=${encodeURIComponent(adminKey)}` : ""}`}>
+            The 3v3 tournament&rsquo;s spawns are in the Spawn Maker →
+          </a>
+        </p>
+      )}
 
       {error && <p className="gm-error">{error}</p>}
 

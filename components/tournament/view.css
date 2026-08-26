@@ -1,0 +1,169 @@
+/* The tournament page.
+   Tabs reuse .pro-tabs / .pro-tab from the profile, so a tab strip means the
+   same thing everywhere on the site. What is here is only what the panels need. */
+
+.tv-stages {
+  display: grid;
+  gap: var(--space-6);
+}
+
+.tv-stage-name {
+  display: flex;
+  align-items: baseline;
+  gap: var(--space-2);
+  margin: 0 0 var(--space-3);
+  font-size: 16px;
+}
+
+.tv-stage-kind {
+  font-size: 11px;
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+  color: var(--color-text-muted);
+}
+
+/* ------------------------------------------------------------------- teams */
+
+.tv-teams {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(240px, 1fr));
+  gap: var(--space-3);
+}
+
+.tv-team {
+  border: 1px solid var(--color-divider);
+  background: var(--color-surface);
+  padding: var(--space-3);
+}
+
+/* A withdrawn or disqualified team stays on the page and recedes — removing it
+   makes a bracket that references it impossible to read. */
+.tv-team.st-withdrawn,
+.tv-team.st-disqualified {
+  opacity: 0.55;
+}
+
+.tv-team-head {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  flex-wrap: wrap;
+  margin-bottom: var(--space-2);
+}
+
+.tv-team-head h3 {
+  margin: 0;
+  font-size: 15px;
+  flex: 1;
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.tv-seed {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-width: 22px;
+  height: 22px;
+  border: 1px solid var(--color-divider);
+  font-size: 11px;
+  color: var(--color-text-muted);
+}
+
+.tv-roster {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: grid;
+  gap: 4px;
+}
+
+.tv-roster li {
+  display: flex;
+  align-items: baseline;
+  gap: 6px;
+  font-size: 13px;
+}
+
+.tv-roster a {
+  color: inherit;
+}
+
+.tv-cap {
+  color: var(--color-accent);
+  font-size: 10px;
+}
+
+.tv-roles {
+  margin-left: auto;
+  font-size: 10.5px;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  color: var(--color-text-muted);
+}
+
+/* ------------------------------------------------------------------- stats */
+
+.tv-note {
+  margin: 0 0 var(--space-3);
+  font-size: 13px;
+}
+
+.tv-stats th,
+.tv-stats td {
+  white-space: nowrap;
+}
+
+/* Rating is the column people look at first, so it is the only one coloured —
+   colouring more than one turns a table into a heat map nobody can rank by. */
+.tv-rating.good {
+  color: #4ade80;
+  font-weight: 700;
+}
+
+.tv-rating.poor {
+  color: var(--color-text-muted);
+}
+
+/* -------------------------------------------------------------------- pool */
+
+.tv-pool {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(180px, 1fr));
+  gap: var(--space-3);
+}
+
+.tv-map {
+  margin: 0;
+  border: 1px solid var(--color-divider);
+  background: var(--color-surface);
+  overflow: hidden;
+}
+
+.tv-map img,
+.tv-map-blank {
+  display: block;
+  width: 100%;
+  aspect-ratio: 16 / 9;
+  object-fit: cover;
+  background: color-mix(in srgb, var(--color-text) 8%, transparent);
+}
+
+.tv-map figcaption {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 8px;
+  padding: 8px 10px;
+  font-size: 13px;
+  font-weight: 600;
+}
+
+.tv-map-file {
+  font-family: var(--font-mono);
+  font-size: 10.5px;
+  font-weight: 400;
+  color: var(--color-text-muted);
+}

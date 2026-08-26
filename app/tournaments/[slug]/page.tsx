@@ -1,10 +1,23 @@
+import Link from "next/link";
 import { notFound } from "next/navigation";
 import { prisma } from "@/lib/db";
 import { getT } from "@/lib/serverI18n";
-import Bracket from "@/components/tournament/Bracket";
+import TournamentView, { type PoolMap, type StageView, type TeamView } from "@/components/tournament/TournamentView";
 import { standings } from "@/lib/tournament/bracket";
+import { previewsForTournament, type MatchPreview } from "@/lib/tournament/preview";
+import { tournamentStats } from "@/lib/tournament/statsDb";
 
 export const revalidate = 15;
+
+// The page is now a data-loader and a heading. Everything below the hero is one
+// tabbed component, because a tournament of any size does not fit in a scroll:
+// see components/tournament/TournamentView.tsx.
+
+const pretty = (map: string) =>
+  map
+    .replace(/^(de_|cs_|ar_)/i, "")
+    .replace(/[_-]+/g, " ")
+    .replace(/\b\w/g, (c) => c.toUpperCase());
 
 export default async function TournamentPage({ params }: { params: { slug: string } }) {
   const t = getT();
@@ -15,21 +28,53 @@ export default async function TournamentPage({ params }: { params: { slug: strin
       Stages: { orderBy: { Ordinal: "asc" } },
       Teams: { orderBy: [{ Seed: "asc" }, { Name: "asc" }], include: { Members: true } },
       Maps: { orderBy: { Ordinal: "asc" } },
+      Organizers: true,
     },
   });
 
   if (!tournament) notFound();
 
-  const matches = await prisma.tournamentMatch.findMany({
-    where: { TournamentId: tournament.Id },
-    orderBy: [{ Round: "asc" }, { Slot: "asc" }],
-  });
+  const [matches, previewMap, stats] = await Promise.all([
+    prisma.tournamentMatch.findMany({
+      where: { TournamentId: tournament.Id },
+      orderBy: [{ Round: "asc" }, { Slot: "asc" }],
+    }),
+    previewsForTournament(tournament.Id),
+    tournamentStats(tournament.Id),
+  ]);
 
   const teamName = new Map(tournament.Teams.map((team) => [team.Id, team.Name]));
 
-  const asBracket = (stageId: number) =>
-    matches
-      .filter((m) => m.StageId === stageId)
+  // Names for the rosters and the stats table. One query for both, since a
+  // tournament's players are the same people in each.
+  const rosterIds = tournament.Teams.flatMap((team) => team.Members.map((m) => m.SteamId));
+  const profiles = rosterIds.length
+    ? await prisma.playerProfile.findMany({
+        where: { SteamId: { in: rosterIds } },
+        select: { SteamId: true, LastKnownName: true },
+      })
+    : [];
+  const nameOf = new Map(profiles.map((p) => [p.SteamId.toString(), p.LastKnownName ?? ""]));
+
+  // Map artwork for the pool tab.
+  const poolNames = tournament.Maps.map((m) => m.Map);
+  const library = poolNames.length
+    ? await prisma.gardenMap.findMany({
+        where: { MapName: { in: poolNames } },
+        select: { MapName: true, ImageUrl: true, DisplayName: true },
+      })
+    : [];
+  const art = new Map(library.map((m) => [m.MapName, m]));
+
+  const pool: PoolMap[] = tournament.Maps.map((m) => ({
+    map: m.Map,
+    label: art.get(m.Map)?.DisplayName || pretty(m.Map),
+    image: art.get(m.Map)?.ImageUrl ?? null,
+  }));
+
+  const stages: StageView[] = tournament.Stages.map((stage) => {
+    const stageMatches = matches
+      .filter((m) => m.StageId === stage.Id)
       .map((m) => ({
         id: m.Id,
         round: m.Round,
@@ -43,30 +88,20 @@ export default async function TournamentPage({ params }: { params: { slug: strin
         winnerTeamId: m.WinnerTeamId,
       }));
 
-  return (
-    <>
-      <section className="hero hero-compact">
-        <div className="hero-inner">
-          <p className="eyebrow">{tournament.State}</p>
-          <h1 className="grad">{tournament.Name}</h1>
-          {tournament.Description && <p className="muted">{tournament.Description}</p>}
-        </div>
-      </section>
+    const isTable = stage.Kind === "group" || stage.Kind === "swiss";
 
-      {tournament.Stages.map((stage) => {
-        const stageMatches = asBracket(stage.Id);
-        if (stageMatches.length === 0) return null;
-
-        // A group is a table of standings; a bracket is a bracket. Showing a
-        // group as a bracket is technically possible and tells you nothing about
-        // who is going through, which is the only question a group asks.
-        if (stage.Kind === "group" || stage.Kind === "swiss") {
-          const teamIds = Array.from(
-            new Set(stageMatches.flatMap((m) => [m.teamA?.id, m.teamB?.id]).filter(Boolean) as number[]),
-          );
-
-          const table = standings(
-            teamIds,
+    return {
+      id: stage.Id,
+      name: stage.Name,
+      kind: stage.Kind,
+      matches: stageMatches,
+      standings: isTable
+        ? standings(
+            Array.from(
+              new Set(
+                stageMatches.flatMap((m) => [m.teamA?.id, m.teamB?.id]).filter(Boolean) as number[],
+              ),
+            ),
             stageMatches.map((m) => ({
               teamAId: m.teamA?.id ?? null,
               teamBId: m.teamB?.id ?? null,
@@ -74,84 +109,64 @@ export default async function TournamentPage({ params }: { params: { slug: strin
               scoreB: m.scoreB,
               finished: m.winnerTeamId !== null,
             })),
-          );
+          ).map((row) => ({ ...row, name: teamName.get(row.teamId) ?? "?" }))
+        : null,
+    };
+  }).filter((stage) => stage.matches.length > 0 || stage.standings !== null);
 
-          return (
-            <section className="panel" key={stage.Id}>
-              <h2>{stage.Name}</h2>
-              <table>
-                <thead>
-                  <tr>
-                    <th>{t("tournaments.team")}</th>
-                    <th>{t("tournaments.played")}</th>
-                    <th>{t("tournaments.won")}</th>
-                    <th>{t("tournaments.diff")}</th>
-                  </tr>
-                </thead>
-                <tbody>
-                  {table.map((row) => (
-                    <tr key={row.teamId}>
-                      <td>{teamName.get(row.teamId) ?? "?"}</td>
-                      <td>{row.played}</td>
-                      <td>{row.won}</td>
-                      <td className={row.diff > 0 ? "positive" : row.diff < 0 ? "negative" : ""}>
-                        {row.diff > 0 ? `+${row.diff}` : row.diff}
-                      </td>
-                    </tr>
-                  ))}
-                </tbody>
-              </table>
-            </section>
-          );
-        }
+  const teams: TeamView[] = tournament.Teams.map((team) => ({
+    id: team.Id,
+    seed: team.Seed,
+    name: team.Name,
+    tag: team.Tag,
+    status: team.Status,
+    players: team.Members.filter((m) => m.Status === "accepted").map((m) => ({
+      steamId: m.SteamId.toString(),
+      name: nameOf.get(m.SteamId.toString()) || m.SteamId.toString(),
+      captain: m.IsCaptain,
+      roleT: m.RoleT,
+      roleCt: m.RoleCt,
+    })),
+  }));
 
-        return (
-          <section className="panel" key={stage.Id}>
-            <h2>{stage.Name}</h2>
-            <Bracket matches={stageMatches} />
-          </section>
-        );
-      })}
+  const teamOfPlayer = new Map<string, string>();
+  for (const team of tournament.Teams) {
+    for (const member of team.Members) teamOfPlayer.set(member.SteamId.toString(), team.Name);
+  }
 
-      <section className="panel">
-        <h2>{t("tournaments.teams")}</h2>
-        {tournament.Teams.length === 0 ? (
-          <p className="muted">{t("tournaments.noTeams")}</p>
-        ) : (
-          <table>
-            <thead>
-              <tr>
-                <th>{t("tournaments.seed")}</th>
-                <th>{t("tournaments.team")}</th>
-                <th>{t("tournaments.players")}</th>
-                <th>{t("tournaments.state")}</th>
-              </tr>
-            </thead>
-            <tbody>
-              {tournament.Teams.map((team) => (
-                <tr key={team.Id}>
-                  <td className="muted">{team.Seed ?? "—"}</td>
-                  <td>
-                    {team.Tag && <span className="chip" style={{ marginRight: 8 }}>{team.Tag}</span>}
-                    {team.Name}
-                  </td>
-                  <td>{team.Members.filter((m) => m.Status === "accepted").length}</td>
-                  <td>
-                    <span className="chip">{team.Status}</span>
-                  </td>
-                </tr>
-              ))}
-            </tbody>
-          </table>
-        )}
+  const previews: Record<number, MatchPreview> = Object.fromEntries(previewMap);
+
+  return (
+    <>
+      <section className="hero hero-compact">
+        <div className="hero-inner">
+          <p className="eyebrow">{tournament.State}</p>
+          <h1 className="grad">{tournament.Name}</h1>
+          {tournament.Description && <p className="muted">{tournament.Description}</p>}
+
+          <p className="muted" style={{ fontSize: 13 }}>
+            {tournament.TeamSize}v{tournament.TeamSize}
+            {" · "}
+            {tournament.Teams.length} {t("tournaments.teams").toLowerCase()}
+            {tournament.State === "registration" && (
+              <>
+                {" · "}
+                <Link href={`/tournaments/${tournament.Slug}/register`}>{t("setup.registerLink")}</Link>
+              </>
+            )}
+            {" · "}
+            <Link href={`/tournaments/${tournament.Slug}/live`}>{t("tournamentAdmin.liveWall")}</Link>
+          </p>
+        </div>
       </section>
 
-      {tournament.Maps.length > 0 && (
-        <section className="panel">
-          <h2>{t("tournaments.pool")}</h2>
-          <p className="muted">{tournament.Maps.map((m) => m.Map).join(" · ")}</p>
-        </section>
-      )}
+      <TournamentView
+        stages={stages}
+        teams={teams}
+        stats={stats.map((row) => ({ ...row, teamName: teamOfPlayer.get(row.steamId) ?? null }))}
+        pool={pool}
+        previews={previews}
+      />
     </>
   );
 }

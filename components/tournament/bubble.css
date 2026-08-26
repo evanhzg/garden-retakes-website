@@ -1,0 +1,165 @@
+/* The match hover bubble.
+
+   Fixed to the viewport and portalled into <body>, so the bracket's horizontal
+   scroller cannot clip it. Pointer-events off throughout: it follows the cursor,
+   and a bubble that can be hovered would fight the thing that opened it. */
+
+.mb {
+  position: fixed;
+  z-index: 80;
+  width: 268px;
+  pointer-events: none;
+  background: var(--color-surface);
+  border: 1px solid var(--color-divider);
+  box-shadow: var(--shadow-lg);
+  animation: mb-in 0.14s ease-out;
+}
+
+@keyframes mb-in {
+  from {
+    opacity: 0;
+    transform: translateY(4px);
+  }
+  to {
+    opacity: 1;
+    transform: none;
+  }
+}
+
+.mb.below {
+  animation-name: mb-in-below;
+}
+
+@keyframes mb-in-below {
+  from {
+    opacity: 0;
+    transform: translateY(-4px);
+  }
+  to {
+    opacity: 1;
+    transform: none;
+  }
+}
+
+.mb-head {
+  display: grid;
+  grid-template-columns: 1fr auto 1fr;
+  align-items: center;
+  gap: 8px;
+  padding: 7px 10px;
+  border-bottom: 1px solid var(--color-divider);
+  font-size: 11.5px;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+}
+
+.mb-team {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.mb-team-b {
+  text-align: right;
+}
+
+.mb-bo {
+  font-family: var(--font-mono);
+  font-size: 10px;
+  color: var(--color-text-muted);
+}
+
+.mb-rows {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+}
+
+/* One row per map of the series. The artwork is the row's background rather
+   than a thumbnail beside it — at this size a thumbnail is a smudge, and the
+   full-bleed image is recognisable at a glance, which is the whole point. */
+.mb-row {
+  position: relative;
+  display: grid;
+  grid-template-columns: 2.2em 1fr 2.2em;
+  align-items: center;
+  gap: 8px;
+  padding: 8px 10px;
+  isolation: isolate;
+  overflow: hidden;
+}
+
+.mb-row + .mb-row {
+  border-top: 1px solid var(--color-divider);
+}
+
+.mb-row::before {
+  content: "";
+  position: absolute;
+  inset: 0;
+  z-index: -2;
+  background-image: var(--art);
+  background-size: cover;
+  background-position: center;
+}
+
+/* The scrim. Map art is busy and light in places, and a score that is only
+   sometimes readable is worse than one drawn on a flat panel. */
+.mb-row::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  z-index: -1;
+  background: color-mix(in srgb, var(--color-surface) 74%, transparent);
+}
+
+.mb-row.tbd::after {
+  background: var(--color-surface);
+}
+
+.mb-row.live {
+  box-shadow: inset 3px 0 0 var(--color-accent);
+}
+
+.mb-map {
+  display: flex;
+  align-items: baseline;
+  gap: 6px;
+  font-size: 12.5px;
+  font-weight: 600;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.mb-row.tbd .mb-map {
+  font-weight: 400;
+  font-style: italic;
+  color: var(--color-text-muted);
+}
+
+.mb-decider {
+  font-size: 9.5px;
+  font-weight: 400;
+  font-style: normal;
+  text-transform: uppercase;
+  letter-spacing: 0.07em;
+  color: var(--color-text-muted);
+}
+
+.mb-score {
+  font-family: var(--font-mono);
+  font-size: 13px;
+  color: var(--color-text-muted);
+  text-align: center;
+}
+
+.mb-score.won {
+  color: var(--color-text);
+  font-weight: 700;
+}
+
+/* The right-hand score reads towards its team name. */
+.mb-row .mb-score:last-child {
+  text-align: center;
+}

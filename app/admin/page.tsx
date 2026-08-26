@@ -46,7 +46,15 @@ export default async function AdminPage({
           {t("auto.page.signed_in_as")} {ctx.name || "admin"}{t("auto.page._every_action_is_recorded_in_t")}{" "}
           <Link href={`/admin-log${keyQuery}`}>{t("auto.page.admin_log")}</Link>.
         </p>
+        {/* The tournament pages had no entry point from here at all — you had
+            to know the URL. They are the two most-used tools during an event. */}
         <div style={{ display: "flex", gap: "var(--space-2)", flexWrap: "wrap", marginTop: "var(--space-3)" }}>
+          <Link className="btn btn-secondary" href={`/admin/tournaments${keyQuery}`}>
+            {t("setup.title")}
+          </Link>
+          <Link className="btn btn-secondary" href={`/admin/maker${keyQuery}`}>
+            {t("setup.makerLink")}
+          </Link>
           <Link className="btn btn-secondary" href={`/admin/skins${keyQuery}`}>
             {t("auto.page.custom_skins")}
                                 </Link>

@@ -96,3 +96,76 @@
   font-size: 12px;
   white-space: pre-wrap;
 }
+
+/* Organizers.
+   A chip per person rather than a table: the list is short, it is read at a
+   glance ("is X on this?"), and a table of two columns for three rows is more
+   furniture than content. */
+
+.su-wrap {
+  align-items: center;
+}
+
+.su-organizer {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 3px 4px 3px 9px;
+  border: 1px solid var(--border);
+  background: var(--panel);
+  font-size: 13px;
+}
+
+.su-organizer a {
+  color: inherit;
+  text-decoration: none;
+}
+
+.su-organizer a:hover {
+  text-decoration: underline;
+}
+
+/* The creator. Marked rather than sorted first, so the list stays in the order
+   people were added and nobody has to work out why it moved. */
+.su-creator {
+  color: var(--color-accent);
+  font-size: 11px;
+}
+
+.su-x {
+  border: 0;
+  background: none;
+  color: var(--muted);
+  cursor: pointer;
+  font-size: 15px;
+  line-height: 1;
+  padding: 2px 5px;
+}
+
+.su-x:hover:not(:disabled) {
+  color: var(--color-accent);
+}
+
+.su-x:disabled {
+  opacity: 0.3;
+  cursor: not-allowed;
+}
+
+.su-inline {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--space-2);
+}
+
+.su-inline input {
+  padding: 5px 8px;
+  border: 1px solid var(--border);
+  background: var(--panel);
+  color: var(--text);
+}
+
+.su-narrow-id {
+  width: 190px;
+  font-family: var(--font-mono);
+  font-size: 12px;
+}

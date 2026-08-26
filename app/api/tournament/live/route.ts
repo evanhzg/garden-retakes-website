@@ -38,12 +38,60 @@ export async function GET(req: Request) {
   const servers = await prisma.gameServer.findMany({ where: { Id: { in: serverIds } } });
   const serverOf = new Map(servers.map((s) => [s.Id, s]));
 
+  // Artwork for the hover bubble's rows. One query for every map named by any
+  // of the twelve matches; a wall polls this every three seconds, so it matters
+  // that the cost does not scale with the number of matches on it.
+  const mapNames = Array.from(new Set(matches.flatMap((m) => m.Maps.map((x) => x.Map))));
+  const library = mapNames.length
+    ? await prisma.gardenMap.findMany({
+        where: { MapName: { in: mapNames } },
+        select: { MapName: true, ImageUrl: true, DisplayName: true },
+      })
+    : [];
+  const art = new Map(library.map((m) => [m.MapName, m]));
+
+  const pretty = (map: string) =>
+    map.replace(/^(de_|cs_|ar_)/i, "").replace(/[_-]+/g, " ").replace(/\b\w/g, (c) => c.toUpperCase());
+
   return NextResponse.json({
     matches: matches.map((m) => {
       const live = m.Maps.find((x) => x.State === "live") ?? m.Maps[0];
       const server = m.ServerId ? serverOf.get(m.ServerId) : null;
 
+      // Built off bestOf rather than off the rows that exist, so a BO3 with one
+      // map picked still shows three rows and says which are undecided.
+      const bestOf = Math.max(1, m.BestOf);
+      const rows = Array.from({ length: bestOf }, (_, ordinal) => {
+        const row = m.Maps.find((x) => x.Ordinal === ordinal);
+        if (!row) {
+          return {
+            ordinal,
+            map: null,
+            label: null,
+            image: null,
+            scoreA: 0,
+            scoreB: 0,
+            winner: null,
+            state: "pending",
+            decider: false,
+          };
+        }
+        const meta = art.get(row.Map);
+        return {
+          ordinal,
+          map: row.Map,
+          label: meta?.DisplayName || pretty(row.Map),
+          image: meta?.ImageUrl ?? null,
+          scoreA: row.ScoreA,
+          scoreB: row.ScoreB,
+          winner: row.WinnerTeamId == null ? null : row.WinnerTeamId === m.TeamAId ? "a" : "b",
+          state: row.State,
+          decider: row.IsDecider,
+        };
+      });
+
       return {
+        preview: { matchId: m.Id, bestOf, rows },
         id: m.Id,
         matchKey: m.MatchKey,
         tournament: m.Tournament.Name,

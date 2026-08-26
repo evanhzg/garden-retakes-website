@@ -400,9 +400,16 @@ export default function InventorySimulator() {
 
   const [catalog, setCatalog] = useState<Catalog | null>(null);
   const [category, setCategory] = useState("Rifles");
-  /** Whole-loadout view instead of the store. Closes any open type. */
-  /** Which weapon type the loadout rail has open. Null = all collapsed. */
-  const [openBoardType, setOpenBoardType] = useState<string | null>(null);
+  /**
+   * Which weapon type the loadout rail has open. Null = all collapsed.
+   *
+   * Starts on the browsed category rather than on null. It began collapsed
+   * while `category` already said "Rifles", so the page's first paint had the
+   * rail and the right-hand pane disagreeing about where you were — and the
+   * rail, which is where you see what is equipped, showed nothing at all until
+   * you clicked something.
+   */
+  const [openBoardType, setOpenBoardType] = useState<string | null>("Rifles");
   const [side, setSide] = useState<Side>("t");
   const [weapon, setWeapon] = useState<WeaponEntry | null>(null); // set = skin chooser open
   const [chooserTab, setChooserTab] = useState<"catalog" | "inventory">("catalog");
@@ -436,7 +443,20 @@ export default function InventorySimulator() {
   const [stickers, setStickers] = useState<(PlacedSticker | null)[]>(defaultStickerSlots());
   const [charm, setCharm] = useState<PlacedSticker | null>(null);
   const [editor3dOpen, setEditor3dOpen] = useState(false);
-  const [contextMenu, setContextMenu] = useState<{ id: string; skin: Skin; weapon: WeaponEntry; side: "t" | "ct"; boardSlot?: BoardSlot } | null>(null);
+  /**
+   * The item menu.
+   *
+   * One menu for the whole page, positioned in viewport coordinates and
+   * portalled to <body>. It used to be rendered inside each tile with
+   * `position: absolute; transform: translateX(102%)`, which had two
+   * consequences: it was clipped by every scroll container it sat in, and
+   * putting it on a new kind of tile meant remembering to call `renderContext`
+   * there. Three of the six kinds of tile had been given it; the other three
+   * had no menu at all.
+   */
+  const [contextMenu, setContextMenu] = useState<
+    { skin: Skin; weapon: WeaponEntry; side: "t" | "ct"; boardSlot?: BoardSlot; x: number; y: number } | null
+  >(null);
   const [selectedItems, setSelectedItems] = useState<Set<string>>(new Set());
   const [selectedSkins, setSelectedSkins] = useState<Set<number>>(new Set());
 
@@ -456,9 +476,11 @@ export default function InventorySimulator() {
   const [stickersLoading, setStickersLoading] = useState(false);
   const [vaultCatsCollapsed, setVaultCatsCollapsed] = useState<Record<string, boolean>>({});
 
-  // Loadout switcher drag-reorder
-  const dragIndex = useRef<number | null>(null);
-  const [dragOver, setDragOver] = useState<number | null>(null);
+  // Loadout switcher drag-reorder, by id — see onLoDrop for why not by index.
+  const dragId = useRef<string | null>(null);
+  const [dragOver, setDragOver] = useState<string | null>(null);
+  /** The manage-all panel, which replaced a native <select> of the overflow. */
+  const [loMenuOpen, setLoMenuOpen] = useState(false);
 
   // Share / borrow
   const [share, setShare] = useState<{ key: string; name: string } | null>(null);
@@ -549,10 +571,20 @@ export default function InventorySimulator() {
       const s = q.get("side");
       if (s === "t" || s === "ct") setSide(s);
       const c = q.get("cat");
-      if (c === ALL_TYPES || (c && CATEGORY_ORDER.includes(c))) setCategory(c);
+      // The rail follows the URL too. Arriving on a link to Snipers used to
+      // open the snipers on the right and leave the rail collapsed, so the
+      // slots — the part that says what you have equipped — were closed on
+      // exactly the type the link was about.
+      if (c === ALL_TYPES || (c && CATEGORY_ORDER.includes(c))) {
+        setCategory(c);
+        setOpenBoardType(c === ALL_TYPES ? null : c);
+      }
       // ?view=preview is retired. An old link still means "show me
       // everything", which is now a category rather than a mode.
-      else if (q.get("view") === "preview") setCategory(ALL_TYPES);
+      else if (q.get("view") === "preview") {
+        setCategory(ALL_TYPES);
+        setOpenBoardType(null);
+      }
       const lo = q.get("lo");
       if (lo) setStore((cur) => (cur.loadouts.some((l) => l.id === lo) ? { ...cur, activeLoadoutId: lo } : cur));
 
@@ -965,6 +997,11 @@ export default function InventorySimulator() {
    */
   const chooseCategory = (c: string) => {
     setCategory(c);
+    // The rail's open type and the browsed type are the same question asked
+    // twice, and they were separate variables set from different places — so
+    // clicking a weapon in the All-types overview moved the right-hand pane and
+    // left the rail sitting on whatever it had been showing. One call sets both.
+    setOpenBoardType(c);
     setWeapon(null);
     writeUrl({ cat: c, w: null });
   };
@@ -972,6 +1009,7 @@ export default function InventorySimulator() {
   /** Every type at once — the rail's first entry, and no longer a mode. */
   const chooseAllTypes = () => {
     setCategory(ALL_TYPES);
+    setOpenBoardType(null);
     setWeapon(null);
     writeUrl({ cat: ALL_TYPES, w: null });
   };
@@ -1186,15 +1224,29 @@ export default function InventorySimulator() {
     writeUrl({ lo: id });
   };
 
-  const onLoDrop = (targetIdx: number) => {
-    const from = dragIndex.current;
+  /**
+   * Reorder by id, not by index.
+   *
+   * This was a real bug and an invisible one. The strip renders
+   * `sortedLoadouts` — favourites first — and handed those positions to a
+   * splice over `store.loadouts`, which is in insertion order. The two agree
+   * only when nothing is favourited, so the moment anybody starred a loadout,
+   * dragging moved a different one than the one under the cursor.
+   */
+  const onLoDrop = (targetId: string) => {
+    const from = dragId.current;
     setDragOver(null);
-    dragIndex.current = null;
-    if (from === null || from === targetIdx) return;
+    dragId.current = null;
+    if (!from || from === targetId) return;
+
     setStore((c) => {
       const arr = [...c.loadouts];
-      const [moved] = arr.splice(from, 1);
-      arr.splice(targetIdx, 0, moved);
+      const fromIdx = arr.findIndex((x) => x.id === from);
+      const toIdx = arr.findIndex((x) => x.id === targetId);
+      if (fromIdx < 0 || toIdx < 0 || fromIdx === toIdx) return c;
+
+      const [moved] = arr.splice(fromIdx, 1);
+      arr.splice(toIdx, 0, moved);
       return { ...c, loadouts: arr };
     });
   };
@@ -1339,6 +1391,16 @@ export default function InventorySimulator() {
   const weapons = catalog?.[category] ?? [];
   const borrowUrl = share && origin ? `${origin}/inventory?borrow=${share.key}` : "";
 
+  /**
+   * Which side a one-click equip lands on.
+   *
+   * The side you are browsing, except for a weapon only one team can hold — an
+   * M4 clicked while on T would otherwise offer "Equip (T)" and then refuse
+   * it, which is a button that lies about what it does.
+   */
+  const equipSide: "t" | "ct" =
+    weapon && weapon.team !== "both" ? (weapon.team as "t" | "ct") : side;
+
   const sortedLoadouts = useMemo(() => {
     return [...store.loadouts].sort((a, b) => {
       if (a.favorite && !b.favorite) return -1;
@@ -1349,12 +1411,123 @@ export default function InventorySimulator() {
     });
   }, [store.loadouts]);
 
-  const visibleLoadouts = sortedLoadouts.slice(0, 4);
-  const overflowLoadouts = sortedLoadouts.slice(4);
+  /**
+   * The four in the strip — and the active one is always among them.
+   *
+   * It was a plain `slice(0, 4)`, so selecting the fifth loadout left the strip
+   * showing four others with none of them highlighted. The thing you are
+   * editing has to be the thing that looks selected.
+   */
+  const visibleLoadouts = useMemo(() => {
+    const head = sortedLoadouts.slice(0, 4);
+    if (head.some((l) => l.id === store.activeLoadoutId)) return head;
 
-  const renderContext = (id: string) => {
-    if (!contextMenu || contextMenu.id !== id || !mounted) return null;
-    
+    const active = sortedLoadouts.find((l) => l.id === store.activeLoadoutId);
+    return active ? [...head.slice(0, 3), active] : head;
+  }, [sortedLoadouts, store.activeLoadoutId]);
+
+
+  /** A catalog entry by weapon def, for tiles that only know the def. */
+  const weaponByDef = useCallback(
+    (def: number): WeaponEntry | null =>
+      Object.values(catalog ?? {})
+        .flat()
+        .find((w) => w.def === def) ?? null,
+    [catalog],
+  );
+
+  /** An owned or equipped item, as the Skin shape the menu wants. */
+  const asSkin = (item: InventoryItem): Skin => ({
+    id: item.skinId,
+    def: item.weaponDef,
+    paint: item.paint,
+    name: item.skinName,
+    image: item.image,
+    rarity: item.rarity || "default",
+  });
+
+  /**
+   * Open the item menu from anywhere.
+   *
+   * The one entry point, so a tile gains a menu by calling this rather than by
+   * remembering to render one. A right-click opens at the pointer; the ⋯ button
+   * opens at the tile's top-right corner, so the menu lands in the same place
+   * however you asked for it.
+   */
+  const openItemMenu = useCallback(
+    (
+      e: React.MouseEvent,
+      args: { skin: Skin; weapon: WeaponEntry; side: "t" | "ct"; boardSlot?: BoardSlot },
+    ) => {
+      e.preventDefault();
+      e.stopPropagation();
+
+      const fromPointer = e.type === "contextmenu";
+      const box = (e.currentTarget as HTMLElement).getBoundingClientRect();
+
+      setContextMenu({
+        ...args,
+        x: fromPointer ? e.clientX : box.right,
+        y: fromPointer ? e.clientY : box.top,
+      });
+    },
+    [],
+  );
+
+  /**
+   * The props that make any element an item-menu target.
+   *
+   * Returns nothing when there is no item to act on — an empty slot has no skin
+   * to equip, favourite or customise, and a menu of disabled rows would say
+   * less than no menu at all.
+   */
+  const menuTarget = useCallback(
+    (args: { skin: Skin | null; weapon: WeaponEntry | null; side: "t" | "ct"; boardSlot?: BoardSlot }) => {
+      if (!args.skin || !args.weapon) return {};
+      const { skin, weapon, side, boardSlot } = args;
+      return {
+        onContextMenu: (e: React.MouseEvent) => openItemMenu(e, { skin, weapon, side, boardSlot }),
+      };
+    },
+    [openItemMenu],
+  );
+
+  /**
+   * The ⋯ button.
+   *
+   * The left-click route to the same menu. A right-click is not available to
+   * everybody — trackpads, touch, and anybody whose browser or OS has claimed
+   * the gesture — so a feature reachable only that way is a feature some people
+   * do not have. Rendered on every tile that has a menu, in the same corner.
+   */
+  const MenuDots = ({
+    skin,
+    weapon,
+    side,
+    boardSlot,
+  }: {
+    skin: Skin | null;
+    weapon: WeaponEntry | null;
+    side: "t" | "ct";
+    boardSlot?: BoardSlot;
+  }) => {
+    if (!skin || !weapon) return null;
+    return (
+      <button
+        type="button"
+        className="inv4-dots"
+        title="Options"
+        aria-label={`Options for ${skinLabel(skin.name)}`}
+        onClick={(e) => openItemMenu(e, { skin, weapon, side, boardSlot })}
+      >
+        ⋯
+      </button>
+    );
+  };
+
+  const renderItemMenu = () => {
+    if (!contextMenu || !mounted) return null;
+
     const isMusicKit = contextMenu.weapon.category === "Music Kits";
     const isAgent = contextMenu.weapon.category === "Agents";
     
@@ -1400,15 +1573,23 @@ export default function InventorySimulator() {
       (payload.kind === "weapon" && activeLoadout.equippedCT[payload.weaponDef] === identical.id)
     ) : false;
 
-    return (
-      <div 
+    // Clamped so a tile at the right-hand edge, or one near the bottom of a
+    // long grid, still opens a menu you can read all of.
+    const MENU_W = 232;
+    const MENU_H = 420;
+    const vw = typeof window === "undefined" ? 1280 : window.innerWidth;
+    const vh = typeof window === "undefined" ? 800 : window.innerHeight;
+    const left = Math.min(Math.max(8, contextMenu.x), vw - MENU_W - 8);
+    const top = Math.min(Math.max(8, contextMenu.y), Math.max(8, vh - MENU_H - 8));
+
+    return createPortal(
+      <div
         className="inv4-context"
-        style={{ 
-          position: "absolute",
-          right: 0, 
-          bottom: 0,
-          transform: "translateX(102%)",
-          zIndex: 100
+        style={{
+          position: "fixed",
+          left,
+          top,
+          zIndex: 200,
         }}
         onClick={(e) => e.stopPropagation()}
         onContextMenu={(e) => e.preventDefault()}
@@ -1500,7 +1681,8 @@ export default function InventorySimulator() {
         }}>
           {fav ? "Remove from favorites" : "Add to favorites"}
         </button>
-      </div>
+      </div>,
+      document.body,
     );
   };
 
@@ -1510,22 +1692,22 @@ export default function InventorySimulator() {
       {/* ===== Header: which loadout, how full, and what to do with it ===== */}
       <header className="inv4-bar">
         <div className="inv4-loadouts" role="tablist" aria-label={t("auto.inventorysimulator.loadouts")}>
-          {visibleLoadouts.map((l, idx) => (
+          {visibleLoadouts.map((l) => (
             <button
               key={l.id}
               role="tab"
               aria-selected={l.id === store.activeLoadoutId}
-              className={`inv4-lo ${l.id === store.activeLoadoutId ? "active" : ""} ${dragOver === idx ? "dragover" : ""}`}
+              className={`inv4-lo ${l.id === store.activeLoadoutId ? "active" : ""} ${dragOver === l.id ? "dragover" : ""}`}
               draggable
-              onDragStart={() => (dragIndex.current = idx)}
+              onDragStart={() => (dragId.current = l.id)}
               onDragOver={(e) => {
                 e.preventDefault();
-                setDragOver(idx);
+                setDragOver(l.id);
               }}
-              onDrop={() => onLoDrop(idx)}
+              onDrop={() => onLoDrop(l.id)}
               onDragEnd={() => {
                 setDragOver(null);
-                dragIndex.current = null;
+                dragId.current = null;
               }}
               onClick={() => setActiveLoadout(l.id)}
             >
@@ -1534,16 +1716,92 @@ export default function InventorySimulator() {
               <span className="inv4-lo-count">{loadoutSize(l)}</span>
             </button>
           ))}
-          {overflowLoadouts.length > 0 && (
-            <div className="inv4-lo-dropdown">
-              <select className="inv4-lo-select" value={overflowLoadouts.find(l => l.id === store.activeLoadoutId) ? store.activeLoadoutId : ""} onChange={(e) => { if (e.target.value) setActiveLoadout(e.target.value); }}>
-                <option value="" disabled>+{overflowLoadouts.length} More...</option>
-                {overflowLoadouts.map(l => (
-                  <option key={l.id} value={l.id}>{l.favorite ? '★ ' : ''}{l.name} ({loadoutSize(l)})</option>
-                ))}
-              </select>
-            </div>
-          )}
+
+          {/*
+            All of them, in one place.
+
+            This was a native <select> holding whatever did not fit in the
+            strip, which made "switch loadout" and "manage loadouts" two
+            different controls depending on how many you had — and the fifth
+            loadout could only be renamed by first making it active. The panel
+            lists every loadout, including the four in the strip, with the same
+            row of actions on each.
+          */}
+          <div className="inv4-lo-all">
+            <button
+              type="button"
+              className="btn btn-secondary inv4-lo-new"
+              aria-expanded={loMenuOpen}
+              aria-haspopup="true"
+              onClick={() => setLoMenuOpen((v) => !v)}
+            >
+              {t("inventory.loadouts.all", { n: String(store.loadouts.length) })}
+            </button>
+
+            {loMenuOpen && (
+              <>
+                <div className="inv4-lo-scrim" onClick={() => setLoMenuOpen(false)} aria-hidden />
+                <div className="inv4-lo-panel" role="menu">
+                  {sortedLoadouts.map((l) => (
+                    <div
+                      key={l.id}
+                      className={`inv4-lo-row ${l.id === store.activeLoadoutId ? "active" : ""}`}
+                    >
+                      <button
+                        className="inv4-lo-pick"
+                        onClick={() => {
+                          setActiveLoadout(l.id);
+                          setLoMenuOpen(false);
+                        }}
+                      >
+                        <span className="inv4-lo-dot" style={{ background: l.color ?? "var(--color-neutral-500)" }} />
+                        <span className="inv4-lo-rowname">{l.name}</span>
+                        <span className="inv4-lo-count">{loadoutSize(l)}</span>
+                      </button>
+
+                      <button
+                        className={`inv4-lo-act ${l.favorite ? "on" : ""}`}
+                        title={t("inventory.loadouts.favourite")}
+                        aria-label={`${t("inventory.loadouts.favourite")}: ${l.name}`}
+                        onClick={() => toggleFavoriteLoadout(l)}
+                      >
+                        {l.favorite ? "★" : "☆"}
+                      </button>
+                      <button
+                        className="inv4-lo-act"
+                        title={t("auto.inventorysimulator.rename")}
+                        aria-label={`${t("auto.inventorysimulator.rename")}: ${l.name}`}
+                        onClick={() => renameLoadout(l)}
+                      >
+                        ✎
+                      </button>
+                      <button
+                        className="inv4-lo-act"
+                        title={t("auto.inventorysimulator.duplicate")}
+                        aria-label={`${t("auto.inventorysimulator.duplicate")}: ${l.name}`}
+                        onClick={() => duplicateLoadout(l)}
+                      >
+                        ⧉
+                      </button>
+                      {/* The last loadout cannot be deleted — deleteLoadout
+                          reads loadouts[0] afterwards, and there would not be
+                          one. */}
+                      {store.loadouts.length > 1 && (
+                        <button
+                          className="inv4-lo-act"
+                          title={t("auto.inventorysimulator.delete")}
+                          aria-label={`${t("auto.inventorysimulator.delete")}: ${l.name}`}
+                          onClick={() => deleteLoadout(l)}
+                        >
+                          ×
+                        </button>
+                      )}
+                    </div>
+                  ))}
+                </div>
+              </>
+            )}
+          </div>
           <button className="btn btn-secondary inv4-lo-new" onClick={addLoadout} title={t("auto.inventorysimulator.new_loadout")}>
             {t("auto.inventorysimulator._new")}
                                 </button>
@@ -1692,11 +1950,17 @@ export default function InventorySimulator() {
                 {(["t", "ct"] as Side[]).map((s) => {
                   const agent = itemById(s === "t" ? activeLoadout.agentT : activeLoadout.agentCT);
                   const patches = agent?.stickers.filter(Boolean).length ?? 0;
+                  const agentSkin = agent ? asSkin(agent) : null;
+                  const agentWeapon = agent ? weaponByDef(agent.weaponDef) : null;
                   return (
+                    <div key={s} className="inv4-agent-cell">
                     <button
-                      key={s}
                       className={`inv4-agent ${s} ${agent ? "filled" : "empty"}`}
                       onClick={() => openAgentFor(s)}
+                      // Patches and radio commands are on the menu, and this
+                      // tile is where people look for their agent. It had no
+                      // menu at all.
+                      {...menuTarget({ skin: agentSkin, weapon: agentWeapon, side: s })}
                       title={agent ? agent.skinName || agent.weaponName : "Default agent"}
                     >
                       <span className="inv4-agent-art">
@@ -1718,6 +1982,8 @@ export default function InventorySimulator() {
                         )}
                       </span>
                     </button>
+                    <MenuDots skin={agentSkin} weapon={agentWeapon} side={s} />
+                    </div>
                   );
                 })}
               </div>
@@ -1787,28 +2053,14 @@ export default function InventorySimulator() {
             {openBoardType && (
               <ul className="inv4-slots">
                 {(boardGroups.find(([g]) => g === openBoardType)?.[1] ?? []).map((slot) => {
-                  const handleSlotContextMenu = (e: React.MouseEvent) => {
-                    e.preventDefault();
-                    e.stopPropagation();
-                    if (!slot.item || !catalog) return;
-                    const w = Object.values(catalog).flat().find((x) => x.def === slot.item!.weaponDef);
-                    if (!w) return;
-                    const itemSkin: Skin = {
-                      id: slot.item.skinId,
-                      def: slot.item.weaponDef,
-                      paint: slot.item.paint,
-                      name: slot.item.skinName,
-                      image: slot.item.image,
-                      rarity: slot.item.rarity || "default"
-                    };
-                    setContextMenu({ id: `board-${slot.key}`, skin: itemSkin, weapon: w, side, boardSlot: slot });
-                  };
+                  const slotSkin = slot.item ? asSkin(slot.item) : null;
+                  const slotWeapon = slot.item ? weaponByDef(slot.item.weaponDef) : null;
                   return (
-                  <li key={slot.key} style={{ position: 'relative' }}>
+                  <li key={slot.key} className="inv4-slot-li">
                     <button
                       className={`inv4-slot ${slot.item ? "filled" : "empty"}`}
                       onClick={() => openBoardSlot(slot, side)}
-                      onContextMenu={handleSlotContextMenu}
+                      {...menuTarget({ skin: slotSkin, weapon: slotWeapon, side, boardSlot: slot })}
                       style={slot.item?.rarity ? ({ "--rarity": slot.item.rarity } as React.CSSProperties) : undefined}
                     >
                       <span className="inv4-slot-art">
@@ -1840,7 +2092,7 @@ export default function InventorySimulator() {
                         })()}
                       </span>
                     </button>
-                    {renderContext(`board-${slot.key}`)}
+                    <MenuDots skin={slotSkin} weapon={slotWeapon} side={side} boardSlot={slot} />
                   </li>
                 )})}
               </ul>
@@ -1858,17 +2110,57 @@ export default function InventorySimulator() {
                 </button>
               ))}
             </div>
-            {/* The second weapon-type control lived here. It is gone — the
-                rail on the left is the only one now. What is left in this bar
-                is the side switch and the name of what you are looking at, so
-                the bar answers "where am I" instead of asking again. */}
-            <div className="inv4-topbar-where">
-              <InventoryIcon
-                id={category === ALL_TYPES ? "alltypes" : categoryIconId(category)}
-                size={18}
-              />
-              <strong>{category === ALL_TYPES ? t("inventory.rail.allTypes") : category}</strong>
-            </div>
+            {/*
+              Where you are, as a path you can walk back up.
+
+              This said the type and nothing else, which answered "what am I
+              looking at" and not "how did I get here" — and the way out of a
+              skin list was a back button in a different bar. Every step is a
+              link to that step, so leaving is the same gesture as arriving.
+            */}
+            <nav className="inv4-crumbs" aria-label="Where you are">
+              <button
+                className="inv4-crumb"
+                onClick={() => setLoMenuOpen(true)}
+                title={t("inventory.loadouts.switch")}
+              >
+                <span
+                  className="inv4-lo-dot"
+                  style={{ background: activeLoadout?.color ?? "var(--color-neutral-500)" }}
+                />
+                {activeLoadout?.name ?? "—"}
+              </button>
+
+              <span className="inv4-crumb-sep" aria-hidden>›</span>
+
+              <button
+                className={`inv4-crumb side-${side}`}
+                onClick={() => chooseSide(side === "t" ? "ct" : "t")}
+                title={t("inventory.crumbs.flipSide")}
+              >
+                {side.toUpperCase()}
+              </button>
+
+              <span className="inv4-crumb-sep" aria-hidden>›</span>
+
+              <button
+                className={`inv4-crumb ${weapon ? "" : "here"}`}
+                onClick={() => (category === ALL_TYPES ? chooseAllTypes() : chooseCategory(category))}
+              >
+                <InventoryIcon
+                  id={category === ALL_TYPES ? "alltypes" : categoryIconId(category)}
+                  size={15}
+                />
+                {category === ALL_TYPES ? t("inventory.rail.allTypes") : category}
+              </button>
+
+              {weapon && (
+                <>
+                  <span className="inv4-crumb-sep" aria-hidden>›</span>
+                  <span className="inv4-crumb here">{weapon.name}</span>
+                </>
+              )}
+            </nav>
           </div>
 
           {category === ALL_TYPES ? (
@@ -1913,9 +2205,10 @@ export default function InventorySimulator() {
                       {weaponsToRender.map((w: any) => {
                         const effectiveSide = w.forceSide || side;
                         const item = slotItemFor(w.def, kind, effectiveSide);
+                        const cellSkin = item ? asSkin(item) : null;
                         return (
+                          <div key={`${w.def}-${w.forceSide || 'base'}`} className="inv4-preview-holder">
                           <button
-                            key={`${w.def}-${w.forceSide || 'base'}`}
                             className={`inv4-preview-cell ${item ? "has-skin" : ""}`}
                             style={item?.rarity ? ({ "--rarity": item.rarity } as React.CSSProperties) : undefined}
                             onClick={() => {
@@ -1924,6 +2217,11 @@ export default function InventorySimulator() {
                               if (w.forceSide) chooseSide(w.forceSide as Side);
                               if (isSingleSlot) chooseCategory(c); else openWeapon(w);
                             }}
+                            // The overview is where you notice something is
+                            // wrong, so it is where you should be able to fix
+                            // it. It had no menu, so noticing meant navigating
+                            // somewhere else and finding the item again.
+                            {...menuTarget({ skin: cellSkin, weapon: w as WeaponEntry, side: effectiveSide })}
                             title={item ? item.skinName : `${isSingleSlot ? c : w.name} — no skin`}
                           >
                             {/* eslint-disable-next-line @next/next/no-img-element */}
@@ -1936,6 +2234,8 @@ export default function InventorySimulator() {
                               return <span className="inv4-preview-st">ST {kills.toLocaleString()}</span>;
                             })()}
                           </button>
+                          <MenuDots skin={cellSkin} weapon={w as WeaponEntry} side={effectiveSide} />
+                          </div>
                         );
                       })}
                     </div>
@@ -1950,50 +2250,42 @@ export default function InventorySimulator() {
               <div className="inv4-weapons">
                 {weapons.map((w) => {
                   const item = slotItemFor(w.def, kindOfCategory(w.category), side);
+                  // An unskinned agent still has something to act on — the base
+                  // model itself, which has patches and radio commands. Every
+                  // other type has nothing until a skin is on it.
+                  const menuSkin: Skin | null = item
+                    ? asSkin(item)
+                    : w.category === "Agents"
+                      ? { id: w.id, def: w.id, paint: 0, name: w.name, image: w.image, rarity: w.rarity || "default" }
+                      : null;
                   return (
-                    <button
-                      key={w.def}
-                      className={`inv4-weapon ${item ? "has-skin" : ""}`}
-                      onClick={(e) => {
-                        e.stopPropagation();
-                        if (w.category === "Agents") {
-                          const itemSkin: Skin = {
-                            id: w.id,
-                            def: w.id,
-                            paint: 0,
-                            name: w.name,
-                            image: w.image,
-                            rarity: w.rarity || "default"
-                          };
-                          setContextMenu({ id: `weapon-${w.def}`, skin: itemSkin, weapon: w, side });
-                          return;
+                    <div key={w.def} className="inv4-weapon-cell">
+                      <button
+                        className={`inv4-weapon ${item ? "has-skin" : ""}`}
+                        // Left click opens the skin list, on every type. Agents
+                        // used to open the options menu instead — the one tile
+                        // on the page where a left click did a different kind of
+                        // thing, and the reason nobody could find the agent list.
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          openWeapon(w);
+                        }}
+                        {...menuTarget({ skin: menuSkin, weapon: w, side })}
+                        style={
+                          item?.rarity || w.rarity
+                            ? ({ "--rarity": item?.rarity || w.rarity } as React.CSSProperties)
+                            : undefined
                         }
-                        openWeapon(w);
-                      }}
-                      onContextMenu={(e) => {
-                        e.preventDefault();
-                        e.stopPropagation();
-                        if (!item) return;
-                        const itemSkin: Skin = {
-                          id: item.skinId,
-                          def: item.weaponDef,
-                          paint: item.paint,
-                          name: item.skinName,
-                          image: item.image,
-                          rarity: item.rarity || "default"
-                        };
-                        setContextMenu({ id: `weapon-${w.def}`, skin: itemSkin, weapon: w, side });
-                      }}
-                      style={(item?.rarity || w.rarity) ? ({ "--rarity": item?.rarity || w.rarity, position: "relative" } as React.CSSProperties) : { position: "relative" }}
-                    >
-                      <div className="inv4-weapon-img">
-                        {/* eslint-disable-next-line @next/next/no-img-element */}
-                        <img src={item?.image ?? w.image} alt={w.name} loading="lazy" />
-                      </div>
-                      <div className="inv4-weapon-name">{w.name}</div>
-                      <div className="inv4-weapon-skin">{item ? skinLabel(item.skinName) : "Default"}</div>
-                      {renderContext(`weapon-${w.def}`)}
-                    </button>
+                      >
+                        <div className="inv4-weapon-img">
+                          {/* eslint-disable-next-line @next/next/no-img-element */}
+                          <img src={item?.image ?? w.image} alt={w.name} loading="lazy" />
+                        </div>
+                        <div className="inv4-weapon-name">{w.name}</div>
+                        <div className="inv4-weapon-skin">{item ? skinLabel(item.skinName) : "Default"}</div>
+                      </button>
+                      <MenuDots skin={menuSkin} weapon={w} side={side} />
+                    </div>
                   );
                 })}
               </div>
@@ -2091,7 +2383,7 @@ export default function InventorySimulator() {
                       that renders nothing still costs a reader the time to work
                       out that it renders nothing, so it is gone along with its
                       .inv4-config rules. The controls themselves live on in the
-                      context menu — see renderContext. */}
+                      item menu — see renderItemMenu. */}
 
 
                   {skinsLoading ? (
@@ -2101,31 +2393,35 @@ export default function InventorySimulator() {
                       {shownSkins.map((s) => {
                         const fav = favorites.has(skinKey(s.def, s.paint));
                         return (
-                          <div 
-                            key={s.id} 
-                            className={`inv4-skin ${s.id === currentSkinId ? "current" : ""}`} 
-                            style={{ "--rarity": s.rarity, position: "relative" } as React.CSSProperties}
-                            onContextMenu={(e) => {
-                              e.preventDefault();
-                              e.stopPropagation();
-                              setContextMenu({ id: `skin-${s.id}`, skin: s, weapon: weapon!, side });
-                            }}
+                          <div
+                            key={s.id}
+                            className={`inv4-skin ${s.id === currentSkinId ? "current" : ""}`}
+                            style={{ "--rarity": s.rarity } as React.CSSProperties}
+                            {...menuTarget({ skin: s, weapon: weapon ?? null, side })}
                           >
-                            <input type="checkbox" style={{ position: 'absolute', top: 8, left: 8, zIndex: 10 }} checked={selectedSkins.has(s.id)} onChange={(e) => {
+                            <input type="checkbox" className="inv4-skin-check" checked={selectedSkins.has(s.id)} onChange={(e) => {
                               const n = new Set(selectedSkins);
                               if (e.target.checked) n.add(s.id); else n.delete(s.id);
                               setSelectedSkins(n);
                             }} />
+                            {/* Left click equips it to the side you are on.
+                                It used to open the options menu — which made
+                                this the only tile where a left click opened a
+                                menu, and meant equipping the obvious thing took
+                                two clicks and a decision. The menu is still one
+                                right-click, or the ⋯, away. */}
                             <button className="inv4-skin-pick" onClick={(e) => {
                               e.preventDefault();
                               e.stopPropagation();
-                              setContextMenu({ id: `skin-${s.id}`, skin: s, weapon: weapon!, side });
+                              if (weapon) equipSkin(s, equipSide, true, weapon);
                             }}>
                               {/* eslint-disable-next-line @next/next/no-img-element */}
                               <img src={s.image} alt={s.name} loading="lazy" />
                               <span className="inv4-skin-name">{skinLabel(s.name)}</span>
                               <span className="inv4-skin-rarity">{rarityName(s.rarity)}</span>
-                              <span className="inv4-skin-equip">Options</span>
+                              <span className="inv4-skin-equip">
+                                {s.id === currentSkinId ? "Equipped" : `Equip (${equipSide.toUpperCase()})`}
+                              </span>
                             </button>
                             <button
                               className={`inv4-heart ${fav ? "on" : ""}`}
@@ -2135,7 +2431,7 @@ export default function InventorySimulator() {
                             >
                               {fav ? "♥" : "♡"}
                             </button>
-                            {renderContext(`skin-${s.id}`)}
+                            <MenuDots skin={s} weapon={weapon ?? null} side={side} />
                           </div>
                         );
                       })}
@@ -2227,13 +2523,21 @@ export default function InventorySimulator() {
                               display: collapsed ? 'none' : 'grid',
                               paddingTop: '12px'
                             }}>
-                              {itemsList.map(item => (
-                                <div 
+                              {itemsList.map(item => {
+                                const vaultSkin = asSkin(item);
+                                const vaultWeapon = weaponByDef(item.weaponDef);
+                                return (
+                                <div
                                   key={item.id}
                                   className={`inv4-skin ${equipped.has(item.id) ? "current" : ""}`}
-                                  style={{ "--rarity": item.rarity, position: "relative" } as React.CSSProperties}
+                                  style={{ "--rarity": item.rarity } as React.CSSProperties}
+                                  // The Vault is the one place a crafted item
+                                  // exists as itself, and it was the one place
+                                  // with no way to equip it except selecting it
+                                  // and finding the bulk button above.
+                                  {...menuTarget({ skin: vaultSkin, weapon: vaultWeapon, side })}
                                 >
-                                  <input type="checkbox" style={{ position: 'absolute', top: 8, left: 8, zIndex: 10 }} checked={selectedItems.has(item.id)} onChange={(e) => {
+                                  <input type="checkbox" className="inv4-skin-check" checked={selectedItems.has(item.id)} onChange={(e) => {
                                     const n = new Set(selectedItems);
                                     if (e.target.checked) n.add(item.id); else n.delete(item.id);
                                     setSelectedItems(n);
@@ -2245,18 +2549,21 @@ export default function InventorySimulator() {
                                   }}>
                                     {/* eslint-disable-next-line @next/next/no-img-element */}
                                     <img src={item.image} alt={item.skinName} loading="lazy" />
-                                    <div style={{ position: 'absolute', top: 4, right: 4, display: 'flex', gap: 2, zIndex: 5, background: 'rgba(0,0,0,0.5)', padding: 2, borderRadius: 4 }}>
+                                    <div className="inv4-skin-applied">
                                       {item.stickers?.filter(s => s).slice(0,6).map((st, i) => (
-                                        <img key={i} src={st!.image} style={{ width: 16, height: 16 }} alt="" />
+                                        <img key={i} src={st!.image} alt="" />
                                       ))}
-                                      {item.charm && <img src={item.charm.image} style={{ width: 16, height: 16 }} alt="" />}
+                                      {item.charm && <img src={item.charm.image} alt="" />}
                                     </div>
                                     <span className="inv4-skin-name">{skinLabel(item.skinName)}</span>
                                     <span className="inv4-skin-rarity">{item.nameTag ? `"${item.nameTag}"` : rarityName(item.rarity || 'default')}</span>
-                                    <span className="inv4-skin-equip">Select</span>
+                                    <span className="inv4-skin-equip">
+                                      {selectedItems.has(item.id) ? "Selected" : "Select"}
+                                    </span>
                                   </button>
+                                  <MenuDots skin={vaultSkin} weapon={vaultWeapon} side={side} />
                                 </div>
-                              ))}
+                              )})}
                             </div>
                           </div>
                         );
@@ -2321,6 +2628,9 @@ export default function InventorySimulator() {
           {t("auto.inventorysimulator.guest_saved_on_this_device")} <a href="/api/auth/steam/login">{t("auto.inventorysimulator.sign_in")}</a> {t("auto.inventorysimulator.to_sync_in_game")}
                           </div>
       )}
+
+      {/* One menu for every item on the page, portalled to <body>. */}
+      {renderItemMenu()}
 
       {toast && <div className="toast">{toast}</div>}
       {editor3dOpen && weapon && (

@@ -1,0 +1,114 @@
+/* The shared map picker.
+   Used by the Game Maker (retakes and the other live modes) and by the
+   tournament Spawn Maker, so choosing a map is the same gesture in both. */
+
+.mp {
+  display: grid;
+  gap: var(--space-3);
+}
+
+.mp-bar {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--space-2);
+  align-items: center;
+}
+
+.mp-search {
+  padding: 8px 10px;
+  border: 1px solid var(--color-divider);
+  background: var(--color-surface);
+  color: var(--color-text);
+  font: inherit;
+  font-size: 13px;
+  min-width: 180px;
+}
+
+.mp-search:focus {
+  outline: none;
+  border-color: var(--color-accent);
+}
+
+.mp-custom {
+  display: flex;
+  gap: var(--space-2);
+  align-items: center;
+}
+
+.mp-use {
+  padding: 7px 12px;
+  font-size: 12px;
+}
+
+.mp-off {
+  margin: 0;
+  font-size: 12.5px;
+  color: var(--color-text-muted);
+}
+
+.mp-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(150px, 1fr));
+  gap: var(--space-2);
+}
+
+.mp-map {
+  display: block;
+  padding: 0;
+  border: 1px solid var(--color-divider);
+  background: var(--color-surface);
+  color: inherit;
+  cursor: pointer;
+  text-align: left;
+  overflow: hidden;
+  transition: border-color 0.12s ease, transform 0.12s ease;
+}
+
+.mp-map:hover {
+  border-color: color-mix(in srgb, var(--color-accent) 55%, var(--color-divider));
+  transform: translateY(-1px);
+}
+
+/* Selection has to survive a busy screenshot of map art, so it is a border and
+   an inset bar rather than a tint that the picture would swallow. */
+.mp-map.on {
+  border-color: var(--color-accent);
+  box-shadow: inset 0 -3px 0 var(--color-accent);
+}
+
+.mp-map img,
+.mp-blank {
+  display: block;
+  width: 100%;
+  aspect-ratio: 16 / 9;
+  object-fit: cover;
+  background: color-mix(in srgb, var(--color-text) 8%, transparent);
+}
+
+.mp-text {
+  display: grid;
+  gap: 1px;
+  padding: 7px 9px 8px;
+}
+
+.mp-name {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 13px;
+  font-weight: 600;
+}
+
+.mp-ready {
+  color: #4ade80;
+  font-size: 9px;
+}
+
+.mp-note {
+  font-family: var(--font-mono);
+  font-size: 10.5px;
+  color: var(--color-text-muted);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}

@@ -1,3 +1,7 @@
+"use client";
+
+import MatchBubble from "./MatchBubble";
+import type { MatchPreview } from "@/lib/tournament/preview";
 import "./bracket.css";
 
 // A bracket, as CSS grid.
@@ -6,6 +10,9 @@ import "./bracket.css";
 // each round, which grid does natively and a dependency would do the same way
 // with more to go wrong. The connecting lines are borders on pseudo-elements
 // rather than SVG, so they follow the boxes when the text wraps.
+//
+// A client component now, only because the hover bubble needs pointer events.
+// Nothing here reads the database — the previews arrive as props.
 
 export type BracketMatch = {
   id: number;
@@ -20,7 +27,14 @@ export type BracketMatch = {
   winnerTeamId: number | null;
 };
 
-export default function Bracket({ matches }: { matches: BracketMatch[] }) {
+export default function Bracket({
+  matches,
+  previews,
+}: {
+  matches: BracketMatch[];
+  /** Keyed by match id. Absent is fine — the box simply has no bubble. */
+  previews?: Record<number, MatchPreview>;
+}) {
   if (matches.length === 0) {
     return null;
   }
@@ -40,25 +54,30 @@ export default function Bracket({ matches }: { matches: BracketMatch[] }) {
             </h4>
 
             {inRound.map((match) => (
-              <div
+              <MatchBubble
                 key={match.id}
-                className={`br-match ${match.state === "live" ? "live" : ""}`}
+                preview={previews?.[match.id] ?? null}
+                teamA={match.teamA?.name ?? "—"}
+                teamB={match.teamB?.name ?? "—"}
+                className="br-slot"
               >
-                <Row
-                  team={match.teamA}
-                  score={match.scoreA}
-                  won={match.winnerTeamId !== null && match.winnerTeamId === match.teamA?.id}
-                  decided={match.winnerTeamId !== null}
-                />
-                <Row
-                  team={match.teamB}
-                  score={match.scoreB}
-                  won={match.winnerTeamId !== null && match.winnerTeamId === match.teamB?.id}
-                  decided={match.winnerTeamId !== null}
-                />
+                <div className={`br-match ${match.state === "live" ? "live" : ""}`}>
+                  <Row
+                    team={match.teamA}
+                    score={match.scoreA}
+                    won={match.winnerTeamId !== null && match.winnerTeamId === match.teamA?.id}
+                    decided={match.winnerTeamId !== null}
+                  />
+                  <Row
+                    team={match.teamB}
+                    score={match.scoreB}
+                    won={match.winnerTeamId !== null && match.winnerTeamId === match.teamB?.id}
+                    decided={match.winnerTeamId !== null}
+                  />
 
-                {match.bestOf > 1 && <span className="br-bo">BO{match.bestOf}</span>}
-              </div>
+                  {match.bestOf > 1 && <span className="br-bo">BO{match.bestOf}</span>}
+                </div>
+              </MatchBubble>
             ))}
           </div>
         );

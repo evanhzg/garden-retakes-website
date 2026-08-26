@@ -1,7 +1,7 @@
 import { NextResponse } from "next/server";
 import { prisma } from "@/lib/db";
-import { getAdminContext, logAdminAction } from "@/lib/adminAuth";
-import { AdminLevel } from "@/lib/adminImmunity";
+import { logAdminAction } from "@/lib/adminAuth";
+import { canManage, getTournamentContext, type TournamentContext } from "@/lib/tournamentAuth";
 import { roundRobin, singleElimination, resolveByes, type PlannedMatch } from "@/lib/tournament/bracket";
 import { startMatch } from "@/lib/tournament/matchRunner";
 import { execOnServer } from "@/lib/tournament/servers";
@@ -12,12 +12,27 @@ export const runtime = "nodejs";
 // Running a tournament from the admin side.
 //
 // One route with an action rather than six, because every one of them needs the
-// same admin gate and the same audit line, and six copies of that is how one of
-// them ends up missing it.
+// same gate and the same audit line, and six copies of that is how one of them
+// ends up missing it.
+//
+// The gate is no longer one level test. Creating needs standing (an organizer,
+// or an admin); everything else needs standing ON THE TOURNAMENT BEING EDITED,
+// which for an organizer means their own and for an admin means any. Actions
+// name their subject in different ways — a stage id, a match id — so the
+// tournament is resolved from whichever one arrived before the gate runs.
 
 type Body = {
   key?: string;
-  action?: "create" | "add-stage" | "generate" | "start" | "set-pool" | "state" | "admin";
+  action?:
+    | "create"
+    | "add-stage"
+    | "generate"
+    | "start"
+    | "set-pool"
+    | "state"
+    | "admin"
+    | "add-organizer"
+    | "remove-organizer";
   tournamentId?: number;
   stageId?: number;
   matchId?: number;
@@ -36,10 +51,42 @@ type Body = {
   state?: string;
   // admin passthrough
   command?: string;
+  // add-organizer / remove-organizer
+  steamId?: string;
+  organizerName?: string;
 };
 
 const slugify = (s: string) =>
   s.toLowerCase().replace(/[^a-z0-9]+/g, "-").replace(/^-|-$/g, "").slice(0, 64);
+
+/**
+ * Which tournament an action is about, however it named its subject.
+ *
+ * Every action except `create` edits exactly one tournament, but three of them
+ * arrive holding a stage or a match instead. Resolving that here means the gate
+ * below is one line rather than a per-action lookup somebody forgets to add.
+ */
+async function subjectOf(body: Body): Promise<number | null> {
+  if (body.tournamentId) return body.tournamentId;
+
+  if (body.stageId) {
+    const stage = await prisma.tournamentStage.findUnique({
+      where: { Id: body.stageId },
+      select: { TournamentId: true },
+    });
+    return stage?.TournamentId ?? null;
+  }
+
+  if (body.matchId) {
+    const match = await prisma.tournamentMatch.findUnique({
+      where: { Id: body.matchId },
+      select: { TournamentId: true },
+    });
+    return match?.TournamentId ?? null;
+  }
+
+  return null;
+}
 
 export async function POST(req: Request) {
   let body: Body;
@@ -49,9 +96,23 @@ export async function POST(req: Request) {
     return NextResponse.json({ error: "Malformed JSON." }, { status: 400 });
   }
 
-  const ctx = await getAdminContext(body.key);
-  if (ctx.level < AdminLevel.Admin) {
-    return NextResponse.json({ error: "Not authorized." }, { status: 403 });
+  const ctx = await getTournamentContext(body.key);
+
+  if (body.action === "create") {
+    if (!ctx.canCreate) {
+      return NextResponse.json(
+        { error: "Only organizers and admins can create a tournament." },
+        { status: 403 },
+      );
+    }
+  } else {
+    const subject = await subjectOf(body);
+    if (subject === null) {
+      return NextResponse.json({ error: "Which tournament?" }, { status: 400 });
+    }
+    if (!(await canManage(ctx, subject))) {
+      return NextResponse.json({ error: "You do not run this tournament." }, { status: 403 });
+    }
   }
 
   switch (body.action) {
@@ -71,6 +132,22 @@ export async function POST(req: Request) {
           OwnerSteamId: ctx.steamId ? BigInt(ctx.steamId) : null,
         },
       });
+
+      // The creator goes on the organizer list immediately. Without this an
+      // organizer would create a tournament and instantly lose access to it,
+      // since the gate reads the list rather than OwnerSteamId. A key-authorized
+      // creator has no SteamID to record, and needs none — the key manages
+      // everything anyway.
+      if (ctx.steamId) {
+        await prisma.tournamentOrganizer.create({
+          data: {
+            TournamentId: tournament.Id,
+            SteamId: BigInt(ctx.steamId),
+            Name: ctx.name?.slice(0, 64) || null,
+            IsCreator: true,
+          },
+        });
+      }
 
       await logAdminAction(ctx, "tournament.create", undefined, slug);
       return NextResponse.json({ ok: true, id: tournament.Id, slug });
@@ -159,6 +236,57 @@ export async function POST(req: Request) {
       return NextResponse.json({ ok: true, reply });
     }
 
+    case "add-organizer": {
+      if (!body.tournamentId) return NextResponse.json({ error: "tournamentId?" }, { status: 400 });
+
+      const steamId = (body.steamId ?? "").trim();
+      if (!/^\d{17}$/.test(steamId)) {
+        return NextResponse.json({ error: "That is not a SteamID64." }, { status: 400 });
+      }
+
+      await prisma.tournamentOrganizer.upsert({
+        where: {
+          TournamentId_SteamId: { TournamentId: body.tournamentId, SteamId: BigInt(steamId) },
+        },
+        create: {
+          TournamentId: body.tournamentId,
+          SteamId: BigInt(steamId),
+          Name: body.organizerName?.slice(0, 64) || null,
+        },
+        update: { Name: body.organizerName?.slice(0, 64) || undefined },
+      });
+
+      await logAdminAction(ctx, "tournament.organizer.add", { steamId }, `#${body.tournamentId}`);
+      return NextResponse.json({ ok: true });
+    }
+
+    case "remove-organizer": {
+      if (!body.tournamentId) return NextResponse.json({ error: "tournamentId?" }, { status: 400 });
+
+      const steamId = (body.steamId ?? "").trim();
+      if (!steamId) return NextResponse.json({ error: "steamId?" }, { status: 400 });
+
+      // A tournament with no organizers can only be recovered by an admin, so
+      // the last one is refused rather than being a mistake somebody notices
+      // later. Removing yourself is fine as long as somebody else is left.
+      const remaining = await prisma.tournamentOrganizer.count({
+        where: { TournamentId: body.tournamentId },
+      });
+      if (remaining <= 1) {
+        return NextResponse.json(
+          { error: "That is the last organizer — add another before removing this one." },
+          { status: 400 },
+        );
+      }
+
+      await prisma.tournamentOrganizer.deleteMany({
+        where: { TournamentId: body.tournamentId, SteamId: BigInt(steamId) },
+      });
+
+      await logAdminAction(ctx, "tournament.organizer.remove", { steamId }, `#${body.tournamentId}`);
+      return NextResponse.json({ ok: true });
+    }
+
     default:
       return NextResponse.json({ error: "Unknown action." }, { status: 400 });
   }
@@ -172,7 +300,7 @@ export async function POST(req: Request) {
  * to play, and "delete them first" is a decision an admin should make
  * deliberately.
  */
-async function generate(body: Body, ctx: Awaited<ReturnType<typeof getAdminContext>>) {
+async function generate(body: Body, ctx: TournamentContext) {
   if (!body.stageId) return NextResponse.json({ error: "stageId?" }, { status: 400 });
 
   const stage = await prisma.tournamentStage.findUnique({

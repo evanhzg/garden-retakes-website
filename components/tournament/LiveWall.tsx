@@ -2,6 +2,8 @@
 
 import { useEffect, useState } from "react";
 import { useI18n } from "@/components/I18nProvider";
+import MatchBubble from "./MatchBubble";
+import type { MatchPreview } from "@/lib/tournament/preview";
 import "./live.css";
 
 // Every match at once, for a stream.
@@ -24,6 +26,7 @@ type LiveMatch = {
   roundsA: number;
   roundsB: number;
   gotv: string | null;
+  preview: MatchPreview | null;
 };
 
 export default function LiveWall({ slug }: { slug?: string }) {
@@ -70,30 +73,40 @@ export default function LiveWall({ slug }: { slug?: string }) {
 
       <div className="lw">
         {matches.map((m) => (
-          <article key={m.id} className={`lw-card ${m.state === "live" ? "live" : ""}`}>
-            <header className="lw-head">
-              <span className="lw-map">{m.map ?? "—"}</span>
-              {m.bestOf > 1 && <span className="lw-bo">BO{m.bestOf}</span>}
-              {m.state !== "live" && <span className="lw-warm">{t("live.warmup")}</span>}
-            </header>
+          // The card shows the map being played. Hovering shows the whole
+          // series — which is the question a caster asks about a BO3 and the
+          // one a card this size has no room to answer.
+          <MatchBubble
+            key={m.id}
+            preview={m.preview ?? null}
+            teamA={m.teamA?.name ?? "—"}
+            teamB={m.teamB?.name ?? "—"}
+          >
+            <article className={`lw-card ${m.state === "live" ? "live" : ""}`}>
+              <header className="lw-head">
+                <span className="lw-map">{m.map ?? "—"}</span>
+                {m.bestOf > 1 && <span className="lw-bo">BO{m.bestOf}</span>}
+                {m.state !== "live" && <span className="lw-warm">{t("live.warmup")}</span>}
+              </header>
 
-            <div className="lw-teams">
-              <Team
-                name={m.teamA?.name ?? "—"}
-                rounds={m.roundsA}
-                maps={m.mapsA}
-                bestOf={m.bestOf}
-                leading={m.roundsA > m.roundsB}
-              />
-              <Team
-                name={m.teamB?.name ?? "—"}
-                rounds={m.roundsB}
-                maps={m.mapsB}
-                bestOf={m.bestOf}
-                leading={m.roundsB > m.roundsA}
-              />
-            </div>
-          </article>
+              <div className="lw-teams">
+                <Team
+                  name={m.teamA?.name ?? "—"}
+                  rounds={m.roundsA}
+                  maps={m.mapsA}
+                  bestOf={m.bestOf}
+                  leading={m.roundsA > m.roundsB}
+                />
+                <Team
+                  name={m.teamB?.name ?? "—"}
+                  rounds={m.roundsB}
+                  maps={m.mapsB}
+                  bestOf={m.bestOf}
+                  leading={m.roundsB > m.roundsA}
+                />
+              </div>
+            </article>
+          </MatchBubble>
         ))}
       </div>
     </>
