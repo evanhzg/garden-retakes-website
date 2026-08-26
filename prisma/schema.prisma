@@ -1436,6 +1436,39 @@ model Tournament {
   CreatedAt    DateTime  @default(now()) @db.DateTime(6)
   UpdatedAt    DateTime  @default(now()) @updatedAt @db.DateTime(6)
 
+  /// public | invite. Gates who may CREATE A TEAM, not who may watch — an
+  /// invite-only tournament's bracket is still readable by anyone.
+  Visibility  String  @default("public") @db.VarChar(16)
+  /// The token in the invite link. Null until invite-only is turned on.
+  InviteToken String? @db.VarChar(32)
+
+  /// single | double | group | swiss, and the series length. Editable until the
+  /// start button is pressed, which is why they live here and not only on a
+  /// stage: stages do not exist until the bracket is generated.
+  Format      String @default("single") @db.VarChar(16)
+  /// random | faceit | manual — how seeds are decided at generation.
+  Seeding     String @default("random") @db.VarChar(16)
+  BestOf      Int    @default(1) @db.TinyInt
+  FinalBestOf Int?   @db.TinyInt
+
+  /// Whether anyone but an organizer can see it. A tournament is built in
+  /// private and published deliberately. Distinct from State: a published
+  /// tournament can still be in registration.
+  Published Boolean   @default(false)
+  /// When start was actually pressed. StartsAt is the plan; this is the fact,
+  /// and it is what makes "editable until it starts" answerable.
+  StartedAt DateTime? @db.DateTime(6)
+
+  RulesText    String? @db.Text
+  PrizeText    String? @db.Text
+  SponsorsText String? @db.Text
+
+  DiscordUrl     String? @db.VarChar(255)
+  TeamSpeakUrl   String? @db.VarChar(255)
+  /// Comma-separated channel names — a handful of strings edited as one field
+  /// and never queried across, so a table would be ceremony.
+  TwitchChannels String? @db.VarChar(500)
+
   Stages     TournamentStage[]
   Teams      TournamentTeam[]
   Matches    TournamentMatch[]
@@ -1510,6 +1543,9 @@ model TournamentTeam {
   /// pending | accepted | withdrawn | disqualified
   Status         String   @default("pending") @db.VarChar(16)
   CreatedAt      DateTime @default(now()) @db.DateTime(6)
+  /// The token in this team's player-invite link. Rotating it revokes a link
+  /// that reached the wrong place, which is why it can be regenerated.
+  InviteToken    String?  @unique(map: "UX_TournamentTeams_Invite") @db.VarChar(32)
 
   Tournament Tournament             @relation(fields: [TournamentId], references: [Id], onDelete: Cascade)
   Members    TournamentTeamMember[]
@@ -1530,6 +1566,12 @@ model TournamentTeamMember {
   /// on each — a single column would mean somebody is a planter on CT.
   RoleT       String?   @db.VarChar(24)
   RoleCt      String?   @db.VarChar(24)
+  /// What this player is called FOR THIS TOURNAMENT.
+  ///
+  /// Not an account rename. A Steam name changes on a whim and carries clan
+  /// tags and jokes a bracket should not inherit; an organizer needs a stable
+  /// name for the duration. Null falls back to the profile name.
+  DisplayName String?   @db.VarChar(32)
   InvitedAt   DateTime  @default(now()) @db.DateTime(6)
   RespondedAt DateTime? @db.DateTime(6)
 
@@ -1568,6 +1610,15 @@ model TournamentMatch {
   ScheduledAt      DateTime? @db.DateTime(6)
   StartedAt        DateTime? @db.DateTime(6)
   EndedAt          DateTime? @db.DateTime(6)
+
+  /// Ready-up per side. Columns rather than socket state, so a team that
+  /// readied and then reconnected does not have to do it again.
+  ReadyA           Boolean   @default(false)
+  ReadyB           Boolean   @default(false)
+  VetoStartedAt    DateTime? @db.DateTime(6)
+  /// When the current veto turn runs out. Stored rather than computed so every
+  /// viewer counts down to the same instant and a turn survives a reload.
+  VetoDeadline     DateTime? @db.DateTime(6)
 
   Tournament  Tournament             @relation(fields: [TournamentId], references: [Id], onDelete: Cascade)
   Stage       TournamentStage        @relation(fields: [StageId], references: [Id], onDelete: Cascade)

@@ -1,6 +1,8 @@
 import { NextResponse } from "next/server";
 import { prisma } from "@/lib/db";
 import { getSession } from "@/lib/auth";
+import { randomBytes } from "node:crypto";
+import { canRegister, registrationBlockedReason, type EditionState } from "@/lib/tournament/edition";
 
 export const dynamic = "force-dynamic";
 export const runtime = "nodejs";
@@ -16,7 +18,18 @@ const CT_ROLES = ["roamer", "frontrunner", "awper", "backup"];
 const T_ROLES = ["planter", "sniper", "rifler"];
 
 type Body = {
-  action?: "create" | "invite" | "accept" | "decline" | "leave" | "kick" | "rename" | "role";
+  action?:
+    | "create"
+    | "invite"
+    | "accept"
+    | "decline"
+    | "leave"
+    | "kick"
+    | "rename"
+    | "role"
+    | "join"
+    | "team-link"
+    | "display-name";
   roleT?: string | null;
   roleCt?: string | null;
   tournamentId?: number;
@@ -24,6 +37,30 @@ type Body = {
   name?: string;
   tag?: string;
   steamId?: string;
+  /** The tournament's invite token, when arriving from an invite link. */
+  invite?: string;
+  /** A team's own invite token, for joining one directly. */
+  teamToken?: string;
+  /** The name to carry for this tournament only. */
+  displayName?: string;
+};
+
+/** Short, unguessable, and safe in a URL without escaping. */
+const freshToken = () => randomBytes(16).toString("hex");
+
+/**
+ * A message for each way registration can be shut.
+ *
+ * Written out rather than reduced to "closed" because each one leads somewhere
+ * different: full means watch the bracket, invite-only means ask for a link,
+ * not-published means it does not exist yet as far as you are concerned.
+ */
+const REGISTRATION_REFUSAL: Record<string, string> = {
+  "not-published": "That tournament is not open yet.",
+  started: "That tournament has already started.",
+  "wrong-state": "Registration is closed.",
+  full: "The tournament is full.",
+  "invite-only": "This tournament is invite only — you need a link from the organizer.",
 };
 
 export async function POST(req: Request) {
@@ -45,11 +82,31 @@ export async function POST(req: Request) {
     case "create": {
       if (!body.tournamentId) return NextResponse.json({ error: "tournamentId?" }, { status: 400 });
 
-      const tournament = await prisma.tournament.findUnique({ where: { Id: body.tournamentId } });
+      const tournament = await prisma.tournament.findUnique({
+        where: { Id: body.tournamentId },
+        include: { _count: { select: { Teams: true } } },
+      });
       if (!tournament) return NextResponse.json({ error: "No such tournament." }, { status: 404 });
 
-      if (tournament.State !== "registration") {
-        return NextResponse.json({ error: "Registration is closed." }, { status: 400 });
+      // One gate, shared with the page that renders the form, so what the
+      // button offers and what the server allows cannot drift apart. The
+      // invite token has to MATCH — holding any token is not holding this one.
+      const edition: EditionState = {
+        published: tournament.Published,
+        state: tournament.State,
+        visibility: tournament.Visibility === "invite" ? "invite" : "public",
+        maxTeams: tournament.MaxTeams,
+        teamCount: tournament._count.Teams,
+        startsAt: tournament.StartsAt,
+        startedAt: tournament.StartedAt,
+      };
+
+      const holdsInvite =
+        Boolean(tournament.InviteToken) && body.invite === tournament.InviteToken;
+
+      if (!canRegister(edition, holdsInvite)) {
+        const why = registrationBlockedReason(edition, holdsInvite) ?? "wrong-state";
+        return NextResponse.json({ error: REGISTRATION_REFUSAL[why] ?? "Registration is closed." }, { status: 400 });
       }
 
       const name = (body.name ?? "").trim();
@@ -72,14 +129,6 @@ export async function POST(req: Request) {
         );
       }
 
-      const full = await prisma.tournamentTeam.count({
-        where: { TournamentId: tournament.Id, Status: { not: "withdrawn" } },
-      });
-
-      if (full >= tournament.MaxTeams) {
-        return NextResponse.json({ error: "The tournament is full." }, { status: 400 });
-      }
-
       try {
         const team = await prisma.tournamentTeam.create({
           data: {
@@ -87,6 +136,7 @@ export async function POST(req: Request) {
             Name: name.slice(0, 64),
             Tag: (body.tag ?? "").trim().slice(0, 8) || null,
             CaptainSteamId: me,
+            InviteToken: freshToken(),
             Members: {
               create: { SteamId: me, IsCaptain: true, Status: "accepted", RespondedAt: new Date() },
             },
@@ -225,6 +275,139 @@ export async function POST(req: Request) {
       } catch {
         return NextResponse.json({ error: "A team already has that name." }, { status: 400 });
       }
+    }
+
+    case "team-link": {
+      // The captain's shareable link. Rotating it is how you revoke one that
+      // reached the wrong Discord, so the same action serves both purposes.
+      const team = await captainOf(body.teamId, me);
+      if ("error" in team) return team.error;
+
+      const fresh = freshToken();
+      await prisma.tournamentTeam.update({
+        where: { Id: team.value.Id },
+        data: { InviteToken: fresh },
+      });
+
+      return NextResponse.json({ ok: true, teamToken: fresh });
+    }
+
+    case "join": {
+      // Joining by link rather than by being invited by SteamID.
+      //
+      // The captain does not need to know anybody's 17-digit id, and the player
+      // proves who they are by signing in with Steam before this runs — which
+      // is why the link alone is enough and why it carries no identity itself.
+      const token = (body.teamToken ?? "").trim();
+      if (!token) return NextResponse.json({ error: "That link is missing its code." }, { status: 400 });
+
+      const team = await prisma.tournamentTeam.findUnique({
+        where: { InviteToken: token },
+        include: { Tournament: { include: { _count: { select: { Teams: true } } } } },
+      });
+
+      if (!team) {
+        return NextResponse.json({ error: "That invite link is not valid any more." }, { status: 404 });
+      }
+
+      const tournament = team.Tournament;
+
+      if (tournament.StartedAt) {
+        return NextResponse.json({ error: "That tournament has already started." }, { status: 400 });
+      }
+
+      // Already here? Say so plainly and succeed, so a player who clicks the
+      // link twice is not told they have done something wrong.
+      const existing = await prisma.tournamentTeamMember.findFirst({
+        where: { TeamId: team.Id, SteamId: me, Status: { not: "removed" } },
+      });
+
+      if (existing) {
+        if (existing.Status !== "accepted") {
+          await prisma.tournamentTeamMember.update({
+            where: { Id: existing.Id },
+            data: { Status: "accepted", RespondedAt: new Date() },
+          });
+        }
+        return NextResponse.json({ ok: true, teamId: team.Id, alreadyThere: true });
+      }
+
+      const elsewhere = await prisma.tournamentTeamMember.findFirst({
+        where: {
+          SteamId: me,
+          Status: { in: ["accepted", "invited"] },
+          Team: { TournamentId: tournament.Id, Status: { not: "withdrawn" } },
+        },
+        include: { Team: true },
+      });
+
+      if (elsewhere) {
+        return NextResponse.json(
+          { error: `You are already in ${elsewhere.Team.Name} for this tournament.` },
+          { status: 400 },
+        );
+      }
+
+      const size = await prisma.tournamentTeamMember.count({
+        where: { TeamId: team.Id, Status: { in: ["invited", "accepted"] } },
+      });
+
+      const cap = tournament.TeamSize + 2;
+      if (size >= cap) {
+        return NextResponse.json({ error: `${team.Name} is full.` }, { status: 400 });
+      }
+
+      await prisma.tournamentTeamMember.create({
+        data: {
+          TeamId: team.Id,
+          SteamId: me,
+          Status: "accepted",
+          RespondedAt: new Date(),
+          DisplayName: (body.displayName ?? "").trim().slice(0, 32) || null,
+        },
+      });
+
+      return NextResponse.json({ ok: true, teamId: team.Id, team: team.Name });
+    }
+
+    case "display-name": {
+      // The name this player carries FOR THIS TOURNAMENT.
+      //
+      // A player sets their own and a captain sets anyone's on their team —
+      // the same rule as roles, for the same reason: a captain filling in a
+      // team sheet before everybody has logged in is the normal case.
+      if (!body.teamId) return NextResponse.json({ error: "teamId?" }, { status: 400 });
+
+      const team = await prisma.tournamentTeam.findUnique({ where: { Id: body.teamId } });
+      if (!team) return NextResponse.json({ error: "No such team." }, { status: 404 });
+
+      const target = body.steamId && /^\d{17}$/.test(body.steamId) ? BigInt(body.steamId) : me;
+
+      if (target !== me && team.CaptainSteamId !== me) {
+        return NextResponse.json(
+          { error: "Only the captain can rename somebody else." },
+          { status: 403 },
+        );
+      }
+
+      const name = (body.displayName ?? "").trim();
+
+      // Empty clears it, falling back to the profile name. That is a real
+      // choice rather than an error — it is how you undo a rename.
+      if (name.length > 0 && name.length < 2) {
+        return NextResponse.json({ error: "That name is too short." }, { status: 400 });
+      }
+
+      const updated = await prisma.tournamentTeamMember.updateMany({
+        where: { TeamId: team.Id, SteamId: target },
+        data: { DisplayName: name.slice(0, 32) || null },
+      });
+
+      if (updated.count === 0) {
+        return NextResponse.json({ error: "They are not on that team." }, { status: 400 });
+      }
+
+      return NextResponse.json({ ok: true });
     }
 
     case "role": {
