@@ -90,6 +90,14 @@ export async function POST(req: Request) {
           Port: Number.parseInt(process.env.RCON_PORT ?? "27015", 10),
           RconPassword: password,
           ConnectAddress: process.env.RETAKES_CONNECT_ADDRESS ?? null,
+          // Explicitly NOT a tournament server, against the column's default.
+          // The environment's RCON triple is the public LADDER server — it runs
+          // R5e-games, not the tournament plugin. Left at the default it sorted
+          // first among "tournament" servers and swallowed every Spawn Maker
+          // command, answering "Unknown command 'css_t_maker'" from a machine
+          // nobody was standing in. Mark a box as tournament-capable by adding
+          // it deliberately, not by inheriting a default.
+          IsTournament: false,
         },
       });
 

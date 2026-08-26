@@ -2,7 +2,7 @@ import { NextResponse } from "next/server";
 import { prisma } from "@/lib/db";
 import { getAdminContext, logAdminAction } from "@/lib/adminAuth";
 import { AdminLevel } from "@/lib/adminImmunity";
-import { rconExec } from "@/lib/rcon";
+import { makerExec, NoMakerServerError } from "@/lib/tournament/makerServer";
 
 export const dynamic = "force-dynamic";
 export const runtime = "nodejs";
@@ -45,8 +45,26 @@ export async function POST(req: Request) {
     return NextResponse.json({ error: "Not authorized." }, { status: 403 });
   }
 
+  // Every branch below talks to the game server, and the one failure that is
+  // not the plugin's fault is having no server to talk to. Answered as a
+  // sentence the admin can act on rather than a 500 that sends them to the
+  // plugin logs — which is where this exact fault sent somebody already.
+  try {
+    return await handle(body, ctx);
+  } catch (err) {
+    if (err instanceof NoMakerServerError) {
+      return NextResponse.json({ error: err.message }, { status: 503 });
+    }
+    throw err;
+  }
+}
+
+async function handle(
+  body: Body,
+  ctx: Awaited<ReturnType<typeof getAdminContext>>,
+): Promise<NextResponse> {
   if (body.action === "end") {
-    await rconExec("css_t_maker_end");
+    await makerExec("css_t_maker_end");
     await prisma.tournamentMakerSession.updateMany({
       where: { EndedAt: null },
       data: { EndedAt: new Date() },
@@ -56,7 +74,7 @@ export async function POST(req: Request) {
   }
 
   if (body.action === "generate") {
-    const reply = await rconExec("css_t_maker_generate");
+    const reply = await makerExec("css_t_maker_generate");
 
     // The plugin answers with a line rather than an error code, so a refusal
     // arrives looking like a success unless it is read. The ladder learned this
@@ -128,7 +146,7 @@ export async function POST(req: Request) {
     name,
   ].join(" ");
 
-  const reply = await rconExec(command);
+  const reply = await makerExec(command);
   const started = /maker started/i.test(reply);
 
   if (started) {
