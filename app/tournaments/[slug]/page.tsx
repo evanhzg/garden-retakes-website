@@ -6,8 +6,11 @@ import TournamentView, { type PoolMap, type StageView, type TeamView } from "@/c
 import { standings } from "@/lib/tournament/bracket";
 import { previewsForTournament, type MatchPreview } from "@/lib/tournament/preview";
 import { tournamentStats } from "@/lib/tournament/statsDb";
+import { canManage, getTournamentContext } from "@/lib/tournamentAuth";
 
-export const revalidate = 15;
+// force-dynamic, not revalidate: the Manage button depends on who is looking,
+// and a shared cache would show one viewer their controls on somebody else visit.
+export const dynamic = "force-dynamic";
 
 // The page is now a data-loader and a heading. Everything below the hero is one
 // tabbed component, because a tournament of any size does not fit in a scroll:
@@ -33,6 +36,9 @@ export default async function TournamentPage({ params }: { params: { slug: strin
   });
 
   if (!tournament) notFound();
+
+  const ctx = await getTournamentContext();
+  const canManageThis = await canManage(ctx, tournament.Id);
 
   const [matches, previewMap, stats] = await Promise.all([
     prisma.tournamentMatch.findMany({
@@ -157,6 +163,15 @@ export default async function TournamentPage({ params }: { params: { slug: strin
             {" · "}
             <Link href={`/tournaments/${tournament.Slug}/live`}>{t("tournamentAdmin.liveWall")}</Link>
           </p>
+
+          {/* Only for somebody who actually runs this one. */}
+          {canManageThis && (
+            <p style={{ marginTop: 10 }}>
+              <Link className="btn btn-secondary" href={`/admin/tournaments/${tournament.Id}`}>
+                {t("tournaments.manage")}
+              </Link>
+            </p>
+          )}
         </div>
       </section>
 

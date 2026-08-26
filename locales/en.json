@@ -2640,5 +2640,10 @@
   "inventory.loadouts.all": "All loadouts ({n})",
   "inventory.loadouts.favourite": "Favourite",
   "inventory.loadouts.switch": "Switch loadout",
-  "inventory.crumbs.flipSide": "Switch side"
+  "inventory.crumbs.flipSide": "Switch side",
+  "tournaments.organizerTools": "Your tools",
+  "tournaments.organizerBlurb": "Create and run tournaments, and author the spawns they are played on.",
+  "tournaments.createOne": "Create a tournament",
+  "tournaments.manage": "Manage",
+  "tournaments.mapLibrary": "Map library"
 }

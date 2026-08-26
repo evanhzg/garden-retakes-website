@@ -2640,5 +2640,10 @@
   "inventory.loadouts.all": "Tous les loadouts ({n})",
   "inventory.loadouts.favourite": "Favori",
   "inventory.loadouts.switch": "Changer de loadout",
-  "inventory.crumbs.flipSide": "Changer de côté"
+  "inventory.crumbs.flipSide": "Changer de côté",
+  "tournaments.organizerTools": "Vos outils",
+  "tournaments.organizerBlurb": "Créez et gérez des tournois, et éditez les spawns sur lesquels ils se jouent.",
+  "tournaments.createOne": "Créer un tournoi",
+  "tournaments.manage": "Gérer",
+  "tournaments.mapLibrary": "Bibliothèque de maps"
 }
