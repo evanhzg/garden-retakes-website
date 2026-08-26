@@ -2646,8 +2646,9 @@
   "tournaments.createOne": "Create a tournament",
   "tournaments.manage": "Manage",
   "tournaments.mapLibrary": "Map library",
-  "maker.step1": "Name a spawn below and press SELECT IN-GAME. The server puts you into Maker mode — noclip on, no round timer.",
+  "maker.step1": "Name a spawn below, pick its role, and press SELECT IN-GAME. Reuse a name to give the same place another role — Short can have a front-runner AND a backup.",
   "maker.step2": "Stand where you want each variant and press E. Rows appear here as you place them; shoot a marker to remove it.",
   "maker.step3": "Nothing is written to the map until you press GENERATE. Discard throws the session away.",
-  "maker.pending": "A session is open. These variants are not saved yet — GENERATE writes them to the map."
+  "maker.pending": "A session is open. These variants are not saved yet — GENERATE writes them to the map.",
+  "maker.roleCount": "{n} role(s)"
 }

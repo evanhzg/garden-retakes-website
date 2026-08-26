@@ -67,7 +67,7 @@ export async function POST(req: Request) {
   const variants = (body.variants ?? []).filter(isFinitePoint);
 
   const spawn = await prisma.tournamentSpawn.upsert({
-    where: { Map_Bombsite_Team_Name: { Map: map, Bombsite: bombsite, Team: team, Name: name } },
+    where: { Map_Bombsite_Team_Name_RoleId: { Map: map, Bombsite: bombsite, Team: team, Name: name, RoleId: role } },
     create: { Map: map, Name: name, RoleId: role, Bombsite: bombsite, Team: team },
     update: { RoleId: role },
   });

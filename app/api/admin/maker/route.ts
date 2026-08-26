@@ -121,7 +121,7 @@ async function handle(
   }
 
   const spawn = await prisma.tournamentSpawn.upsert({
-    where: { Map_Bombsite_Team_Name: { Map: map, Bombsite: bombsite, Team: team, Name: name } },
+    where: { Map_Bombsite_Team_Name_RoleId: { Map: map, Bombsite: bombsite, Team: team, Name: name, RoleId: role } },
     create: {
       Map: map,
       Name: name,
@@ -131,7 +131,10 @@ async function handle(
       CanBePlanter: Boolean(body.canBePlanter),
       CreatedBy: BigInt(ctx.steamId),
     },
-    update: { RoleId: role, CanBePlanter: Boolean(body.canBePlanter) },
+    // RoleId is part of the key now, so it is never the thing being changed:
+    // a different role under the same name is a different spawn, which is the
+    // whole point of the key including it.
+    update: { CanBePlanter: Boolean(body.canBePlanter) },
   });
 
   // The name goes last because it is the only argument that can contain spaces.

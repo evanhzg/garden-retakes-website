@@ -1371,7 +1371,14 @@ model TournamentSpawn {
 
   Variants TournamentSpawnVariant[]
 
-  @@unique([Map, Bombsite, Team, Name], map: "UX_TournamentSpawns")
+  /// (place, role) is the identity, not place alone.
+  ///
+  /// "Short" is a PLACE and a role is a JOB, and a site is authored by putting
+  /// several jobs in one place — a front-runner holding Short, a backup behind
+  /// them, a roamer cutting through. Without RoleId in the key the second one
+  /// silently overwrote the first: same row, new role, and the earlier role's
+  /// variants inherited by whoever was saved last.
+  @@unique([Map, Bombsite, Team, Name, RoleId], map: "UX_TournamentSpawns")
   @@index([Map])
   @@map("TournamentSpawns")
 }

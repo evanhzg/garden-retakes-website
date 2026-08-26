@@ -226,6 +226,36 @@ export default function MakerTool({
     return out;
   }, [spawns]);
 
+  /**
+   * Spawns collected under their name, because a name is a PLACE and a role is
+   * a JOB done there.
+   *
+   * "Short" wants a front-runner holding it, a backup behind them and a roamer
+   * cutting through — three positions, one place. Listing them as three
+   * unrelated rows called Short would read as a mistake; nesting them says what
+   * is actually true.
+   *
+   * Insertion order is preserved rather than sorted, so a list does not
+   * rearrange itself while somebody is working down it.
+   */
+  const byName = useMemo(() => {
+    const out: Record<string, { name: string; roles: Spawn[] }[]> = {};
+
+    for (const section of SECTIONS) {
+      const places = new Map<string, { name: string; roles: Spawn[] }>();
+
+      for (const spawn of grouped[section.key] ?? []) {
+        const place = places.get(spawn.name) ?? { name: spawn.name, roles: [] };
+        place.roles.push(spawn);
+        places.set(spawn.name, place);
+      }
+
+      out[section.key] = Array.from(places.values());
+    }
+
+    return out;
+  }, [grouped]);
+
   if (!map) {
     // The same picker the Game Maker uses, so choosing a map is one gesture
     // across both tools. What differs is the note under each name: here it is
@@ -317,7 +347,15 @@ export default function MakerTool({
           onChange={(e) => setDraft({ ...draft, name: e.target.value })}
           placeholder={t("maker.namePlaceholder")}
           maxLength={64}
+          // Existing names offered for reuse, because reusing one is now the
+          // normal way to give a place a second role rather than a collision.
+          list="mk-existing-names"
         />
+        <datalist id="mk-existing-names">
+          {Array.from(new Set(spawns.map((s) => s.name))).map((name) => (
+            <option key={name} value={name} />
+          ))}
+        </datalist>
 
         <select value={draft.bombsite} onChange={(e) => setDraft({ ...draft, bombsite: Number(e.target.value) })}>
           <option value={0}>{t("maker.siteA")}</option>
@@ -371,58 +409,69 @@ export default function MakerTool({
               <p className="muted mk-empty">{t("maker.nothingHere")}</p>
             )}
 
-            {grouped[section.key].map((spawn) => (
-              <div
-                key={spawn.id}
-                className={`mk-spawn ${spawn.id === activeSpawnId ? "active" : ""}`}
-              >
-                <div className="mk-spawn-head">
-                  <span className="mk-dot" style={{ background: ROLE_COLOUR[spawn.role] ?? "#888" }} />
-                  <strong>{spawn.name}</strong>
-                  <span className="muted">{spawn.role}</span>
-                  {spawn.canBePlanter && <span className="mk-tag">{t("maker.plantSpot")}</span>}
-                  <span className="mk-count">
-                    {t("maker.variantCount", { n: String(spawn.variants.length) })}
+            {/* One block per PLACE, with a row per role in it. */}
+            {byName[section.key].map((place) => (
+              <div key={place.name} className="mk-place">
+                <div className="mk-place-name">
+                  {place.name}
+                  <span className="mk-place-roles">
+                    {t("maker.roleCount", { n: String(place.roles.length) })}
                   </span>
-
-                  <button
-                    className="btn mk-small"
-                    disabled={busy}
-                    onClick={() =>
-                      post({
-                        map,
-                        name: spawn.name,
-                        role: spawn.role,
-                        bombsite: spawn.bombsite,
-                        team: spawn.team,
-                        canBePlanter: spawn.canBePlanter,
-                      })
-                    }
-                  >
-                    {t("maker.selectInGame")}
-                  </button>
-
-                  <button
-                    className="btn mk-small mk-danger"
-                    disabled={busy}
-                    title={t("maker.deleteSpawn")}
-                    aria-label={`${t("maker.deleteSpawn")}: ${spawn.name}`}
-                    onClick={() => remove(spawn)}
-                  >
-                    ×
-                  </button>
                 </div>
 
-                {spawn.variants.length > 0 && (
-                  <ol className="mk-variants">
-                    {spawn.variants.map((v) => (
-                      <li key={v.id}>
-                        <code>{v.setpos}</code>
-                        <code className="muted">{v.viewpos}</code>
-                      </li>
-                    ))}
-                  </ol>
-                )}
+                {place.roles.map((spawn) => (
+                  <div
+                    key={spawn.id}
+                    className={`mk-spawn ${spawn.id === activeSpawnId ? "active" : ""}`}
+                  >
+                    <div className="mk-spawn-head">
+                      <span className="mk-dot" style={{ background: ROLE_COLOUR[spawn.role] ?? "#888" }} />
+                      <strong>{spawn.role}</strong>
+                      {spawn.canBePlanter && <span className="mk-tag">{t("maker.plantSpot")}</span>}
+                      <span className="mk-count">
+                        {t("maker.variantCount", { n: String(spawn.variants.length) })}
+                      </span>
+
+                      <button
+                        className="btn mk-small"
+                        disabled={busy}
+                        onClick={() =>
+                          post({
+                            map,
+                            name: spawn.name,
+                            role: spawn.role,
+                            bombsite: spawn.bombsite,
+                            team: spawn.team,
+                            canBePlanter: spawn.canBePlanter,
+                          })
+                        }
+                      >
+                        {t("maker.selectInGame")}
+                      </button>
+
+                      <button
+                        className="btn mk-small mk-danger"
+                        disabled={busy}
+                        title={t("maker.deleteSpawn")}
+                        aria-label={`${t("maker.deleteSpawn")}: ${spawn.name} (${spawn.role})`}
+                        onClick={() => remove(spawn)}
+                      >
+                        ×
+                      </button>
+                    </div>
+
+                    {spawn.variants.length > 0 && (
+                      <ol className="mk-variants">
+                        {spawn.variants.map((v) => (
+                          <li key={v.id}>
+                            <code>{v.setpos}</code>
+                            <code className="muted">{v.viewpos}</code>
+                          </li>
+                        ))}
+                      </ol>
+                    )}
+                  </div>
+                ))}
               </div>
             ))}
           </div>
