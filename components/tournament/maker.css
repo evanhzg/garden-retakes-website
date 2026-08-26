@@ -187,3 +187,29 @@
   border-color: var(--color-accent);
   color: var(--color-accent);
 }
+
+/* The three steps, and where the handover between website and game happens.
+   Without this the tool reads as two unrelated halves. */
+.mk-steps {
+  margin: var(--space-3) 0;
+  padding-left: 1.4em;
+  display: grid;
+  gap: 4px;
+  font-size: 13px;
+  color: var(--color-text-muted);
+  max-width: 80ch;
+}
+
+.mk-steps strong {
+  color: var(--color-text);
+}
+
+/* Only while a session is open — the state where work exists but is not saved
+   yet is the one worth being loud about. */
+.mk-pending {
+  margin: 0 0 var(--space-2);
+  padding: 8px 11px;
+  border-left: 3px solid var(--color-accent);
+  background: color-mix(in srgb, var(--color-accent) 10%, transparent);
+  font-size: 13px;
+}

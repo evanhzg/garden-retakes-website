@@ -238,6 +238,23 @@ export default function MakerTool({
         </button>
       </div>
 
+      {/* What the buttons above actually do, in order.
+          The tool has two halves and the handover between them was invisible:
+          you place variants in game, and nothing is written to the map until
+          GENERATE — so it was reasonable to place forty positions and not know
+          whether anything had been saved, or whether saving was even needed. */}
+      <ol className="mk-steps">
+        <li>{t("maker.step1")}</li>
+        <li>{t("maker.step2")}</li>
+        <li>
+          <strong>{t("maker.step3")}</strong>
+        </li>
+      </ol>
+
+      {activeSpawnId !== null && (
+        <p className="mk-pending">{t("maker.pending")}</p>
+      )}
+
       {notice && <p className="mk-notice">{notice}</p>}
 
       <form

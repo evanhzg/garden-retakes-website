@@ -2645,5 +2645,9 @@
   "tournaments.organizerBlurb": "Créez et gérez des tournois, et éditez les spawns sur lesquels ils se jouent.",
   "tournaments.createOne": "Créer un tournoi",
   "tournaments.manage": "Gérer",
-  "tournaments.mapLibrary": "Bibliothèque de maps"
+  "tournaments.mapLibrary": "Bibliothèque de maps",
+  "maker.step1": "Nommez un spawn ci-dessous puis SÉLECTIONNER EN JEU. Le serveur passe en mode Maker — noclip actif, sans timer de round.",
+  "maker.step2": "Placez-vous à l'endroit voulu et appuyez sur E. Les lignes apparaissent ici au fur et à mesure ; tirez sur un marqueur pour le retirer.",
+  "maker.step3": "Rien n'est écrit sur la map tant que vous n'avez pas cliqué GÉNÉRER. Annuler abandonne la session.",
+  "maker.pending": "Une session est ouverte. Ces variantes ne sont pas encore enregistrées — GÉNÉRER les écrit sur la map."
 }
