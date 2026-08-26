@@ -74,7 +74,44 @@ export default function MakerTool({
 }) {
   const { t } = useI18n();
 
-  const [map, setMap] = useState<string | null>(null);
+  /**
+   * The map being authored, mirrored into ?map= so a reload stays put.
+   *
+   * Authoring is long and interruptible — you refresh after a plugin redeploy,
+   * you open the page again on a second screen, you come back to it tomorrow —
+   * and landing back on the map grid every time means re-finding the map before
+   * you can see whether the last thing you placed arrived. It also makes the
+   * URL shareable, which is how you tell somebody which map you are on.
+   *
+   * Initialised from the URL rather than set by an effect afterwards, so the
+   * first paint is already the right map instead of the grid flashing first.
+   */
+  const [map, setMapState] = useState<string | null>(() => {
+    if (typeof window === "undefined") return null;
+    const wanted = new URLSearchParams(window.location.search).get("map");
+    // Only a map the library actually has. A stale or hand-edited value would
+    // otherwise poll for spawns on a map that does not exist and show an empty
+    // board with no explanation.
+    return wanted && maps.some((m) => m.mapName === wanted) ? wanted : null;
+  });
+
+  /**
+   * history.replaceState rather than the Next router: this is a client
+   * workspace, and router.replace would round-trip to the server on every map
+   * change. Replace rather than push, so Back leaves the Maker instead of
+   * walking through every map you looked at.
+   */
+  const setMap = useCallback((next: string | null) => {
+    setMapState(next);
+
+    if (typeof window === "undefined") return;
+
+    const url = new URL(window.location.href);
+    if (next) url.searchParams.set("map", next);
+    else url.searchParams.delete("map");
+
+    window.history.replaceState({}, "", url);
+  }, []);
   const [spawns, setSpawns] = useState<Spawn[]>([]);
   const [activeSpawnId, setActiveSpawnId] = useState<number | null>(null);
   const [busy, setBusy] = useState(false);
