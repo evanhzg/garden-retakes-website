@@ -97,3 +97,15 @@
   position: relative;
   cursor: default;
 }
+
+/* A box that links to its match page. The box keeps its own look — the link is
+   a target, not a style. */
+.br-link {
+  display: block;
+  color: inherit;
+  text-decoration: none;
+}
+
+.br-link:hover .br-match {
+  border-color: var(--color-accent);
+}

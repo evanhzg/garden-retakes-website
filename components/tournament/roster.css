@@ -1,0 +1,132 @@
+/* The organizer's roster editor.
+   Names are inputs rather than labels-with-a-pencil: the whole reason this
+   panel exists is that names need fixing, so editing is the default posture. */
+
+.rs {
+  display: grid;
+  gap: var(--space-3);
+}
+
+.rs-notice {
+  margin: 0;
+  padding: 8px 11px;
+  border-left: 3px solid var(--color-accent);
+  background: color-mix(in srgb, var(--color-accent) 10%, transparent);
+  font-size: 13px;
+}
+
+.rs-team {
+  padding: var(--space-3);
+  border: 1px solid var(--color-divider);
+  background: var(--color-surface);
+}
+
+/* Withdrawn and disqualified teams stay visible and recede — removing one
+   makes a bracket that references it impossible to read. */
+.rs-team.st-withdrawn,
+.rs-team.st-disqualified {
+  opacity: 0.55;
+}
+
+.rs-head {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  flex-wrap: wrap;
+  margin-bottom: var(--space-2);
+}
+
+.rs-seed {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-width: 22px;
+  height: 22px;
+  border: 1px solid var(--color-divider);
+  font-size: 11px;
+  color: var(--color-text-muted);
+}
+
+.rs-name {
+  flex: 1;
+  min-width: 160px;
+  padding: 6px 9px;
+  border: 1px solid var(--color-divider);
+  background: var(--color-bg);
+  color: var(--color-text);
+  font: inherit;
+  font-size: 14px;
+  font-weight: 700;
+}
+
+.rs-small {
+  padding: 4px 10px;
+  font-size: 12px;
+}
+
+.rs-invite {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin-bottom: var(--space-2);
+  padding: 6px 9px;
+  border: 1px dashed var(--color-divider);
+}
+
+.rs-invite code {
+  flex: 1;
+  font-family: var(--font-mono);
+  font-size: 11px;
+  overflow-wrap: anywhere;
+  color: var(--color-text-muted);
+}
+
+.rs-members {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: grid;
+  gap: 6px;
+}
+
+.rs-members li {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  flex-wrap: wrap;
+  font-size: 13px;
+}
+
+.rs-profile {
+  min-width: 130px;
+  color: inherit;
+}
+
+.rs-cap {
+  color: var(--color-accent);
+  font-size: 10px;
+}
+
+/* The tournament name, next to the account name it overrides — seeing both at
+   once is the point, since the override only makes sense against the original. */
+.rs-display {
+  width: 170px;
+  padding: 4px 8px;
+  border: 1px solid var(--color-divider);
+  background: var(--color-bg);
+  color: var(--color-text);
+  font: inherit;
+  font-size: 12.5px;
+}
+
+.rs-roles {
+  font-size: 10.5px;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  color: var(--color-text-muted);
+}
+
+.chip.rs-accepted { border-color: #4ade80; color: #4ade80; }
+.chip.rs-invited  { border-color: var(--color-text-muted); color: var(--color-text-muted); }
+.chip.rs-removed,
+.chip.rs-declined { opacity: 0.6; }

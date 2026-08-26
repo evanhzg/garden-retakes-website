@@ -4,6 +4,7 @@ import { useState } from "react";
 import Link from "next/link";
 import { useI18n } from "@/components/I18nProvider";
 import Bracket, { type BracketMatch } from "./Bracket";
+import Rules, { type RulesFacts } from "./Rules";
 import type { MatchPreview } from "@/lib/tournament/preview";
 import type { PlayerTotals } from "@/lib/tournament/stats";
 import "./view.css";
@@ -40,7 +41,7 @@ export type TeamView = {
 
 export type PoolMap = { map: string; label: string; image: string | null };
 
-type Tab = "bracket" | "teams" | "stats" | "pool";
+type Tab = "bracket" | "teams" | "stats" | "pool" | "rules";
 
 export default function TournamentView({
   stages,
@@ -48,12 +49,16 @@ export default function TournamentView({
   stats,
   pool,
   previews,
+  rules,
+  slug,
 }: {
   stages: StageView[];
   teams: TeamView[];
   stats: (PlayerTotals & { teamName: string | null })[];
   pool: PoolMap[];
   previews: Record<number, MatchPreview>;
+  rules: RulesFacts;
+  slug: string;
 }) {
   const { t } = useI18n();
   const [tab, setTab] = useState<Tab>("bracket");
@@ -63,6 +68,7 @@ export default function TournamentView({
     { id: "teams", label: t("tournaments.tabs.teams"), count: teams.length },
     { id: "stats", label: t("tournaments.tabs.stats"), count: stats.length },
     { id: "pool", label: t("tournaments.tabs.pool"), count: pool.length },
+    { id: "rules", label: t("tournaments.tabs.rules") },
   ];
 
   return (
@@ -85,16 +91,25 @@ export default function TournamentView({
       </div>
 
       <div className="pro-panel" role="tabpanel" id={`tv-panel-${tab}`} aria-labelledby={`tv-tab-${tab}`}>
-        {tab === "bracket" && <BracketPanel stages={stages} previews={previews} />}
+        {tab === "bracket" && <BracketPanel stages={stages} previews={previews} slug={slug} />}
         {tab === "teams" && <TeamsPanel teams={teams} />}
         {tab === "stats" && <StatsPanel stats={stats} />}
         {tab === "pool" && <PoolPanel pool={pool} />}
+        {tab === "rules" && <Rules facts={rules} />}
       </div>
     </section>
   );
 }
 
-function BracketPanel({ stages, previews }: { stages: StageView[]; previews: Record<number, MatchPreview> }) {
+function BracketPanel({
+  stages,
+  previews,
+  slug,
+}: {
+  stages: StageView[];
+  previews: Record<number, MatchPreview>;
+  slug: string;
+}) {
   const { t } = useI18n();
 
   if (stages.length === 0) {
@@ -139,7 +154,7 @@ function BracketPanel({ stages, previews }: { stages: StageView[]; previews: Rec
               </table>
             </div>
           ) : (
-            <Bracket matches={stage.matches} previews={previews} />
+            <Bracket matches={stage.matches} previews={previews} slug={slug} />
           )}
         </section>
       ))}

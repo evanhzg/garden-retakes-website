@@ -7,6 +7,10 @@ import { standings } from "@/lib/tournament/bracket";
 import { previewsForTournament, type MatchPreview } from "@/lib/tournament/preview";
 import { tournamentStats } from "@/lib/tournament/statsDb";
 import { canManage, getTournamentContext } from "@/lib/tournamentAuth";
+import Countdown from "@/components/tournament/Countdown";
+import Community from "@/components/tournament/Community";
+import type { RulesFacts } from "@/components/tournament/Rules";
+import { notFound as pageNotFound } from "next/navigation";
 
 // force-dynamic, not revalidate: the Manage button depends on who is looking,
 // and a shared cache would show one viewer their controls on somebody else visit.
@@ -39,6 +43,11 @@ export default async function TournamentPage({ params }: { params: { slug: strin
 
   const ctx = await getTournamentContext();
   const canManageThis = await canManage(ctx, tournament.Id);
+
+  // An unpublished tournament does not exist as far as anybody else is
+  // concerned. Not "closed" — invisible: telling a stranger that an organizer
+  // has a half-built event is leaking work in progress.
+  if (!tournament.Published && !canManageThis) pageNotFound();
 
   const [matches, previewMap, stats] = await Promise.all([
     prisma.tournamentMatch.findMany({
@@ -142,6 +151,24 @@ export default async function TournamentPage({ params }: { params: { slug: strin
 
   const previews: Record<number, MatchPreview> = Object.fromEntries(previewMap);
 
+  // Generated from the tournament's own settings rather than written down. A
+  // rules page that says BO3 when the tournament is BO1 is worse than none, and
+  // that is what a hand-maintained one becomes.
+  const rules: RulesFacts = {
+    teamSize: tournament.TeamSize,
+    maxTeams: tournament.MaxTeams,
+    teamCount: tournament.Teams.length,
+    format: tournament.Format,
+    seeding: tournament.Seeding,
+    bestOf: tournament.BestOf,
+    finalBestOf: tournament.FinalBestOf,
+    startsAt: tournament.StartsAt?.toISOString() ?? null,
+    rulesText: tournament.RulesText ?? "",
+    prizeText: tournament.PrizeText ?? "",
+    sponsorsText: tournament.SponsorsText ?? "",
+    pool,
+  };
+
   return (
     <>
       <section className="hero hero-compact">
@@ -164,6 +191,16 @@ export default async function TournamentPage({ params }: { params: { slug: strin
             <Link href={`/tournaments/${tournament.Slug}/live`}>{t("tournamentAdmin.liveWall")}</Link>
           </p>
 
+          <Countdown
+            startsAt={tournament.StartsAt?.toISOString() ?? null}
+            startedAt={tournament.StartedAt?.toISOString() ?? null}
+            state={tournament.State}
+            published={tournament.Published}
+            maxTeams={tournament.MaxTeams}
+            teamCount={tournament.Teams.length}
+            visibility={tournament.Visibility}
+          />
+
           {/* Only for somebody who actually runs this one. */}
           {canManageThis && (
             <p style={{ marginTop: 10 }}>
@@ -175,12 +212,20 @@ export default async function TournamentPage({ params }: { params: { slug: strin
         </div>
       </section>
 
+      <Community
+        discordUrl={tournament.DiscordUrl}
+        teamSpeakUrl={tournament.TeamSpeakUrl}
+        twitchChannels={tournament.TwitchChannels}
+      />
+
       <TournamentView
         stages={stages}
         teams={teams}
         stats={stats.map((row) => ({ ...row, teamName: teamOfPlayer.get(row.steamId) ?? null }))}
         pool={pool}
         previews={previews}
+        rules={rules}
+        slug={tournament.Slug}
       />
     </>
   );

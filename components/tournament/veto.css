@@ -1,0 +1,188 @@
+/* Ready-up and the veto.
+   Read under time pressure by two people who are also in a Discord call, so:
+   big targets, one obvious next action, and a clock that cannot be missed. */
+
+.vt {
+  display: grid;
+  gap: var(--space-3);
+}
+
+.vt-notice {
+  margin: 0;
+  padding: 8px 11px;
+  border-left: 3px solid var(--color-accent);
+  background: color-mix(in srgb, var(--color-accent) 10%, transparent);
+  font-size: 13px;
+}
+
+.vt-lead {
+  margin: 0;
+  font-size: 14px;
+}
+
+.vt-done {
+  font-weight: 700;
+  color: #4ade80;
+}
+
+/* ------------------------------------------------------------- ready-up */
+
+.vt-ready {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+  gap: var(--space-3);
+}
+
+.vt-side {
+  display: grid;
+  gap: 6px;
+  justify-items: center;
+  padding: var(--space-4) var(--space-3);
+  border: 1px solid var(--color-divider);
+  background: var(--color-surface);
+  text-align: center;
+}
+
+.vt-side.on {
+  border-color: #4ade80;
+  background: color-mix(in srgb, #4ade80 10%, transparent);
+}
+
+.vt-side strong {
+  font-size: 15px;
+}
+
+.vt-side span {
+  font-size: 12px;
+  color: var(--color-text-muted);
+}
+
+.vt-force {
+  display: flex;
+  align-items: center;
+  gap: var(--space-2);
+  flex-wrap: wrap;
+  padding-top: var(--space-2);
+  border-top: 1px solid var(--color-divider);
+  font-size: 12.5px;
+}
+
+/* ----------------------------------------------------------------- turn */
+
+.vt-turn {
+  display: grid;
+  grid-template-columns: auto 1fr auto;
+  align-items: baseline;
+  gap: 10px;
+  padding: var(--space-3);
+  border: 1px solid var(--color-accent);
+  background: color-mix(in srgb, var(--color-accent) 8%, transparent);
+}
+
+.vt-turn-team {
+  font-weight: 800;
+  font-size: 15px;
+}
+
+.vt-turn-kind {
+  font-size: 13px;
+  color: var(--color-text-muted);
+}
+
+.vt-clock {
+  font-family: var(--font-mono);
+  font-size: 20px;
+  font-weight: 700;
+}
+
+.vt-clock.low {
+  color: var(--color-accent);
+}
+
+.vt-bar {
+  grid-column: 1 / -1;
+  height: 4px;
+  background: color-mix(in srgb, var(--color-text) 12%, transparent);
+}
+
+.vt-bar-fill {
+  height: 100%;
+  background: var(--color-text);
+  /* Linear, and matched to the poll rather than the tick, so it slides instead
+     of stepping. */
+  transition: width 0.25s linear;
+}
+
+.vt-bar-fill.low {
+  background: var(--color-accent);
+}
+
+/* ----------------------------------------------------------------- maps */
+
+.vt-maps {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(140px, 1fr));
+  gap: var(--space-2);
+}
+
+.vt-map {
+  display: grid;
+  gap: 2px;
+  padding: var(--space-3) var(--space-2);
+  border: 1px solid var(--color-divider);
+  background: var(--color-surface);
+  color: var(--color-text);
+  font: inherit;
+  font-size: 14px;
+  font-weight: 600;
+  cursor: pointer;
+  text-transform: capitalize;
+}
+
+.vt-map:hover:not(:disabled) {
+  border-color: var(--color-accent);
+  transform: translateY(-1px);
+}
+
+.vt-map:disabled {
+  cursor: not-allowed;
+}
+
+/* A banned map stays on the board, struck through. Removing it would make the
+   veto impossible to follow after the fact, which is most of what a veto is
+   for. */
+.vt-map.banned {
+  opacity: 0.4;
+  text-decoration: line-through;
+}
+
+.vt-map.picked {
+  border-color: #4ade80;
+  color: #4ade80;
+  opacity: 1;
+}
+
+.vt-map-tag {
+  font-size: 10px;
+  font-weight: 400;
+  text-transform: uppercase;
+  letter-spacing: 0.07em;
+  color: var(--color-text-muted);
+}
+
+.vt-sides {
+  display: flex;
+  gap: var(--space-3);
+  flex-wrap: wrap;
+}
+
+.vt-side-btn {
+  flex: 1 1 160px;
+  padding: var(--space-4);
+  font-size: 15px;
+}
+
+.vt-hint {
+  margin: 0;
+  font-size: 12.5px;
+}

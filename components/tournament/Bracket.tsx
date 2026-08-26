@@ -1,5 +1,6 @@
 "use client";
 
+import Link from "next/link";
 import MatchBubble from "./MatchBubble";
 import type { MatchPreview } from "@/lib/tournament/preview";
 import "./bracket.css";
@@ -30,10 +31,13 @@ export type BracketMatch = {
 export default function Bracket({
   matches,
   previews,
+  slug,
 }: {
   matches: BracketMatch[];
   /** Keyed by match id. Absent is fine — the box simply has no bubble. */
   previews?: Record<number, MatchPreview>;
+  /** When given, every box links to its own match page. */
+  slug?: string;
 }) {
   if (matches.length === 0) {
     return null;
@@ -61,6 +65,7 @@ export default function Bracket({
                 teamB={match.teamB?.name ?? "—"}
                 className="br-slot"
               >
+                <BoxLink slug={slug} matchId={match.id}>
                 <div className={`br-match ${match.state === "live" ? "live" : ""}`}>
                   <Row
                     team={match.teamA}
@@ -77,12 +82,37 @@ export default function Bracket({
 
                   {match.bestOf > 1 && <span className="br-bo">BO{match.bestOf}</span>}
                 </div>
+                </BoxLink>
               </MatchBubble>
             ))}
           </div>
         );
       })}
     </div>
+  );
+}
+
+/**
+ * A bracket box, linked to its match page when there is one to link to.
+ *
+ * A plain wrapper when there is not, rather than a disabled link: a box for a
+ * match whose feeder has not been played yet leads nowhere useful, and a link
+ * that goes nowhere is worse than text.
+ */
+function BoxLink({
+  slug,
+  matchId,
+  children,
+}: {
+  slug?: string;
+  matchId: number;
+  children: React.ReactNode;
+}) {
+  if (!slug) return <>{children}</>;
+  return (
+    <Link className="br-link" href={`/tournaments/${slug}/match/${matchId}`}>
+      {children}
+    </Link>
   );
 }
 

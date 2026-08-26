@@ -1,0 +1,79 @@
+/* The Rules tab.
+   Facts as a definition list, prose as markdown. The generated half is first
+   because it is the half that cannot be wrong. */
+
+.rl {
+  display: grid;
+  gap: var(--space-5);
+  max-width: 80ch;
+}
+
+.rl-block h3 {
+  margin: 0 0 var(--space-2);
+  padding-bottom: 6px;
+  border-bottom: 1px solid var(--color-divider);
+  font-size: 14px;
+  letter-spacing: 0.02em;
+}
+
+.rl-facts {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
+  gap: var(--space-3);
+  margin: 0;
+}
+
+.rl-facts > div {
+  display: grid;
+  gap: 2px;
+}
+
+.rl-facts dt {
+  font-size: 11px;
+  font-weight: 800;
+  letter-spacing: 0.07em;
+  text-transform: uppercase;
+  color: var(--color-text-muted);
+}
+
+.rl-facts dd {
+  margin: 0;
+  font-size: 14px;
+  font-weight: 600;
+}
+
+.rl-pool {
+  margin: 0;
+  font-size: 14px;
+}
+
+.rl-steps,
+.rl-list {
+  margin: 0;
+  padding-left: 1.35em;
+  display: grid;
+  gap: 6px;
+  font-size: 13.5px;
+  line-height: 1.55;
+}
+
+.rl-md {
+  font-size: 13.5px;
+  line-height: 1.6;
+}
+
+.rl-md :where(p, ul, ol) {
+  margin: 0 0 var(--space-2);
+}
+
+.rl-md :where(h1, h2, h3, h4) {
+  font-size: 14px;
+  margin: var(--space-3) 0 var(--space-1);
+}
+
+.rl-md code {
+  font-family: var(--font-mono);
+  font-size: 12.5px;
+  background: color-mix(in srgb, var(--color-text) 8%, transparent);
+  padding: 1px 5px;
+}

@@ -1,9 +1,12 @@
 import Link from "next/link";
+import { headers } from "next/headers";
 import { notFound } from "next/navigation";
 import { canManage, getTournamentContext } from "@/lib/tournamentAuth";
 import { prisma } from "@/lib/db";
 import { getT } from "@/lib/serverI18n";
 import MatchAdmin from "@/components/tournament/MatchAdmin";
+import Settings, { type LibraryMap, type SettingsView } from "@/components/tournament/Settings";
+import Roster, { type RosterTeam } from "@/components/tournament/Roster";
 import { previewsForTournament } from "@/lib/tournament/preview";
 
 export const dynamic = "force-dynamic";
@@ -37,25 +40,100 @@ export default async function TournamentAdminPage({
     where: { Id: id },
     include: {
       Stages: { orderBy: { Ordinal: "asc" } },
-      Teams: { orderBy: { Name: "asc" } },
+      Teams: {
+        orderBy: [{ Seed: "asc" }, { Name: "asc" }],
+        include: { Members: { orderBy: { Id: "asc" } } },
+      },
+      Maps: { orderBy: { Ordinal: "asc" } },
+      _count: { select: { Teams: true } },
     },
   });
 
   if (!tournament) notFound();
 
-  const [matches, previews] = await Promise.all([
+  const [matches, previews, library] = await Promise.all([
     prisma.tournamentMatch.findMany({
       where: { TournamentId: id },
       orderBy: [{ Round: "asc" }, { Slot: "asc" }],
     }),
     previewsForTournament(id),
+    prisma.gardenMap.findMany({
+      where: { TournamentReady: true },
+      orderBy: { MapName: "asc" },
+      select: { MapName: true, DisplayName: true },
+    }),
   ]);
+
+  // Player names for the roster panel. One query for every member.
+  const memberIds = tournament.Teams.flatMap((team) => team.Members.map((m) => m.SteamId));
+  const profiles = memberIds.length
+    ? await prisma.playerProfile.findMany({
+        where: { SteamId: { in: memberIds } },
+        select: { SteamId: true, LastKnownName: true },
+      })
+    : [];
+  const nameOf = new Map(profiles.map((p) => [p.SteamId.toString(), p.LastKnownName ?? ""]));
 
   const teamName = new Map(tournament.Teams.map((x) => [x.Id, x.Name]));
 
   // Anything not finished is something somebody may need to act on; a finished
-  // match is history and does not need a panel competing for attention.
+  // match is history and should not compete for attention.
   const actionable = matches.filter((m) => m.State !== "finished");
+
+  const proto = headers().get("x-forwarded-proto") ?? "https";
+  const host = headers().get("host") ?? "retakes.fr";
+  const origin = `${proto}://${host}`;
+
+  const view: SettingsView = {
+    id: tournament.Id,
+    slug: tournament.Slug,
+    name: tournament.Name,
+    description: tournament.Description ?? "",
+    state: tournament.State,
+    published: tournament.Published,
+    visibility: tournament.Visibility === "invite" ? "invite" : "public",
+    inviteToken: tournament.InviteToken,
+    maxTeams: tournament.MaxTeams,
+    teamSize: tournament.TeamSize,
+    teamCount: tournament._count.Teams,
+    format: tournament.Format,
+    seeding: tournament.Seeding,
+    bestOf: tournament.BestOf,
+    finalBestOf: tournament.FinalBestOf,
+    startsAt: tournament.StartsAt?.toISOString() ?? null,
+    startedAt: tournament.StartedAt?.toISOString() ?? null,
+    maps: tournament.Maps.map((m) => m.Map),
+    rulesText: tournament.RulesText ?? "",
+    prizeText: tournament.PrizeText ?? "",
+    sponsorsText: tournament.SponsorsText ?? "",
+    discordUrl: tournament.DiscordUrl ?? "",
+    teamSpeakUrl: tournament.TeamSpeakUrl ?? "",
+    twitchChannels: tournament.TwitchChannels ?? "",
+  };
+
+  const teams: RosterTeam[] = tournament.Teams.map((team) => ({
+    id: team.Id,
+    name: team.Name,
+    tag: team.Tag,
+    status: team.Status,
+    seed: team.Seed,
+    inviteToken: team.InviteToken,
+    captainSteamId: team.CaptainSteamId.toString(),
+    members: team.Members.map((m) => ({
+      steamId: m.SteamId.toString(),
+      profileName: nameOf.get(m.SteamId.toString()) || m.SteamId.toString(),
+      displayName: m.DisplayName,
+      captain: m.IsCaptain,
+      status: m.Status,
+      roleT: m.RoleT,
+      roleCt: m.RoleCt,
+    })),
+  }));
+
+  const libraryMaps: LibraryMap[] = library.map((m) => ({
+    name: m.MapName,
+    label: m.DisplayName || m.MapName,
+  }));
 
   return (
     <>
@@ -70,23 +148,23 @@ export default async function TournamentAdminPage({
           {" · "}
           <Link href={`/tournaments/${tournament.Slug}/live`}>{t("tournamentAdmin.liveWall")}</Link>
           {" · "}
-          {tournament.Teams.length} {t("tournaments.teams").toLowerCase()}
-          {" · "}
-          <span className="chip">{tournament.State}</span>
+          <Link href={`/tournaments/${tournament.Slug}/register`}>{t("setup.registerLink")}</Link>
         </p>
-
-        {tournament.Stages.length === 0 && (
-          <div className="empty-hint">
-            <p style={{ margin: 0 }}>{t("tournamentAdmin.noStages")}</p>
-          </div>
-        )}
       </section>
 
-      {actionable.length === 0 ? (
-        <section className="panel">
-          <p className="muted">{t("tournamentAdmin.noMatches")}</p>
-        </section>
-      ) : (
+      <section className="panel">
+        <h3>{t("settings.title")}</h3>
+        <Settings tournament={view} library={libraryMaps} adminKey={searchParams.key} origin={origin} />
+      </section>
+
+      <section className="panel">
+        <h3>
+          {t("tournaments.teams")} <span className="muted">({teams.length})</span>
+        </h3>
+        <Roster teams={teams} adminKey={searchParams.key} origin={origin} slug={tournament.Slug} />
+      </section>
+
+      {actionable.length > 0 && (
         <section className="panel">
           <h3>{t("tournamentAdmin.matches")}</h3>
 
