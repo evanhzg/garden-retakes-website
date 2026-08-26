@@ -1,3 +1,4 @@
+import BackToTournament from "@/components/tournament/BackToTournament";
 import Link from "next/link";
 import { notFound } from "next/navigation";
 import { prisma } from "@/lib/db";
@@ -49,13 +50,18 @@ export default async function JoinPage({
 
   return (
     <>
+      <BackToTournament slug={tournament.Slug} />
+
       <section className="hero hero-compact">
         <div className="hero-inner">
           <p className="eyebrow">{tournament.Name}</p>
           <h1 className="grad">{bad ? t("join.badTitle") : team!.Name}</h1>
-          <p className="muted">
-            <Link href={`/tournaments/${tournament.Slug}`}>{t("register.backToTournament")}</Link>
-          </p>
+          {!bad && (
+            <p className="muted">
+              {team!.Members.length} / {tournament.TeamSize}{" "}
+              {t("tournaments.players").toLowerCase()}
+            </p>
+          )}
         </div>
       </section>
 

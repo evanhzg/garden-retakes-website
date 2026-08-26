@@ -86,6 +86,65 @@ export default function FriendsSidebar() {
   const toast = useToast();
 
   const [isOpen, setIsOpen] = useState(false);
+
+  /**
+   * The panel shrinks when you click away from it.
+   *
+   * It is a fixed overlay down the side of every page, so leaving it open is
+   * leaving a third of a phone screen covered by something you have finished
+   * with. Closing on an outside click is what every other panel on this site
+   * does, and the one that did not was this one.
+   *
+   * Capture phase, and the bubble is excluded: a player resume opened FROM the
+   * rail is portalled to <body>, so a plain contains() check would see a click
+   * inside the bubble as a click outside the panel and shut it underneath.
+   */
+  const panelRef = useRef<HTMLDivElement>(null);
+  const railRef = useRef<HTMLDivElement>(null);
+
+  useEffect(() => {
+    if (!isOpen) return;
+
+    const onPointerDown = (event: PointerEvent) => {
+      const target = event.target as Node | null;
+      if (!target) return;
+
+      if (panelRef.current?.contains(target)) return;
+      if (railRef.current?.contains(target)) return;
+      if ((target as HTMLElement).closest?.(".player-bubble, .friends-bubble")) return;
+
+      setIsOpen(false);
+    };
+
+    document.addEventListener("pointerdown", onPointerDown, true);
+    return () => document.removeEventListener("pointerdown", onPointerDown, true);
+  }, [isOpen]);
+
+  /**
+   * Publish the header's real height as --social-top.
+   *
+   * The rail and the panel both run from directly under the header to the
+   * bottom of the viewport, so they need that number. globals.css already
+   * carries a warning about the last attempt at this: a hard-coded 72px that
+   * "broke whenever the header wrapped". Measuring is the fix — a wrapped
+   * header on a narrow screen reports its wrapped height, and the rail follows.
+   */
+  useEffect(() => {
+    const header = document.querySelector<HTMLElement>(".site-header");
+    if (!header) return;
+
+    const publish = () => {
+      document.documentElement.style.setProperty(
+        "--social-top",
+        `${Math.round(header.getBoundingClientRect().height)}px`,
+      );
+    };
+
+    publish();
+    const observer = new ResizeObserver(publish);
+    observer.observe(header);
+    return () => observer.disconnect();
+  }, []);
   const [friends, setFriends] = useState<Friend[]>([]);
   const [pendingRequests, setPendingRequests] = useState<Friend[]>([]);
   const [onlineUsers, setOnlineUsers] = useState<string[]>([]);
@@ -467,7 +526,7 @@ export default function FriendsSidebar() {
        *
        * Hidden entirely while an overlay owns the screen — the accept window
        * and the loadout gate both cover the page, and this is position:fixed. */}
-      <div className={`friends-rail ${isOpen ? "hidden" : ""}`}>
+      <div className={`friends-rail ${isOpen ? "hidden" : ""}`} ref={railRef}>
         <button
           className="friends-rail-expand"
           onClick={() => setIsOpen(true)}
@@ -481,26 +540,22 @@ export default function FriendsSidebar() {
         </button>
 
         <div className="friends-rail-list">
-          {onlineFriends.slice(0, 12).map((f) => (
-            <button
-              key={f.id}
-              className="friends-rail-friend"
-              onClick={() => {
-                setIsOpen(true);
-                openThread(f.friendId);
-              }}
-              title={f.name}
-              aria-label={f.name}
-            >
-              <AvatarStatus
-                steamId={f.friendId}
-                name={f.name}
-                src={f.avatarUrl}
-                presence="online"
-                size={34}
-              />
-              {(unread[f.friendId] ?? 0) > 0 && <span className="dot-badge" />}
-            </button>
+          {/* The whole online list, not the first twelve. The rail is full
+              height now, so it has room for them — and a friend silently
+              missing from a truncated list is worse than a scrollbar. */}
+          {onlineFriends.map((f) => (
+            <PlayerBubble key={f.id} steamId={f.friendId} name={f.name} isFriend>
+              <span className="friends-rail-friend" title={f.name} aria-label={f.name}>
+                <AvatarStatus
+                  steamId={f.friendId}
+                  name={f.name}
+                  src={f.avatarUrl}
+                  presence="online"
+                  size={34}
+                />
+                {(unread[f.friendId] ?? 0) > 0 && <span className="dot-badge" />}
+              </span>
+            </PlayerBubble>
           ))}
           {onlineFriends.length === 0 && (
             <span className="friends-rail-none" title={t("social.friends.noneOnline")}>
@@ -510,7 +565,25 @@ export default function FriendsSidebar() {
         </div>
       </div>
 
-      <div className={`friends-sidebar ${isOpen ? "open" : ""}`}>
+      {/* The phone's way in.
+          The rail is display:none below 760px — a full-height column down the
+          side of a phone is most of the phone — and the button that used to
+          replace it, .friends-toggle-btn, exists only as three dead rules in
+          globals.css. So on a phone there was no way to open this panel at all.
+          A single floating button restores it without giving up the screen. */}
+      <button
+        className={`friends-fab ${isOpen ? "hidden" : ""}`}
+        onClick={() => setIsOpen(true)}
+        aria-label={t("social.friends.toggleBtn")}
+        title={t("social.friends.toggleBtn")}
+      >
+        <Users size={18} />
+        {(pendingRequests.length > 0 || totalUnread > 0) && (
+          <span className="notification-badge">{pendingRequests.length + totalUnread}</span>
+        )}
+      </button>
+
+      <div className={`friends-sidebar ${isOpen ? "open" : ""}`} ref={panelRef}>
         <div className="friends-header">
           <h2>{t("social.friends.header")}</h2>
           <button className="close-btn" onClick={() => setIsOpen(false)} aria-label="Close">

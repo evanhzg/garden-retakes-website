@@ -69,6 +69,32 @@ export async function tournamentStats(tournamentId: number): Promise<PlayerTotal
 }
 
 /**
+ * Every player's line across every tournament, best first.
+ *
+ * The same aggregation as `tournamentStats`, without the tournament filter, so
+ * the numbers are the rounds-weighted ones rather than an average of averages.
+ * `teamId` stays null here on purpose: a player's team is a per-tournament
+ * fact, and carrying one of them into a career table would be arbitrary.
+ */
+export async function allTournamentStats(minRounds = 0): Promise<PlayerTotals[]> {
+  const rows = await prisma.tournamentPlayerStat.findMany();
+  if (rows.length === 0) return [];
+
+  const profiles = await prisma.playerProfile.findMany({
+    where: { SteamId: { in: Array.from(new Set(rows.map((r) => r.SteamId))) } },
+    select: { SteamId: true, LastKnownName: true },
+  });
+  const names = Object.fromEntries(profiles.map((p) => [p.SteamId.toString(), p.LastKnownName ?? ""]));
+
+  const totals = aggregate(
+    rows.map((r) => ({ ...asRow(r), teamId: null })),
+    names,
+  );
+
+  return minRounds > 0 ? totals.filter((p) => p.roundsPlayed >= minRounds) : totals;
+}
+
+/**
  * One player's record, one line per tournament they appeared in.
  *
  * Ordered newest first, because a profile is read as "what have they been doing

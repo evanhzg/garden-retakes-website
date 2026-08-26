@@ -186,3 +186,59 @@
   margin: 0;
   font-size: 12.5px;
 }
+
+/* ------------------------------------------------------------------ mobile */
+
+@media (max-width: 640px) {
+  /* The turn header stacks. `auto 1fr auto` put the team name, the action and
+     a 20px monospace clock on one line; with a real team name in the first
+     track the clock was the thing that got squeezed, and the clock is the one
+     part of this panel that must never be hard to read — there are 30 seconds
+     on it. */
+  .vt-turn {
+    grid-template-columns: 1fr auto;
+    align-items: center;
+    gap: 4px 10px;
+  }
+
+  .vt-turn-team {
+    grid-column: 1;
+  }
+
+  .vt-clock {
+    grid-column: 2;
+    grid-row: 1 / span 2;
+    font-size: 26px;
+    align-self: center;
+  }
+
+  .vt-turn-kind {
+    grid-column: 1;
+  }
+
+  /* Two columns of maps, and each one a proper thumb target. A veto is the one
+     part of the flow that is genuinely timed, so a mis-tap here costs a map. */
+  .vt-maps {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+
+  .vt-map {
+    min-height: 56px;
+    align-content: center;
+    /* Long map names must not force the grid wider than the screen. */
+    overflow-wrap: anywhere;
+  }
+
+  .vt-side-btn {
+    flex: 1 1 100%;
+    min-height: 52px;
+  }
+
+  .vt-ready {
+    grid-template-columns: 1fr;
+  }
+
+  .vt-force {
+    justify-content: center;
+  }
+}

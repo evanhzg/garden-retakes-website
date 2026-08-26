@@ -1,3 +1,4 @@
+import BackToTournament from "@/components/tournament/BackToTournament";
 import Link from "next/link";
 import { notFound } from "next/navigation";
 import { prisma } from "@/lib/db";
@@ -63,6 +64,8 @@ export default async function MatchPage({
 
   return (
     <>
+      <BackToTournament slug={params.slug} label={t("match.backToBracket")} />
+
       <section className="hero hero-compact">
         <div className="hero-inner">
           <p className="eyebrow">
@@ -108,6 +111,10 @@ export default async function MatchPage({
       {match.Maps.length > 0 && (
         <section className="panel">
           <h3>{t("tournaments.maps")}</h3>
+          {/* Four columns of map results overflow a phone. The wrapper scrolls
+              the table inside itself rather than taking the page sideways with
+              it, which is the pattern the rest of the site already uses. */}
+          <div className="pro-tablewrap">
           <table>
             <thead>
               <tr>
@@ -130,6 +137,7 @@ export default async function MatchPage({
               ))}
             </tbody>
           </table>
+          </div>
         </section>
       )}
     </>

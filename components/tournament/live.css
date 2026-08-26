@@ -4,7 +4,11 @@
 
 .lw {
   display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+  /* min(300px, 100%) rather than a bare 300px: auto-fit honours the track
+     minimum even when the container is narrower than it, so a plain 300px
+     overflowed a 360px phone once the panel's own padding was taken off. The
+     min() lets the single column shrink to fit instead. */
+  grid-template-columns: repeat(auto-fit, minmax(min(300px, 100%), 1fr));
   gap: var(--space-4);
   margin-top: var(--space-4);
 }

@@ -67,3 +67,36 @@
   height: 100%;
   border: 0;
 }
+
+/* ------------------------------------------------------------------ mobile */
+
+@media (max-width: 640px) {
+  /* Discord and TeamSpeak become full-width buttons. They are the two things a
+     player actually taps on this panel — often while the match is starting —
+     and a wrapped row of small pills is the wrong target for that. */
+  .cm-links {
+    display: grid;
+    grid-template-columns: 1fr;
+    gap: 8px;
+  }
+
+  .cm-links .btn {
+    width: 100%;
+    min-height: 44px;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    gap: 8px;
+  }
+
+  .cm-streams {
+    grid-template-columns: 1fr;
+  }
+
+  /* An expanded Twitch player capped at 70vh leaves nothing else on screen on
+     a phone; half the viewport still shows the stream and keeps the bracket
+     reachable by scrolling. */
+  .cm-stream.open .cm-frame {
+    max-height: 50vh;
+  }
+}

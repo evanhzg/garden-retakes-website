@@ -10,6 +10,8 @@ import LadderRows from "@/components/home/LadderRows";
 import { ladderRows } from "@/lib/ladder";
 import SeasonBreakBanner from "@/components/SeasonBreakBanner";
 import { getT } from "@/lib/serverI18n";
+import { isDemoMode } from "@/lib/demoMode";
+import TournamentLeaderboards from "@/components/tournament/TournamentLeaderboards";
 
 export const dynamic = "force-dynamic";
 export const revalidate = 60;
@@ -19,6 +21,15 @@ export default async function StatsPage() {
   // charts.tsx takes its legend strings as a prop because it is a client
   // component and cannot reach the server dictionary itself.
   const t = getT();
+
+  // In demo mode /stats is the tournament boards, not the ladder's season
+  // boards. The nav filter alone would have left the ladder numbers one typed
+  // URL away, and they are built from ranked pub rounds — the half of the site
+  // a demo is deliberately not about.
+  if (await isDemoMode()) {
+    return <TournamentLeaderboards />;
+  }
+
   const season = await getActiveSeason();
   if (!season) {
     return (

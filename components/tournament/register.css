@@ -1,6 +1,8 @@
 /* Registering and joining.
    One column, wide type, few controls: this is the one tournament page an
-   ordinary player sees, and they see it once, in a hurry, probably on a phone. */
+   ordinary player sees, and they see it once, in a hurry, probably on a phone.
+   Everything below is therefore mobile-first — the base rules are the phone
+   layout and the media queries widen it, not the other way round. */
 
 .rg {
   display: grid;
@@ -13,29 +15,200 @@
   border-left: 3px solid var(--color-accent);
   background: color-mix(in srgb, var(--color-accent) 10%, transparent);
   font-size: 13px;
+  overflow-wrap: anywhere;
 }
 
 .rg-team-name {
   margin: 0;
+  font-size: clamp(1.15rem, 4.5vw, 1.5rem);
+  overflow-wrap: anywhere;
+}
+
+.rg-lead {
+  margin: 0;
+  font-size: 14px;
+  color: var(--color-text);
+  max-width: 62ch;
 }
 
 .rg-hint {
   margin: 0;
-  font-size: 13px;
+  font-size: 12px;
+  color: var(--color-text-muted);
   max-width: 70ch;
 }
 
-.rg-row {
+.rg-warn {
+  color: #d97706;
+}
+
+.rg-centered {
+  display: grid;
+  gap: 14px;
+  justify-items: center;
+  text-align: center;
+  padding: var(--space-3) 0;
+}
+
+/* ---------- Step indicator ---------- */
+
+.rg-steps {
+  list-style: none;
+  margin: 0;
+  padding: 0 0 var(--space-3);
+  border-bottom: 1px solid var(--color-divider);
+  display: grid;
+  /* Three equal columns at every size. Stacking them would make the indicator
+     taller than the form it introduces. */
+  grid-template-columns: repeat(3, 1fr);
+  gap: 6px;
+}
+
+.rg-step {
   display: flex;
-  gap: var(--space-3);
-  align-items: flex-end;
+  flex-direction: column;
+  align-items: center;
+  gap: 6px;
+  text-align: center;
+  min-width: 0;
+}
+
+.rg-step-dot {
+  display: grid;
+  place-items: center;
+  width: 26px;
+  height: 26px;
+  border-radius: 50%;
+  border: 1px solid var(--color-divider);
+  background: var(--color-surface);
+  color: var(--color-text-muted);
+  font-size: 12px;
+  font-weight: 800;
+  flex: 0 0 auto;
+}
+
+.rg-step-label {
+  font-size: 11px;
+  font-weight: 700;
+  line-height: 1.25;
+  color: var(--color-text-muted);
+  overflow-wrap: anywhere;
+}
+
+.rg-step.now .rg-step-dot {
+  border-color: var(--color-accent);
+  background: var(--color-accent);
+  color: #fff;
+}
+.rg-step.now .rg-step-label {
+  color: var(--color-text);
+}
+
+.rg-step.done .rg-step-dot {
+  border-color: var(--color-accent);
+  color: var(--color-accent);
+}
+
+/* ---------- Header ---------- */
+
+.rg-head {
+  display: flex;
   flex-wrap: wrap;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 8px;
+}
+
+.rg-count {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 12px;
+  font-weight: 700;
+  padding: 4px 10px;
+  border-radius: 999px;
+  border: 1px solid var(--color-divider);
+  color: var(--color-text-muted);
+  white-space: nowrap;
+}
+
+.rg-count.full {
+  border-color: #22c55e;
+  color: #16a34a;
+  background: color-mix(in srgb, #22c55e 12%, transparent);
+}
+
+/* ---------- Roster slots ---------- */
+
+.rg-slots {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: grid;
+  gap: 6px;
+}
+
+.rg-slot {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  min-height: 40px;
+  padding: 8px 12px;
+  border: 1px solid var(--color-divider);
+  border-radius: 8px;
+  font-size: 13.5px;
+  min-width: 0;
+}
+
+.rg-slot.taken {
+  background: color-mix(in srgb, var(--color-text) 4%, transparent);
+}
+
+/* An open slot reads as a gap to fill, not as another row of the roster. */
+.rg-slot.open {
+  border-style: dashed;
+  background: none;
+}
+
+.rg-slot-name {
+  color: inherit;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  min-width: 0;
+}
+
+.rg-slot-empty {
+  color: var(--color-text-muted);
+  font-style: italic;
+}
+
+.rg-cap {
+  flex: 0 0 auto;
+  font-size: 10px;
+  font-weight: 800;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  color: var(--color-accent);
+  border: 1px solid currentColor;
+  border-radius: 999px;
+  padding: 1px 7px;
+}
+
+/* ---------- Forms ---------- */
+
+/* One field per row, button on its own row underneath. This replaced a flex
+   row that put the submit button beside `flex: 1 1 220px` inputs, where it
+   overlapped the name field as soon as the row was narrower than their bases. */
+.rg-form {
+  display: grid;
+  gap: var(--space-3);
+  align-items: start;
 }
 
 .rg-field {
   display: grid;
   gap: 4px;
-  flex: 1 1 220px;
   min-width: 0;
 }
 
@@ -48,56 +221,109 @@
 }
 
 .rg-field input {
-  padding: 9px 11px;
+  width: 100%;
+  min-width: 0;
+  /* 16px keeps iOS Safari from zooming the page on focus, which on a form like
+     this leaves the reader scrolled sideways into a field they cannot see. */
+  font-size: 16px;
+  padding: 11px;
   border: 1px solid var(--color-divider);
+  border-radius: 8px;
   background: var(--color-surface);
   color: var(--color-text);
-  font: inherit;
+  font-family: inherit;
 }
 
-.rg-narrow {
-  flex: 0 0 110px;
+.rg-field input:focus-visible {
+  outline: 2px solid var(--color-accent);
+  outline-offset: 1px;
 }
 
-/* The invite link is the point of this page once a team exists, so it is the
-   loudest thing on it. */
+.rg-btn-wide {
+  width: 100%;
+  min-height: 44px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+}
+
+/* ---------- Invite link ---------- */
+
 .rg-invite {
   display: grid;
   gap: var(--space-2);
   padding: var(--space-3);
   border: 1px solid var(--color-accent);
+  border-radius: 10px;
   background: color-mix(in srgb, var(--color-accent) 8%, transparent);
+  min-width: 0;
 }
 
 .rg-link {
   font-family: var(--font-mono);
   font-size: 12px;
   overflow-wrap: anywhere;
-  padding: 8px 10px;
+  padding: 10px;
+  border-radius: 6px;
   background: var(--color-bg);
   border: 1px solid var(--color-divider);
+  /* user-select so the link is still recoverable when the clipboard API is
+     unavailable, which it is in most in-app browsers. */
+  user-select: all;
 }
 
-.rg-members {
-  list-style: none;
-  margin: 0;
-  padding: 0;
+.rg-actions {
   display: grid;
-  gap: 4px;
+  gap: 8px;
 }
 
-.rg-members li {
-  display: flex;
+.rg-actions .btn {
+  min-height: 44px;
+  display: inline-flex;
   align-items: center;
-  gap: 6px;
-  font-size: 13.5px;
+  justify-content: center;
+  gap: 8px;
 }
 
-.rg-members a {
-  color: inherit;
-}
+/* ---------- Wider than a phone ---------- */
 
-.rg-cap {
-  color: var(--color-accent);
-  font-size: 10px;
+@media (min-width: 620px) {
+  .rg-step {
+    flex-direction: row;
+    justify-content: center;
+  }
+
+  .rg-step-label {
+    font-size: 12px;
+  }
+
+  /* Name and tag share a row once there is genuinely room for both, with the
+     tag on a fixed track so the name field absorbs the slack. Opt-in, because
+     the single-field forms would otherwise leave a dead 120px column. */
+  .rg-form.two-col {
+    grid-template-columns: 1fr 120px;
+  }
+
+  /* The button always spans the full width of the form, on its own row. */
+  .rg-btn-wide {
+    grid-column: 1 / -1;
+    width: auto;
+    justify-self: start;
+    min-width: 200px;
+  }
+
+  .rg-form > .rg-hint,
+  .rg-form > .rg-warn {
+    grid-column: 1 / -1;
+  }
+
+  .rg-actions {
+    grid-auto-flow: column;
+    justify-content: start;
+  }
+
+  .rg-actions .btn {
+    min-width: 150px;
+  }
 }

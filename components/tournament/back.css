@@ -1,0 +1,40 @@
+/* The back control shown on every page inside a tournament.
+   Sized as a real target (44px minimum on touch) rather than as a text link in
+   a paragraph, because on a phone it is the only way out of the flow. */
+
+.t-back {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  min-height: 40px;
+  padding: 8px 14px 8px 10px;
+  margin-bottom: var(--space-3, 16px);
+  border: 1px solid var(--color-divider);
+  border-radius: 999px;
+  background: var(--color-surface);
+  color: var(--color-text);
+  font-size: 13px;
+  font-weight: 700;
+  text-decoration: none;
+  transition: border-color 0.15s ease, background 0.15s ease, transform 0.15s ease;
+}
+
+.t-back:hover {
+  border-color: var(--color-accent);
+  background: color-mix(in srgb, var(--color-accent) 10%, transparent);
+}
+
+.t-back:active {
+  transform: translateX(-2px);
+}
+
+@media (max-width: 640px) {
+  /* Full width on a phone: it is the primary escape hatch, and a pill floating
+     at the left edge reads as decoration next to a full-width page. */
+  .t-back {
+    display: flex;
+    width: 100%;
+    justify-content: center;
+    min-height: 44px;
+  }
+}

@@ -15,10 +15,10 @@
 /* ---------- Sidebar ---------- */
 .friends-sidebar {
   position: fixed;
-  top: 72px;
+  top: var(--social-top, 64px);
   right: -360px;
   width: 330px;
-  height: calc(100dvh - 72px);
+  height: calc(100dvh - var(--social-top, 64px));
   background:
     linear-gradient(180deg, color-mix(in srgb, var(--accent) 14%, transparent), transparent 30%),
     color-mix(in srgb, var(--color-surface) 92%, transparent);
@@ -670,19 +670,21 @@ html[data-motion="off"] .dm-bubble.typing i { animation: none; }
    button at the bottom.
    ============================================ */
 
+/* Full height, from directly under the header to the bottom of the viewport.
+   --social-top is measured from the live header by FriendsSidebar rather than
+   hard-coded, because a fixed figure is wrong the moment the header wraps. */
 .friends-rail {
   position: fixed;
-  top: 50%;
+  top: var(--social-top, 64px);
+  bottom: 0;
   right: 0;
-  transform: translateY(-50%);
   z-index: 900;
   display: flex;
   flex-direction: column;
   align-items: center;
   gap: 8px;
-  padding: 10px 8px;
-  border: 1px solid var(--color-divider);
-  border-right: 0;
+  padding: 12px 8px;
+  border-left: 1px solid var(--color-divider);
   background: color-mix(in srgb, var(--color-surface) 92%, transparent);
   backdrop-filter: blur(12px);
   -webkit-backdrop-filter: blur(12px);
@@ -694,7 +696,7 @@ html[data-motion="off"] .dm-bubble.typing i { animation: none; }
 .friends-rail.hidden {
   opacity: 0;
   pointer-events: none;
-  transform: translateY(-50%) translateX(12px);
+  transform: translateX(12px);
 }
 
 /* Expand lives at the top, which is the whole point of the rearrangement. */
@@ -721,18 +723,26 @@ html[data-motion="off"] .dm-bubble.typing i { animation: none; }
   right: -6px;
 }
 
+/* Fills the rail rather than capping at half the viewport — the rail is full
+   height now, so the list should use it and only scroll once it truly runs out. */
 .friends-rail-list {
   display: flex;
   flex-direction: column;
+  align-items: center;
   gap: 8px;
-  max-height: min(52vh, 520px);
+  flex: 1 1 auto;
+  min-height: 0;
   overflow-y: auto;
   scrollbar-width: none;
 }
 .friends-rail-list::-webkit-scrollbar { display: none; }
 
+/* A <span> rather than a <button>: it is the trigger inside PlayerBubble,
+   which owns the click, and a button nested in a clickable wrapper is a
+   double target for keyboards and screen readers. */
 .friends-rail-friend {
   position: relative;
+  display: block;
   padding: 0;
   border: 0;
   background: none;
@@ -802,3 +812,56 @@ html[data-motion="off"] .dm-bubble.typing i { animation: none; }
   box-shadow: 0 0 8px var(--color-accent);
 }
 .avatar-status.presence-away .avatar-status-dot { background: #eab308; }
+
+/* ---------- The phone's floating opener ----------
+   Hidden wherever the rail is visible: two controls that do the same thing,
+   one above the other, is not a design. */
+
+.friends-fab {
+  display: none;
+  position: fixed;
+  right: 14px;
+  bottom: calc(14px + env(safe-area-inset-bottom, 0px));
+  z-index: 900;
+  width: 48px;
+  height: 48px;
+  border-radius: 50%;
+  border: 1px solid var(--color-divider);
+  background: color-mix(in srgb, var(--color-surface) 94%, transparent);
+  backdrop-filter: blur(12px);
+  -webkit-backdrop-filter: blur(12px);
+  box-shadow: 0 6px 20px rgba(0, 0, 0, 0.3);
+  color: var(--color-text);
+  cursor: pointer;
+  place-items: center;
+  transition: opacity 0.18s ease, transform 0.18s ease;
+}
+
+.friends-fab .notification-badge {
+  position: absolute;
+  top: -4px;
+  right: -4px;
+}
+
+.friends-fab.hidden {
+  opacity: 0;
+  pointer-events: none;
+  transform: scale(0.85);
+}
+
+@media (max-width: 760px) {
+  .friends-fab {
+    display: grid;
+  }
+
+  /* The panel takes the screen on a phone rather than 330px of it with the
+     page showing through the gap. */
+  .friends-sidebar {
+    width: min(360px, 100vw);
+    right: calc(-1 * min(360px, 100vw) - 30px);
+  }
+
+  .friends-sidebar.open {
+    right: 0;
+  }
+}

@@ -143,7 +143,12 @@ export default async function RootLayout({ children }: { children: React.ReactNo
           <div className="layout-wrapper">
             <div className="main-content">
               <main className="container">{children}</main>
-              <SiteFooter serverAddress={process.env.NEXT_PUBLIC_SERVER_ADDRESS ?? "127.0.0.1:27015"} />
+              {/* No footer in demo mode. It is a wall of links into the parts
+                  of the site a demo is deliberately not showing, so every one
+                  of them is a way out of the demo. */}
+              {!isDemoMode && (
+                <SiteFooter serverAddress={process.env.NEXT_PUBLIC_SERVER_ADDRESS ?? "127.0.0.1:27015"} />
+              )}
             </div>
           </div>
           {session && <PassportWorkflow session={session} />}

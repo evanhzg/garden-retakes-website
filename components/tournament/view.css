@@ -167,3 +167,53 @@
   font-weight: 400;
   color: var(--color-text-muted);
 }
+
+/* ------------------------------------------------------------------ mobile */
+
+@media (max-width: 640px) {
+  /* The tab strip scrolls sideways instead of wrapping.
+     .pro-tabs wraps by default, which is right for the three tabs on a profile
+     and wrong for the five here: on a phone they wrapped to three stacked rows
+     of uppercase buttons and pushed the actual tournament off the first screen.
+     Scoped to .tv so the profile keeps the wrapping version. */
+  .tv .pro-tabs {
+    flex-wrap: nowrap;
+    overflow-x: auto;
+    overflow-y: hidden;
+    scrollbar-width: none;
+    /* Snap so a tab never comes to rest half-off the edge. */
+    scroll-snap-type: x proximity;
+    -webkit-overflow-scrolling: touch;
+  }
+
+  .tv .pro-tabs::-webkit-scrollbar {
+    display: none;
+  }
+
+  .tv .pro-tab {
+    flex: 0 0 auto;
+    padding: 10px 14px;
+    scroll-snap-align: start;
+  }
+
+  .tv .pro-panel {
+    padding-top: var(--space-4);
+  }
+
+  /* Single column: 240px cards plus the panel's own padding overflow a 360px
+     phone, and a half-visible second column is worse than one clean one. */
+  .tv-teams {
+    grid-template-columns: 1fr;
+  }
+
+  /* Two up rather than one: map thumbnails stay recognisable small, and a pool
+     of seven as a single column is a very long scroll. */
+  .tv-pool {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: var(--space-2);
+  }
+
+  .tv-stage-name {
+    flex-wrap: wrap;
+  }
+}

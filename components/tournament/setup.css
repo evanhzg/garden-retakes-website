@@ -169,3 +169,50 @@
   font-family: var(--font-mono);
   font-size: 12px;
 }
+
+/* ------------------------------------------------------------------ mobile */
+
+@media (max-width: 640px) {
+  /* `.su-row` is a wrapping flex row whose inputs carry `min-width: 150px`, so
+     two of them plus a button never fit on a phone and land in an order that
+     depends on how the line happened to break. A grid puts them in source
+     order, one per row, always. */
+  .su-row {
+    display: grid;
+    grid-template-columns: 1fr;
+    align-items: stretch;
+  }
+
+  .su-row input,
+  .su-row select {
+    min-width: 0;
+    width: 100%;
+    font-size: 16px;
+    padding: 11px;
+  }
+
+  /* The narrow numeric fields keep a sensible cap rather than stretching the
+     full width of the screen for two digits. */
+  .su-narrow,
+  .su-narrow-id {
+    width: 100%;
+    max-width: 200px;
+  }
+
+  .su-row > .btn {
+    width: 100%;
+    min-height: 44px;
+  }
+
+  .su-inline {
+    display: grid;
+    grid-template-columns: 1fr;
+    gap: 6px;
+  }
+
+  .su-inline input {
+    width: 100%;
+    font-size: 16px;
+    padding: 10px;
+  }
+}

@@ -3,6 +3,12 @@ import { prisma } from "@/lib/db";
 import { getT } from "@/lib/serverI18n";
 import { getTournamentContext, manageableTournamentIds } from "@/lib/tournamentAuth";
 import { AdminLevel } from "@/lib/adminAuth";
+import {
+  countdown,
+  registrationBlockedReason,
+  type EditionState,
+} from "@/lib/tournament/edition";
+import "@/components/tournament/list.css";
 
 // Dynamic rather than revalidated: what you can see here depends on who you
 // are — an organizer sees their own drafts, everybody else does not — and a
@@ -31,6 +37,9 @@ export default async function TournamentsPage() {
   });
 
   const manageable = new Set(mine ?? tournaments.map((x) => x.Id));
+
+  // One clock for the whole list, so every card on a page agrees about "now".
+  const now = new Date();
 
   return (
     <>
@@ -90,38 +99,88 @@ export default async function TournamentsPage() {
             )}
           </div>
         ) : (
-          <table>
-            <thead>
-              <tr>
-                <th>{t("tournaments.name")}</th>
-                <th>{t("tournaments.format")}</th>
-                <th>{t("tournaments.teams")}</th>
-                <th>{t("tournaments.state")}</th>
-                <th />
-              </tr>
-            </thead>
-            <tbody>
-              {tournaments.map((tournament) => (
-                <tr key={tournament.Id}>
-                  <td>
-                    <Link href={`/tournaments/${tournament.Slug}`}>{tournament.Name}</Link>
-                  </td>
-                  <td className="muted">{tournament.TeamSize}v{tournament.TeamSize}</td>
-                  <td>{tournament._count.Teams}</td>
-                  <td>
-                    <span className="chip">{tournament.State}</span>
-                  </td>
-                  <td style={{ textAlign: "right" }}>
+          /* Cards, not a table.
+             This was a five-column table with no scroll wrapper, so on a phone
+             it pushed the whole page sideways — and this is the front door to
+             the entire tournament flow, which most players reach from a Discord
+             link on a phone. A card also has room for the two facts the table
+             had nowhere to put: when it starts, and whether you can still
+             enter. */
+          <ul className="tl-list">
+            {tournaments.map((tournament) => {
+              const edition: EditionState = {
+                published: tournament.Published,
+                state: tournament.State,
+                visibility: tournament.Visibility === "invite" ? "invite" : "public",
+                maxTeams: tournament.MaxTeams,
+                teamCount: tournament._count.Teams,
+                startsAt: tournament.StartsAt,
+                startedAt: tournament.StartedAt,
+              };
+
+              // Registration is offered only where it would actually be
+              // accepted — the same predicate the register page and the API
+              // use, so the button cannot promise what the server refuses.
+              const openToJoin = registrationBlockedReason(edition, false) === null;
+              const when = countdown(edition, now);
+
+              return (
+                <li key={tournament.Id} className="tl-card">
+                  <div className="tl-main">
+                    <Link className="tl-name" href={`/tournaments/${tournament.Slug}`}>
+                      {tournament.Name}
+                    </Link>
+
+                    <div className="tl-facts">
+                      <span className="chip">{tournament.State}</span>
+                      <span className="tl-fact">
+                        {tournament.TeamSize}v{tournament.TeamSize}
+                      </span>
+                      <span className="tl-fact">
+                        {tournament._count.Teams} / {tournament.MaxTeams}{" "}
+                        {t("tournaments.teams").toLowerCase()}
+                      </span>
+                      {when.kind === "live" && <span className="tl-live">{t("countdown.live")}</span>}
+                      {when.kind === "starting-soon" && (
+                        <span className="tl-fact">{t("countdown.soon")}</span>
+                      )}
+                      {when.kind === "scheduled" && (
+                        <time className="tl-fact" dateTime={when.startsAt.toISOString()}>
+                          {when.startsAt.toLocaleDateString(undefined, {
+                            day: "numeric",
+                            month: "short",
+                            year: "numeric",
+                          })}
+                        </time>
+                      )}
+                    </div>
+                  </div>
+
+                  <div className="tl-actions">
+                    {openToJoin && (
+                      <Link
+                        className="btn btn-primary tl-btn"
+                        href={`/tournaments/${tournament.Slug}/register`}
+                      >
+                        {t("tournaments.register")}
+                      </Link>
+                    )}
+                    <Link className="btn btn-secondary tl-btn" href={`/tournaments/${tournament.Slug}`}>
+                      {t("tournaments.view")}
+                    </Link>
                     {manageable.has(tournament.Id) && (
-                      <Link className="btn btn-secondary su-small" href={`/admin/tournaments/${tournament.Id}`}>
+                      <Link
+                        className="btn btn-secondary tl-btn"
+                        href={`/admin/tournaments/${tournament.Id}`}
+                      >
                         {t("tournaments.manage")}
                       </Link>
                     )}
-                  </td>
-                </tr>
-              ))}
-            </tbody>
-          </table>
+                  </div>
+                </li>
+              );
+            })}
+          </ul>
         )}
       </section>
     </>

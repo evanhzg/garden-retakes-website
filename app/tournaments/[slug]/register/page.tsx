@@ -1,3 +1,4 @@
+import BackToTournament from "@/components/tournament/BackToTournament";
 import Link from "next/link";
 import { notFound } from "next/navigation";
 import { headers } from "next/headers";
@@ -72,6 +73,8 @@ export default async function RegisterPage({
 
   return (
     <>
+      <BackToTournament slug={tournament.Slug} />
+
       <section className="hero hero-compact">
         <div className="hero-inner">
           <p className="eyebrow">{tournament.Name}</p>
@@ -80,8 +83,6 @@ export default async function RegisterPage({
             {tournament.TeamSize}v{tournament.TeamSize}
             {" · "}
             {tournament._count.Teams} / {tournament.MaxTeams} {t("tournaments.teams").toLowerCase()}
-            {" · "}
-            <Link href={`/tournaments/${tournament.Slug}`}>{t("register.backToTournament")}</Link>
           </p>
         </div>
       </section>

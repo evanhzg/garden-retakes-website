@@ -130,3 +130,66 @@
 .chip.rs-invited  { border-color: var(--color-text-muted); color: var(--color-text-muted); }
 .chip.rs-removed,
 .chip.rs-declined { opacity: 0.6; }
+
+/* ------------------------------------------------------------------ mobile */
+
+@media (max-width: 640px) {
+  /* The team name field and its Save button stop sharing a line. `.rs-name`
+     asks for 160px and the row also carries a seed badge and a button, which
+     on a phone leaves the input a few characters wide. */
+  .rs-head {
+    display: grid;
+    grid-template-columns: auto 1fr;
+    gap: 8px;
+  }
+
+  .rs-name {
+    min-width: 0;
+    width: 100%;
+    font-size: 16px;
+    padding: 10px;
+  }
+
+  .rs-head > .btn {
+    grid-column: 1 / -1;
+    width: 100%;
+    min-height: 44px;
+  }
+
+  /* One member per line, each part on its own row, so a long Steam name and a
+     rename field do not compete for 300px. */
+  .rs-members li {
+    display: grid;
+    grid-template-columns: 1fr;
+    gap: 6px;
+    padding: 10px;
+    border: 1px solid var(--color-divider);
+    border-radius: 8px;
+  }
+
+  .rs-profile {
+    min-width: 0;
+    overflow-wrap: anywhere;
+  }
+
+  .rs-display {
+    width: 100%;
+    font-size: 16px;
+    padding: 9px 10px;
+  }
+
+  .rs-members li > .btn {
+    width: 100%;
+    min-height: 40px;
+  }
+
+  .rs-invite {
+    display: grid;
+    grid-template-columns: 1fr;
+  }
+
+  .rs-invite .btn {
+    width: 100%;
+    min-height: 40px;
+  }
+}

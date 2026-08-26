@@ -109,3 +109,19 @@
 .br-link:hover .br-match {
   border-color: var(--color-accent);
 }
+
+/* ------------------------------------------------------------------ mobile */
+
+@media (max-width: 640px) {
+  /* Tighter rounds so two of them are visible at once. The bracket already
+     scrolls sideways inside itself, but a --space-6 gutter meant a phone
+     showed one round and a sliver, and a bracket you can only read one column
+     at a time is not a bracket. */
+  .br {
+    gap: var(--space-4);
+  }
+
+  .br-round {
+    min-width: 168px;
+  }
+}

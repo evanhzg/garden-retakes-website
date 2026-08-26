@@ -4866,33 +4866,15 @@ body.inv-fullscreen .site-footer {
 }
 .header-peek:hover { height: 30px; color: #fff; }
 
-/* friends button rides in the header's empty centre, and steps aside when hidden */
-body.in-game .friends-toggle-btn {
-  position: fixed;
-  top: calc(var(--games-top-inset, 60px) / 2);
-  left: 50%;
-  right: auto;
-  bottom: auto;
-  transform: translate(-50%, -50%);
-  z-index: 122;
-  padding: 8px 16px;
-  font-size: 0.9rem;
-  box-shadow: 0 6px 18px -6px rgba(59, 130, 246, 0.6);
-  transition: opacity 0.25s ease;
-}
-body.header-hidden .friends-toggle-btn {
+/* These rules used to target .friends-toggle-btn, a class no element on the
+   site has carried for some time — including the block that positioned it in
+   the header's empty centre while in a game. The opener is now .friends-fab
+   (components/social/FriendsSidebar.tsx), a bottom-right button on phones, so
+   only the intent worth keeping survives: it gets out of the way when the
+   header is deliberately hidden. */
+body.header-hidden .friends-fab {
   opacity: 0;
   pointer-events: none;
-}
-@media (max-width: 720px) {
-  body.in-game .friends-toggle-btn {
-    top: auto;
-    bottom: calc(var(--games-top-inset, 56px) + 12px);
-    right: 12px;
-    left: auto;
-    transform: none;
-    padding: 8px 14px;
-  }
 }
 
 .wheel-nav-container {
@@ -10918,7 +10900,8 @@ body.inv-fullscreen .main-content > main.container { flex: none; }
    aside; the higher z-index is the belt to that pair of braces.
    --------------------------------------------------------------------------- */
 
-body.overlay-open .friends-toggle-btn {
+body.overlay-open .friends-fab,
+body.overlay-open .friends-rail {
   opacity: 0;
   pointer-events: none;
 }

@@ -161,6 +161,9 @@ export default function Setup({ adminKey, isOwner }: { adminKey?: string; isOwne
         )}
 
         {servers.length > 0 && (
+          /* Scrolls inside itself on a narrow screen rather than widening the
+             page — an address column alone is wider than a phone. */
+          <div className="pro-tablewrap">
           <table>
             <thead>
               <tr>
@@ -192,6 +195,7 @@ export default function Setup({ adminKey, isOwner }: { adminKey?: string; isOwne
               ))}
             </tbody>
           </table>
+          </div>
         )}
       </section>
 

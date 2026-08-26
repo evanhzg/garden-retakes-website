@@ -1,3 +1,4 @@
+import BackToTournament from "@/components/tournament/BackToTournament";
 import { notFound } from "next/navigation";
 import { prisma } from "@/lib/db";
 import { getT } from "@/lib/serverI18n";
@@ -17,6 +18,8 @@ export default async function TournamentLivePage({ params }: { params: { slug: s
 
   return (
     <>
+      <BackToTournament slug={tournament.Slug} />
+
       <section className="hero hero-compact">
         <div className="hero-inner">
           <p className="eyebrow">{t("live.eyebrow")}</p>

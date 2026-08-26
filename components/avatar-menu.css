@@ -1,0 +1,129 @@
+/* ============================================================
+   Account menu (header avatar)
+   ------------------------------------------------------------
+   Profile / Settings / Inventory / Admin / Log out. See
+   components/AvatarMenu.tsx for why these left the nav bar.
+   ============================================================ */
+
+.avatar-menu {
+  position: relative;
+  display: flex;
+  align-items: center;
+}
+
+.avatar-menu-trigger {
+  display: block;
+  padding: 0;
+  border: 0;
+  background: none;
+  cursor: pointer;
+  line-height: 0;
+  border-radius: 50%;
+  transition: box-shadow 0.15s ease;
+}
+.avatar-menu-trigger:hover,
+.avatar-menu-trigger:focus-visible {
+  outline: none;
+  box-shadow: 0 0 0 2px color-mix(in srgb, var(--accent) 65%, transparent);
+}
+
+/* Animated rather than mounted/unmounted, so the pointer can travel from the
+   avatar into the panel without the panel disappearing mid-journey. */
+.avatar-menu-panel {
+  position: absolute;
+  top: calc(100% + 10px);
+  right: 0;
+  min-width: 216px;
+  padding: 6px;
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  border: 1px solid var(--border);
+  border-radius: 12px;
+  background: color-mix(in srgb, var(--color-surface, #fff) 97%, transparent);
+  backdrop-filter: blur(14px);
+  -webkit-backdrop-filter: blur(14px);
+  box-shadow: 0 18px 44px rgba(0, 0, 0, 0.28);
+  z-index: 1200;
+  opacity: 0;
+  visibility: hidden;
+  transform: translateY(-6px);
+  transition: opacity 0.16s ease, transform 0.16s ease, visibility 0.16s;
+}
+.avatar-menu-panel.open {
+  opacity: 1;
+  visibility: visible;
+  transform: translateY(0);
+}
+
+/* Bridges the gap between the avatar and the panel so the hover survives it. */
+.avatar-menu-panel::before {
+  content: "";
+  position: absolute;
+  left: 0;
+  right: 0;
+  top: -12px;
+  height: 12px;
+}
+
+.avatar-menu-head {
+  display: flex;
+  flex-direction: column;
+  padding: 8px 10px 10px;
+  margin-bottom: 4px;
+  border-bottom: 1px solid var(--border);
+}
+.avatar-menu-name {
+  font-weight: 800;
+  font-size: 0.9rem;
+  color: var(--text);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.avatar-menu-sub {
+  font-size: 0.7rem;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  color: var(--muted);
+}
+
+.avatar-menu-item {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  width: 100%;
+  padding: 9px 10px;
+  border: 0;
+  border-radius: 8px;
+  background: none;
+  color: var(--text);
+  font: inherit;
+  font-size: 0.86rem;
+  font-weight: 600;
+  text-align: left;
+  text-decoration: none;
+  cursor: pointer;
+  transition: background 0.14s ease, color 0.14s ease;
+}
+.avatar-menu-item:hover {
+  background: color-mix(in srgb, var(--accent) 14%, transparent);
+}
+.avatar-menu-item.danger {
+  margin-top: 4px;
+  border-top: 1px solid var(--border);
+  border-radius: 0 0 8px 8px;
+  color: #ef4444;
+}
+.avatar-menu-item.danger:hover {
+  background: color-mix(in srgb, #ef4444 14%, transparent);
+}
+
+/* On a phone the panel is anchored to the right edge of a narrow screen; keep
+   it on-screen rather than letting it push the viewport sideways. */
+@media (max-width: 520px) {
+  .avatar-menu-panel {
+    right: -6px;
+    min-width: min(240px, calc(100vw - 24px));
+  }
+}

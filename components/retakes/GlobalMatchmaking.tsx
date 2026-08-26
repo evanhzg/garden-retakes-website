@@ -44,6 +44,40 @@ export default function GlobalMatchmaking({ avatarPlayers = [] }: { avatarPlayer
   if (!state || !state.party) return null;
   const isQueueing = state.party.queuedAt !== null;
 
+  /**
+   * The bar only appears when there is actually a lobby to talk about.
+   *
+   * The gate above — "you have a party" — is true for every signed-in player
+   * from the moment they connect, because the server hands everyone a party of
+   * one. So a permanent strip saying "See lobby" sat across the top of every
+   * page on the site whether or not the reader had anything to do with
+   * matchmaking, and it was the first thing under the header on the tournament
+   * pages, which have nothing to do with matchmaking at all.
+   *
+   * Four things count as being in a lobby: standing on /lobby, queueing, a
+   * match waiting to be accepted, or a party with somebody else in it.
+   */
+  const inLobby =
+    pathname === "/lobby" ||
+    isQueueing ||
+    isFound ||
+    (state.party.members?.length ?? 0) > 1;
+
+  // The accept window still has to appear from anywhere — a match found while
+  // you are reading the bracket is exactly when you most need to see it.
+  if (!inLobby) {
+    return isFound ? (
+      <AcceptModal
+        match={state.match}
+        queue={state.match.queueLabel ?? state.party.queue}
+        me={steamId}
+        now={now}
+        onAccept={() => socket?.emit("rq:match:accept")}
+        onDecline={() => socket?.emit("rq:match:decline")}
+      />
+    ) : null;
+  }
+
   const handlePlay = () => {
     if (!socket) return;
     setClicked(true);
@@ -114,7 +148,10 @@ export default function GlobalMatchmaking({ avatarPlayers = [] }: { avatarPlayer
         />
       )}
 
-      {pathname !== "/lobby" && (
+      {/* Dim the nav only while a search is actually running. It used to fire
+          on "not on /lobby", which for anyone signed in meant the nav was
+          permanently half-faded on every other page of the site. */}
+      {pathname !== "/lobby" && (isQueueing || isFound) && (
         <style dangerouslySetInnerHTML={{ __html: `
           header nav a { opacity: 0.4 !important; transition: opacity 0.2s; }
           header nav a:hover { opacity: 0.8 !important; }

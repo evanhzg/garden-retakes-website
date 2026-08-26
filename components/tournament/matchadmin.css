@@ -77,3 +77,31 @@
   font-size: 12px;
   white-space: pre-wrap;
 }
+
+/* ------------------------------------------------------------------ mobile */
+
+@media (max-width: 640px) {
+  /* The group heading takes its own line rather than a 96px column, which on a
+     phone left about a third of the row for the controls it labels. */
+  .ma-group {
+    display: grid;
+    grid-template-columns: 1fr;
+    gap: 8px;
+  }
+
+  .ma-group h4 {
+    min-width: 0;
+  }
+
+  .ma-group .btn {
+    width: 100%;
+    min-height: 44px;
+  }
+
+  .ma-group input {
+    width: 100%;
+    max-width: 140px;
+    font-size: 16px;
+    padding: 10px;
+  }
+}

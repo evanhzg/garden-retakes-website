@@ -6,6 +6,7 @@ import { useEffect, useState, useRef } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import { ThemeToggle } from "./ThemeToggle";
 import AvatarImage from "./AvatarImage";
+import AvatarMenu from "./AvatarMenu";
 import NotificationCenter from "@/components/NotificationCenter";
 import { useI18n } from "@/components/I18nProvider";
 import GlobalMatchmaking from "./retakes/GlobalMatchmaking";
@@ -30,7 +31,9 @@ type NavLink = {
 const CS2_LINKS: NavLink[] = [
   { href: "/insights", label: "Insights", key: "nav.insights", primary: true },
   { href: "/stats", label: "Stats", key: "nav.stats", primary: true },
-  { href: "/inventory", label: "Inventory", key: "nav.inventory", primary: true },
+  // Inventory and Admin are not here any more: both are account destinations
+  // rather than places on the site, so they live in the avatar menu with
+  // Profile and Settings. See components/AvatarMenu.tsx.
   { href: "/feed", label: "Feed", key: "nav.feed", primary: true },
   { href: "/utility", label: "Utility", key: "nav.utility", primary: true },
   { href: "/live", label: "Live", key: "nav.live", isLive: true, primary: true },
@@ -47,7 +50,6 @@ const CS2_LINKS: NavLink[] = [
   { href: "/commands", label: "Commands", key: "nav.commands" },
   { href: "/roadmap", label: "Roadmap", key: "nav.roadmap" },
   { href: "/games", label: "Games", key: "nav.games", isSection: true },
-  { href: "/admin", label: "Admin", key: "nav.admin", adminOnly: true },
 ];
 
 const GAMES_LINKS: NavLink[] = [
@@ -181,11 +183,15 @@ export default function NavBar({
   
   let baseLinks = isGamesSection ? [...GAMES_LINKS] : [...CS2_LINKS];
   if (isDemoMode) {
-    const hiddenInDemo = [
-      "/insights", "/utility", "/live", "/compare", "/duels", 
-      "/request-skin", "/docs", "/commands", "/roadmap", "/games"
-    ];
-    baseLinks = baseLinks.filter(l => !hiddenInDemo.includes(l.href));
+    // An allowlist, not a blocklist. The blocklist that used to be here named
+    // ten routes to hide, so every route added afterwards appeared in the demo
+    // by default — the opposite of what a demo is for. Naming the two that stay
+    // means a new page is invisible until somebody decides otherwise.
+    //
+    // Tournaments is the pitch; Stats is here for tournament stats only, which
+    // is enforced on the page itself rather than by hiding the link.
+    const shownInDemo = ["/tournaments", "/stats"];
+    baseLinks = baseLinks.filter((l) => shownInDemo.includes(l.href));
   }
   
   if (isGamesSection) {
@@ -424,20 +430,19 @@ export default function NavBar({
         <NotificationCenter steamId={session.steamId} />
 
         {session.authenticated ? (
-          <div className="nav-identity" style={{ display: "flex", alignItems: "center", gap: 10 }}>
-            {session.steamId && (
-              <Link href={getHref("/profile")} title={session.name ?? "Profile"}>
-                <AvatarImage
-                  steamId={session.steamId}
-                  src={session.avatar}
-                  alt={session.name ?? "Profile"}
-                  className="avatar avatar-sm"
-                />
-              </Link>
-            )}
-            <a className="btn btn-secondary" href="/api/auth/logout" style={{ fontSize: 12 }}>
-              {t("auto.navbar.log_out")}
-                                      </a>
+          /* The log-out button is gone from the header. It sat permanently
+             beside the avatar, which gave the single most destructive action on
+             the page the most prominent slot in it. It now lives at the bottom
+             of the account menu, where it is one hover away rather than one
+             stray click away. */
+          <div className="nav-identity">
+            <AvatarMenu
+              steamId={session.steamId}
+              name={session.name}
+              avatar={session.avatar}
+              adminLevel={session.adminLevel ?? 0}
+              getHref={getHref}
+            />
           </div>
         ) : (
           // The CS2 side signs in with Steam and comes back where you were.

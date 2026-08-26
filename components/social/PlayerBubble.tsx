@@ -40,11 +40,16 @@ export default function PlayerBubble({ steamId, name, isFriend = false, children
     const r = el.getBoundingClientRect();
     const estimated = popoverRef.current?.offsetHeight ?? 320;
 
-    // Open on the left side of the sidebar, which is typically 330px from the right window edge
-    // r.left is the element's position, but we just want to put it to the left of the sidebar
-    // We can use the window inner width minus the sidebar width and bubble width
-    const left = window.innerWidth - 330 - WIDTH - GAP;
-    
+    // Placed against the trigger, not against an assumed 330px sidebar.
+    // The old line was `innerWidth - 330 - WIDTH - GAP`, which only lands
+    // correctly for a row inside the expanded friends panel; opened from the
+    // collapsed rail — or from a leaderboard row mid-page — it left the bubble
+    // floating a sidebar's width away from whatever was clicked.
+    let left = r.left - WIDTH - GAP;
+    // No room on the left (trigger near the left edge): flip to the right.
+    if (left < GAP) left = Math.min(r.right + GAP, window.innerWidth - WIDTH - GAP);
+    left = Math.max(GAP, left);
+
     // Vertically align with the trigger, keeping it within bounds
     let top = r.top + r.height / 2 - estimated / 2;
     top = Math.max(GAP, Math.min(top, window.innerHeight - estimated - GAP));
@@ -123,6 +128,7 @@ export default function PlayerBubble({ steamId, name, isFriend = false, children
         {isOpen && (
           <motion.div
             ref={popoverRef}
+            className="player-bubble"
             initial={{ opacity: 0, y: pos?.placement === "below" ? -10 : 10, scale: 0.95 }}
             animate={{ opacity: 1, y: 0, scale: 1 }}
             exit={{ opacity: 0, y: pos?.placement === "below" ? -10 : 10, scale: 0.95 }}

@@ -231,3 +231,58 @@
   padding: var(--space-3) 0;
   background: linear-gradient(to top, var(--color-bg) 60%, transparent);
 }
+
+/* ------------------------------------------------------------------ mobile */
+
+@media (max-width: 640px) {
+  /* Rows become columns. `.ts-row` is a wrapping flex row of `flex: 1 1 240px`
+     fields with a submit button as the last child — on a phone the fields eat
+     the line and the button lands wherever there happens to be room, which is
+     the same shape of problem the register form had. Stacking removes the
+     question entirely. */
+  .ts-row {
+    display: grid;
+    grid-template-columns: 1fr;
+    align-items: stretch;
+  }
+
+  .ts-narrow {
+    flex: auto;
+  }
+
+  /* Every control in a settings row is a full-width target, in source order. */
+  .ts-row > .btn {
+    width: 100%;
+    min-height: 44px;
+  }
+
+  /* 16px stops iOS Safari zooming the viewport on focus. Organizers edit these
+     forms on a phone between matches, and a zoom mid-edit loses the field. */
+  .ts-field input,
+  .ts-field select,
+  .ts-field textarea {
+    font-size: 16px;
+    padding: 11px;
+  }
+
+  .ts-choice {
+    flex: auto;
+    min-height: 52px;
+  }
+
+  .ts-seeds {
+    display: grid;
+    grid-template-columns: 1fr;
+  }
+
+  .ts-link {
+    min-width: 0;
+    flex: 1 1 100%;
+  }
+
+  .ts-invite .btn,
+  .ts-small {
+    width: 100%;
+    min-height: 44px;
+  }
+}

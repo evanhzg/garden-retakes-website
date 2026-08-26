@@ -2,13 +2,40 @@
 
 import { useState } from "react";
 import Link from "next/link";
+import { Check, Users } from "lucide-react";
 import { useI18n } from "@/components/I18nProvider";
+import "./register.css";
 
 // Accepting a team invite.
 //
 // One decision on the page, and the name you will carry — asked here because
 // this is the only moment the player is definitely paying attention, and a
 // name set now saves the captain chasing them for it later.
+
+/**
+ * Every terminal state on this page: a sentence and one button out of it.
+ *
+ * Five of them were the same eight lines of inline-styled JSX repeated with a
+ * different string, which is how the button widths had already drifted apart.
+ */
+function Outcome({
+  message,
+  href,
+  action,
+}: {
+  message: string;
+  href: string;
+  action: string;
+}) {
+  return (
+    <div className="rg-centered">
+      <p className="rg-lead">{message}</p>
+      <Link className="btn btn-primary rg-btn-wide" href={href}>
+        {action}
+      </Link>
+    </div>
+  );
+}
 
 export default function JoinTeam({
   slug,
@@ -59,23 +86,21 @@ export default function JoinTeam({
 
   if (started) {
     return (
-      <div className="empty-hint" style={{ display: "grid", gap: 14, justifyItems: "center" }}>
-        <p style={{ margin: 0 }}>{t("register.started")}</p>
-        <Link className="btn btn-primary" href={`/tournaments/${slug}`}>
-          {t("register.seeBracket")}
-        </Link>
-      </div>
+      <Outcome
+        message={t("register.started")}
+        href={`/tournaments/${slug}`}
+        action={t("register.seeBracket")}
+      />
     );
   }
 
   if (joined) {
     return (
-      <div className="empty-hint" style={{ display: "grid", gap: 14, justifyItems: "center" }}>
-        <p style={{ margin: 0 }}>{t("join.done", { team: teamName })}</p>
-        <Link className="btn btn-primary" href={`/tournaments/${slug}/register`}>
-          {t("join.seeTeam")}
-        </Link>
-      </div>
+      <Outcome
+        message={t("join.done", { team: teamName })}
+        href={`/tournaments/${slug}/register`}
+        action={t("join.seeTeam")}
+      />
     );
   }
 
@@ -84,9 +109,12 @@ export default function JoinTeam({
   if (!signedIn) {
     const returnTo = `/tournaments/${slug}/join?team=${token}`;
     return (
-      <div className="empty-hint" style={{ display: "grid", gap: 14, justifyItems: "center" }}>
-        <p style={{ margin: 0 }}>{t("join.signIn", { team: teamName })}</p>
-        <a className="btn btn-primary" href={`/api/auth/steam/login?returnTo=${encodeURIComponent(returnTo)}`}>
+      <div className="rg-centered">
+        <p className="rg-lead">{t("join.signIn", { team: teamName })}</p>
+        <a
+          className="btn btn-primary rg-btn-wide"
+          href={`/api/auth/steam/login?returnTo=${encodeURIComponent(returnTo)}`}
+        >
           {t("profile.signInButton")}
         </a>
       </div>
@@ -95,12 +123,11 @@ export default function JoinTeam({
 
   if (full) {
     return (
-      <div className="empty-hint" style={{ display: "grid", gap: 14, justifyItems: "center" }}>
-        <p style={{ margin: 0 }}>{t("join.full", { team: teamName })}</p>
-        <Link className="btn btn-primary" href={`/tournaments/${slug}`}>
-          {t("register.seeBracket")}
-        </Link>
-      </div>
+      <Outcome
+        message={t("join.full", { team: teamName })}
+        href={`/tournaments/${slug}`}
+        action={t("register.seeBracket")}
+      />
     );
   }
 
@@ -108,12 +135,27 @@ export default function JoinTeam({
     <div className="rg">
       {notice && <p className="rg-notice">{notice}</p>}
 
-      <p>{t("join.prompt", { team: teamName })}</p>
-      <p className="muted rg-hint">
-        {memberCount} / {teamSize} {t("tournaments.players").toLowerCase()}
-      </p>
+      <header className="rg-head">
+        <p className="rg-lead" style={{ margin: 0 }}>
+          {t("join.prompt", { team: teamName })}
+        </p>
+        <span className="rg-count">
+          <Users size={14} aria-hidden />
+          {t("register.slotsFilled", { a: String(memberCount), b: String(teamSize) })}
+        </span>
+      </header>
 
-      <div className="rg-row">
+      {/* Same grid as the create form: field, then a full-width button on its
+          own row. The flex row this replaced put the accept button — which
+          carries a team name and so is often wide — beside a `flex: 1 1 220px`
+          input, and the two fought for the same line on a phone. */}
+      <form
+        className="rg-form"
+        onSubmit={(e) => {
+          e.preventDefault();
+          if (!busy) join();
+        }}
+      >
         <label className="rg-field">
           <span>{t("register.yourName")}</span>
           <input
@@ -122,14 +164,14 @@ export default function JoinTeam({
             maxLength={32}
             placeholder={t("roster.displayPlaceholder")}
           />
+          <small className="rg-hint">{t("register.yourNameHint")}</small>
         </label>
 
-        <button className="btn btn-primary" disabled={busy} onClick={join}>
-          {t("join.accept", { team: teamName })}
+        <button className="btn btn-primary rg-btn-wide" disabled={busy}>
+          <Check size={15} />
+          {busy ? t("register.saving") : t("join.accept", { team: teamName })}
         </button>
-      </div>
-
-      <p className="muted rg-hint">{t("register.yourNameHint")}</p>
+      </form>
     </div>
   );
 }

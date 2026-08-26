@@ -1,0 +1,122 @@
+/* The tournaments index.
+   One card per tournament. This replaced a five-column table with no scroll
+   wrapper, which took the whole page sideways on a phone — and this list is
+   the front door to the tournament flow, reached from a Discord link far more
+   often than from the nav. */
+
+.tl-list {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: grid;
+  gap: var(--space-2);
+}
+
+.tl-card {
+  display: grid;
+  gap: var(--space-3);
+  padding: var(--space-3);
+  border: 1px solid var(--color-divider);
+  border-radius: 10px;
+  background: var(--color-surface);
+  transition: border-color 0.15s ease;
+}
+
+.tl-card:hover {
+  border-color: color-mix(in srgb, var(--color-accent) 45%, var(--color-divider));
+}
+
+.tl-main {
+  display: grid;
+  gap: 8px;
+  min-width: 0;
+}
+
+.tl-name {
+  font-size: 16px;
+  font-weight: 800;
+  color: var(--color-text);
+  text-decoration: none;
+  overflow-wrap: anywhere;
+}
+
+.tl-name:hover {
+  color: var(--color-accent);
+}
+
+.tl-facts {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 6px 10px;
+  font-size: 12.5px;
+  color: var(--color-text-muted);
+}
+
+.tl-fact {
+  white-space: nowrap;
+}
+
+.tl-live {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  font-weight: 800;
+  font-size: 11px;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  color: #ef4444;
+}
+
+.tl-live::before {
+  content: "";
+  width: 7px;
+  height: 7px;
+  border-radius: 50%;
+  background: currentColor;
+  animation: tl-pulse 1.6s ease-in-out infinite;
+}
+
+@keyframes tl-pulse {
+  0%, 100% { opacity: 1; }
+  50% { opacity: 0.25; }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .tl-live::before { animation: none; }
+}
+
+/* Stacked and full width on a phone — these are the actions the whole page
+   exists for, so they get thumb-sized targets rather than a wrapped row of
+   small pills. */
+.tl-actions {
+  display: grid;
+  gap: 8px;
+}
+
+.tl-btn {
+  width: 100%;
+  min-height: 44px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+}
+
+@media (min-width: 720px) {
+  /* Facts on the left, actions on the right, once there is room for both. */
+  .tl-card {
+    grid-template-columns: minmax(0, 1fr) auto;
+    align-items: center;
+  }
+
+  .tl-actions {
+    grid-auto-flow: column;
+    justify-content: end;
+  }
+
+  .tl-btn {
+    width: auto;
+    min-height: 38px;
+    min-width: 104px;
+  }
+}
