@@ -1469,6 +1469,16 @@ model Tournament {
   /// and never queried across, so a table would be ceremony.
   TwitchChannels String? @db.VarChar(500)
 
+  /// The card image, in the database because there is no object storage here
+  /// and the one existing upload path writes to a filesystem Vercel discards.
+  BannerImage Bytes?  @db.MediumBlob
+  BannerMime  String? @db.VarChar(32)
+
+  /// A test tournament: bot teams and instant resolution are offered here and
+  /// refused everywhere else. Deliberately not the same thing as unpublished —
+  /// an unpublished tournament is a real one somebody is still setting up.
+  IsTest Boolean @default(false)
+
   Stages     TournamentStage[]
   Teams      TournamentTeam[]
   Matches    TournamentMatch[]
@@ -1489,6 +1499,47 @@ model GardenOrganizer {
   AddedAt        DateTime @default(now()) @db.DateTime(6)
 
   @@map("GardenOrganizers")
+}
+
+/// A link that makes whoever clicks it an organizer.
+///
+/// Modelled on the team invite rather than on Tournament.InviteToken. That one
+/// is a shared secret compared by string equality — it can gate an action but
+/// can never say who used it. This has to name the redeemer, so the token is
+/// unique and looked up rather than compared.
+///
+/// Single use. The alternative, a link that keeps working, is a link that keeps
+/// working after it has been forwarded out of the channel it was posted in.
+model OrganizerInvite {
+  Id Int @id @default(autoincrement())
+
+  /// 32 hex characters, from randomBytes(16) — the same generator as the team
+  /// link, and the same VarChar(32) that exactly fits it.
+  Token String @unique(map: "UX_OrganizerInvites_Token") @db.VarChar(32)
+
+  /// registry | tournament
+  ///
+  /// registry grants the right to create tournaments at all, and minting one
+  /// is Admin+ — letting organizers appoint organizers would make the registry
+  /// self-expanding, which is a permission system with no edge.
+  /// tournament adds the redeemer to one event's staff, and any of its
+  /// managers may mint one.
+  Kind String @default("registry") @db.VarChar(16)
+
+  /// Set only when Kind is "tournament".
+  TournamentId Int?
+
+  CreatedBySteamId BigInt   @db.UnsignedBigInt
+  CreatedAt        DateTime @default(now()) @db.DateTime(6)
+  /// Null never expires. A link handed over in a call does not need a clock;
+  /// one posted in a channel does.
+  ExpiresAt        DateTime? @db.DateTime(6)
+
+  UsedBySteamId BigInt?   @db.UnsignedBigInt
+  UsedAt        DateTime? @db.DateTime(6)
+
+  @@index([TournamentId], map: "IX_OrganizerInvites_Tournament")
+  @@map("OrganizerInvites")
 }
 
 /// Who may manage one tournament. Several per event, which is why it is a table
@@ -1572,6 +1623,10 @@ model TournamentTeamMember {
   /// tags and jokes a bracket should not inherit; an organizer needs a stable
   /// name for the duration. Null falls back to the profile name.
   DisplayName String?   @db.VarChar(32)
+  /// A synthetic player. Bots carry a real-looking SteamId so every join, stat
+  /// and scoreboard path treats them as a player with no special case; this is
+  /// the one column that says otherwise.
+  IsBot       Boolean   @default(false)
   InvitedAt   DateTime  @default(now()) @db.DateTime(6)
   RespondedAt DateTime? @db.DateTime(6)
 

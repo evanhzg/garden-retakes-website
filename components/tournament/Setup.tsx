@@ -66,6 +66,13 @@ export default function Setup({ adminKey, isOwner }: { adminKey?: string; isOwne
   const [srvEdit, setSrvEdit] = useState({ name: "", host: "", port: "", rconPassword: "", isTournament: true });
   /** Delete asks twice. The row is small and the action is not undoable. */
   const [confirmDelete, setConfirmDelete] = useState<number | null>(null);
+
+  /** The freshly minted organizer link, shown once so it can be copied. */
+  const [inviteLink, setInviteLink] = useState<string | null>(null);
+  /* Built in the browser rather than passed down: this component is already a
+     client component and the origin is whatever host is serving the page, which
+     is the one thing a hardcoded URL always gets wrong on a preview deploy. */
+  const origin = typeof window === "undefined" ? "" : window.location.origin;
   const [tName, setTName] = useState("");
   /**
    * The add-stage draft, per tournament.
@@ -405,6 +412,44 @@ export default function Setup({ adminKey, isOwner }: { adminKey?: string; isOwne
               {t("setup.addOrganizer")}
             </button>
           </form>
+
+          {/* The other way in, and the one people will actually use.
+              Adding an organizer by SteamID64 means asking somebody for a
+              17-digit number, being sent a profile URL instead, and looking it
+              up. A link skips all of it: whoever clicks it proves who they are
+              by signing in with Steam, so the link carries no identity and can
+              be handed to somebody without knowing anything about them. */}
+          <div className="su-invite">
+            <div className="su-row">
+              <button
+                className="btn"
+                disabled={busy}
+                onClick={async () => {
+                  const done = await post(
+                    "/api/admin/organizers/invite",
+                    { action: "create", kind: "registry" },
+                    "organizer invite",
+                  );
+                  if (done?.token) setInviteLink(`${origin}/organizers/join?invite=${done.token}`);
+                }}
+              >
+                {t("organizerInvite.create")}
+              </button>
+            </div>
+
+            {inviteLink && (
+              <div className="su-invite-out">
+                <code className="su-invite-link">{inviteLink}</code>
+                <button
+                  className="btn su-small"
+                  onClick={() => navigator.clipboard?.writeText(inviteLink)}
+                >
+                  {t("commands.copy")}
+                </button>
+                <span className="muted">{t("organizerInvite.unused")}</span>
+              </div>
+            )}
+          </div>
 
           {registry.length === 0 ? (
             <p className="muted">{t("setup.noOrganizers")}</p>

@@ -2,29 +2,77 @@
    One card per tournament. This replaced a five-column table with no scroll
    wrapper, which took the whole page sideways on a phone — and this list is
    the front door to the tournament flow, reached from a Discord link far more
-   often than from the nav. */
+   often than from the nav.
+
+   A card is a poster, not a table row: the banner is the background behind the
+   title rather than a thumbnail beside it, and the whole thing is square. */
 
 .tl-list {
   list-style: none;
   margin: 0;
   padding: 0;
   display: grid;
-  gap: var(--space-2);
+  gap: var(--space-3);
 }
 
 .tl-card {
+  position: relative;
   display: grid;
   gap: var(--space-3);
-  padding: var(--space-3);
+  padding: var(--space-4);
   border: 1px solid var(--color-divider);
   border-radius: 0;
   background: var(--color-surface);
+  overflow: hidden;
+  isolation: isolate;
   transition: border-color 0.15s ease;
 }
 
 .tl-card:hover {
-  border-color: color-mix(in srgb, var(--color-accent) 45%, var(--color-divider));
+  border-color: color-mix(in srgb, var(--color-accent) 55%, var(--color-divider));
 }
+
+/* ---------- Banner ---------- */
+
+.tl-banner {
+  position: absolute;
+  inset: 0;
+  z-index: -1;
+  overflow: hidden;
+  /* The fallback when there is no image: a quiet diagonal wash rather than an
+     empty grey rectangle, so a bannerless tournament looks deliberate. */
+  background:
+    linear-gradient(135deg, color-mix(in srgb, var(--color-accent) 12%, transparent), transparent 60%),
+    var(--color-surface);
+}
+
+.tl-banner img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  display: block;
+}
+
+/* Without this the title sits on whatever the photograph happens to be, which
+   is unreadable roughly half the time. Weighted towards the text side. */
+.tl-scrim {
+  position: absolute;
+  inset: 0;
+  background: linear-gradient(
+    90deg,
+    color-mix(in srgb, var(--color-surface) 94%, transparent) 0%,
+    color-mix(in srgb, var(--color-surface) 82%, transparent) 45%,
+    color-mix(in srgb, var(--color-surface) 55%, transparent) 100%
+  );
+}
+
+/* With a real banner the card is taller — a poster needs room to be one. */
+.tl-card.has-banner {
+  min-height: 132px;
+  align-content: center;
+}
+
+/* ---------- Text ---------- */
 
 .tl-main {
   display: grid;
@@ -33,11 +81,14 @@
 }
 
 .tl-name {
-  font-size: 16px;
-  font-weight: 800;
+  font-size: clamp(1rem, 2.6vw, 1.25rem);
+  font-weight: 900;
+  letter-spacing: -0.01em;
   color: var(--color-text);
   text-decoration: none;
   overflow-wrap: anywhere;
+  /* Readable over a photograph even where the scrim is thinnest. */
+  text-shadow: 0 1px 2px color-mix(in srgb, var(--color-bg) 60%, transparent);
 }
 
 .tl-name:hover {
@@ -88,6 +139,8 @@
   .tl-live::before { animation: none; }
 }
 
+/* ---------- Actions ---------- */
+
 /* Stacked and full width on a phone — these are the actions the whole page
    exists for, so they get thumb-sized targets rather than a wrapped row of
    small pills. */
@@ -102,6 +155,9 @@
   display: inline-flex;
   align-items: center;
   justify-content: center;
+  border-radius: 0;
+  font-weight: 700;
+  letter-spacing: 0.02em;
 }
 
 @media (min-width: 720px) {
@@ -119,6 +175,6 @@
   .tl-btn {
     width: auto;
     min-height: 38px;
-    min-width: 104px;
+    min-width: 108px;
   }
 }

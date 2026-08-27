@@ -39,6 +39,8 @@ export type SettingsView = {
   rulesText: string;
   prizeText: string;
   sponsorsText: string;
+  /** Whether a banner is stored. The bytes never come to the client. */
+  hasBanner: boolean;
   discordUrl: string;
   teamSpeakUrl: string;
   twitchChannels: string;
@@ -107,6 +109,61 @@ export default function Settings({
   const [notice, setNotice] = useState<string | null>(null);
 
   const started = tournament.startedAt !== null;
+
+  /* The banner lives outside `form` because it is not JSON — it goes up as a
+     multipart body to its own route and is never part of a settings save. */
+  const [hasBanner, setHasBanner] = useState(tournament.hasBanner);
+  /** Bumped on every upload, purely to defeat the image cache. */
+  const [bannerVersion, setBannerVersion] = useState(0);
+
+  const uploadBanner = useCallback(
+    async (file: File) => {
+      setBusy(true);
+      setNotice(null);
+      try {
+        const body = new FormData();
+        body.append("tournamentId", String(tournament.id));
+        body.append("file", file);
+
+        const query = adminKey ? `?key=${encodeURIComponent(adminKey)}` : "";
+        const res = await fetch(`/api/admin/tournaments/banner${query}`, { method: "POST", body });
+        const data = await res.json();
+
+        if (data.ok) {
+          setHasBanner(true);
+          setBannerVersion((v) => v + 1);
+          setNotice(t("settings.saved"));
+        } else {
+          setNotice(data.error ?? "upload failed");
+        }
+      } catch (err) {
+        setNotice(String(err));
+      } finally {
+        setBusy(false);
+      }
+    },
+    [adminKey, tournament.id, t],
+  );
+
+  const removeBanner = useCallback(async () => {
+    setBusy(true);
+    setNotice(null);
+    try {
+      const query = `?tournamentId=${tournament.id}${adminKey ? `&key=${encodeURIComponent(adminKey)}` : ""}`;
+      const res = await fetch(`/api/admin/tournaments/banner${query}`, { method: "DELETE" });
+      const data = await res.json();
+      if (data.ok) {
+        setHasBanner(false);
+        setNotice(t("settings.saved"));
+      } else {
+        setNotice(data.error ?? "failed");
+      }
+    } catch (err) {
+      setNotice(String(err));
+    } finally {
+      setBusy(false);
+    }
+  }, [adminKey, tournament.id, t]);
 
   const post = useCallback(
     async (body: Record<string, unknown>) => {
@@ -232,6 +289,52 @@ export default function Settings({
               {t("settings.start")}
             </button>
           )}
+        </div>
+      </section>
+
+      {/* ---------------------------------------------------------- banner */}
+      <section className="ts-block">
+        <h3>{t("settings.banner")}</h3>
+        <p className="muted ts-hint">{t("settings.bannerHint")}</p>
+
+        <div className="ts-banner">
+          {/* Cache-busted by the counter, not by a timestamp: the URL is
+              stable, so without this the browser keeps showing the old image
+              after an upload and the organizer uploads it again. */}
+          {hasBanner && (
+            // eslint-disable-next-line @next/next/no-img-element
+            <img
+              className="ts-banner-preview"
+              src={`/api/tournaments/${tournament.slug}/banner?v=${bannerVersion}`}
+              alt=""
+            />
+          )}
+
+          <div className="ts-row">
+            <label className="btn" htmlFor="ts-banner-file">
+              {busy ? t("register.saving") : t("settings.bannerPick")}
+            </label>
+            <input
+              id="ts-banner-file"
+              type="file"
+              accept="image/png,image/jpeg,image/webp,image/gif"
+              className="ts-file"
+              onChange={async (e) => {
+                const file = e.target.files?.[0];
+                // Cleared here so picking the same file twice still fires a
+                // change event — otherwise a failed upload cannot be retried
+                // without choosing a different image.
+                e.target.value = "";
+                if (file) await uploadBanner(file);
+              }}
+            />
+
+            {hasBanner && (
+              <button className="btn btn-secondary" disabled={busy} onClick={removeBanner}>
+                {t("settings.bannerRemove")}
+              </button>
+            )}
+          </div>
         </div>
       </section>
 

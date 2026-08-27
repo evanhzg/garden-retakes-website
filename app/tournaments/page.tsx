@@ -126,7 +126,20 @@ export default async function TournamentsPage() {
               const when = countdown(edition, now);
 
               return (
-                <li key={tournament.Id} className="tl-card">
+                <li key={tournament.Id} className={`tl-card ${tournament.BannerImage ? "has-banner" : ""}`}>
+                  {/* The banner is a background behind the title, not a
+                      thumbnail beside it — a tournament card should look like a
+                      poster. Without one the card falls back to a tinted panel
+                      rather than a broken image well, so a bannerless event
+                      reads as plain rather than as unfinished. */}
+                  <div className="tl-banner">
+                    {tournament.BannerImage && (
+                      // eslint-disable-next-line @next/next/no-img-element
+                      <img src={`/api/tournaments/${tournament.Slug}/banner`} alt="" loading="lazy" />
+                    )}
+                    <span className="tl-scrim" aria-hidden />
+                  </div>
+
                   <div className="tl-main">
                     <Link className="tl-name" href={`/tournaments/${tournament.Slug}`}>
                       {tournament.Name}
