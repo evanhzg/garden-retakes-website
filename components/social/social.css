@@ -865,3 +865,75 @@ html[data-motion="off"] .dm-bubble.typing i { animation: none; }
     right: 0;
   }
 }
+
+/* ---------- Rail avatars: online above, offline below ----------
+   Told apart by treatment rather than by absence. The rail used to render
+   online friends only, so somebody logging off vanished from the bar entirely,
+   which reads as "they removed me" rather than "they went to bed". */
+
+.friends-rail-friend.is-online .avatar-status img {
+  /* A ring, not a thick band: 34px of avatar cannot spare more than a pixel. */
+  border: 1px solid var(--accent);
+  box-shadow: 0 0 0 1px color-mix(in srgb, var(--accent) 30%, transparent);
+}
+
+.friends-rail-friend.is-offline .avatar-status img {
+  /* The house idiom for inactive, from components/home/LadderRows.tsx: full
+     desaturation plus a small contrast bump, which stops grey faces going
+     muddy. */
+  filter: grayscale(1) contrast(1.08);
+  /* There is no black token, and a literal #000 disappears against the dark
+     theme's own near-black surfaces. Mixing from --color-text tracks both
+     themes and stays visible in each. */
+  border: 1px solid color-mix(in srgb, var(--color-text) 70%, transparent);
+  opacity: 0.75;
+}
+
+/* Offline friends still respond to a hover — they are still clickable, and a
+   dead-looking avatar that opens a profile is a surprise. */
+.friends-rail-friend.is-offline:hover .avatar-status img {
+  filter: grayscale(0.35) contrast(1);
+  opacity: 1;
+}
+
+/* The presence dot is redundant once the whole avatar carries the state, and
+   at 34px it costs more than it says. */
+.friends-rail-friend .avatar-status-dot {
+  display: none;
+}
+
+/* Separates the two groups, so the rail reads as a ranking rather than as a
+   list with some faded entries in it. */
+.friends-rail-split {
+  flex: 0 0 auto;
+  width: 18px;
+  height: 1px;
+  margin: 2px 0;
+  background: var(--color-divider);
+}
+
+/* ---------- Hover to expand ----------
+   The rail opens the panel on hover and the panel closes on leave, unless it
+   was pinned by a click. Nothing here needs to change for that — it is state —
+   but the cursor should say the rail is interactive as a whole. */
+
+.friends-rail {
+  cursor: pointer;
+}
+
+.friends-rail-list {
+  cursor: default;
+}
+
+/* A pinned panel is the deliberate state and gets a slightly firmer edge, so
+   "I clicked this open" and "this is following my pointer" are distinguishable
+   without reading anything. */
+.friends-sidebar.pinned {
+  border-left-color: color-mix(in srgb, var(--accent) 55%, var(--border));
+}
+
+/* "You:" prefix on a thread's last line. */
+.dm-you {
+  font-weight: 700;
+  color: var(--color-text-muted);
+}

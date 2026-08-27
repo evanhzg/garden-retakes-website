@@ -2846,5 +2846,10 @@
   "bracket.semis": "Demi-finales",
   "bracket.quarters": "Quarts de finale",
   "bracket.round": "Tour {n}",
-  "community.discordHint": "Annonces et support"
+  "community.discordHint": "Annonces et support",
+  "social.friends.otherChats": "Autres conversations",
+  "social.friends.noOtherChats": "Aucun message hors de votre liste d'amis. Vos amis sont dans l'onglet Amis.",
+  "social.friends.you": "Vous :",
+  "social.friends.chat": "Discuter",
+  "social.friends.add": "Ajouter en ami"
 }

@@ -2846,5 +2846,10 @@
   "bracket.semis": "Semi-finals",
   "bracket.quarters": "Quarter-finals",
   "bracket.round": "Round {n}",
-  "community.discordHint": "Announcements and support"
+  "community.discordHint": "Announcements and support",
+  "social.friends.otherChats": "Other conversations",
+  "social.friends.noOtherChats": "No messages from anyone outside your friends list. Friends are on the Friends tab.",
+  "social.friends.you": "You:",
+  "social.friends.chat": "Chat",
+  "social.friends.add": "Add friend"
 }
