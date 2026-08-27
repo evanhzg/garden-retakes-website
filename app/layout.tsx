@@ -1,5 +1,5 @@
 import type { Metadata, Viewport } from "next";
-import { Archivo, JetBrains_Mono } from "next/font/google";
+import { Archivo, JetBrains_Mono, Cormorant_Garamond } from "next/font/google";
 import fs from "fs";
 import path from "path";
 import { prisma } from "@/lib/db";
@@ -31,13 +31,21 @@ const mono = JetBrains_Mono({
   display: "swap",
 });
 
+const serif = Cormorant_Garamond({
+  subsets: ["latin"],
+  weight: ["400", "500", "600"],
+  style: ["normal", "italic"],
+  variable: "--font-serif-face",
+  display: "swap",
+});
+
 export const metadata: Metadata = {
   metadataBase: new URL(process.env.NEXT_PUBLIC_SITE_URL || "https://retakes.fr"),
   title: {
-    default: "REEEETAKES",
+    default: "TOURNAMENT SYSTEM",
     template: "%s · REEEETAKES",
   },
-  description: "Rankings, stats, seasons, inventory and games for the REEEETAKES community",
+  description: "Understand the REEEETAKES tournament system: map veto, brackets, rules, servers and match flow.",
   icons: {
     icon: "/retakes_logo.ico",
     apple: "/retakes_logo.png",
@@ -120,7 +128,7 @@ export default async function RootLayout({ children }: { children: React.ReactNo
       lang={locale}
       suppressHydrationWarning
       data-accent={userAccent}
-      className={`${sans.variable} ${mono.variable}`}
+      className={`${sans.variable} ${mono.variable} ${serif.variable} bg-background`}
     >
       <body>
         {/* Applied before first paint so an override does not flash the wrong
