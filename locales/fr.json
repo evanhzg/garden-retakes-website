@@ -3028,5 +3028,8 @@
   "home.format.swiss.p2": "Moins de matchs qu'un round robin",
   "home.close.title": "Voilà tout le système.",
   "home.close.body": "Amenez deux amis et un nom d'équipe. Tout le reste est sur ce site.",
-  "nav.community": "Communauté"
+  "nav.community": "Communauté",
+  "match.gotv": "Regarder sur GOTV",
+  "match.noServerYet": "Pas encore de serveur — le bouton apparaît dès que le match en reçoit un.",
+  "match.notAllowed": "Les places de spectateur sont limitées à la liste de ce tournoi."
 }

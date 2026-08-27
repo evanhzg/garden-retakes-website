@@ -1,6 +1,21 @@
 "use client";
 
 import { useCallback, useEffect, useState } from "react";
+import {
+  Bot,
+  Copy,
+  EyeOff,
+  FastForward,
+  FlaskConical,
+  Globe,
+  ImagePlus,
+  Play,
+  RefreshCw,
+  Save,
+  Server,
+  Trash2,
+  UserPlus,
+} from "lucide-react";
 import { useI18n } from "@/components/I18nProvider";
 import { formatRemaining, TEAM_SIZES } from "@/lib/tournament/edition";
 import "./settings.css";
@@ -347,11 +362,13 @@ export default function Settings({
         <div className="ts-row">
           {!published && (
             <button className="btn btn-primary" disabled={busy} onClick={() => post({ action: "publish" }).then(() => setPublished(true))}>
+              <Globe size={15} />
               {t("settings.publish")}
             </button>
           )}
           {published && !started && (
             <button className="btn btn-secondary" disabled={busy} onClick={() => post({ action: "unpublish" }).then(() => setPublished(false))}>
+              <EyeOff size={15} />
               {t("settings.unpublish")}
             </button>
           )}
@@ -367,6 +384,7 @@ export default function Settings({
               title={tournament.teamCount < 2 ? t("settings.needTwo") : t("settings.startHint")}
               onClick={() => post({ action: "start" })}
             >
+              <Play size={15} />
               {t("settings.start")}
             </button>
           )}
@@ -393,6 +411,7 @@ export default function Settings({
 
           <div className="ts-row">
             <label className="btn" htmlFor="ts-banner-file">
+              <ImagePlus size={15} />
               {busy ? t("register.saving") : t("settings.bannerPick")}
             </label>
             <input
@@ -412,6 +431,7 @@ export default function Settings({
 
             {hasBanner && (
               <button className="btn btn-secondary" disabled={busy} onClick={removeBanner}>
+                <Trash2 size={15} />
                 {t("settings.bannerRemove")}
               </button>
             )}
@@ -485,6 +505,7 @@ export default function Settings({
               <>
                 <code className="ts-link">{inviteUrl}</code>
                 <button className="btn btn-secondary ts-small" onClick={() => navigator.clipboard?.writeText(inviteUrl)}>
+                  <Copy size={15} />
                   {t("commands.copy")}
                 </button>
               </>
@@ -498,6 +519,7 @@ export default function Settings({
               onClick={() => post({ action: "rotate-invite" }).then((d) => d?.inviteToken && setInviteToken(d.inviteToken))}
               title={t("settings.rotateHint")}
             >
+              <RefreshCw size={15} />
               {t("settings.rotate")}
             </button>
           </div>
@@ -615,6 +637,8 @@ export default function Settings({
               if (done?.ok) setSpectatorsPublic(Boolean(done.isPublic));
             }}
           >
+            <Globe size={15} />
+            <Globe size={15} />
             {t("spectators.public")}
           </button>
           <span className="muted ts-hint">
@@ -641,6 +665,8 @@ export default function Settings({
             />
           </label>
           <button className="btn" disabled={busy || !/^\d{17}$/.test(newSpectator.trim())}>
+            <UserPlus size={15} />
+            <UserPlus size={15} />
             {t("spectators.add")}
           </button>
         </form>
@@ -690,18 +716,21 @@ export default function Settings({
 
           {isTest && !started && (
             <button className="btn" disabled={busy} onClick={() => testAction({ action: "fill-bots" })}>
+              <Bot size={15} />
               {t("settings.fillBots")}
             </button>
           )}
 
           {isTest && !started && (
             <button className="btn" disabled={busy} onClick={() => testAction({ action: "add-bot-team" })}>
+              <Bot size={15} />
               {t("settings.addBotTeam")}
             </button>
           )}
 
           {isTest && started && (
             <button className="btn btn-primary" disabled={busy} onClick={() => testAction({ action: "simulate" })}>
+              <FastForward size={15} />
               {t("settings.simulate")}
             </button>
           )}
@@ -710,6 +739,7 @@ export default function Settings({
               the absent team-mates, so the in-game flow can be walked too. */}
           {isTest && started && (
             <button className="btn" disabled={busy} onClick={() => testAction({ action: "play-live" })}>
+              <Server size={15} />
               {t("settings.playLive")}
             </button>
           )}
@@ -742,6 +772,7 @@ export default function Settings({
 
       <div className="ts-save">
         <button className="btn btn-primary" disabled={busy} onClick={save}>
+          <Save size={15} />
           {t("settings.save")}
         </button>
       </div>

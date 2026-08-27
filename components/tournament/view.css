@@ -326,3 +326,112 @@
     min-height: 52px;
   }
 }
+
+/* ============================================================== breathing room
+   Every tab of a tournament, not just the ones that were noticed.
+
+   The panels were flush against the tab strip and against each other, so the
+   bracket, the rosters and the results all read as content pushed into a
+   corner. One padding scale applied at the panel level rather than per tab, so
+   a tab added later inherits it instead of being the odd one out.
+   ============================================================================ */
+
+.tv .pro-panel {
+  padding: 1rem;
+}
+
+/* The bracket needs its own, because it is a scroller: padding on the
+   scrolling element is what puts space before the first round and — with
+   padding-right — after the last, which is otherwise clipped away. */
+.tv .pro-panel .br {
+  padding: 1rem;
+  gap: var(--space-5);
+}
+
+/* Teams, pool and stats sit inside the padded panel already; the stage blocks
+   need separating from each other rather than from the edge. */
+.tv-stage + .tv-stage {
+  margin-top: var(--space-5);
+  padding-top: var(--space-5);
+  border-top: 1px solid var(--color-divider);
+}
+
+.tv-teams,
+.tv-pool {
+  padding: 0;
+}
+
+/* ---------------------------------------------------------------- results */
+
+.rr-champion {
+  padding: 1rem;
+  margin: 1rem 0;
+}
+
+.rr-block {
+  padding: 1rem;
+  border: 1px solid var(--color-divider);
+  background: color-mix(in srgb, var(--color-text) 3%, transparent);
+}
+
+.rr-block .rr-heading {
+  margin-top: 0;
+}
+
+/* ------------------------------------------------------- bracket scrolling
+   It still would not scroll sideways on a phone. Three things were stopping
+   it, and all three had to go:
+
+   1. The panel it sits in had no `min-width: 0`, so the grid track it lives in
+      sized to the bracket's full width rather than to the screen — there was
+      no overflow to scroll, the page was simply wider than the viewport.
+   2. `touch-action` defaults let the browser claim a horizontal drag for
+      back-navigation before the element sees it.
+   3. Nothing said the strip continues past the edge, so nobody tried. */
+
+.tv .pro-panel,
+.tv-stage,
+.tv-stages {
+  min-width: 0;
+}
+
+.br {
+  touch-action: pan-x pan-y;
+  /* A scroll container has to be allowed to be narrower than its content. */
+  max-width: 100%;
+}
+
+@media (max-width: 760px) {
+  .tv .pro-panel {
+    /* Less at the sides on a phone: 16px each way off a 360px screen is most of
+       a bracket column. */
+    padding: 0.75rem 0.5rem;
+  }
+
+  .tv .pro-panel .br {
+    padding: 0.5rem;
+    /* The scroll cue: a sliver of the next round visible at the right edge is
+       what tells a thumb there is more to drag towards. */
+    padding-right: 2.5rem;
+  }
+
+  .rr-champion,
+  .rr-block {
+    padding: 0.85rem;
+  }
+
+  .rr-champion {
+    margin: 0.75rem 0;
+  }
+}
+
+/* ------------------------------------------------------------ match modal */
+
+.mm-why {
+  margin: 0;
+  padding: 10px 12px;
+  border-left: 3px solid var(--color-divider);
+  background: color-mix(in srgb, var(--color-text) 4%, transparent);
+  font-size: 12.5px;
+  color: var(--color-text-muted);
+}

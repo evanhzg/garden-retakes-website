@@ -1,0 +1,80 @@
+/* A foldable section. Square, like everything else here. */
+
+.cl {
+  border: 1px solid var(--color-divider);
+  border-left: 3px solid var(--color-divider);
+  background: var(--color-surface);
+  min-width: 0;
+}
+
+.cl.tone-accent {
+  border-left-color: var(--color-accent);
+}
+
+.cl.tone-muted {
+  opacity: 0.72;
+}
+
+.cl-head {
+  display: flex;
+  align-items: center;
+  gap: 9px;
+  width: 100%;
+  padding: 11px 12px;
+  border: 0;
+  border-radius: 0;
+  background: transparent;
+  color: var(--color-text);
+  font: inherit;
+  font-size: 13.5px;
+  font-weight: 700;
+  text-align: left;
+  cursor: pointer;
+  min-width: 0;
+  transition: background 0.14s ease;
+}
+
+.cl-head:hover {
+  background: color-mix(in srgb, var(--color-text) 5%, transparent);
+}
+
+.cl-chev {
+  flex: 0 0 auto;
+  color: var(--color-text-muted);
+  transition: transform 0.16s ease;
+}
+
+.cl.open .cl-chev {
+  transform: rotate(90deg);
+  color: var(--color-accent);
+}
+
+.cl-title {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  min-width: 0;
+}
+
+.cl-meta {
+  margin-left: auto;
+  flex: 0 0 auto;
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 11.5px;
+  font-weight: 600;
+  color: var(--color-text-muted);
+}
+
+.cl-body {
+  padding: 1rem;
+  border-top: 1px solid var(--color-divider);
+  min-width: 0;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .cl-chev {
+    transition: none;
+  }
+}

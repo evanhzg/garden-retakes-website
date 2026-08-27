@@ -1,6 +1,6 @@
 import { NextResponse } from "next/server";
 import { prisma } from "@/lib/db";
-import { autoVeto, materialiseMaps, setMapsDirectly } from "@/lib/tournament/vetoRunner";
+import { autoStart, autoVeto, materialiseMaps, setMapsDirectly } from "@/lib/tournament/vetoRunner";
 import { getSession } from "@/lib/auth";
 import { canManage, getTournamentContext } from "@/lib/tournamentAuth";
 import { autoAction, validateAction, vetoState } from "@/lib/tournament/veto";
@@ -30,6 +30,8 @@ type Body = {
     | "admin-set-maps";
   /** admin-set-maps only: the series, in play order. */
   maps?: { map: string; startSideTeamA?: "T" | "CT" | null }[];
+  /** admin-auto only: a map to steer the result towards. */
+  preferMap?: string | null;
   map?: string;
   side?: "T" | "CT";
 };
@@ -167,7 +169,13 @@ export async function POST(req: Request) {
       // TournamentMatchMap rows — so a correctly completed veto still left
       // startMatch() with no map to play. Idempotent, so calling it on every
       // action rather than trying to detect the last one is free.
-      await materialiseMaps(match.Id);
+      const decided = await materialiseMaps(match.Id);
+
+      // The veto ending and the match starting used to be two acts, the second
+      // of which nobody performed — a decided match sat waiting for an organizer
+      // to notice. Tolerant of failure: a busy fleet leaves the match "ready"
+      // and startable by hand, which is exactly where it was before.
+      if (decided.ok) await autoStart(match.Id);
 
       return NextResponse.json({ ok: true });
     }
@@ -181,7 +189,8 @@ export async function POST(req: Request) {
       if (!isOrganizer) {
         return NextResponse.json({ error: "Organizers only." }, { status: 403 });
       }
-      const result = await autoVeto(match.Id);
+      const result = await autoVeto(match.Id, Math.random, body.preferMap ?? null);
+      if (result.ok) await autoStart(match.Id);
       return NextResponse.json({ ok: result.ok, maps: result.maps });
     }
 
@@ -194,6 +203,7 @@ export async function POST(req: Request) {
       }
       const result = await setMapsDirectly(match.Id, body.maps ?? []);
       if (!result.ok) return NextResponse.json({ error: result.error }, { status: 400 });
+      await autoStart(match.Id);
       return NextResponse.json({ ok: true });
     }
 
@@ -244,7 +254,8 @@ export async function GET(req: Request) {
       await recordAction(match.Id, actions.length, teamId, auto.kind, auto.map, auto.side, true);
       // An expired turn can be the last one, and a veto that completed by
       // timeout needs its maps as much as one that completed by choice.
-      await materialiseMaps(match.Id);
+      const done = await materialiseMaps(match.Id);
+      if (done.ok) await autoStart(match.Id);
 
       actions.push({
         ordinal: actions.length,

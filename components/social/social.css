@@ -985,11 +985,14 @@ html[data-motion="off"] .dm-bubble.typing i { animation: none; }
   display: none;
 }
 
+/* Fills the dock, and keeps its own grid.
+   This used to also set display:flex, which overrode the
+   `grid-template-rows: auto minmax(0,1fr) auto` on .dm-view — so the message
+   list lost the row that gives it height and the thread rendered as a header
+   and a composer with the conversation squeezed between them. */
 .dm-dock .dm-view {
-  display: flex;
-  flex-direction: column;
+  flex: 1 1 auto;
   min-height: 0;
-  flex: 1;
 }
 
 /* The header is the toggle, so it needs a pointer and a hover. */
@@ -1134,4 +1137,33 @@ html[data-motion="off"] .dm-bubble.typing i { animation: none; }
   body:has(.dm-dock) .friends-fab {
     display: none;
   }
+}
+
+/* Unread on a folded dock. The corner keeps counting, which is the reason to
+   fold rather than close. */
+.dm-unread {
+  margin-left: auto;
+  min-width: 20px;
+  height: 20px;
+  padding: 0 6px;
+  display: grid;
+  place-items: center;
+  background: var(--accent);
+  color: #fff;
+  font-family: var(--font-mono);
+  font-size: 11px;
+  font-weight: 800;
+  border-radius: 999px;
+}
+
+/* With a badge present the close button must not also claim margin-left:auto,
+   or the two fight over the same gap. */
+.dm-unread ~ .dm-x {
+  margin-left: 0;
+}
+
+/* A staff message, marked by its rule rather than by an emoji inside the
+   bubble — a glyph in the text reads as part of what the person said. */
+.dm-msg.staff .dm-bubble {
+  border-left: 3px solid var(--accent);
 }

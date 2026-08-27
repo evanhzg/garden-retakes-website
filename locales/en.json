@@ -3028,5 +3028,8 @@
   "home.format.swiss.p2": "Fewer matches than a round robin",
   "home.close.title": "That is the whole system.",
   "home.close.body": "Bring two friends and a team name. Everything else is on this site.",
-  "nav.community": "Community"
+  "nav.community": "Community",
+  "match.gotv": "Watch on GOTV",
+  "match.noServerYet": "No server yet — the button appears as soon as the match is handed to one.",
+  "match.notAllowed": "Spectating is limited to the allowlist for this tournament."
 }

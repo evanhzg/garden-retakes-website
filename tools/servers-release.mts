@@ -34,10 +34,17 @@ if (args.includes("--stale")) {
       select: { State: true },
     });
 
+    // A server is legitimately held while a match is "ready" (its map is
+    // loading) or "live". Anything else holding one is a leftover: a finished
+    // match, a match that was reset, or a match that no longer exists. The
+    // "pending" case is the one that bit — a demo reset put matches back to
+    // pending and left every server they had claimed marked busy forever.
+    const HOLDS = new Set(["ready", "live"]);
+
     if (!match) {
       await release(server.Id, `match ${server.CurrentMatchId} no longer exists`);
-    } else if (match.State === "finished") {
-      await release(server.Id, `match ${server.CurrentMatchId} is finished`);
+    } else if (!HOLDS.has(match.State)) {
+      await release(server.Id, `match ${server.CurrentMatchId} is ${match.State}`);
     } else {
       console.log(`#${server.Id} "${server.Name}": match ${server.CurrentMatchId} is ${match.State} — leaving it`);
     }

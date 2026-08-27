@@ -174,6 +174,7 @@ export default function FriendsSidebar() {
     return () => document.removeEventListener("pointerdown", onPointerDown, true);
   }, [isOpen]);
 
+
   /**
    * Publish the header's real height as --social-top.
    *
@@ -210,9 +211,44 @@ export default function FriendsSidebar() {
   const [dmInput, setDmInput] = useState("");
   /** Collapsed to its header, like every chat dock people already use. */
   const [dockMinimised, setDockMinimised] = useState(false);
+  const dockRef = useRef<HTMLDivElement>(null);
+  /** Mirror for the socket handler, which closes over its first render. */
+  const dockMinimisedRef = useRef(false);
   const [typingFrom, setTypingFrom] = useState<string | null>(null);
   /** friendId -> unread count, cleared when that thread is opened. */
   const [unread, setUnread] = useState<Record<string, number>>({});
+
+  useEffect(() => {
+    dockMinimisedRef.current = dockMinimised;
+  }, [dockMinimised]);
+
+  /**
+   * A click outside the dock folds it away.
+   *
+   * Minimised rather than closed, and the distinction matters: closing loses
+   * the thread and you have to find the person again, whereas folding leaves
+   * the header in the corner with a count of whatever arrived while you were
+   * elsewhere. Closing is what the X is for, and it is right there.
+   *
+   * The friends panel is exempt — clicking a different conversation in the list
+   * is the most obvious next thing to do, and folding the dock on the way would
+   * fight it.
+   */
+  useEffect(() => {
+    if (!activeDmUser || dockMinimised) return;
+
+    const onDown = (event: PointerEvent) => {
+      const target = event.target as HTMLElement | null;
+      if (!target) return;
+      if (dockRef.current?.contains(target)) return;
+      if (target.closest?.(".friends-sidebar, .friends-rail, .friends-fab, .player-bubble")) return;
+
+      setDockMinimised(true);
+    };
+
+    document.addEventListener("pointerdown", onDown, true);
+    return () => document.removeEventListener("pointerdown", onDown, true);
+  }, [activeDmUser, dockMinimised]);
 
   const logRef = useRef<HTMLDivElement>(null);
   const lastTypingSent = useRef(0);
@@ -291,6 +327,13 @@ export default function FriendsSidebar() {
       if (activeDmRef.current && from === activeDmRef.current) {
         setMessages((prev) => mergeMessages(prev, [incoming]));
         setTypingFrom((who) => (who === from ? null : who));
+
+        // Open but folded away is not read. Without this the badge on a
+        // minimised dock could never count anything, because the thread being
+        // "active" was taken to mean somebody was looking at it.
+        if (dockMinimisedRef.current) {
+          setUnread((u) => ({ ...u, [from]: (u[from] ?? 0) + 1 }));
+        }
         return;
       }
       // Not the open thread: count it so the tab and the row can say so.
@@ -714,7 +757,7 @@ export default function FriendsSidebar() {
           Portalled to <body> so the sidebar's transform and overflow cannot
           clip or move it. */}
       {activeDmUser && typeof document !== "undefined" && createPortal(
-        <div className={`dm-dock ${dockMinimised ? "minimised" : ""}`}>
+        <div className={`dm-dock ${dockMinimised ? "minimised" : ""}`} ref={dockRef}>
                 <div className="dm-view">
                   {/* The whole header toggles the dock, the way every chat
                       card people already use behaves — but the two buttons
@@ -724,11 +767,20 @@ export default function FriendsSidebar() {
                     className="dm-header"
                     role="button"
                     tabIndex={0}
-                    onClick={() => setDockMinimised((v) => !v)}
+                    onClick={() => {
+                      setDockMinimised((v) => {
+                        // Opening it back up clears what accumulated.
+                        if (v && activeDmUser) setUnread((u) => ({ ...u, [activeDmUser]: 0 }));
+                        return !v;
+                      });
+                    }}
                     onKeyDown={(e) => {
                       if (e.key === "Enter" || e.key === " ") {
                         e.preventDefault();
-                        setDockMinimised((v) => !v);
+                        setDockMinimised((v) => {
+                          if (v && activeDmUser) setUnread((u) => ({ ...u, [activeDmUser]: 0 }));
+                          return !v;
+                        });
                       }
                     }}
                   >
@@ -746,6 +798,13 @@ export default function FriendsSidebar() {
                             : "Offline"}
                       </span>
                     </div>
+
+                    {/* What arrived while it was folded away. The whole point
+                        of minimising rather than closing is that the corner
+                        keeps counting. */}
+                    {dockMinimised && (unread[activeDmUser] ?? 0) > 0 && (
+                      <span className="dm-unread">{unread[activeDmUser]}</span>
+                    )}
 
                     <button
                       className="dm-x"
@@ -776,12 +835,12 @@ export default function FriendsSidebar() {
                             className={[
                               "dm-msg",
                               mine ? "own" : "other",
+                              m.isAdmin ? "staff" : "",
                               grouped ? "grouped" : "",
                               m.pending ? "pending" : "",
                             ].filter(Boolean).join(" ")}
                           >
                             <div className="dm-bubble">
-                              {m.isAdmin && <span className="admin-badge" title="Staff">🛡️</span>}
                               <MessageBody content={m.content} />
                             </div>
                             {!grouped && <time className="dm-time">{timeLabel(m.ts)}</time>}

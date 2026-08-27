@@ -42,7 +42,19 @@ for (const slug of SLUGS) {
     // empty or the bracket would start half-populated.
     await prisma.tournamentMatch.updateMany({
       where: { Id: { in: ids } },
-      data: { ScoreA: 0, ScoreB: 0, WinnerTeamId: null, State: "pending", EndedAt: null, VetoDeadline: null },
+      // ServerId cleared too. Leaving it set on a reset match left a pending
+      // match pointing at a server it no longer holds, which the spectate check
+      // read as "there is somewhere to watch" and offered a button to an empty
+      // server.
+      data: {
+        ScoreA: 0,
+        ScoreB: 0,
+        WinnerTeamId: null,
+        State: "pending",
+        EndedAt: null,
+        VetoDeadline: null,
+        ServerId: null,
+      },
     });
     await prisma.tournamentMatch.updateMany({
       where: { Id: { in: ids }, Round: { gt: 1 } },

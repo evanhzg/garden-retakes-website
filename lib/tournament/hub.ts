@@ -62,15 +62,35 @@ export function podiumFrom(
   matches: { Round: number; TeamAId: number | null; TeamBId: number | null; WinnerTeamId: number | null }[],
   teams: { Id: number; Name: string; Tag: string | null }[],
 ): { place: number; teamId: number; name: string; tag: string | null }[] {
+  if (matches.length === 0) return [];
+
   const finished = matches.filter((m) => m.WinnerTeamId !== null);
   if (finished.length === 0) return [];
 
   const teamById = new Map(teams.map((x) => [x.Id, x]));
   const named = (id: number | null) => (id === null ? null : teamById.get(id) ?? null);
 
-  const finalRound = Math.max(...finished.map((m) => m.Round));
-  const final = finished.find((m) => m.Round === finalRound);
-  if (!final?.WinnerTeamId) return [];
+  /**
+   * The final is the last round of the BRACKET, not the last round played.
+   *
+   * This used to take the highest round among finished matches, which meant an
+   * ongoing tournament with only its first round played reported a round-one
+   * winner as the champion — a tournament in progress showing a trophy and a
+   * podium for a team that had won one game. The bracket's own depth is the
+   * only thing that says which match is the final.
+   */
+  const finalRound = Math.max(...matches.map((m) => m.Round));
+  const lastRound = matches.filter((m) => m.Round === finalRound);
+
+  // A final is one match. Two matches in the deepest round means this is not a
+  // complete bracket — the final row is missing — and picking one of them as
+  // the decider would crown whichever happened to be first in the list.
+  if (lastRound.length !== 1) return [];
+
+  const final = lastRound[0];
+
+  // Not played yet: there is no podium, and saying so is the correct answer.
+  if (!final.WinnerTeamId) return [];
 
   const out: { place: number; teamId: number; name: string; tag: string | null }[] = [];
 
@@ -122,7 +142,10 @@ export async function tournamentArchive(
     include: {
       Teams: { select: { Id: true, Name: true, Tag: true } },
       Matches: {
-        where: { State: "finished" },
+        // Every match, not only the finished ones. podiumFrom needs the
+        // bracket's full depth to know which round IS the final — handed only
+        // the finished ones it would call the deepest round played the final,
+        // which is the bug it was just fixed for.
         orderBy: [{ Round: "desc" }, { Slot: "asc" }],
         select: {
           Round: true,

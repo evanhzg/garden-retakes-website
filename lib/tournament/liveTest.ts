@@ -28,7 +28,18 @@ export type LiveTestResult = {
   log: string[];
 };
 
-export async function startLiveBotMatch(tournamentId: number): Promise<LiveTestResult> {
+export async function startLiveBotMatch(
+  tournamentId: number,
+  /**
+   * A map to steer the veto towards.
+   *
+   * Only de_dust2 has authored tournament spawns so far, so a bot match on any
+   * other map has nowhere for its players to stand. Steering the veto is the
+   * cheap fix; special-casing the spawn engine would be the expensive one, and
+   * would have to be undone the day the other maps are authored.
+   */
+  preferMap: string | null = "de_dust2",
+): Promise<LiveTestResult> {
   const log: string[] = [];
 
   const tournament = await prisma.tournament.findUnique({
@@ -61,7 +72,7 @@ export async function startLiveBotMatch(tournamentId: number): Promise<LiveTestR
   // in game, so decide it here — the same autoVeto the simulator uses, through
   // the same validator a captain's veto goes through.
   if (match.Maps.length === 0) {
-    const veto = await autoVeto(match.Id);
+    const veto = await autoVeto(match.Id, Math.random, preferMap);
     if (!veto.ok) return { ok: false, error: "Could not decide the maps.", log };
     log.push(`veto → ${veto.maps.join(", ")}`);
   }

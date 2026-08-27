@@ -4,6 +4,7 @@ import { useCallback, useState } from "react";
 import { useI18n } from "@/components/I18nProvider";
 import "./roster.css";
 import StatusTag from "./StatusTag";
+import Collapsible from "./Collapsible";
 
 // The organizer's view of who is playing.
 //
@@ -77,13 +78,32 @@ export default function Roster({
   }
 
   return (
-    <div className="rs">
-      {notice && <p className="rs-notice">{notice}</p>}
+    <div className="rs rs-grid">
+      {notice && <p className="rs-notice rs-wide">{notice}</p>}
 
+      {/* Folded, and two across.
+          Sixteen expanded rosters is a page you scroll for a minute to reach
+          the one team you came for — and every one of them was mounting its own
+          rename form and invite link to be looked at by nobody. */}
       {teams.map((team) => {
         const nameKey = `team-${team.id}`;
+        const accepted = team.members.filter((m) => m.status === "accepted").length;
         return (
-          <article key={team.id} className={`rs-team st-${team.status}`}>
+          <Collapsible
+            key={team.id}
+            tone={team.status === "accepted" ? "accent" : "muted"}
+            title={team.name}
+            meta={
+              <>
+                {team.seed !== null && <span className="rs-seed num">{team.seed}</span>}
+                <span>
+                  {accepted}/{team.members.length}
+                </span>
+                <StatusTag kind="team" value={team.status} />
+              </>
+            }
+          >
+          <article className={`rs-team st-${team.status}`}>
             <header className="rs-head">
               {team.seed !== null && <span className="rs-seed num">{team.seed}</span>}
 
@@ -180,6 +200,7 @@ export default function Roster({
               )}
             </ul>
           </article>
+          </Collapsible>
         );
       })}
     </div>

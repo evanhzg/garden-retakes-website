@@ -3,7 +3,7 @@
 import { useEffect, useState } from "react";
 import { createPortal } from "react-dom";
 import Link from "next/link";
-import { X, Eye, ExternalLink, Copy, Check } from "lucide-react";
+import { X, Eye, ExternalLink, Copy, Check, Tv } from "lucide-react";
 import { useI18n } from "@/components/I18nProvider";
 import StatusTag from "./StatusTag";
 import type { BracketMatch } from "./Bracket";
@@ -19,9 +19,13 @@ import "./matchmodal.css";
 
 export type MatchDetail = {
   maps: { map: string; scoreA: number; scoreB: number; startSideTeamA: string | null }[];
-  /** Set only when the viewer may spectate and the match is actually running. */
+  /** Set when the viewer may spectate and a server is assigned. */
   connect: string | null;
+  /** The GOTV address, when the organizer has set one. */
+  gotv: string | null;
   canSpectate: boolean;
+  serverIsUp: boolean;
+  state: string;
 };
 
 export default function MatchModal({
@@ -143,6 +147,17 @@ export default function MatchModal({
                 <Eye size={15} />
                 {t("match.spectate")}
               </a>
+
+              {/* GOTV when there is one: it is the better way to watch a
+                  competitive match, since it takes no slot and cannot drop you
+                  into a live round. */}
+              {detail.gotv && (
+                <a className="btn mm-btn" href={`steam://connect/${detail.gotv}`}>
+                  <Tv size={15} />
+                  {t("match.gotv")}
+                </a>
+              )}
+
               <button
                 className="btn mm-btn"
                 onClick={() => {
@@ -155,6 +170,15 @@ export default function MatchModal({
                 {copied ? t("register.copied") : t("match.copyConnect")}
               </button>
             </>
+          )}
+
+          {/* Says why there is no button, rather than leaving a gap where one
+              would be. "There is no server yet" and "you are not allowed to
+              watch" are different answers and people deserve to know which. */}
+          {detail && !detail.connect && detail.state !== "finished" && (
+            <p className="mm-why">
+              {detail.canSpectate ? t("match.noServerYet") : t("match.notAllowed")}
+            </p>
           )}
 
           <Link className="btn mm-btn" href={`/tournaments/${slug}/match/${match.id}`}>

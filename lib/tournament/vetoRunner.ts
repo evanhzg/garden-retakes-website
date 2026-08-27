@@ -1,5 +1,6 @@
 import { prisma } from "@/lib/db";
 import { autoAction, vetoState, type VetoAction, type Side } from "@/lib/tournament/veto";
+import { startMatch } from "@/lib/tournament/matchRunner";
 
 // Finishing a veto: turning its result into maps, playing it out for bots, and
 // letting an organizer set the maps by hand.
@@ -84,6 +85,39 @@ export async function materialiseMaps(matchId: number): Promise<{ ok: boolean; m
 }
 
 /**
+ * Put a decided match on a server, now.
+ *
+ * The veto ending and the match starting were two separate acts, the second of
+ * which nobody performed: a match sat "ready" with maps chosen and no server
+ * until an organizer noticed and pressed a button. Ten teams waiting on one
+ * person to click ten times is the thing an automated bracket exists to avoid.
+ *
+ * Deliberately tolerant. No free server, a server that will not load the map, a
+ * plugin that refuses — none of those should turn a completed veto into an
+ * error, because the veto itself succeeded. The match stays "ready" and can be
+ * started by hand exactly as before.
+ */
+export async function autoStart(matchId: number): Promise<{ started: boolean; error?: string }> {
+  try {
+    const match = await prisma.tournamentMatch.findUnique({
+      where: { Id: matchId },
+      select: { State: true, ServerId: true, Maps: { select: { Id: true } } },
+    });
+
+    if (!match) return { started: false, error: "gone" };
+    // Already on a server, or already playing. Nothing to do, and re-running
+    // startMatch would claim a second one.
+    if (match.ServerId !== null || match.State === "live") return { started: false };
+    if (match.Maps.length === 0) return { started: false, error: "no maps" };
+
+    const result = await startMatch(matchId);
+    return result.ok ? { started: true } : { started: false, error: result.error };
+  } catch (err) {
+    return { started: false, error: String(err) };
+  }
+}
+
+/**
  * Play a veto out without captains.
  *
  * Used for bot matches and as the organizer's "just decide it" button. Reuses
@@ -99,6 +133,17 @@ export async function materialiseMaps(matchId: number): Promise<{ ok: boolean; m
 export async function autoVeto(
   matchId: number,
   random: () => number = Math.random,
+  /**
+   * A map to steer the result towards.
+   *
+   * Only one map has authored tournament spawns so far, so a bot match on any
+   * other one has nowhere for its players to stand. Rather than special-casing
+   * the spawn engine, the veto is steered: the preferred map is never banned
+   * and is always the pick, so it survives to be played. The sequence itself is
+   * untouched — the same number of bans and picks happen in the same order, by
+   * the same validator.
+   */
+  prefer?: string | null,
 ): Promise<{ ok: boolean; maps: string[]; steps: number }> {
   const match = await prisma.tournamentMatch.findUnique({
     where: { Id: matchId },
@@ -123,11 +168,27 @@ export async function autoVeto(
     const auto = autoAction(pool, match.BestOf, actions);
     if (!auto) break;
 
-    // Randomise which map, keeping the KIND the sequence asked for.
-    const map =
-      auto.kind === "side"
-        ? undefined
-        : state.remaining[Math.floor(random() * state.remaining.length)] ?? auto.map;
+    // Which map, keeping the KIND the sequence asked for.
+    let map: string | undefined;
+
+    if (auto.kind === "side") {
+      map = undefined;
+    } else {
+      const wanted = prefer && state.remaining.includes(prefer) ? prefer : null;
+
+      if (auto.kind === "pick" && wanted) {
+        map = wanted;
+      } else {
+        // Banning: everything except the preferred map is fair game. If it is
+        // the only one left there is nothing to protect it from, so fall
+        // through to the normal choice rather than banning nothing.
+        const pool = wanted
+          ? state.remaining.filter((m) => m !== wanted)
+          : state.remaining;
+        const from = pool.length > 0 ? pool : state.remaining;
+        map = from[Math.floor(random() * from.length)] ?? auto.map;
+      }
+    }
 
     const side: Side | undefined = auto.kind === "side" ? (random() < 0.5 ? "T" : "CT") : undefined;
 

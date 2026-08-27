@@ -98,6 +98,16 @@ export async function startMatch(matchId: number): Promise<StartResult> {
       throw new Error(`${nextMap.Map} did not load.`);
     }
 
+    // Cancel first, then reset.
+    //
+    // css_t_reset clears a PENDING match; a live one needs css_t_cancel, and
+    // TryStart refuses outright while IsLive. So a server the website thinks is
+    // idle — because a match was released, or an admin freed it, or a test was
+    // abandoned — can hold a live match in the plugin that nothing ever clears,
+    // and every future start on that server is refused with "a match is already
+    // live". This is the reconciliation: the website has just claimed this
+    // server, so whatever the plugin still believes about it is stale.
+    await execOnServer(server.id, "css_t_cancel");
     await execOnServer(server.id, "css_t_reset");
     await execOnServer(server.id, `css_t_team 0 ${slug(teamA.Name)} ${rosterA.join(" ")}`);
     await execOnServer(server.id, `css_t_team 1 ${slug(teamB.Name)} ${rosterB.join(" ")}`);

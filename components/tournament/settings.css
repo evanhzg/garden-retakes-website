@@ -391,3 +391,133 @@ label.btn {
 .ts-test h3 {
   color: #b45309;
 }
+
+/* ======================================================= admin: two columns
+   Rosters and matches side by side, folded.
+
+   Expanded and stacked, a sixteen-team tournament was a page you scrolled for
+   a minute to reach the one row you wanted — and every roster was mounting a
+   rename form and an invite link for nobody to look at. */
+
+.rs-grid,
+.ta-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(min(340px, 100%), 1fr));
+  gap: var(--space-2);
+  align-items: start;
+}
+
+/* A notice belongs across the top, not in the first column. */
+.rs-wide {
+  grid-column: 1 / -1;
+}
+
+/* Inside a folded row the article no longer needs its own frame — the
+   Collapsible is the frame. */
+.rs-grid .rs-team {
+  border: 0;
+  padding: 0;
+  background: none;
+}
+
+/* The seed badge sits in the folded header now. */
+.cl-meta .rs-seed {
+  min-width: 20px;
+  height: 20px;
+  font-size: 10px;
+}
+
+/* Status tags in a header are dense by definition: the caption is repeated on
+   every row and stops earning its space. */
+.cl-meta .status {
+  flex-direction: row;
+  align-items: baseline;
+  gap: 6px;
+  padding: 3px 8px;
+}
+
+.cl-meta .status-label {
+  display: none;
+}
+
+/* ============================================================ settings page
+   Padding, and controls that look like the actions they are. */
+
+.ts-block {
+  padding: 1rem;
+  border: 1px solid var(--color-divider);
+  background: color-mix(in srgb, var(--color-text) 3%, transparent);
+  margin-bottom: var(--space-3);
+}
+
+.ts-block > h3 {
+  margin-top: 0;
+  margin-bottom: 0.6rem;
+  padding-bottom: 0.55rem;
+  border-bottom: 1px solid var(--color-divider);
+  font-size: 12.5px;
+  font-weight: 800;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  color: var(--color-text-muted);
+}
+
+/* Buttons carry an icon and sit at a real size. They were bare text at the
+   default .btn scale, which on a page of twenty of them gives no way to tell
+   "save the settings" from "rotate the invite link" at a glance. */
+.ts-block .btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 7px;
+  min-height: 38px;
+  padding: 8px 14px;
+  border-radius: 0;
+  font-weight: 700;
+}
+
+.ts-block .btn svg {
+  flex: 0 0 auto;
+  opacity: 0.85;
+}
+
+.ts-block .btn.btn-primary svg {
+  opacity: 1;
+}
+
+/* The destructive one reads as destructive without being red until hovered —
+   a page of red buttons has no emphasis left for the one that matters. */
+.ts-block .btn.danger {
+  border-color: color-mix(in srgb, #ef4444 55%, var(--color-divider));
+  color: #ef4444;
+}
+
+.ts-block .btn.danger:hover {
+  background: color-mix(in srgb, #ef4444 12%, transparent);
+  border-color: #ef4444;
+}
+
+.ts-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  padding-top: 0.75rem;
+  margin-top: 0.75rem;
+  border-top: 1px solid var(--color-divider);
+}
+
+@media (max-width: 640px) {
+  .ts-block {
+    padding: 0.85rem;
+  }
+
+  .rs-grid,
+  .ta-grid {
+    grid-template-columns: 1fr;
+  }
+
+  .ts-block .btn {
+    flex: 1 1 auto;
+    justify-content: center;
+    min-height: 44px;
+  }
+}

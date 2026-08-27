@@ -7,6 +7,8 @@ import { getT } from "@/lib/serverI18n";
 import MatchAdmin from "@/components/tournament/MatchAdmin";
 import Settings, { type LibraryMap, type SettingsView } from "@/components/tournament/Settings";
 import Roster, { type RosterTeam } from "@/components/tournament/Roster";
+import Collapsible from "@/components/tournament/Collapsible";
+import StatusTag from "@/components/tournament/StatusTag";
 import { previewsForTournament } from "@/lib/tournament/preview";
 
 export const dynamic = "force-dynamic";
@@ -181,10 +183,19 @@ export default async function TournamentAdminPage({
         <section className="panel">
           <h3>{t("tournamentAdmin.matches")}</h3>
 
-          <div style={{ display: "flex", flexDirection: "column", gap: 16 }}>
+          {/* Folded and two across, same as the rosters. An eight-team bracket
+              has seven of these and each one carries its own control panel. */}
+          <div className="ta-grid">
             {actionable.map((match) => (
-              <MatchAdmin
+              <Collapsible
                 key={match.Id}
+                tone={match.State === "live" ? "accent" : undefined}
+                title={`${match.TeamAId ? teamName.get(match.TeamAId) ?? "?" : "—"} v ${
+                  match.TeamBId ? teamName.get(match.TeamBId) ?? "?" : "—"
+                }`}
+                meta={<StatusTag kind="match" value={match.State} />}
+              >
+              <MatchAdmin
                 matchId={match.Id}
                 matchKey={match.MatchKey}
                 teamA={match.TeamAId ? teamName.get(match.TeamAId) ?? "?" : "—"}
@@ -193,6 +204,7 @@ export default async function TournamentAdminPage({
                 adminKey={searchParams.key}
                 preview={previews.get(match.Id) ?? null}
               />
+              </Collapsible>
             ))}
           </div>
         </section>
