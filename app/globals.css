@@ -11416,3 +11416,112 @@ body.overlay-open .socket-status-banner {
 
 .sock-banner-spin { animation: gr-spin 0.9s linear infinite; }
 html[data-motion="off"] .sock-banner-spin { animation: none; }
+
+/* ================================================================= scrolling
+   Horizontal scrollers that actually scroll on a touch screen.
+
+   Three separate things were wrong and they compound:
+
+   1. No momentum. Without -webkit-overflow-scrolling: touch, iOS gives a
+      hard-stopping drag with no flick, which reads as "this barely moves"
+      rather than as a scroll.
+   2. No containment. overscroll-behavior defaults to auto, so a horizontal
+      drag that reaches the end hands the gesture to the page — on a bracket
+      wider than the screen the last swipe navigates back instead of stopping.
+   3. Nothing to grab. A wide table with no visible scrollbar and no cut-off
+      column looks like a table that ends where the screen ends, so nobody
+      tries. A thin persistent scrollbar is the affordance.
+   ========================================================================= */
+
+.br,
+.pro-tablewrap,
+.tv .pro-tabs,
+.hub-tabs,
+.friends-tabs {
+  -webkit-overflow-scrolling: touch;
+  /* Contain the gesture: at the end of the strip the page must not take over. */
+  overscroll-behavior-x: contain;
+  /* Cheap composited scrolling rather than repainting the whole strip. */
+  will-change: scroll-position;
+}
+
+/* A visible, thin scrollbar on the two big ones. The tab strips stay hidden —
+   they snap, and a bar under four tabs is noise — but a bracket and a stats
+   table are content, and content that continues off-screen has to say so. */
+.br,
+.pro-tablewrap {
+  scrollbar-width: thin;
+  scrollbar-color: color-mix(in srgb, var(--color-text) 30%, transparent) transparent;
+}
+
+.br::-webkit-scrollbar,
+.pro-tablewrap::-webkit-scrollbar {
+  height: 8px;
+}
+
+.br::-webkit-scrollbar-track,
+.pro-tablewrap::-webkit-scrollbar-track {
+  background: color-mix(in srgb, var(--color-text) 6%, transparent);
+}
+
+.br::-webkit-scrollbar-thumb,
+.pro-tablewrap::-webkit-scrollbar-thumb {
+  background: color-mix(in srgb, var(--color-text) 32%, transparent);
+}
+
+.br::-webkit-scrollbar-thumb:hover,
+.pro-tablewrap::-webkit-scrollbar-thumb:hover {
+  background: color-mix(in srgb, var(--color-accent) 70%, transparent);
+}
+
+/* A stats table has a name column people need while reading the numbers, and
+   scrolling it out of view makes every row anonymous halfway across. */
+.pro-tablewrap .table th:first-child,
+.pro-tablewrap .table td:first-child {
+  position: sticky;
+  left: 0;
+  z-index: 1;
+  /* Opaque, or the scrolled columns show through it. */
+  background: var(--color-surface);
+}
+
+.pro-tablewrap .table thead th:first-child {
+  z-index: 2;
+}
+
+/* The edge of the frozen column, so it reads as pinned rather than as overlap. */
+.pro-tablewrap .table th:first-child::after,
+.pro-tablewrap .table td:first-child::after {
+  content: "";
+  position: absolute;
+  top: 0;
+  right: 0;
+  bottom: 0;
+  width: 1px;
+  background: var(--color-divider);
+}
+
+@media (max-width: 640px) {
+  /* Room for the scrollbar so it does not sit on the last row of the table. */
+  .pro-tablewrap {
+    padding-bottom: 4px;
+  }
+
+  /* The bracket gets a nudge: a hint of the next column visible at the right
+     edge is what tells a thumb there is more to the right. */
+  .br {
+    padding-right: var(--space-4);
+    scroll-snap-type: x proximity;
+  }
+
+  .br-round {
+    scroll-snap-align: start;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .br,
+  .pro-tablewrap {
+    scroll-behavior: auto;
+  }
+}

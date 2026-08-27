@@ -1,5 +1,6 @@
 import { prisma } from "@/lib/db";
 import { finishMap } from "@/lib/tournament/matchRunner";
+import { autoVeto } from "@/lib/tournament/vetoRunner";
 
 // Playing a bot tournament out without a server.
 //
@@ -129,22 +130,42 @@ export async function simulateTournament(
 
     if (!match) break;
 
-    // finishMap needs a map in "live" — normally the veto creates the rows and
-    // startMatch flips one. Neither has run here, so this stands in for both.
-    let live = match.Maps.find((m) => m.State === "live");
+    // Bots veto for themselves.
+    //
+    // This used to invent a map out of the pool and write a row directly, which
+    // meant a simulated bracket never exercised the veto at all — the one part
+    // of the flow most likely to be wrong, skipped by the thing meant to test
+    // it. autoVeto plays the real sequence through the real validator and
+    // materialises the maps the same way a captain-run veto now does, so a
+    // simulated match arrives at exactly the state a played one does.
+    let maps = match.Maps;
+
+    if (maps.length === 0) {
+      await autoVeto(match.Id, random);
+      maps = await prisma.tournamentMatchMap.findMany({
+        where: { MatchId: match.Id },
+        orderBy: { Ordinal: "asc" },
+      });
+    }
+
+    let live = maps.find((m) => m.State === "live");
 
     if (!live) {
-      const next = match.Maps.find((m) => m.State !== "finished");
+      const next = maps.find((m) => m.State !== "finished");
       if (next) {
         live = await prisma.tournamentMatchMap.update({
           where: { Id: next.Id },
           data: { State: "live" },
         });
       } else {
+        // Only reachable when the pool is empty and the veto had nothing to
+        // work with, which is a misconfigured tournament rather than a normal
+        // state — but the simulation should say so by playing rather than by
+        // hanging.
         live = await prisma.tournamentMatchMap.create({
           data: {
             MatchId: match.Id,
-            Ordinal: match.Maps.length,
+            Ordinal: maps.length,
             Map: fallback[Math.floor(random() * fallback.length)],
             State: "live",
           },

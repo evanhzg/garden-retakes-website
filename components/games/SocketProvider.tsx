@@ -19,7 +19,23 @@ import FriendsSidebar from "../social/FriendsSidebar";
 import NotificationToast from "../social/NotificationToast";
 import SocketStatusBanner from "../social/SocketStatusBanner";
 
-export const SocketProvider = ({ children, steamId }: { children: React.ReactNode, steamId?: string }) => {
+export const SocketProvider = ({
+  children,
+  steamId,
+  isDemoMode = false,
+}: {
+  children: React.ReactNode;
+  steamId?: string;
+  /**
+   * A demo is a pitch, and the connection banner is plumbing.
+   *
+   * "Waking up game server… (28s)" is honest and useful to a player waiting to
+   * queue, and to somebody being shown the tournament system it is a red
+   * warning strip announcing that the site is not ready. The socket still
+   * connects; only the commentary is suppressed.
+   */
+  isDemoMode?: boolean;
+}) => {
   const [socket, setSocket] = useState<Socket | null>(null);
   const [isConnected, setIsConnected] = useState(false);
   const [isAuthed, setIsAuthed] = useState(false);
@@ -70,7 +86,7 @@ export const SocketProvider = ({ children, steamId }: { children: React.ReactNod
   return (
     <SocketContext.Provider value={{ socket, isConnected, isAuthed, steamId }}>
       {children}
-      <SocketStatusBanner />
+      {!isDemoMode && <SocketStatusBanner />}
       {steamId && <FriendsSidebar />}
       {steamId && <NotificationToast />}
     </SocketContext.Provider>

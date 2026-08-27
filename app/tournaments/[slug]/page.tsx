@@ -1,4 +1,5 @@
 import { getSession } from "@/lib/auth";
+import { resolveName } from "@/lib/tournament/playerNames";
 import Link from "next/link";
 import { notFound } from "next/navigation";
 import { prisma } from "@/lib/db";
@@ -158,7 +159,10 @@ export default async function TournamentPage({ params }: { params: { slug: strin
     status: team.Status,
     players: team.Members.filter((m) => m.Status === "accepted").map((m) => ({
       steamId: m.SteamId.toString(),
-      name: nameOf.get(m.SteamId.toString()) || m.SteamId.toString(),
+      // DisplayName first: it is the name the organizer set FOR this event,
+      // and it was being ignored in favour of a profile lookup that falls
+      // through to the raw id for anybody who has never played the ladder.
+      name: resolveName(m.DisplayName, nameOf.get(m.SteamId.toString()), m.SteamId.toString()),
       captain: m.IsCaptain,
       roleT: m.RoleT,
       roleCt: m.RoleCt,

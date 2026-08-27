@@ -1,5 +1,6 @@
 import { NextResponse } from "next/server";
 import { prisma } from "@/lib/db";
+import { autoVeto, materialiseMaps, setMapsDirectly } from "@/lib/tournament/vetoRunner";
 import { getSession } from "@/lib/auth";
 import { canManage, getTournamentContext } from "@/lib/tournamentAuth";
 import { autoAction, validateAction, vetoState } from "@/lib/tournament/veto";
@@ -18,7 +19,17 @@ export const runtime = "nodejs";
 type Body = {
   key?: string;
   matchId?: number;
-  action?: "ready" | "unready" | "start-veto" | "ban" | "pick" | "side";
+  action?:
+    | "ready"
+    | "unready"
+    | "start-veto"
+    | "ban"
+    | "pick"
+    | "side"
+    | "admin-auto"
+    | "admin-set-maps";
+  /** admin-set-maps only: the series, in play order. */
+  maps?: { map: string; startSideTeamA?: "T" | "CT" | null }[];
   map?: string;
   side?: "T" | "CT";
 };
@@ -150,6 +161,39 @@ export async function POST(req: Request) {
       if (!check.ok) return NextResponse.json({ error: check.error }, { status: 400 });
 
       await recordAction(match.Id, actions.length, teamId, body.action, body.map, body.side, false);
+
+      // The step that was missing. The veto recorded its actions and computed a
+      // state containing the picks, and nothing ever turned those picks into
+      // TournamentMatchMap rows — so a correctly completed veto still left
+      // startMatch() with no map to play. Idempotent, so calling it on every
+      // action rather than trying to detect the last one is free.
+      await materialiseMaps(match.Id);
+
+      return NextResponse.json({ ok: true });
+    }
+
+    // ---------------------------------------------------------------- admin
+
+    // Decide the whole veto without captains. The organizer's "just get on with
+    // it" button, and what a bot match uses: both teams unreachable, or both
+    // teams are bots, and the match still has to acquire maps.
+    case "admin-auto": {
+      if (!isOrganizer) {
+        return NextResponse.json({ error: "Organizers only." }, { status: 403 });
+      }
+      const result = await autoVeto(match.Id);
+      return NextResponse.json({ ok: result.ok, maps: result.maps });
+    }
+
+    // Set the maps by hand. For when the veto has gone wrong, a team cannot be
+    // reached, or the maps were agreed somewhere else entirely — all of which
+    // happen, and all of which previously meant editing the database.
+    case "admin-set-maps": {
+      if (!isOrganizer) {
+        return NextResponse.json({ error: "Organizers only." }, { status: 403 });
+      }
+      const result = await setMapsDirectly(match.Id, body.maps ?? []);
+      if (!result.ok) return NextResponse.json({ error: result.error }, { status: 400 });
       return NextResponse.json({ ok: true });
     }
 
@@ -198,6 +242,9 @@ export async function GET(req: Request) {
     if (auto) {
       const teamId = state.next.team === "A" ? match.TeamAId : match.TeamBId;
       await recordAction(match.Id, actions.length, teamId, auto.kind, auto.map, auto.side, true);
+      // An expired turn can be the last one, and a veto that completed by
+      // timeout needs its maps as much as one that completed by choice.
+      await materialiseMaps(match.Id);
 
       actions.push({
         ordinal: actions.length,

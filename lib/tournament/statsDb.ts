@@ -1,5 +1,6 @@
 import { prisma } from "@/lib/db";
 import { aggregate, type PlayerTotals, type StatRow, type TournamentAppearance } from "@/lib/tournament/stats";
+import { allPlayerNames, tournamentPlayerNames } from "@/lib/tournament/playerNames";
 
 // Fetching for lib/tournament/stats.ts. Kept apart from the arithmetic so the
 // arithmetic can be tested without a database — see tools/tests/tstats.test.mts.
@@ -53,11 +54,10 @@ export async function tournamentStats(tournamentId: number): Promise<PlayerTotal
   });
   const teamOf = new Map(members.map((m) => [m.SteamId.toString(), m.TeamId]));
 
-  const profiles = await prisma.playerProfile.findMany({
-    where: { SteamId: { in: Array.from(new Set(rows.map((r) => r.SteamId))) } },
-    select: { SteamId: true, LastKnownName: true },
-  });
-  const names = Object.fromEntries(profiles.map((p) => [p.SteamId.toString(), p.LastKnownName ?? ""]));
+  // Tournament display names first, profile names second, id last. Reading
+  // only the profile put a raw SteamID64 on the stats table for every player
+  // without a ladder history — and for every bot, which has no profile at all.
+  const names = await tournamentPlayerNames(tournamentId);
 
   return aggregate(
     rows.map((r) => {
@@ -80,11 +80,7 @@ export async function allTournamentStats(minRounds = 0): Promise<PlayerTotals[]>
   const rows = await prisma.tournamentPlayerStat.findMany();
   if (rows.length === 0) return [];
 
-  const profiles = await prisma.playerProfile.findMany({
-    where: { SteamId: { in: Array.from(new Set(rows.map((r) => r.SteamId))) } },
-    select: { SteamId: true, LastKnownName: true },
-  });
-  const names = Object.fromEntries(profiles.map((p) => [p.SteamId.toString(), p.LastKnownName ?? ""]));
+  const names = await allPlayerNames(Array.from(new Set(rows.map((r) => r.SteamId))));
 
   const totals = aggregate(
     rows.map((r) => ({ ...asRow(r), teamId: null })),

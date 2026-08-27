@@ -133,7 +133,7 @@ export default async function RootLayout({ children }: { children: React.ReactNo
         <PageLoader />
         <ThemeProvider attribute="class" defaultTheme="system" enableSystem>
         <I18nProvider initial={locale}>
-        <SocketProvider steamId={session?.steamId}>
+        <SocketProvider steamId={session?.steamId} isDemoMode={isDemoMode}>
         <ToastProvider>
           {/* The three blurred orbs were the last of the old purple/pink wash
               (#ec4899 / #a855f7 / #d946ef) and fought the Modernist ground. */}
