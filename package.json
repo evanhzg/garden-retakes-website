@@ -3,10 +3,10 @@
   "version": "1.0.0",
   "private": true,
   "scripts": {
-    "dev": "node server.js",
+    "dev": "prisma generate && node server.js",
     "build": "node tools/check-i18n.mjs && prisma generate && next build",
     "start": "mkdir -p ./data/home && NODE_ENV=production node server.js",
-    "lint": "next lint",
+    "lint": "eslint .",
     "prisma:generate": "prisma generate",
     "bot": "node scripts/discordBot.js",
     "ws:ingest": "node scripts/ws-ingest",
