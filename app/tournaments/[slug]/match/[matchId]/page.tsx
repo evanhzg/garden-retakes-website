@@ -6,6 +6,7 @@ import { getSession } from "@/lib/auth";
 import { getT } from "@/lib/serverI18n";
 import { canManage, getTournamentContext } from "@/lib/tournamentAuth";
 import VetoBoard from "@/components/tournament/VetoBoard";
+import StatusTag from "@/components/tournament/StatusTag";
 
 export const dynamic = "force-dynamic";
 
@@ -77,7 +78,7 @@ export default async function MatchPage({
           <p className="muted">
             BO{match.BestOf}
             {" · "}
-            <span className="chip">{match.State}</span>
+            <StatusTag kind="match" value={match.State} />
             {match.ScoreA + match.ScoreB > 0 && (
               <>
                 {" · "}

@@ -9,6 +9,7 @@ import {
   type EditionState,
 } from "@/lib/tournament/edition";
 import "@/components/tournament/list.css";
+import StatusTag from "@/components/tournament/StatusTag";
 
 // Dynamic rather than revalidated: what you can see here depends on who you
 // are — an organizer sees their own drafts, everybody else does not — and a
@@ -132,7 +133,7 @@ export default async function TournamentsPage() {
                     </Link>
 
                     <div className="tl-facts">
-                      <span className="chip">{tournament.State}</span>
+                      <StatusTag kind="tournament" value={tournament.State} />
                       <span className="tl-fact">
                         {tournament.TeamSize}v{tournament.TeamSize}
                       </span>

@@ -154,14 +154,23 @@ export default async function TournamentAdminPage({
 
       <section className="panel">
         <h3>{t("settings.title")}</h3>
-        <Settings tournament={view} library={libraryMaps} adminKey={searchParams.key} origin={origin} />
+        {/* Keyed by tournament id, and it has to be.
+            Settings and Roster both seed every piece of their state from props
+            in useState initialisers, which run only on mount. Without a key
+            React reconciles rather than remounts when you navigate from
+            /admin/tournaments/1 to /2 — same component, same position in the
+            tree — so those initialisers never re-run. The previous
+            tournament's name, map pool and rules stay in the boxes while the
+            save handler posts to the NEW tournament's id, which quietly writes
+            one tournament's settings onto another. */}
+        <Settings key={tournament.Id} tournament={view} library={libraryMaps} adminKey={searchParams.key} origin={origin} />
       </section>
 
       <section className="panel">
         <h3>
           {t("tournaments.teams")} <span className="muted">({teams.length})</span>
         </h3>
-        <Roster teams={teams} adminKey={searchParams.key} origin={origin} slug={tournament.Slug} />
+        <Roster key={tournament.Id} teams={teams} adminKey={searchParams.key} origin={origin} slug={tournament.Slug} />
       </section>
 
       {actionable.length > 0 && (

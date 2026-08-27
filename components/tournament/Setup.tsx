@@ -3,6 +3,7 @@
 import { useCallback, useEffect, useState } from "react";
 import { useI18n } from "@/components/I18nProvider";
 import "./setup.css";
+import StatusTag from "./StatusTag";
 
 // Everything needed to get from an empty database to a match on a server.
 //
@@ -19,6 +20,8 @@ type Server = {
   port: number;
   status: string;
   currentMatchId: number | null;
+  /** The API has always returned this; nothing displayed or edited it. */
+  isTournament: boolean;
 };
 
 type Organizer = { steamId: string; name: string; isCreator?: boolean };
@@ -32,6 +35,11 @@ type Tournament = {
   organizers: Organizer[];
 };
 type Stage = { id: number; name: string; kind: string; bestOf: number; matches: number };
+
+/** One tournament's unsaved add-stage form. */
+type StageDraft = { name: string; kind: string; bestOf: string; finalBestOf: string };
+
+const NEW_STAGE: StageDraft = { name: "Playoffs", kind: "single", bestOf: "1", finalBestOf: "" };
 
 const DEFAULT_POOL = ["de_dust2", "de_inferno", "de_cache", "de_anubis", "de_mirage", "de_ancient", "de_nuke"];
 
@@ -51,8 +59,31 @@ export default function Setup({ adminKey, isOwner }: { adminKey?: string; isOwne
   const [coOrganizer, setCoOrganizer] = useState<Record<number, string>>({});
 
   const [srv, setSrv] = useState({ name: "", host: "", port: "27015", rconPassword: "", connectAddress: "" });
+
+  // Which server row is being edited, and its draft. One at a time: editing two
+  // rows at once has no use here and doubles the ways the table can be wrong.
+  const [editingServer, setEditingServer] = useState<number | null>(null);
+  const [srvEdit, setSrvEdit] = useState({ name: "", host: "", port: "", rconPassword: "", isTournament: true });
+  /** Delete asks twice. The row is small and the action is not undoable. */
+  const [confirmDelete, setConfirmDelete] = useState<number | null>(null);
   const [tName, setTName] = useState("");
-  const [stage, setStage] = useState({ tournamentId: 0, name: "Playoffs", kind: "single", bestOf: "1", finalBestOf: "" });
+  /**
+   * The add-stage draft, per tournament.
+   *
+   * This used to be a single object shared by every tournament in the list,
+   * while the form that edits it is rendered inside `tournaments.map()` — so
+   * typing a stage name under one tournament visibly rewrote the field under
+   * all the others. Keyed by id, exactly like `coOrganizer` above, which had
+   * the shape right all along.
+   *
+   * The old object also carried a `tournamentId` that was initialised to 0 and
+   * never read: the submit handler takes `tr.id` from the closure. Gone.
+   */
+  const [stage, setStage] = useState<Record<number, StageDraft>>({});
+
+  const stageOf = (id: number): StageDraft => stage[id] ?? NEW_STAGE;
+  const setStageOf = (id: number, patch: Partial<StageDraft>) =>
+    setStage((s) => ({ ...s, [id]: { ...stageOf(id), ...patch } }));
 
   const say = (line: string) => setLog((l) => [line, ...l].slice(0, 30));
 
@@ -176,19 +207,156 @@ export default function Setup({ adminKey, isOwner }: { adminKey?: string; isOwne
             <tbody>
               {servers.map((s) => (
                 <tr key={s.id}>
-                  <td>{s.name}</td>
-                  <td className="muted">{s.host}:{s.port}</td>
                   <td>
-                    <span className={`chip su-${s.status}`}>{s.status}</span>
+                    {editingServer === s.id ? (
+                      <input
+                        id={`su-srv-name-${s.id}`}
+                        aria-label={t("setup.serverName")}
+                        className="su-narrow-wide"
+                        value={srvEdit.name}
+                        onChange={(e) => setSrvEdit({ ...srvEdit, name: e.target.value })}
+                      />
+                    ) : (
+                      s.name
+                    )}
+                  </td>
+                  <td className="muted">
+                    {editingServer === s.id ? (
+                      <span className="su-inline">
+                        <input
+                          id={`su-srv-host-${s.id}`}
+                          aria-label={t("setup.host")}
+                          value={srvEdit.host}
+                          onChange={(e) => setSrvEdit({ ...srvEdit, host: e.target.value })}
+                        />
+                        <input
+                          id={`su-srv-port-${s.id}`}
+                          aria-label={t("setup.port")}
+                          className="su-narrow"
+                          value={srvEdit.port}
+                          onChange={(e) => setSrvEdit({ ...srvEdit, port: e.target.value })}
+                        />
+                      </span>
+                    ) : (
+                      `${s.host}:${s.port}`
+                    )}
                   </td>
                   <td>
-                    <button className="btn su-small" disabled={busy} onClick={() => post("/api/admin/servers", { action: "test", id: s.id }, `test ${s.name}`)}>
-                      {t("setup.test")}
-                    </button>
-                    {isOwner && s.currentMatchId !== null && (
-                      <button className="btn su-small" disabled={busy} onClick={() => post("/api/admin/servers", { action: "release", id: s.id }, `release ${s.name}`)}>
-                        {t("setup.release")}
-                      </button>
+                    <StatusTag kind="server" value={s.status} />
+                  </td>
+                  <td>
+                    {editingServer === s.id ? (
+                      <>
+                        {/* Left blank the password is untouched — the route
+                            only overwrites it when a new one is supplied, so
+                            saving a renamed server cannot blank it. */}
+                        <input
+                          id={`su-srv-pw-${s.id}`}
+                          aria-label={t("setup.rconUnchanged")}
+                          className="su-narrow-wide"
+                          type="password"
+                          autoComplete="new-password"
+                          placeholder={t("setup.rconUnchanged")}
+                          value={srvEdit.rconPassword}
+                          onChange={(e) => setSrvEdit({ ...srvEdit, rconPassword: e.target.value })}
+                        />
+                        <button
+                          className="btn btn-primary su-small"
+                          disabled={busy}
+                          onClick={async () => {
+                            await post(
+                              "/api/admin/servers",
+                              {
+                                action: "update",
+                                id: s.id,
+                                name: srvEdit.name,
+                                host: srvEdit.host,
+                                port: Number(srvEdit.port) || undefined,
+                                rconPassword: srvEdit.rconPassword || undefined,
+                                isTournament: srvEdit.isTournament,
+                              },
+                              `save ${s.name}`,
+                            );
+                            setEditingServer(null);
+                          }}
+                        >
+                          {t("setup.save")}
+                        </button>
+                        <button className="btn su-small" onClick={() => setEditingServer(null)}>
+                          {t("setup.cancel")}
+                        </button>
+                      </>
+                    ) : (
+                      <>
+                        <button className="btn su-small" disabled={busy} onClick={() => post("/api/admin/servers", { action: "test", id: s.id }, `test ${s.name}`)}>
+                          {t("setup.test")}
+                        </button>
+
+                        {isOwner && (
+                          <button
+                            className="btn su-small"
+                            disabled={busy}
+                            onClick={() => {
+                              setSrvEdit({
+                                name: s.name,
+                                host: s.host,
+                                port: String(s.port),
+                                // Never prefilled: GET does not return it, and a
+                                // box that looks filled would invite saving a
+                                // placeholder over a working password.
+                                rconPassword: "",
+                                isTournament: s.isTournament,
+                              });
+                              setEditingServer(s.id);
+                            }}
+                          >
+                            {t("setup.edit")}
+                          </button>
+                        )}
+
+                        {isOwner && (
+                          <button
+                            className="btn su-small"
+                            disabled={busy}
+                            onClick={() => post("/api/admin/servers", { action: "duplicate", id: s.id }, `duplicate ${s.name}`)}
+                            title={t("setup.duplicateHint")}
+                          >
+                            {t("setup.duplicate")}
+                          </button>
+                        )}
+
+                        {isOwner && s.currentMatchId !== null && (
+                          <button className="btn su-small" disabled={busy} onClick={() => post("/api/admin/servers", { action: "release", id: s.id }, `release ${s.name}`)}>
+                            {t("setup.release")}
+                          </button>
+                        )}
+
+                        {/* Two-step rather than a confirm() — a modal dialog
+                            blocks the whole tab and this is a table row. */}
+                        {isOwner && (
+                          confirmDelete === s.id ? (
+                            <>
+                              <button
+                                className="btn su-small su-danger"
+                                disabled={busy}
+                                onClick={async () => {
+                                  await post("/api/admin/servers", { action: "delete", id: s.id }, `delete ${s.name}`);
+                                  setConfirmDelete(null);
+                                }}
+                              >
+                                {t("setup.confirmDelete")}
+                              </button>
+                              <button className="btn su-small" onClick={() => setConfirmDelete(null)}>
+                                {t("setup.cancel")}
+                              </button>
+                            </>
+                          ) : (
+                            <button className="btn su-small" disabled={busy} onClick={() => setConfirmDelete(s.id)}>
+                              {t("setup.delete")}
+                            </button>
+                          )
+                        )}
+                      </>
                     )}
                   </td>
                 </tr>
@@ -285,7 +453,7 @@ export default function Setup({ adminKey, isOwner }: { adminKey?: string; isOwne
           <div key={tr.id} className="su-tournament">
             <div className="su-row">
               <strong>{tr.name}</strong>
-              <span className="chip">{tr.state}</span>
+              <StatusTag kind="tournament" value={tr.state} />
               <span className="muted">{tr.teams} {t("tournaments.teams").toLowerCase()}</span>
 
               <a className="btn su-small" href={`/tournaments/${tr.slug}/register`}>{t("setup.registerLink")}</a>
@@ -388,32 +556,65 @@ export default function Setup({ adminKey, isOwner }: { adminKey?: string; isOwne
               </div>
             ))}
 
+            {/* Every control is templated by tournament id — both the value it
+                reads and the id it carries. Placeholder-only inputs had no
+                accessible name at all before this. */}
             <form
               className="su-row su-stage"
               onSubmit={async (e) => {
                 e.preventDefault();
+                const draft = stageOf(tr.id);
                 await post(
                   "/api/admin/tournaments",
                   {
                     action: "add-stage",
                     tournamentId: tr.id,
-                    stageName: stage.name,
-                    kind: stage.kind,
-                    bestOf: Number(stage.bestOf) || 1,
-                    finalBestOf: stage.finalBestOf ? Number(stage.finalBestOf) : undefined,
+                    stageName: draft.name,
+                    kind: draft.kind,
+                    bestOf: Number(draft.bestOf) || 1,
+                    finalBestOf: draft.finalBestOf ? Number(draft.finalBestOf) : undefined,
                   },
                   "add stage",
                 );
               }}
             >
-              <input value={stage.name} onChange={(e) => setStage({ ...stage, name: e.target.value })} placeholder={t("setup.stageName")} />
-              <select value={stage.kind} onChange={(e) => setStage({ ...stage, kind: e.target.value })}>
+              <label className="su-inline-label" htmlFor={`su-stage-name-${tr.id}`}>
+                {t("setup.stageName")}
+              </label>
+              <input
+                id={`su-stage-name-${tr.id}`}
+                value={stageOf(tr.id).name}
+                onChange={(e) => setStageOf(tr.id, { name: e.target.value })}
+                placeholder={t("setup.stageName")}
+              />
+
+              <select
+                id={`su-stage-kind-${tr.id}`}
+                aria-label={t("setup.stageKind")}
+                value={stageOf(tr.id).kind}
+                onChange={(e) => setStageOf(tr.id, { kind: e.target.value })}
+              >
                 <option value="single">single elim</option>
                 <option value="group">group</option>
                 <option value="swiss">swiss</option>
               </select>
-              <input value={stage.bestOf} onChange={(e) => setStage({ ...stage, bestOf: e.target.value })} className="su-narrow" placeholder="BO" />
-              <input value={stage.finalBestOf} onChange={(e) => setStage({ ...stage, finalBestOf: e.target.value })} className="su-narrow" placeholder={t("setup.finalBo")} />
+
+              <input
+                id={`su-stage-bo-${tr.id}`}
+                aria-label={t("setup.bo")}
+                value={stageOf(tr.id).bestOf}
+                onChange={(e) => setStageOf(tr.id, { bestOf: e.target.value })}
+                className="su-narrow"
+                placeholder="BO"
+              />
+              <input
+                id={`su-stage-finalbo-${tr.id}`}
+                aria-label={t("setup.finalBo")}
+                value={stageOf(tr.id).finalBestOf}
+                onChange={(e) => setStageOf(tr.id, { finalBestOf: e.target.value })}
+                className="su-narrow"
+                placeholder={t("setup.finalBo")}
+              />
               <button className="btn su-small" disabled={busy}>{t("setup.addStage")}</button>
             </form>
           </div>

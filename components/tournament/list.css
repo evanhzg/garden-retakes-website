@@ -17,7 +17,7 @@
   gap: var(--space-3);
   padding: var(--space-3);
   border: 1px solid var(--color-divider);
-  border-radius: 10px;
+  border-radius: 0;
   background: var(--color-surface);
   transition: border-color 0.15s ease;
 }
@@ -68,6 +68,8 @@
   color: #ef4444;
 }
 
+/* Stays a circle. A live indicator is a dot by convention; squared it reads as
+   a bullet point, which is a different thing entirely. */
 .tl-live::before {
   content: "";
   width: 7px;

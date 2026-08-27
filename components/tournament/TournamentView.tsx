@@ -8,6 +8,7 @@ import Rules, { type RulesFacts } from "./Rules";
 import type { MatchPreview } from "@/lib/tournament/preview";
 import type { PlayerTotals } from "@/lib/tournament/stats";
 import "./view.css";
+import StatusTag from "./StatusTag";
 
 // A tournament, as tabs.
 //
@@ -175,9 +176,12 @@ function TeamsPanel({ teams }: { teams: TeamView[] }) {
         <article key={team.id} className={`tv-team st-${team.status}`}>
           <header className="tv-team-head">
             {team.seed !== null && <span className="tv-seed num">{team.seed}</span>}
-            {team.tag && <span className="chip">{team.tag}</span>}
+            {/* A tag is a name, not a state and not a control — it was a .chip,
+                so it offered a pointer cursor and a hover lift for something
+                that does nothing. */}
+            {team.tag && <span className="tv-tag">{team.tag}</span>}
             <h3>{team.name}</h3>
-            <span className="chip">{team.status}</span>
+            <StatusTag kind="team" value={team.status} />
           </header>
 
           <ul className="tv-roster">

@@ -28,7 +28,9 @@ export default function DynamicGridBackground() {
 
     // Config
     const GRID_SIZE = 20;
-    const LENS_RADIUS = 150;
+    // 110 rather than 150 — a bit over a quarter smaller. The lens reads as a
+    // pointer-sized response now instead of a region of the page.
+    const LENS_RADIUS = 110;
     const MAGNIFICATION = 0.8; // Strength of the bulge/zoom
     // Drawn at full strength; the canvas element carries the 0.03 (see below),
     // so the composited grid lands at exactly 0.03 rather than 0.03 × 0.03.
@@ -44,7 +46,8 @@ export default function DynamicGridBackground() {
         ? [parseInt(m[1], 16), parseInt(m[2], 16), parseInt(m[3], 16)]
         : [255, 77, 28];
     };
-    const [r, g, b] = rgb("--accent", "#d93d0b");
+    // The accent used to be read here for the cursor halo. With the halo gone
+    // the grid is ink-neutral throughout and only --muted is needed.
     const [ir, ig, ib] = rgb("--muted", "#6f6758");
 
     // Same rule the CSS uses: the OS preference decides unless data-motion on
@@ -176,18 +179,19 @@ export default function DynamicGridBackground() {
         }
       }
       
-      // Ink-neutral rules; the accent is spent only inside the lens, so the
-      // colour reads as a response to the cursor rather than a background wash.
       ctx.strokeStyle = `rgba(${ir}, ${ig}, ${ib}, ${GRID_OPACITY})`;
       ctx.lineWidth = 1;
       ctx.stroke();
 
-      // 3. Add a subtle ambient glow over the lens
-      const gradient = ctx.createRadialGradient(mouseX, mouseY, 0, mouseX, mouseY, LENS_RADIUS * 0.8);
-      gradient.addColorStop(0, `rgba(${r}, ${g}, ${b}, ${GRID_OPACITY * 0.8})`);
-      gradient.addColorStop(1, `rgba(${r}, ${g}, ${b}, 0)`);
-      ctx.fillStyle = gradient;
-      ctx.fillRect(0, 0, canvas.width, canvas.height);
+      // There used to be a third step here: a radial gradient of the accent
+      // colour, centred on the cursor and painted over the whole canvas. It
+      // drew a soft coloured disc that followed the pointer around every page.
+      //
+      // It is gone deliberately. The lens above already responds to the cursor
+      // by bending the grid, which is a structural effect and reads as the
+      // page reacting; a coloured halo on top of it reads as a light source
+      // that is not there, and it tinted whatever content happened to sit
+      // under it. The distortion is the effect worth keeping.
 
       animationFrameId = requestAnimationFrame(draw);
     };

@@ -126,7 +126,7 @@
   font-size: 12px;
   font-weight: 700;
   padding: 4px 10px;
-  border-radius: 999px;
+  border-radius: 0;
   border: 1px solid var(--color-divider);
   color: var(--color-text-muted);
   white-space: nowrap;
@@ -155,7 +155,7 @@
   min-height: 40px;
   padding: 8px 12px;
   border: 1px solid var(--color-divider);
-  border-radius: 8px;
+  border-radius: 0;
   font-size: 13.5px;
   min-width: 0;
 }
@@ -191,7 +191,7 @@
   text-transform: uppercase;
   color: var(--color-accent);
   border: 1px solid currentColor;
-  border-radius: 999px;
+  border-radius: 0;
   padding: 1px 7px;
 }
 
@@ -228,7 +228,7 @@
   font-size: 16px;
   padding: 11px;
   border: 1px solid var(--color-divider);
-  border-radius: 8px;
+  border-radius: 0;
   background: var(--color-surface);
   color: var(--color-text);
   font-family: inherit;
@@ -255,7 +255,7 @@
   gap: var(--space-2);
   padding: var(--space-3);
   border: 1px solid var(--color-accent);
-  border-radius: 10px;
+  border-radius: 0;
   background: color-mix(in srgb, var(--color-accent) 8%, transparent);
   min-width: 0;
 }
@@ -265,7 +265,7 @@
   font-size: 12px;
   overflow-wrap: anywhere;
   padding: 10px;
-  border-radius: 6px;
+  border-radius: 0;
   background: var(--color-bg);
   border: 1px solid var(--color-divider);
   /* user-select so the link is still recoverable when the clipboard API is

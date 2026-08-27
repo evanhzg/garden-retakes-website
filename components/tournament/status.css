@@ -1,0 +1,109 @@
+/* Read-only status tags.
+   The opposite of .chip in every respect that matters: square, filled, and
+   completely static. Nothing here may suggest the thing can be clicked —
+   no pointer cursor, no hover, no transition, no transform. */
+
+.status {
+  display: inline-flex;
+  flex-direction: column;
+  gap: 1px;
+  padding: 5px 10px;
+  /* Deliberately square. */
+  border-radius: 0;
+  border-left: 3px solid var(--color-divider);
+  background: color-mix(in srgb, var(--color-text) 7%, transparent);
+  line-height: 1.25;
+  vertical-align: middle;
+  /* Not a target. */
+  cursor: default;
+  user-select: none;
+}
+
+.status-label {
+  font-size: 9px;
+  font-weight: 800;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  color: var(--color-text-muted);
+}
+
+.status-value {
+  font-size: 12.5px;
+  font-weight: 700;
+  color: var(--color-text);
+  white-space: nowrap;
+}
+
+/* ---------- State colours ----------
+   Carried on the left rule and a faint wash, so a table of these reads as a
+   column of statuses rather than a row of coloured buttons. */
+
+/* Not started / not yet real. */
+.status.st-draft,
+.status.st-idle,
+.status.st-scheduled,
+.status.st-pending {
+  border-left-color: color-mix(in srgb, var(--color-text) 35%, transparent);
+}
+
+/* Open, inviting an action. */
+.status.st-registration,
+.status.st-invited,
+.status.st-open {
+  border-left-color: #3b82f6;
+  background: color-mix(in srgb, #3b82f6 12%, transparent);
+}
+
+/* Happening now. */
+.status.st-running,
+.status.st-live,
+.status.st-busy,
+.status.st-veto {
+  border-left-color: var(--color-accent);
+  background: color-mix(in srgb, var(--color-accent) 12%, transparent);
+}
+
+/* Settled, good. */
+.status.st-finished,
+.status.st-accepted,
+.status.st-ready,
+.status.st-done {
+  border-left-color: #22c55e;
+  background: color-mix(in srgb, #22c55e 12%, transparent);
+}
+
+/* Out, bad, gone. */
+.status.st-withdrawn,
+.status.st-disqualified,
+.status.st-offline,
+.status.st-disabled,
+.status.st-cancelled,
+.status.st-declined {
+  border-left-color: #ef4444;
+  background: color-mix(in srgb, #ef4444 10%, transparent);
+  opacity: 0.85;
+}
+
+/* ---------- Compact ----------
+   Inside a dense table row the caption is repeated on every line and stops
+   earning its space, so the header carries it instead. */
+
+.status.compact {
+  flex-direction: row;
+  align-items: baseline;
+  gap: 6px;
+  padding: 3px 8px;
+}
+
+.status.compact .status-label {
+  display: none;
+}
+
+@media (max-width: 640px) {
+  .status {
+    padding: 4px 8px;
+  }
+  .status-value {
+    white-space: normal;
+  }
+}

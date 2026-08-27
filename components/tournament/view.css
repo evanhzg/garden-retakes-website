@@ -217,3 +217,20 @@
     flex-wrap: wrap;
   }
 }
+
+/* A team's short tag. A name, not a state and not a control — it used to be a
+   .chip, which offered a pointer cursor and a hover lift for something that
+   does nothing when you click it. Matches .tv-seed, which is the other small
+   identifier on the same row. */
+.tv-tag {
+  display: inline-flex;
+  align-items: center;
+  padding: 2px 7px;
+  border: 1px solid var(--color-divider);
+  font-family: var(--font-mono);
+  font-size: 11px;
+  font-weight: 700;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+  color: var(--color-text-muted);
+}

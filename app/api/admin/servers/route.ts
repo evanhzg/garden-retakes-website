@@ -15,7 +15,7 @@ export const runtime = "nodejs";
 
 type Body = {
   key?: string;
-  action?: "add" | "update" | "delete" | "test" | "seed-from-env" | "release";
+  action?: "add" | "update" | "delete" | "duplicate" | "test" | "seed-from-env" | "release";
   id?: number;
   name?: string;
   host?: string;
@@ -24,6 +24,8 @@ type Body = {
   connectAddress?: string;
   gotvAddress?: string;
   status?: string;
+  /** Whether this server is for tournaments rather than the public ladder. */
+  isTournament?: boolean;
 };
 
 export async function GET(req: Request) {
@@ -144,6 +146,10 @@ export async function POST(req: Request) {
           ...(body.connectAddress !== undefined ? { ConnectAddress: body.connectAddress || null } : {}),
           ...(body.gotvAddress !== undefined ? { GotvAddress: body.gotvAddress || null } : {}),
           ...(body.status ? { Status: body.status.slice(0, 16) } : {}),
+          // There was no way to change this from anywhere, which mattered:
+          // seed-from-env forces it false, so a seeded row could never be
+          // promoted to a tournament server without editing the database.
+          ...(body.isTournament !== undefined ? { IsTournament: body.isTournament } : {}),
         },
       });
 
@@ -168,10 +174,58 @@ export async function POST(req: Request) {
     case "delete": {
       if (!body.id) return NextResponse.json({ error: "id?" }, { status: 400 });
 
+      // CurrentMatchId is a loose int, not a foreign key, so nothing in the
+      // database stops a server being deleted out from under a live match —
+      // the match would simply keep pointing at a row that no longer exists.
+      // Refusing here is the only place that check can live.
+      const doomed = await prisma.gameServer.findUnique({ where: { Id: body.id } });
+      if (!doomed) return NextResponse.json({ error: "No such server." }, { status: 404 });
+      if (doomed.Status === "busy" || doomed.CurrentMatchId !== null) {
+        return NextResponse.json(
+          { error: "That server is running a match. Release it first." },
+          { status: 409 },
+        );
+      }
+
       await prisma.gameServer.delete({ where: { Id: body.id } });
       await logAdminAction(ctx, "server.delete", undefined, String(body.id));
 
       return NextResponse.json({ ok: true });
+    }
+
+    // Copy a server row, password included.
+    //
+    // This cannot be done from the browser: GET deliberately never returns
+    // RconPassword ("a field that is never sent cannot leak"), so a client-side
+    // duplicate would produce a server that looks right and cannot be reached.
+    // Most of a second server on the same box is identical to the first — the
+    // port and the name are usually the whole diff.
+    case "duplicate": {
+      if (!body.id) return NextResponse.json({ error: "id?" }, { status: 400 });
+
+      const source = await prisma.gameServer.findUnique({ where: { Id: body.id } });
+      if (!source) return NextResponse.json({ error: "No such server." }, { status: 404 });
+
+      const created = await prisma.gameServer.create({
+        data: {
+          Name: `${source.Name} copy`,
+          Host: source.Host,
+          // Nudged off the original so the copy is not born colliding. It is a
+          // guess, not a promise — the point is that it differs.
+          Port: source.Port + 10,
+          RconPassword: source.RconPassword,
+          ConnectAddress: source.ConnectAddress,
+          GotvAddress: source.GotvAddress,
+          IsTournament: source.IsTournament,
+          // A copy has never run anything, whatever the original is doing.
+          Status: "idle",
+          CurrentMatchId: null,
+        },
+      });
+
+      await logAdminAction(ctx, "server.duplicate", undefined, `${body.id} -> ${created.Id}`);
+
+      return NextResponse.json({ ok: true, id: created.Id });
     }
 
     case "test": {

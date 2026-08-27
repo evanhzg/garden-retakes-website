@@ -3,6 +3,7 @@
 import { useCallback, useState } from "react";
 import { useI18n } from "@/components/I18nProvider";
 import "./roster.css";
+import StatusTag from "./StatusTag";
 
 // The organizer's view of who is playing.
 //
@@ -86,9 +87,16 @@ export default function Roster({
             <header className="rs-head">
               {team.seed !== null && <span className="rs-seed num">{team.seed}</span>}
 
+              {/* Controlled, not defaultValue. An uncontrolled input keeps
+                  whatever was typed into it regardless of what the props say,
+                  so after a rename saved elsewhere — or a switch to a different
+                  tournament — the box kept showing the stale name while the
+                  server held the new one. */}
               <input
+                id={`rs-name-${team.id}`}
+                aria-label={t("roster.teamName")}
                 className="rs-name"
-                defaultValue={team.name}
+                value={edits[nameKey] ?? team.name}
                 maxLength={64}
                 onChange={(e) => setEdits((x) => ({ ...x, [nameKey]: e.target.value }))}
               />
@@ -101,7 +109,7 @@ export default function Roster({
                 {t("auto.inventorysimulator.rename")}
               </button>
 
-              <span className="chip">{team.status}</span>
+              <StatusTag kind="team" value={team.status} />
             </header>
 
             {/* The captain's link, so an organizer can re-send it when a player
@@ -162,7 +170,7 @@ export default function Roster({
                       </span>
                     )}
 
-                    <span className={`chip rs-${m.status}`}>{m.status}</span>
+                    <StatusTag kind="member" value={m.status} label={t("roster.player")} />
                   </li>
                 );
               })}

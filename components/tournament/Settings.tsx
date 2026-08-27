@@ -4,6 +4,7 @@ import { useCallback, useState } from "react";
 import { useI18n } from "@/components/I18nProvider";
 import { formatRemaining, TEAM_SIZES } from "@/lib/tournament/edition";
 import "./settings.css";
+import StatusTag from "./StatusTag";
 
 // Everything an organizer decides before a tournament runs.
 //
@@ -178,14 +179,27 @@ export default function Settings({
           that change it. Everything below is detail by comparison. */}
       <section className="ts-block ts-state">
         <div className="ts-state-line">
-          <span className={`chip ${published ? "ts-live" : "ts-draft"}`}>
-            {published ? t("settings.published") : t("settings.unpublished")}
+          {/* Visibility and state are two different facts and were two
+              identical-looking pills. Captioned, they stop competing. */}
+          <span className={`status ${published ? "st-live" : "st-draft"}`}>
+            <span className="status-label">{t("settings.visibility")}</span>
+            <span className="status-value">
+              {published ? t("settings.published") : t("settings.unpublished")}
+            </span>
           </span>
-          <span className="chip">{tournament.state}</span>
+
+          <StatusTag kind="tournament" value={tournament.state} />
+
+          {started && (
+            <span className="status st-running">
+              <span className="status-label">{t("settings.clock")}</span>
+              <span className="status-value">{t("settings.started")}</span>
+            </span>
+          )}
+
           <span className="muted">
             {tournament.teamCount} / {tournament.maxTeams} {t("tournaments.teams").toLowerCase()}
           </span>
-          {started && <span className="chip ts-live">{t("settings.started")}</span>}
         </div>
 
         <p className="muted ts-hint">

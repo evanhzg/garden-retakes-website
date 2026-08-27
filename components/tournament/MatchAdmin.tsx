@@ -5,6 +5,7 @@ import { useI18n } from "@/components/I18nProvider";
 import MatchBubble from "./MatchBubble";
 import type { MatchPreview } from "@/lib/tournament/preview";
 import "./matchadmin.css";
+import StatusTag from "./StatusTag";
 
 // The per-match panel.
 //
@@ -71,7 +72,7 @@ export default function MatchAdmin({ matchId, matchKey, teamA, teamB, state, adm
           <span className="muted">v</span>
           <strong>{teamB}</strong>
           <code className="ma-key">{matchKey}</code>
-          <span className="chip">{state}</span>
+          <StatusTag kind="match" value={state} />
         </header>
       </MatchBubble>
 
