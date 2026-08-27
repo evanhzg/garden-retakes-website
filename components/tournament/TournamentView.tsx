@@ -4,6 +4,7 @@ import { useState } from "react";
 import Link from "next/link";
 import { useI18n } from "@/components/I18nProvider";
 import Bracket, { type BracketMatch } from "./Bracket";
+import { placeholderBracket } from "@/lib/tournament/bracket";
 import Rules, { type RulesFacts } from "./Rules";
 import type { MatchPreview } from "@/lib/tournament/preview";
 import type { PlayerTotals } from "@/lib/tournament/stats";
@@ -42,7 +43,9 @@ export type TeamView = {
 
 export type PoolMap = { map: string; label: string; image: string | null };
 
-type Tab = "bracket" | "teams" | "stats" | "pool" | "rules";
+// "pool" is gone: the map pool moved into the rules tab, where it is one
+// section of a page instead of a whole tab holding a single sentence.
+type Tab = "bracket" | "teams" | "stats" | "rules";
 
 export default function TournamentView({
   stages,
@@ -68,7 +71,6 @@ export default function TournamentView({
     { id: "bracket", label: t("tournaments.tabs.bracket"), count: stages.length },
     { id: "teams", label: t("tournaments.tabs.teams"), count: teams.length },
     { id: "stats", label: t("tournaments.tabs.stats"), count: stats.length },
-    { id: "pool", label: t("tournaments.tabs.pool"), count: pool.length },
     { id: "rules", label: t("tournaments.tabs.rules") },
   ];
 
@@ -92,10 +94,9 @@ export default function TournamentView({
       </div>
 
       <div className="pro-panel" role="tabpanel" id={`tv-panel-${tab}`} aria-labelledby={`tv-tab-${tab}`}>
-        {tab === "bracket" && <BracketPanel stages={stages} previews={previews} slug={slug} />}
+        {tab === "bracket" && <BracketPanel stages={stages} previews={previews} slug={slug} rules={rules} />}
         {tab === "teams" && <TeamsPanel teams={teams} />}
         {tab === "stats" && <StatsPanel stats={stats} />}
-        {tab === "pool" && <PoolPanel pool={pool} />}
         {tab === "rules" && <Rules facts={rules} />}
       </div>
     </section>
@@ -106,15 +107,34 @@ function BracketPanel({
   stages,
   previews,
   slug,
+  rules,
 }: {
   stages: StageView[];
   previews: Record<number, MatchPreview>;
   slug: string;
+  /** Only for the empty-state preview, which needs the planned team count. */
+  rules: RulesFacts;
 }) {
   const { t } = useI18n();
 
+  // No stages yet is the normal state of a tournament somebody is still
+  // setting up, and it used to render one line of grey text. That tells an
+  // organizer nothing about what they are building and a visitor nothing about
+  // what they are entering, so the tree is drawn empty instead — same
+  // component, same shape it will really have, every slot blank.
   if (stages.length === 0) {
-    return <p className="muted">{t("tournaments.noStages")}</p>;
+    return (
+      <div className="tv-stages">
+        <section className="tv-stage tv-preview">
+          <div className="tv-preview-note">
+            <strong>{t("tournaments.previewTitle")}</strong>
+            <span>{t("tournaments.previewHint", { n: String(rules.maxTeams) })}</span>
+          </div>
+
+          <Bracket matches={placeholderBracket(rules.maxTeams, rules.bestOf, rules.finalBestOf ?? undefined)} />
+        </section>
+      </div>
+    );
   }
 
   return (
@@ -267,29 +287,3 @@ function StatsPanel({ stats }: { stats: (PlayerTotals & { teamName: string | nul
   );
 }
 
-function PoolPanel({ pool }: { pool: PoolMap[] }) {
-  const { t } = useI18n();
-
-  if (pool.length === 0) {
-    return <p className="muted">{t("tournaments.noPool")}</p>;
-  }
-
-  return (
-    <div className="tv-pool">
-      {pool.map((m) => (
-        <figure key={m.map} className="tv-map">
-          {m.image ? (
-            // eslint-disable-next-line @next/next/no-img-element
-            <img src={m.image} alt="" loading="lazy" />
-          ) : (
-            <span className="tv-map-blank" aria-hidden />
-          )}
-          <figcaption>
-            {m.label}
-            <span className="tv-map-file">{m.map}</span>
-          </figcaption>
-        </figure>
-      ))}
-    </div>
-  );
-}

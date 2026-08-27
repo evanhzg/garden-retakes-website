@@ -1,3 +1,4 @@
+import { getSession } from "@/lib/auth";
 import Link from "next/link";
 import { notFound } from "next/navigation";
 import { prisma } from "@/lib/db";
@@ -48,6 +49,26 @@ export default async function TournamentPage({ params }: { params: { slug: strin
   // concerned. Not "closed" — invisible: telling a stranger that an organizer
   // has a half-built event is leaking work in progress.
   if (!tournament.Published && !canManageThis) pageNotFound();
+
+  /**
+   * Who may see the voice server.
+   *
+   * Organizers and admins always — they set it up and have to test it. Players
+   * only once the tournament has actually started, and only if they are on a
+   * roster: before then the address on a public page is an open invitation for
+   * anyone who read the bracket to sit in the channels.
+   */
+  const session = getSession();
+  const isRegisteredPlayer =
+    session !== null &&
+    tournament.Teams.some((team) =>
+      team.Members.some(
+        (m) => m.SteamId.toString() === session.steamId && m.Status === "accepted",
+      ),
+    );
+
+  const showTeamSpeak =
+    canManageThis || (tournament.StartedAt !== null && isRegisteredPlayer);
 
   const [matches, previewMap, stats] = await Promise.all([
     prisma.tournamentMatch.findMany({
@@ -212,10 +233,14 @@ export default async function TournamentPage({ params }: { params: { slug: strin
         </div>
       </section>
 
+      {/* showTeamSpeak is decided here, not in the component. A voice server
+          address filtered in the browser has already been sent to the browser,
+          so the only place the decision means anything is before the render. */}
       <Community
         discordUrl={tournament.DiscordUrl}
-        teamSpeakUrl={tournament.TeamSpeakUrl}
+        teamSpeakUrl={showTeamSpeak ? tournament.TeamSpeakUrl : null}
         twitchChannels={tournament.TwitchChannels}
+        showTeamSpeak={showTeamSpeak}
       />
 
       <TournamentView

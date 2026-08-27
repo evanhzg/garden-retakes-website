@@ -4,19 +4,90 @@
 
 .cm {
   display: grid;
-  gap: var(--space-3);
+  gap: var(--space-4);
 }
 
+/* ---------- Voice and chat ---------- */
+
 .cm-links {
-  display: flex;
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(min(240px, 100%), 1fr));
   gap: var(--space-2);
-  flex-wrap: wrap;
 }
+
+/* Not .btn. These are the two destinations a player actually needs on match
+   day, and a pair of small grey secondary buttons said "minor action" about
+   the most-used links on the page. Square, weighted, branded on hover. */
+.cm-link {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 12px 14px;
+  border: 1px solid var(--color-divider);
+  border-left: 3px solid var(--brand, var(--color-divider));
+  background: var(--color-surface);
+  color: var(--color-text);
+  text-decoration: none;
+  min-width: 0;
+  transition: background 0.15s ease, border-color 0.15s ease;
+}
+
+.cm-link:hover {
+  background: color-mix(in srgb, var(--brand, var(--color-accent)) 10%, var(--color-surface));
+  border-color: var(--brand, var(--color-accent));
+}
+
+.cm-discord {
+  --brand: #5865f2;
+}
+
+.cm-ts {
+  --brand: #2580c3;
+}
+
+.cm-mark {
+  flex: 0 0 auto;
+  width: 26px;
+  height: 26px;
+  color: var(--brand);
+}
+
+.cm-link-text {
+  display: grid;
+  gap: 1px;
+  min-width: 0;
+}
+
+.cm-link-text strong {
+  font-size: 14px;
+  font-weight: 800;
+  letter-spacing: 0.01em;
+}
+
+.cm-link-text small {
+  font-size: 11.5px;
+  color: var(--color-text-muted);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+/* The address has to be copyable by hand — most people will not have the
+   ts3server:// handler registered. */
+.cm-address {
+  font-family: var(--font-mono);
+  user-select: all;
+}
+
+/* ---------- Streams ---------- */
 
 .cm-streams {
   display: grid;
-  grid-template-columns: repeat(auto-fill, minmax(260px, 1fr));
+  grid-template-columns: repeat(auto-fill, minmax(min(260px, 100%), 1fr));
   gap: var(--space-3);
+  /* The grid rows were sized by the tallest card, so a collapsed stream next
+     to an expanded one grew a tall empty gap under it. */
+  align-items: start;
 }
 
 /* An expanded stream takes the full row rather than growing in place, so the
@@ -28,14 +99,19 @@
 .cm-stream {
   border: 1px solid var(--color-divider);
   background: var(--color-surface);
+  min-width: 0;
+  /* The iframe is a replaced element and sat 3px proud of the border without
+     this, which is where the uneven gap under each stream came from. */
+  overflow: hidden;
 }
 
 .cm-stream-head {
   display: flex;
   align-items: center;
   gap: 8px;
-  padding: 7px 10px;
+  padding: 8px 10px;
   border-bottom: 1px solid var(--color-divider);
+  min-width: 0;
 }
 
 .cm-channel {
@@ -49,12 +125,17 @@
 }
 
 .cm-small {
-  padding: 3px 9px;
+  flex: 0 0 auto;
+  padding: 4px 10px;
   font-size: 11.5px;
+  border-radius: 0;
 }
 
 .cm-frame {
   aspect-ratio: 16 / 9;
+  /* Kills the inline-element baseline gap under the iframe. */
+  display: block;
+  line-height: 0;
 }
 
 .cm-stream.open .cm-frame {
@@ -71,22 +152,12 @@
 /* ------------------------------------------------------------------ mobile */
 
 @media (max-width: 640px) {
-  /* Discord and TeamSpeak become full-width buttons. They are the two things a
-     player actually taps on this panel — often while the match is starting —
-     and a wrapped row of small pills is the wrong target for that. */
   .cm-links {
-    display: grid;
     grid-template-columns: 1fr;
-    gap: 8px;
   }
 
-  .cm-links .btn {
-    width: 100%;
-    min-height: 44px;
-    display: inline-flex;
-    align-items: center;
-    justify-content: center;
-    gap: 8px;
+  .cm-link {
+    min-height: 56px;
   }
 
   .cm-streams {
@@ -98,5 +169,13 @@
      reachable by scrolling. */
   .cm-stream.open .cm-frame {
     max-height: 50vh;
+  }
+
+  .cm-stream-head {
+    flex-wrap: wrap;
+  }
+
+  .cm-channel {
+    flex: 1 1 100%;
   }
 }

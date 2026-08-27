@@ -1,6 +1,7 @@
 "use client";
 
 import Link from "next/link";
+import { useI18n } from "@/components/I18nProvider";
 import MatchBubble from "./MatchBubble";
 import type { MatchPreview } from "@/lib/tournament/preview";
 import "./bracket.css";
@@ -39,6 +40,8 @@ export default function Bracket({
   /** When given, every box links to its own match page. */
   slug?: string;
 }) {
+  const { t } = useI18n();
+
   if (matches.length === 0) {
     return null;
   }
@@ -53,8 +56,16 @@ export default function Bracket({
 
         return (
           <div key={round} className="br-round" style={{ "--gap-mult": 2 ** (round - 1) } as React.CSSProperties}>
+            {/* These were three hardcoded English strings in a site that ships
+                a French dictionary and gates its build on the two matching. */}
             <h4 className="br-round-name">
-              {round === lastRound ? "Final" : round === lastRound - 1 ? "Semi-finals" : `Round ${round}`}
+              {round === lastRound
+                ? t("bracket.final")
+                : round === lastRound - 1
+                  ? t("bracket.semis")
+                  : round === lastRound - 2
+                    ? t("bracket.quarters")
+                    : t("bracket.round", { n: String(round) })}
             </h4>
 
             {inRound.map((match) => (

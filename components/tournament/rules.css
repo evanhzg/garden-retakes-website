@@ -1,24 +1,47 @@
 /* The Rules tab.
    Facts as a definition list, prose as markdown. The generated half is first
-   because it is the half that cannot be wrong. */
+   because it is the half that cannot be wrong.
+
+   Two columns, because this tab is mostly short blocks — five numbered steps,
+   five bullets, a prize note — and a single 80ch column of them is a long
+   scroll of half-empty lines. The wide blocks (the facts grid and the map
+   pool) span both, since they carry their own internal grid. */
 
 .rl {
   display: grid;
-  gap: var(--space-5);
-  max-width: 80ch;
+  grid-template-columns: 1fr;
+  gap: var(--space-4);
+  /* Was 80ch on the container, which capped the whole tab at one column's
+     worth of width and made a second column impossible. The cap belongs on
+     the prose, not on the layout. */
+  align-items: start;
+}
+
+/* Each block sits ON the panel rather than floating above it — same family of
+   surface, one step of contrast, so the tab reads as one page and not as a
+   stack of cards. */
+.rl-block {
+  padding: var(--space-3) var(--space-4) var(--space-4);
+  background: color-mix(in srgb, var(--color-text) 3%, transparent);
+  border: 1px solid var(--color-divider);
+  border-radius: 0;
+  min-width: 0;
 }
 
 .rl-block h3 {
-  margin: 0 0 var(--space-2);
-  padding-bottom: 6px;
+  margin: 0 0 var(--space-3);
+  padding-bottom: 8px;
   border-bottom: 1px solid var(--color-divider);
-  font-size: 14px;
-  letter-spacing: 0.02em;
+  font-size: 13px;
+  font-weight: 800;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  color: var(--color-text-muted);
 }
 
 .rl-facts {
   display: grid;
-  grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
+  grid-template-columns: repeat(auto-fill, minmax(min(190px, 100%), 1fr));
   gap: var(--space-3);
   margin: 0;
 }
@@ -26,6 +49,7 @@
 .rl-facts > div {
   display: grid;
   gap: 2px;
+  min-width: 0;
 }
 
 .rl-facts dt {
@@ -40,30 +64,72 @@
   margin: 0;
   font-size: 14px;
   font-weight: 600;
+  overflow-wrap: anywhere;
 }
 
+/* ---------- Map pool ---------- */
+
 .rl-pool {
+  list-style: none;
   margin: 0;
-  font-size: 14px;
+  padding: 0;
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(min(150px, 100%), 1fr));
+  gap: var(--space-2);
 }
+
+.rl-map {
+  border: 1px solid var(--color-divider);
+  background: var(--color-surface);
+  overflow: hidden;
+  min-width: 0;
+}
+
+.rl-map img,
+.rl-map-blank {
+  display: block;
+  width: 100%;
+  aspect-ratio: 16 / 9;
+  object-fit: cover;
+  background: color-mix(in srgb, var(--color-text) 8%, transparent);
+}
+
+.rl-map-name {
+  display: block;
+  padding: 7px 10px;
+  font-size: 13px;
+  font-weight: 700;
+  text-transform: capitalize;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+/* ---------- Prose ---------- */
 
 .rl-steps,
 .rl-list {
   margin: 0;
   padding-left: 1.35em;
   display: grid;
-  gap: 6px;
+  gap: 8px;
   font-size: 13.5px;
   line-height: 1.55;
+  max-width: 70ch;
 }
 
 .rl-md {
   font-size: 13.5px;
   line-height: 1.6;
+  max-width: 70ch;
 }
 
 .rl-md :where(p, ul, ol) {
   margin: 0 0 var(--space-2);
+}
+
+.rl-md :where(p, ul, ol):last-child {
+  margin-bottom: 0;
 }
 
 .rl-md :where(h1, h2, h3, h4) {
@@ -76,4 +142,16 @@
   font-size: 12.5px;
   background: color-mix(in srgb, var(--color-text) 8%, transparent);
   padding: 1px 5px;
+}
+
+@media (min-width: 900px) {
+  .rl {
+    grid-template-columns: 1fr 1fr;
+  }
+
+  /* The facts grid and the map pool bring their own columns; nesting them in
+     half the width would give two columns of one item each. */
+  .rl-wide {
+    grid-column: 1 / -1;
+  }
 }

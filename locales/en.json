@@ -2839,5 +2839,12 @@
   "state.match.finished": "Finished",
   "state.match.cancelled": "Cancelled",
   "roster.player": "Player",
-  "settings.clock": "Clock"
+  "settings.clock": "Clock",
+  "tournaments.previewTitle": "Bracket preview",
+  "tournaments.previewHint": "This is the shape the bracket will take with {n} teams. Slots fill in as teams register.",
+  "bracket.final": "Final",
+  "bracket.semis": "Semi-finals",
+  "bracket.quarters": "Quarter-finals",
+  "bracket.round": "Round {n}",
+  "community.discordHint": "Announcements and support"
 }

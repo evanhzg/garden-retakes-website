@@ -47,7 +47,7 @@ export default function Rules({ facts }: { facts: RulesFacts }) {
     <div className="rl">
       {/* The facts first, as a table, because they are what people came for and
           they are the part that cannot be out of date. */}
-      <section className="rl-block">
+      <section className="rl-block rl-wide">
         <h3>{t("rules.thisTournament")}</h3>
 
         <dl className="rl-facts">
@@ -97,10 +97,30 @@ export default function Rules({ facts }: { facts: RulesFacts }) {
         </dl>
       </section>
 
+      {/* The map pool lives here now, with pictures.
+          It used to be its own tab holding one line of names joined by dots —
+          a whole tab for a sentence, and a sentence for the thing players
+          actually want to look at. The pool IS part of the rules, so it reads
+          in place, and a map is recognised by its picture long before its
+          name. */}
       {facts.pool.length > 0 && (
-        <section className="rl-block">
+        <section className="rl-block rl-wide">
           <h3>{t("tournaments.tabs.pool")}</h3>
-          <p className="rl-pool">{facts.pool.map((m) => m.label).join(" · ")}</p>
+          <ul className="rl-pool">
+            {facts.pool.map((m) => (
+              <li key={m.map} className="rl-map">
+                {m.image ? (
+                  // eslint-disable-next-line @next/next/no-img-element
+                  <img src={m.image} alt="" loading="lazy" />
+                ) : (
+                  // A map with no art is normal the day it is added and must
+                  // not look like a broken image.
+                  <span className="rl-map-blank" aria-hidden />
+                )}
+                <span className="rl-map-name">{m.label}</span>
+              </li>
+            ))}
+          </ul>
         </section>
       )}
 

@@ -281,3 +281,44 @@ export function resolveByes(matches: PlannedMatch[]): PlannedMatch[] {
 
   return matches;
 }
+
+/**
+ * The shape a bracket will take, before it has one.
+ *
+ * A tournament with no stages yet showed a single line of grey text saying so,
+ * which tells an organizer nothing about what they are building and tells a
+ * visitor nothing about what they are entering. This returns the same match
+ * shape the real bracket uses, with every slot empty, so the tree can be drawn
+ * as a preview from the moment the team count is set.
+ *
+ * Built from `singleElimination` rather than from its own arithmetic — the
+ * preview and the real thing then cannot disagree about how many rounds an
+ * eleven-team bracket has, or where the byes fall.
+ *
+ * Ids are negative so they can never collide with a real match id, and so the
+ * caller can tell a placeholder from a real match without a second flag.
+ */
+export function placeholderBracket(maxTeams: number, bestOf = 1, finalBestOf?: number) {
+  const size = bracketSize(Math.max(2, maxTeams));
+
+  // Synthetic seeds, purely to make the plan the right size. Their ids are
+  // discarded below; only the round/slot structure survives.
+  const teams: SeededTeam[] = Array.from({ length: size }, (_, i) => ({
+    id: -(i + 1),
+    seed: i + 1,
+    name: "",
+  }));
+
+  return singleElimination(teams, bestOf, finalBestOf).map((m, i) => ({
+    id: -(i + 1),
+    round: m.round,
+    slot: m.slot,
+    bestOf: m.bestOf,
+    state: "pending",
+    teamA: null,
+    teamB: null,
+    scoreA: 0,
+    scoreB: 0,
+    winnerTeamId: null,
+  }));
+}
