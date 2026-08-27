@@ -34,6 +34,9 @@ const CS2_LINKS: NavLink[] = [
   // Inventory and Admin are not here any more: both are account destinations
   // rather than places on the site, so they live in the avatar menu with
   // Profile and Settings. See components/AvatarMenu.tsx.
+  // The old homepage. Moved off "/" when the tournament system took that slot,
+  // and linked here so it is not orphaned at a URL nobody would guess.
+  { href: "/community", label: "Community", key: "nav.community", primary: true },
   { href: "/feed", label: "Feed", key: "nav.feed", primary: true },
   { href: "/utility", label: "Utility", key: "nav.utility", primary: true },
   { href: "/live", label: "Live", key: "nav.live", isLive: true, primary: true },

@@ -1,0 +1,748 @@
+/* The tournament homepage.
+   Its own file rather than another block on the end of an 11,000-line
+   globals.css, and square throughout like the rest of the tournament surfaces. */
+
+.th {
+  max-width: 1180px;
+  margin: 0 auto;
+  padding: clamp(40px, 7vw, 84px) clamp(16px, 3vw, 28px) 0;
+  color: var(--color-text);
+}
+
+/* ---------------------------------------------------------------- hero */
+
+.th-hero {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  align-items: end;
+  gap: clamp(28px, 5vw, 64px);
+  padding-bottom: clamp(36px, 6vw, 72px);
+  border-bottom: 1px solid var(--border);
+}
+
+.th-kicker {
+  display: block;
+  font-family: var(--font-mono);
+  font-size: 11px;
+  font-weight: 700;
+  letter-spacing: 0.16em;
+  color: var(--color-accent);
+}
+
+.th-title {
+  margin: 18px 0 22px;
+  font-size: clamp(44px, 9vw, 116px);
+  line-height: 0.86;
+  letter-spacing: -0.05em;
+  font-weight: 900;
+}
+
+.th-title em {
+  font-style: normal;
+  color: var(--color-accent);
+}
+
+.th-lead {
+  margin: 0;
+  max-width: 46ch;
+  font-size: clamp(15px, 1.6vw, 19px);
+  line-height: 1.45;
+  color: color-mix(in srgb, var(--color-text) 76%, transparent);
+}
+
+.th-cta {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px;
+  margin-top: 28px;
+}
+
+.th-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  padding: 13px 20px;
+  border: 1px solid var(--border);
+  border-radius: 0;
+  background: transparent;
+  color: var(--color-text);
+  font-size: 13.5px;
+  font-weight: 800;
+  letter-spacing: 0.01em;
+  text-decoration: none;
+  cursor: pointer;
+  transition: background 0.15s ease, border-color 0.15s ease;
+}
+
+.th-btn:hover {
+  border-color: var(--color-accent);
+  background: color-mix(in srgb, var(--color-accent) 10%, transparent);
+}
+
+.th-btn.primary {
+  border-color: var(--color-accent);
+  background: var(--color-accent);
+  color: #fff;
+}
+
+.th-btn.primary:hover {
+  background: color-mix(in srgb, var(--color-accent) 86%, #000);
+}
+
+.th-btn.small {
+  padding: 9px 14px;
+  font-size: 12.5px;
+}
+
+/* The event being pointed at, stated plainly under the buttons. */
+.th-featured {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 8px 12px;
+  margin: 20px 0 0;
+  font-size: 13px;
+  color: var(--color-text-muted);
+}
+
+.th-featured strong {
+  color: var(--color-text);
+}
+
+.th-featured-dot {
+  width: 7px;
+  height: 7px;
+  border-radius: 50%;
+  background: var(--color-accent);
+  animation: th-pulse 1.8s ease-in-out infinite;
+}
+
+@keyframes th-pulse {
+  0%, 100% { opacity: 1; }
+  50% { opacity: 0.3; }
+}
+
+/* Counts, not a season number — tournaments have no seasons. */
+.th-counts {
+  display: grid;
+  gap: 18px;
+  margin: 0;
+  padding-left: clamp(16px, 2vw, 28px);
+  border-left: 1px solid var(--border);
+}
+
+.th-counts div {
+  display: grid;
+  gap: 2px;
+}
+
+.th-counts dt {
+  font-family: var(--font-mono);
+  font-size: 10px;
+  font-weight: 700;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  color: var(--color-text-muted);
+  white-space: nowrap;
+}
+
+.th-counts dd {
+  margin: 0;
+  font-size: clamp(26px, 3.4vw, 40px);
+  font-weight: 900;
+  line-height: 1;
+  font-variant-numeric: tabular-nums;
+}
+
+/* -------------------------------------------------------------- modules */
+
+.th-module {
+  display: grid;
+  grid-template-columns: minmax(0, 0.85fr) minmax(0, 1.15fr);
+  gap: clamp(28px, 5vw, 72px);
+  align-items: center;
+  padding: clamp(48px, 8vw, 96px) 0;
+  border-bottom: 1px solid var(--border);
+}
+
+/* Alternating sides, so five stacked modules do not read as one long column. */
+.th-module.reverse .th-copy {
+  order: 2;
+}
+
+.th-num {
+  display: block;
+  font-family: var(--font-mono);
+  font-size: 10.5px;
+  font-weight: 700;
+  letter-spacing: 0.16em;
+  color: var(--color-accent);
+}
+
+.th-copy h2 {
+  margin: 16px 0 18px;
+  font-size: clamp(28px, 4.2vw, 52px);
+  line-height: 0.98;
+  letter-spacing: -0.035em;
+  font-weight: 900;
+}
+
+.th-copy p {
+  margin: 0 0 14px;
+  max-width: 46ch;
+  font-size: 15px;
+  line-height: 1.55;
+  color: color-mix(in srgb, var(--color-text) 76%, transparent);
+}
+
+.th-small {
+  font-size: 13px !important;
+  color: var(--color-text-muted) !important;
+}
+
+.th-points {
+  list-style: none;
+  margin: 18px 0 0;
+  padding: 0;
+  display: grid;
+  gap: 9px;
+}
+
+.th-points li {
+  display: flex;
+  align-items: flex-start;
+  gap: 9px;
+  font-size: 13.5px;
+  line-height: 1.4;
+}
+
+.th-points svg {
+  flex: 0 0 auto;
+  margin-top: 2px;
+  color: var(--color-accent);
+}
+
+/* ------------------------------------------------------------ the map */
+
+.th-figure {
+  margin: 0;
+  border: 1px solid var(--border);
+  background: var(--color-surface);
+  min-width: 0;
+}
+
+.th-figcap {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px 14px;
+  padding: 11px 14px;
+  border-bottom: 1px solid var(--border);
+  font-family: var(--font-mono);
+  font-size: 10px;
+  font-weight: 700;
+  letter-spacing: 0.1em;
+  color: var(--color-text-muted);
+}
+
+.th-legend {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.th-key {
+  width: 14px;
+  height: 0;
+  border-top: 2px dashed currentColor;
+  display: inline-block;
+}
+
+.th-key.t { color: var(--color-accent); }
+.th-key.ct { color: #3b82f6; margin-left: 8px; }
+
+.mirage {
+  display: block;
+  width: 100%;
+  height: auto;
+  padding: 14px;
+}
+
+.mirage-floor {
+  fill: color-mix(in srgb, var(--color-text) 5%, transparent);
+  stroke: var(--color-text);
+  stroke-width: 1.5;
+  stroke-opacity: 0.55;
+}
+
+.mirage-block {
+  fill: color-mix(in srgb, var(--color-text) 13%, transparent);
+  stroke: var(--color-text);
+  stroke-width: 1;
+  stroke-opacity: 0.4;
+}
+
+/* Dashed, because these are routes rather than walls. A solid line into the
+   site would read as another piece of cover. */
+.mirage-path {
+  fill: none;
+  stroke-width: 2;
+  stroke-dasharray: 6 5;
+  stroke-linecap: round;
+}
+
+.mirage-path.t { stroke: var(--color-accent); }
+.mirage-path.ct { stroke: #3b82f6; }
+
+.mirage-arrow-t { fill: var(--color-accent); }
+.mirage-arrow-ct { fill: #3b82f6; }
+
+.mirage-label {
+  font-family: var(--font-mono);
+  font-size: 10px;
+  font-weight: 700;
+  letter-spacing: 0.08em;
+}
+
+.mirage-label.t { fill: var(--color-accent); }
+.mirage-label.ct { fill: #3b82f6; }
+
+.mirage-tiny {
+  font-family: var(--font-mono);
+  font-size: 7.5px;
+  letter-spacing: 0.06em;
+  fill: var(--color-text);
+  fill-opacity: 0.55;
+  text-anchor: middle;
+}
+
+.mirage-plant {
+  fill: none;
+  stroke: var(--color-accent);
+  stroke-width: 1.5;
+  stroke-dasharray: 3 3;
+}
+
+.mirage-plant-label {
+  font-family: var(--font-mono);
+  font-size: 9px;
+  font-weight: 700;
+  fill: var(--color-accent);
+  text-anchor: middle;
+}
+
+.mirage-site {
+  font-size: 34px;
+  font-weight: 900;
+  fill: var(--color-text);
+  fill-opacity: 0.16;
+}
+
+.th-fignote {
+  margin: 0;
+  padding: 12px 14px;
+  border-top: 1px solid var(--border);
+  font-size: 12.5px;
+  line-height: 1.45;
+  color: var(--color-text-muted);
+}
+
+/* --------------------------------------------------------------- roles */
+
+.th-roles {
+  display: grid;
+  gap: var(--space-3);
+  min-width: 0;
+}
+
+.th-role-tabs {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: var(--space-3);
+}
+
+.th-role-side {
+  display: grid;
+  gap: 5px;
+  align-content: start;
+  min-width: 0;
+}
+
+.th-side-label {
+  font-family: var(--font-mono);
+  font-size: 9.5px;
+  font-weight: 700;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: var(--color-text-muted);
+  padding-bottom: 5px;
+  border-bottom: 1px solid var(--border);
+  overflow-wrap: anywhere;
+}
+
+.th-role {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  width: 100%;
+  padding: 10px 11px;
+  border: 1px solid var(--border);
+  border-left: 3px solid var(--border);
+  border-radius: 0;
+  background: var(--color-surface);
+  color: var(--color-text);
+  font: inherit;
+  font-size: 13px;
+  font-weight: 700;
+  text-align: left;
+  cursor: pointer;
+  min-width: 0;
+  transition: border-color 0.14s ease, background 0.14s ease;
+}
+
+.th-role span {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  min-width: 0;
+}
+
+.th-role svg {
+  flex: 0 0 auto;
+  opacity: 0.7;
+}
+
+.th-role em {
+  margin-left: auto;
+  flex: 0 0 auto;
+  font-style: normal;
+  font-family: var(--font-mono);
+  font-size: 8.5px;
+  font-weight: 800;
+  letter-spacing: 0.09em;
+  padding: 2px 5px;
+  border: 1px solid currentColor;
+  opacity: 0.6;
+}
+
+.th-role:hover {
+  background: color-mix(in srgb, var(--color-text) 5%, var(--color-surface));
+}
+
+.th-role.on.ct {
+  border-left-color: #3b82f6;
+  background: color-mix(in srgb, #3b82f6 12%, transparent);
+}
+
+.th-role.on.t {
+  border-left-color: var(--color-accent);
+  background: color-mix(in srgb, var(--color-accent) 12%, transparent);
+}
+
+.th-role.on svg {
+  opacity: 1;
+}
+
+.th-role-detail {
+  padding: var(--space-3) var(--space-4);
+  border: 1px solid var(--border);
+  border-top: 3px solid var(--color-accent);
+  background: var(--color-surface);
+  min-width: 0;
+}
+
+.th-role-detail.ct {
+  border-top-color: #3b82f6;
+}
+
+.th-role-detail h3 {
+  margin: 0 0 8px;
+  font-size: 19px;
+  font-weight: 900;
+  letter-spacing: -0.01em;
+}
+
+.th-role-detail p {
+  margin: 0 0 16px;
+  font-size: 13.5px;
+  line-height: 1.55;
+  color: color-mix(in srgb, var(--color-text) 78%, transparent);
+}
+
+.th-role-facts {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(min(140px, 100%), 1fr));
+  gap: var(--space-3);
+  margin: 0;
+  padding-top: 14px;
+  border-top: 1px solid var(--border);
+}
+
+.th-role-facts div {
+  display: grid;
+  gap: 2px;
+  min-width: 0;
+}
+
+.th-role-facts dt {
+  font-family: var(--font-mono);
+  font-size: 9.5px;
+  font-weight: 700;
+  letter-spacing: 0.09em;
+  text-transform: uppercase;
+  color: var(--color-text-muted);
+}
+
+.th-role-facts dd {
+  margin: 0;
+  font-size: 13px;
+  font-weight: 600;
+  line-height: 1.35;
+}
+
+/* ---------------------------------------------------------------- flow */
+
+.th-steps {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: grid;
+  min-width: 0;
+}
+
+.th-steps li {
+  border-bottom: 1px solid var(--border);
+}
+
+.th-steps li:first-child {
+  border-top: 1px solid var(--border);
+}
+
+.th-steps button {
+  display: flex;
+  align-items: flex-start;
+  gap: 14px;
+  width: 100%;
+  padding: 17px 12px;
+  border: 0;
+  border-left: 3px solid transparent;
+  border-radius: 0;
+  background: transparent;
+  color: var(--color-text-muted);
+  font: inherit;
+  text-align: left;
+  cursor: pointer;
+  transition: background 0.16s ease, color 0.16s ease;
+}
+
+.th-steps button:hover {
+  background: color-mix(in srgb, var(--color-text) 4%, transparent);
+}
+
+.th-steps button.on {
+  border-left-color: var(--color-accent);
+  background: var(--color-surface);
+  color: var(--color-text);
+}
+
+.th-step-n {
+  display: grid;
+  place-items: center;
+  flex: 0 0 auto;
+  width: 30px;
+  height: 30px;
+  border: 1px solid var(--border);
+  font-family: var(--font-mono);
+  font-size: 11px;
+  font-weight: 700;
+}
+
+.th-steps button.on .th-step-n,
+.th-steps button.done .th-step-n {
+  background: var(--color-accent);
+  border-color: var(--color-accent);
+  color: #fff;
+}
+
+.th-step-text {
+  display: grid;
+  gap: 4px;
+  min-width: 0;
+}
+
+.th-step-text b {
+  font-size: 14px;
+  font-weight: 800;
+  color: var(--color-text);
+}
+
+.th-step-text small {
+  font-size: 12.5px;
+  line-height: 1.45;
+  /* Only the open step's description is shown; five paragraphs at once is a
+     wall, and the point of a stepper is that you read one at a time. */
+  display: none;
+}
+
+.th-steps button.on .th-step-text small {
+  display: block;
+}
+
+/* -------------------------------------------------------------- format */
+
+.th-format-tabs {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 7px;
+  margin-top: 22px;
+}
+
+.th-format-tabs button {
+  padding: 9px 13px;
+  border: 1px solid var(--border);
+  border-radius: 0;
+  background: transparent;
+  color: var(--color-text-muted);
+  font-family: var(--font-mono);
+  font-size: 11px;
+  font-weight: 700;
+  cursor: pointer;
+}
+
+.th-format-tabs button.on {
+  border-color: var(--color-accent);
+  background: var(--color-accent);
+  color: #fff;
+}
+
+.th-format {
+  padding: var(--space-4);
+  border: 1px solid var(--border);
+  background: var(--color-surface);
+  min-width: 0;
+}
+
+.th-format-head {
+  display: flex;
+  align-items: center;
+  gap: 9px;
+  padding-bottom: 12px;
+  margin-bottom: 14px;
+  border-bottom: 1px solid var(--border);
+}
+
+.th-format-head svg {
+  color: var(--color-accent);
+}
+
+.th-format-head strong {
+  font-size: 15px;
+  font-weight: 900;
+}
+
+.th-format p {
+  margin: 0;
+  font-size: 13.5px;
+  line-height: 1.55;
+  color: color-mix(in srgb, var(--color-text) 78%, transparent);
+}
+
+.th-format .th-btn {
+  margin-top: 20px;
+}
+
+/* --------------------------------------------------------------- close */
+
+.th-close {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: var(--space-3);
+  padding: clamp(32px, 5vw, 56px) 0 clamp(48px, 7vw, 80px);
+}
+
+.th-close > svg {
+  color: var(--color-accent);
+  flex: 0 0 auto;
+}
+
+.th-close div {
+  display: grid;
+  gap: 3px;
+  min-width: 0;
+}
+
+.th-close strong {
+  font-size: 19px;
+  font-weight: 900;
+  letter-spacing: -0.02em;
+}
+
+.th-close span {
+  font-size: 13.5px;
+  color: var(--color-text-muted);
+}
+
+.th-close .th-btn {
+  margin-left: auto;
+}
+
+/* ------------------------------------------------------------------ mobile */
+
+@media (max-width: 860px) {
+  .th-hero {
+    grid-template-columns: 1fr;
+    align-items: start;
+  }
+
+  /* Counts move under the copy and go horizontal, rather than staying a tall
+     column beside a title that now spans the full width. */
+  .th-counts {
+    grid-auto-flow: column;
+    justify-content: start;
+    gap: clamp(20px, 6vw, 40px);
+    padding: 20px 0 0;
+    padding-left: 0;
+    border-left: 0;
+    border-top: 1px solid var(--border);
+  }
+
+  .th-module,
+  .th-module.reverse {
+    grid-template-columns: 1fr;
+  }
+
+  /* The copy always comes first on a phone: the diagram means nothing before
+     the sentence that explains it. */
+  .th-module.reverse .th-copy {
+    order: 0;
+  }
+
+  .th-role-tabs {
+    grid-template-columns: 1fr;
+    gap: var(--space-4);
+  }
+
+  .th-role,
+  .th-steps button {
+    min-height: 48px;
+  }
+
+  .th-btn {
+    min-height: 46px;
+    flex: 1 1 auto;
+    justify-content: center;
+  }
+
+  .th-close .th-btn {
+    margin-left: 0;
+    width: 100%;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .th-featured-dot {
+    animation: none;
+  }
+}
