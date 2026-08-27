@@ -705,6 +705,14 @@ export default function Settings({
               {t("settings.simulate")}
             </button>
           )}
+
+          {/* The other half: the same match on an actual server, with bots for
+              the absent team-mates, so the in-game flow can be walked too. */}
+          {isTest && started && (
+            <button className="btn" disabled={busy} onClick={() => testAction({ action: "play-live" })}>
+              {t("settings.playLive")}
+            </button>
+          )}
         </div>
       </section>
 

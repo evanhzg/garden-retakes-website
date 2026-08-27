@@ -2917,5 +2917,6 @@
   "spectators.publicOn": "Spectating is open to everyone",
   "spectators.publicOff": "Only the people below can spectate",
   "spectators.add": "Add spectator",
-  "spectators.none": "Nobody on the list yet."
+  "spectators.none": "Nobody on the list yet.",
+  "settings.playLive": "Play next match on a server"
 }

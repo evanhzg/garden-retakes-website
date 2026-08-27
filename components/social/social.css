@@ -937,3 +937,201 @@ html[data-motion="off"] .dm-bubble.typing i { animation: none; }
   font-weight: 700;
   color: var(--color-text-muted);
 }
+
+/* ================================================================= chat dock
+   The conversation, as a card in the corner.
+
+   It used to be a view inside the friends panel, which meant reading a message
+   required 330px of panel open over the page, and closing the panel to get on
+   with something closed the conversation with it. Every chat people already use
+   — FACEIT, Facebook, Steam — puts the thread in a small card pinned to a
+   corner, independent of whatever else is open. This does the same.
+
+   Portalled to <body>, so the sidebar's transform and overflow cannot clip it.
+   ========================================================================= */
+
+.dm-dock {
+  position: fixed;
+  right: 16px;
+  bottom: 0;
+  z-index: 1300;
+  width: 340px;
+  max-width: calc(100vw - 32px);
+  height: 440px;
+  max-height: calc(100dvh - var(--social-top, 64px) - 16px);
+  display: flex;
+  flex-direction: column;
+  border: 1px solid var(--color-divider);
+  border-bottom: 0;
+  background: var(--color-surface);
+  box-shadow: 0 -6px 32px rgba(0, 0, 0, 0.32);
+  animation: dm-rise 0.18s cubic-bezier(0.22, 1, 0.36, 1);
+}
+
+@keyframes dm-rise {
+  from { transform: translateY(12px); opacity: 0; }
+  to { transform: none; opacity: 1; }
+}
+
+/* Collapsed to its header. The height animates rather than the card
+   disappearing, so it reads as folding away rather than as closing. */
+.dm-dock.minimised {
+  height: auto;
+}
+
+.dm-dock.minimised .dm-messages,
+.dm-dock.minimised .dm-form,
+.dm-dock.minimised .dm-typing {
+  display: none;
+}
+
+.dm-dock .dm-view {
+  display: flex;
+  flex-direction: column;
+  min-height: 0;
+  flex: 1;
+}
+
+/* The header is the toggle, so it needs a pointer and a hover. */
+.dm-dock .dm-header {
+  cursor: pointer;
+  user-select: none;
+}
+
+.dm-dock .dm-header:hover {
+  background: color-mix(in srgb, var(--color-text) 6%, transparent);
+}
+
+/* The back arrow belonged to a panel with somewhere to go back to. The dock
+   has a close button instead. */
+.dm-dock .back-btn {
+  display: none;
+}
+
+.dm-x {
+  margin-left: auto;
+  display: grid;
+  place-items: center;
+  width: 28px;
+  height: 28px;
+  flex: 0 0 auto;
+  border: 0;
+  border-radius: 0;
+  background: none;
+  color: var(--muted);
+  cursor: pointer;
+}
+
+.dm-x:hover {
+  color: var(--text);
+  background: color-mix(in srgb, var(--text) 10%, transparent);
+}
+
+/* Below the dock, so a chat and the friends panel do not sit on top of each
+   other on a wide screen. */
+@media (min-width: 761px) {
+  .dm-dock {
+    /* Clear of the collapsed rail. */
+    right: 68px;
+  }
+
+  /* With the panel open the dock steps left rather than hiding behind it. */
+  .friends-sidebar.open ~ .dm-dock,
+  body:has(.friends-sidebar.open) .dm-dock {
+    right: 348px;
+  }
+}
+
+/* ------------------------------------------------------------------ mobile */
+
+@media (max-width: 760px) {
+  /* A sheet, not a card: 340px pinned to a corner of a 360px screen is the
+     screen, with an awkward margin. */
+  .dm-dock {
+    right: 0;
+    left: 0;
+    width: 100%;
+    max-width: none;
+    height: 72dvh;
+    border-left: 0;
+    border-right: 0;
+  }
+
+  .dm-dock.minimised {
+    height: auto;
+  }
+
+  /* The composer has to clear the home indicator or the send button is under
+     it on every recent iPhone. */
+  .dm-dock .dm-form {
+    padding-bottom: calc(10px + env(safe-area-inset-bottom, 0px));
+  }
+
+  /* Bigger targets in the thread — this is the surface people use one-handed. */
+  .dm-dock .dm-form input {
+    font-size: 16px;
+    min-height: 44px;
+  }
+
+  .dm-dock .dm-form button {
+    min-width: 44px;
+    min-height: 44px;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .dm-dock {
+    animation: none;
+  }
+}
+
+/* ============================================================ mobile social
+   The panel itself on a phone. The rail is hidden below 760px — a full-height
+   column down the side of a phone is most of the phone — so the FAB opens a
+   sheet that covers the screen properly rather than a 330px strip with the page
+   showing through beside it. */
+
+@media (max-width: 760px) {
+  .friends-sidebar {
+    width: 100%;
+    max-width: none;
+    right: -100%;
+    /* Below the dock: a chat opened from the list should sit over the list. */
+    z-index: 1200;
+  }
+
+  .friends-sidebar.open {
+    right: 0;
+  }
+
+  /* Header and tabs get real targets. */
+  .friends-tabs button {
+    min-height: 52px;
+  }
+
+  .friends-header {
+    padding: 14px 14px 12px;
+  }
+
+  .close-btn {
+    width: 40px;
+    height: 40px;
+  }
+
+  .friend-item {
+    min-height: 56px;
+  }
+
+  .btn-social {
+    min-width: 40px;
+    min-height: 40px;
+    display: grid;
+    place-items: center;
+  }
+
+  /* The FAB steps aside for an open chat rather than sitting on top of it. */
+  .dm-dock ~ .friends-fab,
+  body:has(.dm-dock) .friends-fab {
+    display: none;
+  }
+}

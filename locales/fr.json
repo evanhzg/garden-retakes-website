@@ -2917,5 +2917,6 @@
   "spectators.publicOn": "Les matchs sont ouverts à tous",
   "spectators.publicOff": "Seules les personnes ci-dessous peuvent regarder",
   "spectators.add": "Ajouter un spectateur",
-  "spectators.none": "Personne dans la liste."
+  "spectators.none": "Personne dans la liste.",
+  "settings.playLive": "Jouer le prochain match sur un serveur"
 }

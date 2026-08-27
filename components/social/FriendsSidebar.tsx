@@ -1,6 +1,7 @@
 "use client";
 
 import React, { useCallback, useEffect, useMemo, useRef, useState } from "react";
+import { createPortal } from "react-dom";
 import { useSocket } from "@/components/games/SocketProvider";
 import { useRouter } from "next/navigation";
 import PlayerBubble from "./PlayerBubble";
@@ -207,6 +208,8 @@ export default function FriendsSidebar() {
   const [messages, setMessages] = useState<Message[]>([]);
   const [activeDmUser, setActiveDmUser] = useState<string | null>(null);
   const [dmInput, setDmInput] = useState("");
+  /** Collapsed to its header, like every chat dock people already use. */
+  const [dockMinimised, setDockMinimised] = useState(false);
   const [typingFrom, setTypingFrom] = useState<string | null>(null);
   /** friendId -> unread count, cleared when that thread is opened. */
   const [unread, setUnread] = useState<Record<string, number>>({});
@@ -339,7 +342,10 @@ export default function FriendsSidebar() {
 
   const openThread = (friendId: string) => {
     setActiveDmUser(friendId);
-    setActiveTab("MESSAGES");
+    // No longer switches tabs. The dock is its own surface, so opening a chat
+    // from the friends list should not also throw away the list you were
+    // reading — which is what jumping to MESSAGES did.
+    setDockMinimised(false);
     setUnread((u) => ({ ...u, [friendId]: 0 }));
   };
 
@@ -696,6 +702,119 @@ export default function FriendsSidebar() {
         </div>
       </div>
 
+
+      {/* The chat is a dock, not a panel view.
+          It used to live inside the sidebar, which meant reading a message
+          required the whole 330px panel open over the page, and closing the
+          panel to get on with something closed the conversation with it. As a
+          card anchored to the corner it behaves the way every chat people
+          already use behaves: independent of whatever else is open, and small
+          enough to leave the page usable behind it.
+
+          Portalled to <body> so the sidebar's transform and overflow cannot
+          clip or move it. */}
+      {activeDmUser && typeof document !== "undefined" && createPortal(
+        <div className={`dm-dock ${dockMinimised ? "minimised" : ""}`}>
+                <div className="dm-view">
+                  {/* The whole header toggles the dock, the way every chat
+                      card people already use behaves — but the two buttons
+                      inside it stop the click, or closing a conversation would
+                      also collapse the one underneath it. */}
+                  <div
+                    className="dm-header"
+                    role="button"
+                    tabIndex={0}
+                    onClick={() => setDockMinimised((v) => !v)}
+                    onKeyDown={(e) => {
+                      if (e.key === "Enter" || e.key === " ") {
+                        e.preventDefault();
+                        setDockMinimised((v) => !v);
+                      }
+                    }}
+                  >
+                    <span className="dm-header-avatar">
+                      <AvatarImage steamId={activeDmUser} src={activeFriend?.avatarUrl} alt="" />
+                      <i className={`status-dot ${online(activeDmUser) ? "online" : "offline"}`} />
+                    </span>
+                    <div className="dm-header-info">
+                      <span className="dm-header-name">{activeFriend?.name ?? activeDmUser}</span>
+                      <span className={`dm-header-status ${online(activeDmUser) ? "on" : ""}`}>
+                        {typingFrom === activeDmUser
+                          ? "typing…"
+                          : online(activeDmUser)
+                            ? "Online"
+                            : "Offline"}
+                      </span>
+                    </div>
+
+                    <button
+                      className="dm-x"
+                      aria-label={t("commands.close")}
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        setActiveDmUser(null);
+                      }}
+                    >
+                      <X size={16} />
+                    </button>
+                  </div>
+
+                  <div className="dm-messages" ref={logRef}>
+                    {messages.length === 0 && <div className="dm-empty">No messages yet. Say hi.</div>}
+                    {messages.map((m, i) => {
+                      const mine = m.from === steamId;
+                      const prev = messages[i - 1];
+                      const newDay = !prev || !sameDay(prev.ts, m.ts);
+                      // A run from one person inside a couple of minutes is one
+                      // block: repeating the avatar and the clock on every line
+                      // turns a short exchange into a wall of chrome.
+                      const grouped = !newDay && prev && prev.from === m.from && m.ts - prev.ts < 120_000;
+                      return (
+                        <React.Fragment key={m.id}>
+                          {newDay && <div className="dm-day">{dayLabel(m.ts)}</div>}
+                          <div
+                            className={[
+                              "dm-msg",
+                              mine ? "own" : "other",
+                              grouped ? "grouped" : "",
+                              m.pending ? "pending" : "",
+                            ].filter(Boolean).join(" ")}
+                          >
+                            <div className="dm-bubble">
+                              {m.isAdmin && <span className="admin-badge" title="Staff">🛡️</span>}
+                              <MessageBody content={m.content} />
+                            </div>
+                            {!grouped && <time className="dm-time">{timeLabel(m.ts)}</time>}
+                          </div>
+                        </React.Fragment>
+                      );
+                    })}
+                    {typingFrom === activeDmUser && (
+                      <div className="dm-msg other">
+                        <div className="dm-bubble typing">
+                          <i /><i /><i />
+                        </div>
+                      </div>
+                    )}
+                  </div>
+    
+                  <form onSubmit={sendDm} className="dm-input">
+                    <input
+                      type="text"
+                      value={dmInput}
+                      onChange={(e) => onDmInput(e.target.value)}
+                      placeholder="Message, or /invite"
+                      maxLength={2000}
+                    />
+                    <button type="submit" disabled={!dmInput.trim()} aria-label="Send">
+                      <Send size={16} />
+                    </button>
+                  </form>
+                </div>
+        </div>,
+        document.body,
+      )}
+
       {/* The phone's way in.
           The rail is display:none below 760px — a full-height column down the
           side of a phone is most of the phone — and the button that used to
@@ -796,81 +915,6 @@ export default function FriendsSidebar() {
             its composer can sit on the bottom edge, which it cannot do inside a
             padded scroll container. */}
         {activeTab === "MESSAGES" && (
-          activeDmUser ? (
-            <div className="dm-view">
-              <div className="dm-header">
-                <button className="back-btn" onClick={() => setActiveDmUser(null)} aria-label="Back">
-                  <ChevronLeft size={20} />
-                </button>
-                <span className="dm-header-avatar">
-                  <AvatarImage steamId={activeDmUser} src={activeFriend?.avatarUrl} alt="" />
-                  <i className={`status-dot ${online(activeDmUser) ? "online" : "offline"}`} />
-                </span>
-                <div className="dm-header-info">
-                  <span className="dm-header-name">{activeFriend?.name ?? activeDmUser}</span>
-                  <span className={`dm-header-status ${online(activeDmUser) ? "on" : ""}`}>
-                    {typingFrom === activeDmUser
-                      ? "typing…"
-                      : online(activeDmUser)
-                        ? "Online"
-                        : "Offline"}
-                  </span>
-                </div>
-              </div>
-
-              <div className="dm-messages" ref={logRef}>
-                {messages.length === 0 && <div className="dm-empty">No messages yet. Say hi.</div>}
-                {messages.map((m, i) => {
-                  const mine = m.from === steamId;
-                  const prev = messages[i - 1];
-                  const newDay = !prev || !sameDay(prev.ts, m.ts);
-                  // A run from one person inside a couple of minutes is one
-                  // block: repeating the avatar and the clock on every line
-                  // turns a short exchange into a wall of chrome.
-                  const grouped = !newDay && prev && prev.from === m.from && m.ts - prev.ts < 120_000;
-                  return (
-                    <React.Fragment key={m.id}>
-                      {newDay && <div className="dm-day">{dayLabel(m.ts)}</div>}
-                      <div
-                        className={[
-                          "dm-msg",
-                          mine ? "own" : "other",
-                          grouped ? "grouped" : "",
-                          m.pending ? "pending" : "",
-                        ].filter(Boolean).join(" ")}
-                      >
-                        <div className="dm-bubble">
-                          {m.isAdmin && <span className="admin-badge" title="Staff">🛡️</span>}
-                          <MessageBody content={m.content} />
-                        </div>
-                        {!grouped && <time className="dm-time">{timeLabel(m.ts)}</time>}
-                      </div>
-                    </React.Fragment>
-                  );
-                })}
-                {typingFrom === activeDmUser && (
-                  <div className="dm-msg other">
-                    <div className="dm-bubble typing">
-                      <i /><i /><i />
-                    </div>
-                  </div>
-                )}
-              </div>
-
-              <form onSubmit={sendDm} className="dm-input">
-                <input
-                  type="text"
-                  value={dmInput}
-                  onChange={(e) => onDmInput(e.target.value)}
-                  placeholder="Message, or /invite"
-                  maxLength={2000}
-                />
-                <button type="submit" disabled={!dmInput.trim()} aria-label="Send">
-                  <Send size={16} />
-                </button>
-              </form>
-            </div>
-          ) : (
             <div className="friends-content">
               {/* Says what this tab is for, rather than "no friends to message
                   yet" — which described the old behaviour and would now be a
@@ -930,7 +974,6 @@ export default function FriendsSidebar() {
                 );
               })}
             </div>
-          )
         )}
 
         {activeTab === "MAIL" && (

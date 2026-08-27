@@ -4,6 +4,7 @@ import { canManage, getTournamentContext } from "@/lib/tournamentAuth";
 import { logAdminAction } from "@/lib/adminAuth";
 import { addBotTeam, fillWithBots } from "@/lib/tournament/bots";
 import { simulateTournament } from "@/lib/tournament/simulate";
+import { startLiveBotMatch } from "@/lib/tournament/liveTest";
 
 export const dynamic = "force-dynamic";
 export const runtime = "nodejs";
@@ -17,7 +18,7 @@ export const runtime = "nodejs";
 
 type Body = {
   key?: string;
-  action?: "mark-test" | "add-bot-team" | "fill-bots" | "simulate";
+  action?: "mark-test" | "add-bot-team" | "fill-bots" | "simulate" | "play-live";
   tournamentId?: number;
   isTest?: boolean;
   name?: string;
@@ -90,6 +91,23 @@ export async function POST(req: Request) {
       const result = await simulateTournament(tournamentId);
       await logAdminAction(ctx, "tournament.simulate", undefined, `${tournamentId}:${result.matchesPlayed}`);
       return NextResponse.json({ ok: true, ...result });
+    }
+
+    // Hand the next match to a real CS2 server and fill it with bots, so the
+    // in-game half of the flow can be walked. Same startMatch() a real match
+    // uses; the only addition is css_fill for the absent team-mates.
+    case "play-live": {
+      const result = await startLiveBotMatch(tournamentId);
+      await logAdminAction(ctx, "tournament.play-live", undefined, `${tournamentId}:${result.ok}`);
+      if (!result.ok) {
+        return NextResponse.json({ error: result.error, log: result.log }, { status: 400 });
+      }
+      return NextResponse.json({
+        ok: true,
+        message: `Live on ${result.connect ?? "the server"}`,
+        connect: result.connect,
+        log: result.log,
+      });
     }
 
     default:
