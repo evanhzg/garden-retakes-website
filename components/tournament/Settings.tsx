@@ -1,6 +1,6 @@
 "use client";
 
-import { useCallback, useState } from "react";
+import { useCallback, useEffect, useState } from "react";
 import { useI18n } from "@/components/I18nProvider";
 import { formatRemaining, TEAM_SIZES } from "@/lib/tournament/edition";
 import "./settings.css";
@@ -119,6 +119,56 @@ export default function Settings({
   const [bannerVersion, setBannerVersion] = useState(0);
 
   const [isTest, setIsTest] = useState(tournament.isTest);
+
+  const [spectators, setSpectators] = useState<{ steamId: string; name: string | null }[]>([]);
+  const [spectatorsPublic, setSpectatorsPublic] = useState(false);
+  const [newSpectator, setNewSpectator] = useState("");
+
+  /* Loaded rather than passed down. The list is only ever read by an organizer
+     with this panel open, so putting it in the page payload would ship a list
+     of SteamIDs to every render of a page most people never manage. */
+  const loadSpectators = useCallback(async () => {
+    const q = adminKey ? `&key=${encodeURIComponent(adminKey)}` : "";
+    try {
+      const res = await fetch(`/api/admin/tournaments/spectators?tournamentId=${tournament.id}${q}`, {
+        cache: "no-store",
+      });
+      if (!res.ok) return;
+      const data = await res.json();
+      setSpectators(data.spectators ?? []);
+      setSpectatorsPublic(Boolean(data.isPublic));
+    } catch {
+      // A failed load leaves an empty list; the next action reloads it.
+    }
+  }, [adminKey, tournament.id]);
+
+  useEffect(() => {
+    loadSpectators();
+  }, [loadSpectators]);
+
+  const spectatorAction = useCallback(
+    async (body: Record<string, unknown>) => {
+      setBusy(true);
+      setNotice(null);
+      try {
+        const res = await fetch("/api/admin/tournaments/spectators", {
+          method: "POST",
+          headers: { "content-type": "application/json" },
+          body: JSON.stringify({ ...body, tournamentId: tournament.id, key: adminKey }),
+        });
+        const data = await res.json();
+        setNotice(data.error ?? t("settings.saved"));
+        if (data.ok) await loadSpectators();
+        return data;
+      } catch (err) {
+        setNotice(String(err));
+        return null;
+      } finally {
+        setBusy(false);
+      }
+    },
+    [adminKey, tournament.id, t, loadSpectators],
+  );
 
   /* The test controls have their own route rather than riding on the settings
      save, so the guards live next to the actions they protect instead of
@@ -545,6 +595,76 @@ export default function Settings({
             <textarea rows={3} value={form.sponsorsText} onChange={(e) => set({ sponsorsText: e.target.value })} />
           </label>
         </div>
+      </section>
+
+      {/* ------------------------------------------------------- spectators */}
+      {/* The allowlist already existed and startMatch() already fed it to
+          css_t_spectator — there was simply no way to put anybody on it short
+          of an INSERT, which made the feature real in the plugin and imaginary
+          on the website. */}
+      <section className="ts-block">
+        <h3>{t("spectators.title")}</h3>
+        <p className="muted ts-hint">{t("spectators.hint")}</p>
+
+        <div className="ts-row">
+          <button
+            className={spectatorsPublic ? "btn btn-primary" : "btn"}
+            disabled={busy}
+            onClick={async () => {
+              const done = await spectatorAction({ action: "set-public", isPublic: !spectatorsPublic });
+              if (done?.ok) setSpectatorsPublic(Boolean(done.isPublic));
+            }}
+          >
+            {t("spectators.public")}
+          </button>
+          <span className="muted ts-hint">
+            {spectatorsPublic ? t("spectators.publicOn") : t("spectators.publicOff")}
+          </span>
+        </div>
+
+        <form
+          className="ts-row"
+          onSubmit={async (e) => {
+            e.preventDefault();
+            const done = await spectatorAction({ action: "add", steamId: newSpectator.trim() });
+            if (done?.ok) setNewSpectator("");
+          }}
+        >
+          <label className="ts-field">
+            <span>SteamID64</span>
+            <input
+              id="ts-spectator-id"
+              value={newSpectator}
+              onChange={(e) => setNewSpectator(e.target.value)}
+              placeholder="7656119…"
+              inputMode="numeric"
+            />
+          </label>
+          <button className="btn" disabled={busy || !/^\d{17}$/.test(newSpectator.trim())}>
+            {t("spectators.add")}
+          </button>
+        </form>
+
+        {spectators.length === 0 ? (
+          <p className="muted ts-hint">{t("spectators.none")}</p>
+        ) : (
+          <div className="su-row su-wrap">
+            {spectators.map((s) => (
+              <span key={s.steamId} className="su-organizer">
+                <a href={`/players/${s.steamId}`}>{s.name || s.steamId}</a>
+                <button
+                  className="su-x"
+                  type="button"
+                  disabled={busy}
+                  aria-label={t("setup.delete")}
+                  onClick={() => spectatorAction({ action: "remove", steamId: s.steamId })}
+                >
+                  ×
+                </button>
+              </span>
+            ))}
+          </div>
+        )}
       </section>
 
       {/* ------------------------------------------------------------- test */}

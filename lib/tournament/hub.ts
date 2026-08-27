@@ -44,6 +44,53 @@ export type ScheduledTournament = {
   state: string;
 };
 
+
+/**
+ * Who finished where, read off the bracket.
+ *
+ * Pure, and exported, because two places need the answer and they must not
+ * disagree: the archive card on the tournaments hub, and the results tab on the
+ * tournament itself. A podium computed twice is a podium that eventually says
+ * two different things about the same event.
+ *
+ * First is whoever won the last match; second is whoever lost it. Third is BOTH
+ * losing semi-finalists, presented as a tie — a single-elimination bracket
+ * without a third-place match never ranked them against each other, and putting
+ * one above the other would be inventing a result nobody played for.
+ */
+export function podiumFrom(
+  matches: { Round: number; TeamAId: number | null; TeamBId: number | null; WinnerTeamId: number | null }[],
+  teams: { Id: number; Name: string; Tag: string | null }[],
+): { place: number; teamId: number; name: string; tag: string | null }[] {
+  const finished = matches.filter((m) => m.WinnerTeamId !== null);
+  if (finished.length === 0) return [];
+
+  const teamById = new Map(teams.map((x) => [x.Id, x]));
+  const named = (id: number | null) => (id === null ? null : teamById.get(id) ?? null);
+
+  const finalRound = Math.max(...finished.map((m) => m.Round));
+  const final = finished.find((m) => m.Round === finalRound);
+  if (!final?.WinnerTeamId) return [];
+
+  const out: { place: number; teamId: number; name: string; tag: string | null }[] = [];
+
+  const winner = named(final.WinnerTeamId);
+  const runnerUpId = final.WinnerTeamId === final.TeamAId ? final.TeamBId : final.TeamAId;
+  const runnerUp = named(runnerUpId);
+
+  if (winner) out.push({ place: 1, teamId: winner.Id, name: winner.Name, tag: winner.Tag });
+  if (runnerUp) out.push({ place: 2, teamId: runnerUp.Id, name: runnerUp.Name, tag: runnerUp.Tag });
+
+  for (const semi of finished.filter((m) => m.Round === finalRound - 1)) {
+    if (!semi.WinnerTeamId) continue;
+    const lostId = semi.WinnerTeamId === semi.TeamAId ? semi.TeamBId : semi.TeamAId;
+    const lost = named(lostId);
+    if (lost) out.push({ place: 3, teamId: lost.Id, name: lost.Name, tag: lost.Tag });
+  }
+
+  return out;
+}
+
 /**
  * Finished tournaments, newest first, each with its podium.
  *
@@ -89,35 +136,7 @@ export async function tournamentArchive(
   });
 
   return tournaments.map((tournament) => {
-    const teamById = new Map(tournament.Teams.map((x) => [x.Id, x]));
-    const named = (id: number | null) => (id === null ? null : teamById.get(id) ?? null);
-
-    const podium: ArchiveEntry["podium"] = [];
-
-    if (tournament.Matches.length > 0) {
-      const finalRound = tournament.Matches[0].Round;
-      const final = tournament.Matches.find((m) => m.Round === finalRound);
-
-      if (final?.WinnerTeamId) {
-        const winner = named(final.WinnerTeamId);
-        const runnerUpId =
-          final.WinnerTeamId === final.TeamAId ? final.TeamBId : final.TeamAId;
-        const runnerUp = named(runnerUpId);
-
-        if (winner) podium.push({ place: 1, teamId: winner.Id, name: winner.Name, tag: winner.Tag });
-        if (runnerUp) podium.push({ place: 2, teamId: runnerUp.Id, name: runnerUp.Name, tag: runnerUp.Tag });
-
-        // Both losing semi-finalists share third. No third-place match is
-        // played, so ranking one above the other would be a claim the bracket
-        // never made.
-        for (const semi of tournament.Matches.filter((m) => m.Round === finalRound - 1)) {
-          if (!semi.WinnerTeamId) continue;
-          const lostId = semi.WinnerTeamId === semi.TeamAId ? semi.TeamBId : semi.TeamAId;
-          const lost = named(lostId);
-          if (lost) podium.push({ place: 3, teamId: lost.Id, name: lost.Name, tag: lost.Tag });
-        }
-      }
-    }
+    const podium = podiumFrom(tournament.Matches, tournament.Teams);
 
     return {
       id: tournament.Id,

@@ -1474,6 +1474,12 @@ model Tournament {
   BannerImage Bytes?  @db.MediumBlob
   BannerMime  String? @db.VarChar(32)
 
+  /// Whether anybody may spectate, or only the TournamentSpectators allowlist.
+  /// An allowlist is right for a competitive match — a GOTV slot is a seat in
+  /// the server — and wrong for a showmatch, where adding every viewer by
+  /// SteamID64 is a thing nobody will actually do.
+  SpectatorsPublic Boolean @default(false)
+
   /// A test tournament: bot teams and instant resolution are offered here and
   /// refused everywhere else. Deliberately not the same thing as unpublished —
   /// an unpublished tournament is a real one somebody is still setting up.

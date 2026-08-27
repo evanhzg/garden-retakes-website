@@ -1,7 +1,8 @@
 "use client";
 
-import Link from "next/link";
+import { useState } from "react";
 import { useI18n } from "@/components/I18nProvider";
+import MatchModal from "./MatchModal";
 import MatchBubble from "./MatchBubble";
 import type { MatchPreview } from "@/lib/tournament/preview";
 import "./bracket.css";
@@ -41,6 +42,7 @@ export default function Bracket({
   slug?: string;
 }) {
   const { t } = useI18n();
+  const [open, setOpen] = useState<BracketMatch | null>(null);
 
   if (matches.length === 0) {
     return null;
@@ -76,7 +78,7 @@ export default function Bracket({
                 teamB={match.teamB?.name ?? "—"}
                 className="br-slot"
               >
-                <BoxLink slug={slug} matchId={match.id}>
+                <BoxLink slug={slug} match={match} onOpen={setOpen}>
                 <div className={`br-match ${match.state === "live" ? "live" : ""}`}>
                   <Row
                     team={match.teamA}
@@ -99,31 +101,43 @@ export default function Bracket({
           </div>
         );
       })}
+
+      <MatchModal match={open} slug={slug ?? ""} onClose={() => setOpen(null)} />
     </div>
   );
 }
 
 /**
- * A bracket box, linked to its match page when there is one to link to.
+ * A bracket box, opening its match in a modal.
  *
- * A plain wrapper when there is not, rather than a disabled link: a box for a
- * match whose feeder has not been played yet leads nowhere useful, and a link
- * that goes nowhere is worse than text.
+ * It used to be a Link straight to the match page, which is a whole navigation
+ * away from the bracket somebody is reading — and on a phone, losing your place
+ * in a horizontally scrolled bracket to check one score is a bad trade. The
+ * modal answers in place and offers the full page for anybody who wants the
+ * veto board.
+ *
+ * A plain wrapper when there is no tournament to open into, rather than a
+ * disabled control: a box whose feeder has not been played leads nowhere
+ * useful, and a button that does nothing is worse than text.
  */
 function BoxLink({
   slug,
-  matchId,
+  match,
+  onOpen,
   children,
 }: {
   slug?: string;
-  matchId: number;
+  match: BracketMatch;
+  onOpen: (m: BracketMatch) => void;
   children: React.ReactNode;
 }) {
-  if (!slug) return <>{children}</>;
+  // A placeholder preview has a negative id and no real match behind it.
+  if (!slug || match.id < 0) return <>{children}</>;
+
   return (
-    <Link className="br-link" href={`/tournaments/${slug}/match/${matchId}`}>
+    <button type="button" className="br-link" onClick={() => onOpen(match)}>
       {children}
-    </Link>
+    </button>
   );
 }
 

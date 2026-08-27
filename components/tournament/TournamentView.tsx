@@ -6,6 +6,7 @@ import { useI18n } from "@/components/I18nProvider";
 import Bracket, { type BracketMatch } from "./Bracket";
 import { placeholderBracket } from "@/lib/tournament/bracket";
 import Rules, { type RulesFacts } from "./Rules";
+import Results, { type Podium } from "./Results";
 import type { MatchPreview } from "@/lib/tournament/preview";
 import type { PlayerTotals } from "@/lib/tournament/stats";
 import "./view.css";
@@ -45,7 +46,7 @@ export type PoolMap = { map: string; label: string; image: string | null };
 
 // "pool" is gone: the map pool moved into the rules tab, where it is one
 // section of a page instead of a whole tab holding a single sentence.
-type Tab = "bracket" | "teams" | "stats" | "rules";
+type Tab = "results" | "bracket" | "teams" | "stats" | "rules";
 
 export default function TournamentView({
   stages,
@@ -55,6 +56,8 @@ export default function TournamentView({
   previews,
   rules,
   slug,
+  name,
+  podium,
 }: {
   stages: StageView[];
   teams: TeamView[];
@@ -63,11 +66,26 @@ export default function TournamentView({
   previews: Record<number, MatchPreview>;
   rules: RulesFacts;
   slug: string;
+  name: string;
+  /** Empty until the bracket has a decided final. */
+  podium: Podium[];
 }) {
   const { t } = useI18n();
-  const [tab, setTab] = useState<Tab>("bracket");
+
+  // A finished tournament opens on its result.
+  //
+  // Everything else here is a working surface — a bracket to navigate, a table
+  // to compare — and none of it answers the question somebody arrives with
+  // after the event is over. Landing them on the bracket and making them find
+  // the final is three clicks to reach the one fact they came for.
+  const [tab, setTab] = useState<Tab>(podium.length > 0 ? "results" : "bracket");
 
   const TABS: { id: Tab; label: string; count?: number }[] = [
+    // Only present once there is a result to show. An empty podium tab on a
+    // tournament that has not started is a promise nobody asked for.
+    ...(podium.length > 0
+      ? [{ id: "results" as Tab, label: t("tournaments.tabs.results") }]
+      : []),
     { id: "bracket", label: t("tournaments.tabs.bracket"), count: stages.length },
     { id: "teams", label: t("tournaments.tabs.teams"), count: teams.length },
     { id: "stats", label: t("tournaments.tabs.stats"), count: stats.length },
@@ -94,6 +112,9 @@ export default function TournamentView({
       </div>
 
       <div className="pro-panel" role="tabpanel" id={`tv-panel-${tab}`} aria-labelledby={`tv-tab-${tab}`}>
+        {tab === "results" && (
+          <Results podium={podium} players={stats} teams={teams} tournamentName={name} />
+        )}
         {tab === "bracket" && <BracketPanel stages={stages} previews={previews} slug={slug} rules={rules} />}
         {tab === "teams" && <TeamsPanel teams={teams} />}
         {tab === "stats" && <StatsPanel stats={stats} />}

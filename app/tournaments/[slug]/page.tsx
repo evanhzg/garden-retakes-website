@@ -6,6 +6,8 @@ import { prisma } from "@/lib/db";
 import { getT } from "@/lib/serverI18n";
 import TournamentView, { type PoolMap, type StageView, type TeamView } from "@/components/tournament/TournamentView";
 import { standings } from "@/lib/tournament/bracket";
+import { podiumFrom } from "@/lib/tournament/hub";
+import type { Podium } from "@/components/tournament/Results";
 import { previewsForTournament, type MatchPreview } from "@/lib/tournament/preview";
 import { tournamentStats } from "@/lib/tournament/statsDb";
 import { canManage, getTournamentContext } from "@/lib/tournamentAuth";
@@ -176,6 +178,17 @@ export default async function TournamentPage({ params }: { params: { slug: strin
 
   const previews: Record<number, MatchPreview> = Object.fromEntries(previewMap);
 
+  // Read off the same function the hub's archive uses, so a tournament's own
+  // results page and its card in the archive can never disagree about who won.
+  const podium: Podium[] = podiumFrom(matches, tournament.Teams).map((entry) => ({
+    ...entry,
+    players:
+      teams.find((team) => team.id === entry.teamId)?.players.map((p) => ({
+        steamId: p.steamId,
+        name: p.name,
+      })) ?? [],
+  }));
+
   // Generated from the tournament's own settings rather than written down. A
   // rules page that says BO3 when the tournament is BO1 is worse than none, and
   // that is what a hand-maintained one becomes.
@@ -226,13 +239,23 @@ export default async function TournamentPage({ params }: { params: { slug: strin
             visibility={tournament.Visibility}
           />
 
-          {/* Only for somebody who actually runs this one. */}
+          {/* Only for somebody who actually runs this one.
+              Was a grey secondary button reading "Manage", which said nothing
+              about what it opens and looked like the least important control on
+              a page it is the most important control on. */}
           {canManageThis && (
-            <p style={{ marginTop: 10 }}>
-              <Link className="btn btn-secondary" href={`/admin/tournaments/${tournament.Id}`}>
-                {t("tournaments.manage")}
-              </Link>
-            </p>
+            <Link className="t-manage" href={`/admin/tournaments/${tournament.Id}`}>
+              <svg viewBox="0 0 24 24" width="16" height="16" aria-hidden focusable="false">
+                <path
+                  fill="currentColor"
+                  d="M12 15.5A3.5 3.5 0 1 1 15.5 12 3.5 3.5 0 0 1 12 15.5Zm7.43-2.53a7.6 7.6 0 0 0 0-1.94l2-1.55a.5.5 0 0 0 .12-.62l-1.9-3.28a.5.5 0 0 0-.6-.22l-2.35.94a7.5 7.5 0 0 0-1.68-.97l-.36-2.5a.5.5 0 0 0-.49-.42h-3.8a.5.5 0 0 0-.49.42l-.36 2.5c-.6.24-1.16.57-1.68.97l-2.35-.94a.5.5 0 0 0-.6.22L2.99 8.86a.5.5 0 0 0 .12.62l2 1.55a7.6 7.6 0 0 0 0 1.94l-2 1.55a.5.5 0 0 0-.12.62l1.9 3.28a.5.5 0 0 0 .6.22l2.35-.94c.52.4 1.08.73 1.68.97l.36 2.5a.5.5 0 0 0 .49.42h3.8a.5.5 0 0 0 .49-.42l.36-2.5c.6-.24 1.16-.57 1.68-.97l2.35.94a.5.5 0 0 0 .6-.22l1.9-3.28a.5.5 0 0 0-.12-.62Z"
+                />
+              </svg>
+              <span className="t-manage-text">
+                <strong>{t("tournaments.manageTitle")}</strong>
+                <small>{t("tournaments.manageHint")}</small>
+              </span>
+            </Link>
           )}
         </div>
       </section>
@@ -255,6 +278,8 @@ export default async function TournamentPage({ params }: { params: { slug: strin
         previews={previews}
         rules={rules}
         slug={tournament.Slug}
+        name={tournament.Name}
+        podium={podium}
       />
     </>
   );

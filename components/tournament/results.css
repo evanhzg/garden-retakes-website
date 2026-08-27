@@ -1,0 +1,273 @@
+/* The results tab: who won.
+   The one panel on the page that is a statement rather than a tool, so it is
+   allowed to be the loudest thing here — but still square, and still using the
+   accent rather than inventing a gold gradient. */
+
+.rs-results {
+  display: grid;
+  gap: var(--space-5);
+}
+
+/* ---------- Champion ---------- */
+
+.rr-champion {
+  display: grid;
+  justify-items: center;
+  gap: 6px;
+  padding: var(--space-5) var(--space-4);
+  text-align: center;
+  border: 1px solid var(--color-accent);
+  background:
+    radial-gradient(120% 120% at 50% 0%, color-mix(in srgb, var(--color-accent) 16%, transparent), transparent 65%),
+    var(--color-surface);
+  color: var(--color-text);
+}
+
+.rr-champion svg {
+  color: var(--color-accent);
+}
+
+.rr-champion-label {
+  margin: 0;
+  font-size: 10.5px;
+  font-weight: 800;
+  letter-spacing: 0.16em;
+  text-transform: uppercase;
+  color: var(--color-accent);
+}
+
+.rr-champion-name {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  flex-wrap: wrap;
+  justify-content: center;
+  margin: 0;
+  font-size: clamp(1.4rem, 6vw, 2.2rem);
+  font-weight: 900;
+  letter-spacing: -0.02em;
+  overflow-wrap: anywhere;
+}
+
+.rr-champion-of {
+  margin: 0;
+  font-size: 11px;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  color: var(--color-text-muted);
+}
+
+.rr-champion-roster {
+  list-style: none;
+  margin: var(--space-2) 0 0;
+  padding: 0;
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: center;
+  gap: var(--space-2) var(--space-3);
+}
+
+.rr-champion-roster li {
+  display: flex;
+  align-items: center;
+  gap: 7px;
+  font-size: 13.5px;
+  font-weight: 600;
+}
+
+.rr-champion-roster a {
+  color: inherit;
+}
+
+/* Avatars stay round — a square face is a different design, not a squarer one. */
+.rr-face {
+  width: 24px;
+  height: 24px;
+  border-radius: 50%;
+  object-fit: cover;
+  flex: 0 0 auto;
+}
+
+.rr-face.lg {
+  width: 38px;
+  height: 38px;
+}
+
+/* ---------- Shared block ---------- */
+
+.rr-block {
+  display: grid;
+  gap: var(--space-2);
+}
+
+.rr-heading {
+  margin: 0;
+  padding-bottom: 7px;
+  border-bottom: 1px solid var(--color-divider);
+  font-size: 12px;
+  font-weight: 800;
+  letter-spacing: 0.07em;
+  text-transform: uppercase;
+  color: var(--color-text-muted);
+}
+
+/* ---------- Second and third ---------- */
+
+.rr-podium {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: grid;
+  gap: 6px;
+}
+
+.rr-step {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 10px 12px;
+  border-left: 3px solid var(--color-divider);
+  background: color-mix(in srgb, var(--color-text) 4%, transparent);
+  font-size: 14px;
+  min-width: 0;
+}
+
+.rr-step.place-2 {
+  border-left-color: #9aa3ad;
+}
+
+.rr-step.place-3 {
+  border-left-color: #a9682f;
+}
+
+.rr-place {
+  font-size: 10.5px;
+  font-weight: 800;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: var(--color-text-muted);
+  min-width: 34px;
+}
+
+.rr-team {
+  font-weight: 700;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  min-width: 0;
+}
+
+/* ---------- Top players ---------- */
+
+.rr-players {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: grid;
+  gap: 8px;
+}
+
+.rr-player {
+  display: grid;
+  grid-template-columns: auto auto minmax(0, 1fr) auto;
+  align-items: center;
+  gap: var(--space-3);
+  padding: 12px;
+  border: 1px solid var(--color-divider);
+  background: var(--color-surface);
+}
+
+/* The best player gets the accent rule; second and third do not. A podium
+   where every step is highlighted has no podium in it. */
+.rr-player.rank-1 {
+  border-left: 3px solid var(--color-accent);
+  background: color-mix(in srgb, var(--color-accent) 6%, var(--color-surface));
+}
+
+.rr-rank {
+  font-size: 18px;
+  font-weight: 900;
+  font-variant-numeric: tabular-nums;
+  color: var(--color-text-muted);
+  min-width: 18px;
+  text-align: center;
+}
+
+.rr-player.rank-1 .rr-rank {
+  color: var(--color-accent);
+}
+
+.rr-player-main {
+  display: grid;
+  gap: 1px;
+  min-width: 0;
+  font-size: 12px;
+}
+
+.rr-player-name {
+  font-size: 14.5px;
+  font-weight: 800;
+  color: var(--color-text);
+  text-decoration: none;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.rr-player-name:hover {
+  color: var(--color-accent);
+}
+
+.rr-player-stats {
+  display: flex;
+  gap: var(--space-3);
+  margin: 0;
+}
+
+.rr-player-stats > div {
+  display: grid;
+  gap: 1px;
+  text-align: right;
+}
+
+.rr-player-stats dt {
+  font-size: 9.5px;
+  font-weight: 800;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: var(--color-text-muted);
+}
+
+.rr-player-stats dd {
+  margin: 0;
+  font-size: 15px;
+  font-weight: 800;
+  font-variant-numeric: tabular-nums;
+}
+
+/* ------------------------------------------------------------------ mobile */
+
+@media (max-width: 640px) {
+  /* The stats drop under the name rather than squeezing four columns into a
+     phone — three right-aligned numbers beside a name is about 80px each and
+     there is not 320px of room for it. */
+  .rr-player {
+    grid-template-columns: auto auto minmax(0, 1fr);
+    gap: var(--space-2);
+  }
+
+  .rr-player-stats {
+    grid-column: 1 / -1;
+    justify-content: space-between;
+    padding-top: 8px;
+    border-top: 1px solid var(--color-divider);
+  }
+
+  .rr-player-stats > div {
+    text-align: left;
+  }
+
+  .rr-champion {
+    padding: var(--space-4) var(--space-3);
+  }
+}

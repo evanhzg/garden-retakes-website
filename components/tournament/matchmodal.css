@@ -1,0 +1,196 @@
+/* The match modal a bracket box opens.
+   Square, centred on desktop, and a sheet from the bottom on a phone — where a
+   centred dialog is a small card floating in a dimmed screen and a sheet is
+   something a thumb can reach. */
+
+.mm-backdrop {
+  position: fixed;
+  inset: 0;
+  z-index: 1400;
+  display: grid;
+  place-items: center;
+  padding: var(--space-4);
+  background: color-mix(in srgb, var(--color-bg) 72%, transparent);
+  backdrop-filter: blur(4px);
+  -webkit-backdrop-filter: blur(4px);
+  animation: mm-fade 0.14s ease-out;
+}
+
+@keyframes mm-fade {
+  from { opacity: 0; }
+  to { opacity: 1; }
+}
+
+.mm-card {
+  width: min(440px, 100%);
+  max-height: min(80vh, 640px);
+  overflow-y: auto;
+  overscroll-behavior: contain;
+  display: grid;
+  gap: var(--space-3);
+  padding: var(--space-4);
+  border: 1px solid var(--color-divider);
+  border-radius: 0;
+  background: var(--color-surface);
+  box-shadow: 0 24px 60px rgba(0, 0, 0, 0.4);
+}
+
+.mm-head {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: var(--space-2);
+}
+
+.mm-close {
+  display: grid;
+  place-items: center;
+  width: 32px;
+  height: 32px;
+  border: 1px solid transparent;
+  border-radius: 0;
+  background: none;
+  color: var(--color-text-muted);
+  cursor: pointer;
+  flex: 0 0 auto;
+}
+
+.mm-close:hover {
+  color: var(--color-text);
+  border-color: var(--color-divider);
+}
+
+/* ---------- Score ---------- */
+
+.mm-score {
+  display: grid;
+  grid-template-columns: 1fr auto 1fr;
+  align-items: center;
+  gap: var(--space-2);
+  padding: var(--space-3) 0;
+  border-top: 1px solid var(--color-divider);
+  border-bottom: 1px solid var(--color-divider);
+}
+
+.mm-side {
+  display: grid;
+  gap: 4px;
+  justify-items: center;
+  text-align: center;
+  min-width: 0;
+}
+
+.mm-team {
+  font-size: 14px;
+  font-weight: 800;
+  overflow-wrap: anywhere;
+}
+
+.mm-num {
+  font-size: 30px;
+  font-weight: 900;
+  line-height: 1;
+  font-variant-numeric: tabular-nums;
+}
+
+.mm-side.won .mm-num,
+.mm-side.won .mm-team {
+  color: var(--color-accent);
+}
+
+.mm-side.lost {
+  opacity: 0.55;
+}
+
+.mm-v {
+  font-size: 10.5px;
+  font-weight: 800;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: var(--color-text-muted);
+}
+
+/* ---------- Maps ---------- */
+
+.mm-maps {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: grid;
+  gap: 4px;
+}
+
+.mm-maps li {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--space-2);
+  padding: 7px 10px;
+  background: color-mix(in srgb, var(--color-text) 4%, transparent);
+  font-size: 13px;
+}
+
+.mm-map {
+  font-weight: 700;
+  text-transform: capitalize;
+}
+
+.mm-map-score {
+  font-variant-numeric: tabular-nums;
+  color: var(--color-text-muted);
+}
+
+/* ---------- Actions ---------- */
+
+.mm-actions {
+  display: grid;
+  gap: 8px;
+}
+
+.mm-btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  min-height: 42px;
+  border-radius: 0;
+  text-decoration: none;
+}
+
+@media (max-width: 640px) {
+  /* A sheet, not a floating card. */
+  .mm-backdrop {
+    align-items: end;
+    padding: 0;
+  }
+
+  .mm-card {
+    width: 100%;
+    max-height: 88vh;
+    border-left: 0;
+    border-right: 0;
+    border-bottom: 0;
+    padding-bottom: calc(var(--space-4) + env(safe-area-inset-bottom, 0px));
+    animation: mm-rise 0.18s cubic-bezier(0.22, 1, 0.36, 1);
+  }
+
+  .mm-num {
+    font-size: 26px;
+  }
+
+  .mm-btn {
+    min-height: 46px;
+  }
+}
+
+@keyframes mm-rise {
+  from { transform: translateY(16px); }
+  to { transform: none; }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .mm-backdrop,
+  .mm-card {
+    animation: none;
+  }
+}
