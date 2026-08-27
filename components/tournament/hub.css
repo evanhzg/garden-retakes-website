@@ -1,0 +1,219 @@
+/* The tournaments hub: schedule, archive, team rankings, player boards.
+   Square throughout, like the rest of the tournament surfaces. */
+
+.hub-tabs {
+  margin-bottom: 0;
+}
+
+.hub-note {
+  margin: 0 0 var(--space-3);
+  font-size: 13px;
+}
+
+/* ---------- Schedule ---------- */
+
+.hub-schedule {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: grid;
+  gap: var(--space-2);
+}
+
+.hub-sched {
+  display: grid;
+  grid-template-columns: auto minmax(0, 1fr);
+  align-items: center;
+  gap: var(--space-3);
+  padding: var(--space-3);
+  border: 1px solid var(--color-divider);
+  background: var(--color-surface);
+}
+
+/* A date block, not a sentence: a column of these is scannable and a column of
+   "starts on Tuesday the…" is not. */
+.hub-date {
+  display: grid;
+  place-items: center;
+  align-content: center;
+  min-width: 56px;
+  padding: 6px 10px;
+  border-right: 1px solid var(--color-divider);
+  text-align: center;
+}
+
+.hub-day {
+  font-size: 22px;
+  font-weight: 900;
+  line-height: 1;
+  font-variant-numeric: tabular-nums;
+}
+
+.hub-month {
+  font-size: 10.5px;
+  font-weight: 800;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: var(--color-text-muted);
+}
+
+.hub-tbd {
+  font-size: 10.5px;
+  font-weight: 800;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  color: var(--color-text-muted);
+}
+
+.hub-sched-main {
+  display: grid;
+  gap: 2px;
+  min-width: 0;
+  font-size: 12.5px;
+}
+
+.hub-sched-name {
+  font-size: 15px;
+  font-weight: 800;
+  color: var(--color-text);
+  text-decoration: none;
+  overflow-wrap: anywhere;
+}
+
+.hub-sched-name:hover {
+  color: var(--color-accent);
+}
+
+.hub-btn {
+  border-radius: 0;
+  min-height: 38px;
+  white-space: nowrap;
+}
+
+/* ---------- Archive ---------- */
+
+.hub-archive {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: grid;
+  gap: var(--space-3);
+}
+
+.hub-past {
+  display: grid;
+  gap: var(--space-2);
+  padding: var(--space-3);
+  border: 1px solid var(--color-divider);
+  background: var(--color-surface);
+}
+
+.hub-past-head {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 4px 12px;
+  font-size: 12.5px;
+}
+
+.hub-past-name {
+  font-size: 15px;
+  font-weight: 800;
+  color: var(--color-text);
+  text-decoration: none;
+}
+
+.hub-past-name:hover {
+  color: var(--color-accent);
+}
+
+.hub-podium {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: grid;
+  gap: 4px;
+}
+
+.hub-place {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 6px 10px;
+  border-left: 3px solid var(--color-divider);
+  background: color-mix(in srgb, var(--color-text) 4%, transparent);
+  font-size: 13.5px;
+  min-width: 0;
+}
+
+.hub-rank {
+  flex: 0 0 auto;
+  width: 18px;
+  font-weight: 900;
+  font-variant-numeric: tabular-nums;
+  color: var(--color-text-muted);
+}
+
+.hub-team {
+  font-weight: 700;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  min-width: 0;
+}
+
+/* Medal colours on the rule only. Filling three rows with gold, silver and
+   bronze would make the podium the loudest thing in the archive, and the
+   archive is a list. */
+.hub-gold {
+  border-left-color: #d4a017;
+  background: color-mix(in srgb, #d4a017 10%, transparent);
+}
+
+.hub-silver {
+  border-left-color: #9aa3ad;
+  background: color-mix(in srgb, #9aa3ad 10%, transparent);
+}
+
+.hub-bronze {
+  border-left-color: #a9682f;
+  background: color-mix(in srgb, #a9682f 10%, transparent);
+}
+
+/* ------------------------------------------------------------------ mobile */
+
+@media (max-width: 640px) {
+  /* The tab strip scrolls rather than wrapping to three rows of uppercase
+     buttons, same as the tournament page's own tabs. */
+  .hub-tabs {
+    flex-wrap: nowrap;
+    overflow-x: auto;
+    scrollbar-width: none;
+    scroll-snap-type: x proximity;
+  }
+
+  .hub-tabs::-webkit-scrollbar {
+    display: none;
+  }
+
+  .hub-tabs .pro-tab {
+    flex: 0 0 auto;
+    padding: 10px 14px;
+    scroll-snap-align: start;
+  }
+
+  .hub-sched {
+    grid-template-columns: auto minmax(0, 1fr);
+  }
+
+  .hub-btn {
+    grid-column: 1 / -1;
+    width: 100%;
+    min-height: 44px;
+  }
+
+  .hub-past-head {
+    flex-direction: column;
+  }
+}

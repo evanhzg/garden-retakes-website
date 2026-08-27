@@ -109,6 +109,7 @@ export default async function TournamentAdminPage({
     // Whether one exists, not the bytes: a MEDIUMBLOB has no business being
     // serialised into the page payload for a checkbox's worth of information.
     hasBanner: tournament.BannerImage !== null,
+    isTest: tournament.IsTest,
     discordUrl: tournament.DiscordUrl ?? "",
     teamSpeakUrl: tournament.TeamSpeakUrl ?? "",
     twitchChannels: tournament.TwitchChannels ?? "",

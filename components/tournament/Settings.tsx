@@ -41,6 +41,8 @@ export type SettingsView = {
   sponsorsText: string;
   /** Whether a banner is stored. The bytes never come to the client. */
   hasBanner: boolean;
+  /** A test tournament may gain bot teams and be resolved without a server. */
+  isTest: boolean;
   discordUrl: string;
   teamSpeakUrl: string;
   twitchChannels: string;
@@ -115,6 +117,35 @@ export default function Settings({
   const [hasBanner, setHasBanner] = useState(tournament.hasBanner);
   /** Bumped on every upload, purely to defeat the image cache. */
   const [bannerVersion, setBannerVersion] = useState(0);
+
+  const [isTest, setIsTest] = useState(tournament.isTest);
+
+  /* The test controls have their own route rather than riding on the settings
+     save, so the guards live next to the actions they protect instead of
+     inside a general-purpose handler that also writes the map pool. */
+  const testAction = useCallback(
+    async (body: Record<string, unknown>) => {
+      setBusy(true);
+      setNotice(null);
+      try {
+        const res = await fetch("/api/admin/tournaments/test", {
+          method: "POST",
+          headers: { "content-type": "application/json" },
+          body: JSON.stringify({ ...body, tournamentId: tournament.id, key: adminKey }),
+        });
+        const data = await res.json();
+        setNotice(data.error ?? data.message ?? t("settings.saved"));
+        if (data.ok) setTimeout(() => window.location.reload(), 600);
+        return data;
+      } catch (err) {
+        setNotice(String(err));
+        return null;
+      } finally {
+        setBusy(false);
+      }
+    },
+    [adminKey, tournament.id, t],
+  );
 
   const uploadBanner = useCallback(
     async (file: File) => {
@@ -513,6 +544,47 @@ export default function Settings({
             <span>{t("settings.sponsors")}</span>
             <textarea rows={3} value={form.sponsorsText} onChange={(e) => set({ sponsorsText: e.target.value })} />
           </label>
+        </div>
+      </section>
+
+      {/* ------------------------------------------------------------- test */}
+      {/* Deliberately its own block with its own colour, and deliberately not
+          reachable by accident: marking a tournament as a test is refused once
+          any real player has registered, and every control below refuses a
+          tournament that is not marked. */}
+      <section className="ts-block ts-test">
+        <h3>{t("settings.testMode")}</h3>
+        <p className="muted ts-hint">{t("settings.testModeHint")}</p>
+
+        <div className="ts-row">
+          <button
+            className={isTest ? "btn btn-secondary" : "btn"}
+            disabled={busy}
+            onClick={async () => {
+              const done = await testAction({ action: "mark-test", isTest: !isTest });
+              if (done?.ok) setIsTest(Boolean(done.isTest));
+            }}
+          >
+            {isTest ? t("settings.testOff") : t("settings.testOn")}
+          </button>
+
+          {isTest && !started && (
+            <button className="btn" disabled={busy} onClick={() => testAction({ action: "fill-bots" })}>
+              {t("settings.fillBots")}
+            </button>
+          )}
+
+          {isTest && !started && (
+            <button className="btn" disabled={busy} onClick={() => testAction({ action: "add-bot-team" })}>
+              {t("settings.addBotTeam")}
+            </button>
+          )}
+
+          {isTest && started && (
+            <button className="btn btn-primary" disabled={busy} onClick={() => testAction({ action: "simulate" })}>
+              {t("settings.simulate")}
+            </button>
+          )}
         </div>
       </section>
 

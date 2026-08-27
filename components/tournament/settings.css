@@ -377,3 +377,17 @@ label.btn {
 .su-danger:hover {
   background: color-mix(in srgb, #ef4444 12%, transparent);
 }
+
+/* The test-tournament block.
+   Marked out because its buttons do things no real event should ever have done
+   to it — filling with bots, resolving a bracket without playing it. A dashed
+   amber rule says "this is scaffolding" without shouting. */
+
+.ts-test {
+  border: 1px dashed color-mix(in srgb, #d97706 55%, var(--color-divider));
+  background: color-mix(in srgb, #d97706 5%, transparent);
+}
+
+.ts-test h3 {
+  color: #b45309;
+}

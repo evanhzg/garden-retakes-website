@@ -9,6 +9,10 @@ import {
   type EditionState,
 } from "@/lib/tournament/edition";
 import "@/components/tournament/list.css";
+import HubTabs from "@/components/tournament/HubTabs";
+import { tournamentArchive, teamRankings, upcomingTournaments } from "@/lib/tournament/hub";
+import { allTournamentStats } from "@/lib/tournament/statsDb";
+import type { Board } from "@/components/stats/LeaderboardTabs";
 import StatusTag from "@/components/tournament/StatusTag";
 
 // Dynamic rather than revalidated: what you can see here depends on who you
@@ -41,6 +45,46 @@ export default async function TournamentsPage() {
 
   // One clock for the whole list, so every card on a page agrees about "now".
   const now = new Date();
+
+  // The hub panels. Fetched in parallel with each other because none of them
+  // depends on another, and all four are read off rows that already exist.
+  const [archive, teamRanks, players, schedule] = await Promise.all([
+    // `mine` is null for admins (everything) and a list of ids for an
+    // organizer, which is exactly what these want: an organizer's own
+    // unpublished event stays visible to them and to nobody else.
+    tournamentArchive(mine),
+    teamRankings(mine),
+    // Reuses the rounds-weighted aggregation written for demo-mode /stats
+    // rather than averaging per-map ratings, which is a different and wrong
+    // number.
+    allTournamentStats(12),
+    upcomingTournaments(mine),
+  ]);
+
+  const board = (
+    title: string,
+    unit: string,
+    value: (p: (typeof players)[number]) => number,
+    format: (v: number) => string,
+  ): Board => ({
+    title,
+    unit,
+    rows: [...players]
+      .sort((a, b) => value(b) - value(a))
+      .slice(0, 10)
+      .map((p) => ({ steamId: p.steamId, name: p.name || p.steamId, value: format(value(p)) })),
+  });
+
+  const boards: Board[] = players.length === 0 ? [] : [
+    board(t("tstats.rating"), "Rating", (p) => p.ratingAvg, (v) => v.toFixed(2)),
+    board(t("tstats.adr"), "ADR", (p) => p.adr, (v) => v.toFixed(0)),
+    board(t("tstats.kd"), "K/D", (p) => p.kd, (v) => v.toFixed(2)),
+    board(t("tstats.kast"), "KAST %", (p) => p.kast, (v) => `${v.toFixed(0)}%`),
+    board(t("tstats.hs"), "HS %", (p) => p.hs, (v) => `${v.toFixed(0)}%`),
+    board(t("tstats.kills"), "Kills", (p) => p.kills, (v) => String(v)),
+    board(t("tstats.entries"), "Entries", (p) => p.entryKills, (v) => String(v)),
+    board(t("tstats.clutches"), "Clutches", (p) => p.clutches, (v) => String(v)),
+  ];
 
   return (
     <>
@@ -90,6 +134,7 @@ export default async function TournamentsPage() {
       )}
 
       <section className="panel">
+        <HubTabs archive={archive} teams={teamRanks} boards={boards} schedule={schedule}>
         {tournaments.length === 0 ? (
           <div className="empty-hint">
             <p style={{ margin: 0 }}>{t("tournaments.none")}</p>
@@ -196,6 +241,7 @@ export default async function TournamentsPage() {
             })}
           </ul>
         )}
+        </HubTabs>
       </section>
     </>
   );
