@@ -163,7 +163,58 @@ Nice-to-have rather than required for an event; put it after teams and avatars.
   a round in the UI. Check the loadouts and the per-round kills specifically: the
   kills are a subtraction between two backups, and a sign error there shows as
   every player having zero.
-- **GOTV: the cause is found, one step left.** Paused mid-verification to work on
+- **GOTV: it is OUR PLUGIN, not the engine.** Proven by elimination, and this is
+  the one fact worth keeping — four earlier theories were wrong and are recorded
+  below so nobody retries them.
+
+  The experiment: same instance, same GOTV, tournament plugin moved aside.
+
+  | t6 | plugin | GOTV | result |
+  |----|--------|------|--------|
+  | with plugin | on  | on | watchdog + segfault every ~100s, for hours |
+  | without     | off | on | **0 crashes, 0 level changes, 11 minutes, relay answering A2S** |
+
+  So a stock CS2 server runs GOTV on this box perfectly well. Something the
+  tournament plugin does, roughly 100 seconds after the map settles, provokes a
+  level reload; SourceTV is torn down and restarted inside it, and that restart
+  hangs until the watchdog kills the process.
+
+  **Ruled out, with the measurement that ruled it out:**
+
+  - *Capacity.* One instance with GOTV crashed on an otherwise idle box at load
+    1.42 while five others ran clean. Not CPU.
+  - *`+tv_enable` as a launch argument.* It is the trigger, not the fault —
+    turning GOTV on is simply what makes the server stay awake long enough to
+    reach the reload.
+  - *`game_mode` in tournament.cfg.* Real bug, genuinely fixed (the fleet had
+    been booting into Casual and being corrected afterwards), but not this one:
+    with the corrected cfg and the plugin on, it still crashed 8 times in ten
+    minutes.
+  - *Hibernation.* `sv_hibernate_when_empty` already read `false` at runtime.
+
+  **Where to look next**, in the plugin rather than the config:
+
+  1. The ~100s delay is consistent and unexplained. Find what runs on that
+     cadence with no match declared. The one-second `Tick` only calls
+     `ApplyPendingModeCfg()` and then returns when `_match.Current` is null, so
+     it is probably not the tick itself.
+  2. SourceTV joins as a **player controller** — the log says
+     `ClientPutInServer create new player controller [SourceTV]`. Anything that
+     iterates players and acts on them is a suspect: `EnforceSides()` checks
+     `IsHLTV`, but `TeamLock`, `MaintainBots` and the freezetime sweep should be
+     audited for the same guard.
+  3. Reproduce with the plugin loaded but no match, then bisect by disabling its
+     subsystems, rather than by changing cvars.
+
+  **How to test it.** Not `tv_enable`, and not a bound port — both read healthy
+  for the entire ninety-minute outage. Use `tools/a2s-probe.mjs <ip>:<tv_port>`:
+  a live relay answers with the server's name and map. And watch for ten
+  minutes, because the crash cycle is ~100 seconds and anything shorter proves
+  nothing.
+
+  GOTV is off fleet-wide (`TV_ENABLE=0` per instance) until this is closed.
+
+- **(superseded) GOTV: the cause is found, one step left.** Paused mid-verification to work on
   matchmaking, so this is written to be picked up cold.
 
   **What it is.** `r5e/tournament.cfg` writes `game_type 0` / `game_mode 1`.

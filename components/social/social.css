@@ -16,7 +16,6 @@
 .friends-sidebar {
   position: fixed;
   top: var(--social-top, 64px);
-  right: -360px;
   width: 330px;
   height: calc(100dvh - var(--social-top, 64px));
   background:
@@ -27,13 +26,28 @@
   border-left: 1px solid color-mix(in srgb, var(--border) 80%, transparent);
   box-shadow: -18px 0 50px rgba(0, 0, 0, 0.45);
   z-index: 1001;
-  transition: right 0.3s cubic-bezier(0.22, 1, 0.36, 1);
+  /* Positioned at its open place and pushed off-screen with a transform, rather
+     than animating `right` from -360px. A transform is composited; `right`
+     relayouts the panel on every frame, which is what made this judder next to
+     the rail's fade. */
+  right: 0;
+  transform: translateX(100%);
+  transition: transform 0.3s cubic-bezier(0.22, 1, 0.36, 1);
   display: flex;
   flex-direction: column;
 }
 
 .friends-sidebar.open {
-  right: 0;
+  transform: translateX(0);
+}
+
+/* Somebody who has asked for less movement gets the state change without the
+   slide, rather than a slower version of it. */
+@media (prefers-reduced-motion: reduce) {
+  .friends-sidebar,
+  .friends-rail {
+    transition-duration: 0.01ms;
+  }
 }
 
 .friends-header {
@@ -689,14 +703,23 @@ html[data-motion="off"] .dm-bubble.typing i { animation: none; }
   backdrop-filter: blur(12px);
   -webkit-backdrop-filter: blur(12px);
   box-shadow: -4px 0 18px rgba(0, 0, 0, 0.28);
-  transition: opacity 0.18s ease, transform 0.18s ease;
+  /* The same curve and duration as the panel, so the two read as one movement
+     rather than as a fade racing a slide. */
+  transition: opacity 0.3s cubic-bezier(0.22, 1, 0.36, 1),
+              transform 0.3s cubic-bezier(0.22, 1, 0.36, 1);
 }
 
-/* The panel it opens covers this; two of the same avatars is not a design. */
+/* Out of the way, not merely invisible.
+ *
+ * This used to fade to opacity 0 and nudge 12px right, which leaves the rail
+ * exactly where it was — underneath a panel that is translucent and blurred, so
+ * the collapsed avatars showed through the expanded ones for the whole
+ * transition and, at low opacity, after it. Sliding it its own width off the
+ * edge means there is nothing behind the panel to see through to. */
 .friends-rail.hidden {
   opacity: 0;
   pointer-events: none;
-  transform: translateX(12px);
+  transform: translateX(100%);
 }
 
 /* Expand lives at the top, which is the whole point of the rearrangement. */
