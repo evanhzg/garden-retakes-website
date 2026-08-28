@@ -54,11 +54,35 @@ export default async function MatchPage({
   const ctx = await getTournamentContext();
   const isOrganizer = await canManage(ctx, match.TournamentId);
 
-  if (!match.Tournament.Published && !isOrganizer) notFound();
-
   const teams = await prisma.tournamentTeam.findMany({
     where: { Id: { in: [match.TeamAId, match.TeamBId].filter((x): x is number => x !== null) } },
   });
+
+  /**
+   * Who may look at an unpublished tournament's match.
+   *
+   * Organizers and admins, as before — and now the people playing in it, which
+   * is what a pickup game is. Pickups hang off a deliberately unpublished
+   * tournament so they never appear in the hub beside a real event, and the old
+   * `!Published && !isOrganizer -> notFound()` meant the two teams who had just
+   * formed a lobby got a 404 on their own match. The link the lobby handed them
+   * went nowhere.
+   *
+   * Unpublished still means unlisted: nothing links here but the lobby, and
+   * every listing filters on Published. This only stops the page pretending not
+   * to exist for the people it is for.
+   */
+  const playing =
+    session !== null &&
+    (await prisma.tournamentTeamMember.count({
+      where: {
+        TeamId: { in: teams.map((x) => x.Id) },
+        SteamId: BigInt(session.steamId),
+        Status: { not: "removed" },
+      },
+    })) > 0;
+
+  if (!match.Tournament.Published && !isOrganizer && !playing) notFound();
 
   const teamA = teams.find((x) => x.Id === match.TeamAId);
   const teamB = teams.find((x) => x.Id === match.TeamBId);

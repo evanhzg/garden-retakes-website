@@ -1,4 +1,5 @@
 import { NextResponse } from "next/server";
+import { prisma } from "@/lib/db";
 import { createSessionToken, SESSION_COOKIE, sessionCookieOptions } from "@/lib/auth";
 
 const STEAM_OPENID = "https://steamcommunity.com/openid/login";
@@ -40,6 +41,56 @@ function safeReturnTo(raw: string | null): string {
   return raw;
 }
 
+/**
+ * Writes down who just signed in.
+ *
+ * Steam hands us a name and an avatar on every login and this route used to put
+ * both in the session cookie and nowhere else. The cookie is readable by
+ * exactly one browser, so to the rest of the site that player had no name: a
+ * friend who signed in on the website but had never played on the game server
+ * had no PlayerProfile row either, and /api/players/resolve — which reads that
+ * table — fell through to its last resort and called them "Player 3631".
+ *
+ * The Discord and Google callbacks already write PlayerProfile for the same
+ * reason. This is the one that did not.
+ *
+ * Best effort on purpose. A player who has signed in should be let in even if
+ * the write fails; the cost of failing is a name, and the cost of throwing here
+ * is a login that appears broken.
+ */
+async function rememberPlayer(steamId: string, profile: { name?: string; avatar?: string }) {
+  const id = BigInt(steamId);
+  const now = new Date();
+
+  try {
+    if (profile.name) {
+      // LastKnownName is also written by the plugin, with the same value — it is
+      // the Steam persona either way. A GardenNameOverride still wins over both,
+      // which is what resolveNames() is for.
+      await prisma.playerProfile.upsert({
+        where: { SteamId: id },
+        update: { LastKnownName: profile.name, LastSeenAtUtc: now },
+        create: {
+          SteamId: id,
+          LastKnownName: profile.name,
+          FirstSeenAtUtc: now,
+          LastSeenAtUtc: now,
+        },
+      });
+    }
+
+    if (profile.avatar) {
+      await prisma.gardenWebProfile.upsert({
+        where: { SteamId: id },
+        update: { AvatarUrl: profile.avatar },
+        create: { SteamId: id, AvatarUrl: profile.avatar },
+      });
+    }
+  } catch {
+    // See above: a login is not worth failing over a display name.
+  }
+}
+
 export async function GET(request: Request) {
   const origin = process.env.SITE_URL ?? new URL(request.url).origin;
   const incoming = new URL(request.url).searchParams;
@@ -66,6 +117,9 @@ export async function GET(request: Request) {
 
   const steamId = match[1];
   const profile = await fetchProfile(steamId);
+
+  await rememberPlayer(steamId, profile);
+
   const token = createSessionToken({ steamId, ...profile });
 
   const response = NextResponse.redirect(`${origin}${returnTo}`);

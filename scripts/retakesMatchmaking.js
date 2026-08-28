@@ -276,7 +276,7 @@ const uid = (prefix) => `${prefix}_${Math.random().toString(36).slice(2, 10)}`;
 
 function attachRetakesMatchmaking(
   io,
-  { connectedUsers, loadRatings, loadMapPrefs, saveMapPrefs, loadSetupState, prisma }
+  { connectedUsers, loadRatings, loadMapPrefs, saveMapPrefs, prisma }
 ) {
   /** partyId -> party */
   const parties = new Map();
@@ -469,23 +469,10 @@ function attachRetakesMatchmaking(
     );
   }
 
-  /**
-   * Who in this party has not been through the loadout picker.
-   *
-   * Fails open. If the lookup is not wired or the database is unreachable, a
-   * party that cannot be checked queues — an outage should not lock everyone
-   * out of the game, and the server has defaults for every round type.
-   */
-  async function membersWithoutLoadout(party) {
-    if (typeof loadSetupState !== "function" || !party) return [];
-    try {
-      const ids = party.members.map((m) => m.steamId);
-      const rows = await loadSetupState(ids);
-      return ids.filter((sid) => rows?.[sid] !== true);
-    } catch {
-      return [];
-    }
-  }
+  // membersWithoutLoadout() lived here and refused the queue for anybody who
+  // had not been through the weapon picker. Blitz decides a player's kit from
+  // their ROLE now, so there is nothing for that picker to have answered and
+  // nothing to gate on — see the lobby, where the gate and its tab went too.
 
   function leaveQueue(party, reason) {
     if (!party?.queuedAt) return;
@@ -1577,19 +1564,6 @@ function attachRetakesMatchmaking(
       // should end up; opting in is at least a signal, and a control that acts
       // on it beats one that lies.
       party.safeQueue = Boolean(safeQueue);
-
-      // Nobody queues without a loadout. Checked here and not only in the UI: a
-      // disabled button is a courtesy, not a gate, and the round type a player
-      // never chose for is the one the server has to invent an answer for.
-      const unset = await membersWithoutLoadout(party);
-      if (unset.length > 0) {
-        return socket.emit("rq:notice", {
-          kind: "error",
-          code: "loadout_unset",
-          who: unset,
-          mine: unset.includes(id),
-        });
-      }
 
       // Queue first, then re-read the ratings. Waiting on the database before
       // joining meant the button did nothing until a round trip came back,

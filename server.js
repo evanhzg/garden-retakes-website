@@ -277,22 +277,13 @@ attachRetakesMatchmaking(io, {
   },
 
   /**
-   * Who has been through the loadout picker.
+   * (removed) Who has been through the loadout picker.
    *
-   * A missing row means no, which is what everybody is on the day this ships —
-   * see GardenOnboardingStates.CompletedRetakeSetup.
+   * Blitz decides a player's kit from their role, so there is no weapon picker
+   * left to have completed and nothing to gate the queue on. The onboarding
+   * column it read is left in place — it is a record of something that did
+   * happen, and dropping it would be a migration for no gain.
    */
-  async loadSetupState(steamIds) {
-    const ids = (steamIds || []).filter((id) => /^\d{5,20}$/.test(String(id)));
-    if (ids.length === 0) return {};
-    const rows = await prisma.gardenOnboardingState.findMany({
-      where: { SteamId: { in: ids.map((id) => BigInt(id)) } },
-      select: { SteamId: true, CompletedRetakeSetup: true },
-    });
-    return Object.fromEntries(
-      rows.map((r) => [r.SteamId.toString(), r.CompletedRetakeSetup === true])
-    );
-  },
 });
 
 io.on("connection", (socket) => {

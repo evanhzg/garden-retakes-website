@@ -3,7 +3,7 @@
 import { useI18n } from "@/components/I18nProvider";
 import RetakesIcon from "@/components/retakes/RetakesIcon";
 
-export type LobbyTab = "play" | "loadout" | "maps" | "matches" | "live";
+export type LobbyTab = "play" | "maps" | "matches" | "live";
 
 /**
  * The matchmaking rail.
@@ -39,7 +39,6 @@ export default function LobbyRail({
 
   const rows: { id: LobbyTab; glyph: string }[] = [
     { id: "play", glyph: "play" },
-    { id: "loadout", glyph: "loadout" },
     { id: "maps", glyph: "maps" },
     { id: "matches", glyph: "matches" },
     { id: "live", glyph: "live" },

@@ -16,7 +16,6 @@ import LobbyRail, { type LobbyTab } from "./lobby/LobbyRail";
 import ModeBar from "./lobby/ModeBar";
 import MatchesTab from "./lobby/MatchesTab";
 import LiveTab from "./lobby/LiveTab";
-import LoadoutGate from "./lobby/LoadoutGate";
 import PartyStage from "./lobby/PartyStage";
 import { claimKey, type RoleClaims } from "./lobby/RolePicker";
 import RetakesIcon from "./RetakesIcon";
@@ -182,8 +181,6 @@ export default function RetakesLobby({ signedIn, lobbyId }: { signedIn: boolean,
    * than one that is briefly optimistic. The server refuses the queue either
    * way; see rq:queue:join.
    */
-  const [loadoutSet, setLoadoutSet] = useState<boolean | null>(null);
-  const [gateOpen, setGateOpen] = useState(false);
   const [pendingInvites, setPendingInvites] = useState<{ id: string, name: string, expiresAt: number }[]>([]);
   const [reportOpen, setReportOpen] = useState(false);
   const [reportText, setReportText] = useState("");
@@ -328,23 +325,6 @@ export default function RetakesLobby({ signedIn, lobbyId }: { signedIn: boolean,
     const timer = setTimeout(() => setNotice(null), 5000);
     return () => clearTimeout(timer);
   }, [notice]);
-
-  // Has this account been through the loadout picker? Everyone answers no the
-  // first time — CompletedRetakeSetup defaults false — so this opens the gate
-  // rather than merely disabling a button.
-  useEffect(() => {
-    if (!signedIn) return;
-    fetch("/api/loadout")
-      .then((r) => (r.ok ? r.json() : null))
-      .then((d) => {
-        const done = Boolean(d?.complete);
-        setLoadoutSet(done);
-        if (!done) setGateOpen(true);
-      })
-      // An unreadable answer is not a reason to lock somebody out of their own
-      // lobby. The server refuses the queue if it really is unset.
-      .catch(() => setLoadoutSet(true));
-  }, [signedIn]);
 
   useEffect(() => {
     if (!steamId) return;
@@ -606,7 +586,6 @@ export default function RetakesLobby({ signedIn, lobbyId }: { signedIn: boolean,
             play: party ? party.members.length : null,
             maps: party?.maps?.excluded?.length ? party.maps.excluded.length : null,
           }}
-          locked={loadoutSet === false ? { play: t("lobby.gate.locked") } : undefined}
         />
 
       {/* ---------------------------------------------------- the stage ---
@@ -746,21 +725,10 @@ export default function RetakesLobby({ signedIn, lobbyId }: { signedIn: boolean,
               <button
                 data-tutorial="queue-play"
                 className="btn btn-primary rq-play"
-                disabled={
-                  match
-                    ? false
-                    : !party?.isLeader || conflicts.length > 0 || loadoutSet === false
-                }
+                disabled={match ? false : !party?.isLeader || conflicts.length > 0}
                 onClick={() => {
-                  // A live match is never behind the loadout gate: the point
-                  // of the button then is to get back to the game, and the
-                  // loadout was already settled when the queue was joined.
                   if (match) {
                     setHideMatchRoom(false);
-                    return;
-                  }
-                  if (loadoutSet === false) {
-                    setGateOpen(true);
                     return;
                   }
                   // Asked here rather than on mount: a prompt that appears
@@ -777,8 +745,6 @@ export default function RetakesLobby({ signedIn, lobbyId }: { signedIn: boolean,
                   </>
                 ) : conflicts.length > 0 ? (
                   t("lobby.fixroles")
-                ) : loadoutSet === false ? (
-                  t("lobby.setloadout")
                 ) : (
                   t("lobby.findmatch")
                 )}
@@ -818,21 +784,6 @@ export default function RetakesLobby({ signedIn, lobbyId }: { signedIn: boolean,
         )}
       </div>
 
-      {tab === "loadout" && (
-        <section className="panel rq-tabpanel">
-          <div className="rq-loadout-tab">
-            <p className="rq-hint">{t("lobby.loadouttab.hint")}</p>
-            <button className="btn btn-secondary" onClick={() => setGateOpen(true)}>
-              <RetakesIcon id="loadout" size={15} />
-              {loadoutSet ? t("lobby.loadouttab.edit") : t("lobby.loadouttab.set")}
-            </button>
-            <a className="btn btn-ghost" href="/loadout">
-              {t("lobby.loadouttab.full")}
-            </a>
-          </div>
-        </section>
-      )}
-
       {tab === "maps" && (
         <section className="panel rq-tabpanel">
           <header className="rq-panel-head">
@@ -865,16 +816,6 @@ export default function RetakesLobby({ signedIn, lobbyId }: { signedIn: boolean,
         </section>
       )}
       </div>
-
-      {gateOpen && (
-        <LoadoutGate
-          onClose={() => setGateOpen(false)}
-          onDone={() => {
-            setLoadoutSet(true);
-            setGateOpen(false);
-          }}
-        />
-      )}
 
       {state?.invite && (
         <InviteModal invite={state.invite} send={send} t={t} />
