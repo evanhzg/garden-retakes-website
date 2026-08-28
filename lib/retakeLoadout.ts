@@ -9,6 +9,8 @@
 // game and does not, so this reads and writes that exact structure — numeric
 // CsItem ids and all.
 //
+import { CT_ROLES, T_ROLES } from "@/lib/tournament/roles";
+
 // The role and utility half has no in-game counterpart yet, so it lives in a
 // website-owned table. It is honest about that: the page says which settings
 // take effect in game today and which are for your team to read.
@@ -176,35 +178,47 @@ export const itemName = (id: number | null | undefined): string | null => {
 // ------------------------------------------------------------------- roles
 
 /**
- * Retake roles.
+ * Blitz roles, taken from the mode itself.
  *
- * Not the five-man roles from a normal match — a retake has no lurker and
- * nobody is holding an angle for ninety seconds. These are the jobs that
- * actually exist when four people walk onto a site with the bomb down.
+ * This used to be its own list — sniper, lurker, rifler, anchor, rotator — and
+ * not one of `lurker`, `anchor` or `rotator` exists in the game. The plugin
+ * implements the seven in lib/tournament/roles.ts and refuses anything else, so
+ * the lobby was offering three jobs the server has never heard of and hiding
+ * four it does. A player picked "anchor" in the lobby and arrived as nothing.
+ *
+ * Derived rather than copied, so the two cannot drift again. The tournament
+ * list is the source: it is what the role draft offers, what RoleKits gives you
+ * in game, and what the match page draws.
+ *
+ * The `both` side is gone with it. The two sniper jobs are separate ids —
+ * `sniper` on T and `awper` on CT — because the plugin keys kits on them
+ * separately, even though both read as "Sniper" to a player.
  */
 export const ROLES = [
-  { id: "sniper", side: "both" as const, unique: true },
-  { id: "lurker", side: "T" as const, unique: true },
-  { id: "rifler", side: "T" as const, unique: false },
-  { id: "anchor", side: "CT" as const, unique: true },
-  { id: "rotator", side: "CT" as const, unique: false },
-] as const;
+  ...T_ROLES.map((r) => ({ id: r.id, side: "T" as const, unique: r.unique })),
+  ...CT_ROLES.map((r) => ({ id: r.id, side: "CT" as const, unique: r.unique })),
+];
 
 export type RoleId = (typeof ROLES)[number]["id"];
 
 export const isRole = (v: string): v is RoleId => ROLES.some((r) => r.id === v);
 
-/** The roles one side can take. `both` roles appear in each column. */
-export const rolesFor = (side: Side) => ROLES.filter((r) => r.side === side || r.side === "both");
+/**
+ * The roles one side can take.
+ *
+ * No role appears in both columns any more. The T sniper and the CT sniper are
+ * `sniper` and `awper`, two ids the plugin kits separately, which is why this
+ * is a plain equality rather than the old `|| r.side === "both"`.
+ */
+export const rolesFor = (side: Side) => ROLES.filter((r) => r.side === side);
 
 /**
  * Whether two people in the same party may both claim this role.
  *
- * Only two of the five may not: a second sniper is a second AWP nobody can
- * afford, and a second lurker or a second anchor is the same body in the same
- * place. Riflers and rotators are the jobs a retake wants more than one of, so
- * they are deliberately not capped — the lobby used to hard-code both lists in
- * a `conflicts` memo, which is why this now lives beside the roles themselves.
+ * The answer comes from the mode, not from an opinion held here: `rifler` and
+ * `backup` are the two jobs a side wants more than one of, and everything else
+ * is capped at one. The plugin enforces the same list, so the lobby refuses
+ * exactly what the server would.
  */
 export const isRoleUnique = (id: string): boolean =>
   ROLES.find((r) => r.id === id)?.unique ?? false;

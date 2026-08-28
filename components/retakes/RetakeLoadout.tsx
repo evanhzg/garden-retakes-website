@@ -80,8 +80,17 @@ const TABS = [
 ] as const;
 type TabId = (typeof TABS)[number]["id"];
 
-/** Only anchor/rotator hold a specific site — every other role is the same job map-wide. */
-const SITE_ROLES = new Set(["anchor", "rotator"]);
+/**
+ * The roles whose job is tied to one bombsite.
+ *
+ * A front-runner goes through a specific door and a backup follows them into a
+ * specific site, so both are worth setting per site. The rest are not: a roamer
+ * is defined by being away from the pack, a sniper holds an angle, and the T
+ * roles are about the bomb rather than the site it is on.
+ *
+ * Was anchor/rotator, two roles the game does not implement — see ROLES.
+ */
+const SITE_ROLES = new Set(["frontrunner", "backup"]);
 const SITES = ["A", "B"] as const;
 
 type MapRole = { map: string; side: Side; roleId: string; site: "A" | "B" | null };
@@ -93,7 +102,7 @@ const MAP_POOL = RETAKES_MAPS.map((id) => ({ id, label: mapName(id) }));
 type RoleOption = { roleId: string; site: "A" | "B" | null; label: string };
 
 function bubbleOptions(side: Side): RoleOption[] {
-  return ROLES.filter((r) => r.side === side || r.side === "both").flatMap((r): RoleOption[] =>
+  return ROLES.filter((r) => r.side === side).flatMap((r): RoleOption[] =>
     SITE_ROLES.has(r.id)
       ? SITES.map((s) => ({ roleId: r.id, site: s, label: `${r.id} ${s}` }))
       : [{ roleId: r.id, site: null, label: r.id }]
@@ -151,7 +160,7 @@ function RoleBubble({
                       onClick={() => onPick(side, opt.roleId, opt.site)}
                     >
                       <Icon size={14} />
-                      {t(`loadout.role.${opt.roleId}`)}
+                      {t(`role.${opt.roleId}.name`)}
                       {opt.site && ` ${opt.site}`}
                     </button>
                   );
@@ -282,7 +291,7 @@ function RoleColumn({
   onToggleCaller: () => void;
 }) {
   const { t } = useI18n();
-  const roles = useMemo(() => ROLES.filter((r) => r.side === side || r.side === "both"), [side]);
+  const roles = useMemo(() => ROLES.filter((r) => r.side === side), [side]);
 
   return (
     // The tint used to be a hex written out here. It is a token now, so this
@@ -299,9 +308,9 @@ function RoleColumn({
             <button key={r.id} className={`lo-role ${role === r.id ? "on" : ""}`} onClick={() => onSetRole(role === r.id ? "" : r.id)}>
               <span className="lo-role-name">
                 <Icon size={16} />
-                {t(`loadout.role.${r.id}`)}
+                {t(`role.${r.id}.name`)}
               </span>
-              <span className="lo-role-desc">{t(`loadout.role.${r.id}.desc`)}</span>
+              <span className="lo-role-desc">{t(`role.${r.id}.desc`)}</span>
             </button>
           );
         })}

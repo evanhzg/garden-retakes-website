@@ -252,7 +252,23 @@
 
 /* --- veto board ----------------------------------------------------------- */
 
-.rq-maps { display: grid; grid-template-columns: repeat(auto-fill, minmax(140px, 1fr)); gap: 10px; }
+/* The whole pool, on screen at once.
+   Seven 4:3 cards at 140px wrapped into three or four tall rows and pushed the
+   turn timer and the ban buttons below the fold — so the thing you had to look
+   at to take your turn was the thing you had to scroll to find. Two changes fix
+   it and neither needs a fixed column count, which would break the moment the
+   pool changes size: the cards are 16:9 rather than 4:3, so a row is two thirds
+   the height, and the minimum column is narrow enough that seven fit across a
+   normal lobby in one row.
+
+   Below about 900px it falls to two rows, and on a phone three or four — all of
+   them short enough that the board still fits without scrolling, which is the
+   actual requirement. */
+.rq-maps {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(min(100%, 116px), 1fr));
+  gap: 8px;
+}
 
 .rq-map {
   position: relative;
@@ -262,12 +278,19 @@
   cursor: pointer; font: inherit; color: #fff;
   transition: border-color 0.15s ease, transform 0.15s ease, filter 0.3s ease;
 }
-.rq-map > img { display: block; width: 100%; aspect-ratio: 4 / 3; object-fit: cover; }
+/* 16:9, not 4:3. The map is recognised by its skyline and its middle, both of
+   which survive the crop; the height does not survive seven of them stacked. */
+.rq-map > img { display: block; width: 100%; aspect-ratio: 16 / 9; object-fit: cover; }
 .rq-map-name {
   position: absolute; left: 0; right: 0; bottom: 0;
-  padding: 20px 10px 8px;
-  font-size: 13px; font-weight: 800; letter-spacing: 0.02em;
+  /* Was 20px of gradient above the text, which is a third of a 16:9 card at
+     this width. The plate reads the same at half that. */
+  padding: 12px 7px 5px;
+  font-size: 12px; font-weight: 800; letter-spacing: 0.02em;
   text-align: left;
+  /* Clipped rather than wrapped: a name on two lines makes one card taller than
+     its neighbours and breaks the row. */
+  white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
   background: linear-gradient(to top, rgb(0 0 0 / 0.85), transparent);
 }
 .rq-map:hover:not(:disabled) { border-color: var(--color-accent); transform: translateY(-2px); }
@@ -279,8 +302,14 @@
 .rq-map-ban {
   position: absolute; inset: 0;
   display: grid; place-items: center;
-  padding: 6px;
-  font-size: 11px; font-weight: 800; letter-spacing: 0.1em; text-transform: uppercase;
+  padding: 4px;
+  text-align: center;
+  /* Shrinks with the card rather than overflowing it: "banned by <team>" on a
+     116px tile has to wrap, and a fixed 11px pushed it past the edge. */
+  font-size: clamp(9px, 1.1vw, 11px);
+  line-height: 1.15;
+  overflow-wrap: anywhere;
+  font-weight: 800; letter-spacing: 0.06em; text-transform: uppercase;
   color: #ff8a72;
   background: rgb(0 0 0 / 0.35);
   animation: rq-banned 0.3s ease;

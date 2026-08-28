@@ -441,7 +441,7 @@ export default function RetakesLobby({ signedIn, lobbyId }: { signedIn: boolean,
       if (held.length > 1 && isRoleUnique(id)) {
         conflicts.push(
           t("lobby.role.conflictRole", {
-            role: t(`loadout.role.${id}`),
+            role: t(`role.${id}.name`),
             side: t(`loadout.side.${side}`),
           })
         );

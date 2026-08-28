@@ -96,7 +96,7 @@ export default function RolePicker({
             aria-expanded={editable ? Boolean(anchor) : undefined}
             title={
               id
-                ? `${t(`loadout.side.${side}`)} — ${t(`loadout.role.${id}`)}`
+                ? `${t(`loadout.side.${side}`)} — ${t(`role.${id}.name`)}`
                 : `${t(`loadout.side.${side}`)} — ${t("lobby.role.unset")}`
             }
           >
@@ -234,7 +234,7 @@ function RoleBubble({
                       onBlur={disarm}
                     >
                       <Icon size={14} />
-                      <span className="rq-rolebubble-name">{t(`loadout.role.${r.id}`)}</span>
+                      <span className="rq-rolebubble-name">{t(`role.${r.id}.name`)}</span>
                       {!r.unique && <span className="rq-rolebubble-many" title={t("lobby.role.shared")}>∞</span>}
                       {taken && (
                         <span className="rq-rolebubble-taken">
@@ -333,12 +333,15 @@ function RoleDetail({ side, roleId, x, y }: { side: Side; roleId: string; x: num
           <Icon size={18} />
         </span>
         <div>
-          <strong>{t(`loadout.role.${roleId}`)}</strong>
+          <strong>{t(`role.${roleId}.name`)}</strong>
           <span>{t(`loadout.side.${side}`)}</span>
         </div>
       </header>
 
-      <p>{t(`loadout.role.${roleId}.retake.${side}`)}</p>
+      {/* The mode's own description, which is what the homepage and the match
+          page already show for these roles. The old per-side `retake` copy
+          described jobs that no longer exist. */}
+      <p>{t(`role.${roleId}.desc`)}</p>
 
       <footer className={isRoleUnique(roleId) ? "unique" : ""}>
         {isRoleUnique(roleId) ? t("lobby.role.uniqueNote") : t("lobby.role.sharedNote")}

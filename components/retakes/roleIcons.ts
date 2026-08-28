@@ -1,22 +1,38 @@
-import { Crosshair, Ghost, Target, Anchor, RotateCcw, type LucideIcon } from "lucide-react";
+import {
+  Bomb,
+  Crosshair,
+  DoorOpen,
+  Footprints,
+  Target,
+  Users,
+  type LucideIcon,
+} from "lucide-react";
 
 /**
- * One icon per retake role.
+ * One icon per Blitz role.
  *
  * There were three copies of this: a map in the loadout page, another in its
  * map-role bubble, and a run of inline `role === 'sniper' && <Crosshair/>`
  * conditionals in the lobby which silently drew nothing for any role the
- * author had not listed — the lobby's T column had no case for `anchor` and
- * its CT column none for `lurker`, so a role picked on one screen could vanish
- * on the other. One map, imported everywhere, cannot drift like that.
+ * author had not listed. One map, imported everywhere, cannot drift like that.
  *
- * Lucide rather than the hand-drawn set: nothing in that set covers these five
- * jobs, which is the existing rule of thumb for when to fall back.
+ * The ids follow the mode now (lib/tournament/roles.ts), so the three that were
+ * here and are not in the game — lurker, anchor, rotator — are gone with the
+ * role list that invented them.
+ *
+ * Lucide rather than the hand-drawn set, which is the existing rule of thumb.
+ * The match page draws its own SVGs for these seven at 14px inside a dense
+ * panel; this is the lobby, where the surrounding iconography is lucide and a
+ * different weight would read as a different kind of thing.
  */
 export const ROLE_ICON: Record<string, LucideIcon> = {
+  // T
+  planter: Bomb,
   sniper: Crosshair,
-  lurker: Ghost,
   rifler: Target,
-  anchor: Anchor,
-  rotator: RotateCcw,
+  // CT
+  roamer: Footprints,
+  frontrunner: DoorOpen,
+  awper: Crosshair,
+  backup: Users,
 };
