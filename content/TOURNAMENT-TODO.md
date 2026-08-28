@@ -155,11 +155,45 @@ Nice-to-have rather than required for an event; put it after teams and avatars.
   bot match has yet run on a server carrying the build. First thing to do next
   session: start a match on BOT WORLD CUP and check the scoreboard, the MVP card
   and the map-end warmup countdown together.
+- **The history modal is unproven end to end, for the same reason.** It is built
+  on `css_roundinfo`, which reads the engine's round backup files — and those
+  only exist once a match has played rounds on a server carrying this build. The
+  parser is pinned against a file CS2 actually wrote (`BackupSummaryTests`, and
+  `tools/tests/backups.test.mts` for the wire format), but nobody has yet opened
+  a round in the UI. Check the loadouts and the per-round kills specifically: the
+  kills are a subtraction between two backups, and a sign error there shows as
+  every player having zero.
+- **GOTV needed a launch argument, not a cvar.** Worth knowing because it will
+  look like a config problem the next time it breaks and it is not. The relay
+  binds its socket during map load and only if `tv_enable` is already 1, so
+  setting it from a cfg exec'd afterwards does nothing until the next
+  changelevel. It is now passed by `deploy/vps-run-server.sh`, which
+  `deploy-vps.sh` syncs. **To check it, look at the socket, not the cvar:**
+  `ss -lunp | grep 270` on the box should list twelve ports — six game, six TV.
+  `tv_enable` reported `true` on servers with no listener at all.
+- **Idle servers can still report `tv_delay 30`.** Valve's own
+  `gamemode_*.cfg` sets it, and a server that is not running a tournament match
+  has not exec'd ours. Any server that starts a match execs `tournament.cfg` and
+  goes to 0. Cosmetic, but it looks like the fix did not take.
+- **A match the plugin has forgotten is a state the website must survive.** A
+  fleet restart wipes the plugin's in-memory match while the website still shows
+  it live, and every RCON admin command then answers "no match is live". Force
+  end and restart are database-first for exactly this reason and work anyway.
+  Anything new that ends, scores or advances a match should be too — a feature
+  that is only reachable through RCON is one that disappears at the worst
+  moment.
 - **`main` mirrors this branch.** Vercel deploys `main` to retakes.fr, so
   anything pushed there is live immediately. There is no staging.
 - **Claude in Chrome would not connect** during this session, so none of the UI
   was checked visually — only via rendered HTML and builds. Worth a real look at
-  the match page, the bracket and the map cards.
+  the match page, the bracket, the map cards, the restart panel and the history
+  modal.
+- **"Players can't select sniper as both T and CT" was never reproduced.** The
+  rules allow it and `tools/tests/roles.test.mts` now pins that they do. If it
+  comes back, the thing to capture is whether the WHOLE draft board is
+  unselectable rather than just the sniper: every button is disabled when the
+  viewer is not the player on the clock, so somebody who is not recognised finds
+  nothing selectable and reports it about whichever role they tried first.
 - **A throwaway MySQL is the right way to test destructive work.**
   `docker run -d --name garden-test-db -e MYSQL_ROOT_PASSWORD=testpw -e
   MYSQL_DATABASE=garden -p 33077:3306 mysql:8`, then apply `sql/*.sql` with
