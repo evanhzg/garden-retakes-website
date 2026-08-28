@@ -270,8 +270,16 @@ async function carryForwardSettledRoles(matchId: number): Promise<void> {
     for (const member of sides.rosters[slot]) {
       if (existing.has(member.steamId)) continue;
 
-      await prisma.tournamentRolePick.create({
-        data: {
+      // Upsert, not create. `existing` was read before this loop started, so
+      // two requests a moment apart both believed the same players had no pick
+      // and both tried to create them — check-then-act, and the second one
+      // 500'd. Keyed on the player, which is the only thing that must not be
+      // written twice.
+      await prisma.tournamentRolePick.upsert({
+        where: {
+          MatchId_SteamId: { MatchId: matchId, SteamId: BigInt(member.steamId) },
+        },
+        create: {
           MatchId: matchId,
           Ordinal: ordinal++,
           TeamId: sides.teamIdOf[slot]!,
@@ -280,6 +288,9 @@ async function carryForwardSettledRoles(matchId: number): Promise<void> {
           RoleCt: member.roleCt,
           WasAuto: true,
         },
+        // A pick that is already there is already right: this only ever carries
+        // roles a settled team sheet already holds.
+        update: {},
       });
     }
   }

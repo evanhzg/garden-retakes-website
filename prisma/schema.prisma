@@ -1804,7 +1804,13 @@ model TournamentRolePick {
   Match TournamentMatch @relation(fields: [MatchId], references: [Id], onDelete: Cascade)
 
   @@unique([MatchId, SteamId], map: "UX_TournamentRolePicks_Player")
-  @@unique([MatchId, Ordinal], map: "UX_TournamentRolePicks_Ordinal")
+  /// Ordinal is NOT unique, and used to be. One pick per player is the real
+  /// invariant and the index above enforces it; the ordinal is read for
+  /// `ORDER BY` and for the >= 1000 marker meaning "this team was not
+  /// drafting", and neither needs it. Making it unique meant two writers
+  /// racing for the same number failed the request instead — eleven P2002s in
+  /// production on /api/tournament/roles. See sql/tournament-rolepick-ordinal.sql.
+  @@index([MatchId, Ordinal], map: "IX_TournamentRolePicks_Ordinal")
   @@index([MatchId])
   @@map("TournamentRolePicks")
 }
