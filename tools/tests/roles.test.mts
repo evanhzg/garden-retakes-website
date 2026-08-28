@@ -130,6 +130,36 @@ check("rifler is the T generalist", T_ROLES.find((r) => r.id === "rifler")?.uniq
 check("the CT sniper's id is still awper", CT_ROLES.some((r) => r.id === "awper"));
 check("the CT sniper reads as Sniper", roleLabel("awper") === "Sniper");
 check("the T sniper reads as Sniper", roleLabel("sniper") === "Sniper");
+
+// One player, sniper on BOTH sides.
+//
+// Reported as "players can't select sniper as both t and ct". The two are
+// separate ids — `sniper` on T, `awper` on CT — and uniqueness is per side, so
+// nothing in the rules stops one person holding both. Pinned here because the
+// shared LABEL is what makes it look like one role, and a future change that
+// deduplicates by label would break it silently and plausibly.
+{
+  const first = validateRolePick(A3, B3, [], {
+    steamId: "a1",
+    roleT: "sniper",
+    roleCt: "awper",
+  });
+  check("one player can be the sniper on both sides", first.ok === true, JSON.stringify(first));
+}
+
+// ...and taking it on one side does not remove it from the other.
+{
+  const state = draftState(A3, B3, [pick("a1", "sniper", "backup", 0)]);
+
+  check(
+    "taking the T sniper leaves the CT one free",
+    availableRoles(state, "A", "CT").some((r) => r.id === "awper"),
+  );
+  check(
+    "and taking the T sniper does remove the T one",
+    !availableRoles(state, "A", "T").some((r) => r.id === "sniper"),
+  );
+}
 check("an unknown role falls back to its id", roleLabel("nonsense") === "nonsense");
 check("no role falls back to nothing", roleLabel(null) === "");
 
