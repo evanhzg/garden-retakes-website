@@ -51,7 +51,17 @@ export default async function TournamentPage({ params }: { params: { slug: strin
   // An unpublished tournament does not exist as far as anybody else is
   // concerned. Not "closed" — invisible: telling a stranger that an organizer
   // has a half-built event is leaking work in progress.
-  if (!tournament.Published && !canManageThis) pageNotFound();
+  // An unpublished tournament is unlisted, not secret.
+  //
+  // This used to 404 for everybody but an organizer, which meant the link an
+  // organizer copied out of their own browser went nowhere for every person
+  // they sent it to — a tournament is created unpublished, so that is every
+  // link until somebody remembers to publish. Nothing links here that is not
+  // published, and the hub filters on it, so being reachable by URL costs
+  // nothing and being unreachable cost an evening.
+  //
+  // A draft nobody should see yet is what Visibility is for.
+  void canManageThis;
 
   /**
    * Who may see the voice server.
@@ -219,15 +229,24 @@ export default async function TournamentPage({ params }: { params: { slug: strin
             {tournament.TeamSize}v{tournament.TeamSize}
             {" · "}
             {tournament.Teams.length} {t("tournaments.teams").toLowerCase()}
-            {tournament.State === "registration" && (
-              <>
-                {" · "}
-                <Link href={`/tournaments/${tournament.Slug}/register`}>{t("setup.registerLink")}</Link>
-              </>
-            )}
             {" · "}
             <Link href={`/tournaments/${tournament.Slug}/live`}>{t("tournamentAdmin.liveWall")}</Link>
           </p>
+
+          {/* Joining is a button, and it is here rather than buried in a line of
+              metadata as a text link between two dots.
+              It also no longer waits for State === "registration". A tournament
+              that has not started yet is one you can still enter, and the state
+              a tournament sits in before an organizer touches it is not
+              something a player should have to know about — the gate that
+              matters is whether it has begun. */}
+          {!tournament.StartedAt && (
+            <p style={{ marginTop: "var(--space-3)" }}>
+              <Link className="btn btn-primary" href={`/tournaments/${tournament.Slug}/register`}>
+                {t("tournaments.joinCta")}
+              </Link>
+            </p>
+          )}
 
           <Countdown
             startsAt={tournament.StartsAt?.toISOString() ?? null}

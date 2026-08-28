@@ -1,6 +1,7 @@
 import { prisma } from "@/lib/db";
 import { VETO_MAPS } from "@/lib/maps";
 import {
+  isBotId,
   pickupMatchKey,
   pickupName,
   pickupSlug,
@@ -114,13 +115,22 @@ export async function createPickupMatch(args: {
 
   const made: number[] = [];
 
-  for (const [side, team, fallback] of [
+  for (const [side, given, fallback] of [
     ["A", args.a, "Team A"],
     ["B", args.b, "Team B"],
   ] as const) {
     void side;
+    let team: PickupTeam = given;
 
-    const captain = team.players[0].trim();
+    // A human first, so the captain — who drives the veto — can actually click.
+    // A side of nothing but bots keeps its first id and is driven by the bot
+    // driver instead.
+    const ordered = [...team.players.map((x) => x.trim())].sort(
+      (a, b) => Number(isBotId(a)) - Number(isBotId(b)),
+    );
+    team = { ...team, players: ordered };
+
+    const captain = ordered[0];
 
     const row = await prisma.tournamentTeam.create({
       data: {
@@ -134,14 +144,25 @@ export async function createPickupMatch(args: {
       },
     });
 
+    const botIds = new Set((team.bots ?? []).map((b) => b.trim()));
+
     await prisma.tournamentTeamMember.createMany({
-      data: team.players.map((p, i) => ({
-        TeamId: row.Id,
-        SteamId: BigInt(p.trim()),
-        IsCaptain: i === 0,
-        Status: "accepted",
-        RespondedAt: new Date(),
-      })),
+      data: team.players.map((p, i) => {
+        const id = p.trim();
+        return {
+          TeamId: row.Id,
+          SteamId: BigInt(id),
+          // A bot is never the captain: the captain drives the veto, and a
+          // captain who cannot click is a veto that only ever times out.
+          IsCaptain: i === 0 && !botIds.has(id),
+          Status: "accepted",
+          RespondedAt: new Date(),
+          IsBot: botIds.has(id) || isBotId(id),
+          // The name the lobby gave it, so the scoreboard says "Pike" rather
+          // than a synthetic id nobody can read.
+          DisplayName: names[id] ?? null,
+        };
+      }),
       skipDuplicates: true,
     });
 

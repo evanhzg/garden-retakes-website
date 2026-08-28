@@ -74,6 +74,8 @@ export default function Setup({ adminKey, isOwner }: { adminKey?: string; isOwne
      is the one thing a hardcoded URL always gets wrong on a preview deploy. */
   const origin = typeof window === "undefined" ? "" : window.location.origin;
   const [tName, setTName] = useState("");
+  const [tTeamSize, setTTeamSize] = useState("3");
+  const [tMaxTeams, setTMaxTeams] = useState("16");
   /**
    * The add-stage draft, per tournament.
    *
@@ -484,11 +486,44 @@ export default function Setup({ adminKey, isOwner }: { adminKey?: string; isOwne
           className="su-row"
           onSubmit={async (e) => {
             e.preventDefault();
-            const done = await post("/api/admin/tournaments", { action: "create", name: tName.trim() }, "create");
+            const done = await post(
+              "/api/admin/tournaments",
+              {
+                action: "create",
+                name: tName.trim(),
+                teamSize: Number(tTeamSize) || 3,
+                maxTeams: Number(tMaxTeams) || 16,
+              },
+              "create",
+            );
             if (done?.ok) setTName("");
           }}
         >
           <input value={tName} onChange={(e) => setTName(e.target.value)} placeholder={t("setup.tournamentName")} />
+
+          {/* Asked here rather than defaulted silently. Both were fixed at 3v3
+              and sixteen teams, which is a reasonable guess and the wrong one
+              often enough that an organizer had to go and find the settings
+              page immediately after creating. */}
+          <label className="su-field">
+            <span>{t("setup.teamSizeLabel")}</span>
+            <select value={tTeamSize} onChange={(e) => setTTeamSize(e.target.value)}>
+              <option value="2">2v2</option>
+              <option value="3">3v3</option>
+              <option value="5">5v5</option>
+            </select>
+          </label>
+
+          <label className="su-field">
+            <span>{t("setup.maxTeamsLabel")}</span>
+            <input
+              type="number"
+              min={2}
+              max={128}
+              value={tMaxTeams}
+              onChange={(e) => setTMaxTeams(e.target.value)}
+            />
+          </label>
           <button className="btn btn-primary" disabled={busy || tName.trim().length < 2}>
             {t("setup.create")}
           </button>

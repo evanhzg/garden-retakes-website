@@ -48,11 +48,31 @@ export type PickupTeam = {
   players: string[];
   /** What to call them. Falls back to the captain's name, then to a side name. */
   name?: string | null;
+  /**
+   * Which of those ids are bots.
+   *
+   * Kept as a set of ids rather than a parallel array so the two cannot fall out
+   * of step when a caller reorders the roster.
+   */
+  bots?: string[];
 };
+
+/** Whether this id belongs to a bot rather than a person. */
+export const isBotId = (id: string) => looksLikeBotId(id);
 
 export type PickupCheck = { ok: true } | { ok: false; error: string };
 
 const looksLikeSteamId = (s: string) => /^7656119\d{10}$/.test(s.trim());
+
+/**
+ * A bot's synthetic id, from lib/tournament/bots.ts.
+ *
+ * 76561999… sits far above anything Valve has issued, so it cannot collide with
+ * a person and is recognisable as synthetic at a glance. Accepted here because
+ * a lobby filled with bots is the one flow a person can walk alone, and refusing
+ * it made solo matchmaking form a match and then abandon it.
+ */
+const looksLikeBotId = (s: string) => /^76561999\d{9}$/.test(s.trim());
 
 /**
  * Whether two rosters can be made into a match.
@@ -77,7 +97,7 @@ export function validatePickup(teamSize: number, a: PickupTeam, b: PickupTeam): 
     }
 
     for (const id of team.players) {
-      if (!looksLikeSteamId(id)) {
+      if (!looksLikeSteamId(id) && !looksLikeBotId(id)) {
         return { ok: false, error: `"${id}" is not a SteamID64.` };
       }
     }

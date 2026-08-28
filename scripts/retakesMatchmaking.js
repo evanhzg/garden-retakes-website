@@ -917,12 +917,28 @@ function attachRetakesMatchmaking(
   async function beginVeto(match) {
     clearTimeout(matchTimers.get(match.id));
 
-    const rosters = match.teams.map(rosterIds);
+    // Bots get a real-looking SteamID64 here rather than the internal uid they
+    // carry in this file. 76561999… is the range lib/tournament/bots.ts uses:
+    // far above anything Valve has issued, so it cannot collide with a person,
+    // and recognisable as synthetic in a database client. Without it the
+    // website refused the whole lobby and every solo match was formed and then
+    // abandoned — which read to a player as "somebody did not accept".
+    let botSeq = 0;
+    const idOf = (p) => {
+      if (!p.bot) return String(p.steamId);
+      if (!p.tournamentId) {
+        botSeq += 1;
+        p.tournamentId = String(BigInt("76561999000000000") + BigInt(Date.now() % 100000000) * 10n + BigInt(botSeq));
+      }
+      return p.tournamentId;
+    };
+
+    const rosters = match.teams.map((t) => t.players.map(idOf));
+    const botIds = match.teams.flatMap((t) => t.players.filter((p) => p.bot).map(idOf));
+
     const names = {};
     for (const team of match.teams) {
-      for (const p of team.players) {
-        if (!p.bot && p.steamId) names[p.steamId] = p.name ?? null;
-      }
+      for (const p of team.players) names[idOf(p)] = p.name ?? null;
     }
 
     match.server = { state: "starting", step: "match", error: null };
@@ -933,6 +949,7 @@ function attachRetakesMatchmaking(
         teamSize: rosters[0].length,
         teamA: rosters[0],
         teamB: rosters[1],
+        botIds,
         names,
       });
 
@@ -960,21 +977,19 @@ function attachRetakesMatchmaking(
    * itself, and wiring that through the lobby is a separate piece of work. Said
    * plainly here rather than failing deeper in with something cryptic.
    */
-  async function createTournamentMatch({ teamSize, teamA, teamB, names }) {
+  async function createTournamentMatch({ teamSize, teamA, teamB, botIds, names }) {
     const base = (process.env.SITE_URL || "https://www.retakes.fr").replace(/\/$/, "");
     const apiKey = (process.env.INVSIM_API_KEY || "").trim();
 
     if (!apiKey) throw new Error("INVSIM_API_KEY is not set on the socket server");
     if (teamA.length !== teamSize || teamB.length !== teamSize) {
-      throw new Error(
-        `a side is short of real players (${teamA.length}v${teamB.length}) — bot-filled lobbies cannot be handed off yet`,
-      );
+      throw new Error(`a side is short (${teamA.length}v${teamB.length}), expected ${teamSize}v${teamSize}`);
     }
 
     const res = await fetch(`${base}/api/lobby/match`, {
       method: "POST",
       headers: { "content-type": "application/json" },
-      body: JSON.stringify({ apiKey, teamSize, teamA, teamB, names }),
+      body: JSON.stringify({ apiKey, teamSize, teamA, teamB, botIds, names }),
     });
 
     const data = await res.json().catch(() => ({}));

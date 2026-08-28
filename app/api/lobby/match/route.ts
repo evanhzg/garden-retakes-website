@@ -33,6 +33,8 @@ export async function POST(request: Request) {
     teamSize?: number;
     teamA?: string[];
     teamB?: string[];
+    /** Which ids in either roster are bots. */
+    botIds?: string[];
     names?: Record<string, string | null>;
   };
 
@@ -58,10 +60,14 @@ export async function POST(request: Request) {
     return NextResponse.json({ error: "teamA and teamB must be arrays of SteamID64" }, { status: 400 });
   }
 
+  // Split once and handed to both sides: the caller sends one flat list because
+  // it does not have to care which side a bot ended up on.
+  const bots = (body.botIds ?? []).map(String);
+
   const result = await createPickupMatch({
     teamSize,
-    a: { players: body.teamA.map(String) },
-    b: { players: body.teamB.map(String) },
+    a: { players: body.teamA.map(String), bots },
+    b: { players: body.teamB.map(String), bots },
     names: body.names,
   });
 

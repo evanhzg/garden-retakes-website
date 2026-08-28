@@ -55,6 +55,7 @@ type Body = {
   name?: string;
   slug?: string;
   teamSize?: number;
+  maxTeams?: number;
   // add-stage
   stageName?: string;
   kind?: "group" | "swiss" | "single" | "double";
@@ -154,6 +155,9 @@ export async function POST(req: Request) {
           Name: name,
           Slug: slug,
           TeamSize: body.teamSize ?? 3,
+          // Asked for on the create form now; the fallback is what it always
+          // silently used.
+          MaxTeams: body.maxTeams ?? 16,
           State: "registration",
           OwnerSteamId: ctx.steamId ? BigInt(ctx.steamId) : null,
         },

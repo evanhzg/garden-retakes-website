@@ -197,7 +197,18 @@
 .rq-accept-bar { width: min(320px, 70vw); height: 6px; border-radius: 999px; background: color-mix(in srgb, var(--color-text) 12%, transparent); overflow: hidden; }
 .rq-accept-bar > div { height: 100%; background: var(--color-accent); border-radius: 999px; transition: width 0.3s ease; }
 .rq-accept-count { margin: 0; font-size: 13px; font-weight: 700; letter-spacing: 0.08em; color: var(--muted); }
-.rq-found-actions { display: flex; gap: 10px; flex-wrap: wrap; justify-content: center; }
+/* Accept on the right, where the primary action goes everywhere else on this
+   site — and the destructive pair to its left, so the button under the cursor
+   after a glance is the one almost everybody wants. `row-reverse` rather than
+   reordering the markup: the DOM keeps Accept first, which is what a screen
+   reader and a keyboard tab both reach first. */
+.rq-found-actions {
+  display: flex;
+  flex-direction: row-reverse;
+  gap: 10px;
+  flex-wrap: wrap;
+  justify-content: flex-start;
+}
 
 /* --- match room ----------------------------------------------------------- */
 
