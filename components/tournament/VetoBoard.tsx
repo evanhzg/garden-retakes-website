@@ -5,24 +5,42 @@ import { useI18n } from "@/components/I18nProvider";
 import { formatRemaining } from "@/lib/tournament/edition";
 import "./veto.css";
 
-// Ready-up, then the veto, on one board.
+// The veto board.
 //
-// Polled rather than pushed. A veto is a handful of clicks over a couple of
-// minutes and the deadline is stored server-side, so a two-second poll is
-// indistinguishable from a socket here — and it cannot get stuck in a state
-// where one viewer's connection dropped and their bracket froze.
+// Controlled rather than self-polling. It used to fetch its own state on a
+// two-second timer, which was right when it was the only live thing on the
+// page; now the ready-up, the role draft, the veto and the scoreboard are four
+// stages of one screen, and four independent pollers would fight over which of
+// them got to decide what stage the match is in. MatchStage owns the poll and
+// hands the answer down.
 //
-// The clock is computed from the SERVER's deadline, not from a local counter.
-// A local one drifts, and two captains watching different numbers argue.
+// What changed beyond that is what the board SHOWS. It could say which maps had
+// gone and not who took them or in what order — which is precisely the thing a
+// veto gets argued about afterwards, and the reason the actions are a table.
+// Bans read red, picks read green, and the order is on the face of the tile.
 
-type VetoStateWire = {
+export type VetoStateWire = {
   next: { team: "A" | "B"; kind: "ban" | "pick" | "side" } | null;
   remaining: string[];
-  picked: { map: string; pickedBy: "A" | "B" | null; startSideTeamA: string | null }[];
+  picked: {
+    map: string;
+    pickedBy: "A" | "B" | null;
+    startSideTeamA: string | null;
+    isDecider?: boolean;
+  }[];
   done: boolean;
 };
 
-type Wire = {
+export type VetoAction = {
+  ordinal: number;
+  team: "A" | "B" | null;
+  kind: "ban" | "pick" | "side";
+  map: string | null;
+  side: "T" | "CT" | null;
+  wasAuto: boolean;
+};
+
+export type VetoWire = {
   started: boolean;
   readyA: boolean;
   readyB: boolean;
@@ -30,84 +48,52 @@ type Wire = {
   turnSeconds: number;
   pool: string[];
   state: VetoStateWire;
+  actions: VetoAction[];
 };
 
 export default function VetoBoard({
-  matchId,
+  wire,
   teamA,
   teamB,
   mySlot,
   isOrganizer,
-  adminKey,
+  act,
+  busy,
+  notice,
 }: {
-  matchId: number;
+  wire: VetoWire;
   teamA: string;
   teamB: string;
   /** Which side this viewer captains, if either. */
   mySlot: "A" | "B" | null;
   isOrganizer: boolean;
-  adminKey?: string;
+  act: (body: Record<string, unknown>) => void | Promise<void>;
+  busy: boolean;
+  notice: string | null;
 }) {
   const { t } = useI18n();
-
-  const [wire, setWire] = useState<Wire | null>(null);
-  const [busy, setBusy] = useState(false);
-  const [notice, setNotice] = useState<string | null>(null);
   const [now, setNow] = useState(() => Date.now());
 
-  const load = useCallback(async () => {
-    try {
-      const res = await fetch(`/api/tournament/veto?matchId=${matchId}`, { cache: "no-store" });
-      if (res.ok) setWire(await res.json());
-    } catch {
-      // A dropped poll is a stale board, not a broken one; the next one fixes
-      // it. Saying so on screen would be noisier than the fault.
-    }
-  }, [matchId]);
-
-  useEffect(() => {
-    load();
-    // Two seconds: fast enough that a ban appears while the other captain is
-    // still looking at it, slow enough to be free. The GET also advances an
-    // expired turn, so polling IS the clock's enforcement.
-    const timer = setInterval(load, 2000);
-    return () => clearInterval(timer);
-  }, [load]);
-
-  // Separate from the poll so the countdown moves every second rather than in
-  // two-second jumps.
+  // A second timer purely for the countdown, so it moves every second rather
+  // than in whatever jumps the poll happens to arrive in.
   useEffect(() => {
     const timer = setInterval(() => setNow(Date.now()), 250);
     return () => clearInterval(timer);
   }, []);
 
-  const act = useCallback(
-    async (body: Record<string, unknown>) => {
-      setBusy(true);
-      setNotice(null);
-      try {
-        const res = await fetch("/api/tournament/veto", {
-          method: "POST",
-          headers: { "content-type": "application/json" },
-          body: JSON.stringify({ ...body, matchId, key: adminKey }),
-        });
-        const data = await res.json();
-        if (data.error) setNotice(data.error);
-        await load();
-      } catch (err) {
-        setNotice(String(err));
-      } finally {
-        setBusy(false);
-      }
-    },
-    [matchId, adminKey, load],
-  );
-
-  if (!wire) return <p className="muted">{t("veto.loading")}</p>;
-
   const msLeft = wire.deadline ? Math.max(0, new Date(wire.deadline).getTime() - now) : 0;
   const myTurn = wire.state.next !== null && (mySlot === wire.state.next.team || isOrganizer);
   const turnName = wire.state.next?.team === "A" ? teamA : teamB;
+  const nameOf = (slot: "A" | "B" | null) => (slot === "A" ? teamA : slot === "B" ? teamB : "");
+
+  // What happened to each map, by name. Built once from the actions rather than
+  // searched per tile, so a nine-map pool is nine lookups and not eighty-one.
+  const fate = new Map<string, VetoAction>();
+  for (const action of wire.actions) {
+    if (action.map && (action.kind === "ban" || action.kind === "pick")) {
+      fate.set(action.map, action);
+    }
+  }
 
   // ------------------------------------------------------------ ready-up
   if (!wire.started) {
@@ -120,10 +106,9 @@ export default function VetoBoard({
         <div className="vt-ready">
           {(["A", "B"] as const).map((slot) => {
             const ready = slot === "A" ? wire.readyA : wire.readyB;
-            const name = slot === "A" ? teamA : teamB;
             return (
               <div key={slot} className={`vt-side ${ready ? "on" : ""}`}>
-                <strong>{name}</strong>
+                <strong>{nameOf(slot)}</strong>
                 <span>{ready ? t("veto.ready") : t("veto.notReady")}</span>
 
                 {mySlot === slot && (
@@ -142,7 +127,11 @@ export default function VetoBoard({
 
         {isOrganizer && (
           <div className="vt-force">
-            <button className="btn btn-primary" disabled={busy} onClick={() => act({ action: "start-veto" })}>
+            <button
+              className="btn btn-primary"
+              disabled={busy}
+              onClick={() => act({ action: "start-veto" })}
+            >
               {t("veto.forceStart")}
             </button>
             <span className="muted">{t("veto.forceHint")}</span>
@@ -199,22 +188,47 @@ export default function VetoBoard({
       ) : (
         <div className="vt-maps">
           {wire.pool.map((map) => {
+            const action = fate.get(map);
             const gone = !wire.state.remaining.includes(map);
-            const picked = wire.state.picked.find((p) => p.map === map);
+            const kind = action?.kind ?? (gone ? "ban" : null);
+
             return (
               <button
                 key={map}
-                className={`vt-map ${gone ? (picked ? "picked" : "banned") : ""}`}
+                className={`vt-map ${kind === "pick" ? "picked" : ""} ${kind === "ban" ? "banned" : ""}`}
                 disabled={busy || gone || !myTurn || wire.state.done}
                 onClick={() => act({ action: wire.state.next?.kind ?? "ban", map })}
               >
                 <span className="vt-map-name">{map.replace(/^de_/, "")}</span>
-                {picked && <span className="vt-map-tag">{t("veto.picked")}</span>}
-                {gone && !picked && <span className="vt-map-tag">{t("veto.banned")}</span>}
+
+                {action && (
+                  <>
+                    {/* Who, and when. Both matter: "Cobras banned it" answers a
+                        different argument from "it went third". */}
+                    <span className="vt-map-tag">
+                      {kind === "pick" ? t("veto.picked") : t("veto.banned")}
+                    </span>
+                    <span className="vt-map-by">
+                      <span className="vt-map-ord num">{action.ordinal + 1}</span>
+                      {nameOf(action.team)}
+                      {action.wasAuto && <em className="vt-map-auto">{t("veto.auto")}</em>}
+                    </span>
+                  </>
+                )}
               </button>
             );
           })}
         </div>
+      )}
+
+      {/* The decider is nobody's pick, so it never appears in the action list
+          and would otherwise be the one map on the board with no explanation. */}
+      {wire.state.picked.some((p) => p.isDecider) && (
+        <p className="vt-decider">
+          {t("veto.decider", {
+            map: (wire.state.picked.find((p) => p.isDecider)?.map ?? "").replace(/^de_/, ""),
+          })}
+        </p>
       )}
 
       {!myTurn && !wire.state.done && (

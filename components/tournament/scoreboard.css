@@ -1,0 +1,208 @@
+/* The match scoreboard.
+   A table people screenshot and argue about, so it is built to be read rather
+   than to be pretty: tabular figures, rules instead of cards, and the rating
+   carrying the only colour on the row. */
+
+.sb {
+  display: grid;
+  gap: var(--space-4);
+}
+
+/* ---------- Head: map tabs, and the advanced switch ---------- */
+
+.sb-head {
+  display: flex;
+  align-items: flex-end;
+  justify-content: space-between;
+  gap: var(--space-3);
+  flex-wrap: wrap;
+  border-bottom: 2px solid var(--color-divider);
+  padding-bottom: var(--space-2);
+}
+
+.sb-tabs {
+  display: flex;
+  gap: var(--space-1);
+  flex-wrap: wrap;
+  min-width: 0;
+}
+
+.sb-tab {
+  display: inline-flex;
+  align-items: baseline;
+  gap: 8px;
+  padding: 8px 12px;
+  border: 1px solid var(--color-divider);
+  border-bottom: none;
+  background: transparent;
+  color: var(--color-text-muted);
+  font: inherit;
+  font-weight: 700;
+  cursor: pointer;
+}
+
+.sb-tab:hover {
+  color: var(--color-text);
+  border-color: var(--color-text);
+}
+
+/* Selected is a filled tab AND a heavier weight, never colour alone. */
+.sb-tab.on {
+  background: var(--color-surface);
+  border-color: var(--color-text);
+  color: var(--color-text);
+  font-weight: 800;
+}
+
+.sb-tab-name {
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  font-size: 12px;
+}
+
+.sb-tab-score {
+  font-family: var(--font-mono);
+  font-variant-numeric: tabular-nums;
+  font-size: 12px;
+}
+
+.sb-tab-live {
+  font-size: 9.5px;
+  font-weight: 800;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+  color: var(--color-accent);
+}
+
+.sb-tab.live .sb-tab-name {
+  color: var(--color-accent);
+}
+
+.sb-adv {
+  flex: none;
+  font-size: 12px;
+  padding: 6px 12px;
+}
+
+.sb-adv.on {
+  border-color: var(--color-accent);
+  color: var(--color-accent);
+}
+
+/* ---------- One team's rows ---------- */
+
+.sb-side {
+  display: grid;
+  gap: var(--space-2);
+}
+
+.sb-side-head {
+  margin: 0;
+  font-size: 13px;
+  font-weight: 800;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  padding-left: 8px;
+  border-left: 3px solid var(--color-divider);
+}
+
+.sb-a .sb-side-head {
+  border-left-color: var(--color-accent);
+}
+
+.sb-b .sb-side-head {
+  border-left-color: var(--color-accent-2);
+}
+
+.sb-table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 13px;
+}
+
+.sb-table th {
+  text-align: right;
+  padding: 6px 10px;
+  font-size: 10px;
+  font-weight: 800;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  color: var(--color-text-muted);
+  border-bottom: 1px solid var(--color-divider);
+  white-space: nowrap;
+}
+
+.sb-table td {
+  text-align: right;
+  padding: 7px 10px;
+  border-bottom: 1px solid var(--color-divider);
+  white-space: nowrap;
+}
+
+.sb-table tr:last-child td {
+  border-bottom: none;
+}
+
+.sb-col-name {
+  text-align: left !important;
+  width: 100%;
+  min-width: 140px;
+}
+
+.sb-col-name a {
+  color: inherit;
+  font-weight: 700;
+  text-decoration: none;
+}
+
+.sb-col-name a:hover {
+  color: var(--color-accent);
+  text-decoration: underline;
+}
+
+.sb-bot {
+  margin-left: 6px;
+  font-size: 9px;
+  font-weight: 800;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  color: var(--color-text-muted);
+  border: 1px solid var(--color-divider);
+  padding: 1px 4px;
+}
+
+/* The rating leads the row. Weight carries it; the colour is a second signal,
+   and the number itself is always readable without it. */
+.sb-rating {
+  font-weight: 800;
+}
+
+.sb-rating.good {
+  color: var(--color-accent);
+}
+
+.sb-rating.poor {
+  color: var(--color-text-muted);
+}
+
+.sb-role {
+  text-align: left !important;
+  font-size: 11.5px;
+  color: var(--color-text-muted);
+  text-transform: capitalize;
+}
+
+.sb-empty {
+  padding: var(--space-4) 0;
+}
+
+@media (max-width: 640px) {
+  .sb-table {
+    font-size: 12px;
+  }
+
+  .sb-table th,
+  .sb-table td {
+    padding: 6px 7px;
+  }
+}

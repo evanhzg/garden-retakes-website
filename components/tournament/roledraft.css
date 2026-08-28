@@ -1,0 +1,221 @@
+/* The role draft.
+   Built to be read from across a room while it is happening: a clock, an order
+   both teams can see, and two columns of roles. Deliberately close in shape to
+   veto.css, because it is the same kind of moment one step earlier. */
+
+.rd {
+  display: grid;
+  gap: var(--space-4);
+}
+
+.rd-lead {
+  margin: 0;
+}
+
+.rd-notice {
+  margin: 0;
+  padding: 8px 10px;
+  border: 1px solid var(--color-accent);
+  color: var(--color-accent);
+  font-size: 13px;
+}
+
+/* ---------- Whose turn, and how long is left ---------- */
+
+.rd-turn {
+  display: grid;
+  grid-template-columns: 1fr auto;
+  gap: 4px var(--space-3);
+  align-items: baseline;
+}
+
+.rd-turn-who {
+  font-size: clamp(1.1rem, 3.5vw, 1.5rem);
+  font-weight: 900;
+  letter-spacing: -0.02em;
+  overflow-wrap: anywhere;
+}
+
+.rd-turn-kind {
+  grid-row: 2;
+  font-size: 11px;
+  font-weight: 700;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  color: var(--color-text-muted);
+}
+
+.rd-clock {
+  grid-column: 2;
+  grid-row: 1 / span 2;
+  font-family: var(--font-mono);
+  font-variant-numeric: tabular-nums;
+  font-size: clamp(1.2rem, 4vw, 1.8rem);
+  font-weight: 800;
+}
+
+.rd-clock.low {
+  color: var(--color-accent);
+}
+
+.rd-bar {
+  grid-column: 1 / -1;
+  height: 3px;
+  background: var(--color-divider);
+}
+
+.rd-bar-fill {
+  height: 100%;
+  background: var(--color-text);
+  transition: width 0.25s linear;
+}
+
+.rd-bar-fill.low {
+  background: var(--color-accent);
+}
+
+/* ---------- The pick order ---------- */
+
+.rd-order {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: flex;
+  gap: 1px;
+  flex-wrap: wrap;
+}
+
+.rd-step {
+  display: inline-flex;
+  align-items: baseline;
+  gap: 6px;
+  padding: 4px 8px;
+  border: 1px solid var(--color-divider);
+  font-size: 11.5px;
+  color: var(--color-text-muted);
+  min-width: 0;
+}
+
+/* The two teams are told apart by an edge rule as well as by position, so the
+   order is readable without relying on where a name happens to sit. */
+.rd-team-a {
+  border-left: 3px solid var(--color-accent);
+}
+
+.rd-team-b {
+  border-left: 3px solid var(--color-accent-2);
+}
+
+.rd-step.done {
+  opacity: 0.55;
+  text-decoration: line-through;
+}
+
+.rd-step.on {
+  border-color: var(--color-text);
+  color: var(--color-text);
+  font-weight: 800;
+  background: var(--color-surface);
+}
+
+.rd-step-n {
+  font-family: var(--font-mono);
+  font-variant-numeric: tabular-nums;
+  font-size: 10px;
+  opacity: 0.7;
+}
+
+.rd-step-name {
+  overflow-wrap: anywhere;
+}
+
+/* ---------- The two role columns ---------- */
+
+.rd-sides {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(min(100%, 240px), 1fr));
+  gap: var(--space-4);
+}
+
+.rd-col {
+  display: grid;
+  gap: var(--space-2);
+  align-content: start;
+}
+
+.rd-col-head {
+  margin: 0;
+  font-size: 11px;
+  font-weight: 800;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+  color: var(--color-text-muted);
+  border-bottom: 1px solid var(--color-divider);
+  padding-bottom: 6px;
+}
+
+.rd-roles {
+  display: grid;
+  gap: 1px;
+}
+
+.rd-role {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: var(--space-2);
+  padding: 10px 12px;
+  border: 1px solid var(--color-divider);
+  background: transparent;
+  color: var(--color-text);
+  font: inherit;
+  font-weight: 700;
+  text-align: left;
+  cursor: pointer;
+}
+
+.rd-role:hover:not(:disabled) {
+  border-color: var(--color-text);
+}
+
+.rd-role.on {
+  border-color: var(--color-accent);
+  background: color-mix(in srgb, var(--color-accent) 12%, transparent);
+  color: var(--color-accent);
+}
+
+/* Taken. Struck through and dimmed, not hidden — and the tag next to it says
+   the word, so the state does not rest on the strike alone. */
+.rd-role.gone {
+  opacity: 0.45;
+  cursor: not-allowed;
+}
+
+.rd-role.gone .rd-role-name {
+  text-decoration: line-through;
+}
+
+.rd-role:disabled {
+  cursor: not-allowed;
+}
+
+.rd-role-tag {
+  font-size: 9px;
+  font-weight: 800;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  color: var(--color-text-muted);
+  flex: none;
+}
+
+/* ---------- Confirm ---------- */
+
+.rd-actions {
+  display: flex;
+  align-items: center;
+  gap: var(--space-3);
+  flex-wrap: wrap;
+  border-top: 1px solid var(--color-divider);
+  padding-top: var(--space-3);
+  font-size: 13px;
+}

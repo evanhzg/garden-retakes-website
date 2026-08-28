@@ -1,0 +1,28 @@
+/* The watch controls: GOTV first, the server itself second. */
+
+.mw {
+  display: flex;
+  gap: var(--space-2);
+  flex-wrap: wrap;
+  align-items: center;
+}
+
+.mw-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 7px;
+}
+
+.mw-why {
+  margin: 0;
+  font-size: 12.5px;
+  color: var(--color-text-muted);
+}
+
+@media (max-width: 640px) {
+  .mw-btn {
+    flex: 1 1 100%;
+    justify-content: center;
+    min-height: 44px;
+  }
+}

@@ -148,26 +148,86 @@
   cursor: not-allowed;
 }
 
-/* A banned map stays on the board, struck through. Removing it would make the
-   veto impossible to follow after the fact, which is most of what a veto is
-   for. */
+/* A banned map stays on the board, struck through and in red. Removing it would
+   make the veto impossible to follow after the fact, which is most of what a
+   veto is for — and the colour is never the only signal: the name is struck
+   through, and the tile says the word "banned" underneath it. */
 .vt-map.banned {
-  opacity: 0.4;
+  border-color: #ef4444;
+  background: color-mix(in srgb, #ef4444 8%, var(--color-surface));
+  opacity: 0.72;
+}
+
+.vt-map.banned .vt-map-name {
   text-decoration: line-through;
+}
+
+.vt-map.banned .vt-map-tag {
+  color: #ef4444;
 }
 
 .vt-map.picked {
   border-color: #4ade80;
+  background: color-mix(in srgb, #4ade80 10%, var(--color-surface));
   color: #4ade80;
   opacity: 1;
 }
 
+.vt-map.picked .vt-map-tag {
+  color: #4ade80;
+}
+
 .vt-map-tag {
   font-size: 10px;
-  font-weight: 400;
+  font-weight: 700;
   text-transform: uppercase;
   letter-spacing: 0.07em;
   color: var(--color-text-muted);
+}
+
+/* Who took it, and where in the order. "Cobras banned it" and "it went third"
+   answer different arguments, so the tile carries both. */
+.vt-map-by {
+  display: flex;
+  align-items: baseline;
+  gap: 5px;
+  font-size: 10.5px;
+  font-weight: 600;
+  text-transform: none;
+  letter-spacing: 0;
+  color: var(--color-text-muted);
+  overflow-wrap: anywhere;
+}
+
+.vt-map-ord {
+  font-family: var(--font-mono);
+  font-variant-numeric: tabular-nums;
+  font-size: 9.5px;
+  font-weight: 800;
+  border: 1px solid currentColor;
+  padding: 0 3px;
+  flex: none;
+  opacity: 0.8;
+}
+
+/* A turn that ran out. Said plainly, because an auto-pick that looks deliberate
+   is a support conversation nobody can resolve. */
+.vt-map-auto {
+  font-style: normal;
+  font-size: 9px;
+  font-weight: 800;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  opacity: 0.75;
+}
+
+.vt-decider {
+  margin: 0;
+  font-size: 12.5px;
+  color: var(--color-text-muted);
+  border-left: 3px solid var(--color-divider);
+  padding-left: 8px;
+  text-transform: capitalize;
 }
 
 .vt-sides {

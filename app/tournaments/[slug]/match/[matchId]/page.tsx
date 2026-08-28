@@ -5,8 +5,10 @@ import { prisma } from "@/lib/db";
 import { getSession } from "@/lib/auth";
 import { getT } from "@/lib/serverI18n";
 import { canManage, getTournamentContext } from "@/lib/tournamentAuth";
-import VetoBoard from "@/components/tournament/VetoBoard";
+import MatchStage from "@/components/tournament/MatchStage";
+import MatchWatch from "@/components/tournament/MatchWatch";
 import StatusTag from "@/components/tournament/StatusTag";
+import { scoreboardFor } from "@/lib/tournament/scoreboard";
 
 export const dynamic = "force-dynamic";
 
@@ -16,6 +18,13 @@ export const dynamic = "force-dynamic";
 // server exists — because "where do I go" is the question a player has the
 // moment a bracket appears, and the answer should be a page that already
 // exists rather than a Discord message.
+//
+// The page is one thing that changes shape rather than four stacked panels. A
+// match is ready-up, then the role draft, then the veto, then a scoreboard, and
+// only ever one of those at a time; MatchStage is what decides which, and the
+// two team panels stay either side of it throughout. The maps table below is
+// the exception, because the series is worth reading in every one of those
+// states.
 
 export default async function MatchPage({
   params,
@@ -33,7 +42,6 @@ export default async function MatchPage({
     include: {
       Tournament: true,
       Maps: { orderBy: { Ordinal: "asc" } },
-      Veto: { orderBy: { Ordinal: "asc" } },
     },
   });
 
@@ -63,6 +71,14 @@ export default async function MatchPage({
 
   const started = match.Tournament.StartedAt !== null;
 
+  // Computed here rather than fetched by the client, so a shared link renders
+  // its numbers without JavaScript having run. The client polls the same
+  // function through /api/tournament/scoreboard for everything after that.
+  const board = await scoreboardFor(matchId);
+
+  const nameOf = (teamId: number | null) =>
+    teamId === match.TeamAId ? teamA?.Name : teamId === match.TeamBId ? teamB?.Name : null;
+
   return (
     <>
       <BackToTournament slug={params.slug} label={t("match.backToBracket")} />
@@ -86,58 +102,80 @@ export default async function MatchPage({
               </>
             )}
           </p>
+
+          {/* GOTV first. Only rendered at all once there is a server and this
+              viewer is allowed at it — the endpoint decides both. */}
+          <MatchWatch matchId={match.Id} />
         </div>
       </section>
 
       <section className="panel">
-        <h3>{t("match.veto")}</h3>
-
         {!started ? (
           // A match page before the tournament starts is a real state, not an
           // error: the bracket is drawn and people click through it early.
-          <p className="muted">{t("match.notStarted")}</p>
+          <>
+            <h3>{t("match.veto")}</h3>
+            <p className="muted">{t("match.notStarted")}</p>
+          </>
         ) : !teamA || !teamB ? (
-          <p className="muted">{t("match.waitingTeams")}</p>
+          <>
+            <h3>{t("match.veto")}</h3>
+            <p className="muted">{t("match.waitingTeams")}</p>
+          </>
         ) : (
-          <VetoBoard
-            matchId={match.Id}
-            teamA={teamA.Name}
-            teamB={teamB.Name}
-            mySlot={mySlot}
-            isOrganizer={isOrganizer}
-          />
+          board && (
+            <MatchStage
+              matchId={match.Id}
+              teamA={{ id: teamA.Id, name: teamA.Name, tag: teamA.Tag }}
+              teamB={{ id: teamB.Id, name: teamB.Name, tag: teamB.Tag }}
+              mySlot={mySlot}
+              mySteamId={session?.steamId ?? null}
+              isOrganizer={isOrganizer}
+              initialBoard={board}
+              // The maps existing IS the veto having finished — materialiseMaps
+              // is what writes them — so this is the same fact the poller would
+              // discover a beat later, known in time for the first paint.
+              initialDecided={match.Maps.length > 0}
+            />
+          )
         )}
       </section>
 
       {match.Maps.length > 0 && (
         <section className="panel">
           <h3>{t("tournaments.maps")}</h3>
-          {/* Four columns of map results overflow a phone. The wrapper scrolls
+          {/* Five columns of map results overflow a phone. The wrapper scrolls
               the table inside itself rather than taking the page sideways with
               it, which is the pattern the rest of the site already uses. */}
           <div className="pro-tablewrap">
-          <table>
-            <thead>
-              <tr>
-                <th>#</th>
-                <th>{t("tournaments.tabs.pool")}</th>
-                <th>{t("match.startSide")}</th>
-                <th>{t("tournaments.tabs.stats")}</th>
-              </tr>
-            </thead>
-            <tbody>
-              {match.Maps.map((m) => (
-                <tr key={m.Id}>
-                  <td className="muted">{m.Ordinal + 1}</td>
-                  <td>{m.Map}</td>
-                  <td className="muted">{m.StartSideTeamA ?? t("match.knife")}</td>
-                  <td>
-                    {m.ScoreA} – {m.ScoreB}
-                  </td>
+            <table>
+              <thead>
+                <tr>
+                  <th>#</th>
+                  <th>{t("tournaments.tabs.pool")}</th>
+                  <th>{t("match.pickedBy")}</th>
+                  <th>{t("match.startSide")}</th>
+                  <th>{t("tournaments.tabs.stats")}</th>
                 </tr>
-              ))}
-            </tbody>
-          </table>
+              </thead>
+              <tbody>
+                {match.Maps.map((m) => (
+                  <tr key={m.Id}>
+                    <td className="muted">{m.Ordinal + 1}</td>
+                    <td>{m.Map}</td>
+                    {/* The decider is nobody's pick, which is a fact about the
+                        series rather than missing data — so it says so. */}
+                    <td className="muted">
+                      {m.IsDecider ? t("match.decider") : nameOf(m.PickedByTeamId) ?? "—"}
+                    </td>
+                    <td className="muted">{m.StartSideTeamA ?? t("match.knife")}</td>
+                    <td>
+                      {m.ScoreA} – {m.ScoreB}
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
           </div>
         </section>
       )}

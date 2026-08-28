@@ -1,0 +1,198 @@
+/* The two team panels that flank the veto, the draft and the match.
+   Narrow, ruled, and quiet: they are context for the thing in the middle, not
+   a competing surface. */
+
+.tp {
+  border: 1px solid var(--color-divider);
+  background: var(--color-surface);
+  padding: var(--space-3);
+  display: grid;
+  gap: var(--space-2);
+  align-content: start;
+  min-width: 0;
+}
+
+/* Whose turn it is. An outline and a rule, never a fill: the panel still has to
+   be read while it is highlighted. */
+.tp.on {
+  border-color: var(--color-accent);
+  box-shadow: inset 0 2px 0 0 var(--color-accent);
+}
+
+.tp-head {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: var(--space-2);
+  border-bottom: 1px solid var(--color-divider);
+  padding-bottom: var(--space-2);
+  min-width: 0;
+}
+
+.tp-id {
+  display: flex;
+  align-items: baseline;
+  gap: 8px;
+  min-width: 0;
+}
+
+.tp-tag {
+  font-size: 10px;
+  font-weight: 800;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+  color: var(--color-text-muted);
+  border: 1px solid var(--color-divider);
+  padding: 1px 4px;
+  flex: none;
+}
+
+.tp-name {
+  margin: 0;
+  font-size: 15px;
+  font-weight: 800;
+  letter-spacing: -0.01em;
+  overflow-wrap: anywhere;
+}
+
+.tp-score {
+  font-family: var(--font-mono);
+  font-variant-numeric: tabular-nums;
+  font-size: 22px;
+  font-weight: 800;
+  flex: none;
+}
+
+.tp-ready {
+  margin: 0;
+  font-size: 10px;
+  font-weight: 800;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+  color: var(--color-text-muted);
+}
+
+.tp-ready.on {
+  color: var(--color-accent);
+}
+
+.tp-players {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: grid;
+  gap: 1px;
+}
+
+.tp-player {
+  display: flex;
+  align-items: baseline;
+  gap: 6px;
+  flex-wrap: wrap;
+  padding: 6px 0;
+  border-bottom: 1px solid var(--color-divider);
+  font-size: 13px;
+}
+
+.tp-player:last-child {
+  border-bottom: none;
+}
+
+/* On the clock during the draft. The left rule is the signal; the accent text
+   is the second one. */
+.tp-player.clock {
+  border-left: 3px solid var(--color-accent);
+  padding-left: 6px;
+  margin-left: -9px;
+}
+
+.tp-player.clock .tp-player-name {
+  color: var(--color-accent);
+}
+
+.tp-player-name {
+  color: inherit;
+  font-weight: 700;
+  text-decoration: none;
+  overflow-wrap: anywhere;
+}
+
+.tp-player-name:hover {
+  color: var(--color-accent);
+  text-decoration: underline;
+}
+
+.tp-cap {
+  color: var(--color-accent);
+  font-size: 11px;
+  flex: none;
+}
+
+.tp-bot {
+  font-size: 9px;
+  font-weight: 800;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  color: var(--color-text-muted);
+  border: 1px solid var(--color-divider);
+  padding: 0 3px;
+  flex: none;
+}
+
+.tp-roles {
+  margin-left: auto;
+  display: inline-flex;
+  gap: 4px;
+  font-size: 11px;
+  color: var(--color-text-muted);
+  text-transform: capitalize;
+  white-space: nowrap;
+}
+
+.tp-role-sep {
+  opacity: 0.5;
+}
+
+.tp-empty {
+  margin: 0;
+  font-size: 12px;
+}
+
+/* ---------- The three-column frame the panels live in ---------- */
+
+.tp-frame {
+  display: grid;
+  grid-template-columns: minmax(180px, 220px) minmax(0, 1fr) minmax(180px, 220px);
+  gap: var(--space-4);
+  align-items: start;
+}
+
+.tp-frame-main {
+  min-width: 0;
+  display: grid;
+  gap: var(--space-3);
+  align-content: start;
+}
+
+.tp-stage-head {
+  margin: 0;
+}
+
+.tp-stage-lead {
+  margin: 0;
+  font-size: 13px;
+  max-width: 62ch;
+}
+
+/* Below the two-column collapse point the panels stack above and below the
+   board rather than squeezing it. Two 120px columns either side of a veto grid
+   is worse than no panels at all. */
+@media (max-width: 900px) {
+  .tp-frame {
+    grid-template-columns: minmax(0, 1fr);
+  }
+
+  .tp-frame-main {
+    order: -1;
+  }
+}

@@ -141,33 +141,40 @@ export default function MatchModal({
           {/* Only offered when there is genuinely something to watch and this
               viewer is allowed to. The server decides both; this only renders
               what it was told. */}
-          {detail?.canSpectate && detail.connect && (
+          {detail?.canSpectate && (detail.gotv || detail.connect) && (
             <>
-              <a className="btn btn-primary mm-btn" href={`steam://connect/${detail.connect}`}>
-                <Eye size={15} />
-                {t("match.spectate")}
+              {/* Watching means GOTV. Handing a viewer the game server takes one
+                  of its player slots for somebody who is not playing and drops
+                  them into a live round; GOTV costs nothing and is already on.
+                  The server address is the fallback for a tournament whose
+                  organizer never set one, not the first offer. */}
+              <a
+                className="btn btn-primary mm-btn"
+                href={`steam://connect/${detail.gotv ?? detail.connect}`}
+              >
+                <Tv size={15} />
+                {detail.gotv ? t("match.watchGotv") : t("match.spectate")}
               </a>
 
-              {/* GOTV when there is one: it is the better way to watch a
-                  competitive match, since it takes no slot and cannot drop you
-                  into a live round. */}
-              {detail.gotv && (
-                <a className="btn mm-btn" href={`steam://connect/${detail.gotv}`}>
-                  <Tv size={15} />
-                  {t("match.gotv")}
+              {/* The server itself, for anybody who actually needs to be in it.
+                  Only when it is a different address from the one above. */}
+              {detail.gotv && detail.connect && (
+                <a className="btn btn-secondary mm-btn" href={`steam://connect/${detail.connect}`}>
+                  <Eye size={15} />
+                  {t("match.joinServer")}
                 </a>
               )}
 
               <button
                 className="btn mm-btn"
                 onClick={() => {
-                  navigator.clipboard?.writeText(`connect ${detail.connect}`);
+                  navigator.clipboard?.writeText(`connect ${detail.gotv ?? detail.connect}`);
                   setCopied(true);
                   setTimeout(() => setCopied(false), 2000);
                 }}
               >
                 {copied ? <Check size={15} /> : <Copy size={15} />}
-                {copied ? t("register.copied") : t("match.copyConnect")}
+                {copied ? t("register.copied") : t("match.copyWatch")}
               </button>
             </>
           )}
@@ -175,7 +182,7 @@ export default function MatchModal({
           {/* Says why there is no button, rather than leaving a gap where one
               would be. "There is no server yet" and "you are not allowed to
               watch" are different answers and people deserve to know which. */}
-          {detail && !detail.connect && detail.state !== "finished" && (
+          {detail && !detail.connect && !detail.gotv && detail.state !== "finished" && (
             <p className="mm-why">
               {detail.canSpectate ? t("match.noServerYet") : t("match.notAllowed")}
             </p>
