@@ -56,10 +56,12 @@ export default async function RegisterPage({
 
   const blocked = registrationBlockedReason(edition, holdsInvite);
 
-  // An unpublished tournament is invisible rather than closed. Telling a
-  // stranger "this exists but you cannot enter" leaks the organizer's
-  // half-finished work.
-  if (blocked === "not-published") notFound();
+  // Nothing 404s here any more.
+  //
+  // The only reason this page used to was an unpublished tournament, and that
+  // is now an ordinary unlisted one — see registrationBlockedReason. Every other
+  // blocked reason is a fact the visitor should be told (it has started, it is
+  // full, it is invite-only), and the page below already says which.
 
   const mine = session
     ? tournament.Teams.find((team) =>

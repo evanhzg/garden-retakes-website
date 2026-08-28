@@ -57,10 +57,14 @@ const freshToken = () => randomBytes(16).toString("hex");
  *
  * Written out rather than reduced to "closed" because each one leads somewhere
  * different: full means watch the bracket, invite-only means ask for a link,
- * not-published means it does not exist yet as far as you are concerned.
+ * started means you are too late.
+ *
+ * "not-published" is gone — an unpublished tournament is unlisted, not shut. It
+ * is kept out of the hub by the Published flag and out of strangers' hands by
+ * Visibility; refusing registration as well is what made every organizer's own
+ * invite link a dead end.
  */
 const REGISTRATION_REFUSAL: Record<string, string> = {
-  "not-published": "That tournament is not open yet.",
   started: "That tournament has already started.",
   "wrong-state": "Registration is closed.",
   full: "The tournament is full.",

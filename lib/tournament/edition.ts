@@ -47,8 +47,19 @@ export const canEditFormat = (e: EditionState): boolean => !hasStarted(e);
 export function registrationBlockedReason(
   e: EditionState,
   hasInvite: boolean,
-): "not-published" | "started" | "wrong-state" | "full" | "invite-only" | null {
-  if (!e.published) return "not-published";
+): "started" | "wrong-state" | "full" | "invite-only" | null {
+  // Published is deliberately NOT checked here any more.
+  //
+  // It used to return "not-published" and the register page turned that into a
+  // 404, which meant the link an organizer copied out of their own browser was
+  // dead for every person they sent it to — a tournament is created
+  // unpublished, so that was every link until somebody found the toggle. The
+  // organizer had done the one thing that signals intent, and the site answered
+  // "this does not exist".
+  //
+  // Published is a LISTING flag: it decides whether the hub shows the
+  // tournament, and the hub still filters on it. Whether a stranger may enter
+  // is what Visibility is for, and that is checked below.
   if (hasStarted(e)) return "started";
   if (e.state !== "registration") return "wrong-state";
 

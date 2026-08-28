@@ -37,7 +37,8 @@ const base: EditionState = {
 
 // ---- Registration ----
 check("open when published, in registration and not full", canRegister(base, false));
-check("closed before it is published", !canRegister({ ...base, published: false }, false));
+// Unlisted, not closed — see the fuller note further down.
+check("open before it is published", canRegister({ ...base, published: false }, false));
 check("closed once started", !canRegister({ ...base, startedAt: new Date() }, false));
 check("closed when the state is not registration", !canRegister({ ...base, state: "live" }, false));
 check("closed when full", !canRegister({ ...base, teamCount: 8 }, false));
@@ -53,7 +54,21 @@ check(
   "full beats invite-only in the reason given",
   registrationBlockedReason({ ...inviteOnly, teamCount: 8 }, false) === "full",
 );
-check("an unpublished tournament says so first", registrationBlockedReason({ ...base, published: false }, true) === "not-published");
+// Unpublished is unlisted, not shut. It used to be the first blocker and the
+// register page turned it into a 404, which made every invite link an organizer
+// copied out of their own browser dead for the person they sent it to.
+check(
+  "an unpublished tournament can still be registered for",
+  registrationBlockedReason({ ...base, published: false }, true) === null,
+);
+check(
+  "...and an unpublished one that has started is still refused, for the real reason",
+  registrationBlockedReason({ ...base, published: false, startedAt: new Date() }, true) === "started",
+);
+check(
+  "...and an unpublished invite-only one still needs the link",
+  registrationBlockedReason({ ...base, published: false, visibility: "invite" }, false) === "invite-only",
+);
 
 // ---- Format editing ----
 check("format is editable before the start button", canEditFormat(base));
