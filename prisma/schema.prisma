@@ -1700,6 +1700,13 @@ model TournamentMatch {
   /// standing advantage across a bracket. Null until then.
   RolesFirstTeamId Int?
 
+  /// When this match started waiting for a free server.
+  ///
+  /// The whole of the waitlist. A match that cannot be placed is not an error
+  /// and must not silently do nothing — it queues, and the next server released
+  /// goes to whoever has waited longest. Null means not waiting.
+  QueuedAt DateTime? @db.DateTime(6)
+
   VetoStartedAt DateTime? @db.DateTime(6)
   /// When the current veto turn runs out. Stored rather than computed so every
   /// viewer counts down to the same instant and a turn survives a reload.

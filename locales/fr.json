@@ -2522,8 +2522,6 @@
   "matchAdmin.roundNumber": "Round",
   "matchAdmin.restore": "Restaurer",
   "matchAdmin.ending": "Terminer",
-  "matchAdmin.awardA": "Donner à A",
-  "matchAdmin.awardB": "Donner à B",
   "tournamentAdmin.publicPage": "Page publique",
   "tournamentAdmin.liveWall": "Mur en direct",
   "tournamentAdmin.noStages": "Aucune phase. Ajoutez-en une avant de générer un bracket.",
@@ -3083,5 +3081,8 @@
   "consoles.title": "Consoles serveur",
   "consoles.blurb": "Une console par serveur. Les organisateurs pilotent le serveur de leur tournoi, les admins tous les autres.",
   "consoles.none": "Aucun serveur configuré.",
-  "consoles.ladder": "ladder"
+  "consoles.ladder": "ladder",
+  "match.waitingServer": "En attente d’un serveur",
+  "match.queuePosition": "{n} sur {total} dans la file",
+  "matchAdmin.awardTo": "Donner à {team}"
 }

@@ -2,6 +2,7 @@ import { NextResponse } from "next/server";
 import { prisma } from "@/lib/db";
 import { getSession } from "@/lib/auth";
 import { canManage, getTournamentContext } from "@/lib/tournamentAuth";
+import { queueState } from "@/lib/tournament/queue";
 
 export const dynamic = "force-dynamic";
 export const runtime = "nodejs";
@@ -98,11 +99,16 @@ export async function GET(req: Request) {
     }
   }
 
+  // Where it stands in the line for a server, so the page can say "waiting,
+  // second of five" rather than showing nothing and looking stuck.
+  const queue = await queueState(matchId);
+
   return NextResponse.json({
     canSpectate,
     gotv,
     state: match.State,
     serverIsUp,
+    queue,
     connect,
     maps: match.Maps.map((m) => ({
       map: m.Map,

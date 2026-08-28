@@ -25,6 +25,7 @@ type Detail = {
   canSpectate: boolean;
   serverIsUp: boolean;
   state: string;
+  queue?: { waiting: boolean; position: number | null; total: number };
 };
 
 /**
@@ -116,10 +117,25 @@ export default function MatchWatch({
   if (!detail.connect && !detail.gotv) {
     return (
       <div className="mw">
-        {detail.state !== "finished" && (
-          <p className="mw-why">
-            {detail.canSpectate ? t("match.noServerYet") : t("match.notAllowed")}
+        {/* Waiting for a server is a state, not an absence.
+            A bracket releases a whole round at once onto six servers, so a
+            match with nowhere to go is normal — and "no server yet" on the
+            fourth match of a round says nothing about whether anybody should
+            act. A position says it is in hand. */}
+        {detail.queue?.waiting ? (
+          <p className="mw-queue">
+            <span className="mw-queue-tag">{t("match.waitingServer")}</span>
+            {t("match.queuePosition", {
+              n: String(detail.queue.position ?? 1),
+              total: String(detail.queue.total),
+            })}
           </p>
+        ) : (
+          detail.state !== "finished" && (
+            <p className="mw-why">
+              {detail.canSpectate ? t("match.noServerYet") : t("match.notAllowed")}
+            </p>
+          )
         )}
         {admin}
       </div>

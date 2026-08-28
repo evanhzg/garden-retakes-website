@@ -1,6 +1,7 @@
 import { prisma } from "@/lib/db";
 import { claimServer, connectString, execOnServer, releaseServer } from "@/lib/tournament/servers";
 import { rolesForMatch } from "@/lib/tournament/roleDraft";
+import { dequeue, enqueue, promoteNext } from "@/lib/tournament/queue";
 
 // Starting a tournament match on a server.
 //
@@ -85,7 +86,20 @@ export async function startMatch(matchId: number): Promise<StartResult> {
     ? { id: match.ServerId, ...(await serverRow(match.ServerId)) }
     : await claimServer(matchId);
 
-  if (!server) return { ok: false, error: "No server is free." };
+  // Nothing free: wait in line rather than failing.
+  //
+  // A bracket releases a whole round at once and the fleet is six servers, so
+  // this is the normal case rather than an error. Returning a bare failure left
+  // the match in "ready" — indistinguishable from one nobody had started — and
+  // the server then went to whoever retried fastest instead of whoever had
+  // waited longest.
+  if (!server) {
+    await enqueue(matchId);
+    return { ok: false, error: "No server is free — the match is waiting for one." };
+  }
+
+  // Placed, so it is no longer waiting.
+  await dequeue(matchId);
 
   try {
     await prisma.tournamentMatch.update({
@@ -168,6 +182,23 @@ export async function startMatch(matchId: number): Promise<StartResult> {
         );
       }
     }
+
+    // What the server cannot know: which event this is, and whether the series
+    // continues after this map. The first names the demo folder; the second
+    // decides whether the map ending holds everybody in warmup for the next one
+    // or stops recording so the demo is written.
+    const played = match.Maps.filter((m) => m.State === "finished").length;
+    const more = played + 1 < match.Maps.length;
+
+    const tournament = await prisma.tournament.findUnique({
+      where: { Id: match.TournamentId },
+      select: { Name: true },
+    });
+
+    await execOnServer(
+      server.id,
+      `css_t_series ${more ? "more" : "last"} ${consoleName(tournament?.Name ?? "", "tournament")}`,
+    );
 
     // Sides. A picked map arrives already settled by the veto; only a decider or
     // a BO1 knifes for it — and that distinction is exactly the null below.
@@ -303,6 +334,14 @@ export async function finishMap(
   if (matchOver) {
     await releaseServer(match.ServerId);
     await advance(match.Id);
+
+    // The freed server goes to whoever has waited longest. Not awaited for its
+    // result: promoteNext runs a whole startMatch, map load included, and the
+    // plugin reporting a finished map must not wait on the next match booting.
+    void promoteNext().catch(() => {
+      // A promotion that fails leaves the queue as it was; the next release
+      // tries again.
+    });
   }
 
   return { ok: true, matchOver };

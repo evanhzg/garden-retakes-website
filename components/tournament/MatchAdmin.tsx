@@ -107,18 +107,36 @@ export default function MatchAdmin({ matchId, matchKey, teamA, teamB, state, adm
         <button className="btn" disabled={busy} onClick={() => rcon("css_swap")}>
           {t("matchAdmin.swap")}
         </button>
+        {/* Named, not lettered. "A → CT" means nothing to anybody who has not
+            read the bracket's internals, and an admin forcing a side under
+            pressure should not have to work out which team is A. */}
         <button className="btn" disabled={busy} onClick={() => rcon("css_forceside a t")}>
-          A → T
+          {teamA} → T
         </button>
         <button className="btn" disabled={busy} onClick={() => rcon("css_forceside a ct")}>
-          A → CT
+          {teamA} → CT
+        </button>
+        <button className="btn" disabled={busy} onClick={() => rcon("css_forceside b t")}>
+          {teamB} → T
         </button>
       </div>
 
       <div className="ma-group">
         <h4>{t("matchAdmin.score")}</h4>
-        <input value={scoreA} onChange={(e) => setScoreA(e.target.value)} placeholder="A" inputMode="numeric" />
-        <input value={scoreB} onChange={(e) => setScoreB(e.target.value)} placeholder="B" inputMode="numeric" />
+        <input
+          value={scoreA}
+          onChange={(e) => setScoreA(e.target.value)}
+          placeholder={teamA}
+          aria-label={teamA}
+          inputMode="numeric"
+        />
+        <input
+          value={scoreB}
+          onChange={(e) => setScoreB(e.target.value)}
+          placeholder={teamB}
+          aria-label={teamB}
+          inputMode="numeric"
+        />
         <button
           className="btn"
           disabled={busy || !scoreA || !scoreB}
@@ -151,10 +169,10 @@ export default function MatchAdmin({ matchId, matchKey, teamA, teamB, state, adm
       <div className="ma-group ma-danger">
         <h4>{t("matchAdmin.ending")}</h4>
         <button className="btn" disabled={busy} onClick={() => rcon("css_endmatch a")}>
-          {t("matchAdmin.awardA")}
+          {t("matchAdmin.awardTo", { team: teamA })}
         </button>
         <button className="btn" disabled={busy} onClick={() => rcon("css_endmatch b")}>
-          {t("matchAdmin.awardB")}
+          {t("matchAdmin.awardTo", { team: teamB })}
         </button>
       </div>
 

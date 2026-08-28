@@ -2522,8 +2522,6 @@
   "matchAdmin.roundNumber": "Round",
   "matchAdmin.restore": "Restore",
   "matchAdmin.ending": "Ending it",
-  "matchAdmin.awardA": "Award to A",
-  "matchAdmin.awardB": "Award to B",
   "tournamentAdmin.publicPage": "Public page",
   "tournamentAdmin.liveWall": "Live wall",
   "tournamentAdmin.noStages": "No stages yet. Add one before generating a bracket.",
@@ -3083,5 +3081,8 @@
   "consoles.title": "Server consoles",
   "consoles.blurb": "One console per server. Organizers can drive the server their tournament is on; admins can drive any.",
   "consoles.none": "No servers are configured.",
-  "consoles.ladder": "ladder"
+  "consoles.ladder": "ladder",
+  "match.waitingServer": "Waiting for a server",
+  "match.queuePosition": "{n} of {total} in the queue",
+  "matchAdmin.awardTo": "Award to {team}"
 }

@@ -3,6 +3,7 @@ import { autoAction, vetoState, type VetoAction, type Side } from "@/lib/tournam
 import { startMatch } from "@/lib/tournament/matchRunner";
 import { VETO_TURN_SECONDS } from "@/lib/tournament/edition";
 import { beginRoleDraft } from "@/lib/tournament/roleDraft";
+import { driveBotMatch, isAllBots } from "@/lib/tournament/botDriver";
 
 // Finishing a veto: turning its result into maps, playing it out for bots, and
 // letting an organizer set the maps by hand.
@@ -78,7 +79,22 @@ export async function beginVeto(matchId: number): Promise<void> {
  * nothing to do would be worse than not showing it at all.
  */
 export async function beginRolesOrVeto(matchId: number): Promise<"roles" | "veto"> {
-  if (await beginRoleDraft(matchId)) return "roles";
+  const opened = await beginRoleDraft(matchId);
+
+  // Nobody at the keyboard on either side: the bots take their own turns.
+  //
+  // Not awaited. driveBotMatch pauses two seconds a step so the draft and the
+  // veto can be WATCHED — which is the point of a bot tournament — and holding
+  // the request open for that would make ready-up feel broken to whoever
+  // pressed it. The page polls and shows each step as it lands.
+  if (await isAllBots(matchId)) {
+    void driveBotMatch(matchId).catch(() => {
+      // A bot match that cannot decide its own maps stays where it is and can
+      // be resolved by an organizer, exactly as before.
+    });
+  }
+
+  if (opened) return "roles";
 
   await beginVeto(matchId);
   return "veto";
