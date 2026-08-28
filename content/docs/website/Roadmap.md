@@ -16,7 +16,7 @@ Everything lives in sibling folders under `CS2 Mod Dev/`.
 |---|---|---|
 | `Garden-retakes` | **THE merged signature plugin (live on the server)** — retakes core + allocator + rankings + admin + Duels/Executes/FastStrat/SmallServer/Edit modes + Spotlight. Fork of B3none/cs2-retakes; absorbed the two donor repos below. | CounterStrikeSharp (C#, net10.0, CSS 1.0.371) |
 | `Garden-allocator` | *Read-only donor* (absorbed into Garden-retakes R0). Fork of yonilerner/cs2-retakes-allocator. | CounterStrikeSharp |
-| `Garden-rankings` | *Read-only donor* (absorbed into Garden-retakes R0). Seasons, ELO, HLTV-like rating, Ranked/Competitive Retakes, clutch rounds. | CounterStrikeSharp + EF Core (MySQL/SQLite) |
+| `Garden-rankings` | *Read-only donor* (absorbed into Garden-retakes R0). Seasons, ELO, HLTV-like rating, Ranked/Blitz, clutch rounds. | CounterStrikeSharp + EF Core (MySQL/SQLite) |
 | `Garden-website` | Ladder, HLTV-style player pages + pros section, /compare, CR team ladder, duels ladder, seasons, live spectator dashboard + heatmaps, inventory simulator (per-side loadouts, knives/gloves, stickers, Steam OpenID, /borrow share-keys), profile showcase + Garden-Pops 3D customizer + 3D avatars, admin panel + RCON console, **Games Hub** (6 socket mini-games + universal lobbies + friends/social), roadmap + commands + API docs pages. Deployed on Vercel (socket server needs its own host — see Phase G). | Next.js 14 + Prisma 6 + Aiven MySQL + Socket.IO + three.js |
 | `Garden-website/Garden-overlay` | Tauri desktop overlay companion app (in-repo subfolder, excluded from the site's tsconfig). | Tauri (Rust) + Vite |
 | `Garden-website /spelltakers` | **FOUNDATIONS ONLY** — SpellTakers page + lobby component + `install.ps1`; gameplay TBD. | Next.js page |
@@ -778,3 +778,22 @@ site economy). Long-haul project — phases land independently and each one is p
   a comprehensive E2E script is written and ready (pairing flow, all v1 CRUD, ticket-based socket
   auth, refresh/revoke) but has NOT been run for the same reason. Docs site (docs.retakes.fr) not yet
   updated with this surface — follow-up.
+- 2026-08-28: **The match mode is called Blitz.** Renamed from "Competitive
+  Retakes" everywhere a person can read it — the website, the in-game chat
+  strings in both languages, the command help, the docs, and the tournament
+  hub, which now carries a short section explaining what the mode is and where
+  the name comes from (it is fast; it is about the wires; and it is chess'
+  blitz, the same game as the long one with every decision made in a fraction
+  of the time). The old name was ambiguous in a way that had already caused
+  mistakes: "Competitive Retakes" meant both the rated 2v2/3v3 match and, to
+  anybody editing spawns, the tournament format — a confusion the GameMaker
+  panel carries a comment about. The two no longer share a word.
+
+  The wire is untouched. `!cr`, `!crtop`, the `CrMatch` tables, `lib/crRank.ts`
+  and every `cr.*` translation key keep their spelling, exactly as the CT sniper
+  slot kept the id `awper` after it stopped being called an AWPer: the label is
+  the whole of what anybody sees, and everything else is keyed on the id.
+  `!blitz` and `!blitztop` are added alongside the old commands rather than
+  replacing them, and the mode word `blitz` is accepted where `cr` was — a
+  rename that breaks the old word on the day it ships teaches people the
+  feature is gone rather than that it moved.

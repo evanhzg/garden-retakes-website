@@ -11543,3 +11543,25 @@ html[data-motion="off"] .sock-banner-spin { animation: none; }
 button.btn {
   border-radius: 0;
 }
+
+/* ---------- The Blitz explainer, on /tournaments ----------
+   Two columns that become one on a narrow screen: the two halves answer
+   different questions ("what is it" and "why is it called that") and reading
+   them as one paragraph loses the distinction. */
+.blitz {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(min(100%, 280px), 1fr));
+  gap: var(--space-5);
+}
+
+.blitz-col h2 {
+  margin: 0 0 var(--space-2);
+  font-size: 15px;
+  letter-spacing: 0.02em;
+}
+
+.blitz-col p {
+  margin: 0;
+  max-width: 62ch;
+  line-height: 1.6;
+}

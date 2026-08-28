@@ -96,6 +96,23 @@ export default async function TournamentsPage() {
         </div>
       </section>
 
+      {/* What the mode is, before the bracket.
+          A visitor who has found this page has been told "Blitz" by the nav and
+          by the hero and has no idea what it means — and the name is the one
+          piece of the system that cannot explain itself. It sits above the
+          organizer tools because it is for the people who are NOT organizers,
+          which is almost everybody who arrives here. */}
+      <section className="panel blitz">
+        <div className="blitz-col">
+          <h2>{t("tournaments.whatIs")}</h2>
+          <p className="muted">{t("tournaments.whatIsBody")}</p>
+        </div>
+        <div className="blitz-col">
+          <h2>{t("tournaments.whyBlitz")}</h2>
+          <p className="muted">{t("tournaments.whyBlitzBody")}</p>
+        </div>
+      </section>
+
       {/* The way in. These pages existed and were reachable only by knowing the
           URL, which meant an organizer could be given the role and still have no
           way to use it. */}

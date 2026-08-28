@@ -16,7 +16,7 @@ import {
 export const dynamic = "force-dynamic";
 export const runtime = "nodejs";
 
-// GET/PUT the signed-in player's competitive retakes loadout.
+// GET/PUT the signed-in player's Blitz loadout.
 //
 // Three stores behind one endpoint: weapons go to UserSettings, which the
 // allocator plugin reads every buy round; the bundle choice and everything

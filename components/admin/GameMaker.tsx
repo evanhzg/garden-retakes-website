@@ -100,15 +100,16 @@ const MODE_SPEC: Record<ModeId, {
   retakes: {
     // Named "Competitive Retakes" until now, which was the wrong name twice
     // over: these are the spawns the public retakes server uses for every
-    // flavour of retakes, casual and ranked included — and "Competitive
-    // Retakes" is the tournament format, whose spawns are authored somewhere
-    // else entirely. Editing here expecting the tournament to change was a
-    // mistake the label invited.
+    // flavour of retakes, casual and ranked included — and the match format is
+    // a different thing, whose spawns are authored somewhere else entirely.
+    // Editing here expecting the tournament to change was a mistake the label
+    // invited. That format is now called Blitz, which is the real fix: the two
+    // no longer share a word.
     label: "Retakes",
     icon: Crosshair,
     setNoun: "site setup",
     blurb:
-      "Spawns for the live retakes server — casual, ranked and CR alike. Grouped per bombsite; tag a spawn with the role meant to hold it and the round types it applies to, and the plugin biases placement toward them. The 3v3 tournament format has its own spawns: those are authored in the Spawn Maker, not here.",
+      "Spawns for the live retakes server — casual, ranked and Blitz alike. Grouped per bombsite; tag a spawn with the role meant to hold it and the round types it applies to, and the plugin biases placement toward them. The 3v3 tournament format has its own spawns: those are authored in the Spawn Maker, not here.",
     usesSite: true,
     usesPhase: false,
     usesUtility: false,

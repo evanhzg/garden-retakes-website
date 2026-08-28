@@ -29,7 +29,7 @@ it feeds the website `/commands` page (ROADMAP Phase W).*
 | `!rr` / `!ranked` | Start/stop Ranked Retakes (vote) — informational when auto mode is on |
 | `!ry` / `!rn` | Accept / decline the ongoing vote (ranked or CR) |
 | `!rankedstatus` | Is ranked active? |
-| `!cr` | Start a Competitive Retakes match vote (2v2/3v3, locked sides, MR12) — repeat to cancel a live match |
+| `!cr` | Start a Blitz match vote (2v2/3v3, locked sides, MR12) — repeat to cancel a live match |
 | `!crtop` | Top CR duo/trio teams |
 | `!<map>` (e.g. `!mirage`) | Instant map change (aliases from rankings config; blocked during ranked/CR for non-admins) |
 | `!voices` | Toggle bombsite voice announcements |

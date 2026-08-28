@@ -1,4 +1,4 @@
-// Competitive retakes: skill levels, the rating maths, roles, and the economy.
+// Blitz: skill levels, the rating maths, roles, and the economy.
 //
 // One module, because these four things constrain each other and drifting them
 // apart is how a page ends up explaining an economy the server does not run.

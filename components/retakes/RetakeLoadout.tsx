@@ -31,7 +31,7 @@ type Icons = {
   utility: Record<Side, Record<string, string>>;
 };
 
-// Your competitive retakes loadout.
+// Your Blitz loadout.
 //
 // Organised by round type rather than by weapon slot, because that is the
 // decision people actually make — "on a full buy I want the AK" — and it puts

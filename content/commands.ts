@@ -60,7 +60,7 @@ export type CommandGroup = {
 
 export const COMMAND_MODES: { id: CommandModeId; label: string; hint: string }[] = [
   { id: "global", label: "Everywhere", hint: "Works in every mode" },
-  { id: "retakes", label: "Retakes", hint: "Casual, ranked and competitive retakes" },
+  { id: "retakes", label: "Retakes", hint: "Casual, ranked and Blitz" },
   { id: "tournament", label: "Tournament", hint: "The standalone 3v3 tournament plugin" },
   { id: "executes", label: "Executes", hint: "Scripted T-side executes" },
   { id: "faststrat", label: "Fast Strat", hint: "Called strats on a timer" },
@@ -85,7 +85,7 @@ export const COMMAND_GROUPS: CommandGroup[] = [
       { name: "stats", args: "[ranked]", description: "Your season stats — K/D, ADR, KAST, rating, clutches" },
       { name: "top", description: "The season's top rated players" },
       { name: "time", aliases: ["playtime"], description: "How long you have spent on the server" },
-      { name: "crtop", description: "The season's top Competitive Retakes duos and trios" },
+      { name: "crtop", description: "The season's top Blitz duos and trios" },
       { name: "damage", aliases: ["dmg"], description: "Toggle the end-of-round damage report" },
       { name: "deathreplay", aliases: ["dr", "killcam"], description: "Turn your own death replay on or off" },
       { name: "clip", description: "Save the last few seconds as a clip on the website" },
@@ -184,14 +184,14 @@ export const COMMAND_GROUPS: CommandGroup[] = [
   },
   {
     id: "ranked",
-    title: "Ranked and Competitive Retakes",
+    title: "Ranked and Blitz",
     modes: ["retakes"],
     commands: [
       { name: "rr", aliases: ["ranked"], description: "Start or stop Ranked Retakes — informational while auto mode is on" },
       { name: "rankedstatus", description: "Is ranked active?" },
       { name: "ry", description: "Accept the ongoing vote" },
       { name: "rn", description: "Decline the ongoing vote" },
-      { name: "cr", description: "Start a Competitive Retakes match vote (2v2/3v3, locked sides, MR12). Repeat to cancel a live one" },
+      { name: "cr", description: "Start a Blitz match vote (2v2/3v3, locked sides, MR12). Repeat to cancel a live one" },
       { name: "pause", aliases: ["p"], description: "Tactical pause — counts against your team's budget" },
       { name: "tech", aliases: ["technical"], description: "Technical pause, no time limit", level: "admin" },
       { name: "up", aliases: ["unpause"], description: "Resume the match" },

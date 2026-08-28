@@ -31,7 +31,7 @@ export async function POST(request: Request) {
     if (!friendship) return NextResponse.json({ error: "Not friends" }, { status: 403 });
 
     // Two different lobbies live on this site and this route serves both. It
-    // used to build /games/lobby/<id> unconditionally, so a competitive retakes
+    // used to build /games/lobby/<id> unconditionally, so a Blitz
     // invite sent whoever accepted it to the mini-game hub — a page with no
     // party of that id on it, which reads as an invite that expired.
     //

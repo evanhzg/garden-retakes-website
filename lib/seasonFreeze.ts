@@ -2,7 +2,7 @@
  * The season freeze, in one place.
  *
  * While the season-end vote is open the season is over and ELO is frozen, so
- * ranked and competitive retakes are not something the server can honestly run:
+ * ranked and Blitz are not something the server can honestly run:
  * the points they exist to award would go nowhere. Three surfaces have to say so
  * — the admin panel's game-mode control, the admin dashboard, and the homepage
  * ballot — and they have to agree on the answer to "when do they come back",

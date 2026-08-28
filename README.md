@@ -40,7 +40,7 @@ It reads the same MySQL database that the [garden-retakes plugin](https://github
 |---|---|
 | `/` | Server connect button + current-season ELO ladder |
 | `/players/[steamId]` | Full per-player stats with season selector, ranked filter, match history |
-| `/teams` | Competitive Retakes duo/trio ELO ladder + recent CR matches |
+| `/teams` | Blitz duo/trio ELO ladder + recent CR matches |
 | `/seasons` | All seasons with champions and record ELOs |
 | `/inventory` | In-game skin/sticker loadout builder (Steam login required for in-game sync) |
 | `/duels` | Duel arena stats and scoreboard |

@@ -1,4 +1,4 @@
-// Competitive retakes loadout: what you want to be handed, and what you play as.
+// Blitz loadout: what you want to be handed, and what you play as.
 //
 // Two halves that live in different places on purpose.
 //

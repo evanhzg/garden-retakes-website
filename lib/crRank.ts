@@ -1,4 +1,4 @@
-// Competitive Retakes rank levels: FACEIT-style 1-10, derived from
+// Blitz rank levels: FACEIT-style 1-10, derived from
 // GardenCompetitiveRating.Elo (a different scale from the general ladder Elo —
 // see CompetitiveEloEngine.cs, StartingElo 1000, Floor 100). That table has
 // almost no real match history yet (CR only actually started working once the

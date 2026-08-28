@@ -5,7 +5,7 @@ export const dynamic = "force-dynamic";
 
 export const metadata = {
   title: "Competitive — matchmaking",
-  description: "Queue 2v2 or 3v3 competitive retakes with a proper map veto.",
+  description: "Queue 2v2 or 3v3 Blitz with a proper map veto.",
   robots: { index: false, follow: false },
 };
 

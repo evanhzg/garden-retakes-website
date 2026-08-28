@@ -58,7 +58,7 @@ export default function EconomyPage() {
   return (
     <div className="ec">
       <section className="ec-hero">
-        <span className="ec-kicker">Competitive retakes</span>
+        <span className="ec-kicker">Blitz</span>
         <h1>The economy</h1>
         <p className="muted">
           There is no buy menu. You cannot forget to buy, and you cannot get it wrong. What you

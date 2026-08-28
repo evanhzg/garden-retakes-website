@@ -1,6 +1,6 @@
 import { canUseWeapon, type RoleId } from "@/lib/competitive";
 
-// The competitive retakes economy.
+// The Blitz economy.
 //
 // Retakes normally has no economy at all: the allocator hands out a gun and the
 // round starts. That works when the mode is a warm-up, and stops working the
