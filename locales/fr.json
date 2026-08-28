@@ -2427,6 +2427,7 @@
   "lobby.matches.minutes": "{n} min",
   "lobby.matches.yourTeam": "Votre équipe",
   "lobby.matches.opponents": "Adversaires",
+  "lobby.matches.openMatch": "Ouvrir la page du match",
   "lobby.matches.outcome.win": "Victoire",
   "lobby.matches.outcome.loss": "Défaite",
   "lobby.matches.outcome.draw": "Nul",

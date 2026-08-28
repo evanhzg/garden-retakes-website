@@ -18,6 +18,85 @@ export const runtime = "nodejs";
 /** The plugin stores a roster as its SteamID64s, sorted and dash-joined. */
 const rosterOf = (key: string) => (key ?? "").split("-").filter(Boolean);
 
+/**
+ * The tournament-pipeline matches this player was in.
+ *
+ * Every lobby game is one of these now, and unlike a CrMatch they have a page:
+ * `/tournaments/<slug>/match/<id>`, carrying the scoreboard, the veto, the roles
+ * and — for an organizer — the admin controls. A CrMatch has nowhere to link to,
+ * which is why `url` is null on those and set on these.
+ *
+ * Shaped exactly like the CrMatch rows so the two merge and the client never has
+ * to know which system a row came from.
+ */
+async function tournamentMatchesFor(target: string, limit: number) {
+  try {
+    const memberships = await prisma.tournamentTeamMember.findMany({
+      where: { SteamId: BigInt(target), Status: { not: "removed" } },
+      select: { TeamId: true },
+    });
+
+    const teamIds = memberships.map((m) => m.TeamId);
+    if (teamIds.length === 0) return [];
+
+    const rows = await prisma.tournamentMatch.findMany({
+      where: { OR: [{ TeamAId: { in: teamIds } }, { TeamBId: { in: teamIds } }] },
+      orderBy: { Id: "desc" },
+      take: limit,
+      include: { Tournament: { select: { Slug: true, TeamSize: true } } },
+    });
+
+    if (rows.length === 0) return [];
+
+    const teams = await prisma.tournamentTeam.findMany({
+      where: {
+        Id: {
+          in: rows.flatMap((m) => [m.TeamAId, m.TeamBId].filter((x): x is number => x !== null)),
+        },
+      },
+      include: { Members: { where: { Status: { not: "removed" } }, select: { SteamId: true } } },
+    });
+
+    const teamById = new Map(teams.map((x) => [x.Id, x]));
+    const involved = new Set(teamIds);
+
+    return rows.map((m) => {
+      const mine = m.TeamAId !== null && involved.has(m.TeamAId) ? "A" : "B";
+      const myTeam = teamById.get((mine === "A" ? m.TeamAId : m.TeamBId) ?? -1);
+      const theirTeam = teamById.get((mine === "A" ? m.TeamBId : m.TeamAId) ?? -1);
+
+      const decided = m.WinnerTeamId !== null;
+      const won = decided && m.WinnerTeamId === myTeam?.Id;
+
+      const outcome: "win" | "loss" | "draw" | "cancelled" =
+        m.State !== "finished" ? "cancelled" : !decided ? "draw" : won ? "win" : "loss";
+
+      return {
+        id: `t${m.Id}`,
+        seasonId: 0,
+        // A series has no one map. The page lists every map it played.
+        map: "",
+        startedAt: (m.StartedAt ?? m.EndedAt ?? new Date()).toISOString(),
+        endedAt: m.EndedAt ? m.EndedAt.toISOString() : null,
+        teamSize: m.Tournament.TeamSize,
+        score: (mine === "A" ? [m.ScoreA, m.ScoreB] : [m.ScoreB, m.ScoreA]) as [number, number],
+        teamName: myTeam?.Name ?? "",
+        opponentName: theirTeam?.Name ?? "",
+        roster: (myTeam?.Members ?? []).map((x) => x.SteamId.toString()),
+        opponents: (theirTeam?.Members ?? []).map((x) => x.SteamId.toString()),
+        // These do not move retakes ELO.
+        eloDelta: 0,
+        outcome,
+        url: `/tournaments/${m.Tournament.Slug}/match/${m.Id}`,
+      };
+    });
+  } catch {
+    // Half a history is better than none: if this side fails, the CrMatch rows
+    // still render.
+    return [];
+  }
+}
+
 export async function GET(req: Request) {
   const url = new URL(req.url);
   const asked = url.searchParams.get("steamId");
@@ -67,12 +146,27 @@ export async function GET(req: Request) {
           // "cancelled" is a real outcome here — a roster that emptied out —
           // and it is neither a win nor a draw.
           outcome: m.Result === "cancelled" ? "cancelled" : won ? "win" : drawn ? "draw" : "loss",
+          // CrMatches are written by the game server and have no page of their
+          // own — the tournament ones below do.
+          url: null as string | null,
         };
       })
       .filter(Boolean)
       .slice(0, limit);
 
-    return NextResponse.json({ steamId: target, matches });
+    // Matches that ran through the tournament pipeline, which is every lobby
+    // game now: those have a page with the scoreboard, the veto, the roles and
+    // the admin controls on it, so the list can link to it rather than being a
+    // dead end.
+    const tournament = await tournamentMatchesFor(target, limit);
+
+    // Newest first across both sources, so a player's history reads as one list
+    // rather than as two systems they have to know about.
+    const merged = [...matches, ...tournament]
+      .sort((x, y) => Date.parse(String(y!.startedAt ?? 0)) - Date.parse(String(x!.startedAt ?? 0)))
+      .slice(0, limit);
+
+    return NextResponse.json({ steamId: target, matches: merged });
   } catch (err) {
     return NextResponse.json(
       { error: err instanceof Error ? err.message : "Could not read the match history." },

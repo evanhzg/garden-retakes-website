@@ -1,8 +1,11 @@
 "use client";
 
 import { useEffect, useState } from "react";
+import { ExternalLink } from "lucide-react";
 import { useI18n } from "@/components/I18nProvider";
 import RetakesIcon from "@/components/retakes/RetakesIcon";
+import AvatarImage from "@/components/AvatarImage";
+import { usePlayerNames, displayNameFor } from "@/components/games/hooks";
 import { mapImage, mapName } from "@/lib/maps";
 
 type Match = {
@@ -19,6 +22,8 @@ type Match = {
   opponents: string[];
   eloDelta: number;
   outcome: "win" | "loss" | "draw" | "cancelled";
+  /** Where the match page is, when the match has one. */
+  url?: string | null;
 };
 
 /**
@@ -37,6 +42,13 @@ export default function MatchesTab({ steamId }: { steamId?: string | null }) {
   const { t } = useI18n();
   const [matches, setMatches] = useState<Match[] | null>(null);
   const [open, setOpen] = useState<string | null>(null);
+
+  // Both rosters of every match, resolved in one request rather than per row.
+  // Without this the detail panel listed raw SteamID64s — seventeen digits that
+  // identify a person to nobody.
+  const names = usePlayerNames(
+    (matches ?? []).flatMap((m) => [...m.roster, ...m.opponents]),
+  );
 
   useEffect(() => {
     if (!steamId) return;
@@ -111,7 +123,8 @@ export default function MatchesTab({ steamId }: { steamId?: string | null }) {
                   <ul>
                     {m.roster.map((id) => (
                       <li key={id} className={id === steamId ? "me" : ""}>
-                        {id}
+                        <AvatarImage steamId={id} className="rq-match-face" alt="" />
+                        <span>{displayNameFor(id, names)}</span>
                       </li>
                     ))}
                   </ul>
@@ -120,10 +133,25 @@ export default function MatchesTab({ steamId }: { steamId?: string | null }) {
                   <h4>{m.opponentName || t("lobby.matches.opponents")}</h4>
                   <ul>
                     {m.opponents.map((id) => (
-                      <li key={id}>{id}</li>
+                      <li key={id}>
+                        <AvatarImage steamId={id} className="rq-match-face" alt="" />
+                        <span>{displayNameFor(id, names)}</span>
+                      </li>
                     ))}
                   </ul>
                 </div>
+
+                {/* Only the matches that have a page. A CrMatch is written by
+                    the game server and has nowhere to go; every match formed in
+                    the lobby now runs through the tournament pipeline and has
+                    the full page — scoreboard, veto, roles, and the admin
+                    controls for whoever may use them. */}
+                {m.url && (
+                  <a className="btn btn-secondary rq-match-open" href={m.url}>
+                    <ExternalLink size={14} />
+                    {t("lobby.matches.openMatch")}
+                  </a>
+                )}
               </div>
             )}
           </li>

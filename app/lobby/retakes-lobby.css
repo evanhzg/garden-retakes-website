@@ -837,8 +837,28 @@ html[data-motion="off"] .rq-server-pip.now { animation: none; }
   background: color-mix(in srgb, var(--color-text) 3%, transparent);
 }
 .rq-match-detail h4 { margin: 0 0 8px; font-size: 11px; letter-spacing: 0.1em; text-transform: uppercase; color: var(--muted); }
-.rq-match-detail ul { list-style: none; margin: 0; padding: 0; display: grid; gap: 3px; font-size: 12px; font-family: var(--font-mono); }
+/* Faces and names, not SteamIDs. The monospace was there because the rows used
+   to be seventeen digits and wanted to align; a name reads better in the body
+   font, so only the digits that remain (a player nobody could resolve) keep it. */
+.rq-match-detail ul { list-style: none; margin: 0; padding: 0; display: grid; gap: 5px; font-size: 12.5px; }
+.rq-match-detail li { display: flex; align-items: center; gap: 7px; min-width: 0; }
+.rq-match-detail li > span { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 .rq-match-detail li.me { color: var(--color-accent); font-weight: 700; }
+
+.rq-match-face {
+  width: 20px; height: 20px; flex: none;
+  object-fit: cover;
+  border: 1px solid var(--border);
+}
+
+/* Under both rosters rather than beside one, so it reads as being about the
+   match rather than about a team. */
+.rq-match-open {
+  grid-column: 1 / -1;
+  justify-self: start;
+  margin-top: 4px;
+  display: inline-flex; align-items: center; gap: 6px;
+}
 
 .rq-live-head { display: flex; align-items: center; gap: 16px; margin-bottom: 18px; }
 .rq-live-map { width: 128px; height: 72px; object-fit: cover; }
