@@ -1,0 +1,285 @@
+/* The round-by-round history, as a modal over the match page.
+   Shares the shape of matchadminmodal.css on purpose — the two open from
+   buttons that sit next to each other, and a second modal that behaved
+   differently would read as a different part of the site. */
+
+.mh-backdrop {
+  position: fixed;
+  inset: 0;
+  z-index: 120;
+  display: flex;
+  align-items: flex-start;
+  justify-content: center;
+  padding: var(--space-6) var(--space-4);
+  background: color-mix(in srgb, #000 62%, transparent);
+  overflow-y: auto;
+}
+
+.mh-card {
+  /* Wider than the controls modal: this one has a table in it, and a loadout is
+     five weapon names on one line. */
+  width: min(920px, 100%);
+  border: 1px solid var(--color-divider);
+  background: var(--color-bg);
+  box-shadow: var(--shadow-lg);
+  display: grid;
+  align-content: start;
+}
+
+.mh-head {
+  display: flex;
+  align-items: center;
+  gap: var(--space-3);
+  padding: var(--space-3) var(--space-4);
+  border-bottom: 2px solid var(--color-divider);
+  position: sticky;
+  top: 0;
+  background: var(--color-bg);
+  z-index: 1;
+}
+
+.mh-head h3 {
+  margin: 0;
+  font-size: 16px;
+  flex: none;
+}
+
+.mh-teams {
+  font-size: 12px;
+  color: var(--color-text-muted);
+  overflow-wrap: anywhere;
+  min-width: 0;
+}
+
+.mh-close {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 32px;
+  height: 32px;
+  border: 1px solid var(--color-divider);
+  background: transparent;
+  color: var(--color-text);
+  cursor: pointer;
+  flex: none;
+  margin-left: auto;
+}
+
+.mh-close:hover {
+  border-color: var(--color-accent);
+  color: var(--color-accent);
+}
+
+.mh-body {
+  padding: var(--space-4);
+  display: grid;
+  gap: var(--space-5);
+}
+
+.mh-section h4 {
+  margin: 0 0 var(--space-2);
+  font-size: 11px;
+  font-weight: 800;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+  color: var(--color-text-muted);
+}
+
+.mh-note {
+  margin: 0;
+  font-size: 12px;
+  color: var(--color-text-muted);
+}
+
+/* ---------- Rounds ---------- */
+
+.mh-rounds {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: grid;
+  gap: 3px;
+}
+
+.mh-rounds > li {
+  border: 1px solid var(--color-divider);
+}
+
+.mh-rounds > li.open {
+  border-color: var(--color-accent);
+}
+
+.mh-round {
+  width: 100%;
+  display: grid;
+  grid-template-columns: 16px 2rem 3.2rem 1fr auto;
+  align-items: center;
+  gap: var(--space-2);
+  padding: 6px 8px;
+  border: none;
+  border-radius: 0;
+  background: transparent;
+  color: inherit;
+  font: inherit;
+  font-size: 12px;
+  text-align: left;
+  cursor: pointer;
+}
+
+.mh-round:hover {
+  background: color-mix(in srgb, var(--color-text) 5%, transparent);
+}
+
+.mh-rn {
+  font-weight: 800;
+  opacity: 0.6;
+  text-align: right;
+}
+
+.mh-score {
+  font-weight: 800;
+  font-size: 13px;
+}
+
+.mh-sides {
+  display: grid;
+  gap: 1px;
+  min-width: 0;
+  font-size: 10.5px;
+}
+
+.mh-t,
+.mh-side.mh-t h5 {
+  color: var(--color-t, #d08a3a);
+}
+
+.mh-ct,
+.mh-side.mh-ct h5 {
+  color: var(--color-ct, #5b8fd0);
+}
+
+.mh-t,
+.mh-ct {
+  overflow-wrap: anywhere;
+}
+
+.mh-econ {
+  font-size: 10.5px;
+  color: var(--color-text-muted);
+  white-space: nowrap;
+}
+
+/* ---------- One round, opened ---------- */
+
+.mh-round-body {
+  border-top: 1px solid var(--color-divider);
+  padding: var(--space-3);
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(min(100%, 300px), 1fr));
+  gap: var(--space-3);
+}
+
+.mh-side h5 {
+  margin: 0 0 4px;
+  font-size: 10px;
+  font-weight: 800;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  overflow-wrap: anywhere;
+}
+
+.mh-players {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: grid;
+  gap: 3px;
+}
+
+.mh-players li {
+  display: grid;
+  grid-template-columns: 1fr auto auto;
+  align-items: baseline;
+  gap: var(--space-2);
+  font-size: 11.5px;
+}
+
+.mh-pname {
+  font-weight: 700;
+  overflow-wrap: anywhere;
+  min-width: 0;
+}
+
+.mh-kda {
+  font-variant-numeric: tabular-nums;
+}
+
+.mh-cash {
+  font-size: 10.5px;
+  color: var(--color-text-muted);
+  white-space: nowrap;
+}
+
+/* The loadout wraps under the player's line rather than squeezing into a
+   column: five weapon names never fit beside a name and a K/D, and truncating
+   them removes the one thing the row is here to show. */
+.mh-items {
+  grid-column: 1 / -1;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 3px;
+  margin-bottom: 3px;
+}
+
+.mh-item {
+  font-size: 9.5px;
+  padding: 1px 4px;
+  border: 1px solid var(--color-divider);
+  color: var(--color-text-muted);
+  white-space: nowrap;
+}
+
+/* ---------- Admin actions ---------- */
+
+.mh-log {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: grid;
+  gap: 2px;
+  max-height: 260px;
+  overflow-y: auto;
+}
+
+.mh-log li {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: baseline;
+  gap: var(--space-2);
+  padding: 4px 6px;
+  border: 1px solid var(--color-divider);
+  font-size: 11px;
+}
+
+.mh-log time {
+  font-family: var(--font-mono);
+  font-size: 10px;
+  color: var(--color-text-muted);
+  white-space: nowrap;
+}
+
+.mh-actor {
+  font-weight: 700;
+}
+
+.mh-action {
+  color: var(--color-accent);
+  font-weight: 700;
+}
+
+.mh-detail {
+  font-size: 10px;
+  color: var(--color-text-muted);
+  overflow-wrap: anywhere;
+  min-width: 0;
+}

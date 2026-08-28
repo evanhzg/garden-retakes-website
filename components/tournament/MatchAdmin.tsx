@@ -3,6 +3,7 @@
 import { useCallback, useState } from "react";
 import { useI18n } from "@/components/I18nProvider";
 import type { BackupRow } from "@/lib/tournament/backups";
+import { CT_ROLES, T_ROLES } from "@/lib/tournament/roles";
 import MatchBubble from "./MatchBubble";
 import type { MatchPreview } from "@/lib/tournament/preview";
 import "./matchadmin.css";
@@ -33,6 +34,11 @@ export default function MatchAdmin({ matchId, matchKey, teamA, teamB, state, adm
   const [scoreA, setScoreA] = useState("");
   const [scoreB, setScoreB] = useState("");
   const [restoreRound, setRestoreRound] = useState("");
+  const [roleSteamId, setRoleSteamId] = useState("");
+  const [roleSide, setRoleSide] = useState("t");
+  const [roleName, setRoleName] = useState("");
+  const [econSlot, setEconSlot] = useState("a");
+  const [econAmount, setEconAmount] = useState("");
 
   // The restart flow. `backups === null` means "not asked yet", which is not
   // the same as "asked and there are none" — the panel says different things
@@ -179,6 +185,60 @@ export default function MatchAdmin({ matchId, matchKey, teamA, teamB, state, adm
           onClick={() => rcon(`css_score ${Number(scoreA)} ${Number(scoreB)}`)}
         >
           {t("matchAdmin.setScore")}
+        </button>
+      </div>
+
+      <div className="ma-group">
+        <h4>{t("matchAdmin.roles")}</h4>
+        {/* SteamID rather than a name picker: the plugin keys roles by roster id
+            and a name is not unique on a server with bots called after real
+            players. The panels on the match page show the id, so it is a copy
+            away rather than something to look up. */}
+        <input
+          value={roleSteamId}
+          onChange={(e) => setRoleSteamId(e.target.value)}
+          placeholder={t("matchAdmin.steamId")}
+          inputMode="numeric"
+        />
+        <select value={roleSide} onChange={(e) => setRoleSide(e.target.value)}>
+          <option value="t">T</option>
+          <option value="ct">CT</option>
+        </select>
+        <select value={roleName} onChange={(e) => setRoleName(e.target.value)}>
+          <option value="">{t("matchAdmin.pickRole")}</option>
+          {(roleSide === "t" ? T_ROLES : CT_ROLES).map((r) => (
+            <option key={r.id} value={r.id}>
+              {r.label}
+            </option>
+          ))}
+        </select>
+        <button
+          className="btn"
+          disabled={busy || !roleSteamId || !roleName}
+          onClick={() => rcon(`css_setrole ${roleSteamId.trim()} ${roleSide} ${roleName}`)}
+        >
+          {t("matchAdmin.setRole")}
+        </button>
+      </div>
+
+      <div className="ma-group">
+        <h4>{t("matchAdmin.economy")}</h4>
+        <select value={econSlot} onChange={(e) => setEconSlot(e.target.value)}>
+          <option value="a">{teamA}</option>
+          <option value="b">{teamB}</option>
+        </select>
+        <input
+          value={econAmount}
+          onChange={(e) => setEconAmount(e.target.value)}
+          placeholder={t("matchAdmin.amount")}
+          inputMode="numeric"
+        />
+        <button
+          className="btn"
+          disabled={busy || !econAmount}
+          onClick={() => rcon(`css_economy ${econSlot} ${Number(econAmount)}`)}
+        >
+          {t("matchAdmin.setEconomy")}
         </button>
       </div>
 

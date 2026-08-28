@@ -112,3 +112,104 @@ export function parseBackups(reply: string): BackupRow[] {
   // way round.
   return rows.sort((a, b) => b.round - a.round);
 }
+
+/** One player, as the round detail holds them. */
+export type RoundPlayer = {
+  name: string;
+  side: "t" | "ct";
+  cash: number;
+  /** Running totals to the END of this round, not the round's own. */
+  kills: number;
+  deaths: number;
+  assists: number;
+  /** What they took into the round. */
+  items: string[];
+};
+
+export type RoundDetail = {
+  round: number;
+  map: string;
+  t: { team: string; score: number };
+  ct: { team: string; score: number };
+  players: RoundPlayer[];
+};
+
+/**
+ * Reads `css_roundinfo`, which answers one header line and one line per player.
+ *
+ * Same scanner as the listing above, for the same reason: a player can be
+ * called anything, including things that look like the format.
+ */
+export function parseRoundDetail(reply: string): RoundDetail | null {
+  let head: RoundDetail | null = null;
+
+  for (const raw of (reply || "").split("\n")) {
+    const line = raw.trim();
+
+    const at = line.indexOf("round round=");
+    if (at >= 0) {
+      const f = fields(line.slice(at + "round ".length));
+      head = {
+        round: num(f.get("round")),
+        map: f.get("map") ?? "",
+        t: { team: f.get("t") ?? "", score: num(f.get("tscore")) },
+        ct: { team: f.get("ct") ?? "", score: num(f.get("ctscore")) },
+        players: [],
+      };
+      continue;
+    }
+
+    const pat = line.indexOf("rp round=");
+    if (pat < 0 || !head) continue;
+
+    const f = fields(line.slice(pat + "rp ".length));
+    const items = (f.get("items") ?? "").split(",").filter(Boolean);
+
+    head.players.push({
+      name: f.get("name") ?? "",
+      side: f.get("side") === "t" ? "t" : "ct",
+      cash: num(f.get("cash")),
+      kills: num(f.get("kills")),
+      deaths: num(f.get("deaths")),
+      assists: num(f.get("assists")),
+      items,
+    });
+  }
+
+  return head;
+}
+
+/**
+ * What actually happened in a round, from the two backups either side of it.
+ *
+ * The files hold running totals, so the round itself is a subtraction. Written
+ * here rather than in the component because it is arithmetic and because
+ * getting the direction wrong shows up as every player having negative kills,
+ * which is the kind of thing a test catches in a second and an eye does not.
+ *
+ * `before` is the backup taken AT the start of the round — its totals are what
+ * everybody had going in.
+ */
+export function roundDelta(
+  before: RoundDetail | null,
+  after: RoundDetail,
+): RoundPlayer[] {
+  if (!before) return after.players;
+
+  const was = new Map(before.players.map((p) => [p.name, p]));
+
+  return after.players.map((p) => {
+    const b = was.get(p.name);
+    if (!b) return p;
+
+    return {
+      ...p,
+      // Clamped at zero: a player who reconnected can have totals that went
+      // backwards, and a scoreboard showing -2 kills is worse than one showing
+      // none.
+      kills: Math.max(0, p.kills - b.kills),
+      deaths: Math.max(0, p.deaths - b.deaths),
+      assists: Math.max(0, p.assists - b.assists),
+    };
+  });
+}

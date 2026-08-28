@@ -1,9 +1,10 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import { Check, Copy, Eye, SlidersHorizontal, Tv } from "lucide-react";
+import { Check, Copy, Eye, History, SlidersHorizontal, Tv } from "lucide-react";
 import { useI18n } from "@/components/I18nProvider";
 import MatchAdminModal from "./MatchAdminModal";
+import MatchHistoryModal from "./MatchHistoryModal";
 import "./watch.css";
 
 // How to watch this match, and — for the people who run it — how to fix it.
@@ -65,6 +66,7 @@ export default function MatchWatch({
   const [detail, setDetail] = useState<Detail | null>(null);
   const [copied, setCopied] = useState<string | null>(null);
   const [adminOpen, setAdminOpen] = useState(false);
+  const [historyOpen, setHistoryOpen] = useState(false);
 
   useEffect(() => {
     let alive = true;
@@ -97,6 +99,14 @@ export default function MatchWatch({
         {t("matchAdmin.open")}
       </button>
 
+      {/* Beside the controls, because the two are asked in the same breath:
+          "what happened" and then "put it back". Reading is separated from
+          changing so that opening the history cannot fat-finger a restore. */}
+      <button className="btn btn-secondary mw-btn" onClick={() => setHistoryOpen(true)}>
+        <History size={15} />
+        {t("history.open")}
+      </button>
+
       {adminOpen && (
         <MatchAdminModal
           matchId={matchId}
@@ -105,6 +115,15 @@ export default function MatchWatch({
           teamB={teamB}
           state={state}
           onClose={() => setAdminOpen(false)}
+        />
+      )}
+
+      {historyOpen && (
+        <MatchHistoryModal
+          matchId={matchId}
+          teamA={teamA}
+          teamB={teamB}
+          onClose={() => setHistoryOpen(false)}
         />
       )}
     </>

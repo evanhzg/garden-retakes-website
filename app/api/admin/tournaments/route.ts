@@ -4,7 +4,7 @@ import { logAdminAction } from "@/lib/adminAuth";
 import { canManage, getTournamentContext, type TournamentContext } from "@/lib/tournamentAuth";
 import { roundRobin, singleElimination, resolveByes, type PlannedMatch } from "@/lib/tournament/bracket";
 import { forceEndMatch, restartMatch, startMatch } from "@/lib/tournament/matchRunner";
-import { parseBackups } from "@/lib/tournament/backups";
+import { parseBackups, parseRoundDetail } from "@/lib/tournament/backups";
 import { execOnServer } from "@/lib/tournament/servers";
 
 export const dynamic = "force-dynamic";
@@ -35,6 +35,8 @@ type Body = {
     | "end"
     | "restart"
     | "backups"
+    | "roundinfo"
+    | "adminlog"
     | "add-organizer"
     | "remove-organizer";
   tournamentId?: number;
@@ -57,6 +59,8 @@ type Body = {
   command?: string;
   // end
   winner?: "a" | "b";
+  // roundinfo
+  round?: number;
   // add-organizer / remove-organizer
   steamId?: string;
   organizerName?: string;
@@ -237,7 +241,15 @@ export async function POST(req: Request) {
       }
 
       const reply = await execOnServer(match.ServerId, body.command);
-      await logAdminAction(ctx, "tournament.rcon", undefined, body.command.slice(0, 250));
+      // The match id goes in the detail, so the per-match history can find it.
+      // Without it an rcon line is an orphan: "css_score 7 4" with no way to
+      // tell which of six live matches it was aimed at.
+      await logAdminAction(
+        ctx,
+        "tournament.rcon",
+        undefined,
+        `match ${body.matchId}: ${body.command}`.slice(0, 250),
+      );
 
       return NextResponse.json({ ok: true, reply });
     }
@@ -296,6 +308,54 @@ export async function POST(req: Request) {
       } catch {
         return NextResponse.json({ ok: true, backups: [] });
       }
+    }
+
+    case "roundinfo": {
+      if (!body.matchId || !body.round) {
+        return NextResponse.json({ error: "matchId and round?" }, { status: 400 });
+      }
+
+      const m = await prisma.tournamentMatch.findUnique({ where: { Id: body.matchId } });
+      if (!m?.ServerId) return NextResponse.json({ ok: true, detail: null });
+
+      try {
+        const reply = await execOnServer(m.ServerId, `css_roundinfo ${Number(body.round)}`);
+        return NextResponse.json({ ok: true, detail: parseRoundDetail(reply) });
+      } catch {
+        return NextResponse.json({ ok: true, detail: null });
+      }
+    }
+
+    case "adminlog": {
+      // Every admin action taken on this match.
+      //
+      // The log has no MatchId column — it is the site-wide audit trail — so the
+      // match is named in the detail and matched exactly here. `contains` alone
+      // would put match 17's history in front of match 1, and the SQL LIKE is
+      // only there to keep the row count down before the exact test runs.
+      if (!body.matchId) return NextResponse.json({ error: "matchId?" }, { status: 400 });
+
+      const id = body.matchId;
+
+      const rows = await prisma.gardenAdminLogEntry.findMany({
+        where: { Action: { startsWith: "tournament." }, Detail: { contains: `match ${id}` } },
+        orderBy: { AtUtc: "desc" },
+        take: 200,
+      });
+
+      const exact = new RegExp(`\\bmatch ${id}\\b`);
+
+      return NextResponse.json({
+        ok: true,
+        entries: rows
+          .filter((r) => exact.test(r.Detail))
+          .map((r) => ({
+            at: r.AtUtc.toISOString(),
+            actor: r.ActorName,
+            action: r.Action.replace(/^tournament\./, ""),
+            detail: r.Detail.replace(exact, "").replace(/^[:\s]+/, "").trim(),
+          })),
+      });
     }
 
     case "add-organizer": {
