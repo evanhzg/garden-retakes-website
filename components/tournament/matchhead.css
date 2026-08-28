@@ -1,0 +1,111 @@
+/* The top of the match page: where you are, who is playing, and the key to the
+   role marks used everywhere below. */
+
+/* The way out and the tournament name, on one line. Square, like everything
+   else here — the back control already carries a 0 radius and the name beside
+   it has no business being a pill. */
+.mh-nav {
+  display: flex;
+  align-items: stretch;
+  gap: 0;
+  margin-bottom: var(--space-3);
+  min-width: 0;
+}
+
+.mh-nav .t-back {
+  margin-bottom: 0;
+  border-right: none;
+}
+
+.mh-tournament {
+  display: inline-flex;
+  align-items: center;
+  min-height: 40px;
+  padding: 8px 14px;
+  border: 1px solid var(--color-divider);
+  border-radius: 0;
+  background: transparent;
+  color: var(--color-text-muted);
+  font-size: 12px;
+  font-weight: 800;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  text-decoration: none;
+  overflow-wrap: anywhere;
+}
+
+.mh-tournament:hover {
+  color: var(--color-accent);
+  border-color: var(--color-accent);
+}
+
+/* ---------- Hero: identity left, legend right ---------- */
+
+.mh-hero {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) minmax(220px, 280px);
+  gap: var(--space-4);
+  align-items: start;
+}
+
+.mh-id {
+  display: grid;
+  gap: var(--space-3);
+  min-width: 0;
+}
+
+.mh-id h1 {
+  margin: 0;
+  overflow-wrap: anywhere;
+}
+
+.mh-meta {
+  display: flex;
+  align-items: center;
+  gap: var(--space-2);
+  flex-wrap: wrap;
+  margin: 0;
+}
+
+.mh-bo {
+  font-size: 11px;
+  font-weight: 800;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  color: var(--color-text-muted);
+  border: 1px solid var(--color-divider);
+  padding: 3px 7px;
+}
+
+.mh-score {
+  font-family: var(--font-mono);
+  font-variant-numeric: tabular-nums;
+  font-size: 15px;
+  font-weight: 800;
+}
+
+@media (max-width: 900px) {
+  /* The legend goes under the identity rather than squeezing it. It is a key,
+     not a control — nobody needs it before they know whose match this is. */
+  .mh-hero {
+    grid-template-columns: minmax(0, 1fr);
+  }
+}
+
+@media (max-width: 640px) {
+  /* The back control is full width on a phone (back.css), so the name stacks
+     beneath it and keeps its own full-width row rather than being squeezed
+     into a strip beside a centred button. */
+  .mh-nav {
+    flex-direction: column;
+  }
+
+  .mh-nav .t-back {
+    border-right: 1px solid var(--color-divider);
+  }
+
+  .mh-tournament {
+    justify-content: center;
+    border-top: none;
+  }
+}

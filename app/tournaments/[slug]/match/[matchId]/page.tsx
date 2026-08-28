@@ -9,6 +9,8 @@ import MatchStage from "@/components/tournament/MatchStage";
 import MatchWatch from "@/components/tournament/MatchWatch";
 import StatusTag from "@/components/tournament/StatusTag";
 import { scoreboardFor } from "@/lib/tournament/scoreboard";
+import { RoleLegend } from "@/components/tournament/RoleIcon";
+import "@/components/tournament/matchhead.css";
 
 export const dynamic = "force-dynamic";
 
@@ -81,31 +83,49 @@ export default async function MatchPage({
 
   return (
     <>
-      <BackToTournament slug={params.slug} label={t("match.backToBracket")} />
+      {/* The way out and where you are, on one line. The tournament name used
+          to be an eyebrow inside the hero, which put the two halves of "where
+          am I" in different places and left the back control sitting alone
+          above an empty row. */}
+      <div className="mh-nav">
+        <BackToTournament slug={params.slug} label={t("match.backToBracket")} />
+        <Link className="mh-tournament" href={`/tournaments/${params.slug}`}>
+          {match.Tournament.Name}
+        </Link>
+      </div>
 
       <section className="hero hero-compact">
-        <div className="hero-inner">
-          <p className="eyebrow">
-            <Link href={`/tournaments/${params.slug}`}>{match.Tournament.Name}</Link>
-          </p>
-          <h1 className="grad">
-            {teamA?.Name ?? "—"} <span className="muted">v</span> {teamB?.Name ?? "—"}
-          </h1>
-          <p className="muted">
-            BO{match.BestOf}
-            {" · "}
-            <StatusTag kind="match" value={match.State} />
-            {match.ScoreA + match.ScoreB > 0 && (
-              <>
-                {" · "}
-                {match.ScoreA} – {match.ScoreB}
-              </>
-            )}
-          </p>
+        <div className="hero-inner mh-hero">
+          <div className="mh-id">
+            <h1 className="grad">
+              {teamA?.Name ?? "—"} <span className="muted">v</span> {teamB?.Name ?? "—"}
+            </h1>
 
-          {/* GOTV first. Only rendered at all once there is a server and this
-              viewer is allowed at it — the endpoint decides both. */}
-          <MatchWatch matchId={match.Id} />
+            <p className="mh-meta">
+              <span className="mh-bo">BO{match.BestOf}</span>
+              <StatusTag kind="match" value={match.State} className="tiny" />
+              {match.ScoreA + match.ScoreB > 0 && (
+                <span className="mh-score num">
+                  {match.ScoreA} – {match.ScoreB}
+                </span>
+              )}
+            </p>
+
+            {/* GOTV first. Only rendered at all once there is a server and this
+                viewer is allowed at it — the endpoint decides both. */}
+            <MatchWatch
+              matchId={match.Id}
+              matchKey={match.MatchKey}
+              teamA={teamA?.Name ?? "A"}
+              teamB={teamB?.Name ?? "B"}
+              state={match.State}
+              isOrganizer={isOrganizer}
+            />
+          </div>
+
+          {/* The key to the role marks. Top right, because the marks it explains
+              are down both edges of everything below it. */}
+          <RoleLegend />
         </div>
       </section>
 

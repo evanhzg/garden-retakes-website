@@ -9,6 +9,16 @@ import StatusTag from "./StatusTag";
 import type { BracketMatch } from "./Bracket";
 import "./matchmodal.css";
 
+/**
+ * A steam:// link that actually launches something.
+ *
+ * `steam://connect/host:port` names an address and no game, so Steam has to
+ * guess the title by querying the server — and when that fails the link does
+ * nothing at all, silently. `rungameid/730` says Counter-Strike 2 outright.
+ */
+const steamConnect = (address: string) =>
+  `steam://rungameid/730//+connect%20${encodeURIComponent(address)}`;
+
 // What a bracket box opens.
 //
 // It used to navigate straight to the match page, which is a whole page load
@@ -150,7 +160,7 @@ export default function MatchModal({
                   organizer never set one, not the first offer. */}
               <a
                 className="btn btn-primary mm-btn"
-                href={`steam://connect/${detail.gotv ?? detail.connect}`}
+                href={steamConnect(detail.gotv ?? detail.connect!)}
               >
                 <Tv size={15} />
                 {detail.gotv ? t("match.watchGotv") : t("match.spectate")}
@@ -159,7 +169,7 @@ export default function MatchModal({
               {/* The server itself, for anybody who actually needs to be in it.
                   Only when it is a different address from the one above. */}
               {detail.gotv && detail.connect && (
-                <a className="btn btn-secondary mm-btn" href={`steam://connect/${detail.connect}`}>
+                <a className="btn btn-secondary mm-btn" href={steamConnect(detail.connect)}>
                   <Eye size={15} />
                   {t("match.joinServer")}
                 </a>

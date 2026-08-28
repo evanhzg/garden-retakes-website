@@ -3,7 +3,7 @@
 import { useCallback, useEffect, useMemo, useState } from "react";
 import { useI18n } from "@/components/I18nProvider";
 import type { Scoreboard as Board, ScoreboardRow } from "@/lib/tournament/scoreboard";
-import { roleLabel } from "@/lib/tournament/roles";
+import { RolePair } from "./RoleIcon";
 import "./scoreboard.css";
 
 // The match scoreboard: one tab per map, and the series across all of them.
@@ -279,9 +279,7 @@ function Side({
                     <td className="num">{r.utilityDamage}</td>
                     <td className="num">{r.damage}</td>
                     <td className="sb-role">
-                      {roleLabel(r.roleT) || "—"}
-                      <span className="muted"> / </span>
-                      {roleLabel(r.roleCt) || "—"}
+                      <RolePair roleT={r.roleT} roleCt={r.roleCt} />
                     </td>
                   </>
                 )}

@@ -24,12 +24,15 @@ export default function StatusTag({
   kind,
   value,
   label,
+  className,
 }: {
   /** Which family of states this is, so `running` can differ per family. */
   kind: "tournament" | "team" | "match" | "server" | "member";
   value: string | null | undefined;
   /** Overrides the "STATUS" caption. */
   label?: string;
+  /** `tiny` for a header, `compact` inside a dense table row. */
+  className?: string;
 }) {
   const { t } = useI18n();
 
@@ -46,7 +49,7 @@ export default function StatusTag({
   const text = translated === key ? humanise(raw) : translated;
 
   return (
-    <span className={`status status-${kind} st-${raw.toLowerCase()}`}>
+    <span className={`status status-${kind} st-${raw.toLowerCase()}${className ? ` ${className}` : ""}`}>
       <span className="status-label">{label ?? t("status.label")}</span>
       <span className="status-value">{text}</span>
     </span>

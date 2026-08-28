@@ -84,6 +84,31 @@
   opacity: 0.85;
 }
 
+/* ---------- Tiny ----------
+   For a page header, where the tag sits beside a 40px team name and has to
+   read as metadata rather than as a second heading. Keeps the stacked shape —
+   the caption is what makes "Ready" mean a match state rather than a word — but
+   drops both sizes and tightens the box around them. */
+
+.status.tiny {
+  padding: 3px 7px;
+  border-left-width: 2px;
+}
+
+.status.tiny .status-label {
+  font-size: 7.5px;
+  letter-spacing: 0.1em;
+  /* Hard against the top-left corner: at this size the default line-height
+     floats it in the middle of the box and it reads as a second value. */
+  line-height: 1;
+  align-self: flex-start;
+}
+
+.status.tiny .status-value {
+  font-size: 10.5px;
+  line-height: 1.15;
+}
+
 /* ---------- Compact ----------
    Inside a dense table row the caption is repeated on every line and stops
    earning its space, so the header carries it instead. */

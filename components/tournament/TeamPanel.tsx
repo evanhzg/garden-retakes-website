@@ -1,7 +1,7 @@
 "use client";
 
 import { useI18n } from "@/components/I18nProvider";
-import { roleLabel } from "@/lib/tournament/roles";
+import { RolePair } from "./RoleIcon";
 import "./teampanel.css";
 
 // One team, down the side of the veto and the match.
@@ -88,16 +88,13 @@ export default function TeamPanel({
 
               {p.isBot && <span className="tp-bot">{t("scoreboard.bot")}</span>}
 
-              {/* An em dash rather than an empty cell, so a roleless player reads
-                  as "not chosen yet" rather than as a rendering fault. */}
+              {/* Marks, not words. Two role names per player across ten players
+                  is more text than the names themselves, and it pushed the
+                  panel wide enough to squeeze the board it sits beside. The
+                  legend on the page is what makes them readable; the em dash
+                  inside a mark is "not chosen yet" rather than a failed draw. */}
               <span className="tp-roles">
-                <span className="tp-role" title={t("scoreboard.roleT")}>
-                  {roleLabel(p.roleT) || "—"}
-                </span>
-                <span className="tp-role-sep">/</span>
-                <span className="tp-role" title={t("scoreboard.roleCt")}>
-                  {roleLabel(p.roleCt) || "—"}
-                </span>
+                <RolePair roleT={p.roleT} roleCt={p.roleCt} />
               </span>
             </li>
           ))}

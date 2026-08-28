@@ -3071,5 +3071,8 @@
   "scoreboard.utilityHint": "Dégâts infligés aux grenades.",
   "state.match.roles": "Rôles",
   "settings.roles": "Rôles",
-  "settings.rolesHint": "Quand les équipes choisissent leurs rôles. Les matchs déjà joués conservent les leurs."
+  "settings.rolesHint": "Quand les équipes choisissent leurs rôles. Les matchs déjà joués conservent les leurs.",
+  "roles.legend": "Rôles",
+  "matchAdmin.open": "Admin",
+  "matchAdmin.title": "Contrôles du match"
 }

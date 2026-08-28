@@ -3071,5 +3071,8 @@
   "scoreboard.utilityHint": "Damage dealt with grenades.",
   "state.match.roles": "Roles",
   "settings.roles": "Roles",
-  "settings.rolesHint": "When teams choose their roles. Matches already played keep the roles they were played with."
+  "settings.rolesHint": "When teams choose their roles. Matches already played keep the roles they were played with.",
+  "roles.legend": "Roles",
+  "matchAdmin.open": "Admin",
+  "matchAdmin.title": "Match controls"
 }

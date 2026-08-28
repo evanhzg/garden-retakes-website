@@ -14,7 +14,7 @@
  *     node --import '...alias loader...' tools/tests/roledraft.live.mts
  */
 import { prisma } from "@/lib/db";
-import { draftState, validateRolePick } from "@/lib/tournament/roles";
+import { autoRolePick, draftState, validateRolePick } from "@/lib/tournament/roles";
 import {
   autoRoleDraft,
   beginRoleDraft,
@@ -335,6 +335,62 @@ async function main() {
   check("the carried roles are complete", carried.every((p) => !!p.roleT && !!p.roleCt));
 
   await cleanup(second2.tournament.Id);
+
+  // ------------------------------- the last pick of a tournament-mode draft
+  //
+  // The regression this exists for: `drafting` used to be recomputed from the
+  // team sheet on every request, and the draft writes to the team sheet as it
+  // goes. So the moment one team's third player picked, that team read as
+  // "complete", dropped out of the order, and the order was rebuilt shorter —
+  // ordinals shifted backwards and the final pick was handed one an earlier
+  // pick already held. The unique index rejected it, the request 500'd, and the
+  // last player in the draft simply could not choose.
+  //
+  // Re-reading draftSides between every pick is what makes this test catch it;
+  // autoRoleDraft reads once and would have sailed straight past.
+  const third = await makeTournament("tournament");
+  await beginRolesOrVeto(third.match.Id);
+
+  const seen: number[] = [];
+  let failure: string | null = null;
+
+  for (let i = 0; i < 8; i++) {
+    const fresh = (await draftSides(third.match.Id))!;
+    const picks2 = await picksFor(third.match.Id);
+    const st = draftState(fresh.drafting.A, fresh.drafting.B, picks2);
+
+    if (!st.next) break;
+
+    seen.push(st.next.ordinal);
+
+    const teamId = fresh.teamIdOf[st.next.team]!;
+    const auto = autoRolePick(fresh.drafting.A, fresh.drafting.B, picks2)!;
+
+    try {
+      await recordRolePick(
+        third.match.Id,
+        teamId,
+        st.next.ordinal,
+        st.next.steamId,
+        auto.roleT,
+        auto.roleCt,
+        false,
+      );
+    } catch (err) {
+      failure = err instanceof Error ? err.message.split("\n").pop()! : String(err);
+      break;
+    }
+  }
+
+  check("every pick lands, including the last", failure === null, failure ?? "");
+  check("ordinals never go backwards", seen.every((o, i) => i === 0 || o > seen[i - 1]), seen.join(","));
+  check("the order stays six long", seen.length === 6, seen.join(","));
+  check(
+    "all six players ended up with roles",
+    (await picksFor(third.match.Id)).filter((p) => p.roleT && p.roleCt).length === 6,
+  );
+
+  await cleanup(third.tournament.Id);
 }
 
 main()

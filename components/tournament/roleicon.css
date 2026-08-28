@@ -1,0 +1,127 @@
+/* Role marks, and the key that makes them readable. */
+
+.ri {
+  flex: none;
+  vertical-align: -2px;
+  color: var(--color-text-muted);
+}
+
+.ri-none {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 11px;
+  line-height: 1;
+  opacity: 0.5;
+}
+
+/* The two marks a player carries: T first, CT second, in that order
+   everywhere — a pair that changes order between panels is two pairs. */
+.ri-pair {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+}
+
+.ri-slot {
+  display: inline-flex;
+  align-items: center;
+  /* The tooltip is the fallback, never the only way to read it — the legend is
+     the real answer, and it is on the page. */
+  cursor: help;
+}
+
+.ri-slot:first-child .ri {
+  color: var(--color-accent-2);
+}
+
+.ri-slot:last-child .ri {
+  color: #3b82f6;
+}
+
+/* ---------- The legend ---------- */
+
+.rl {
+  border: 1px solid var(--color-divider);
+  background: var(--color-surface);
+  padding: var(--space-3);
+  display: grid;
+  gap: var(--space-2);
+  align-content: start;
+  min-width: 0;
+}
+
+.rl-title {
+  margin: 0;
+  font-size: 9.5px;
+  font-weight: 800;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+  color: var(--color-text-muted);
+  border-bottom: 1px solid var(--color-divider);
+  padding-bottom: 6px;
+}
+
+.rl-cols {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: var(--space-3);
+}
+
+.rl-head {
+  margin: 0 0 4px;
+  font-size: 9px;
+  font-weight: 800;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  color: var(--color-text-muted);
+}
+
+.rl-col:first-child .ri {
+  color: var(--color-accent-2);
+}
+
+.rl-col:last-child .ri {
+  color: #3b82f6;
+}
+
+.rl-list {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: grid;
+  gap: 3px;
+}
+
+.rl-list li {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 11.5px;
+  min-width: 0;
+}
+
+.rl-name {
+  overflow-wrap: anywhere;
+}
+
+/* Which roles only one player a side may hold. A dot rather than the word at
+   this size; the word is in the draft, where it is actionable. */
+.rl-uniq {
+  margin-left: auto;
+  font-size: 8.5px;
+  font-weight: 800;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  color: var(--color-text-muted);
+  opacity: 0.75;
+  flex: none;
+}
+
+@media (max-width: 900px) {
+  /* Below the hero split it becomes a full-width strip rather than a narrow
+     column, so the two role lists stay side by side instead of stacking. */
+  .rl-cols {
+    grid-template-columns: repeat(auto-fit, minmax(min(100%, 150px), 1fr));
+  }
+}

@@ -25,6 +25,16 @@ import {
 /** A fresh deadline for the turn about to begin. */
 const nextDeadline = () => new Date(Date.now() + ROLE_TURN_SECONDS * 1000);
 
+/**
+ * Where carried-forward picks are written, well clear of the draft's own
+ * ordinals.
+ *
+ * Load-bearing beyond tidiness: it is also how `draftSides` recovers, after the
+ * fact, which teams were not drafting this match. Nothing else writes an
+ * ordinal this high.
+ */
+const CARRIED_ORDINAL = 1000;
+
 export type DraftMember = {
   steamId: string;
   name: string;
@@ -98,6 +108,7 @@ export async function draftSides(matchId: number): Promise<{
       TeamAId: true,
       TeamBId: true,
       RolesFirstTeamId: true,
+      RolesStartedAt: true,
       Tournament: { select: { RoleMode: true } },
     },
   });
@@ -112,12 +123,48 @@ export async function draftSides(matchId: number): Promise<{
     draftRoster(second),
   ]);
 
-  // In tournament mode a team that has already drafted does not draft again, so
-  // its players are simply absent from the order. That is the entire difference
-  // between the two modes — there is no second code path.
+  /**
+   * Who is drafting — decided ONCE, when the draft opens, and read back after
+   * that rather than recomputed.
+   *
+   * This is the whole of a bug that made the last pick of a tournament-mode
+   * draft impossible. The answer used to come from `rolesComplete`, which reads
+   * the team sheet — and the draft WRITES to the team sheet as it goes. So the
+   * moment a team's third player picked, that team became "complete", dropped
+   * out of the order, and the order was recomputed shorter: ordinals shifted
+   * backwards, the final pick was handed an ordinal an earlier pick already
+   * held, and the unique index rejected it. The request 500'd, and the board
+   * showed the parse failure of an error page rather than anything useful.
+   *
+   * The frozen answer is recoverable without a new column: a team that was NOT
+   * drafting had every one of its players written by carryForwardSettledRoles
+   * at CARRIED_ORDINAL, and nothing else ever writes an ordinal that high.
+   */
   const perMatch = match.Tournament.RoleMode === "match";
-  const owes = (roster: DraftMember[]) =>
-    perMatch || !rolesComplete(roster) ? roster.map((m) => m.steamId) : [];
+
+  const carried = match.RolesStartedAt
+    ? new Set(
+        (
+          await prisma.tournamentRolePick.findMany({
+            where: { MatchId: matchId, Ordinal: { gte: CARRIED_ORDINAL } },
+            select: { SteamId: true },
+          })
+        ).map((r) => r.SteamId.toString()),
+      )
+    : new Set<string>();
+
+  const owes = (roster: DraftMember[]): string[] => {
+    if (roster.length === 0) return [];
+
+    // Open already: the decision is history, so read it back.
+    if (match.RolesStartedAt) {
+      return roster.every((m) => carried.has(m.steamId)) ? [] : roster.map((m) => m.steamId);
+    }
+
+    // Not open yet: this is where the decision is actually made, and the team
+    // sheet is still a safe thing to make it from.
+    return perMatch || !rolesComplete(roster) ? roster.map((m) => m.steamId) : [];
+  };
 
   return {
     first,
@@ -176,6 +223,16 @@ export async function beginRoleDraft(matchId: number): Promise<boolean> {
   // Opened only once. Two captains readying at the same instant both reach
   // here, and the second must not redraw who picks first.
   if (!match.RolesStartedAt) {
+    // Before the clock starts, and deliberately so.
+    //
+    // A team that keeps its tournament roles gets a row per player here, which
+    // does two jobs: the match records what was actually played rather than
+    // pointing at a team sheet that may have moved on, and those rows are what
+    // `draftSides` reads back afterwards to know who was drafting. Both need
+    // this to happen while the team sheet is still the honest source — which is
+    // only true until RolesStartedAt is set.
+    await carryForwardSettledRoles(matchId);
+
     const first = Math.random() < 0.5 ? match.TeamAId : match.TeamBId;
 
     await prisma.tournamentMatch.update({
@@ -187,11 +244,6 @@ export async function beginRoleDraft(matchId: number): Promise<boolean> {
         State: "roles",
       },
     });
-
-    // A team that keeps its tournament roles still gets a row per player, so
-    // the match records what was actually played rather than pointing at a team
-    // sheet that may have moved on by the time anybody reads it.
-    await carryForwardSettledRoles(matchId);
   }
 
   // Asked whether the draft was opened a moment ago or ten minutes ago, so this
@@ -210,7 +262,7 @@ async function carryForwardSettledRoles(matchId: number): Promise<void> {
   if (!sides) return;
 
   const existing = new Set((await picksFor(matchId)).map((p) => p.steamId));
-  let ordinal = 1000; // Well clear of the draft's own ordinals.
+  let ordinal = CARRIED_ORDINAL;
 
   for (const slot of ["A", "B"] as const) {
     if (sides.drafting[slot].length > 0) continue;

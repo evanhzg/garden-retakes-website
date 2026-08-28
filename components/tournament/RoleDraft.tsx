@@ -4,6 +4,7 @@ import { useCallback, useEffect, useState } from "react";
 import { useI18n } from "@/components/I18nProvider";
 import { formatRemaining } from "@/lib/tournament/edition";
 import type { DraftTurn, RoleDef } from "@/lib/tournament/roles";
+import RoleIcon from "./RoleIcon";
 import "./roledraft.css";
 
 // The role draft: the step between ready-up and the veto.
@@ -264,6 +265,10 @@ function RoleColumn({
               aria-pressed={chosen === role.id}
               onClick={() => onPick(role.id)}
             >
+              {/* The mark AND the name here, unlike the panels. This is where
+                  the two are learned together, and it is the one screen where
+                  the name is the thing being chosen. */}
+              <RoleIcon role={role.id} size={16} labelled={false} />
               <span className="rd-role-name">{role.label}</span>
               {role.unique && (
                 <span className="rd-role-tag">
