@@ -507,19 +507,29 @@ html[data-motion="off"] .rq-server-pip.now { animation: none; }
 
 /* --- toast ---------------------------------------------------------------- */
 
+/* Top of the page, under the header.
+   It used to sit at the bottom of the viewport, which on a lobby is where the
+   queue button and the party row are — so the one message explaining why a
+   match had just evaporated appeared under the thing everybody was already
+   clicking, and was gone in five seconds. */
 .rq-toast {
-  position: fixed; left: 50%; bottom: 26px; transform: translateX(-50%);
+  position: fixed; left: 50%; top: calc(var(--social-top, 64px) + 12px);
+  transform: translateX(-50%);
   z-index: 950;
-  padding: 11px 20px; border-radius: 999px;
+  max-width: min(560px, calc(100vw - 32px));
+  padding: 11px 20px;
+  /* Squared, like the rest of the site. */
+  border-radius: 0;
   background: var(--rq-panel);
   border: 1px solid var(--rq-edge);
   box-shadow: 0 14px 40px rgb(0 0 0 / 0.4);
   font-size: 13.5px; font-weight: 600;
+  text-align: center;
   animation: rq-toast-in 0.2s ease;
 }
 .rq-toast.error { border-color: color-mix(in srgb, #e0533a 60%, transparent); }
 .rq-toast.ok { border-color: color-mix(in srgb, var(--color-accent) 60%, transparent); }
-@keyframes rq-toast-in { from { opacity: 0; transform: translate(-50%, 10px); } to { opacity: 1; transform: translateX(-50%); } }
+@keyframes rq-toast-in { from { opacity: 0; transform: translate(-50%, -10px); } to { opacity: 1; transform: translateX(-50%); } }
 
 /* --- recent form ---------------------------------------------------------- */
 

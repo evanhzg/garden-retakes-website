@@ -37,16 +37,12 @@ export default function ModeBar({
   modes,
   canChange,
   partySize,
-  safeQueue,
-  onSafeQueue,
   onChange,
   inline,
 }: {
   modes: Modes;
   canChange: boolean;
   partySize: number;
-  safeQueue: boolean;
-  onSafeQueue: (on: boolean) => void;
   onChange: (next: { size?: string; premium?: boolean; testing?: boolean }) => void;
   inline?: boolean;
 }) {
@@ -118,16 +114,11 @@ export default function ModeBar({
           {t("lobby.mode.premium")}
         </button>
 
-        <button
-          type="button"
-          className={`rq-toggle safe ${safeQueue ? "on" : ""}`}
-          aria-pressed={safeQueue}
-          disabled={!canChange}
-          onClick={() => onSafeQueue(!safeQueue)}
-        >
-          <RetakesIcon id="anchor" size={16} />
-          {t("lobby.mode.safe")}
-        </button>
+        {/* The safe-queue toggle was here.
+            Taken out until further notice: it had to match on both sides for
+            two parties to meet, which at this population is two empty queues
+            rather than one working one. The matchmaker no longer reads it, so a
+            button that changes nothing is worse than no button. */}
       </div>
     </div>
   );

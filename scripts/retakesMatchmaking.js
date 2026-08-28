@@ -919,7 +919,14 @@ function attachRetakesMatchmaking(
         matchOf.delete(p.steamId);
         emitTo(p.steamId, "rq:notice", {
           kind: blamed.has(p.steamId) ? "error" : "warn",
-          code: blamed.has(p.steamId) ? "you_declined" : "match_cancelled",
+          // Nobody is blamed when the reason is not a person. `match_cancelled`
+          // reads as "somebody did not accept", which is a specific accusation
+          // and was wrong every time the hand-off failed.
+          code: blamed.has(p.steamId)
+            ? "you_declined"
+            : reason === "handoff_failed"
+              ? "handoff_failed"
+              : "match_cancelled",
         });
         emitTo(p.steamId, "rq:state", stateFor(p.steamId));
       }
@@ -997,6 +1004,11 @@ function attachRetakesMatchmaking(
       // failure this replaced; everybody goes back in the queue and is told.
       match.server = { state: "failed", step: "match", error: "handoff_failed" };
       syncMatch(match);
+
+      // `reason` reaches the client, and it must be the truth. This used to
+      // fall through to the generic cancel, which the lobby renders as
+      // "Someone did not accept" — so a failure on OUR side sent everybody
+      // looking for a team-mate who had done nothing wrong. Twice.
       abandonMatch(match, { requeue: true, blame: [], reason: "handoff_failed" });
     }
   }

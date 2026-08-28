@@ -2186,6 +2186,7 @@
   "lobby.notice.kicked": "You were removed from the party.",
   "lobby.notice.you_declined": "You declined — the others went back to the queue.",
   "lobby.notice.match_cancelled": "Someone did not accept. You are back in the queue.",
+  "lobby.notice.handoff_failed": "The match could not be set up. Everybody is back in the queue — nobody declined.",
   "lobby.notice.not_your_turn": "It is not your turn.",
   "form.nogames": "no ranked games",
   "form.nogamesLong": "No ranked rounds recorded yet.",

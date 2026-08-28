@@ -173,7 +173,6 @@ export default function RetakesLobby({ signedIn, lobbyId }: { signedIn: boolean,
   const [notice, setNotice] = useState<{ kind: string; text: string } | null>(null);
   const [safeScores, setSafeScores] = useState<{ steamId: string, score: number, probation: boolean }[]>([]);
   const [tab, setTab] = useState<LobbyTab>("play");
-  const [safeQueue, setSafeQueue] = useState(false);
   /**
    * Whether this account has been through the loadout picker.
    *
@@ -740,7 +739,7 @@ export default function RetakesLobby({ signedIn, lobbyId }: { signedIn: boolean,
                   // the moment a page loads is the one everybody dismisses,
                   // and a dismissed prompt cannot be asked again.
                   primeNotifications();
-                  send("rq:queue:join", { safeQueue });
+                  send("rq:queue:join", {});
                 }}
               >
                 {match ? (
@@ -769,8 +768,6 @@ export default function RetakesLobby({ signedIn, lobbyId }: { signedIn: boolean,
               modes={modes}
               canChange={Boolean(party?.isLeader) && !match}
               partySize={party?.members.length ?? 1}
-              safeQueue={party?.safeQueue ?? safeQueue}
-              onSafeQueue={(on) => setSafeQueue(on)}
               onChange={(next) => send("rq:party:queue", next)}
               inline
             />

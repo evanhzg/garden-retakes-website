@@ -2180,6 +2180,7 @@
   "lobby.notice.kicked": "Tu as été retiré du groupe.",
   "lobby.notice.you_declined": "Tu as refusé — les autres sont retournés dans la file.",
   "lobby.notice.match_cancelled": "Quelqu'un n'a pas accepté. Tu es de retour dans la file.",
+  "lobby.notice.handoff_failed": "Le match n'a pas pu être créé. Tout le monde est de retour dans la file — personne n'a refusé.",
   "lobby.notice.not_your_turn": "Ce n'est pas ton tour.",
   "form.nogames": "aucune partie classée",
   "form.nogamesLong": "Aucune manche classée enregistrée.",
