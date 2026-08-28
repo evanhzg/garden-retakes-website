@@ -3084,5 +3084,8 @@
   "consoles.ladder": "ladder",
   "match.waitingServer": "Waiting for a server",
   "match.queuePosition": "{n} of {total} in the queue",
-  "matchAdmin.awardTo": "Award to {team}"
+  "matchAdmin.awardTo": "Award to {team}",
+  "match.pickedByTeam": "Picked by {team}",
+  "match.demoRecorded": "Demo recorded",
+  "match.mvp": "Match MVP"
 }

@@ -12,24 +12,81 @@
   padding-bottom: var(--space-3);
 }
 
+/* One fixed card width for the whole bracket.
+   Cards used to size to their contents, so "Fernhollow Bots" made a wider box
+   than "Kestrel" and no two columns lined up. A bracket is a diagram; its boxes
+   have to be the same box. Long names ellipsis inside it. */
+.br {
+  --br-card: 210px;
+}
+
 .br-round {
+  display: grid;
+  /* Header, then the matches. The header used to be a flex child of the same
+     space-around distribution as the matches, which is why the phases never
+     aligned: a column of four matches distributed five items and the final
+     distributed two, so every column placed its boxes somewhere different.
+     Giving the header its own row takes it out of that entirely. */
+  grid-template-rows: auto 1fr;
+  width: var(--br-card);
+  flex: none;
+}
+
+/* The matches, spread over the full column height.
+   Every column is the same height (the flex parent stretches them), so
+   space-around puts a single final exactly in the middle and a round of four
+   at the quarters of the same span — which is what makes the rounds line up
+   and the final centre without any of it being computed. */
+.br-slots {
   display: flex;
   flex-direction: column;
   justify-content: space-around;
   gap: calc(var(--space-3) * var(--gap-mult, 1));
-  min-width: 200px;
 }
 
 .br-round-name {
-  margin: 0 0 var(--space-2);
+  /* A fixed height, so every column's matches begin at the same line however
+     long the round is called. */
+  margin: 0 0 var(--space-3);
+  min-height: 1.4em;
   font-size: 12px;
   text-transform: uppercase;
   letter-spacing: 0.08em;
   color: var(--muted);
 }
 
+/* ---------- Connectors ----------
+
+   Dashed between the phases, solid once a match is decided — so the winner's
+   route through the bracket reads as a continuous line and the undecided part
+   of the draw reads as provisional. Drawn as pseudo-elements on the slot rather
+   than as SVG, because they only ever need to be a horizontal rule reaching
+   into the gutter, and the gutter is a known width. */
+
+.br-slot::after {
+  content: "";
+  position: absolute;
+  top: 50%;
+  left: 100%;
+  width: var(--space-6);
+  border-top: 2px dashed var(--border);
+  pointer-events: none;
+}
+
+/* The winner advances, so the line onward is solid and carries the accent. */
+.br-slot.decided::after {
+  border-top-style: solid;
+  border-top-color: var(--color-accent);
+}
+
+/* The last column has nowhere to advance to. */
+.br-round:last-child .br-slot::after {
+  content: none;
+}
+
 .br-match {
   position: relative;
+  width: 100%;
   border: 1px solid var(--border);
   background: var(--panel);
 }

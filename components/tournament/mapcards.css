@@ -1,0 +1,256 @@
+/* The series as cards, and the match MVP. */
+
+.mc {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(min(100%, 200px), 1fr));
+  gap: var(--space-3);
+}
+
+.mc-card {
+  border: 1px solid var(--color-divider);
+  background: var(--color-surface);
+  display: grid;
+  grid-template-rows: auto 1fr;
+  min-width: 0;
+}
+
+.mc-card.live {
+  border-color: var(--color-accent);
+}
+
+/* ---------- The picture ---------- */
+
+.mc-art {
+  position: relative;
+  aspect-ratio: 16 / 9;
+  overflow: hidden;
+  background: color-mix(in srgb, var(--color-text) 8%, transparent);
+}
+
+.mc-art img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  display: block;
+}
+
+.mc-art-none {
+  display: block;
+  width: 100%;
+  height: 100%;
+  /* A diagonal hatch rather than an empty box, so a map with no art reads as
+     "no picture" rather than as an image that failed to load. */
+  background-image: repeating-linear-gradient(
+    45deg,
+    transparent,
+    transparent 6px,
+    color-mix(in srgb, var(--color-text) 6%, transparent) 6px,
+    color-mix(in srgb, var(--color-text) 6%, transparent) 12px
+  );
+}
+
+.mc-ordinal {
+  position: absolute;
+  top: 0;
+  left: 0;
+  padding: 3px 7px;
+  background: var(--color-bg);
+  border-right: 1px solid var(--color-divider);
+  border-bottom: 1px solid var(--color-divider);
+  font-family: var(--font-mono);
+  font-size: 11px;
+  font-weight: 800;
+}
+
+.mc-live {
+  position: absolute;
+  top: 0;
+  right: 0;
+  padding: 3px 7px;
+  background: var(--color-accent);
+  color: var(--btn-primary-ink, #fff);
+  font-size: 9px;
+  font-weight: 800;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+}
+
+/* ---------- The facts ---------- */
+
+.mc-body {
+  padding: var(--space-3);
+  display: grid;
+  gap: 4px;
+  align-content: start;
+  min-width: 0;
+}
+
+.mc-name {
+  margin: 0;
+  font-size: 15px;
+  font-weight: 800;
+  overflow-wrap: anywhere;
+}
+
+.mc-by {
+  margin: 0;
+  font-size: 11.5px;
+  color: var(--color-text-muted);
+  overflow-wrap: anywhere;
+}
+
+.mc-decider {
+  font-weight: 800;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  font-size: 10px;
+  color: var(--color-accent);
+}
+
+.mc-side {
+  margin: 0;
+  font-size: 11px;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+}
+
+.mc-score {
+  margin: 4px 0 0;
+  display: flex;
+  align-items: baseline;
+  gap: 6px;
+  font-family: var(--font-mono);
+  font-variant-numeric: tabular-nums;
+  font-size: 20px;
+  font-weight: 800;
+  color: var(--color-text-muted);
+}
+
+/* The winner's number carries the weight; the loser's stays muted, so a glance
+   answers "who won" without reading both figures. */
+.mc-win {
+  color: var(--color-text);
+}
+
+.mc-dash {
+  opacity: 0.4;
+  font-size: 15px;
+}
+
+.mc-demo-name {
+  display: flex;
+  align-items: center;
+  gap: 5px;
+  flex-wrap: wrap;
+  margin: 6px 0 0;
+  font-size: 10px;
+  color: var(--color-text-muted);
+}
+
+.mc-demo-name code {
+  font-size: 9.5px;
+  overflow-wrap: anywhere;
+  opacity: 0.8;
+}
+
+/* ---------- MVP ---------- */
+
+.mvp {
+  border: 1px solid var(--color-accent);
+  background:
+    radial-gradient(120% 120% at 0% 0%, color-mix(in srgb, var(--color-accent) 14%, transparent), transparent 60%),
+    var(--color-surface);
+  padding: var(--space-3);
+  display: grid;
+  gap: var(--space-3);
+  align-content: start;
+  min-width: 0;
+}
+
+.mvp-head {
+  display: flex;
+  align-items: center;
+  gap: 7px;
+  font-size: 10px;
+  font-weight: 800;
+  letter-spacing: 0.16em;
+  text-transform: uppercase;
+  color: var(--color-accent);
+}
+
+.mvp-who {
+  display: flex;
+  align-items: center;
+  gap: var(--space-3);
+  min-width: 0;
+}
+
+.mvp-avatar {
+  width: 44px;
+  height: 44px;
+  object-fit: cover;
+  border: 1px solid var(--color-divider);
+  flex: none;
+}
+
+.mvp-id {
+  display: grid;
+  gap: 1px;
+  min-width: 0;
+}
+
+.mvp-name {
+  font-size: 16px;
+  font-weight: 800;
+  color: inherit;
+  text-decoration: none;
+  overflow-wrap: anywhere;
+}
+
+.mvp-name:hover {
+  color: var(--color-accent);
+  text-decoration: underline;
+}
+
+.mvp-team {
+  font-size: 11px;
+  color: var(--color-text-muted);
+  overflow-wrap: anywhere;
+}
+
+.mvp-roles {
+  margin-left: auto;
+  flex: none;
+}
+
+.mvp-stats {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: var(--space-2);
+  margin: 0;
+  border-top: 1px solid var(--color-divider);
+  padding-top: var(--space-2);
+}
+
+.mvp-stats dt {
+  font-size: 9px;
+  font-weight: 800;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  color: var(--color-text-muted);
+}
+
+.mvp-stats dd {
+  margin: 2px 0 0;
+  font-family: var(--font-mono);
+  font-variant-numeric: tabular-nums;
+  font-size: 15px;
+  font-weight: 800;
+}
+
+.mvp-lead {
+  color: var(--color-accent);
+}

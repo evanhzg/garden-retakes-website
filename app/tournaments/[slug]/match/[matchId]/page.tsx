@@ -10,6 +10,7 @@ import MatchWatch from "@/components/tournament/MatchWatch";
 import StatusTag from "@/components/tournament/StatusTag";
 import { scoreboardFor } from "@/lib/tournament/scoreboard";
 import { RoleLegend } from "@/components/tournament/RoleIcon";
+import MapCards from "@/components/tournament/MapCards";
 import "@/components/tournament/matchhead.css";
 
 export const dynamic = "force-dynamic";
@@ -161,44 +162,23 @@ export default async function MatchPage({
         )}
       </section>
 
-      {match.Maps.length > 0 && (
+      {board && board.maps.length > 0 && (
         <section className="panel">
           <h3>{t("tournaments.maps")}</h3>
-          {/* Five columns of map results overflow a phone. The wrapper scrolls
-              the table inside itself rather than taking the page sideways with
-              it, which is the pattern the rest of the site already uses. */}
-          <div className="pro-tablewrap">
-            <table>
-              <thead>
-                <tr>
-                  <th>#</th>
-                  <th>{t("tournaments.tabs.pool")}</th>
-                  <th>{t("match.pickedBy")}</th>
-                  <th>{t("match.startSide")}</th>
-                  <th>{t("tournaments.tabs.stats")}</th>
-                </tr>
-              </thead>
-              <tbody>
-                {match.Maps.map((m) => (
-                  <tr key={m.Id}>
-                    <td className="muted">{m.Ordinal + 1}</td>
-                    <td>{m.Map}</td>
-                    {/* The decider is nobody's pick, which is a fact about the
-                        series rather than missing data — so it says so. */}
-                    <td className="muted">
-                      {m.IsDecider ? t("match.decider") : nameOf(m.PickedByTeamId) ?? "—"}
-                    </td>
-                    <td className="muted">{m.StartSideTeamA ?? t("match.knife")}</td>
-                    <td>
-                      {m.ScoreA} – {m.ScoreB}
-                    </td>
-                  </tr>
-                ))}
-              </tbody>
-            </table>
-          </div>
+
+          {/* Cards, not a table. A row gave every map the weight of a line of
+              metadata, and the picture is how anybody recognises a map at a
+              glance — "de_anubis" is a string, Anubis is somewhere you have
+              stood. The demo hangs off the card it belongs to, because on a BO3
+              a single list at the bottom makes you work out which is which. */}
+          <MapCards
+            maps={board.maps}
+            teamA={teamA?.Name ?? "A"}
+            teamB={teamB?.Name ?? "B"}
+          />
         </section>
       )}
+
     </>
   );
 }

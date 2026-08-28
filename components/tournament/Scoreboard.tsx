@@ -4,6 +4,7 @@ import { useCallback, useEffect, useMemo, useState } from "react";
 import { useI18n } from "@/components/I18nProvider";
 import type { Scoreboard as Board, ScoreboardRow } from "@/lib/tournament/scoreboard";
 import { RolePair } from "./RoleIcon";
+import { MvpCard } from "./MapCards";
 import "./scoreboard.css";
 
 // The match scoreboard: one tab per map, and the series across all of them.
@@ -164,6 +165,19 @@ export default function Scoreboard({ initial }: { initial: Board }) {
           {t("scoreboard.advanced")}
         </button>
       </div>
+
+      {/* The match's best player, once there is a match to judge. Above the
+          tables rather than below them: it is the answer to the question the
+          tables exist to support, and burying it under three scoreboards means
+          nobody reads it. */}
+      {board.mvp && (
+        <MvpCard
+          mvp={board.mvp}
+          teamA={board.teamA?.name ?? t("match.tbd")}
+          teamB={board.teamB?.name ?? t("match.tbd")}
+          roleIcons={<RolePair roleT={board.mvp.roleT} roleCt={board.mvp.roleCt} />}
+        />
+      )}
 
       {rows.length === 0 ? (
         <p className="muted sb-empty">{t("scoreboard.noStats")}</p>

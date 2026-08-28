@@ -70,13 +70,17 @@ export default function Bracket({
                     : t("bracket.round", { n: String(round) })}
             </h4>
 
+            <div className="br-slots">
             {inRound.map((match) => (
               <MatchBubble
                 key={match.id}
                 preview={previews?.[match.id] ?? null}
                 teamA={match.teamA?.name ?? "—"}
                 teamB={match.teamB?.name ?? "—"}
-                className="br-slot"
+                // Decided matches draw a solid line onward; undecided ones stay
+                // dashed. The winner's path through the bracket is then
+                // readable as a line rather than by comparing scores.
+                className={`br-slot ${match.winnerTeamId !== null ? "decided" : ""}`}
               >
                 <BoxLink slug={slug} match={match} onOpen={setOpen}>
                 <div className={`br-match ${match.state === "live" ? "live" : ""}`}>
@@ -98,6 +102,7 @@ export default function Bracket({
                 </BoxLink>
               </MatchBubble>
             ))}
+            </div>
           </div>
         );
       })}

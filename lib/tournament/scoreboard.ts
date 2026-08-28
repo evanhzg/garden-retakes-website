@@ -33,6 +33,10 @@ export type ScoreboardMap = {
   /** "a" | "b" | null. */
   winner: "a" | "b" | null;
   pickedBy: "a" | "b" | null;
+  /** The map's picture, for a card rather than a table row. */
+  image: string | null;
+  /** The demo of this map, once the collector has it. */
+  demo: string | null;
 };
 
 export type ScoreboardRow = PlayerTotals & {
@@ -68,6 +72,13 @@ export type Scoreboard = {
   rows: Record<string, ScoreboardRow[]>;
   /** Which tab to open on. The live map, else the last played, else the series. */
   defaultTab: string;
+  /**
+   * Best player of the match, once it is over.
+   *
+   * Only on a finished match. Naming one mid-series would crown somebody for a
+   * half-played game and then take it away, which is worse than waiting.
+   */
+  mvp: ScoreboardRow | null;
 };
 
 const pretty = (map: string) =>
@@ -122,11 +133,19 @@ export async function scoreboardFor(matchId: number): Promise<Scoreboard | null>
   const teamA = teams.find((x) => x.Id === match.TeamAId) ?? null;
   const teamB = teams.find((x) => x.Id === match.TeamBId) ?? null;
 
-  const [stats, names, roles] = await Promise.all([
+  const [stats, names, roles, art] = await Promise.all([
     prisma.tournamentPlayerStat.findMany({ where: { MatchId: matchId } }),
     tournamentPlayerNames(match.TournamentId),
     rolesForMatch(matchId),
+    // The pictures, for map cards. One query for the whole pool rather than one
+    // per map row.
+    prisma.gardenMap.findMany({
+      where: { MapName: { in: match.Maps.map((m) => m.Map) } },
+      select: { MapName: true, ImageUrl: true, DisplayName: true },
+    }),
   ]);
+
+  const artOf = new Map(art.map((a) => [a.MapName, a]));
 
   // The plugin reports SteamIDs, not team ids, so a stat row's TeamId is often
   // null. The roster is the authority on who played for whom.
@@ -172,7 +191,7 @@ export async function scoreboardFor(matchId: number): Promise<Scoreboard | null>
     id: m.Id,
     ordinal: m.Ordinal,
     map: m.Map,
-    label: pretty(m.Map),
+    label: artOf.get(m.Map)?.DisplayName || pretty(m.Map),
     scoreA: m.ScoreA,
     scoreB: m.ScoreB,
     state: m.State,
@@ -182,6 +201,8 @@ export async function scoreboardFor(matchId: number): Promise<Scoreboard | null>
       m.WinnerTeamId === null ? null : m.WinnerTeamId === match.TeamAId ? "a" : "b",
     pickedBy:
       m.PickedByTeamId === null ? null : m.PickedByTeamId === match.TeamAId ? "a" : "b",
+    image: artOf.get(m.Map)?.ImageUrl ?? null,
+    demo: m.DemoFile,
   }));
 
   // A map with no stats and no score has not been reached yet. It still belongs
@@ -229,6 +250,20 @@ export async function scoreboardFor(matchId: number): Promise<Scoreboard | null>
       ? "series"
       : live?.key ?? tabs[tabs.length - 1]?.key ?? "series";
 
+  /**
+   * The best player of the match.
+   *
+   * Rating over the whole series, which is what `aggregate` already sorts by —
+   * so this is the top of the series table rather than a second opinion about
+   * who played well. Rounds-weighted, so a big first map is not outvoted by a
+   * short second one.
+   *
+   * Only once the match is finished. A live MVP would change hands every round
+   * and mean nothing until the end anyway.
+   */
+  const mvp =
+    match.State === "finished" ? (rows.series ?? rowsFor(stats))[0] ?? null : null;
+
   return {
     matchId,
     state: match.State,
@@ -241,5 +276,6 @@ export async function scoreboardFor(matchId: number): Promise<Scoreboard | null>
     tabs,
     rows,
     defaultTab,
+    mvp,
   };
 }
