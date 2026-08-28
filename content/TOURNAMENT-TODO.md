@@ -163,7 +163,58 @@ Nice-to-have rather than required for an event; put it after teams and avatars.
   a round in the UI. Check the loadouts and the per-round kills specifically: the
   kills are a subtraction between two backups, and a sign error there shows as
   every player having zero.
-- **GOTV is OFF, and turning it on crashes the server.** This is the single most
+- **GOTV: the cause is found, one step left.** Paused mid-verification to work on
+  matchmaking, so this is written to be picked up cold.
+
+  **What it is.** `r5e/tournament.cfg` writes `game_type 0` / `game_mode 1`.
+  Writing `game_mode` is not an ordinary cvar set — it reloads the GameTypes
+  manifest and takes the level with it. The plugin execs that cfg three seconds
+  after every map start, so every boot has a level change queued behind it. The
+  giveaway in the log is a dump of `ctm_idf_variantA…` / `tm_leet_variantA…`
+  immediately before the teardown: that is the manifest reloading.
+
+  **Why it only shows up with GOTV.** An empty server hibernates — no clients,
+  no ticks — so the queued reload never arrives and nobody ever saw it. GOTV's
+  relay connects as a player controller, which keeps the server awake, so the
+  reload finally fires. SourceTV is torn down and restarted inside it, and that
+  restart hangs:
+
+  ```
+  SourceTV shutting down, type non-relay, tv_enable is true
+  CNetworkGameServerBase::SetServerState (ss_active -> ss_dead)
+  Starting SourceTV server listening on port 27070, type non-relay
+  WatchDog! Server took too long to process (probably infinite loop)
+  FATAL ERROR: Watchdog timeout exceeded, exiting
+  ```
+
+  Every boot starts SourceTV twice. The first, logged as "port 0", is fine. The
+  second, on the real port during that level change, is the one that dies.
+
+  **The measurement.** Commenting `game_type`/`game_mode` out of ONE instance's
+  `cfg/r5e/tournament.cfg`, with GOTV on: 159 seconds, zero level changes, zero
+  watchdogs, one SourceTV start. The same instance with those two lines present
+  crashed four times in five minutes. That is one observation, not a proof —
+  **rerun it for ten minutes before rolling out.**
+
+  **The fix to make.** Delete `game_type 0` / `game_mode 1` from
+  `cfg/r5e/tournament.cfg` and let the launcher set them instead:
+  `GAME_TYPE`/`GAME_MODE` in `deploy/vps-run-server.sh` already do this, per
+  instance, and `GAME_MODE=1` makes the server exec `gamemode_competitive.cfg`
+  at boot rather than `gamemode_casual.cfg`. Note the fleet default is still 0
+  and has been all along — a tournament server has been booting into Casual and
+  being corrected afterwards, which is a bug in its own right and the reason the
+  cfg had to set the mode at all.
+
+  Then enable GOTV with `TV_ENABLE=1` in each instance's
+  `/opt/cs2/instances/tN.env`, one at a time, watching for ten minutes each.
+
+  **What proves it works.** Not `tv_enable`, and not a bound port — both read
+  healthy for ninety minutes while the fleet was dying. Query the GOTV port:
+  `node tools/../a2s.mjs 213.130.147.107:27070` style A2S_INFO. A live relay
+  answers with the server's name and map; a dead one does not answer at all.
+  That check was already passing on t6 while GOTV was up.
+
+- **(superseded, kept for the measurements) GOTV is OFF, and turning it on crashes the server.** This is the single most
   expensive thing in this document — it cost a ninety-minute fleet outage — so
   read it before touching anything with `tv_` in the name.
 
