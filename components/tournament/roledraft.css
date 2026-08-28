@@ -160,9 +160,14 @@
 }
 
 .rd-role {
-  display: flex;
-  align-items: baseline;
-  justify-content: space-between;
+  display: grid;
+  /* Mark, name, tag — a fixed three-column grid rather than space-between.
+     With flex, a role WITHOUT a unique tag had nothing to push against, so its
+     name sat hard against the right edge while the tagged ones sat left: the
+     column read as two different lists. The third track is always there, empty
+     or not. */
+  grid-template-columns: 16px minmax(0, 1fr) auto;
+  align-items: center;
   gap: var(--space-2);
   padding: 10px 12px;
   border: 1px solid var(--color-divider);

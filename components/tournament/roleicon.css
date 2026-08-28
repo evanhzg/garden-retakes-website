@@ -48,7 +48,10 @@
   display: grid;
   gap: var(--space-2);
   align-content: start;
-  min-width: 0;
+  /* Not min-width: 0. That let the hero's 1fr column win every fight for
+     space and squeezed the legend until "Front runner" wrapped onto three
+     lines — the card has a natural width and should keep it. */
+  min-width: min(100%, 210px);
 }
 
 .rl-title {
@@ -94,21 +97,27 @@
 }
 
 .rl-list li {
-  display: flex;
+  display: grid;
+  /* Mark, name, then the unique tag — a grid rather than a flex row so the
+     names line up down the column instead of each starting wherever its icon
+     left off, and so a two-word name does not shove the tag off the edge. */
+  grid-template-columns: 14px minmax(0, 1fr) auto;
   align-items: center;
   gap: 6px;
   font-size: 11.5px;
-  min-width: 0;
 }
 
 .rl-name {
-  overflow-wrap: anywhere;
+  /* Kept on one line: these are seven short labels and hyphenating "Front
+     runner" mid-word to save twelve pixels reads as broken rather than tight. */
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
 }
 
 /* Which roles only one player a side may hold. A dot rather than the word at
    this size; the word is in the draft, where it is actionable. */
 .rl-uniq {
-  margin-left: auto;
   font-size: 8.5px;
   font-weight: 800;
   letter-spacing: 0.1em;

@@ -2761,7 +2761,7 @@
   "match.notStarted": "The tournament has not started yet. The veto opens when it does.",
   "match.waitingTeams": "Waiting on the matches that feed this one.",
   "match.startSide": "Start side",
-  "match.knife": "knife round",
+  "match.knife": "KNIFE",
   "tstats.title": "Tournament stats",
   "tstats.subtitle": "Every tournament match played, aggregated across all events.",
   "tstats.empty": "No tournament matches have been played yet. Stats appear here as soon as the first match finishes.",

@@ -74,6 +74,18 @@ export default function VetoBoard({
   const { t } = useI18n();
   const [now, setNow] = useState(() => Date.now());
 
+  // Whether a real deadline has been seen yet.
+  //
+  // Without this the bar animates up from zero at the start of every turn: the
+  // width comes from a countdown the component only learns on its first tick,
+  // so frame one is an empty bar growing — which reads as time ELAPSED on a
+  // control whose whole job is to show time LEFT.
+  const [seeded, setSeeded] = useState(false);
+
+  useEffect(() => {
+    if (wire.deadline) setSeeded(true);
+  }, [wire.deadline]);
+
   // A second timer purely for the countdown, so it moves every second rather
   // than in whatever jumps the poll happens to arrive in.
   useEffect(() => {
@@ -165,8 +177,14 @@ export default function VetoBoard({
 
           <div className="vt-bar" aria-hidden>
             <div
-              className={`vt-bar-fill ${msLeft <= 10_000 ? "low" : ""}`}
-              style={{ width: `${Math.min(100, (msLeft / (wire.turnSeconds * 1000)) * 100)}%` }}
+              className={`vt-bar-fill ${msLeft <= 10_000 ? "low" : ""} ${seeded ? "" : "seeding"}`}
+              style={{
+                // Full until a deadline is known, so the first frame is a full
+                // bar rather than an empty one filling.
+                width: wire.deadline
+                  ? `${Math.min(100, (msLeft / (wire.turnSeconds * 1000)) * 100)}%`
+                  : "100%",
+              }}
             />
           </div>
         </div>

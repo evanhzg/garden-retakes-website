@@ -110,6 +110,52 @@ export default function MatchStage({
     async (body: Record<string, unknown>) => {
       setBusy(true);
       setNotice(null);
+
+      /**
+       * The tile flips now, not after the round trip.
+       *
+       * A ban took two to three seconds to show, which on a thirty-second clock
+       * reads as a board that ignored you — so people clicked again. The server
+       * is still the authority and the next poll reconciles; this only removes
+       * the wait between pressing and seeing.
+       *
+       * Kept so it can be rolled back: if the server refuses, the optimistic
+       * state has to go away rather than sit there looking accepted.
+       */
+      const rollback = veto;
+      const kind = body.action;
+      const map = typeof body.map === "string" ? body.map : null;
+
+      if (veto && map && (kind === "ban" || kind === "pick")) {
+        setVeto({
+          ...veto,
+          state: {
+            ...veto.state,
+            remaining: veto.state.remaining.filter((m) => m !== map),
+            picked:
+              kind === "pick"
+                ? [...veto.state.picked, { map, pickedBy: veto.state.next?.team ?? null, startSideTeamA: null }]
+                : veto.state.picked,
+            // The turn is cleared rather than advanced: working out whose turn
+            // is next means re-deriving the sequence, and the poll a moment
+            // later knows the real answer. Blank for an instant is honest;
+            // guessing wrong and correcting is not.
+            next: null,
+          },
+          actions: [
+            ...veto.actions,
+            {
+              ordinal: veto.actions.length,
+              team: veto.state.next?.team ?? null,
+              kind,
+              map,
+              side: null,
+              wasAuto: false,
+            },
+          ],
+        });
+      }
+
       try {
         const res = await fetch("/api/tournament/veto", {
           method: "POST",
@@ -117,15 +163,21 @@ export default function MatchStage({
           body: JSON.stringify({ ...body, matchId, key: adminKey }),
         });
         const data = await res.json();
-        if (data.error) setNotice(data.error);
+
+        if (data.error) {
+          setNotice(data.error);
+          if (rollback) setVeto(rollback);
+        }
+
         await load();
       } catch (err) {
         setNotice(String(err));
+        if (rollback) setVeto(rollback);
       } finally {
         setBusy(false);
       }
     },
-    [matchId, adminKey, load],
+    [matchId, adminKey, load, veto],
   );
 
   const stage: Stage = useMemo(() => {

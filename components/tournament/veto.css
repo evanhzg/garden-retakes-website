@@ -113,6 +113,16 @@
   transition: width 0.25s linear;
 }
 
+/* The bar starts full.
+   It used to animate up from zero on every new turn, because the width comes
+   from a countdown the component only learns after its first render — so the
+   first frame of a thirty-second turn showed an empty bar filling, which reads
+   as time ELAPSED rather than time left. The transition is suppressed until the
+   first real value has landed. */
+.vt-bar-fill.seeding {
+  transition: none;
+}
+
 .vt-bar-fill.low {
   background: var(--color-accent);
 }
@@ -152,14 +162,104 @@
    make the veto impossible to follow after the fact, which is most of what a
    veto is for — and the colour is never the only signal: the name is struck
    through, and the tile says the word "banned" underneath it. */
+/* ---------- The moment a map goes ----------
+
+   Two beats, in order: the border draws itself around the tile, then the label
+   and the strike arrive. One combined fade said "something changed"; drawing
+   the outline first says WHICH tile changed before asking anybody to read
+   anything, which is what you want on a board of nine under a clock.
+
+   The path is four insets rather than a real stroke animation, because
+   border-color cannot be animated per side and an SVG overlay would need a
+   second element per tile. Each edge grows from the previous corner, so it
+   reads as one line travelling around the card. */
+
+@keyframes vt-edge-top {
+  from { transform: scaleX(0); }
+  to   { transform: scaleX(1); }
+}
+
+@keyframes vt-edge-right {
+  from { transform: scaleY(0); }
+  to   { transform: scaleY(1); }
+}
+
+@keyframes vt-label-in {
+  from { opacity: 0; transform: translateY(3px); }
+  to   { opacity: 1; transform: none; }
+}
+
+.vt-map.banned,
+.vt-map.picked {
+  position: relative;
+}
+
+/* The two drawn edges. Top and bottom travel across, left and right travel
+   down, and the delays chain them into a single circuit. */
+.vt-map.banned::before,
+.vt-map.picked::before,
+.vt-map.banned::after,
+.vt-map.picked::after {
+  content: "";
+  position: absolute;
+  background: currentColor;
+  pointer-events: none;
+}
+
+.vt-map.banned::before,
+.vt-map.picked::before {
+  inset: -1px -1px auto -1px;
+  height: 2px;
+  transform-origin: left center;
+  animation: vt-edge-top 0.18s ease-out both;
+}
+
+.vt-map.banned::after,
+.vt-map.picked::after {
+  inset: -1px -1px -1px auto;
+  width: 2px;
+  transform-origin: top center;
+  animation: vt-edge-right 0.18s ease-out 0.18s both;
+}
+
+.vt-map.banned .vt-map-tag,
+.vt-map.picked .vt-map-tag,
+.vt-map.banned .vt-map-by,
+.vt-map.picked .vt-map-by {
+  animation: vt-label-in 0.2s ease-out 0.36s both;
+}
+
+.vt-map.banned .vt-map-name {
+  animation: vt-label-in 0.2s ease-out 0.36s both;
+}
+
+/* Somebody who asked not to be moved gets the state without the theatre. */
+@media (prefers-reduced-motion: reduce) {
+  .vt-map.banned::before,
+  .vt-map.picked::before,
+  .vt-map.banned::after,
+  .vt-map.picked::after,
+  .vt-map.banned .vt-map-tag,
+  .vt-map.picked .vt-map-tag,
+  .vt-map.banned .vt-map-by,
+  .vt-map.picked .vt-map-by,
+  .vt-map.banned .vt-map-name {
+    animation: none;
+  }
+}
+
 .vt-map.banned {
   border-color: #ef4444;
+  color: #ef4444;
   background: color-mix(in srgb, #ef4444 8%, var(--color-surface));
   opacity: 0.72;
 }
 
 .vt-map.banned .vt-map-name {
   text-decoration: line-through;
+  /* The strike is part of the second beat, so it lands with the word "banned"
+     rather than before the border has finished drawing. */
+  text-decoration-color: currentColor;
 }
 
 .vt-map.banned .vt-map-tag {

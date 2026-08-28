@@ -2761,7 +2761,7 @@
   "match.notStarted": "Le tournoi n'a pas encore commencé. Le veto s'ouvrira à ce moment-là.",
   "match.waitingTeams": "En attente des matchs qui alimentent celui-ci.",
   "match.startSide": "Côté de départ",
-  "match.knife": "round au couteau",
+  "match.knife": "KNIFE",
   "tstats.title": "Statistiques de tournoi",
   "tstats.subtitle": "Tous les matchs de tournoi joués, agrégés sur l'ensemble des événements.",
   "tstats.empty": "Aucun match de tournoi n'a encore été joué. Les statistiques apparaîtront dès la fin du premier match.",

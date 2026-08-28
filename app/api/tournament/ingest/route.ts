@@ -144,11 +144,33 @@ export async function POST(req: Request) {
 
 const num = (v: unknown) => (typeof v === "number" && Number.isFinite(v) ? Math.trunc(v) : 0);
 
-async function savePlayerStats(matchId: number, players: PlayerLine[]) {
+/**
+ * Which map a stat line belongs to.
+ *
+ * The live one, and failing that the last one that has been reached. The
+ * fallback matters because of ordering: the plugin sends the scoreboard just
+ * before map_end, but a retry, a reconnect or a slow request can land after it
+ * — and the old code wrote MapId 0 in that case, which matches no map row, so
+ * the rows existed and the scoreboard could never find them. An orphan is worse
+ * than an approximation here: nobody can see it, and the page just says there
+ * are no stats.
+ */
+async function mapForStats(matchId: number) {
   const live = await prisma.tournamentMatchMap.findFirst({
     where: { MatchId: matchId, State: "live" },
     orderBy: { Ordinal: "asc" },
   });
+
+  if (live) return live;
+
+  return prisma.tournamentMatchMap.findFirst({
+    where: { MatchId: matchId, State: { not: "pending" } },
+    orderBy: { Ordinal: "desc" },
+  });
+}
+
+async function savePlayerStats(matchId: number, players: PlayerLine[]) {
+  const live = await mapForStats(matchId);
 
   for (const line of players) {
     if (!/^\d{17}$/.test(line.steamId ?? "")) continue;
@@ -168,15 +190,20 @@ async function savePlayerStats(matchId: number, players: PlayerLine[]) {
       Rating: rating(line),
     };
 
+    // Skipped rather than written to MapId 0 when there is genuinely no map —
+    // a stat row that belongs to nothing is invisible debris that the career
+    // table still counts.
+    if (!live) continue;
+
     await prisma.tournamentPlayerStat.upsert({
       where: {
         MatchId_MapId_SteamId: {
           MatchId: matchId,
-          MapId: live?.Id ?? 0,
+          MapId: live.Id,
           SteamId: BigInt(line.steamId),
         },
       },
-      create: { MatchId: matchId, MapId: live?.Id ?? 0, SteamId: BigInt(line.steamId), ...data },
+      create: { MatchId: matchId, MapId: live.Id, SteamId: BigInt(line.steamId), ...data },
       update: data,
     });
   }

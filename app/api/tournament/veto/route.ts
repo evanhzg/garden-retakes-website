@@ -184,11 +184,26 @@ export async function POST(req: Request) {
 
       // The veto ending and the match starting used to be two acts, the second
       // of which nobody performed — a decided match sat waiting for an organizer
-      // to notice. Tolerant of failure: a busy fleet leaves the match "ready"
-      // and startable by hand, which is exactly where it was before.
-      if (decided.ok) await autoStart(match.Id);
+      // to notice.
+      //
+      // NOT awaited, and that is the fix for a veto that felt broken. startMatch
+      // loads the map and then polls `status` until it appears — up to thirty
+      // seconds — and all of it used to happen inside this request. So the last
+      // ban of a veto hung the captain's browser for half a minute with no
+      // indication anything was happening, and every earlier action paid the
+      // round trip before its tile would flip.
+      //
+      // The match page polls, so it discovers the server the moment it exists.
+      // Failure is still tolerated exactly as before: the match stays "ready"
+      // and startable by hand.
+      if (decided.ok) {
+        void autoStart(match.Id).catch(() => {
+          // Already swallowed inside autoStart; this is belt and braces so an
+          // unhandled rejection cannot take the process down.
+        });
+      }
 
-      return NextResponse.json({ ok: true });
+      return NextResponse.json({ ok: true, done: decided.ok });
     }
 
     // ---------------------------------------------------------------- admin
