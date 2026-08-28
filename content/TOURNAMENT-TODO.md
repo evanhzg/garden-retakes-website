@@ -163,18 +163,57 @@ Nice-to-have rather than required for an event; put it after teams and avatars.
   a round in the UI. Check the loadouts and the per-round kills specifically: the
   kills are a subtraction between two backups, and a sign error there shows as
   every player having zero.
-- **GOTV needed a launch argument, not a cvar.** Worth knowing because it will
-  look like a config problem the next time it breaks and it is not. The relay
-  binds its socket during map load and only if `tv_enable` is already 1, so
-  setting it from a cfg exec'd afterwards does nothing until the next
-  changelevel. It is now passed by `deploy/vps-run-server.sh`, which
-  `deploy-vps.sh` syncs. **To check it, look at the socket, not the cvar:**
-  `ss -lunp | grep 270` on the box should list twelve ports — six game, six TV.
-  `tv_enable` reported `true` on servers with no listener at all.
-- **Idle servers can still report `tv_delay 30`.** Valve's own
-  `gamemode_*.cfg` sets it, and a server that is not running a tournament match
-  has not exec'd ours. Any server that starts a match execs `tournament.cfg` and
-  goes to 0. Cosmetic, but it looks like the fix did not take.
+- **GOTV is OFF, and turning it on crashes the server.** This is the single most
+  expensive thing in this document — it cost a ninety-minute fleet outage — so
+  read it before touching anything with `tv_` in the name.
+
+  Two true facts that pull in opposite directions. The relay binds its socket
+  during map load and only if `tv_enable` is already 1, so setting it from a cfg
+  afterwards does nothing until the next changelevel; that is why five of six
+  servers had `tv_enable` reading `true` with no listener at all. **A bound port
+  is the only proof — `ss -lunp | grep 270` should show twelve, six game and six
+  TV.** But passing `+tv_enable 1` at launch, which is the only place that works,
+  crash-loops the instance.
+
+  Measured, on one instance, so it is not load: t6 with GOTV crashed four times
+  in five minutes at load 1.42 while t1-t5 sat at zero crashes and eleven
+  minutes' uptime. The launcher passed only `+tv_enable 1` at that point — no
+  `tv_delay`, no `tv_advertise_watchable` — so that one argument does it. The
+  crash is always the same, every line inside one second:
+
+  ```
+  Server waking up from hibernation
+  HLTV:maxplayers set to 64
+  Starting SourceTV server listening on port 27070, type non-relay
+  ClientPutInServer create new player controller [SourceTV]
+  SourceTV[0] broadcast active.
+  WatchDog! Server took too long to process (probably infinite loop)
+  FATAL ERROR: Watchdog timeout exceeded, exiting
+  ```
+
+  It hangs bringing SourceTV **up**, not running it. Two candidates, to try one
+  instance at a time with `TV_ENABLE=1` in that instance's `.env` and nowhere
+  else: the HLTV slot allocation against `-maxplayers_override 12` (HLTV asks for
+  64 while the launcher forces 12), and the hibernation wake in the line above
+  it. Note `sv_hibernate_when_empty 0` IS set by tournament.cfg and the server
+  still logs a hibernation wake, which is worth understanding on its own.
+
+  Until one of those is proven, the Watch button points at a closed port. That is
+  where it was before this work; a crash-looping fleet is much worse.
+
+- **Never set `tv_delay` from a cfg, or at runtime at all.** Changing it on a
+  running server crashes it: `tv_delay 0` over RCON to a server sitting at 30
+  took the process down (NRestarts 2 -> 3, start timestamp moved to the second
+  the command was sent), while the same command to a server already at 0 did
+  nothing. Writing the value it already has is harmless; changing it is fatal.
+  A cfg is therefore the worst possible place for it — `_baseline.cfg` is exec'd
+  by every mode on every map change. Setting it from `gamemode_casual_server.cfg`
+  during map load was also tried, and crash-looped the fleet too; that is
+  reverted.
+- **Servers report `tv_delay 30`, from Valve's own `gamemode_casual.cfg`.** The
+  fleet launches `+game_type 0 +game_mode 0`, so that file runs on every map load
+  and sets the delay after any launch argument. It cannot be corrected — see
+  above — and while GOTV is off it does not matter.
 - **A match the plugin has forgotten is a state the website must survive.** A
   fleet restart wipes the plugin's in-memory match while the website still shows
   it live, and every RCON admin command then answers "no match is live". Force
