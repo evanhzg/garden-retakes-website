@@ -114,6 +114,8 @@ type State = {
     result: {
       map: string;
       connect: string | null;
+      /** Where the draft, the veto and the server live now. */
+      matchUrl?: string | null;
       sides: (string | null)[];
       server: ServerStatus;
     } | null;
@@ -1045,7 +1047,23 @@ function MatchRoom({
                   connect string only ever appears alongside a server that has
                   confirmed it is on the map and has taken the roster. */}
               <div className="rq-connect-wrapper" style={{ minHeight: "80px", display: "flex", alignItems: "center", justifyContent: "center" }}>
-                {match.result.connect ? (
+                {match.result.matchUrl ? (
+                  /* The lobby's job ends here.
+                     The role draft, the map veto and the server all happen on
+                     the match page — the same page a tournament match uses, so
+                     a pickup game and a bracket game are the same thing from
+                     this point on. No server is held yet, deliberately: nothing
+                     should occupy one while people are still picking maps. */
+                  <div className="rq-connect">
+                    <a className="btn btn-primary rq-connect-go" href={match.result.matchUrl}>
+                      <RetakesIcon id="connect" size={18} />
+                      {t("lobby.go_to_match")}
+                    </a>
+                    <div className="rq-connect-ip">
+                      <span className="muted">{t("lobby.match_next_steps")}</span>
+                    </div>
+                  </div>
+                ) : match.result.connect ? (
                   /* Connect first and biggest. Everything else on this screen
                      is over — the veto is decided, the server has taken the
                      roster — and the only thing left to do is join. */

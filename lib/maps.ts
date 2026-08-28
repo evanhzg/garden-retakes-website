@@ -22,6 +22,29 @@ export const RETAKES_MAPS = [
 
 export type RetakesMap = (typeof RETAKES_MAPS)[number];
 
+/**
+ * The maps a veto is run on.
+ *
+ * A subset of the pool above, and deliberately smaller: RETAKES_MAPS is
+ * everything the retakes servers will load, which is the right list for "what
+ * can we play". A veto is a different question. Ten maps is nine bans before a
+ * BO1 starts, which at a turn each is several minutes of banning for a game
+ * that lasts twenty — and the maps at the bottom of that list are ones nobody
+ * was going to play anyway.
+ *
+ * Seven is the Active Duty pool, which is what the tournaments on this site
+ * already run and what every player already expects to see in a veto.
+ */
+export const VETO_MAPS = [
+  "de_dust2",
+  "de_mirage",
+  "de_inferno",
+  "de_nuke",
+  "de_ancient",
+  "de_anubis",
+  "de_train",
+] as const;
+
 /** Most a player may drop. Mirrors MAX_EXCLUDED_MAPS in the matchmaker. */
 export const MAX_EXCLUDED_MAPS = 4;
 

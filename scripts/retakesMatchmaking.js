@@ -625,6 +625,10 @@ function attachRetakesMatchmaking(
             connect: match.connect,
             sides: match.teams.map((t) => t.side),
             server: { state: match.server.state, step: match.server.step, error: match.server.error },
+            // Where the rest of it happens. The role draft, the veto and the
+            // server all live on the match page now, so this is the only thing
+            // the lobby still has to hand over.
+            matchUrl: match.matchUrl ?? null,
           }
         : null,
       // Team chat is filtered here, not in the browser.
@@ -904,11 +908,92 @@ function attachRetakesMatchmaking(
     for (const party of affected) syncParty(party);
   }
 
-  function beginVeto(match) {
+  /**
+   * Hands a formed lobby to the tournament pipeline.
+   *
+   * This used to start a veto here, run it over the socket, then drive a game
+   * server over RCON with `css_cr_*`. That protocol belongs to the all-in-one
+   * plugin, and the server the lobby aimed at now runs the tournament one,
+   * which answers "Unknown command 'css_cr_reset'". The hand-off failed at its
+   * first command and the lobby sat on "starting" for ever.
+   *
+   * So a formed lobby becomes a real match instead. The role draft, the veto,
+   * claiming a free server from the pool (and queueing when they are all busy),
+   * the scoreboard and the admin controls are all machinery that already exists
+   * on the website and is already tested — none of it needs a second
+   * implementation here, and the second implementation is what rotted.
+   *
+   * Everyone is sent to the match page, which is where the draft and the veto
+   * happen. That is also why no server is claimed yet: nothing should hold one
+   * while six people argue about maps.
+   */
+  async function beginVeto(match) {
     clearTimeout(matchTimers.get(match.id));
-    match.phase = "veto";
-    armTurn(match);
+
+    const rosters = match.teams.map(rosterIds);
+    const names = {};
+    for (const team of match.teams) {
+      for (const p of team.players) {
+        if (!p.bot && p.steamId) names[p.steamId] = p.name ?? null;
+      }
+    }
+
+    match.server = { state: "starting", step: "match", error: null };
     syncMatch(match);
+
+    try {
+      const created = await createTournamentMatch({
+        teamSize: rosters[0].length,
+        teamA: rosters[0],
+        teamB: rosters[1],
+        names,
+      });
+
+      match.phase = "ready";
+      match.matchUrl = created.url;
+      match.server = { state: "ready", step: null, error: null };
+      syncMatch(match);
+    } catch (err) {
+      const message = err && err.message ? err.message : String(err);
+      console.error(`[retakes ${match.id}] handoff failed — ${message}`);
+
+      // Loud rather than silent. A lobby that quietly goes nowhere is the exact
+      // failure this replaced; everybody goes back in the queue and is told.
+      match.server = { state: "failed", step: "match", error: "handoff_failed" };
+      syncMatch(match);
+      abandonMatch(match, { requeue: true, blame: [], reason: "handoff_failed" });
+    }
+  }
+
+  /**
+   * Asks the website to create the match.
+   *
+   * A bot-only side has no SteamID64 to put on a roster, so a match with one
+   * cannot be created this way — the tournament pipeline declares bot slots
+   * itself, and wiring that through the lobby is a separate piece of work. Said
+   * plainly here rather than failing deeper in with something cryptic.
+   */
+  async function createTournamentMatch({ teamSize, teamA, teamB, names }) {
+    const base = (process.env.SITE_URL || "https://www.retakes.fr").replace(/\/$/, "");
+    const apiKey = (process.env.INVSIM_API_KEY || "").trim();
+
+    if (!apiKey) throw new Error("INVSIM_API_KEY is not set on the socket server");
+    if (teamA.length !== teamSize || teamB.length !== teamSize) {
+      throw new Error(
+        `a side is short of real players (${teamA.length}v${teamB.length}) — bot-filled lobbies cannot be handed off yet`,
+      );
+    }
+
+    const res = await fetch(`${base}/api/lobby/match`, {
+      method: "POST",
+      headers: { "content-type": "application/json" },
+      body: JSON.stringify({ apiKey, teamSize, teamA, teamB, names }),
+    });
+
+    const data = await res.json().catch(() => ({}));
+    if (!res.ok || !data.ok) throw new Error(data.error || `HTTP ${res.status}`);
+
+    return data;
   }
 
   /**
