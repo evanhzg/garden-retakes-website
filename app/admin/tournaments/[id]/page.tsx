@@ -7,6 +7,7 @@ import { getT } from "@/lib/serverI18n";
 import MatchAdmin from "@/components/tournament/MatchAdmin";
 import Settings, { type LibraryMap, type SettingsView } from "@/components/tournament/Settings";
 import Roster, { type RosterTeam } from "@/components/tournament/Roster";
+import Exceptions from "@/components/tournament/Exceptions";
 import ServerConsoles from "@/components/tournament/ServerConsoles";
 import Collapsible from "@/components/tournament/Collapsible";
 import StatusTag from "@/components/tournament/StatusTag";
@@ -222,6 +223,24 @@ export default async function TournamentAdminPage({
           </div>
         </section>
       )}
+
+      {/* Last, because it is the last resort. Everything above is how a
+          tournament is meant to run; this is for the day it does not. */}
+      <section className="panel">
+        <Exceptions
+          teams={teams}
+          // Every match, not just the actionable ones: correcting a finished
+          // match's teams is exactly the kind of thing this section is for.
+          matches={matches.map((m) => ({
+            id: m.Id,
+            label: `${m.TeamAId ? teamName.get(m.TeamAId) ?? "?" : "—"} v ${
+              m.TeamBId ? teamName.get(m.TeamBId) ?? "?" : "—"
+            }`,
+            state: m.State,
+          }))}
+          adminKey={searchParams.key}
+        />
+      </section>
     </>
   );
 }

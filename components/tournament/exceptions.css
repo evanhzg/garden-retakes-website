@@ -1,0 +1,132 @@
+/* The exception controls.
+   Visibly a different kind of thing from the rest of the admin panel: these
+   break rules on purpose, and an organizer should know they have arrived
+   somewhere unusual rather than finding them among the ordinary buttons. */
+
+.exc {
+  border: 1px solid var(--color-warning, #d08a3a);
+  background: var(--color-surface);
+  padding: var(--space-4);
+  display: grid;
+  gap: var(--space-4);
+}
+
+.exc-head {
+  display: flex;
+  align-items: center;
+  gap: var(--space-2);
+  color: var(--color-warning, #d08a3a);
+}
+
+.exc-head h3 {
+  margin: 0;
+  font-size: 14px;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+}
+
+.exc-lead {
+  margin: 0;
+  font-size: 12px;
+  color: var(--color-text-muted);
+  max-width: 76ch;
+  line-height: 1.55;
+}
+
+.exc-block {
+  border-top: 1px solid var(--color-divider);
+  padding-top: var(--space-3);
+  display: grid;
+  gap: var(--space-2);
+}
+
+.exc-block h4 {
+  margin: 0;
+  font-size: 12px;
+  font-weight: 800;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+}
+
+.exc-why {
+  margin: 0;
+  font-size: 11.5px;
+  color: var(--color-text-muted);
+  max-width: 76ch;
+  line-height: 1.5;
+}
+
+.exc-row {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(min(100%, 180px), 1fr));
+  gap: var(--space-2);
+}
+
+.exc-row label,
+.exc-move {
+  display: grid;
+  gap: 3px;
+  min-width: 0;
+}
+
+.exc-row label > span,
+.exc-move > span {
+  font-size: 10px;
+  font-weight: 800;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  color: var(--color-text-muted);
+}
+
+.exc-row input,
+.exc-row select,
+.exc-move select {
+  width: 100%;
+  min-width: 0;
+}
+
+.exc-actions {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: end;
+  gap: var(--space-2);
+}
+
+.exc-override {
+  display: flex;
+  align-items: center;
+  gap: var(--space-2);
+  border-top: 1px solid var(--color-divider);
+  padding-top: var(--space-3);
+  font-size: 12px;
+  cursor: pointer;
+}
+
+.exc-override input {
+  width: 16px;
+  height: 16px;
+  flex: none;
+  accent-color: var(--color-warning, #d08a3a);
+}
+
+/* One line per reason: two refusals joined into a sentence is how somebody
+   fixes half a problem and tries again. */
+.exc-result {
+  list-style: none;
+  margin: 0;
+  padding: var(--space-2) var(--space-3);
+  display: grid;
+  gap: 3px;
+  border: 1px solid var(--color-divider);
+  font-size: 12px;
+  line-height: 1.5;
+}
+
+.exc-result.ok {
+  border-color: var(--color-accent);
+}
+
+.exc-result.error {
+  border-color: var(--color-danger, #c0392b);
+  color: var(--color-danger, #c0392b);
+}

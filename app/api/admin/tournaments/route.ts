@@ -5,6 +5,11 @@ import { canManage, getTournamentContext, type TournamentContext } from "@/lib/t
 import { roundRobin, singleElimination, resolveByes, type PlannedMatch } from "@/lib/tournament/bracket";
 import { forceEndMatch, restartMatch, startMatch } from "@/lib/tournament/matchRunner";
 import { parseBackups, parseRoundDetail } from "@/lib/tournament/backups";
+import {
+  checkMatchTeamChange,
+  checkSubstitution,
+  looksLikeSteamId,
+} from "@/lib/tournament/exceptions";
 import { execOnServer } from "@/lib/tournament/servers";
 
 export const dynamic = "force-dynamic";
@@ -37,6 +42,10 @@ type Body = {
     | "backups"
     | "roundinfo"
     | "adminlog"
+    | "add-player"
+    | "drop-player"
+    | "move-player"
+    | "set-match-team"
     | "add-organizer"
     | "remove-organizer";
   tournamentId?: number;
@@ -61,6 +70,13 @@ type Body = {
   winner?: "a" | "b";
   // roundinfo
   round?: number;
+  // the exception controls
+  teamId?: number;
+  toTeamId?: number;
+  slot?: "a" | "b";
+  displayName?: string;
+  /** The organizer confirming they mean to break a rule. */
+  override?: boolean;
   // add-organizer / remove-organizer
   steamId?: string;
   organizerName?: string;
@@ -356,6 +372,256 @@ export async function POST(req: Request) {
             detail: r.Detail.replace(exact, "").replace(/^[:\s]+/, "").trim(),
           })),
       });
+    }
+
+    case "add-player": {
+      // A substitute, or somebody whose account will not cooperate ten minutes
+      // before their match. The ordinary join flow correctly refuses both — you
+      // cannot join a tournament that has started — and an organizer with six
+      // people waiting needs a yes.
+      //
+      // The rules live in lib/tournament/exceptions.ts, which decides what an
+      // override may break (a started tournament, a full roster) and what it may
+      // not (a player already on another team, whose stats would then count for
+      // both).
+      if (!body.teamId || !body.steamId) {
+        return NextResponse.json({ error: "teamId and steamId?" }, { status: 400 });
+      }
+
+      const team = await prisma.tournamentTeam.findUnique({
+        where: { Id: body.teamId },
+        include: { Tournament: true },
+      });
+
+      if (!team) return NextResponse.json({ error: "No such team." }, { status: 404 });
+
+      const steamId = String(body.steamId).trim();
+
+      // Every membership this player holds in THIS tournament, which is what
+      // the double-counting rule is about.
+      const existingRows = await prisma.tournamentTeamMember.findMany({
+        where: { SteamId: BigInt(looksLikeSteamId(steamId) ? steamId : "0"), Team: { TournamentId: team.TournamentId } },
+        include: { Team: true },
+      });
+
+      const rosterSize = await prisma.tournamentTeamMember.count({
+        where: { TeamId: team.Id, Status: { in: ["invited", "accepted"] } },
+      });
+
+      const check = checkSubstitution({
+        teamId: team.Id,
+        teamName: team.Name,
+        teamSize: team.Tournament.TeamSize,
+        currentRosterSize: rosterSize,
+        tournamentStarted: team.Tournament.StartedAt !== null,
+        existing: existingRows.map((m) => ({
+          teamId: m.TeamId,
+          teamName: m.Team.Name,
+          status: m.Status,
+        })),
+        override: body.override === true,
+        steamIdValid: looksLikeSteamId(steamId),
+      });
+
+      if (!check.ok) {
+        return NextResponse.json({ error: check.blockers.join(" "), blockers: check.blockers }, { status: 400 });
+      }
+
+      // Already here is a no-op that succeeds, so clicking twice is not an error.
+      const here = existingRows.find((m) => m.TeamId === team.Id);
+
+      if (here) {
+        await prisma.tournamentTeamMember.update({
+          where: { Id: here.Id },
+          data: {
+            Status: "accepted",
+            RespondedAt: new Date(),
+            ...(body.displayName ? { DisplayName: body.displayName.trim().slice(0, 32) } : {}),
+          },
+        });
+      } else {
+        await prisma.tournamentTeamMember.create({
+          data: {
+            TeamId: team.Id,
+            SteamId: BigInt(steamId),
+            Status: "accepted",
+            RespondedAt: new Date(),
+            DisplayName: (body.displayName ?? "").trim().slice(0, 32) || null,
+          },
+        });
+      }
+
+      await logAdminAction(ctx, "tournament.add-player", { steamId },
+        `${team.Name}${body.override ? " (override)" : ""}`);
+
+      return NextResponse.json({ ok: true, warnings: check.warnings });
+    }
+
+    case "drop-player": {
+      // Marked removed rather than deleted. A player who was on the roster when
+      // a map was played is part of that map's record, and deleting the row
+      // orphans their stat lines — the same lesson the tournament deletes taught
+      // when four of them left 160 rows behind.
+      if (!body.teamId || !body.steamId) {
+        return NextResponse.json({ error: "teamId and steamId?" }, { status: 400 });
+      }
+
+      const steamId = String(body.steamId).trim();
+      if (!looksLikeSteamId(steamId)) {
+        return NextResponse.json({ error: "That is not a SteamID64." }, { status: 400 });
+      }
+
+      await prisma.tournamentTeamMember.updateMany({
+        where: { TeamId: body.teamId, SteamId: BigInt(steamId) },
+        data: { Status: "removed", RespondedAt: new Date() },
+      });
+
+      await logAdminAction(ctx, "tournament.drop-player", { steamId }, `team ${body.teamId}`);
+      return NextResponse.json({ ok: true });
+    }
+
+    case "move-player": {
+      // Moving rather than adding, which is what the double-counting blocker
+      // tells an organizer to do. One call so it cannot be half done — a player
+      // dropped from one team and then refused by the other is worse than
+      // either.
+      if (!body.teamId || !body.toTeamId || !body.steamId) {
+        return NextResponse.json({ error: "teamId, toTeamId and steamId?" }, { status: 400 });
+      }
+
+      const steamId = String(body.steamId).trim();
+      if (!looksLikeSteamId(steamId)) {
+        return NextResponse.json({ error: "That is not a SteamID64." }, { status: 400 });
+      }
+
+      const to = await prisma.tournamentTeam.findUnique({
+        where: { Id: body.toTeamId },
+        include: { Tournament: true },
+      });
+
+      if (!to) return NextResponse.json({ error: "No such destination team." }, { status: 404 });
+
+      const rosterSize = await prisma.tournamentTeamMember.count({
+        where: { TeamId: to.Id, Status: { in: ["invited", "accepted"] } },
+      });
+
+      // Checked as if they were unattached, because the drop below makes that
+      // true — the point of doing both here is that the blocker cannot fire.
+      const check = checkSubstitution({
+        teamId: to.Id,
+        teamName: to.Name,
+        teamSize: to.Tournament.TeamSize,
+        currentRosterSize: rosterSize,
+        tournamentStarted: to.Tournament.StartedAt !== null,
+        existing: [],
+        override: body.override === true,
+        steamIdValid: true,
+      });
+
+      if (!check.ok) {
+        return NextResponse.json({ error: check.blockers.join(" "), blockers: check.blockers }, { status: 400 });
+      }
+
+      const from = await prisma.tournamentTeamMember.findFirst({
+        where: { TeamId: body.teamId, SteamId: BigInt(steamId) },
+      });
+
+      await prisma.tournamentTeamMember.updateMany({
+        where: { TeamId: body.teamId, SteamId: BigInt(steamId) },
+        data: { Status: "removed", RespondedAt: new Date() },
+      });
+
+      const already = await prisma.tournamentTeamMember.findFirst({
+        where: { TeamId: to.Id, SteamId: BigInt(steamId) },
+      });
+
+      if (already) {
+        await prisma.tournamentTeamMember.update({
+          where: { Id: already.Id },
+          data: { Status: "accepted", RespondedAt: new Date() },
+        });
+      } else {
+        await prisma.tournamentTeamMember.create({
+          data: {
+            TeamId: to.Id,
+            SteamId: BigInt(steamId),
+            Status: "accepted",
+            RespondedAt: new Date(),
+            // The name they carried on the old team follows them; an organizer
+            // moving somebody mid-event should not have to retype it.
+            DisplayName: from?.DisplayName ?? null,
+            RoleT: from?.RoleT ?? null,
+            RoleCt: from?.RoleCt ?? null,
+          },
+        });
+      }
+
+      await logAdminAction(ctx, "tournament.move-player", { steamId },
+        `team ${body.teamId} -> ${to.Name}`);
+
+      return NextResponse.json({ ok: true, warnings: check.warnings });
+    }
+
+    case "set-match-team": {
+      // The wrong two teams in a match. A bracket generated before a withdrawal,
+      // a seed entered wrong, or a match started against the wrong opponent —
+      // the last of which is why rounds already played is a warning rather than
+      // a refusal.
+      if (!body.matchId || (body.slot !== "a" && body.slot !== "b")) {
+        return NextResponse.json({ error: "matchId and slot (a|b)?" }, { status: 400 });
+      }
+
+      const match = await prisma.tournamentMatch.findUnique({
+        where: { Id: body.matchId },
+        include: { Maps: true },
+      });
+
+      if (!match) return NextResponse.json({ error: "No such match." }, { status: 404 });
+
+      const incoming = body.teamId ?? null;
+      const outgoing = body.slot === "a" ? match.TeamAId : match.TeamBId;
+      const other = body.slot === "a" ? match.TeamBId : match.TeamAId;
+
+      const check = checkMatchTeamChange({
+        matchState: match.State,
+        incomingTeamId: incoming,
+        outgoingTeamId: outgoing,
+        otherTeamId: other,
+        hasPlayed: match.Maps.some((m) => m.ScoreA + m.ScoreB > 0 || m.State !== "pending"),
+        hasAdvanced: match.WinnerTeamId !== null,
+        override: body.override === true,
+      });
+
+      if (!check.ok) {
+        return NextResponse.json({ error: check.blockers.join(" "), blockers: check.blockers }, { status: 400 });
+      }
+
+      await prisma.tournamentMatch.update({
+        where: { Id: match.Id },
+        data: body.slot === "a" ? { TeamAId: incoming } : { TeamBId: incoming },
+      });
+
+      // The server is NOT told, and the warning says so.
+      //
+      // A game server holds the roster it was handed when the match was
+      // declared, and the only thing that replaces it is declaring the match
+      // again — which is a restart, not a side effect an organizer should get
+      // from editing a bracket. Sending some half-measure here would leave the
+      // server and the website disagreeing about who is playing, which is the
+      // exact failure this whole session has been unpicking.
+      //
+      // So the database is corrected and the organizer is told what is still
+      // true on the server. Restart from the admin panel loads the new roster.
+      if (match.ServerId && (match.State === "live" || match.State === "ready")) {
+        check.warnings.push(
+          "The server is still running the old roster — restart the match to load this change.",
+        );
+      }
+
+      await logAdminAction(ctx, "tournament.set-match-team", undefined,
+        `match ${match.Id} slot ${body.slot} -> team ${incoming ?? "none"}`);
+
+      return NextResponse.json({ ok: true, warnings: check.warnings });
     }
 
     case "add-organizer": {
