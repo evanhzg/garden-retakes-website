@@ -117,6 +117,34 @@
   letter-spacing: 0.06em;
 }
 
+/* How the knife went, on the maps that had one. Quiet: it is a footnote about
+   how the sides came to be, not a result. */
+.mc-knife {
+  margin: 0;
+  font-size: 10.5px;
+  color: var(--color-text-muted);
+  overflow-wrap: anywhere;
+}
+
+/* Who won, under the scoreline. Deliberately the loudest thing in the body of
+   a finished card: it is the answer to the only question the card exists to
+   settle, and the numbers above it are the working. */
+.mc-won {
+  display: flex;
+  align-items: center;
+  gap: 5px;
+  margin: 2px 0 0;
+  font-size: 11px;
+  font-weight: 800;
+  letter-spacing: 0.04em;
+  color: var(--color-accent);
+  overflow-wrap: anywhere;
+}
+
+.mc-won svg {
+  flex: none;
+}
+
 .mc-score {
   margin: 4px 0 0;
   display: flex;

@@ -3,7 +3,8 @@ import { prisma } from "@/lib/db";
 import { logAdminAction } from "@/lib/adminAuth";
 import { canManage, getTournamentContext, type TournamentContext } from "@/lib/tournamentAuth";
 import { roundRobin, singleElimination, resolveByes, type PlannedMatch } from "@/lib/tournament/bracket";
-import { startMatch } from "@/lib/tournament/matchRunner";
+import { forceEndMatch, restartMatch, startMatch } from "@/lib/tournament/matchRunner";
+import { parseBackups } from "@/lib/tournament/backups";
 import { execOnServer } from "@/lib/tournament/servers";
 
 export const dynamic = "force-dynamic";
@@ -31,6 +32,9 @@ type Body = {
     | "set-pool"
     | "state"
     | "admin"
+    | "end"
+    | "restart"
+    | "backups"
     | "add-organizer"
     | "remove-organizer";
   tournamentId?: number;
@@ -51,6 +55,8 @@ type Body = {
   state?: string;
   // admin passthrough
   command?: string;
+  // end
+  winner?: "a" | "b";
   // add-organizer / remove-organizer
   steamId?: string;
   organizerName?: string;
@@ -234,6 +240,62 @@ export async function POST(req: Request) {
       await logAdminAction(ctx, "tournament.rcon", undefined, body.command.slice(0, 250));
 
       return NextResponse.json({ ok: true, reply });
+    }
+
+    case "end": {
+      // Force-ending is NOT the rcon passthrough. css_endmatch needs the plugin
+      // to be holding a live match, and the case an admin most needs this in is
+      // exactly the one where it is not — a restarted game server answers "no
+      // match is live" and the website is left showing a match that can never
+      // be ended from anywhere. So the database ends it and the server is told
+      // afterwards.
+      if (!body.matchId || (body.winner !== "a" && body.winner !== "b")) {
+        return NextResponse.json({ error: "matchId and winner (a|b)?" }, { status: 400 });
+      }
+
+      const result = await forceEndMatch(body.matchId, body.winner);
+      if (!result.ok) return NextResponse.json({ error: result.error }, { status: 400 });
+
+      await logAdminAction(ctx, "tournament.end", undefined, `match ${body.matchId} to ${body.winner}`);
+      return NextResponse.json(result);
+    }
+
+    case "restart": {
+      if (!body.matchId) return NextResponse.json({ error: "matchId?" }, { status: 400 });
+
+      const result = await restartMatch(body.matchId);
+      if (!result.ok) return NextResponse.json({ error: result.error }, { status: 400 });
+
+      // The server is told too, so a box still holding the old match drops it
+      // rather than reporting rounds into a match the website has just reset.
+      // Best effort for the same reason as above.
+      const m = await prisma.tournamentMatch.findUnique({ where: { Id: body.matchId } });
+      if (m?.ServerId) {
+        try {
+          await execOnServer(m.ServerId, "css_restartmatch");
+        } catch {
+          // A server that cannot be reached is one the restart did not need.
+        }
+      }
+
+      await logAdminAction(ctx, "tournament.restart", undefined, `match ${body.matchId}`);
+      return NextResponse.json({ ok: true });
+    }
+
+    case "backups": {
+      // What can be restored, and what each one holds. Read live off the server
+      // because the files are on its disk and nothing else knows about them.
+      if (!body.matchId) return NextResponse.json({ error: "matchId?" }, { status: 400 });
+
+      const m = await prisma.tournamentMatch.findUnique({ where: { Id: body.matchId } });
+      if (!m?.ServerId) return NextResponse.json({ ok: true, backups: [] });
+
+      try {
+        const reply = await execOnServer(m.ServerId, "css_backups");
+        return NextResponse.json({ ok: true, backups: parseBackups(reply) });
+      } catch {
+        return NextResponse.json({ ok: true, backups: [] });
+      }
     }
 
     case "add-organizer": {

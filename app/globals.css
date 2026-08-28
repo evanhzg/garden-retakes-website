@@ -11525,3 +11525,21 @@ html[data-motion="off"] .sock-banner-spin { animation: none; }
     scroll-behavior: auto;
   }
 }
+
+
+/* ---------- Square buttons, everywhere ----------
+   --radius-* are all 0px by design (see content/DESIGN-CONVENTIONS.md), but a
+   handful of controls carried their own radius from before that rule and read
+   as belonging to a different site. Stated once here rather than hunted down
+   in a dozen files. */
+.btn,
+.btn-primary,
+.btn-secondary,
+.btn-ghost,
+.btn.small,
+.btn-icon,
+.chip,
+.input,
+button.btn {
+  border-radius: 0;
+}

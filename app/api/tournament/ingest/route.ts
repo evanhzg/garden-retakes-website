@@ -21,7 +21,8 @@ type Event =
   | { kind: "round_end"; scoreA: number; scoreB: number; round?: number }
   | { kind: "map_end"; scoreA: number; scoreB: number }
   | { kind: "match_end"; scoreA: number; scoreB: number }
-  | { kind: "player_stats"; players: PlayerLine[] };
+  | { kind: "player_stats"; players: PlayerLine[] }
+  | { kind: "knife_result"; winner?: "A" | "B"; choice?: "stay" | "switch" };
 
 type PlayerLine = {
   steamId: string;
@@ -136,6 +137,25 @@ export async function POST(req: Request) {
 
     case "player_stats": {
       await savePlayerStats(match.Id, body.players ?? []);
+      break;
+    }
+
+    // Who won the knife round, and which way it sent them. Written onto the map
+    // it decided — which is the live one, or the next one still to be played
+    // when the report lands during the moment between the knife and going live.
+    case "knife_result": {
+      const map = await mapForStats(match.Id);
+      const winner = body.winner === "A" ? match.TeamAId : body.winner === "B" ? match.TeamBId : null;
+
+      if (map && winner) {
+        await prisma.tournamentMatchMap.update({
+          where: { Id: map.Id },
+          data: {
+            KnifeWinnerTeamId: winner,
+            KnifeChoice: body.choice === "switch" ? "switch" : "stay",
+          },
+        });
+      }
       break;
     }
 

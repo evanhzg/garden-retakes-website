@@ -71,11 +71,36 @@ export default function MapCards({
                 {t("match.startSide")}: {m.startSideTeamA ?? t("match.knife")}
               </p>
 
+              {/* How the knife went. Only a map whose sides the veto did NOT
+                  settle has one, and for those it is the only record of how the
+                  sides came to be what they are. */}
+              {m.knifeWinner && (
+                <p className="mc-knife">
+                  {t(m.knifeChoice === "switch" ? "match.knifeSwitched" : "match.knifeStayed", {
+                    team: m.knifeWinner === "a" ? teamA : teamB,
+                  })}
+                </p>
+              )}
+
               {played && (
                 <p className={`mc-score num ${m.winner ? `won-${m.winner}` : ""}`}>
                   <span className={m.winner === "a" ? "mc-win" : ""}>{m.scoreA}</span>
                   <span className="mc-dash">–</span>
                   <span className={m.winner === "b" ? "mc-win" : ""}>{m.scoreB}</span>
+                </p>
+              )}
+
+              {/* Who took the map, in words.
+                  The scoreline already bolds the winning number, but that only
+                  works if you know which side of the dash is which team — and
+                  the card never names them, because the two team names live at
+                  the top of the page, not on every card. On a BO3 where the
+                  same two teams appear three times, "13-7" answers nothing on
+                  its own. So a map that is OVER says who won it. */}
+              {m.winner && (
+                <p className="mc-won">
+                  <Trophy size={12} aria-hidden />
+                  <span>{t("match.mapWonBy", { team: m.winner === "a" ? teamA : teamB })}</span>
                 </p>
               )}
 

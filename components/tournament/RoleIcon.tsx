@@ -21,12 +21,17 @@ import "./roleicon.css";
 // AWPer, and giving them different drawings would undo that in pictures.
 
 const P = {
-  /** Carries the bomb, so its spawn is the plant spot. */
+  /** Carries the bomb, so its spawn IS the plant spot — hence a C4. */
   planter: (
     <>
-      <circle cx="10" cy="15" r="6" />
-      <path d="M14.2 10.8 18 7" />
-      <path d="M16 5h3v3" />
+      {/* The body of the charge, with its keypad and the aerial. Read at 15px
+          the silhouette is what carries it: a squat box with a stub on top is
+          a bomb, where the old circle-and-handle was a generic satchel. */}
+      <rect x="4" y="9" width="16" height="11" rx="1" />
+      <path d="M12 9V6" />
+      <path d="M9.5 6h5" />
+      <path d="M7.5 13h4" />
+      <path d="M7.5 16.5h9" />
     </>
   ),
 
@@ -57,20 +62,41 @@ const P = {
     </>
   ),
 
-  /** First through the door. */
+  /**
+   * First through the door.
+   *
+   * A doorway with somebody stepping out of it. Two stacked chevrons said
+   * "forward" and could equally have meant fast-forward, skip, or next — this
+   * says entry, which is the actual job.
+   */
   frontrunner: (
     <>
-      <path d="M4 4v16" />
-      <path d="M9 7l5 5-5 5" />
-      <path d="M15 7l5 5-5 5" />
+      {/* The frame, open on the right. */}
+      <path d="M3 3v18h6" />
+      <path d="M3 3h6" />
+      {/* Through it, and out. */}
+      <circle cx="14.5" cy="7" r="2" />
+      <path d="M14.5 9.5v5" />
+      <path d="M12 12h5" />
+      <path d="M13 20l1.5-5.5L17 20" />
     </>
   ),
 
-  /** Second wave — the role that makes a three-player side work. */
+  /**
+   * Second wave — the one behind, covering.
+   *
+   * Two figures, the second half a step back. A shield with a tick was the
+   * universal "verified" mark and said nothing about the role; this says there
+   * are two of you and one is behind, which is the whole job.
+   */
   backup: (
     <>
-      <path d="M12 3l8 3v6c0 4.8-3.4 8.3-8 9.4C7.4 20.3 4 16.8 4 12V6Z" />
-      <path d="M9.5 12l1.8 1.9 3.4-3.6" />
+      {/* In front. */}
+      <circle cx="9" cy="6.5" r="2.5" />
+      <path d="M4.5 20v-3a4.5 4.5 0 0 1 9 0v3" />
+      {/* Behind, and offset. */}
+      <circle cx="17" cy="9" r="2" />
+      <path d="M13.5 20v-2.2a3.5 3.5 0 0 1 7 0V20" />
     </>
   ),
 } as const;

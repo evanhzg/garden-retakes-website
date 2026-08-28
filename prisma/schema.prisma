@@ -1738,6 +1738,14 @@ model TournamentMatchMap {
   ScoreA             Int     @default(0)
   ScoreB             Int     @default(0)
   WinnerTeamId       Int?
+  /// Who won the knife round on this map, and which way it sent them.
+  ///
+  /// Only ever set on a map whose sides were NOT settled by the veto — a BO1 or
+  /// a decider. Everywhere else the veto already recorded the sides and there
+  /// was no knife round to report.
+  KnifeWinnerTeamId  Int?
+  /// stay | switch
+  KnifeChoice        String? @db.VarChar(8)
   DemoFile           String? @db.VarChar(160)
   State              String  @default("pending") @db.VarChar(16)
 

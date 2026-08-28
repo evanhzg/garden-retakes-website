@@ -2,6 +2,7 @@ import { prisma } from "@/lib/db";
 import { claimServer, connectString, execOnServer, releaseServer } from "@/lib/tournament/servers";
 import { rolesForMatch } from "@/lib/tournament/roleDraft";
 import { dequeue, enqueue, promoteNext } from "@/lib/tournament/queue";
+import { forcedMapScore, forcedSeriesScore, type Slot } from "@/lib/tournament/forceEnd";
 
 // Starting a tournament match on a server.
 //
@@ -334,15 +335,14 @@ export async function finishMap(
   if (matchOver) {
     await releaseServer(match.ServerId);
 
-    // The match lets go of the server too. Leaving ServerId set made a finished
-    // match still look like it held one — the match page offered a spectate
-    // button into somebody else's game, and two matches appeared to share a
-    // server. Observed: #16 finished and #17 live, both reading server 4.
-    await prisma.tournamentMatch.update({
-      where: { Id: match.Id },
-      data: { ServerId: null },
-    });
-
+    // The match KEEPS its ServerId on purpose: "which server did that match run
+    // on" is a question asked after the fact, and clearing it threw the answer
+    // away. It cannot cause a stale spectate button, because the match route
+    // gates that on serverIsUp — ServerId AND a state of ready or live — so a
+    // finished match names its server without offering a way into it.
+    //
+    // The server itself is released above, which is what actually frees it for
+    // the next match; the two facts are separate and only one of them expires.
     await advance(match.Id);
 
     // The freed server goes to whoever has waited longest. Not awaited for its
@@ -380,6 +380,190 @@ export async function advance(matchId: number): Promise<void> {
     await prisma.tournamentMatch.update({
       where: { Id: match.LoserNextMatchId },
       data: match.LoserNextSlot === 0 ? { TeamAId: loserId } : { TeamBId: loserId },
+    });
+  }
+}
+
+
+/**
+ * Ends a match by hand, and makes the result stick.
+ *
+ * Deliberately NOT a wrapper around the plugin's css_endmatch. That command was
+ * the whole implementation of "force end" and it fails silently in the one
+ * situation an admin most needs it: the game server restarted, the plugin came
+ * back with no match in memory, and it answers "no match is live" while the
+ * website still shows the match running. Measured on the fleet — the website
+ * had #17 live on server 4 and the plugin had nothing at all. Every admin
+ * button was a no-op and the match could not be ended from anywhere.
+ *
+ * So the database is the thing that ends, and the server is told afterwards as
+ * a courtesy. If the server has a match it wraps up; if it does not, the
+ * bracket has still moved, which is what an admin pressing "force end" wants.
+ */
+export async function forceEndMatch(
+  matchId: number,
+  winner: Slot,
+): Promise<{ ok: boolean; error?: string; reply?: string }> {
+  const match = await prisma.tournamentMatch.findUnique({
+    where: { Id: matchId },
+    include: { Maps: { orderBy: { Ordinal: "asc" } } },
+  });
+
+  if (!match) return { ok: false, error: "No such match." };
+  if (match.State === "finished") return { ok: false, error: "That match has already ended." };
+
+  const winnerTeamId = winner === "a" ? match.TeamAId : match.TeamBId;
+  const loserTeamId = winner === "a" ? match.TeamBId : match.TeamAId;
+
+  // The map that was being played, or — if the server never got that far — the
+  // first one that has not finished. A BO3 forced during map two must not award
+  // map one all over again.
+  const target =
+    match.Maps.find((m) => m.State === "live") ?? match.Maps.find((m) => m.State !== "finished");
+
+  if (target) {
+    const line = forcedMapScore({ a: target.ScoreA, b: target.ScoreB }, winner);
+
+    await prisma.tournamentMatchMap.update({
+      where: { Id: target.Id },
+      data: { ScoreA: line.a, ScoreB: line.b, WinnerTeamId: winnerTeamId, State: "finished" },
+    });
+  }
+
+  // Recount from what the maps now say, then let the award override it if the
+  // admin has given the series to somebody who was behind.
+  const wonA =
+    match.Maps.filter((m) => m.Id !== target?.Id && m.WinnerTeamId === match.TeamAId).length +
+    (target && winnerTeamId === match.TeamAId ? 1 : 0);
+  const wonB =
+    match.Maps.filter((m) => m.Id !== target?.Id && m.WinnerTeamId === match.TeamBId).length +
+    (target && winnerTeamId === match.TeamBId ? 1 : 0);
+
+  const series = forcedSeriesScore({ a: wonA, b: wonB }, winner, match.BestOf);
+
+  await prisma.tournamentMatch.update({
+    where: { Id: match.Id },
+    data: {
+      ScoreA: series.a,
+      ScoreB: series.b,
+      State: "finished",
+      WinnerTeamId: winnerTeamId,
+      EndedAt: new Date(),
+    },
+  });
+
+  // The bracket, which is the part an admin is actually forcing. Without this
+  // the next match never receives a team and the round stalls on a result
+  // everybody can already see.
+  await advance(match.Id);
+
+  // The server goes back in the pool, but the match KEEPS naming it: "which
+  // server did that run on" is asked after the fact, and the match route gates
+  // the spectate button on State being ready or live, so a finished match
+  // cannot offer a way into somebody else's game.
+  await releaseServer(match.ServerId);
+
+  void promoteNext().catch(() => {
+    // A promotion that fails leaves the queue as it was.
+  });
+
+  // Best effort, and last. A server that has no match answers with a refusal
+  // line rather than an error, and that refusal must not undo any of the above.
+  let reply: string | undefined;
+  if (match.ServerId) {
+    try {
+      reply = await execOnServer(match.ServerId, `css_endmatch ${winner}`);
+    } catch {
+      reply = undefined;
+    }
+  }
+
+  void loserTeamId;
+  return { ok: true, reply };
+}
+
+/**
+ * Puts a match back to the start.
+ *
+ * Keeps the veto and the roles, because those were agreed between the two
+ * teams and re-running them is a negotiation, not a restart — a match that
+ * crashed on map one should come back on the same map with the same sides and
+ * the same role picks. What is thrown away is everything that was PLAYED:
+ * scores, stat rows, winners, and the ended-ness of the match itself.
+ *
+ * The server is left claimed if it was claimed, so a restart lands on the same
+ * box rather than fighting the queue for a new one.
+ */
+export async function restartMatch(matchId: number): Promise<{ ok: boolean; error?: string }> {
+  const match = await prisma.tournamentMatch.findUnique({
+    where: { Id: matchId },
+    include: { Maps: { orderBy: { Ordinal: "asc" } } },
+  });
+
+  if (!match) return { ok: false, error: "No such match." };
+
+  // Stat rows are per map, and a replayed map that keeps its old rows shows
+  // every player's kills twice. Deleted rather than superseded because there is
+  // no version of "the first attempt" anybody wants to read.
+  await prisma.tournamentPlayerStat.deleteMany({ where: { MatchId: match.Id } });
+
+  await prisma.tournamentMatchMap.updateMany({
+    where: { MatchId: match.Id },
+    data: {
+      ScoreA: 0,
+      ScoreB: 0,
+      WinnerTeamId: null,
+      State: "pending",
+      // The knife is replayed with the map, so its result goes too — keeping it
+      // would show a knife winner for a round that is about to happen again.
+      KnifeWinnerTeamId: null,
+      KnifeChoice: null,
+    },
+  });
+
+  await prisma.tournamentMatch.update({
+    where: { Id: match.Id },
+    data: {
+      ScoreA: 0,
+      ScoreB: 0,
+      WinnerTeamId: null,
+      EndedAt: null,
+      // "ready" rather than "live": the match has a server and a map plan but
+      // nothing has been started on it yet, which is exactly what ready means
+      // and is the state startMatch expects to be handed.
+      State: match.ServerId ? "ready" : "pending",
+    },
+  });
+
+  // A restarted match that had already advanced somebody has to take them back
+  // out again, or the next round holds a team that has not won yet.
+  await retract(match.Id);
+
+  return { ok: true };
+}
+
+/**
+ * Undoes an advance.
+ *
+ * The mirror of {@link advance}, and it exists only for restarts. Clears the
+ * slot rather than blanking the whole next match, so the OTHER semi-final's
+ * winner stays where they are.
+ */
+async function retract(matchId: number): Promise<void> {
+  const match = await prisma.tournamentMatch.findUnique({ where: { Id: matchId } });
+  if (!match) return;
+
+  if (match.NextMatchId) {
+    await prisma.tournamentMatch.update({
+      where: { Id: match.NextMatchId },
+      data: match.NextSlot === 0 ? { TeamAId: null } : { TeamBId: null },
+    });
+  }
+
+  if (match.LoserNextMatchId) {
+    await prisma.tournamentMatch.update({
+      where: { Id: match.LoserNextMatchId },
+      data: match.LoserNextSlot === 0 ? { TeamAId: null } : { TeamBId: null },
     });
   }
 }

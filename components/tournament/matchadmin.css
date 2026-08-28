@@ -105,3 +105,92 @@
     padding: 10px;
   }
 }
+
+/* ---------- Restarting a match ---------- */
+
+.ma-note {
+  grid-column: 1 / -1;
+  font-size: 11px;
+  color: var(--color-text-muted);
+}
+
+.ma-restart {
+  border: 1px solid var(--color-accent);
+  background: var(--color-surface);
+  padding: var(--space-3);
+  display: grid;
+  gap: var(--space-2);
+}
+
+.ma-restart-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--space-2);
+}
+
+.ma-restart-head h4 {
+  margin: 0;
+  font-size: 12px;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+}
+
+.ma-backups {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: grid;
+  gap: 4px;
+  /* A long match is thirty of these. Scrolls inside the panel rather than
+     pushing the buttons under it off the screen. */
+  max-height: 240px;
+  overflow-y: auto;
+}
+
+.ma-backups li {
+  display: grid;
+  grid-template-columns: 2.2rem 1fr auto auto;
+  align-items: center;
+  gap: var(--space-2);
+  padding: 5px 6px;
+  border: 1px solid var(--color-divider);
+  font-size: 11.5px;
+}
+
+.ma-bk-round {
+  font-weight: 800;
+  text-align: right;
+  opacity: 0.7;
+}
+
+.ma-bk-sides {
+  display: grid;
+  gap: 1px;
+  min-width: 0;
+}
+
+.ma-bk-t,
+.ma-bk-ct {
+  overflow-wrap: anywhere;
+}
+
+.ma-bk-t {
+  color: var(--color-t, #d08a3a);
+}
+
+.ma-bk-ct {
+  color: var(--color-ct, #5b8fd0);
+}
+
+.ma-bk-cash {
+  font-size: 10.5px;
+  color: var(--color-text-muted);
+  white-space: nowrap;
+}
+
+/* The destructive option, last and looking like it. */
+.ma-restart-clean {
+  border-color: var(--color-danger, #c0392b);
+  color: var(--color-danger, #c0392b);
+}

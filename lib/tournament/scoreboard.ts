@@ -38,6 +38,10 @@ export type ScoreboardMap = {
   image: string | null;
   /** The demo of this map, once the collector has it. */
   demo: string | null;
+  /** Who won the knife round on this map, when one was played. */
+  knifeWinner: "a" | "b" | null;
+  /** stay | switch — which way the knife sent them. */
+  knifeChoice: string | null;
 };
 
 export type ScoreboardRow = PlayerTotals & {
@@ -206,6 +210,13 @@ export async function scoreboardFor(matchId: number): Promise<Scoreboard | null>
     // tournament maps have an ImageUrl, so reading the column alone meant every
     // card drew the "no picture" hatch. mapArt falls back to the shipped
     // /maps/<name>.webp that the admin map picker already uses.
+    knifeWinner:
+      m.KnifeWinnerTeamId === null
+        ? null
+        : m.KnifeWinnerTeamId === match.TeamAId
+          ? "a"
+          : "b",
+    knifeChoice: m.KnifeChoice,
     image: mapArt(m.Map, artOf.get(m.Map)?.ImageUrl),
     demo: m.DemoFile,
   }));
