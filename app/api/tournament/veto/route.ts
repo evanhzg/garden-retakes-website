@@ -1,6 +1,14 @@
 import { NextResponse } from "next/server";
 import { prisma } from "@/lib/db";
-import { autoStart, autoVeto, materialiseMaps, setMapsDirectly } from "@/lib/tournament/vetoRunner";
+import {
+  autoStart,
+  autoVeto,
+  beginRolesOrVeto,
+  beginVeto,
+  materialiseMaps,
+  setMapsDirectly,
+} from "@/lib/tournament/vetoRunner";
+import { autoRoleDraft } from "@/lib/tournament/roleDraft";
 import { getSession } from "@/lib/auth";
 import { canManage, getTournamentContext } from "@/lib/tournamentAuth";
 import { autoAction, validateAction, vetoState } from "@/lib/tournament/veto";
@@ -100,11 +108,14 @@ export async function POST(req: Request) {
         data: mySlot === "A" ? { ReadyA: value } : { ReadyB: value },
       });
 
-      // Both sides in: the veto starts itself, with no admin needed. That is
+      // Both sides in: the match starts itself, with no admin needed. That is
       // the normal path and the reason ready-up exists at all.
+      //
+      // What it starts is now the role draft, when there is one to run — the
+      // step that decides who plays what, before the maps are argued about.
       if (vetoMayStart(updated.ReadyA, updated.ReadyB, false)) {
-        await beginVeto(match.Id);
-        return NextResponse.json({ ok: true, started: true });
+        const stage = await beginRolesOrVeto(match.Id);
+        return NextResponse.json({ ok: true, started: true, stage });
       }
 
       return NextResponse.json({ ok: true, started: false });
@@ -120,8 +131,8 @@ export async function POST(req: Request) {
 
       // The escape hatch for the team that is on the server but not on the
       // website, which at a real event is most of them.
-      await beginVeto(match.Id);
-      return NextResponse.json({ ok: true, started: true });
+      const stage = await beginRolesOrVeto(match.Id);
+      return NextResponse.json({ ok: true, started: true, stage });
     }
 
     case "ban":
@@ -189,6 +200,13 @@ export async function POST(req: Request) {
       if (!isOrganizer) {
         return NextResponse.json({ error: "Organizers only." }, { status: 403 });
       }
+      // Roles first. A match decided without captains has nobody to draft
+      // either, and starting one whose roles were never settled puts three
+      // generalists a side on the server — which is the format the draft exists
+      // to replace.
+      await autoRoleDraft(match.Id);
+      await beginVeto(match.Id);
+
       const result = await autoVeto(match.Id, Math.random, body.preferMap ?? null);
       if (result.ok) await autoStart(match.Id);
       return NextResponse.json({ ok: result.ok, maps: result.maps });
@@ -241,6 +259,7 @@ export async function GET(req: Request) {
     kind: v.Kind as "ban" | "pick" | "side",
     map: v.Map ?? undefined,
     side: (v.Side as "T" | "CT" | undefined) ?? undefined,
+    wasAuto: v.WasAuto,
   }));
 
   let state = vetoState(pool, match.BestOf, actions);
@@ -263,6 +282,10 @@ export async function GET(req: Request) {
         kind: auto.kind,
         map: auto.map,
         side: auto.side,
+        // It was: recordAction was just told so. The board shows this, and an
+        // auto-pick that looks deliberate is a support conversation nobody can
+        // resolve.
+        wasAuto: true,
       });
 
       state = vetoState(pool, match.BestOf, actions);
@@ -283,13 +306,20 @@ export async function GET(req: Request) {
     turnSeconds: VETO_TURN_SECONDS,
     pool,
     state,
-  });
-}
-
-async function beginVeto(matchId: number) {
-  await prisma.tournamentMatch.update({
-    where: { Id: matchId },
-    data: { VetoStartedAt: new Date(), VetoDeadline: nextDeadline(), State: "veto" },
+    // The audit trail, resolved to slots.
+    //
+    // The board could only show WHAT had gone, never who took it or in what
+    // order — which is exactly the question a veto gets argued about afterwards,
+    // and the reason TournamentVetoActions is a table rather than a column. The
+    // data was recorded from the start and simply never sent.
+    actions: actions.map((a) => ({
+      ordinal: a.ordinal,
+      team: a.teamId === match.TeamAId ? "A" : a.teamId === match.TeamBId ? "B" : null,
+      kind: a.kind,
+      map: a.map ?? null,
+      side: a.side ?? null,
+      wasAuto: a.wasAuto,
+    })),
   });
 }
 

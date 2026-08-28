@@ -1485,6 +1485,17 @@ model Tournament {
   /// an unpublished tournament is a real one somebody is still setting up.
   IsTest Boolean @default(false)
 
+  /// tournament | match — when the role draft runs.
+  ///
+  /// "tournament" drafts once, the first time a team plays, and every later
+  /// match reuses what was chosen. "match" prompts before every match, for
+  /// organizers who want teams to be able to answer the opponent. The
+  /// difference is a real one at an event: re-drafting five roles before every
+  /// round of a sixteen-team bracket is several minutes a round nobody asked
+  /// for, and never being able to change them is a format decision that should
+  /// not be made by the software.
+  RoleMode String @default("tournament") @db.VarChar(16)
+
   Stages     TournamentStage[]
   Teams      TournamentTeam[]
   Matches    TournamentMatch[]
@@ -1535,8 +1546,8 @@ model OrganizerInvite {
   /// Set only when Kind is "tournament".
   TournamentId Int?
 
-  CreatedBySteamId BigInt   @db.UnsignedBigInt
-  CreatedAt        DateTime @default(now()) @db.DateTime(6)
+  CreatedBySteamId BigInt    @db.UnsignedBigInt
+  CreatedAt        DateTime  @default(now()) @db.DateTime(6)
   /// Null never expires. A link handed over in a call does not need a clock;
   /// one posted in a channel does.
   ExpiresAt        DateTime? @db.DateTime(6)
@@ -1674,17 +1685,31 @@ model TournamentMatch {
 
   /// Ready-up per side. Columns rather than socket state, so a team that
   /// readied and then reconnected does not have to do it again.
-  ReadyA           Boolean   @default(false)
-  ReadyB           Boolean   @default(false)
-  VetoStartedAt    DateTime? @db.DateTime(6)
+  ReadyA Boolean @default(false)
+  ReadyB Boolean @default(false)
+
+  /// The role draft, which runs between ready-up and the veto.
+  ///
+  /// Its own clock rather than the veto's, because it has its own turn order —
+  /// a snake through the two rosters rather than an alternation between two
+  /// captains — and a shared deadline column would have to mean two things at
+  /// once.
+  RolesStartedAt   DateTime? @db.DateTime(6)
+  RolesDeadline    DateTime? @db.DateTime(6)
+  /// Which team picks first. Drawn when the draft opens, so neither side has a
+  /// standing advantage across a bracket. Null until then.
+  RolesFirstTeamId Int?
+
+  VetoStartedAt DateTime? @db.DateTime(6)
   /// When the current veto turn runs out. Stored rather than computed so every
   /// viewer counts down to the same instant and a turn survives a reload.
-  VetoDeadline     DateTime? @db.DateTime(6)
+  VetoDeadline  DateTime? @db.DateTime(6)
 
   Tournament  Tournament             @relation(fields: [TournamentId], references: [Id], onDelete: Cascade)
   Stage       TournamentStage        @relation(fields: [StageId], references: [Id], onDelete: Cascade)
   Maps        TournamentMatchMap[]
   Veto        TournamentVetoAction[]
+  RolePicks   TournamentRolePick[]
   PlayerStats TournamentPlayerStat[]
 
   @@index([StageId, Round, Slot])
@@ -1737,6 +1762,36 @@ model TournamentVetoAction {
   @@unique([MatchId, Ordinal], map: "UX_TournamentVetoActions")
   @@index([MatchId])
   @@map("TournamentVetoActions")
+}
+
+/// One player's role for one match, in the order it was chosen.
+///
+/// Stored per match even when the tournament drafts once, because a role is
+/// part of what a match WAS: reading a finished match's roles off the team sheet
+/// would show whatever those players picked most recently rather than what they
+/// played on the day. The team sheet is still written too, so the next match has
+/// a starting point.
+model TournamentRolePick {
+  Id      Int      @id @default(autoincrement())
+  MatchId Int
+  /// Position in the snake. 0 is the first pick of the whole draft.
+  Ordinal Int
+  TeamId  Int
+  SteamId BigInt   @db.UnsignedBigInt
+  /// Roles are per side, because sides swap at halftime and a player carries one
+  /// on each — the same reason TournamentTeamMembers has two columns.
+  RoleT   String?  @db.VarChar(24)
+  RoleCt  String?  @db.VarChar(24)
+  /// Whether a turn ran out and the system chose, as on a veto action.
+  WasAuto Boolean  @default(false)
+  ActedAt DateTime @default(now()) @db.DateTime(6)
+
+  Match TournamentMatch @relation(fields: [MatchId], references: [Id], onDelete: Cascade)
+
+  @@unique([MatchId, SteamId], map: "UX_TournamentRolePicks_Player")
+  @@unique([MatchId, Ordinal], map: "UX_TournamentRolePicks_Ordinal")
+  @@index([MatchId])
+  @@map("TournamentRolePicks")
 }
 
 model TournamentMap {

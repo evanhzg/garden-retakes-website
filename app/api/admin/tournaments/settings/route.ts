@@ -27,6 +27,7 @@ type Body = {
   teamSize?: number;
   format?: string;
   seeding?: string;
+  roleMode?: string;
   bestOf?: number;
   finalBestOf?: number | null;
   startsAt?: string | null;
@@ -42,6 +43,7 @@ type Body = {
 
 const FORMATS = ["single", "double", "group", "swiss"];
 const SEEDINGS = ["random", "faceit", "manual"];
+const ROLE_MODES = ["tournament", "match"];
 const VISIBILITIES = ["public", "invite"];
 
 /** Short, unguessable, and safe in a URL without escaping. */
@@ -186,6 +188,15 @@ export async function POST(req: Request) {
   }
   if (typeof body.teamSize === "number" && (TEAM_SIZES as readonly number[]).includes(body.teamSize)) {
     data.TeamSize = body.teamSize;
+  }
+
+  // Deliberately outside the format freeze below. Format, seeding and series
+  // length shape a bracket that already exists once the tournament has started;
+  // when the roles are drafted shapes nothing but the next match, and an
+  // organizer who finds the per-match draft is costing them ten minutes a round
+  // should be able to turn it off without regenerating anything.
+  if (body.roleMode && ROLE_MODES.includes(body.roleMode)) {
+    data.RoleMode = body.roleMode;
   }
 
   // Format, seeding and series length shape the bracket, so they freeze the

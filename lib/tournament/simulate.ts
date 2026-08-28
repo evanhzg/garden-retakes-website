@@ -1,6 +1,7 @@
 import { prisma } from "@/lib/db";
 import { finishMap } from "@/lib/tournament/matchRunner";
 import { autoVeto } from "@/lib/tournament/vetoRunner";
+import { autoRoleDraft } from "@/lib/tournament/roleDraft";
 
 // Playing a bot tournament out without a server.
 //
@@ -141,6 +142,10 @@ export async function simulateTournament(
     let maps = match.Maps;
 
     if (maps.length === 0) {
+      // Roles first, for the same reason: a simulated bracket that skipped the
+      // draft would leave every player roleless, and the side panels on a
+      // finished match page would be blank for the whole event.
+      await autoRoleDraft(match.Id);
       await autoVeto(match.Id, random);
       maps = await prisma.tournamentMatchMap.findMany({
         where: { MatchId: match.Id },

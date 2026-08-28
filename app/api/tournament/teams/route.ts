@@ -3,6 +3,7 @@ import { prisma } from "@/lib/db";
 import { getSession } from "@/lib/auth";
 import { randomBytes } from "node:crypto";
 import { canRegister, registrationBlockedReason, type EditionState } from "@/lib/tournament/edition";
+import { CT_ROLES, T_ROLES } from "@/lib/tournament/roles";
 
 export const dynamic = "force-dynamic";
 export const runtime = "nodejs";
@@ -14,8 +15,11 @@ export const runtime = "nodejs";
 // person who took it. A captain inviting somebody, and that somebody accepting,
 // are two different people's decisions and both are recorded.
 
-const CT_ROLES = ["roamer", "frontrunner", "awper", "backup"];
-const T_ROLES = ["planter", "sniper", "rifler"];
+// The role lists live in lib/tournament/roles.ts, which is also what the draft
+// and the board read. Two hand-written copies of the same seven ids is how one
+// of them ends up a rename behind the other.
+const CT_ROLE_IDS = CT_ROLES.map((r) => r.id);
+const T_ROLE_IDS = T_ROLES.map((r) => r.id);
 
 type Body = {
   action?:
@@ -428,11 +432,11 @@ export async function POST(req: Request) {
       const roleT = (body.roleT ?? "").trim();
       const roleCt = (body.roleCt ?? "").trim();
 
-      if (roleT && !T_ROLES.includes(roleT)) {
+      if (roleT && !T_ROLE_IDS.includes(roleT)) {
         return NextResponse.json({ error: `'${roleT}' is not a T role.` }, { status: 400 });
       }
 
-      if (roleCt && !CT_ROLES.includes(roleCt)) {
+      if (roleCt && !CT_ROLE_IDS.includes(roleCt)) {
         return NextResponse.json({ error: `'${roleCt}' is not a CT role.` }, { status: 400 });
       }
 

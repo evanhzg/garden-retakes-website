@@ -112,6 +112,7 @@ export default async function TournamentAdminPage({
     // serialised into the page payload for a checkbox's worth of information.
     hasBanner: tournament.BannerImage !== null,
     isTest: tournament.IsTest,
+    roleMode: tournament.RoleMode,
     discordUrl: tournament.DiscordUrl ?? "",
     teamSpeakUrl: tournament.TeamSpeakUrl ?? "",
     twitchChannels: tournament.TwitchChannels ?? "",

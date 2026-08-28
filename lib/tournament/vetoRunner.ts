@@ -1,6 +1,8 @@
 import { prisma } from "@/lib/db";
 import { autoAction, vetoState, type VetoAction, type Side } from "@/lib/tournament/veto";
 import { startMatch } from "@/lib/tournament/matchRunner";
+import { VETO_TURN_SECONDS } from "@/lib/tournament/edition";
+import { beginRoleDraft } from "@/lib/tournament/roleDraft";
 
 // Finishing a veto: turning its result into maps, playing it out for bots, and
 // letting an organizer set the maps by hand.
@@ -35,6 +37,51 @@ async function poolFor(tournamentId: number): Promise<string[]> {
     select: { Map: true },
   });
   return maps.map((m) => m.Map);
+}
+
+/**
+ * Opens the veto and starts the first turn's clock.
+ *
+ * Lives here rather than in the route because two routes reach it now: ready-up
+ * still opens the veto directly when nothing has to be drafted, and the role
+ * draft opens it when its last pick lands. A second copy would be a second
+ * place that could forget the deadline, and a turn with no deadline is a turn
+ * that never times out.
+ */
+export async function beginVeto(matchId: number): Promise<void> {
+  const match = await prisma.tournamentMatch.findUnique({
+    where: { Id: matchId },
+    select: { VetoStartedAt: true },
+  });
+
+  // Already running. Reached twice when the last role pick and an expired role
+  // turn land together, and redrawing the deadline would hand somebody a fresh
+  // thirty seconds they had already spent.
+  if (!match || match.VetoStartedAt) return;
+
+  await prisma.tournamentMatch.update({
+    where: { Id: matchId },
+    data: {
+      VetoStartedAt: new Date(),
+      VetoDeadline: new Date(Date.now() + VETO_TURN_SECONDS * 1000),
+      State: "veto",
+    },
+  });
+}
+
+/**
+ * What ready-up leads to: the role draft, or straight to the veto.
+ *
+ * The draft is skipped rather than shown empty when there is nothing to pick —
+ * a tournament that drafts once, on the second match of a team that has already
+ * been through it. Putting a board in front of two teams to tell them there is
+ * nothing to do would be worse than not showing it at all.
+ */
+export async function beginRolesOrVeto(matchId: number): Promise<"roles" | "veto"> {
+  if (await beginRoleDraft(matchId)) return "roles";
+
+  await beginVeto(matchId);
+  return "veto";
 }
 
 /**

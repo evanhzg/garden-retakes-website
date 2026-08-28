@@ -1,7 +1,8 @@
 import { prisma } from "@/lib/db";
 import { execOnServer } from "@/lib/tournament/servers";
 import { startMatch } from "@/lib/tournament/matchRunner";
-import { autoVeto } from "@/lib/tournament/vetoRunner";
+import { autoVeto, beginVeto } from "@/lib/tournament/vetoRunner";
+import { autoRoleDraft } from "@/lib/tournament/roleDraft";
 
 // Playing a test match on a real server, with bots for players.
 //
@@ -67,6 +68,14 @@ export async function startLiveBotMatch(
   });
 
   if (!match) return { ok: false, error: "No match is waiting to be played.", log };
+
+  // Bots cannot draft for themselves either, and a match that reaches the
+  // server with nobody's roles settled plays generalists a side — the one thing
+  // the draft exists to prevent, and what would make a bot match a poor test of
+  // the format it is supposed to be exercising.
+  const drafted = await autoRoleDraft(match.Id);
+  if (drafted.picks > 0) log.push(`roles → ${drafted.picks} drafted`);
+  await beginVeto(match.Id);
 
   // A match with no maps has not been vetoed. Bots cannot veto for themselves
   // in game, so decide it here — the same autoVeto the simulator uses, through

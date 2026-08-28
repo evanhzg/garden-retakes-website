@@ -1,5 +1,6 @@
 import { prisma } from "@/lib/db";
 import { claimServer, connectString, execOnServer, releaseServer } from "@/lib/tournament/servers";
+import { rolesForMatch } from "@/lib/tournament/roleDraft";
 
 // Starting a tournament match on a server.
 //
@@ -109,26 +110,55 @@ export async function startMatch(matchId: number): Promise<StartResult> {
     // server, so whatever the plugin still believes about it is stale.
     await execOnServer(server.id, "css_t_cancel");
     await execOnServer(server.id, "css_t_reset");
-    await execOnServer(server.id, `css_t_team 0 ${slug(teamA.Name)} ${rosterA.join(" ")}`);
-    await execOnServer(server.id, `css_t_team 1 ${slug(teamB.Name)} ${rosterB.join(" ")}`);
+    await execOnServer(server.id, `css_t_team 0 ${consoleName(teamA.Name)} ${rosterA.join(" ")}`);
+    await execOnServer(server.id, `css_t_team 1 ${consoleName(teamB.Name)} ${rosterB.join(" ")}`);
 
     // Roles, per player and per side.
     //
-    // Only sent for players who actually chose one. The plugin falls back to the
+    // The match's own draft first, the team sheet second. That order is what
+    // makes "roles are re-picked every match" mean anything: the sheet holds
+    // whatever the team last chose, and for a match drafted an hour ago that is
+    // not what they agreed to play.
+    //
+    // Only sent for players who actually have one. The plugin falls back to the
     // side's generalist for anybody it was not told about, so a half-filled team
     // sheet plays correctly — and sending a role nobody picked would be worse
     // than sending none.
+    const drafted = await rolesForMatch(matchId);
+
     for (const team of [teamA, teamB]) {
       for (const member of team.Members) {
         const steamId = member.SteamId.toString();
+        const pick = drafted.get(steamId);
 
-        if (member.RoleT) {
-          await execOnServer(server.id, `css_t_role ${steamId} T ${member.RoleT}`);
+        const roleT = pick?.roleT ?? member.RoleT;
+        const roleCt = pick?.roleCt ?? member.RoleCt;
+
+        if (roleT) {
+          await execOnServer(server.id, `css_t_role ${steamId} T ${roleT}`);
         }
 
-        if (member.RoleCt) {
-          await execOnServer(server.id, `css_t_role ${steamId} CT ${member.RoleCt}`);
+        if (roleCt) {
+          await execOnServer(server.id, `css_t_role ${steamId} CT ${roleCt}`);
         }
+      }
+    }
+
+    // Which roster slots the server should fill with bots.
+    //
+    // This is the seam that used to be missing entirely. A bot is rostered here
+    // as an ordinary player with a synthetic SteamID64, so every bracket and
+    // stats path treats it as one — but a CS2 bot has no SteamID, so the server
+    // could not tell which of the six ids it was supposed to spawn somebody for,
+    // and a bot match arrived on an empty server that then waited for a .ready
+    // nobody could type. The plugin does the quota and the seating; it only
+    // needed telling which slots, and what to call them.
+    for (const team of [teamA, teamB]) {
+      for (const member of team.Members.filter((m) => m.IsBot)) {
+        // The name is optional: a bot slot with no display name is still a bot
+        // slot, and the server keeps whatever the engine called it.
+        const name = member.DisplayName ? ` ${consoleName(member.DisplayName)}` : "";
+        await execOnServer(server.id, `css_t_bot ${member.SteamId.toString()}${name}`);
       }
     }
 
@@ -199,13 +229,20 @@ async function spectatorsFor(tournamentId: number): Promise<string[]> {
 }
 
 /**
- * A team name as one console token.
+ * A team name, safe to send down a console line.
  *
- * css_t_team is positional and the name sits between the index and the first
- * SteamID, so a space in it would swallow the first player of the roster.
+ * Spaces are kept. css_t_team is positional but its parser takes everything
+ * between the index and the first SteamID as the name, so "Ashgrove Bots"
+ * arrives intact — and now that the plugin puts these on the scoreboard through
+ * mp_teamname_1/2, hyphenating them was a visible loss rather than a harmless
+ * one.
+ *
+ * Quotes, semicolons and newlines are not kept. Any of them would end the
+ * argument and turn the rest of the name into a second console command run with
+ * the server's privileges, and team names come from a public registration form.
  */
-function slug(name: string): string {
-  const cleaned = name.replace(/[^\w-]/g, "-").replace(/-+/g, "-").replace(/^-|-$/g, "");
+function consoleName(name: string): string {
+  const cleaned = name.replace(/["';\r\n]/g, " ").replace(/\s+/g, " ").trim();
   return cleaned.length > 0 ? cleaned.slice(0, 32) : "team";
 }
 

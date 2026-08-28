@@ -58,6 +58,8 @@ export type SettingsView = {
   hasBanner: boolean;
   /** A test tournament may gain bot teams and be resolved without a server. */
   isTest: boolean;
+  /** tournament | match - when the role draft runs. */
+  roleMode: string;
   discordUrl: string;
   teamSpeakUrl: string;
   twitchChannels: string;
@@ -70,6 +72,19 @@ const FORMATS = [
   { id: "double", label: "Double elimination" },
   { id: "group", label: "Groups (round robin)" },
   { id: "swiss", label: "Swiss" },
+];
+
+const ROLE_MODES = [
+  {
+    id: "tournament",
+    label: "Once, for the tournament",
+    hint: "Teams draft their roles before their first match and keep them.",
+  },
+  {
+    id: "match",
+    label: "Before every match",
+    hint: "Teams draft again each match, so they can answer the opponent.",
+  },
 ];
 
 const SEEDINGS = [
@@ -108,6 +123,7 @@ export default function Settings({
     teamSize: String(tournament.teamSize),
     format: tournament.format,
     seeding: tournament.seeding,
+    roleMode: tournament.roleMode,
     bestOf: String(tournament.bestOf),
     finalBestOf: tournament.finalBestOf === null ? "" : String(tournament.finalBestOf),
     startsAt: toLocalInput(tournament.startsAt),
@@ -301,6 +317,10 @@ export default function Settings({
       visibility: form.visibility,
       maxTeams: Number(form.maxTeams) || tournament.maxTeams,
       teamSize: Number(form.teamSize) || tournament.teamSize,
+      // Not frozen by the start button. Switching from one draft a tournament
+      // to one a match mid-event is a decision an organizer is allowed to make
+      // - the matches already played keep the roles they were played with.
+      roleMode: form.roleMode,
       // Only sent while they can still be changed, so a save of the rules text
       // after the start does not trip the server's format guard.
       ...(started
@@ -557,6 +577,26 @@ export default function Settings({
               {[1, 3, 5].map((n) => <option key={n} value={n}>BO{n}</option>)}
             </select>
           </label>
+        </div>
+
+        {/* Roles. Deliberately alongside seeding rather than in its own block:
+            both are "how the event is run" rather than "what it is called", and
+            both are a row of mutually exclusive choices with a sentence each. */}
+        <p className="muted ts-hint">
+          <strong>{t("settings.roles")}</strong> — {t("settings.rolesHint")}
+        </p>
+
+        <div className="ts-seeds">
+          {ROLE_MODES.map((m) => (
+            <button
+              key={m.id}
+              className={`ts-choice ${form.roleMode === m.id ? "on" : ""}`}
+              onClick={() => set({ roleMode: m.id })}
+            >
+              <strong>{m.label}</strong>
+              <span className="muted">{m.hint}</span>
+            </button>
+          ))}
         </div>
 
         <div className="ts-seeds">
