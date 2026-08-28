@@ -87,27 +87,23 @@ check("what is left is the pool minus the drops",
 
 // ------------------------------------------------------------------ the floor
 
-check("a fresh queue asks for the full floor",
-  mm.requiredPoolSize(0) === mm.VETO_POOL_FLOOR, String(mm.requiredPoolSize(0)));
+// The floor is off.
+//
+// It used to demand several shared maps, relaxing with the wait, so two people
+// who had each dropped a few could sit in a queue together indefinitely and
+// never be told why — invisible, and indistinguishable from nobody else being
+// online. At this population that is the wrong trade: a veto on one map is a
+// formality, and no match at all is worse.
+check("the floor never blocks a match", mm.requiredPoolSize(0) === 1);
+check("...however long anybody has waited", mm.requiredPoolSize(60 * 60_000) === 1);
+check("...and a negative wait is still just one", mm.requiredPoolSize(-5000) === 1);
 
-check("the floor relaxes with the wait",
-  mm.requiredPoolSize(60_000) < mm.requiredPoolSize(0),
-  `${mm.requiredPoolSize(0)} -> ${mm.requiredPoolSize(60_000)}`);
-
-// Without a bottom the floor reaches zero and a "match" is two parties with no
-// map in common, which cannot run a veto at all.
-check("the floor never falls below a veto that can be run",
-  mm.requiredPoolSize(60 * 60_000) === mm.VETO_POOL_FLOOR_MIN,
-  String(mm.requiredPoolSize(60 * 60_000)));
-
-check("a negative wait is treated as no wait",
-  mm.requiredPoolSize(-5000) === mm.VETO_POOL_FLOOR);
-
-// Two captains at four each, disjoint: eight of ten gone, two left. That is the
-// case the floor exists for — it must be refused at the start of a queue.
-check("two disjoint four-map drops leave too little to match on",
+// The case the floor used to exist for: two captains dropping four maps each,
+// disjoint, leaves two. That is now a match rather than a refusal.
+check(
+  "two disjoint four-map drops still leave enough to match on",
   mm.allowedMaps(pool, pool.slice(0, 4)).filter((m: string) => !pool.slice(4, 8).includes(m)).length
-  < mm.requiredPoolSize(0));
+  >= mm.requiredPoolSize(0));
 
 // ------------------------------------------------------------------- rating
 
@@ -122,10 +118,16 @@ check("a lopsided party is judged nearer its top",
   mm.effectiveElo([1800, 1800, 900]) > (1800 + 1800 + 900) / 3,
   String(mm.effectiveElo([1800, 1800, 900])));
 
-check("the band widens with the wait and then stops",
-  mm.acceptableGap(mm.QUEUES[mm.DEFAULT_QUEUE], 10) > mm.acceptableGap(mm.QUEUES[mm.DEFAULT_QUEUE], 0) &&
-  mm.acceptableGap(mm.QUEUES[mm.DEFAULT_QUEUE], 10_000) ===
-  mm.acceptableGap(mm.QUEUES[mm.DEFAULT_QUEUE], 20_000));
+// There is no skill-based matchmaking. There are not enough people playing for
+// it to sort anybody — it only ever stopped four friends in a queue from
+// finding each other. effectiveElo above is still exercised because the number
+// is still shown; it simply no longer decides who plays whom.
+check(
+  "any two parties are close enough, whatever their rating",
+  mm.acceptableGap(mm.QUEUES[mm.DEFAULT_QUEUE], 0) === Number.POSITIVE_INFINITY);
+check(
+  "...and waiting does not change that",
+  mm.acceptableGap(mm.QUEUES[mm.DEFAULT_QUEUE], 10_000) === Number.POSITIVE_INFINITY);
 
 console.log(fails ? `\n${fails} FAILED` : "\nall passed");
 process.exit(fails ? 1 : 0);

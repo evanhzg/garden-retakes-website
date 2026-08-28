@@ -214,8 +214,21 @@ const VETO_POOL_FLOOR_MIN = 3;
 const VETO_POOL_RELAX_MS = 30_000;
 
 /** How many maps a lobby must share, given how long the head of the queue has waited. */
-const requiredPoolSize = (msWaiting) =>
-  Math.max(VETO_POOL_FLOOR_MIN, VETO_POOL_FLOOR - Math.floor(Math.max(0, msWaiting) / VETO_POOL_RELAX_MS));
+/**
+ * How many maps two parties must still share for a veto to be worth running.
+ *
+ * One, which is to say: this no longer stops anybody matching. It used to
+ * require several, relaxing with the wait, so two people who had each dropped a
+ * few maps could sit in a queue together indefinitely without ever being told
+ * why — invisible, and indistinguishable from nobody else being online.
+ *
+ * A veto on one map is a formality rather than a veto, and that is the right
+ * trade at this population: the alternative is no match at all.
+ */
+const requiredPoolSize = (msWaiting) => {
+  void msWaiting;
+  return 1;
+};
 
 /** How long everyone has to accept a found match. */
 const ACCEPT_MS = 20_000;
@@ -264,8 +277,23 @@ function effectiveElo(ratings) {
 }
 
 /** How far apart two parties may be, widening the longer they have waited. */
-const acceptableGap = (cfg, secondsWaiting) =>
-  cfg.band.base + Math.min(cfg.band.max, Math.max(0, secondsWaiting) * cfg.band.widen);
+/**
+ * How far apart two parties may be in rating. Currently: as far as they like.
+ *
+ * There is no skill-based matchmaking. There are not enough people playing for
+ * it to sort anybody — it only ever stopped four friends in a queue from finding
+ * each other, which is the opposite of what a queue is for. Four people looking
+ * for a game should get one.
+ *
+ * The bands are still defined and still reported, so turning this back on is one
+ * line when the population justifies it: return the old expression, which was
+ * `cfg.band.base + min(band.max, secondsWaiting * band.widen)`.
+ */
+const acceptableGap = (cfg, secondsWaiting) => {
+  void cfg;
+  void secondsWaiting;
+  return Number.POSITIVE_INFINITY;
+};
 
 /** How often the map-load gate re-reads `status`, and for how long it keeps trying. */
 const STATUS_POLL_MS = 3_000;
@@ -480,6 +508,9 @@ function attachRetakesMatchmaking(
     const i = q ? q.indexOf(party.id) : -1;
     if (i >= 0) q.splice(i, 1);
     party.queuedAt = null;
+
+    // ...and when it shrinks, for the same reason.
+    setTimeout(() => syncQueue(party.queue), 0);
     party.queueReason = reason ?? null;
     const t = botTimers.get(party.id);
     if (t) {
@@ -681,9 +712,10 @@ function attachRetakesMatchmaking(
       .filter((party) => party && party.id !== head.id)
       .map((party) => ({ party, distance: Math.abs(partyElo(party) - anchor) }))
       .filter((c) => c.distance <= tolerance)
-      // Safe queue is opt-in on both sides or neither. It does not widen with
-      // the wait: the point of asking for it is that it is not traded away.
-      .filter((c) => Boolean(c.party.safeQueue) === Boolean(head.safeQueue))
+      // Safe queue used to have to match on both sides, which quietly split
+      // every queue in two. With this few people that is two empty queues; the
+      // flag still travels with the party and still shows on the card.
+      //
       // A party whose captain has dropped maps this one needs is not a
       // candidate, however close their rating. Checked pairwise against the
       // head first as a cheap filter; the whole set is checked again below,
@@ -1359,6 +1391,12 @@ function attachRetakesMatchmaking(
       botTimers.set(party.id, setTimeout(() => fillWithBots(party), cfg.botFillMs));
     }
 
+    // Everybody already waiting is told the queue grew, before the match is
+    // attempted. Without this only the party that just joined ever saw the
+    // number move: syncQueue was called after a match formed and nowhere else,
+    // so "3 searching" sat there while four people waited.
+    syncQueue(party.queue);
+
     tryMatch(party.queue);
   }
 
@@ -1431,6 +1469,22 @@ function attachRetakesMatchmaking(
       }
       leaveQueue(party, "queue_changed");
       party.queue = next;
+
+      // Written down, so it comes back.
+      //
+      // The rejoin path has always READ this column — `resolveQueueId(dbLobby.Mode)`
+      // — and nothing ever wrote it after the row was created, so every refresh
+      // and every re-entry silently reset the choice to the default. Somebody
+      // who wanted 3v3 had to pick it again every single time.
+      if (prisma) {
+        prisma.retakesLobby
+          .update({ where: { Id: party.id }, data: { Mode: next } })
+          .catch(() => {
+            // A preference is not worth failing the queue change over; the
+            // party still moves, it just will not be remembered.
+          });
+      }
+
       syncParty(party);
     });
 
