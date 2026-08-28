@@ -66,8 +66,12 @@
 }
 
 .rl-cols {
+  /* One column, stacked under the title.
+     Two columns inside a 210px card left each list about 90px, and after the
+     icon and the "unique" tag the name had roughly 50px — so every label was
+     ellipsised down to nothing and the legend explained nothing. The card is
+     narrow by design; the lists go under each other instead. */
   display: grid;
-  grid-template-columns: repeat(2, minmax(0, 1fr));
   gap: var(--space-3);
 }
 
@@ -108,11 +112,13 @@
 }
 
 .rl-name {
-  /* Kept on one line: these are seven short labels and hyphenating "Front
-     runner" mid-word to save twelve pixels reads as broken rather than tight. */
+  /* Allowed to use the room it now has. The ellipsis stays as a last resort for
+     a very narrow viewport, but with one column there is space for the longest
+     label ("Front runner") on one line. */
   white-space: nowrap;
   overflow: hidden;
   text-overflow: ellipsis;
+  min-width: 0;
 }
 
 /* Which roles only one player a side may hold. A dot rather than the word at
@@ -128,9 +134,9 @@
 }
 
 @media (max-width: 900px) {
-  /* Below the hero split it becomes a full-width strip rather than a narrow
-     column, so the two role lists stay side by side instead of stacking. */
+  /* Below the hero split the card is full width, so the two lists can sit side
+     by side again — there is room for both at that size. */
   .rl-cols {
-    grid-template-columns: repeat(auto-fit, minmax(min(100%, 150px), 1fr));
+    grid-template-columns: repeat(auto-fit, minmax(min(100%, 160px), 1fr));
   }
 }

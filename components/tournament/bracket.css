@@ -12,12 +12,29 @@
   padding-bottom: var(--space-3);
 }
 
-/* One fixed card width for the whole bracket.
-   Cards used to size to their contents, so "Fernhollow Bots" made a wider box
-   than "Kestrel" and no two columns lined up. A bracket is a diagram; its boxes
-   have to be the same box. Long names ellipsis inside it. */
+/* The bracket is laid out from three numbers, so every position is computed
+   rather than approximated.
+
+     --br-card   the width of every box
+     --br-h      the height of every box
+     --br-gap    the space between two boxes in round one
+
+   Measured before this was written: boxes were 62px to 145px wide and 62px to
+   66px tall, because .br-link is a <button> and a button shrinks to its
+   contents — `width: 100%` on the box inside it was 100% of a shrunken button.
+   With unequal heights the rounds could not line up either; the semi-finals sat
+   2 to 5px off the midpoint of the pair they came from, which is exactly close
+   enough to look like a mistake rather than a rule.
+
+   Fixing the two dimensions makes the rest arithmetic. A match in round r sits
+   at the midpoint of the two that feed it, which is a top offset of
+   (h + gap) * (2^(r-1) - 1) / 2 and a gap between siblings of
+   (h + gap) * 2^(r-1) - h. The component already passes 2^(r-1) as
+   --gap-mult, so both fall out of one multiply. */
 .br {
   --br-card: 210px;
+  --br-h: 64px;
+  --br-gap: 18px;
 }
 
 .br-round {
@@ -32,16 +49,21 @@
   flex: none;
 }
 
-/* The matches, spread over the full column height.
-   Every column is the same height (the flex parent stretches them), so
-   space-around puts a single final exactly in the middle and a round of four
-   at the quarters of the same span — which is what makes the rounds line up
-   and the final centre without any of it being computed. */
+/* The matches, placed rather than distributed.
+   space-around looked right and was not: it spreads items over whatever height
+   the column happens to have, so the moment two boxes differed in height the
+   midpoints drifted. Positions come from the formula above instead, which puts
+   every match exactly on the midpoint of its pair and centres a lone final
+   because that is where the arithmetic lands. */
 .br-slots {
   display: flex;
   flex-direction: column;
-  justify-content: space-around;
-  gap: calc(var(--space-3) * var(--gap-mult, 1));
+  padding-top: calc((var(--br-h) + var(--br-gap)) * (var(--gap-mult, 1) - 1) / 2);
+  gap: calc((var(--br-h) + var(--br-gap)) * var(--gap-mult, 1) - var(--br-h));
+}
+
+.br-score {
+  font-variant-numeric: tabular-nums;
 }
 
 .br-round-name {
@@ -63,32 +85,90 @@
    than as SVG, because they only ever need to be a horizontal rule reaching
    into the gutter, and the gutter is a known width. */
 
+/* Out of the box, half way across the gutter. */
 .br-slot::after {
   content: "";
   position: absolute;
-  top: 50%;
+  top: calc(var(--br-h) / 2);
   left: 100%;
-  width: var(--space-6);
+  width: calc(var(--space-6) / 2);
   border-top: 2px dashed var(--border);
   pointer-events: none;
 }
 
-/* The winner advances, so the line onward is solid and carries the accent. */
+/* And then vertically, to meet its partner at the height of the match they
+   both feed. The first of a pair reaches down, the second reaches up, and both
+   travel exactly half the distance between their midpoints — which the layout
+   above fixes at (h + gap) * mult / 2. */
+.br-slot::before {
+  content: "";
+  position: absolute;
+  left: calc(100% + var(--space-6) / 2);
+  height: calc((var(--br-h) + var(--br-gap)) * var(--gap-mult, 1) / 2);
+  border-left: 2px dashed var(--border);
+  pointer-events: none;
+}
+
+.br-slot:nth-child(odd)::before {
+  top: calc(var(--br-h) / 2);
+}
+
+.br-slot:nth-child(even)::before {
+  bottom: calc(var(--br-h) / 2);
+}
+
+/* A decided match draws its route onward solid and in the accent, so the
+   winner's path through the bracket reads as a continuous line. */
 .br-slot.decided::after {
   border-top-style: solid;
   border-top-color: var(--color-accent);
 }
 
+.br-slot.decided::before {
+  border-left-style: solid;
+  border-left-color: var(--color-accent);
+}
+
 /* The last column has nowhere to advance to. */
-.br-round:last-child .br-slot::after {
+.br-round:last-child .br-slot::after,
+.br-round:last-child .br-slot::before {
   content: none;
 }
 
 .br-match {
   position: relative;
   width: 100%;
-  border: 1px solid var(--border);
-  background: var(--panel);
+  /* Fixed, so the arithmetic above holds. Two rows and a border, and the rows
+     are fixed too — a score of 13 must not make a taller box than a blank. */
+  height: var(--br-h);
+  box-sizing: border-box;
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  border: 1px solid var(--color-divider);
+  /* Square, and on the site's own surface token rather than the legacy
+     --panel, which is a flatter grey that made the boxes vanish into the page.
+     The rest of the tournament UI is built on --color-surface over
+     --color-bg; a bracket in a different palette reads as a different app. */
+  border-radius: 0;
+  background: var(--color-surface);
+  transition: border-color 0.15s ease, background 0.15s ease;
+}
+
+/* Which match this is. Top left, over the box's own border, in the same
+   register as the BO tag on the other corner. */
+.br-num {
+  position: absolute;
+  top: -8px;
+  left: 6px;
+  padding: 0 4px;
+  background: var(--color-bg);
+  color: var(--color-text-muted);
+  font-family: var(--font-mono);
+  font-size: 9px;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  white-space: nowrap;
 }
 
 .br-match.live {
@@ -100,21 +180,28 @@
   display: flex;
   align-items: center;
   gap: var(--space-2);
-  padding: 7px 10px;
+  padding: 0 10px;
+  /* Half the box each, less the divider. Fixed rather than padded, so a long
+     name that wraps cannot change the height the layout depends on. */
+  height: calc((var(--br-h) - 2px) / 2);
+  box-sizing: border-box;
 }
 
 .br-row + .br-row {
-  border-top: 1px solid var(--border);
+  border-top: 1px solid var(--color-divider);
 }
 
 .br-row.won {
   font-weight: 700;
+  /* A wash rather than a colour: the row is already bold and the loser is
+     already muted, so this is the third signal and the quietest of them. */
+  background: color-mix(in srgb, var(--color-text) 5%, transparent);
 }
 
 /* Losing rows recede rather than disappear — a bracket is read as much for who
    went out as for who went through. */
 .br-row.lost {
-  color: var(--muted);
+  color: var(--color-text-muted);
 }
 
 .br-name {
@@ -125,8 +212,10 @@
 }
 
 .br-name.pending {
-  color: var(--muted);
-  font-style: italic;
+  color: var(--color-text-muted);
+  /* Not italic. It was the only italic text in the bracket and it made a TBD
+     row look like a different kind of row rather than an empty one. */
+  opacity: 0.7;
 }
 
 .br-score {
@@ -138,14 +227,14 @@
 
 .br-bo {
   position: absolute;
-  top: -9px;
+  top: -8px;
   right: 6px;
-  padding: 0 5px;
-  background: var(--bg);
-  color: var(--muted);
-  font-size: 10px;
+  padding: 0 4px;
+  background: var(--color-bg);
+  color: var(--color-text-muted);
   font-family: var(--font-mono);
-  letter-spacing: 0.04em;
+  font-size: 9px;
+  letter-spacing: 0.06em;
 }
 
 /* The hover target. A wrapper rather than the box itself, so the box keeps its
@@ -159,12 +248,21 @@
    a target, not a style. */
 .br-link {
   display: block;
+  /* A <button> sizes to its contents even as a block, which is why every box
+     was a different width. This is the line that makes the bracket a grid. */
+  width: 100%;
+  padding: 0;
+  border: none;
+  background: none;
+  font: inherit;
+  text-align: left;
   color: inherit;
   text-decoration: none;
 }
 
 .br-link:hover .br-match {
   border-color: var(--color-accent);
+  background: color-mix(in srgb, var(--color-accent) 7%, var(--color-surface));
 }
 
 /* ------------------------------------------------------------------ mobile */

@@ -51,6 +51,18 @@ export default function Bracket({
   const rounds = Array.from(new Set(matches.map((m) => m.round))).sort((a, b) => a - b);
   const lastRound = rounds[rounds.length - 1];
 
+  /**
+   * "Match 5", counted across the whole bracket rather than per round.
+   *
+   * Numbered in reading order — every match of round one, then round two — so
+   * the number on the card is the number an organizer says out loud, and two
+   * matches never share one.
+   */
+  const numberOf = new Map<number, number>();
+  [...matches]
+    .sort((a, b) => a.round - b.round || a.slot - b.slot)
+    .forEach((m, i) => numberOf.set(m.id, i + 1));
+
   return (
     <div className="br" role="table" aria-label="Bracket">
       {rounds.map((round) => {
@@ -84,6 +96,14 @@ export default function Bracket({
               >
                 <BoxLink slug={slug} match={match} onOpen={setOpen}>
                 <div className={`br-match ${match.state === "live" ? "live" : ""}`}>
+                  {/* Which match this is, top left. A bracket is discussed out
+                      loud — "go and look at match 5" — and without a number the
+                      only way to name one is by its two teams, which is exactly
+                      what changes when it is still TBD. */}
+                  <span className="br-num">
+                    {t("bracket.matchNumber", { n: String(numberOf.get(match.id) ?? 0) })}
+                  </span>
+
                   <Row
                     team={match.teamA}
                     score={match.scoreA}

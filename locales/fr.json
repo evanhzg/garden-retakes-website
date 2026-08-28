@@ -3090,5 +3090,6 @@
   "match.mvp": "MVP du match",
   "match.serverLabel": "Serveur",
   "match.serverUnset": "Non attribué",
-  "match.serverSettingUp": "Préparation"
+  "match.serverSettingUp": "Préparation",
+  "bracket.matchNumber": "Match {n}"
 }

@@ -333,6 +333,16 @@ export async function finishMap(
 
   if (matchOver) {
     await releaseServer(match.ServerId);
+
+    // The match lets go of the server too. Leaving ServerId set made a finished
+    // match still look like it held one — the match page offered a spectate
+    // button into somebody else's game, and two matches appeared to share a
+    // server. Observed: #16 finished and #17 live, both reading server 4.
+    await prisma.tournamentMatch.update({
+      where: { Id: match.Id },
+      data: { ServerId: null },
+    });
+
     await advance(match.Id);
 
     // The freed server goes to whoever has waited longest. Not awaited for its

@@ -2,6 +2,7 @@ import { prisma } from "@/lib/db";
 import { aggregate, type PlayerTotals, type StatRow } from "@/lib/tournament/stats";
 import { tournamentPlayerNames } from "@/lib/tournament/playerNames";
 import { rolesForMatch } from "@/lib/tournament/roleDraft";
+import { mapArt } from "@/lib/mapArt";
 
 // One match's scoreboard: the map being played, the maps already played, and
 // the series as a whole.
@@ -201,7 +202,11 @@ export async function scoreboardFor(matchId: number): Promise<Scoreboard | null>
       m.WinnerTeamId === null ? null : m.WinnerTeamId === match.TeamAId ? "a" : "b",
     pickedBy:
       m.PickedByTeamId === null ? null : m.PickedByTeamId === match.TeamAId ? "a" : "b",
-    image: artOf.get(m.Map)?.ImageUrl ?? null,
+    // Through mapArt, not the raw column. Measured on production: 0 of 7
+    // tournament maps have an ImageUrl, so reading the column alone meant every
+    // card drew the "no picture" hatch. mapArt falls back to the shipped
+    // /maps/<name>.webp that the admin map picker already uses.
+    image: mapArt(m.Map, artOf.get(m.Map)?.ImageUrl),
     demo: m.DemoFile,
   }));
 

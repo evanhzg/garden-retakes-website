@@ -3090,5 +3090,6 @@
   "match.mvp": "Match MVP",
   "match.serverLabel": "Server",
   "match.serverUnset": "Unset",
-  "match.serverSettingUp": "Setting up"
+  "match.serverSettingUp": "Setting up",
+  "bracket.matchNumber": "Match {n}"
 }

@@ -229,9 +229,11 @@
   animation: vt-label-in 0.2s ease-out 0.36s both;
 }
 
-.vt-map.banned .vt-map-name {
-  animation: vt-label-in 0.2s ease-out 0.36s both;
-}
+/* The name does NOT animate.
+   It is already on screen before the tile is taken — animating it from opacity
+   0 meant the map's own name blinked out and back on every re-render, and a
+   poll two seconds later re-ran it. Only the things that genuinely appear
+   (the tag, the who-and-when line) are animated in. */
 
 /* Somebody who asked not to be moved gets the state without the theatre. */
 @media (prefers-reduced-motion: reduce) {
@@ -242,8 +244,7 @@
   .vt-map.banned .vt-map-tag,
   .vt-map.picked .vt-map-tag,
   .vt-map.banned .vt-map-by,
-  .vt-map.picked .vt-map-by,
-  .vt-map.banned .vt-map-name {
+  .vt-map.picked .vt-map-by {
     animation: none;
   }
 }

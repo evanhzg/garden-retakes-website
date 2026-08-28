@@ -84,7 +84,13 @@ export async function POST(req: Request) {
     return NextResponse.json({ error: "matchKey is required." }, { status: 400 });
   }
 
-  if (isDuplicate(matchKey, body.seq)) {
+  // player_stats is a full snapshot written with an upsert, so replaying one
+  // changes nothing — and exempting it fixes a real hole. The plugin resets its
+  // sequence counter per MAP, while this set is keyed per MATCH for the life of
+  // the process, so on the second map of a series every event arrived with a
+  // seq the website had already seen and was silently discarded. A scoreboard
+  // that works on map one and never updates again is exactly that bug.
+  if (body.kind !== "player_stats" && isDuplicate(matchKey, body.seq)) {
     return NextResponse.json({ ok: true, duplicate: true });
   }
 
