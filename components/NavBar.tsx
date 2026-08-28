@@ -41,9 +41,12 @@ const CS2_LINKS: NavLink[] = [
   { href: "/utility", label: "Utility", key: "nav.utility", primary: true },
   { href: "/live", label: "Live", key: "nav.live", isLive: true, primary: true },
   { href: "/lobby", label: "Matchmaking", key: "nav.lobby", primary: true },
-  // Deliberately absent from `hiddenInDemo` below. A demo is shown to somebody
-  // being pitched an event, and the tournament pages are most of what there is
-  // to show them.
+  // Tournaments and Matchmaking are both in the demo allowlist further down. A
+  // demo is shown to somebody being pitched an event, and those two are the
+  // event and the way into it. (This used to say "deliberately absent from
+  // hiddenInDemo", which stopped being true when the blocklist became an
+  // allowlist — a comment naming a thing that no longer exists is worse than
+  // none, because it is read as current.)
   { href: "/tournaments", label: "Tournaments", key: "nav.tournaments", primary: true },
   { href: "/safe-place", label: "Safe Place", key: "nav.safe_place", primary: true },
   { href: "/compare", label: "Compare", key: "nav.compare" },
@@ -193,7 +196,14 @@ export default function NavBar({
     //
     // Tournaments is the pitch; Stats is here for tournament stats only, which
     // is enforced on the page itself rather than by hiding the link.
-    const shownInDemo = ["/tournaments", "/stats"];
+    //
+    // Matchmaking joined them because the pitch was only half of one without it.
+    // A demo that shows a bracket and no way to play the mode leaves the obvious
+    // question — "yes, but can I try it" — with no answer on screen. The lobby
+    // is that answer, and it runs the same roles-then-veto-then-server flow a
+    // tournament match does, so it demonstrates the product rather than a
+    // separate corner of it.
+    const shownInDemo = ["/tournaments", "/stats", "/lobby"];
     baseLinks = baseLinks.filter((l) => shownInDemo.includes(l.href));
   }
   
