@@ -21,8 +21,14 @@
  * meaning anything the first time it happens.
  */
 
-/** How long the training queue waits for humans before bots are offered. */
-const BOT_FILL_MS = 15_000;
+/**
+ * How long the training queue waits for humans before bots are offered.
+ *
+ * Four seconds. It was fifteen, which is a sensible wait for a queue that might
+ * find somebody and a long one for a queue whose whole purpose is to start a
+ * match on your own so you can look at something.
+ */
+const BOT_FILL_MS = 4_000;
 
 /**
  * A queue is a size and two switches, not a name.
