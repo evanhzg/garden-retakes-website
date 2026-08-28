@@ -634,17 +634,30 @@
 .lo-maps-inline .lo-maps-count { margin: 0; }
 .lo-maps-rowhint { font-size: 11.5px; color: var(--muted); }
 
-.lo-maps-row {
-  display: flex; gap: 8px;
-  overflow-x: auto;
-  padding-bottom: 6px;
-  scrollbar-width: thin;
-  justify-content: center;
-}
-/* Once there are more maps than fit, centring would hide the first one behind
-   the scroll origin — so it only centres while everything is visible. */
-.lo-maps-row > * { flex: 0 0 auto; }
+/* Every map visible at once, without a scrollbar.
+   This was a flex strip with overflow-x: auto and 118px cards, which needs
+   about 1250px for ten maps — so in the lobby it was always a horizontal
+   scroller, and the maps past the edge were ones you had to know were there to
+   go looking for. A map preference you cannot see is one nobody sets.
 
-.lo-maps-row .lo-map { width: 118px; }
+   A wrapping grid instead, with cards that shrink rather than a viewport that
+   slides. auto-fit and a small minimum means ten fit across ~780px in one row
+   and fall to two rows below that, which is the whole pool either way. */
+.lo-maps-row {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(min(100%, 72px), 1fr));
+  gap: 6px;
+}
+
+/* The cards carry their size from the grid track now, so the fixed width goes;
+   without this they would still be 118px and overflow the column. */
+.lo-maps-row .lo-map { width: auto; }
 .lo-maps-row .lo-map img { aspect-ratio: 16 / 10; }
-.lo-maps-row .lo-map-name { padding: 6px 8px; font-size: 11px; }
+.lo-maps-row .lo-map-name {
+  padding: 4px 5px;
+  font-size: 10px;
+  /* Clipped, not wrapped: a two-line name makes one card taller than the rest
+     and puts a step in the row. */
+  white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
+}
+
