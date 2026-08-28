@@ -307,6 +307,15 @@ io.on("connection", (socket) => {
       connectedUsers.set(steamId.toString(), socket.id);
       socket.steamId = steamId.toString();
 
+      // A room per person, on top of the id map.
+      //
+      // connectedUsers holds ONE socket id per steamId, so a second tab
+      // overwrote the first and direct messages only ever reached whichever tab
+      // authenticated last — and a reconnect left a stale id that reached
+      // nothing at all. That is the "messages do not appear until I reload".
+      // A room takes every socket the person has, and drops them as they go.
+      socket.join(`user_${steamId}`);
+
       // Broadcast online status to others
       io.emit("user_online", { steamId: steamId.toString() });
       console.log(`User ${steamId} authenticated`);
@@ -363,8 +372,14 @@ io.on("connection", (socket) => {
         type: "dm",
       };
 
-      const targetSocket = connectedUsers.get(to);
-      if (targetSocket) io.to(targetSocket).emit("new_message", payload);
+      // To the room, not to one socket id: every tab the recipient has open
+      // gets it, and a stale id cannot swallow the message.
+      io.to(`user_${to}`).emit("new_message", payload);
+
+      // And back to the sender's OTHER tabs. The tab that sent it already drew
+      // the line optimistically, and both copies carry the id the API returned,
+      // so the client's merge collapses them rather than showing it twice.
+      io.to(`user_${socket.steamId}`).emit("new_message", payload);
       return;
     }
 

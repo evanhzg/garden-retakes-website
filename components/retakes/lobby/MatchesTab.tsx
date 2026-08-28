@@ -123,8 +123,10 @@ export default function MatchesTab({ steamId }: { steamId?: string | null }) {
                   <ul>
                     {m.roster.map((id) => (
                       <li key={id} className={id === steamId ? "me" : ""}>
-                        <AvatarImage steamId={id} className="rq-match-face" alt="" />
-                        <span>{displayNameFor(id, names)}</span>
+                        <a className="rq-match-who" href={`/players/${id}`}>
+                          <AvatarImage steamId={id} className="rq-match-face" alt="" />
+                          <span>{displayNameFor(id, names)}</span>
+                        </a>
                       </li>
                     ))}
                   </ul>
@@ -134,8 +136,10 @@ export default function MatchesTab({ steamId }: { steamId?: string | null }) {
                   <ul>
                     {m.opponents.map((id) => (
                       <li key={id}>
-                        <AvatarImage steamId={id} className="rq-match-face" alt="" />
-                        <span>{displayNameFor(id, names)}</span>
+                        <a className="rq-match-who" href={`/players/${id}`}>
+                          <AvatarImage steamId={id} className="rq-match-face" alt="" />
+                          <span>{displayNameFor(id, names)}</span>
+                        </a>
                       </li>
                     ))}
                   </ul>

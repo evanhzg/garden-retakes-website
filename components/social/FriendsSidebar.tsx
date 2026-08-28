@@ -316,13 +316,24 @@ export default function FriendsSidebar() {
     const onNewMessage = (msg: any) => {
       if (msg?.type !== "dm" && msg?.type !== "direct") return;
       const from = String(msg.from);
+      const to = msg.to ? String(msg.to) : undefined;
       const incoming: Message = {
         id: msg.id ?? `${from}-${msg.ts ?? Date.now()}`,
         from,
-        to: msg.to ? String(msg.to) : undefined,
+        to,
         content: String(msg.content ?? ""),
         ts: Number(msg.ts) || Date.now(),
       };
+
+      // My own message, echoed back so my other tabs catch up. The tab that
+      // sent it already has the line under the same id, so merging is a no-op
+      // there and a real append everywhere else. Never unread: I wrote it.
+      if (steamId && from === steamId) {
+        if (activeDmRef.current && to === activeDmRef.current) {
+          setMessages((prev) => mergeMessages(prev, [incoming]));
+        }
+        return;
+      }
 
       if (activeDmRef.current && from === activeDmRef.current) {
         setMessages((prev) => mergeMessages(prev, [incoming]));
@@ -373,7 +384,10 @@ export default function FriendsSidebar() {
       socket.off("notification", onNotification);
       if (typingTimer.current) clearTimeout(typingTimer.current);
     };
-  }, [socket, fetchFriends]);
+    // steamId is read inside onNewMessage to recognise my own echo, so the
+    // handler has to be rebuilt when it arrives — without it the first render
+    // captures undefined and every echo is treated as somebody else's message.
+  }, [socket, fetchFriends, steamId]);
 
   // Stick to the newest line.
   useEffect(() => {

@@ -803,13 +803,29 @@ html[data-motion="off"] .rq-server-pip.now { animation: none; }
 .rq-matches { list-style: none; margin: 0; padding: 0; display: grid; gap: 8px; }
 .rq-match { border: 1px solid var(--border); }
 .rq-match-row {
-  display: grid; align-items: center; gap: 14px;
-  grid-template-columns: 96px minmax(0, 1fr) auto auto auto;
-  width: 100%; padding: 10px 14px 10px 0;
+  /* `stretch`, not `center`: the image column is meant to be the full height of
+     the row, and a centred grid item is only as tall as its content. */
+  display: grid; align-items: stretch; gap: 14px;
+  grid-template-columns: auto minmax(0, 1fr) auto auto auto;
+  /* No left padding — the picture sits flush against the edge, which is what
+     makes it read as part of the row rather than an icon inside it. */
+  width: 100%; padding: 0 14px 0 0;
   border: none; background: transparent; color: var(--color-text);
   font: inherit; text-align: left; cursor: pointer;
 }
-.rq-match-map { width: 96px; height: 54px; object-fit: cover; display: block; }
+
+/* Full height, and the width follows from the picture's own shape rather than
+   being fixed — `object-fit: cover` at a fixed 96x54 was cropping every map to
+   16:9 whatever it actually was. `contain` keeps the whole frame; `width: auto`
+   with `height: 100%` is what lets the column size itself to the result. */
+.rq-match-map {
+  height: 100%; width: auto;
+  object-fit: contain;
+  display: block;
+  /* A floor and a ceiling, so a missing or oddly-shaped image cannot collapse
+     the column to nothing or push the score off the row. */
+  min-height: 54px; max-width: 128px;
+}
 .rq-match-where { display: flex; flex-direction: column; gap: 2px; min-width: 0; }
 .rq-match-where strong { font-size: 14px; }
 .rq-match-where .muted { font-size: 11px; }
@@ -842,7 +858,10 @@ html[data-motion="off"] .rq-server-pip.now { animation: none; }
    font, so only the digits that remain (a player nobody could resolve) keep it. */
 .rq-match-detail ul { list-style: none; margin: 0; padding: 0; display: grid; gap: 5px; font-size: 12.5px; }
 .rq-match-detail li { display: flex; align-items: center; gap: 7px; min-width: 0; }
-.rq-match-detail li > span { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.rq-match-detail li > a { display: flex; align-items: center; gap: 7px; min-width: 0; color: inherit; text-decoration: none; }
+.rq-match-detail li > a:hover { color: var(--color-accent); }
+.rq-match-detail li > a:hover .rq-match-face { border-color: var(--color-accent); }
+.rq-match-detail li span { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 .rq-match-detail li.me { color: var(--color-accent); font-weight: 700; }
 
 .rq-match-face {
@@ -890,8 +909,8 @@ html[data-motion="off"] .rq-server-pip.now { animation: none; }
 
 @media (max-width: 760px) {
   .rq-live-teams, .rq-match-detail { grid-template-columns: 1fr; }
-  .rq-match-row { grid-template-columns: 72px minmax(0, 1fr) auto; }
-  .rq-match-map { width: 72px; height: 40px; }
+  .rq-match-row { grid-template-columns: auto minmax(0, 1fr) auto; }
+  .rq-match-map { min-height: 40px; max-width: 84px; }
   .rq-match-outcome, .rq-match-elo { display: none; }
 }
 
