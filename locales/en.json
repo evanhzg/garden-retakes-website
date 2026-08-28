@@ -3074,5 +3074,14 @@
   "settings.rolesHint": "When teams choose their roles. Matches already played keep the roles they were played with.",
   "roles.legend": "Roles",
   "matchAdmin.open": "Admin",
-  "matchAdmin.title": "Match controls"
+  "matchAdmin.title": "Match controls",
+  "console.title": "Console",
+  "console.empty": "Commands and their output appear here, for everyone watching this server.",
+  "console.placeholder": "Type a command…",
+  "console.send": "Send",
+  "console.running": "Running…",
+  "consoles.title": "Server consoles",
+  "consoles.blurb": "One console per server. Organizers can drive the server their tournament is on; admins can drive any.",
+  "consoles.none": "No servers are configured.",
+  "consoles.ladder": "ladder"
 }

@@ -5,6 +5,7 @@ import { createPortal } from "react-dom";
 import { X } from "lucide-react";
 import { useI18n } from "@/components/I18nProvider";
 import MatchAdmin from "./MatchAdmin";
+import ServerConsole from "./ServerConsole";
 import "./matchadminmodal.css";
 
 // The match controls, on the match page.
@@ -86,6 +87,13 @@ export default function MatchAdminModal({
             state={state}
             adminKey={adminKey}
           />
+
+          {/* The console below the buttons, not instead of them. The buttons
+              are the things anybody needs under pressure; the console is for
+              the thing nobody anticipated, which is why it exists at all.
+              Addressed by match rather than by server, so it cannot be pointed
+              at a server this match is not on. */}
+          <ServerConsole matchId={matchId} adminKey={adminKey} title={t("console.title")} />
         </div>
       </div>
     </div>,

@@ -2,6 +2,7 @@ import { NextResponse } from "next/server";
 import { prisma } from "@/lib/db";
 import { getAdminContext, logAdminAction } from "@/lib/adminAuth";
 import { AdminLevel } from "@/lib/adminImmunity";
+import { getTournamentContext } from "@/lib/tournamentAuth";
 import { rconExecOn } from "@/lib/rcon";
 
 export const dynamic = "force-dynamic";
@@ -30,10 +31,28 @@ type Body = {
 
 export async function GET(req: Request) {
   const url = new URL(req.url);
-  const ctx = await getAdminContext(url.searchParams.get("key"));
+  const key = url.searchParams.get("key");
+  const ctx = await getAdminContext(key);
 
+  // Admin+, or anybody who organizes a tournament.
+  //
+  // Organizers need this list to reach the console for the server their match
+  // is on — a picker they cannot load is a console they cannot open, which is
+  // half of the "only Owners can do anything" report. Nothing sensitive is
+  // widened: the password is never in this response at any level, and being
+  // able to READ that six servers exist is not a capability worth gating.
+  // Whether they may DRIVE one is decided per command, per server, in
+  // lib/tournament/serverAccess.ts.
   if (ctx.level < AdminLevel.Admin) {
-    return NextResponse.json({ error: "Not authorized." }, { status: 403 });
+    const tctx = await getTournamentContext(key);
+    const organizes =
+      tctx.isOrganizer ||
+      (tctx.steamId !== null &&
+        (await prisma.tournamentOrganizer.count({ where: { SteamId: BigInt(tctx.steamId) } })) > 0);
+
+    if (!organizes) {
+      return NextResponse.json({ error: "Not authorized." }, { status: 403 });
+    }
   }
 
   const servers = await prisma.gameServer.findMany({ orderBy: { Id: "asc" } });

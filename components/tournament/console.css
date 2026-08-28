@@ -1,0 +1,164 @@
+/* The live server console.
+   A terminal, so it reads like one: mono throughout, output indented under the
+   command that caused it, and the whole thing square. */
+
+.cns {
+  display: grid;
+  gap: var(--space-2);
+  border: 1px solid var(--color-divider);
+  background: var(--color-surface);
+  padding: var(--space-3);
+  min-width: 0;
+}
+
+.cns-head {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: var(--space-2);
+  flex-wrap: wrap;
+  border-bottom: 1px solid var(--color-divider);
+  padding-bottom: var(--space-2);
+}
+
+.cns-title {
+  margin: 0;
+  font-size: 13px;
+  font-weight: 800;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  overflow-wrap: anywhere;
+}
+
+.cns-sub {
+  font-family: var(--font-mono);
+  font-size: 11px;
+  color: var(--color-text-muted);
+  overflow-wrap: anywhere;
+}
+
+.cns-error {
+  margin: 0;
+  padding: 7px 10px;
+  border-left: 3px solid var(--color-accent);
+  background: color-mix(in srgb, var(--color-accent) 10%, transparent);
+  font-size: 12.5px;
+}
+
+/* ---------- Quick commands ---------- */
+
+.cns-quick {
+  display: flex;
+  gap: 4px;
+  flex-wrap: wrap;
+}
+
+.cns-chip {
+  padding: 4px 9px;
+  border: 1px solid var(--color-divider);
+  background: transparent;
+  color: var(--color-text-muted);
+  font: inherit;
+  font-size: 11px;
+  font-weight: 700;
+  cursor: pointer;
+}
+
+.cns-chip:hover:not(:disabled) {
+  border-color: var(--color-accent);
+  color: var(--color-accent);
+}
+
+.cns-chip:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+/* ---------- The log ---------- */
+
+.cns-log {
+  height: clamp(180px, 32vh, 340px);
+  overflow-y: auto;
+  border: 1px solid var(--color-divider);
+  background: color-mix(in srgb, var(--color-text) 5%, transparent);
+  padding: var(--space-2);
+  font-family: var(--font-mono);
+  font-size: 12px;
+  line-height: 1.5;
+}
+
+.cns-empty {
+  margin: 0;
+  color: var(--color-text-muted);
+  font-size: 12px;
+}
+
+.cns-entry + .cns-entry {
+  margin-top: 8px;
+  border-top: 1px solid var(--color-divider);
+  padding-top: 8px;
+}
+
+.cns-cmd {
+  display: flex;
+  align-items: baseline;
+  gap: 7px;
+  flex-wrap: wrap;
+}
+
+.cns-cmd code {
+  color: var(--color-text);
+  font-weight: 700;
+  overflow-wrap: anywhere;
+}
+
+.cns-cmd code::before {
+  content: "> ";
+  color: var(--color-accent);
+}
+
+/* Who ran it. The whole reason the scrollback is shared. */
+.cns-who {
+  font-size: 9.5px;
+  font-weight: 800;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  color: var(--color-text-muted);
+  border: 1px solid var(--color-divider);
+  padding: 0 4px;
+  flex: none;
+}
+
+.cns-out {
+  margin: 3px 0 0;
+  padding-left: 12px;
+  border-left: 2px solid var(--color-divider);
+  white-space: pre-wrap;
+  overflow-wrap: anywhere;
+  color: var(--color-text-muted);
+}
+
+.cns-out.bad {
+  border-left-color: #ef4444;
+  color: #ef4444;
+}
+
+/* ---------- Input ---------- */
+
+.cns-row {
+  display: flex;
+  gap: var(--space-2);
+}
+
+.cns-input {
+  flex: 1 1 auto;
+  min-width: 0;
+  font-family: var(--font-mono);
+  font-size: 12.5px;
+}
+
+@media (max-width: 640px) {
+  .cns-log {
+    height: 200px;
+  }
+}

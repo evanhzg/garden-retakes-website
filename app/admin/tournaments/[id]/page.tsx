@@ -7,6 +7,7 @@ import { getT } from "@/lib/serverI18n";
 import MatchAdmin from "@/components/tournament/MatchAdmin";
 import Settings, { type LibraryMap, type SettingsView } from "@/components/tournament/Settings";
 import Roster, { type RosterTeam } from "@/components/tournament/Roster";
+import ServerConsoles from "@/components/tournament/ServerConsoles";
 import Collapsible from "@/components/tournament/Collapsible";
 import StatusTag from "@/components/tournament/StatusTag";
 import { previewsForTournament } from "@/lib/tournament/preview";
@@ -178,6 +179,17 @@ export default async function TournamentAdminPage({
           {t("tournaments.teams")} <span className="muted">({teams.length})</span>
         </h3>
         <Roster key={tournament.Id} teams={teams} adminKey={searchParams.key} origin={origin} slug={tournament.Slug} />
+      </section>
+
+      {/* A console for every server, picked by name.
+          Here rather than only on a match, because the servers that need
+          driving most are the ones NOT running a match: the one that will not
+          load a map, the one that came back from a restart wrong. Those have no
+          match page to open. */}
+      <section className="panel">
+        <h3>{t("consoles.title")}</h3>
+        <p className="muted ts-hint">{t("consoles.blurb")}</p>
+        <ServerConsoles adminKey={searchParams.key} />
       </section>
 
       {actionable.length > 0 && (

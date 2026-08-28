@@ -3074,5 +3074,14 @@
   "settings.rolesHint": "Quand les équipes choisissent leurs rôles. Les matchs déjà joués conservent les leurs.",
   "roles.legend": "Rôles",
   "matchAdmin.open": "Admin",
-  "matchAdmin.title": "Contrôles du match"
+  "matchAdmin.title": "Contrôles du match",
+  "console.title": "Console",
+  "console.empty": "Les commandes et leur sortie apparaissent ici, pour tous ceux qui suivent ce serveur.",
+  "console.placeholder": "Tapez une commande…",
+  "console.send": "Envoyer",
+  "console.running": "En cours…",
+  "consoles.title": "Consoles serveur",
+  "consoles.blurb": "Une console par serveur. Les organisateurs pilotent le serveur de leur tournoi, les admins tous les autres.",
+  "consoles.none": "Aucun serveur configuré.",
+  "consoles.ladder": "ladder"
 }
