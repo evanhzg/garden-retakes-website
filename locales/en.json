@@ -3087,5 +3087,8 @@
   "matchAdmin.awardTo": "Award to {team}",
   "match.pickedByTeam": "Picked by {team}",
   "match.demoRecorded": "Demo recorded",
-  "match.mvp": "Match MVP"
+  "match.mvp": "Match MVP",
+  "match.serverLabel": "Server",
+  "match.serverUnset": "Unset",
+  "match.serverSettingUp": "Setting up"
 }

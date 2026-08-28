@@ -11,6 +11,7 @@ import StatusTag from "@/components/tournament/StatusTag";
 import { scoreboardFor } from "@/lib/tournament/scoreboard";
 import { RoleLegend } from "@/components/tournament/RoleIcon";
 import MapCards from "@/components/tournament/MapCards";
+import MatchServer from "@/components/tournament/MatchServer";
 import "@/components/tournament/matchhead.css";
 
 export const dynamic = "force-dynamic";
@@ -105,6 +106,11 @@ export default async function MatchPage({
             <p className="mh-meta">
               <span className="mh-bo">BO{match.BestOf}</span>
               <StatusTag kind="match" value={match.State} className="tiny" />
+
+              {/* Where the match is actually living. Six servers and six
+                  matches means "go and look at the one that is wrong" needs a
+                  name, and the page never said one. */}
+              <MatchServer matchId={match.Id} />
               {match.ScoreA + match.ScoreB > 0 && (
                 <span className="mh-score num">
                   {match.ScoreA} – {match.ScoreB}

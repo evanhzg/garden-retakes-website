@@ -84,6 +84,19 @@ export async function GET(req: Request) {
   // to somebody else's match.
   const serverIsUp = match.ServerId !== null && (match.State === "ready" || match.State === "live");
 
+  // Which server, by name, for everybody — not only for people allowed to join
+  // it. "T3" is not an address and leaks nothing; it is the difference between
+  // a page that says a match is being set up somewhere and one that says where.
+  let serverName: string | null = null;
+
+  if (match.ServerId !== null) {
+    const named = await prisma.gameServer.findUnique({
+      where: { Id: match.ServerId },
+      select: { Name: true },
+    });
+    serverName = named?.Name ?? null;
+  }
+
   if (canSpectate && serverIsUp) {
     const server = await prisma.gameServer.findUnique({
       where: { Id: match.ServerId! },
@@ -108,6 +121,7 @@ export async function GET(req: Request) {
     gotv,
     state: match.State,
     serverIsUp,
+    serverName,
     queue,
     connect,
     maps: match.Maps.map((m) => ({
