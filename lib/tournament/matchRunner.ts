@@ -157,8 +157,15 @@ export async function startMatch(matchId: number): Promise<StartResult> {
       for (const member of team.Members.filter((m) => m.IsBot)) {
         // The name is optional: a bot slot with no display name is still a bot
         // slot, and the server keeps whatever the engine called it.
-        const name = member.DisplayName ? ` ${consoleName(member.DisplayName)}` : "";
-        await execOnServer(server.id, `css_t_bot ${member.SteamId.toString()}${name}`);
+        //
+        // The empty check is on the SANITISED name, not the raw one. A display
+        // name of "  " is truthy and sanitises to nothing, which would have sent
+        // the team fallback and put a bot called "team" on the scoreboard.
+        const clean = consoleName(member.DisplayName ?? "", "");
+        await execOnServer(
+          server.id,
+          `css_t_bot ${member.SteamId.toString()}${clean ? ` ${clean}` : ""}`,
+        );
       }
     }
 
@@ -241,9 +248,9 @@ async function spectatorsFor(tournamentId: number): Promise<string[]> {
  * argument and turn the rest of the name into a second console command run with
  * the server's privileges, and team names come from a public registration form.
  */
-function consoleName(name: string): string {
+function consoleName(name: string, fallback = "team"): string {
   const cleaned = name.replace(/["';\r\n]/g, " ").replace(/\s+/g, " ").trim();
-  return cleaned.length > 0 ? cleaned.slice(0, 32) : "team";
+  return cleaned.length > 0 ? cleaned.slice(0, 32) : fallback;
 }
 
 /**
