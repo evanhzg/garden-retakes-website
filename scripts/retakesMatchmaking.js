@@ -1008,7 +1008,7 @@ function attachRetakesMatchmaking(
 
       // Loud rather than silent. A lobby that quietly goes nowhere is the exact
       // failure this replaced; everybody goes back in the queue and is told.
-      match.server = { state: "failed", step: "match", error: "handoff_failed" };
+      match.server = { state: "failed", step: "match", error: message.slice(0, 200) };
       syncMatch(match);
 
       // `reason` reaches the client, and it must be the truth. This used to
@@ -1027,8 +1027,32 @@ function attachRetakesMatchmaking(
    * itself, and wiring that through the lobby is a separate piece of work. Said
    * plainly here rather than failing deeper in with something cryptic.
    */
+  /**
+   * Where the website lives, as seen from the socket server.
+   *
+   * NOT SITE_URL on its own. This process also serves Next when it can, so on
+   * Render SITE_URL is set to this service's own hostname — and Next is not
+   * ready there, so every route 404s. The hand-off was posting to itself and
+   * getting "HTTP 404" back, which is the whole of why a bot match formed,
+   * everybody accepted, and the lobby then abandoned it.
+   *
+   * WEBSITE_ORIGIN is the explicit override. Failing that, the public site,
+   * which is the only origin certain to serve /api/lobby/match.
+   */
+  function websiteOrigin() {
+    const explicit = (process.env.WEBSITE_ORIGIN || "").trim();
+    if (explicit) return explicit.replace(/\/$/, "");
+
+    const site = (process.env.SITE_URL || "").trim().replace(/\/$/, "");
+
+    // A SITE_URL pointing at a Render host is this service talking to itself.
+    if (site && !/\.onrender\.com$/i.test(new URL(site).host)) return site;
+
+    return "https://www.retakes.fr";
+  }
+
   async function createTournamentMatch({ teamSize, teamA, teamB, botIds, names }) {
-    const base = (process.env.SITE_URL || "https://www.retakes.fr").replace(/\/$/, "");
+    const base = websiteOrigin();
     const apiKey = (process.env.INVSIM_API_KEY || "").trim();
 
     if (!apiKey) throw new Error("INVSIM_API_KEY is not set on the socket server");
@@ -1043,7 +1067,12 @@ function attachRetakesMatchmaking(
     });
 
     const data = await res.json().catch(() => ({}));
-    if (!res.ok || !data.ok) throw new Error(data.error || `HTTP ${res.status}`);
+    if (!res.ok || !data.ok) {
+      // The URL is in the message on purpose: "HTTP 404" alone sent this
+      // investigation round twice, because the interesting part is not the
+      // status, it is which host answered with it.
+      throw new Error(`${data.error || `HTTP ${res.status}`} (POST ${base}/api/lobby/match)`);
+    }
 
     return data;
   }
