@@ -996,16 +996,22 @@ html[data-motion="off"] .dm-bubble.typing i { animation: none; }
   to { transform: none; opacity: 1; }
 }
 
-/* Collapsed to its header. The height animates rather than the card
-   disappearing, so it reads as folding away rather than as closing. */
+/* Collapsed to its header.
+   The card sizes to whatever is inside it; what actually folds is .dm-body,
+   whose height framer animates. `display: none` used to hide the three parts
+   directly, which is why it snapped — a hidden element has no height to
+   animate from. */
 .dm-dock.minimised {
   height: auto;
 }
 
-.dm-dock.minimised .dm-messages,
-.dm-dock.minimised .dm-form,
-.dm-dock.minimised .dm-typing {
-  display: none;
+/* The fold itself. overflow:hidden is what lets a measured height clip the
+   content mid-animation instead of it spilling out of the card. */
+.dm-body {
+  overflow: hidden;
+  display: flex;
+  flex-direction: column;
+  min-height: 0;
 }
 
 /* Fills the dock, and keeps its own grid.

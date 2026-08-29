@@ -2,6 +2,7 @@
 
 import React, { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { createPortal } from "react-dom";
+import { AnimatePresence, motion } from "framer-motion";
 import { useSocket } from "@/components/games/SocketProvider";
 import { useRouter } from "next/navigation";
 import PlayerBubble from "./PlayerBubble";
@@ -918,6 +919,25 @@ export default function FriendsSidebar() {
                     </button>
                   </div>
 
+                  {/* Everything below the header folds.
+                      `height: auto` on the card could not animate — the CSS
+                      transitioned a value the browser will not interpolate, so
+                      the dock snapped shut. Framer measures the content and
+                      animates the real height, which is the whole difference
+                      between folding and vanishing.
+
+                      The composer goes with it, which is what makes a collapsed
+                      dock a title bar: a text box you cannot see the
+                      conversation above is an invitation to type into nothing. */}
+                  <AnimatePresence initial={false}>
+                    {!dockMinimised && (
+                      <motion.div
+                        className="dm-body"
+                        initial={{ height: 0, opacity: 0 }}
+                        animate={{ height: "auto", opacity: 1 }}
+                        exit={{ height: 0, opacity: 0 }}
+                        transition={{ duration: 0.22, ease: [0.22, 1, 0.36, 1] }}
+                      >
                   <div className="dm-messages" ref={logRef}>
                     {messages.length === 0 && <div className="dm-empty">No messages yet. Say hi.</div>}
                     {messages.map((m, i) => {
@@ -969,6 +989,9 @@ export default function FriendsSidebar() {
                       <Send size={16} />
                     </button>
                   </form>
+                      </motion.div>
+                    )}
+                  </AnimatePresence>
                 </div>
         </div>,
         document.body,
