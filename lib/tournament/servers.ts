@@ -79,6 +79,32 @@ export async function claimServer(matchId: number): Promise<ServerRow | null> {
   return null;
 }
 
+/**
+ * Takes a server back for a match that already names it.
+ *
+ * startMatch reuses match.ServerId when it is set — a restart, the next map of
+ * a series — and used to do so without touching the pool. If anything had
+ * released that server in the meantime (a force-end, a finished map, an admin
+ * freeing it) the pool went on saying idle while a match was very much running
+ * there, and the next match to look claimed the same box. Two matches, one
+ * server, both writing rosters over each other.
+ *
+ * Returns false when somebody ELSE holds it, which is the case that must not be
+ * papered over: the match is better off waiting in the queue than sharing.
+ */
+export async function reclaimServer(serverId: number, matchId: number): Promise<boolean> {
+  const taken = await prisma.gameServer.updateMany({
+    where: {
+      Id: serverId,
+      // Free, or already ours. Anything else belongs to another match.
+      OR: [{ CurrentMatchId: null }, { CurrentMatchId: matchId }],
+    },
+    data: { Status: "busy", CurrentMatchId: matchId },
+  });
+
+  return taken.count === 1;
+}
+
 export async function releaseServer(serverId: number | null | undefined) {
   if (!serverId) return;
 

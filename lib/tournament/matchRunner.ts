@@ -1,6 +1,6 @@
 import { background } from "@/lib/background";
 import { prisma } from "@/lib/db";
-import { claimServer, connectString, execOnServer, releaseServer } from "@/lib/tournament/servers";
+import { claimServer, connectString, execOnServer, reclaimServer, releaseServer } from "@/lib/tournament/servers";
 import { rolesForMatch } from "@/lib/tournament/roleDraft";
 import { dequeue, enqueue, promoteNext } from "@/lib/tournament/queue";
 import { forcedMapScore, forcedSeriesScore, type Slot } from "@/lib/tournament/forceEnd";
@@ -84,8 +84,16 @@ export async function startMatch(matchId: number): Promise<StartResult> {
     return { ok: false, error: `Rosters differ: ${rosterA.length} v ${rosterB.length}.` };
   }
 
+  // Reusing the server this match already names — a restart, or the next map
+  // of a series — re-asserts the claim rather than assuming it still holds.
+  // Without that the pool could say idle while the match ran there, and the
+  // next match to look claimed the same box: two matches on one server, each
+  // declaring rosters over the other. Losing the race means waiting in the
+  // queue, which is what the null below leads to.
   const server = match.ServerId
-    ? { id: match.ServerId, ...(await serverRow(match.ServerId)) }
+    ? (await reclaimServer(match.ServerId, matchId))
+      ? { id: match.ServerId, ...(await serverRow(match.ServerId)) }
+      : null
     : await claimServer(matchId);
 
   // Nothing free: wait in line rather than failing.
@@ -292,6 +300,14 @@ function consoleName(name: string, fallback = "team"): string {
  * Called by the ingest when the plugin reports a match end. Idempotent on the
  * map's state, because a plugin that retries must not advance a bracket twice.
  */
+/**
+ * How long the plugin holds everybody between maps of a series.
+ *
+ * Mirrors MatchFlow.BetweenMapsSeconds in the plugin, which announces exactly
+ * this number in chat. If one changes the other has to.
+ */
+const BETWEEN_MAPS_MS = 15_000;
+
 export async function finishMap(
   matchKey: string,
   scoreA: number,
@@ -354,6 +370,26 @@ export async function finishMap(
     // server was never handed to the match that had waited longest. The queue
     // simply stopped moving, and nothing said so.
     background("match:promoteNext", () => promoteNext());
+  } else {
+    /**
+     * The series continues, so somebody has to load the next map — and until
+     * now nobody did.
+     *
+     * finishMap put the match back to "ready" and stopped there, which looks
+     * finished from the database's side and is anything but from the server's:
+     * the plugin holds everybody in the between-maps warmup waiting for a map
+     * change that was never coming. A bot BO3 sat there knife-fighting in
+     * warmup on map one with the website already showing map one won.
+     *
+     * Delayed by the countdown the plugin has just announced in chat, so the
+     * map does not change out from under "next map in 15s". background() keeps
+     * the instance alive across it; the route's maxDuration covers the wait
+     * plus the start.
+     */
+    background("match:nextMap", async () => {
+      await new Promise((r) => setTimeout(r, BETWEEN_MAPS_MS));
+      await startMatch(match.Id);
+    });
   }
 
   return { ok: true, matchOver };
