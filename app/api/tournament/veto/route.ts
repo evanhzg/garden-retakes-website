@@ -1,4 +1,6 @@
 import { NextResponse } from "next/server";
+
+import { background } from "@/lib/background";
 import { prisma } from "@/lib/db";
 import {
   autoStart,
@@ -13,6 +15,18 @@ import { getSession } from "@/lib/auth";
 import { canManage, getTournamentContext } from "@/lib/tournamentAuth";
 import { autoAction, validateAction, vetoState } from "@/lib/tournament/veto";
 import { VETO_TURN_SECONDS, vetoExpired, vetoMayStart } from "@/lib/tournament/edition";
+
+/**
+ * Long enough for a match to start.
+ *
+ * startMatch changes the map and then polls the server until it appears, which
+ * is up to thirty seconds before a single roster command is sent, followed by
+ * roughly twenty more RCON round trips. That runs here — either inline or via
+ * background(), which keeps the instance alive but does not exempt it from the
+ * duration cap. On the default cap the sequence was being cut off partway,
+ * leaving a half-declared match on the server.
+ */
+export const maxDuration = 120;
 
 export const dynamic = "force-dynamic";
 export const runtime = "nodejs";
@@ -196,11 +210,14 @@ export async function POST(req: Request) {
       // The match page polls, so it discovers the server the moment it exists.
       // Failure is still tolerated exactly as before: the match stays "ready"
       // and startable by hand.
+      // background(), not `void`. `void` abandons the promise the moment this
+      // response returns, and startMatch is a thirty-second sequence — so it
+      // was being killed after the map load and the rosters but before the
+      // sides and the start, leaving a server holding a half-declared match
+      // and a row still saying "ready" that nothing retried. That is exactly
+      // the "no bots, warmup never ends" a tournament match arrived in.
       if (decided.ok) {
-        void autoStart(match.Id).catch(() => {
-          // Already swallowed inside autoStart; this is belt and braces so an
-          // unhandled rejection cannot take the process down.
-        });
+        background("veto:autoStart", () => autoStart(match.Id));
       }
 
       return NextResponse.json({ ok: true, done: decided.ok });

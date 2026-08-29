@@ -1,3 +1,4 @@
+import { background } from "@/lib/background";
 import { prisma } from "@/lib/db";
 import { claimServer, connectString, execOnServer, releaseServer } from "@/lib/tournament/servers";
 import { rolesForMatch } from "@/lib/tournament/roleDraft";
@@ -348,10 +349,11 @@ export async function finishMap(
     // The freed server goes to whoever has waited longest. Not awaited for its
     // result: promoteNext runs a whole startMatch, map load included, and the
     // plugin reporting a finished map must not wait on the next match booting.
-    void promoteNext().catch(() => {
-      // A promotion that fails leaves the queue as it was; the next release
-      // tries again.
-    });
+    // Losing this one is quieter than losing a start and was costing more:
+    // promoteNext runs a whole startMatch, so abandoning it meant a freed
+    // server was never handed to the match that had waited longest. The queue
+    // simply stopped moving, and nothing said so.
+    background("match:promoteNext", () => promoteNext());
   }
 
   return { ok: true, matchOver };
@@ -463,9 +465,7 @@ export async function forceEndMatch(
   // cannot offer a way into somebody else's game.
   await releaseServer(match.ServerId);
 
-  void promoteNext().catch(() => {
-    // A promotion that fails leaves the queue as it was.
-  });
+  background("match:promoteNext", () => promoteNext());
 
   // Best effort, and last. A server that has no match answers with a refusal
   // line rather than an error, and that refusal must not undo any of the above.

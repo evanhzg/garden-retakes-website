@@ -1,3 +1,4 @@
+import { background } from "@/lib/background";
 import { prisma } from "@/lib/db";
 import { autoAction, vetoState, type VetoAction, type Side } from "@/lib/tournament/veto";
 import { startMatch } from "@/lib/tournament/matchRunner";
@@ -88,10 +89,9 @@ export async function beginRolesOrVeto(matchId: number): Promise<"roles" | "veto
   // the request open for that would make ready-up feel broken to whoever
   // pressed it. The page polls and shows each step as it lands.
   if (await isAllBots(matchId)) {
-    void driveBotMatch(matchId).catch(() => {
-      // A bot match that cannot decide its own maps stays where it is and can
-      // be resolved by an organizer, exactly as before.
-    });
+    // Deliberately slow — two seconds a step so the draft can be watched — and
+    // therefore exactly the kind of work `void` loses on a serverless host.
+    background("veto:driveBotMatch", () => driveBotMatch(matchId));
   }
 
   if (opened) return "roles";

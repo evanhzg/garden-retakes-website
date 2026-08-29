@@ -12,6 +12,18 @@ import {
 } from "@/lib/tournament/exceptions";
 import { execOnServer } from "@/lib/tournament/servers";
 
+/**
+ * Long enough for a match to start.
+ *
+ * startMatch changes the map and then polls the server until it appears, which
+ * is up to thirty seconds before a single roster command is sent, followed by
+ * roughly twenty more RCON round trips. That runs here — either inline or via
+ * background(), which keeps the instance alive but does not exempt it from the
+ * duration cap. On the default cap the sequence was being cut off partway,
+ * leaving a half-declared match on the server.
+ */
+export const maxDuration = 120;
+
 export const dynamic = "force-dynamic";
 export const runtime = "nodejs";
 
