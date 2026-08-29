@@ -8,7 +8,7 @@ import PlayerBubble from "./PlayerBubble";
 import AvatarImage from "@/components/AvatarImage";
 import AvatarStatus from "@/components/social/AvatarStatus";
 import { useToast } from "@/components/Toast";
-import { MessageSquare, UserPlus, Gamepad2, Eye, Users, Mail, Send, ChevronLeft, X } from "lucide-react";
+import { MessageSquare, UserPlus, Gamepad2, Eye, Users, Mail, Send, X } from "lucide-react";
 import { useI18n } from "@/components/I18nProvider";
 import "./social.css";
 
@@ -31,6 +31,8 @@ type DmThread = {
   lastMessage: string;
   lastAt: string;
   fromMe: boolean;
+  /** Staff. They get their own category above the friends list. */
+  isAdmin?: boolean;
 };
 
 type Message = {
@@ -205,7 +207,9 @@ export default function FriendsSidebar() {
   const [onlineUsers, setOnlineUsers] = useState<string[]>([]);
   const [addFriendInput, setAddFriendInput] = useState("");
   const [addBusy, setAddBusy] = useState(false);
-  const [activeTab, setActiveTab] = useState<"FRIENDS" | "MESSAGES" | "MAIL">("FRIENDS");
+  // MESSAGES went with the Chat tab: those conversations are in the friends
+  // list now, under their own headings.
+  const [activeTab, setActiveTab] = useState<"FRIENDS" | "MAIL">("FRIENDS");
   const [messages, setMessages] = useState<Message[]>([]);
   const [activeDmUser, setActiveDmUser] = useState<string | null>(null);
   const [dmInput, setDmInput] = useState("");
@@ -561,21 +565,29 @@ export default function FriendsSidebar() {
     [unread]
   );
 
-  /** Threads with something in them first, then everyone else. */
   /**
-   * The Chat tab: conversations with people who are NOT friends.
+   * Every conversation with somebody who is not a friend.
    *
-   * This used to be `[...friends]`, which made the tab a second copy of the
-   * friends list — every friend appeared as a thread whether or not a word had
-   * ever passed between you, and somebody who is not a friend could message you
-   * with nowhere for it to show. The unread badge still counted them, so the
-   * number went up and no row explained it.
-   *
-   * Friends are reachable from the friends tab, which has had a chat button on
-   * every row all along. This tab is now the other half: strangers, team-mates
-   * from a tournament, whoever messaged you off a profile.
+   * There is no Chat tab any more. It was a second list of the same people —
+   * a friend appeared there whether or not a word had ever passed between you —
+   * and having two places a message might be is how one of them stops being
+   * checked. Friends carry their own unread count on the friends list; these
+   * threads are folded in above it, and the staff ones get a category of their
+   * own because a message from an admin is not a social one.
    */
   const [strangerThreads, setStrangerThreads] = useState<DmThread[]>([]);
+
+  /**
+   * People you have played with who are not friends yet.
+   *
+   * The add box asks for a SteamID64 or a nickname, which works for somebody
+   * whose id you already have and not at all for the people most worth adding —
+   * the ones you were on a roster with last night, whose id is the one thing
+   * you do not know.
+   */
+  const [suggestions, setSuggestions] = useState<
+    { steamId: string; name: string; times: number }[]
+  >([]);
 
   const loadThreads = useCallback(async () => {
     try {
@@ -588,16 +600,67 @@ export default function FriendsSidebar() {
     }
   }, []);
 
+  // Loaded whenever the panel is open, not when a tab is selected: the threads
+  // feed the admin category on the friends list now, so waiting for a tab that
+  // no longer exists would mean it never loaded at all.
   useEffect(() => {
-    if (activeTab === "MESSAGES") loadThreads();
-  }, [activeTab, loadThreads]);
+    if (isOpen) loadThreads();
+  }, [isOpen, loadThreads]);
+
+  // Only when the tab that shows them is open: this is a join across every
+  // roster the viewer has ever been on, and it is not worth running for
+  // somebody who came to read their friends list.
+  useEffect(() => {
+    if (activeTab !== "MAIL") return;
+
+    let alive = true;
+    fetch("/api/friends/suggestions", { cache: "no-store" })
+      .then((r) => (r.ok ? r.json() : null))
+      .then((d) => {
+        if (alive) setSuggestions(Array.isArray(d?.suggestions) ? d.suggestions : []);
+      })
+      .catch(() => {
+        // A convenience, not a feature: the add box below still works.
+      });
+
+    return () => {
+      alive = false;
+    };
+  }, [activeTab]);
+
+  /**
+   * Staff conversations, newest first.
+   *
+   * They leave this list when the admin closes the thread — the endpoint stops
+   * returning it — which is what makes it a queue rather than a permanent
+   * section somebody has to look at for ever.
+   */
+  const adminThreads = useMemo(
+    () =>
+      strangerThreads
+        .filter((thread) => thread.isAdmin)
+        .map((thread) => ({
+          steamId: thread.steamId,
+          name: thread.name,
+          avatarUrl: null as string | null,
+          lastAt: thread.lastAt,
+        }))
+        .sort((a, b) => {
+          const ua = unread[a.steamId] ?? 0;
+          const ub = unread[b.steamId] ?? 0;
+          if (ua !== ub) return ub - ua;
+          return b.lastAt.localeCompare(a.lastAt);
+        }),
+    [strangerThreads, unread],
+  );
 
   const threads = useMemo(() => {
     const friendIds = new Set(friends.map((f) => f.friendId));
 
-    // A thread that turned into a friendship belongs to the friends tab now.
+    // A thread that turned into a friendship is shown as a friend, and a staff
+    // thread has its own category above — either would otherwise appear twice.
     const rows = strangerThreads
-      .filter((thread) => !friendIds.has(thread.steamId))
+      .filter((thread) => !friendIds.has(thread.steamId) && !thread.isAdmin)
       .map((thread) => ({
         id: Number(thread.steamId.slice(-9)) || 0,
         friendId: thread.steamId,
@@ -624,7 +687,15 @@ export default function FriendsSidebar() {
   const activeFriend = activeDmUser ? friends.find((f) => f.friendId === activeDmUser) : undefined;
 
   const renderFriendRow = (f: Friend, isOnline: boolean) => (
-    <div key={f.id} className={`friend-item${isOnline ? "" : " offline-item"}`}>
+    <div
+      key={f.id}
+      className={
+        `friend-item${isOnline ? "" : " offline-item"}` +
+        // Tinted when they are waiting on a reply, so a glance down the list
+        // finds them without reading every row.
+        ((unread[f.friendId] ?? 0) > 0 ? " has-unread" : "")
+      }
+    >
       <div className="friend-info">
         <AvatarStatus
           steamId={f.friendId}
@@ -651,7 +722,13 @@ export default function FriendsSidebar() {
       <div className="friend-actions">
         <button className="btn-social" onClick={() => openThread(f.friendId)} title="Chat">
           <MessageSquare size={16} />
-          {(unread[f.friendId] ?? 0) > 0 && <span className="dot-badge" />}
+          {/* The number, not a dot. A dot says "something happened"; a person
+              deciding whether to open a conversation wants to know whether it
+              is one message or nine, and the row is already tinted to say that
+              there is anything at all. */}
+          {(unread[f.friendId] ?? 0) > 0 && (
+            <span className="count-badge">{Math.min(99, unread[f.friendId] ?? 0)}</span>
+          )}
         </button>
         {isOnline && (
           <button
@@ -690,23 +767,32 @@ export default function FriendsSidebar() {
       <div
         className={`friends-rail ${isOpen ? "hidden" : ""}`}
         ref={railRef}
+        role="button"
+        tabIndex={0}
+        aria-label={t("social.friends.toggleBtn")}
         onMouseEnter={openNow}
         onMouseLeave={closeSoon}
+        onFocus={openNow}
+        onKeyDown={(e) => {
+          if (e.key !== "Enter" && e.key !== " ") return;
+          e.preventDefault();
+          setIsPinned(true);
+          setIsOpen(true);
+        }}
       >
-        <button
-          className="friends-rail-expand"
-          onClick={() => {
-            setIsPinned(true);
-            setIsOpen(true);
-          }}
-          aria-label={t("social.friends.toggleBtn")}
-          title={t("social.friends.toggleBtn")}
-        >
-          <ChevronLeft size={16} />
-          {(pendingRequests.length > 0 || totalUnread > 0) && (
-            <span className="notification-badge">{pendingRequests.length + totalUnread}</span>
-          )}
-        </button>
+        {/* The expand arrow is gone.
+            Hovering the rail opens the panel and clicking any avatar opens that
+            person's chat, so the arrow was a third way to do what two other
+            gestures already did — and it took the top slot, which is where the
+            eye lands first. What it usefully carried was the unread count, so
+            that stays as a badge on the rail itself rather than on a control.
+            The rail keeps its keyboard route: it is focusable and Enter opens
+            it, which is what the button was actually needed for. */}
+        {(pendingRequests.length > 0 || totalUnread > 0) && (
+          <span className="friends-rail-badge" aria-hidden>
+            {pendingRequests.length + totalUnread}
+          </span>
+        )}
 
         {/* Everybody, online first.
             The rail used to render `onlineFriends` only, so a friend going
@@ -938,17 +1024,7 @@ export default function FriendsSidebar() {
             title={t("social.friends.tabFriends")}
           >
             <Users size={18} />
-            <span>Friends</span>
-          </button>
-          <button
-            role="tab"
-            aria-selected={activeTab === "MESSAGES"}
-            className={activeTab === "MESSAGES" ? "active" : ""}
-            onClick={() => setActiveTab("MESSAGES")}
-            title="Messages"
-          >
-            <MessageSquare size={18} />
-            <span>Chat</span>
+            <span>{t("social.friends.tabFriends")}</span>
             {totalUnread > 0 && <span className="tab-badge">{totalUnread}</span>}
           </button>
           <button
@@ -956,17 +1032,61 @@ export default function FriendsSidebar() {
             aria-selected={activeTab === "MAIL"}
             className={activeTab === "MAIL" ? "active" : ""}
             onClick={() => setActiveTab("MAIL")}
-            title="Invites & Add Friend"
+            title={t("social.friends.tabInvites")}
           >
             <Mail size={18} />
-            <span>Invites</span>
+            <span>{t("social.friends.tabInvites")}</span>
             {pendingRequests.length > 0 && <span className="tab-badge">{pendingRequests.length}</span>}
           </button>
         </div>
 
         {activeTab === "FRIENDS" && (
           <div className="friends-content">
-            {friends.length === 0 && <p className="muted-text">{t("social.friends.noFriends")}</p>}
+            {friends.length === 0 && adminThreads.length === 0 && (
+              <p className="muted-text">{t("social.friends.noFriends")}</p>
+            )}
+
+            {/* Staff first, and never mixed in with friends.
+                A message from an admin is not a social one — it is usually
+                about your account or a match you are in — and finding it
+                sorted alphabetically among people you play with is how it gets
+                missed. They leave this list when the admin closes the thread,
+                which is what makes it a queue rather than a permanent section. */}
+            {adminThreads.length > 0 && (
+              <>
+                <div className="friends-category-title is-admin">
+                  {t("social.friends.adminCategory")} — {adminThreads.length}
+                </div>
+                {adminThreads.map((a) => (
+                  <div
+                    key={a.steamId}
+                    className={`friend-item is-admin${(unread[a.steamId] ?? 0) > 0 ? " has-unread" : ""}`}
+                  >
+                    <div className="friend-info">
+                      <AvatarStatus
+                        steamId={a.steamId}
+                        name={a.name}
+                        src={a.avatarUrl}
+                        presence={onlineUsers.includes(a.steamId) ? "online" : "offline"}
+                        size={34}
+                      />
+                      <div className="friend-lines">
+                        <span className="friend-name">{a.name}</span>
+                        <span className="friend-stats">{t("social.friends.adminRow")}</span>
+                      </div>
+                    </div>
+                    <div className="friend-actions">
+                      <button className="btn-social" onClick={() => openThread(a.steamId)} title="Chat">
+                        <MessageSquare size={16} />
+                        {(unread[a.steamId] ?? 0) > 0 && (
+                          <span className="count-badge">{Math.min(99, unread[a.steamId] ?? 0)}</span>
+                        )}
+                      </button>
+                    </div>
+                  </div>
+                ))}
+              </>
+            )}
 
             {onlineFriends.length > 0 && (
               <>
@@ -981,78 +1101,119 @@ export default function FriendsSidebar() {
                 {offlineFriends.map((f) => renderFriendRow(f, false))}
               </>
             )}
+
+            {/* Conversations with people who are not friends: a team-mate from
+                a tournament, somebody who messaged off a profile. They used to
+                live in a Chat tab, which was a second place a message might be
+                — and two places is how one of them stops being checked. */}
+            {threads.length > 0 && (
+              <>
+                <div className="friends-category-title mt-4">
+                  {t("social.friends.otherChats")} — {threads.length}
+                </div>
+            {threads.map((f) => {
+              const count = unread[f.friendId] ?? 0;
+              return (
+                <div key={f.friendId} className={`friend-item thread${count > 0 ? " unread" : ""}`}>
+                  <div className="friend-info">
+                    {/* Same component as the friends tab, so the two lists
+                        look like one design. The old row hand-rolled an
+                        avatar and a status dot and had already drifted. */}
+                    <AvatarStatus
+                      steamId={f.friendId}
+                      name={f.name}
+                      src={f.avatarUrl}
+                      presence={online(f.friendId) ? "online" : "offline"}
+                      size={34}
+                    />
+                    <div className="friend-lines">
+                      <span className="friend-name">{f.name}</span>
+                      <span className="friend-stats">
+                        {f.fromMe && <span className="dm-you">{t("social.friends.you")} </span>}
+                        {f.lastMessage}
+                      </span>
+                    </div>
+                  </div>
+
+                  <div className="friend-actions">
+                    <button
+                      className="btn-social"
+                      onClick={() => openThread(f.friendId)}
+                      title={t("social.friends.chat")}
+                      aria-label={t("social.friends.chat")}
+                    >
+                      <MessageSquare size={16} />
+                      {count > 0 && <span className="dot-badge" />}
+                    </button>
+
+                    {/* The action a stranger's thread actually wants. */}
+                    <button
+                      className="btn-social"
+                      onClick={() => socket?.emit("friend_request", { targetId: f.friendId })}
+                      title={t("social.friends.add")}
+                      aria-label={t("social.friends.add")}
+                    >
+                      <UserPlus size={16} />
+                    </button>
+                  </div>
+                </div>
+              );
+            })}
+              </>
+            )}
+
           </div>
         )}
 
         {/* Not inside .friends-content: the thread view owns the full height so
             its composer can sit on the bottom edge, which it cannot do inside a
             padded scroll container. */}
-        {activeTab === "MESSAGES" && (
-            <div className="friends-content">
-              {/* Says what this tab is for, rather than "no friends to message
-                  yet" — which described the old behaviour and would now be a
-                  lie, since friends are deliberately not listed here. */}
-              <p className="friends-category-title">{t("social.friends.otherChats")}</p>
+        {activeTab === "MAIL" && (
+          <div className="friends-content">
+            {/* Above the box, because it is the answer to the question the box
+                asks badly: the people you would actually add are here, and
+                their SteamID64 is the one thing you were never going to know. */}
+            {suggestions.length > 0 && (
+              <div className="mail-section">
+                <h3>{t("social.friends.suggestions")}</h3>
+                <p className="muted-text sg-why">{t("social.friends.suggestionsWhy")}</p>
 
-              {threads.length === 0 && (
-                <p className="muted-text">{t("social.friends.noOtherChats")}</p>
-              )}
-
-              {threads.map((f) => {
-                const count = unread[f.friendId] ?? 0;
-                return (
-                  <div key={f.friendId} className={`friend-item thread${count > 0 ? " unread" : ""}`}>
-                    <div className="friend-info">
-                      {/* Same component as the friends tab, so the two lists
-                          look like one design. The old row hand-rolled an
-                          avatar and a status dot and had already drifted. */}
+                <ul className="sg-list">
+                  {suggestions.map((sug) => (
+                    <li key={sug.steamId} className="sg-row">
                       <AvatarStatus
-                        steamId={f.friendId}
-                        name={f.name}
-                        src={f.avatarUrl}
-                        presence={online(f.friendId) ? "online" : "offline"}
-                        size={34}
+                        steamId={sug.steamId}
+                        name={sug.name}
+                        src={null}
+                        presence={onlineUsers.includes(sug.steamId) ? "online" : "offline"}
+                        size={28}
                       />
-                      <div className="friend-lines">
-                        <span className="friend-name">{f.name}</span>
-                        <span className="friend-stats">
-                          {f.fromMe && <span className="dm-you">{t("social.friends.you")} </span>}
-                          {f.lastMessage}
-                        </span>
-                      </div>
-                    </div>
-
-                    <div className="friend-actions">
+                      <span className="sg-name">{sug.name}</span>
+                      <span className="sg-times muted-text">
+                        {t("social.friends.playedTogether", { n: String(sug.times) })}
+                      </span>
                       <button
                         className="btn-social"
-                        onClick={() => openThread(f.friendId)}
-                        title={t("social.friends.chat")}
-                        aria-label={t("social.friends.chat")}
-                      >
-                        <MessageSquare size={16} />
-                        {count > 0 && <span className="dot-badge" />}
-                      </button>
-
-                      {/* The action a stranger's thread actually wants. */}
-                      <button
-                        className="btn-social"
-                        onClick={() => socket?.emit("friend_request", { targetId: f.friendId })}
                         title={t("social.friends.add")}
                         aria-label={t("social.friends.add")}
+                        onClick={() => {
+                          socket?.emit("friend_request", { targetId: sug.steamId });
+                          // Removed on click rather than on a refetch: the row
+                          // has done its job, and leaving it there invites a
+                          // second request that the server would refuse.
+                          setSuggestions((prev) => prev.filter((x) => x.steamId !== sug.steamId));
+                        }}
                       >
                         <UserPlus size={16} />
                       </button>
-                    </div>
-                  </div>
-                );
-              })}
-            </div>
-        )}
+                    </li>
+                  ))}
+                </ul>
+              </div>
+            )}
 
-        {activeTab === "MAIL" && (
-          <div className="friends-content">
             <div className="mail-section">
-              <h3>Add a friend</h3>
+              <h3>{t("social.friends.addTitle")}</h3>
               <form onSubmit={handleAddFriend} className="add-friend-form">
                 <input
                   type="text"

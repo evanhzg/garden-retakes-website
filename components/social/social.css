@@ -1190,3 +1190,99 @@ html[data-motion="off"] .dm-bubble.typing i { animation: none; }
 .dm-msg.staff .dm-bubble {
   border-left: 3px solid var(--accent);
 }
+
+/* ---------- unread, staff, and suggestions ---------- */
+
+/* A friend waiting on a reply. Tinted rather than badged alone, so a glance
+   down the list finds them without reading every row. */
+.friend-item.has-unread {
+  border-left: 2px solid var(--color-accent);
+  background: color-mix(in srgb, var(--color-accent) 8%, transparent);
+}
+
+/* The number, not a dot: one message and nine are different decisions. */
+.count-badge {
+  position: absolute;
+  top: -4px;
+  right: -4px;
+  min-width: 15px;
+  height: 15px;
+  padding: 0 3px;
+  display: grid;
+  place-items: center;
+  background: var(--color-accent);
+  color: var(--btn-primary-ink, #fff);
+  font-size: 9px;
+  font-weight: 800;
+  font-variant-numeric: tabular-nums;
+  line-height: 1;
+}
+
+.btn-social {
+  position: relative;
+}
+
+/* Staff are not friends and do not look like them. */
+.friends-category-title.is-admin {
+  color: var(--color-accent);
+}
+
+.friend-item.is-admin {
+  border-left: 2px solid var(--color-accent);
+}
+
+/* The rail carries the count now that the expand arrow is gone. */
+.friends-rail-badge {
+  min-width: 18px;
+  height: 18px;
+  padding: 0 4px;
+  display: grid;
+  place-items: center;
+  background: var(--color-accent);
+  color: var(--btn-primary-ink, #fff);
+  font-size: 10px;
+  font-weight: 800;
+  font-variant-numeric: tabular-nums;
+  line-height: 1;
+  flex: none;
+}
+
+.sg-why {
+  margin: -2px 0 8px;
+  font-size: 11px;
+}
+
+.sg-list {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: grid;
+  gap: 4px;
+}
+
+/* Smaller than a friend row on purpose: a suggestion is a question, not a
+   relationship, and it should not carry the same weight as somebody you have
+   already added. */
+.sg-row {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 5px 7px;
+  border: 1px solid var(--color-divider);
+  min-width: 0;
+}
+
+.sg-name {
+  flex: 1;
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  font-size: 12.5px;
+  font-weight: 600;
+}
+
+.sg-times {
+  font-size: 10px;
+  white-space: nowrap;
+}

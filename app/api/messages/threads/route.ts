@@ -87,9 +87,24 @@ export async function GET() {
   });
   const nameOf = new Map(profiles.map((p) => [p.SteamId.toString(), p.LastKnownName ?? ""]));
 
+  // Which of these are staff.
+  //
+  // The sidebar puts them in their own category above the friends list: a
+  // message from an admin is usually about your account or a match you are in,
+  // and finding it sorted among people you play with is how it gets missed.
+  const admins = await prisma.gardenAdmin.findMany({
+    where: { SteamId: { in: ids.map((id) => BigInt(id)) } },
+    select: { SteamId: true, Name: true },
+  });
+
+  const adminOf = new Map(admins.map((a) => [a.SteamId.toString(), a.Name]));
+
   const threads = Array.from(byCounterparty.values()).map((thread) => ({
     ...thread,
-    name: nameOf.get(thread.steamId) || thread.steamId,
+    // The admin's own recorded name wins: it is the one they answer to in that
+    // capacity, and a Steam persona can be anything on a given day.
+    name: adminOf.get(thread.steamId) || nameOf.get(thread.steamId) || thread.steamId,
+    isAdmin: adminOf.has(thread.steamId),
   }));
 
   return NextResponse.json({ threads });
