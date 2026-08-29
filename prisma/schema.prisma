@@ -1601,9 +1601,66 @@ model TournamentStage {
   @@map("TournamentStages")
 }
 
+/// A team that exists outside any one tournament.
+///
+/// The thread between three entries by the same five people. Without it a
+/// "team" is one row scoped to one event, which is why Results.tsx groups team
+/// rankings by NAME — the only thing those rows have in common.
+model GardenTeam {
+  Id             Int      @id @default(autoincrement())
+  Name           String   @unique(map: "UX_GardenTeams_Name") @db.VarChar(64)
+  Slug           String   @unique(map: "UX_GardenTeams_Slug") @db.VarChar(64)
+  Tag            String?  @db.VarChar(8)
+  CaptainSteamId BigInt   @db.UnsignedBigInt
+  /// Bytes rather than a URL, the same as tournament banners: there is no
+  /// object storage in this deployment.
+  AvatarBytes    Bytes?
+  AvatarMime     String?  @db.VarChar(32)
+  Bio            String?  @db.Text
+  CreatedAt      DateTime @default(now()) @db.DateTime(6)
+  UpdatedAt      DateTime @default(now()) @updatedAt @db.DateTime(6)
+
+  Members GardenTeamMember[]
+  Entries TournamentTeam[]
+
+  @@index([CaptainSteamId])
+  @@map("GardenTeams")
+}
+
+/// One player's place in a standing team.
+///
+/// A player may hold rows in many teams — that is what makes a standing team
+/// different from a tournament entry — but only one per team, which the unique
+/// index enforces. Entering the SAME TOURNAMENT with two of them is the rule
+/// that cannot be expressed here; it lives in lib/tournament/teams.ts and is
+/// checked at the point of entry.
+model GardenTeamMember {
+  Id       Int      @id @default(autoincrement())
+  TeamId   Int
+  SteamId  BigInt   @db.UnsignedBigInt
+  /// captain | manager | player
+  Role     String   @default("player") @db.VarChar(16)
+  JoinedAt DateTime @default(now()) @db.DateTime(6)
+
+  /// Declared so a team can be read with its roster in one query. As everywhere
+  /// in this schema there is no database-level foreign key, so the cascade is
+  /// Prisma's fiction and deletes must sweep by hand.
+  Team GardenTeam @relation(fields: [TeamId], references: [Id], onDelete: Cascade)
+
+  @@unique([TeamId, SteamId], map: "UX_GardenTeamMembers")
+  @@index([SteamId])
+  @@map("GardenTeamMembers")
+}
+
 model TournamentTeam {
   Id             Int      @id @default(autoincrement())
   TournamentId   Int
+  /// The standing team this entry came from, when it came from one.
+  ///
+  /// Nullable on purpose and for ever: an entry made in a lobby, or by an
+  /// organizer typing a name, has no standing team behind it and is exactly
+  /// what it has always been.
+  GardenTeamId   Int?
   Name           String   @db.VarChar(64)
   Tag            String?  @db.VarChar(8)
   CaptainSteamId BigInt   @db.UnsignedBigInt
@@ -1616,10 +1673,12 @@ model TournamentTeam {
   InviteToken    String?  @unique(map: "UX_TournamentTeams_Invite") @db.VarChar(32)
 
   Tournament Tournament             @relation(fields: [TournamentId], references: [Id], onDelete: Cascade)
+  GardenTeam GardenTeam?             @relation(fields: [GardenTeamId], references: [Id])
   Members    TournamentTeamMember[]
 
   @@unique([TournamentId, Name], map: "UX_TournamentTeams_Name")
   @@index([TournamentId])
+  @@index([GardenTeamId], map: "IX_TournamentTeams_GardenTeam")
   @@map("TournamentTeams")
 }
 

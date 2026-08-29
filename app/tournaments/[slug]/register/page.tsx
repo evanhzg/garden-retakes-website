@@ -1,6 +1,10 @@
 import BackToTournament from "@/components/tournament/BackToTournament";
 import Link from "next/link";
 import { notFound } from "next/navigation";
+import EnterWithTeam from "@/components/tournament/EnterWithTeam";
+import { teamsOf } from "@/lib/tournament/teamStore";
+import { prisma as db } from "@/lib/db";
+import { resolveNames } from "@/lib/names";
 import { headers } from "next/headers";
 import { prisma } from "@/lib/db";
 import { getSession } from "@/lib/auth";
@@ -69,6 +73,36 @@ export default async function RegisterPage({
       )
     : undefined;
 
+  // The standing teams this visitor could enter with, and who is in them.
+  //
+  // Only the ones they may actually enter — a player cannot enter a team they
+  // are merely a member of, so this is filtered to captain and manager. The
+  // server checks again with teamCan().
+  const standing = session ? await teamsOf(session.steamId) : [];
+  const enterable = standing.filter((x) => x.role === "captain" || x.role === "manager");
+
+  const rosters = enterable.length
+    ? await db.gardenTeamMember.findMany({
+        where: { TeamId: { in: enterable.map((x) => x.id) } },
+        orderBy: { JoinedAt: "asc" },
+      })
+    : [];
+
+  const rosterNames = await resolveNames(rosters.map((r) => r.SteamId));
+
+  const enterableTeams = enterable.map((x) => ({
+    id: x.id,
+    name: x.name,
+    slug: x.slug,
+    tag: x.tag,
+    members: rosters
+      .filter((r) => r.TeamId === x.id)
+      .map((r) => {
+        const id = r.SteamId.toString();
+        return { steamId: id, name: rosterNames.get(id) ?? id };
+      }),
+  }));
+
   const proto = headers().get("x-forwarded-proto") ?? "https";
   const host = headers().get("host") ?? "retakes.fr";
   const origin = `${proto}://${host}`;
@@ -107,6 +141,18 @@ export default async function RegisterPage({
           </div>
         </section>
       ) : (
+        <>
+        {/* Entering as a standing team, above the ad-hoc form. Somebody who has
+            a team wants that first; somebody who does not still sees the form
+            they have always seen, unchanged, below. */}
+        {!mine && enterableTeams.length > 0 && (
+          <EnterWithTeam
+            tournamentId={tournament.Id}
+            teamSize={tournament.TeamSize}
+            teams={enterableTeams}
+          />
+        )}
+
         <Register
           tournamentId={tournament.Id}
           slug={tournament.Slug}
@@ -130,6 +176,7 @@ export default async function RegisterPage({
               : null
           }
         />
+        </>
       )}
     </>
   );

@@ -48,6 +48,10 @@ const CS2_LINKS: NavLink[] = [
   // allowlist — a comment naming a thing that no longer exists is worse than
   // none, because it is read as current.)
   { href: "/tournaments", label: "Tournaments", key: "nav.tournaments", primary: true },
+  // Standing teams, and the Blitz ladder under them. Primary because a team is
+  // the unit a tournament is entered as now, so "where is my team" is a
+  // question with an answer worth reaching in one click.
+  { href: "/teams", label: "Teams", key: "nav.teams", primary: true },
   { href: "/safe-place", label: "Safe Place", key: "nav.safe_place", primary: true },
   { href: "/compare", label: "Compare", key: "nav.compare" },
   { href: "/duels", label: "Duels", key: "nav.duels" },

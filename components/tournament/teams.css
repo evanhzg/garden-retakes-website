@@ -1,0 +1,392 @@
+/* Standing teams: the list, the page, and the panel that runs one. */
+
+.tm-list {
+  list-style: none;
+  margin: 0 0 var(--space-3);
+  padding: 0;
+  display: grid;
+  gap: 4px;
+}
+
+.tm-sub {
+  font-size: 10px;
+  font-weight: 800;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+  color: var(--color-text-muted);
+  margin: var(--space-3) 0 6px;
+}
+
+.tm-row {
+  display: flex;
+  align-items: center;
+  gap: var(--space-3);
+  padding: 9px 12px;
+  border: 1px solid var(--color-divider);
+  color: inherit;
+  text-decoration: none;
+  min-width: 0;
+}
+
+.tm-row:hover {
+  border-color: var(--color-accent);
+}
+
+/* A team you are in reads differently from one you are only looking at. */
+.tm-row.is-mine {
+  border-left: 3px solid var(--color-accent);
+}
+
+.tm-name {
+  font-weight: 700;
+  display: flex;
+  align-items: center;
+  gap: 7px;
+  min-width: 0;
+  overflow-wrap: anywhere;
+}
+
+.tm-tag {
+  font-family: var(--font-mono);
+  font-size: 10px;
+  font-weight: 800;
+  letter-spacing: 0.06em;
+  padding: 2px 5px;
+  border: 1px solid var(--color-divider);
+  color: var(--color-text-muted);
+  flex: none;
+}
+
+.tm-tag.big {
+  font-size: 14px;
+  padding: 3px 8px;
+  margin-right: 10px;
+  vertical-align: middle;
+}
+
+.tm-meta {
+  margin-left: auto;
+  font-size: 11.5px;
+  white-space: nowrap;
+}
+
+.tm-role {
+  font-size: 9.5px;
+  font-weight: 800;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  padding: 2px 6px;
+  border: 1px solid var(--color-divider);
+  color: var(--color-text-muted);
+  flex: none;
+}
+
+.tm-role.captain {
+  border-color: var(--color-accent);
+  color: var(--color-accent);
+}
+
+/* ---------- the record ---------- */
+
+.tm-record {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(min(100%, 120px), 1fr));
+  gap: var(--space-4);
+}
+
+.tm-record dt {
+  font-size: 9.5px;
+  font-weight: 800;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  color: var(--color-text-muted);
+}
+
+.tm-record dd {
+  margin: 3px 0 0;
+  font-size: 26px;
+  font-weight: 800;
+  font-variant-numeric: tabular-nums;
+}
+
+.tm-titles {
+  color: var(--color-accent);
+}
+
+/* ---------- roster ---------- */
+
+.tm-roster {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(min(100%, 240px), 1fr));
+  gap: 6px;
+}
+
+.tm-member {
+  display: flex;
+  align-items: center;
+  gap: 9px;
+  padding: 7px 10px;
+  border: 1px solid var(--color-divider);
+  color: inherit;
+  text-decoration: none;
+  min-width: 0;
+}
+
+.tm-member:hover {
+  border-color: var(--color-accent);
+  color: var(--color-accent);
+}
+
+.tm-face {
+  width: 26px;
+  height: 26px;
+  flex: none;
+  object-fit: cover;
+  border: 1px solid var(--color-divider);
+}
+
+.tm-member-name {
+  flex: 1;
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  font-weight: 600;
+}
+
+/* ---------- history ---------- */
+
+.tm-history {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: grid;
+  gap: 4px;
+}
+
+.tm-hrow {
+  display: flex;
+  align-items: center;
+  gap: var(--space-3);
+  padding: 9px 12px;
+  border: 1px solid var(--color-divider);
+  color: inherit;
+  text-decoration: none;
+  min-width: 0;
+}
+
+.tm-hrow:hover {
+  border-color: var(--color-accent);
+}
+
+.tm-htitle {
+  font-weight: 700;
+  display: flex;
+  align-items: center;
+  gap: 7px;
+  min-width: 0;
+  overflow-wrap: anywhere;
+}
+
+.tm-crown {
+  color: var(--color-accent);
+  flex: none;
+}
+
+.tm-hwhen {
+  margin-left: auto;
+  font-size: 11.5px;
+  white-space: nowrap;
+}
+
+.tm-hrec {
+  font-variant-numeric: tabular-nums;
+  font-weight: 700;
+  white-space: nowrap;
+}
+
+/* ---------- making one ---------- */
+
+.tm-create-open {
+  margin-top: var(--space-2);
+}
+
+.tm-create {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--space-2);
+  margin-top: var(--space-3);
+  align-items: center;
+}
+
+.tm-create input {
+  flex: 1 1 220px;
+  min-width: 0;
+}
+
+/* ---------- running one ---------- */
+
+.tm-admin {
+  display: grid;
+  gap: var(--space-3);
+}
+
+.tm-admin h2 {
+  display: flex;
+  align-items: center;
+  gap: 7px;
+  margin: 0;
+  font-size: 15px;
+}
+
+.tm-fields {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(min(100%, 180px), 1fr));
+  gap: var(--space-2);
+}
+
+.tm-fields label,
+.tm-field-wide {
+  display: grid;
+  gap: 3px;
+  min-width: 0;
+}
+
+.tm-fields span,
+.tm-field-wide span,
+.tm-block h3 {
+  font-size: 10px;
+  font-weight: 800;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  color: var(--color-text-muted);
+  margin: 0;
+}
+
+.tm-field-wide textarea {
+  width: 100%;
+  resize: vertical;
+}
+
+.tm-actions {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: var(--space-2);
+}
+
+.tm-block {
+  border-top: 1px solid var(--color-divider);
+  padding-top: var(--space-3);
+  display: grid;
+  gap: var(--space-2);
+}
+
+.tm-hint {
+  font-size: 11.5px;
+}
+
+.tm-manage-list {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: grid;
+  gap: 4px;
+}
+
+.tm-manage-list li {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: var(--space-2);
+  padding: 7px 10px;
+  border: 1px solid var(--color-divider);
+  font-size: 12.5px;
+}
+
+/* The two that cannot be undone, held apart from everything else. */
+.tm-danger-zone {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: var(--space-2);
+  border-top: 1px solid var(--color-divider);
+  padding-top: var(--space-3);
+}
+
+.tm-danger {
+  color: var(--color-danger, #c0392b);
+  border-color: var(--color-danger, #c0392b);
+}
+
+.tm-note,
+.tm-error {
+  margin: 0;
+  font-size: 12px;
+}
+
+.tm-note.ok {
+  color: var(--color-accent);
+}
+
+.tm-note.error,
+.tm-error {
+  color: var(--color-danger, #c0392b);
+}
+
+/* ---------- picking who plays ---------- */
+
+.tm-enter {
+  display: grid;
+  gap: var(--space-2);
+}
+
+.tm-pick {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(min(100%, 200px), 1fr));
+  gap: 4px;
+}
+
+.tm-pick-row {
+  width: 100%;
+  display: flex;
+  align-items: center;
+  gap: var(--space-2);
+  padding: 8px 10px;
+  border: 1px solid var(--color-divider);
+  border-radius: 0;
+  background: transparent;
+  color: inherit;
+  font: inherit;
+  font-size: 12.5px;
+  text-align: left;
+  cursor: pointer;
+}
+
+.tm-pick-row:hover:not(:disabled) {
+  border-color: var(--color-accent);
+}
+
+.tm-pick-row.on {
+  border-color: var(--color-accent);
+  background: color-mix(in srgb, var(--color-accent) 12%, transparent);
+}
+
+/* Not merely dimmed: the roster is full and this row is the reason you cannot
+   add another, which is worth being able to see at a glance. */
+.tm-pick-row:disabled {
+  opacity: 0.45;
+  cursor: default;
+}
+
+.tm-pick-mark {
+  margin-left: auto;
+  color: var(--color-accent);
+  font-weight: 800;
+}
