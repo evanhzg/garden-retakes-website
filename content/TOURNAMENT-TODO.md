@@ -14,7 +14,34 @@ into those. Keep that split.
 
 ---
 
-## 1. Persistent teams  — the big one
+## 1. Persistent teams — DONE (2026-08-29)
+
+Built as specified. `lib/tournament/teams.ts` holds the rules with 38 tests in
+`tools/tests/teams.test.mts`; `teamStore.ts` is the database half; `/teams` gains
+a standing-teams section above the Blitz ladder it already had, and
+`/teams/<slug>` is the team. `sql/garden-teams.sql` is applied to production.
+
+What is worth knowing that the spec did not say:
+
+- **The captain is a member row**, not just `CaptainSteamId`. Without it every
+  membership query has to special-case the captain and one of them eventually
+  forgets.
+- **Deleting a team keeps its results.** Members go and the pointer on past
+  entries is cleared, so the entry becomes the ad-hoc row it would have been.
+  Deleting the entries would orphan every scoreboard and bracket holding them.
+- **`canActOn` refuses acting on the captain from anybody**, including the
+  captain. Handing the team over is its own action with its own confirmation,
+  never a side effect of a demotion.
+- Entering is idempotent: a team already in a tournament has its roster replaced
+  rather than a second entry created, so changing who plays is one action.
+
+Left undone deliberately: team avatars (the columns exist, nothing uploads to
+them yet) and cross-tournament team STATS. The team page shows a record built
+from the bracket — played, won, titles — but not aggregated player stats. When
+that is added, note `lib/tournament/stats.ts` is rounds-weighted and never a
+mean of means; team stats must match.
+
+## 1b. (original spec, kept for reference)
 
 **Today** a "team" is a row scoped to one tournament (`TournamentTeams`). Five
 players entering three events are three unrelated rows, which is why
