@@ -973,13 +973,37 @@ html[data-motion="off"] .dm-bubble.typing i { animation: none; }
    Portalled to <body>, so the sidebar's transform and overflow cannot clip it.
    ========================================================================= */
 
-.dm-dock {
+/* The row every open conversation sits in.
+   Right-aligned and bottom-anchored, so the first dock opens exactly where the
+   single dock used to and the next ones grow leftwards from it. The row owns
+   the position; a dock only owns its own width. */
+.dm-docks {
   position: fixed;
   right: 16px;
   bottom: 0;
   z-index: 1300;
-  width: 340px;
+  display: flex;
+  align-items: flex-end;
+  gap: 8px;
   max-width: calc(100vw - 32px);
+  pointer-events: none;
+}
+
+/* The docks themselves take the clicks; the gaps between them do not, or the
+   row would be an invisible bar across the bottom of the page swallowing
+   everything underneath it. */
+.dm-docks > * {
+  pointer-events: auto;
+}
+
+.dm-dock {
+  /* Shrinks with its neighbours rather than pushing them off screen: every
+     dock asks for 340px and they divide what there is. min-width is the floor
+     at which a conversation is still a conversation — below it the component
+     switches to .compact and stops pretending to show one. */
+  flex: 1 1 340px;
+  min-width: 200px;
+  max-width: 340px;
   height: 440px;
   max-height: calc(100dvh - var(--social-top, 64px) - 16px);
   display: flex;
@@ -989,6 +1013,38 @@ html[data-motion="off"] .dm-bubble.typing i { animation: none; }
   background: var(--color-surface);
   box-shadow: 0 -6px 32px rgba(0, 0, 0, 0.32);
   animation: dm-rise 0.18s cubic-bezier(0.22, 1, 0.36, 1);
+  transition: width 0.18s cubic-bezier(0.22, 1, 0.36, 1),
+              flex-basis 0.18s cubic-bezier(0.22, 1, 0.36, 1);
+}
+
+/* Squeezed to just the avatar.
+   The alternative was letting flex keep shrinking until the name clipped and
+   the composer had no room for a word — a dock that is 90px wide and still
+   drawing a text box is worse than one that admits it is a tab. */
+.dm-dock.compact {
+  flex: 0 0 auto;
+  width: 56px;
+  min-width: 56px;
+}
+
+.dm-dock.compact .dm-header-info,
+.dm-dock.compact .dm-x {
+  display: none;
+}
+
+.dm-dock.compact .dm-header {
+  justify-content: center;
+  padding: 8px;
+}
+
+/* Waiting, at a glance and without a number to read. The accent is the same
+   one the friends list uses for a row with something unread, so the two say
+   the same thing in the same colour. */
+.dm-dock.compact.has-unread,
+.dm-dock.compact:has(.dm-unread) {
+  border-color: var(--color-accent);
+  box-shadow: 0 -6px 32px rgba(0, 0, 0, 0.32),
+              inset 0 2px 0 var(--color-accent);
 }
 
 @keyframes dm-rise {
@@ -1062,14 +1118,14 @@ html[data-motion="off"] .dm-bubble.typing i { animation: none; }
 /* Below the dock, so a chat and the friends panel do not sit on top of each
    other on a wide screen. */
 @media (min-width: 761px) {
-  .dm-dock {
+  .dm-docks {
     /* Clear of the collapsed rail. */
     right: 68px;
   }
 
-  /* With the panel open the dock steps left rather than hiding behind it. */
-  .friends-sidebar.open ~ .dm-dock,
-  body:has(.friends-sidebar.open) .dm-dock {
+  /* With the panel open the row steps left rather than hiding behind it. */
+  .friends-sidebar.open ~ .dm-docks,
+  body:has(.friends-sidebar.open) .dm-docks {
     right: 348px;
   }
 }
@@ -1078,12 +1134,26 @@ html[data-motion="off"] .dm-bubble.typing i { animation: none; }
 
 @media (max-width: 760px) {
   /* A sheet, not a card: 340px pinned to a corner of a 360px screen is the
-     screen, with an awkward margin. */
-  .dm-dock {
+     screen, with an awkward margin.
+     
+     And a column rather than a row. Side-by-side docks need width a phone does
+     not have — three of them would be three slivers — so on a phone the open
+     conversations stack, the newest at the bottom where the thumb is, and the
+     ones above it are headers until tapped. */
+  .dm-docks {
     right: 0;
     left: 0;
+    max-width: none;
+    flex-direction: column;
+    align-items: stretch;
+    gap: 0;
+  }
+
+  .dm-dock {
     width: 100%;
     max-width: none;
+    min-width: 0;
+    flex: 0 0 auto;
     height: 72dvh;
     border-left: 0;
     border-right: 0;
@@ -1091,6 +1161,25 @@ html[data-motion="off"] .dm-bubble.typing i { animation: none; }
 
   .dm-dock.minimised {
     height: auto;
+  }
+
+  /* No avatar-only mode on a phone: a full-width row already has room for the
+     name, and the reason to shrink — neighbours competing for width — does not
+     exist in a column. */
+  .dm-dock.compact {
+    width: 100%;
+    min-width: 0;
+    flex: 0 0 auto;
+  }
+
+  .dm-dock.compact .dm-header-info,
+  .dm-dock.compact .dm-x {
+    display: flex;
+  }
+
+  .dm-dock.compact .dm-header {
+    justify-content: flex-start;
+    padding: 10px 12px;
   }
 
   /* The composer has to clear the home indicator or the send button is under

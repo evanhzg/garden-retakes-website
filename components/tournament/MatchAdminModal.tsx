@@ -86,6 +86,7 @@ export default function MatchAdminModal({
             teamB={teamB}
             state={state}
             adminKey={adminKey}
+            onDone={onClose}
           />
 
           {/* The console below the buttons, not instead of them. The buttons

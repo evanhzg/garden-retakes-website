@@ -25,9 +25,20 @@ type Props = {
   adminKey?: string;
   /** The series, for the hover bubble on the header. */
   preview?: MatchPreview | null;
+  /**
+   * Called when the panel has done the thing it was opened for.
+   *
+   * Only awarding the match uses it. Every other control here is something an
+   * admin does DURING a match and then keeps watching — closing the panel after
+   * a side swap or a score correction would take away the console line that
+   * says whether it worked. Awarding the win is the end of the match, so
+   * leaving the panel open over a finished game is just something else to
+   * dismiss.
+   */
+  onDone?: () => void;
 };
 
-export default function MatchAdmin({ matchId, matchKey, teamA, teamB, state, adminKey, preview }: Props) {
+export default function MatchAdmin({ matchId, matchKey, teamA, teamB, state, adminKey, preview, onDone }: Props) {
   const { t } = useI18n();
   const [log, setLog] = useState<string[]>([]);
   const [busy, setBusy] = useState(false);
@@ -62,13 +73,31 @@ export default function MatchAdmin({ matchId, matchKey, teamA, teamB, state, adm
         // Newest first: the answer you are waiting for is the one you just
         // caused, and scrolling to find it is exactly wrong under pressure.
         setLog((l) => [`${label} → ${String(line).trim()}`, ...l].slice(0, 40));
+        return data as { ok?: boolean };
       } catch (err) {
         setLog((l) => [`${label} → ${String(err)}`, ...l].slice(0, 40));
+        return null;
       } finally {
         setBusy(false);
       }
     },
     [adminKey],
+  );
+
+  /**
+   * Awards the match, then closes the panel.
+   *
+   * Closes only on success. A refusal — no such match, already ended, the
+   * plugin unreachable — is exactly when the admin needs to still be looking at
+   * the console line that says so, and a panel that vanishes on failure reads
+   * as "done" for something that did not happen.
+   */
+  const award = useCallback(
+    async (winner: "a" | "b") => {
+      const data = await send({ action: "end", matchId, winner }, `end ${winner}`);
+      if (data?.ok) onDone?.();
+    },
+    [send, matchId, onDone],
   );
 
   const rcon = (command: string, label = command) =>
@@ -340,10 +369,10 @@ export default function MatchAdmin({ matchId, matchKey, teamA, teamB, state, adm
             and the case this is most needed in — a game server that restarted
             and lost it — is exactly the one where it silently does nothing. The
             website ends the match and tells the server afterwards. */}
-        <button className="btn" disabled={busy} onClick={() => send({ action: "end", matchId, winner: "a" }, "end a")}>
+        <button className="btn" disabled={busy} onClick={() => award("a")}>
           {t("matchAdmin.awardTo", { team: teamA })}
         </button>
-        <button className="btn" disabled={busy} onClick={() => send({ action: "end", matchId, winner: "b" }, "end b")}>
+        <button className="btn" disabled={busy} onClick={() => award("b")}>
           {t("matchAdmin.awardTo", { team: teamB })}
         </button>
         <span className="ma-note">{t("matchAdmin.awardNote")}</span>

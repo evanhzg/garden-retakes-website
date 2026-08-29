@@ -8,9 +8,19 @@ import { useRouter } from "next/navigation";
 import PlayerBubble from "./PlayerBubble";
 import AvatarImage from "@/components/AvatarImage";
 import AvatarStatus from "@/components/social/AvatarStatus";
+import ChatDock from "./ChatDock";
 import { useToast } from "@/components/Toast";
 import { MessageSquare, UserPlus, Gamepad2, Eye, Users, Mail, Send, X } from "lucide-react";
 import { useI18n } from "@/components/I18nProvider";
+import {
+  MessageBody,
+  RECONCILE_MS,
+  dayLabel,
+  mergeMessages,
+  sameDay,
+  timeLabel,
+  type Message,
+} from "./chatShared";
 import "./social.css";
 
 type Friend = {
@@ -36,61 +46,22 @@ type DmThread = {
   isAdmin?: boolean;
 };
 
-type Message = {
-  id: number | string;
-  from: string;
-  to?: string;
-  content: string;
-  ts: number;
-  isAdmin?: boolean;
-  /** Set on a message we have drawn but not yet had confirmed by the server. */
-  pending?: boolean;
-};
+/**
+ * How many conversations may be docked at once.
+ *
+ * Four is where a row of them stops being a row and starts being a second
+ * taskbar. Opening a fifth drops the oldest window — never its unread count.
+ */
+const MAX_DOCKS = 4;
 
 /**
- * A slow reconciliation, not a live feed.
+ * Above this many, a dock is too narrow for a name and shows only the avatar.
  *
- * Delivery is the socket relay's job. This exists only so a thread that was
- * open while the socket was down catches up, and it is deliberately far too
- * slow to be the thing anyone notices working. The previous one-second poll was
- * doing the delivering, which is why messages arrived with a visible lag and
- * the tab issued 3,600 requests an hour per open conversation.
+ * Two full conversations side by side are still readable; three are not, and a
+ * dock that keeps its name at the cost of clipping every message is worse than
+ * one that admits it has no room.
  */
-const RECONCILE_MS = 30_000;
-/** How long a "typing" indicator survives without another keystroke. */
-const TYPING_TTL_MS = 4_000;
-const TYPING_PING_MS = 2_000;
-
-const sameDay = (a: number, b: number) => {
-  const x = new Date(a);
-  const y = new Date(b);
-  return x.getFullYear() === y.getFullYear() && x.getMonth() === y.getMonth() && x.getDate() === y.getDate();
-};
-
-const dayLabel = (ts: number) => {
-  const now = new Date();
-  const then = new Date(ts);
-  if (sameDay(ts, now.getTime())) return "Today";
-  const yesterday = new Date(now);
-  yesterday.setDate(now.getDate() - 1);
-  if (sameDay(ts, yesterday.getTime())) return "Yesterday";
-  return then.toLocaleDateString(undefined, { day: "numeric", month: "short" });
-};
-
-const timeLabel = (ts: number) =>
-  new Date(ts).toLocaleTimeString(undefined, { hour: "2-digit", minute: "2-digit" });
-
-/** Newest-first by time, then by id, so an optimistic line settles in place. */
-const mergeMessages = (a: Message[], b: Message[]): Message[] => {
-  const byId = new Map<string, Message>();
-  for (const m of [...a, ...b]) {
-    const key = String(m.id);
-    const existing = byId.get(key);
-    // A confirmed message always beats the optimistic copy of itself.
-    if (!existing || existing.pending) byId.set(key, m);
-  }
-  return Array.from(byId.values()).sort((x, y) => x.ts - y.ts);
-};
+const COMPACT_ABOVE = 2;
 
 export default function FriendsSidebar() {
   const { t } = useI18n();
@@ -211,57 +182,31 @@ export default function FriendsSidebar() {
   // MESSAGES went with the Chat tab: those conversations are in the friends
   // list now, under their own headings.
   const [activeTab, setActiveTab] = useState<"FRIENDS" | "MAIL">("FRIENDS");
-  const [messages, setMessages] = useState<Message[]>([]);
-  const [activeDmUser, setActiveDmUser] = useState<string | null>(null);
-  const [dmInput, setDmInput] = useState("");
-  /** Collapsed to its header, like every chat dock people already use. */
-  const [dockMinimised, setDockMinimised] = useState(false);
+  /**
+   * Every conversation that is open, oldest first.
+   *
+   * This was a single `activeDmUser`, which is why opening a second
+   * conversation silently threw away the first. Each id here is a dock, each
+   * dock owns its own messages, and the row they sit in shares the width
+   * between them — see MAX_DOCKS and `compact` below.
+   */
+  const [openChats, setOpenChats] = useState<string[]>([]);
   const dockRef = useRef<HTMLDivElement>(null);
-  /** Mirror for the socket handler, which closes over its first render. */
-  const dockMinimisedRef = useRef(false);
-  const [typingFrom, setTypingFrom] = useState<string | null>(null);
-  /** friendId -> unread count, cleared when that thread is opened. */
+  /** friendId -> unread count, cleared when that thread is visible. */
   const [unread, setUnread] = useState<Record<string, number>>({});
-
-  useEffect(() => {
-    dockMinimisedRef.current = dockMinimised;
-  }, [dockMinimised]);
+  /** Mirror for the socket handler, which closes over its first render. */
+  const openChatsRef = useRef<string[]>([]);
+  openChatsRef.current = openChats;
 
   /**
-   * A click outside the dock folds it away.
+   * A click outside the docks closes nothing.
    *
-   * Minimised rather than closed, and the distinction matters: closing loses
-   * the thread and you have to find the person again, whereas folding leaves
-   * the header in the corner with a count of whatever arrived while you were
-   * elsewhere. Closing is what the X is for, and it is right there.
-   *
-   * The friends panel is exempt — clicking a different conversation in the list
-   * is the most obvious next thing to do, and folding the dock on the way would
-   * fight it.
+   * It used to fold the one open conversation away, which made sense when
+   * there was one and it filled the corner. With a row of them, folding the
+   * lot because somebody clicked the page is a lot of state to lose to a
+   * stray click — and each dock already has its own header to fold it and its
+   * own X to close it.
    */
-  useEffect(() => {
-    if (!activeDmUser || dockMinimised) return;
-
-    const onDown = (event: PointerEvent) => {
-      const target = event.target as HTMLElement | null;
-      if (!target) return;
-      if (dockRef.current?.contains(target)) return;
-      if (target.closest?.(".friends-sidebar, .friends-rail, .friends-fab, .player-bubble")) return;
-
-      setDockMinimised(true);
-    };
-
-    document.addEventListener("pointerdown", onDown, true);
-    return () => document.removeEventListener("pointerdown", onDown, true);
-  }, [activeDmUser, dockMinimised]);
-
-  const logRef = useRef<HTMLDivElement>(null);
-  const lastTypingSent = useRef(0);
-  const typingTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
-  // Read inside socket handlers, which are registered once — a ref keeps them
-  // seeing the current thread without re-subscribing on every open/close.
-  const activeDmRef = useRef<string | null>(null);
-  activeDmRef.current = activeDmUser;
 
   const online = useCallback((id: string) => onlineUsers.includes(id), [onlineUsers]);
 
@@ -271,22 +216,6 @@ export default function FriendsSidebar() {
   );
 
   // ---------- data ----------
-
-  const fetchMessages = useCallback(async (targetId: string) => {
-    if (!steamId) return;
-    try {
-      const res = await fetch(`/api/messages?targetId=${targetId}`, {
-        headers: { Authorization: `Bearer ${steamId}` },
-      });
-      if (!res.ok) return;
-      const data: Message[] = await res.json();
-      // Merged rather than replaced: a replace would drop an optimistic line
-      // sent between the request going out and the response coming back.
-      setMessages((prev) => mergeMessages(prev, data));
-    } catch {
-      /* the reconcile is best-effort by design */
-    }
-  }, [steamId]);
 
   const fetchFriends = useCallback(async () => {
     if (!steamId) return;
@@ -303,64 +232,28 @@ export default function FriendsSidebar() {
 
   useEffect(() => { fetchFriends(); }, [fetchFriends]);
 
-  // Opening a thread loads it once; after that the socket delivers.
-  useEffect(() => {
-    if (!activeDmUser) return;
-    setMessages([]);
-    fetchMessages(activeDmUser);
-    setUnread((u) => ({ ...u, [activeDmUser]: 0 }));
-    const interval = setInterval(() => fetchMessages(activeDmUser), RECONCILE_MS);
-    return () => clearInterval(interval);
-  }, [activeDmUser, fetchMessages]);
-
   // ---------- sockets ----------
 
   useEffect(() => {
     if (!socket) return;
 
+    /**
+     * Counting only. Each dock listens for its own conversation and merges the
+     * message itself, so the panel's job here is the badge — including for
+     * threads with no dock open at all, which is the case a dock cannot cover.
+     *
+     * Incremented unconditionally, then cleared by the dock the moment it is
+     * actually visible. That is what makes a folded or squeezed-down dock keep
+     * counting: the old version treated "this thread is open" as "somebody is
+     * reading it", so a minimised dock could never show a number.
+     */
     const onNewMessage = (msg: any) => {
       if (msg?.type !== "dm" && msg?.type !== "direct") return;
       const from = String(msg.from);
-      const to = msg.to ? String(msg.to) : undefined;
-      const incoming: Message = {
-        id: msg.id ?? `${from}-${msg.ts ?? Date.now()}`,
-        from,
-        to,
-        content: String(msg.content ?? ""),
-        ts: Number(msg.ts) || Date.now(),
-      };
-
-      // My own message, echoed back so my other tabs catch up. The tab that
-      // sent it already has the line under the same id, so merging is a no-op
-      // there and a real append everywhere else. Never unread: I wrote it.
-      if (steamId && from === steamId) {
-        if (activeDmRef.current && to === activeDmRef.current) {
-          setMessages((prev) => mergeMessages(prev, [incoming]));
-        }
-        return;
-      }
-
-      if (activeDmRef.current && from === activeDmRef.current) {
-        setMessages((prev) => mergeMessages(prev, [incoming]));
-        setTypingFrom((who) => (who === from ? null : who));
-
-        // Open but folded away is not read. Without this the badge on a
-        // minimised dock could never count anything, because the thread being
-        // "active" was taken to mean somebody was looking at it.
-        if (dockMinimisedRef.current) {
-          setUnread((u) => ({ ...u, [from]: (u[from] ?? 0) + 1 }));
-        }
-        return;
-      }
-      // Not the open thread: count it so the tab and the row can say so.
+      // My own message, echoed back so my other tabs catch up. Never unread: I
+      // wrote it.
+      if (steamId && from === steamId) return;
       setUnread((u) => ({ ...u, [from]: (u[from] ?? 0) + 1 }));
-    };
-
-    const onTyping = ({ from }: { from: string }) => {
-      if (!activeDmRef.current || String(from) !== activeDmRef.current) return;
-      setTypingFrom(String(from));
-      if (typingTimer.current) clearTimeout(typingTimer.current);
-      typingTimer.current = setTimeout(() => setTypingFrom(null), TYPING_TTL_MS);
     };
 
     const onSync = (users: string[]) => setOnlineUsers(users.map(String));
@@ -373,7 +266,6 @@ export default function FriendsSidebar() {
     };
 
     socket.on("new_message", onNewMessage);
-    socket.on("dm_typing", onTyping);
     socket.on("online_friends_sync", onSync);
     socket.on("user_online", onUserOnline);
     socket.on("user_offline", onUserOffline);
@@ -382,85 +274,46 @@ export default function FriendsSidebar() {
 
     return () => {
       socket.off("new_message", onNewMessage);
-      socket.off("dm_typing", onTyping);
       socket.off("online_friends_sync", onSync);
       socket.off("user_online", onUserOnline);
       socket.off("user_offline", onUserOffline);
       socket.off("notification", onNotification);
-      if (typingTimer.current) clearTimeout(typingTimer.current);
     };
     // steamId is read inside onNewMessage to recognise my own echo, so the
     // handler has to be rebuilt when it arrives — without it the first render
     // captures undefined and every echo is treated as somebody else's message.
   }, [socket, fetchFriends, steamId]);
 
-  // Stick to the newest line.
-  useEffect(() => {
-    const el = logRef.current;
-    if (el) el.scrollTop = el.scrollHeight;
-  }, [messages.length, typingFrom]);
-
   // ---------- actions ----------
 
+  /**
+   * Opens a conversation without closing the ones already open.
+   *
+   * Re-opening a thread that is already docked is deliberately a no-op on the
+   * list — it keeps its place in the row rather than jumping to the end, so
+   * clicking a name in the friends panel never rearranges what you were
+   * reading. Oldest stays leftmost.
+   *
+   * Past MAX_DOCKS the oldest is dropped. Its unread count is not: closing a
+   * dock loses the window, never the fact that somebody is waiting.
+   */
   const openThread = (friendId: string) => {
-    setActiveDmUser(friendId);
-    // No longer switches tabs. The dock is its own surface, so opening a chat
-    // from the friends list should not also throw away the list you were
-    // reading — which is what jumping to MESSAGES did.
-    setDockMinimised(false);
+    setOpenChats((prev) => {
+      if (prev.includes(friendId)) return prev;
+      const next = [...prev, friendId];
+      return next.length > MAX_DOCKS ? next.slice(next.length - MAX_DOCKS) : next;
+    });
     setUnread((u) => ({ ...u, [friendId]: 0 }));
   };
 
-  const sendDm = async (e: React.FormEvent) => {
-    e.preventDefault();
-    const content = dmInput.trim();
-    if (!content || !activeDmUser || !steamId) return;
-    setDmInput("");
+  const closeThread = (friendId: string) =>
+    setOpenChats((prev) => prev.filter((id) => id !== friendId));
 
-    if (content.startsWith("/invite")) {
-      inviteFriend(activeDmUser);
-      return;
-    }
-
-    // Drawn immediately under a temporary id, then reconciled with the row the
-    // server actually wrote. Both copies carry the same id after that, so the
-    // merge collapses them instead of showing the line twice — which is what
-    // the old optimistic-plus-poll pair did.
-    const tempId = `pending-${Date.now()}`;
-    const optimistic: Message = { id: tempId, from: steamId, to: activeDmUser, content, ts: Date.now(), pending: true };
-    setMessages((prev) => mergeMessages(prev, [optimistic]));
-
-    try {
-      const res = await fetch("/api/messages", {
-        method: "POST",
-        headers: { "Content-Type": "application/json", Authorization: `Bearer ${steamId}` },
-        body: JSON.stringify({ targetSteamId: activeDmUser, content }),
-      });
-      if (!res.ok) throw new Error("send failed");
-      const data = await res.json();
-      const id = data?.message?.Id ?? tempId;
-      const ts = data?.message?.CreatedAtUtc ? new Date(data.message.CreatedAtUtc).getTime() : optimistic.ts;
-
-      setMessages((prev) =>
-        prev.map((m) => (m.id === tempId ? { ...m, id, ts, pending: false } : m))
-      );
-      socket?.emit("send_message", { type: "dm", targetSteamId: activeDmUser, content, id, ts });
-    } catch {
-      setMessages((prev) => prev.filter((m) => m.id !== tempId));
-      setDmInput(content);
-      toast("Message not sent — try again.", "error");
-    }
-  };
-
-  const onDmInput = (value: string) => {
-    setDmInput(value);
-    if (!socket || !activeDmUser) return;
-    const now = Date.now();
-    // Throttled: a keystroke is not an event worth a packet.
-    if (now - lastTypingSent.current < TYPING_PING_MS) return;
-    lastTypingSent.current = now;
-    socket.emit("dm_typing", { targetSteamId: activeDmUser });
-  };
+  const markRead = useCallback(
+    (friendId: string) =>
+      setUnread((u) => (u[friendId] ? { ...u, [friendId]: 0 } : u)),
+    [],
+  );
 
   const handleAddFriend = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -685,7 +538,6 @@ export default function FriendsSidebar() {
 
   if (!isConnected) return null;
 
-  const activeFriend = activeDmUser ? friends.find((f) => f.friendId === activeDmUser) : undefined;
 
   const renderFriendRow = (f: Friend, isOnline: boolean) => (
     <div
@@ -847,152 +699,45 @@ export default function FriendsSidebar() {
       </div>
 
 
-      {/* The chat is a dock, not a panel view.
-          It used to live inside the sidebar, which meant reading a message
+      {/* The chats are docks, not a panel view.
+          They used to live inside the sidebar, which meant reading a message
           required the whole 330px panel open over the page, and closing the
-          panel to get on with something closed the conversation with it. As a
-          card anchored to the corner it behaves the way every chat people
+          panel to get on with something closed the conversation with it. As
+          cards anchored to the corner they behave the way every chat people
           already use behaves: independent of whatever else is open, and small
-          enough to leave the page usable behind it.
+          enough to leave the page usable behind them.
+
+          A ROW of them, sharing the width. Opening a second conversation used
+          to replace the first, so there was never more than one and the one
+          you had was lost without warning. Now each takes an equal share of
+          the row and they get narrower together; past the point where a name
+          would fit, `compact` drops them to just the avatar rather than
+          letting the layout squash the text into nothing.
 
           Portalled to <body> so the sidebar's transform and overflow cannot
-          clip or move it. */}
-      {activeDmUser && typeof document !== "undefined" && createPortal(
-        <div className={`dm-dock ${dockMinimised ? "minimised" : ""}`} ref={dockRef}>
-                <div className="dm-view">
-                  {/* The whole header toggles the dock, the way every chat
-                      card people already use behaves — but the two buttons
-                      inside it stop the click, or closing a conversation would
-                      also collapse the one underneath it. */}
-                  <div
-                    className="dm-header"
-                    role="button"
-                    tabIndex={0}
-                    onClick={() => {
-                      setDockMinimised((v) => {
-                        // Opening it back up clears what accumulated.
-                        if (v && activeDmUser) setUnread((u) => ({ ...u, [activeDmUser]: 0 }));
-                        return !v;
-                      });
-                    }}
-                    onKeyDown={(e) => {
-                      if (e.key === "Enter" || e.key === " ") {
-                        e.preventDefault();
-                        setDockMinimised((v) => {
-                          if (v && activeDmUser) setUnread((u) => ({ ...u, [activeDmUser]: 0 }));
-                          return !v;
-                        });
-                      }
-                    }}
-                  >
-                    <span className="dm-header-avatar">
-                      <AvatarImage steamId={activeDmUser} src={activeFriend?.avatarUrl} alt="" />
-                      <i className={`status-dot ${online(activeDmUser) ? "online" : "offline"}`} />
-                    </span>
-                    <div className="dm-header-info">
-                      <span className="dm-header-name">{activeFriend?.name ?? activeDmUser}</span>
-                      <span className={`dm-header-status ${online(activeDmUser) ? "on" : ""}`}>
-                        {typingFrom === activeDmUser
-                          ? "typing…"
-                          : online(activeDmUser)
-                            ? "Online"
-                            : "Offline"}
-                      </span>
-                    </div>
-
-                    {/* What arrived while it was folded away. The whole point
-                        of minimising rather than closing is that the corner
-                        keeps counting. */}
-                    {dockMinimised && (unread[activeDmUser] ?? 0) > 0 && (
-                      <span className="dm-unread">{unread[activeDmUser]}</span>
-                    )}
-
-                    <button
-                      className="dm-x"
-                      aria-label={t("commands.close")}
-                      onClick={(e) => {
-                        e.stopPropagation();
-                        setActiveDmUser(null);
-                      }}
-                    >
-                      <X size={16} />
-                    </button>
-                  </div>
-
-                  {/* Everything below the header folds.
-                      `height: auto` on the card could not animate — the CSS
-                      transitioned a value the browser will not interpolate, so
-                      the dock snapped shut. Framer measures the content and
-                      animates the real height, which is the whole difference
-                      between folding and vanishing.
-
-                      The composer goes with it, which is what makes a collapsed
-                      dock a title bar: a text box you cannot see the
-                      conversation above is an invitation to type into nothing. */}
-                  <AnimatePresence initial={false}>
-                    {!dockMinimised && (
-                      <motion.div
-                        className="dm-body"
-                        initial={{ height: 0, opacity: 0 }}
-                        animate={{ height: "auto", opacity: 1 }}
-                        exit={{ height: 0, opacity: 0 }}
-                        transition={{ duration: 0.22, ease: [0.22, 1, 0.36, 1] }}
-                      >
-                  <div className="dm-messages" ref={logRef}>
-                    {messages.length === 0 && <div className="dm-empty">No messages yet. Say hi.</div>}
-                    {messages.map((m, i) => {
-                      const mine = m.from === steamId;
-                      const prev = messages[i - 1];
-                      const newDay = !prev || !sameDay(prev.ts, m.ts);
-                      // A run from one person inside a couple of minutes is one
-                      // block: repeating the avatar and the clock on every line
-                      // turns a short exchange into a wall of chrome.
-                      const grouped = !newDay && prev && prev.from === m.from && m.ts - prev.ts < 120_000;
-                      return (
-                        <React.Fragment key={m.id}>
-                          {newDay && <div className="dm-day">{dayLabel(m.ts)}</div>}
-                          <div
-                            className={[
-                              "dm-msg",
-                              mine ? "own" : "other",
-                              m.isAdmin ? "staff" : "",
-                              grouped ? "grouped" : "",
-                              m.pending ? "pending" : "",
-                            ].filter(Boolean).join(" ")}
-                          >
-                            <div className="dm-bubble">
-                              <MessageBody content={m.content} />
-                            </div>
-                            {!grouped && <time className="dm-time">{timeLabel(m.ts)}</time>}
-                          </div>
-                        </React.Fragment>
-                      );
-                    })}
-                    {typingFrom === activeDmUser && (
-                      <div className="dm-msg other">
-                        <div className="dm-bubble typing">
-                          <i /><i /><i />
-                        </div>
-                      </div>
-                    )}
-                  </div>
-    
-                  <form onSubmit={sendDm} className="dm-input">
-                    <input
-                      type="text"
-                      value={dmInput}
-                      onChange={(e) => onDmInput(e.target.value)}
-                      placeholder="Message, or /invite"
-                      maxLength={2000}
-                    />
-                    <button type="submit" disabled={!dmInput.trim()} aria-label="Send">
-                      <Send size={16} />
-                    </button>
-                  </form>
-                      </motion.div>
-                    )}
-                  </AnimatePresence>
-                </div>
+          clip or move them. */}
+      {openChats.length > 0 && typeof document !== "undefined" && createPortal(
+        <div className="dm-docks" ref={dockRef}>
+          {openChats.map((id) => {
+            const friend = friends.find((f) => f.friendId === id);
+            return (
+              <ChatDock
+                key={id}
+                friendId={id}
+                name={friend?.name ?? id}
+                avatarUrl={friend?.avatarUrl}
+                isOnline={online(id)}
+                steamId={steamId ?? null}
+                socket={socket}
+                unread={unread[id] ?? 0}
+                onRead={() => markRead(id)}
+                onClose={() => closeThread(id)}
+                compact={openChats.length > COMPACT_ABOVE}
+                onInvite={inviteFriend}
+                onError={(m) => toast(m, "error")}
+              />
+            );
+          })}
         </div>,
         document.body,
       )}
@@ -1284,28 +1029,3 @@ export default function FriendsSidebar() {
  * ending in .mp4 — including one pasted by someone you had just met. It now
  * only previews links from this site, and shows the rest as plain text.
  */
-function MessageBody({ content }: { content: string }) {
-  const clip = useMemo(() => {
-    const match = content.match(/https?:\/\/[^\s]+/);
-    if (!match) return null;
-    try {
-      const url = new URL(match[0]);
-      const local =
-        typeof window !== "undefined" && url.host === window.location.host;
-      if (!local) return null;
-      if (!/\.mp4$/i.test(url.pathname) && !/\/clips?\//.test(url.pathname)) return null;
-      return url.toString();
-    } catch {
-      return null;
-    }
-  }, [content]);
-
-  if (!clip) return <>{content}</>;
-
-  return (
-    <>
-      <span>{content}</span>
-      <video src={clip} controls preload="metadata" className="dm-clip" />
-    </>
-  );
-}
