@@ -5,6 +5,8 @@ import { getActiveSeason, prisma } from "@/lib/db";
 import { getSession } from "@/lib/auth";
 import { dayKey, fetchRows, groupBy, ratingClass, sideName, summarize, formatDate, formatPlaytime } from "@/lib/stats";
 import AvatarImage from "@/components/AvatarImage";
+import DemoProfile from "@/components/tournament/DemoProfile";
+import { isDemoMode } from "@/lib/demoMode";
 import ProfileActivity from "@/components/ProfileActivity";
 import ProfileStats from "@/components/profile/ProfileStats";
 import ProfileHero from "@/components/profile/ProfileHero";
@@ -85,6 +87,15 @@ export default async function PlayerPage({
   searchParams: { season?: string; ranked?: string };
 }) {
     const t = getT();
+
+  // In a demo, this page is four things: tournament figures, where they have
+  // been, who they play with, and what they play. The full profile below is
+  // mostly the retakes ladder — ELO, per-map splits, minigame scores, playtime —
+  // which is a demo about the wrong product. Returned before any of that work
+  // is done rather than hidden after it.
+  if (await isDemoMode()) {
+    return <DemoProfile steamId={params.steamId} />;
+  }
 
   const steamId = BigInt(params.steamId);
   const activeSeason = await getActiveSeason();

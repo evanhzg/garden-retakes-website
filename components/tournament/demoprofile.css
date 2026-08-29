@@ -1,0 +1,93 @@
+/* The player page, as a demo shows it: four things, and nothing else. */
+
+.dp-head {
+  display: flex;
+  align-items: center;
+  gap: var(--space-4);
+}
+
+.dp-face {
+  width: 64px;
+  height: 64px;
+  flex: none;
+  object-fit: cover;
+  border: 1px solid var(--color-divider);
+}
+
+.dp-id {
+  min-width: 0;
+}
+
+.dp-id h1 {
+  margin: 0;
+  font-size: 22px;
+}
+
+.dp-id p {
+  margin: 2px 0 0;
+  font-size: 12.5px;
+}
+
+.dp-stats {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(min(100%, 110px), 1fr));
+  gap: var(--space-4);
+}
+
+.dp-stats dt {
+  font-size: 9.5px;
+  font-weight: 800;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  color: var(--color-text-muted);
+}
+
+.dp-stats dd {
+  margin: 3px 0 0;
+  font-size: 24px;
+  font-weight: 800;
+  font-variant-numeric: tabular-nums;
+}
+
+.dp-lead {
+  color: var(--color-accent);
+}
+
+.dp-roles {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(min(100%, 220px), 1fr));
+  gap: var(--space-4);
+}
+
+.dp-role-col h3 {
+  margin: 0 0 6px;
+  font-size: 10px;
+  font-weight: 800;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  color: var(--color-text-muted);
+}
+
+.dp-role-col ul {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: grid;
+  gap: 4px;
+}
+
+.dp-role-col li {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 6px 9px;
+  border: 1px solid var(--color-divider);
+  font-size: 12.5px;
+}
+
+/* The count sits at the end: it is how OFTEN, which is the point of the list —
+   a role played once is not a preference. */
+.dp-role-col li .num {
+  margin-left: auto;
+  font-variant-numeric: tabular-nums;
+}
