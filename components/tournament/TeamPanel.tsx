@@ -37,6 +37,8 @@ export default function TeamPanel({
   ready,
   /** Highlights the whole panel — whose turn it is in the veto or the draft. */
   active = false,
+  /** Whoever is reading, so they can find themselves on the roster. */
+  mySteamId = null,
 }: {
   name: string;
   tag?: string | null;
@@ -47,6 +49,7 @@ export default function TeamPanel({
   /** Ready-up state, before anything has started. Undefined hides the tag. */
   ready?: boolean;
   active?: boolean;
+  mySteamId?: string | null;
 }) {
   const { t } = useI18n();
 
@@ -74,7 +77,9 @@ export default function TeamPanel({
           {players.map((p) => (
             <li
               key={p.steamId}
-              className={`tp-player ${p.onClock ? "clock" : ""} ${p.picked === false ? "waiting" : ""}`}
+              className={`tp-player ${p.onClock ? "clock" : ""} ${p.picked === false ? "waiting" : ""} ${
+                mySteamId && p.steamId === mySteamId ? "me" : ""
+              }`}
             >
               <a className="tp-player-name" href={`/players/${p.steamId}`}>
                 {p.name}

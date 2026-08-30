@@ -242,6 +242,7 @@ export default function MatchStage({
         tag={teamA.tag}
         side="left"
         players={panelFor("A")}
+        mySteamId={mySteamId}
         active={activeSlot === "A"}
         score={stage === "match" ? initialBoard.scoreA : undefined}
         ready={stage === "veto" && !veto?.started ? veto?.readyA : undefined}
@@ -323,6 +324,7 @@ export default function MatchStage({
         tag={teamB.tag}
         side="right"
         players={panelFor("B")}
+        mySteamId={mySteamId}
         active={activeSlot === "B"}
         score={stage === "match" ? initialBoard.scoreB : undefined}
         ready={stage === "veto" && !veto?.started ? veto?.readyB : undefined}

@@ -682,3 +682,119 @@ async function retract(matchId: number): Promise<void> {
     });
   }
 }
+
+/**
+ * Moves a match to another server, keeping everything it had.
+ *
+ * Built out of the recovery path rather than beside it. The work is identical
+ * to what `startMatch` already does for a match whose server restarted under
+ * it: put the live map back to pending, remember the score, take the target
+ * server, run the start, put the score back. Writing a second version of that
+ * would be a second set of bugs about the same six steps.
+ *
+ * The Blitz Tier is carried too, and this is the only place the site can get
+ * it: the ladder lives in the plugin's memory and dies with the match on the
+ * old box. What the site does have is the round feed, whose round rows carry
+ * both sides' tier — so the last round played is the record, and it is replayed
+ * onto the new server. A move that reset both teams to the pistol rung would
+ * hand somebody a free reset by asking an admin for a server change.
+ *
+ * Returns the reason it could not happen rather than throwing, because every
+ * caller here is an admin action that wants to say why on screen.
+ */
+export async function moveMatchToServer(
+  matchId: number,
+  targetServerId: number,
+): Promise<{ ok: boolean; error?: string }> {
+  const match = await prisma.tournamentMatch.findUnique({
+    where: { Id: matchId },
+    select: { Id: true, ServerId: true, State: true, Maps: { select: { Id: true, State: true, ScoreA: true, ScoreB: true } } },
+  });
+
+  if (!match) return { ok: false, error: "No such match." };
+  if (match.ServerId === targetServerId) return { ok: false, error: "The match is already on that server." };
+
+  // Taken before anything is torn down. Losing the race here means the match
+  // stays exactly where it is, which is the outcome worth having when two
+  // admins press the button at the same moment.
+  const taken = await prisma.gameServer.updateMany({
+    where: { Id: targetServerId, Status: "idle", CurrentMatchId: null },
+    data: { Status: "busy", CurrentMatchId: matchId },
+  });
+
+  if (taken.count !== 1) {
+    return { ok: false, error: "That server is busy — pick one that is not running a match." };
+  }
+
+  // The tier the ladder had reached, from the last round the feed recorded.
+  const lastRound = await prisma.tournamentKill.findFirst({
+    where: { MatchId: matchId, Kind: "round", TierA: { not: null } },
+    orderBy: { Id: "desc" },
+    select: { TierA: true, TierB: true },
+  });
+
+  const oldServerId = match.ServerId;
+
+  // Tell the old box to stop before the new one starts, so two servers are
+  // never both holding a live roster for one match. Best effort: a server that
+  // has already gone away is exactly the case a move is being used for.
+  if (oldServerId) {
+    try {
+      await execOnServer(oldServerId, "css_t_reset");
+    } catch {
+      // Unreachable, which is fine — it is being abandoned either way.
+    }
+    await releaseServer(oldServerId);
+  }
+
+  const live = match.Maps.find((m) => m.State === "live");
+  if (live) {
+    await prisma.tournamentMatchMap.update({ where: { Id: live.Id }, data: { State: "pending" } });
+  }
+
+  await prisma.tournamentMatch.update({
+    where: { Id: matchId },
+    data: { ServerId: targetServerId, PendingServerId: null, State: "ready" },
+  });
+
+  const started = await startMatch(matchId);
+  if (!started.ok) {
+    return { ok: false, error: started.error ?? "The match could not be started on that server." };
+  }
+
+  // After the start, because going live is what resets both of them on the
+  // plugin's side — putting them back first would be putting them back before
+  // they were cleared.
+  if (lastRound?.TierA && lastRound.TierB) {
+    try {
+      await execOnServer(targetServerId, `css_tier a ${lastRound.TierA}`);
+      await execOnServer(targetServerId, `css_tier b ${lastRound.TierB}`);
+    } catch {
+      // The score and the roster are the load-bearing part; a tier that did not
+      // land is a round played on the wrong rung, not a broken match.
+    }
+  }
+
+  return { ok: true };
+}
+
+/**
+ * Carries out a move that was waiting for the round to end.
+ *
+ * Called from the ingest when the plugin reports a round, which is the only
+ * moment the site knows a round has finished. Silent when nothing is pending,
+ * which is almost every round.
+ */
+export async function applyPendingServerMove(matchId: number): Promise<void> {
+  const match = await prisma.tournamentMatch.findUnique({
+    where: { Id: matchId },
+    select: { PendingServerId: true },
+  });
+
+  if (!match?.PendingServerId) return;
+
+  const target = match.PendingServerId;
+  await prisma.tournamentMatch.update({ where: { Id: matchId }, data: { PendingServerId: null } });
+  await moveMatchToServer(matchId, target);
+}
+

@@ -3016,5 +3016,21 @@
   "servers.sinkHint": "Add this to the server's autoexec so its output survives a restart:",
   "servers.searchPlayers": "Search players — a name, a SteamID, or a regex",
   "servers.pickHint": "Click once for side A, again for side B, again to remove.",
-  "servers.sides": "A: {a} · B: {b}"
+  "servers.sides": "A: {a} · B: {b}",
+  "matchAdmin.copyId": "Copy the match id",
+  "matchAdmin.tier": "Blitz Tier",
+  "matchAdmin.tierN.1": "Tier 1 — Low",
+  "matchAdmin.tierN.2": "Tier 2 — Mid",
+  "matchAdmin.tierN.3": "Tier 3 — High",
+  "matchAdmin.pickPlayer": "Pick a player…",
+  "matchAdmin.map": "Map",
+  "matchAdmin.pickMap": "Change the map…",
+  "matchAdmin.mapResets": "Changing {map} resets its score to 0-0.",
+  "matchAdmin.mapNoLive": "No map is being played, so nothing is reset.",
+  "matchAdmin.server": "Server",
+  "matchAdmin.noServer": "No server",
+  "matchAdmin.serverBusy": "{name} — running {match}",
+  "matchAdmin.serverPending": "A move is waiting for this round to end.",
+  "matchAdmin.serverAtRoundEnd": "A move happens at the end of the current round, keeping the score and the tier.",
+  "matchAdmin.serverNow": "The match is not live, so a move happens immediately."
 }

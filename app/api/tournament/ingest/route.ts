@@ -1,6 +1,7 @@
 import { NextResponse } from "next/server";
 import { prisma } from "@/lib/db";
-import { finishMap } from "@/lib/tournament/matchRunner";
+import { applyPendingServerMove, finishMap } from "@/lib/tournament/matchRunner";
+import { background } from "@/lib/background";
 
 /**
  * Long enough for a match to start.
@@ -187,6 +188,12 @@ export async function POST(req: Request) {
           data: { ScoreA: num(body.scoreA), ScoreB: num(body.scoreB) },
         });
       }
+
+      // A round end is the only moment the site knows it is safe to move a
+      // match between servers, so a move an admin asked for mid-round happens
+      // here. In the background: it restarts the match on another box and takes
+      // seconds, and the plugin is waiting on this response to carry on.
+      background("match:serverMove", () => applyPendingServerMove(match.Id));
       break;
     }
 

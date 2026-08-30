@@ -18,12 +18,31 @@
   margin-bottom: var(--space-3);
 }
 
+/* The match id, as a copy button. "Which match?" is the first question of every
+   report, and reading seventeen characters off a screenshot is how the wrong
+   one gets looked at. */
 .ma-key {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  margin-left: auto;
+  padding: 3px 7px;
+  border: 1px solid var(--border);
+  background: transparent;
+  color: var(--muted);
+  font: inherit;
   font-family: var(--font-mono);
   font-size: 12px;
-  color: var(--muted);
-  margin-left: auto;
+  cursor: pointer;
+  transition: color 0.15s ease, border-color 0.15s ease;
 }
+
+.ma-key:hover {
+  color: var(--text);
+  border-color: var(--color-accent);
+}
+
+.ma-key code { font: inherit; }
 
 .ma-group {
   display: flex;
@@ -33,18 +52,79 @@
   padding: var(--space-2) 0;
 }
 
+/* Rows that belong together are separated by a rule rather than by nothing.
+   The dashed border between every pair made one long ladder in which no two
+   controls looked more related than any other two — the explicit divider marks
+   the groups that are actually different jobs. */
 .ma-group + .ma-group {
   border-top: 1px dashed var(--border);
 }
 
+.ma-divide {
+  margin: var(--space-2) 0;
+  border: 0;
+  border-top: 1px solid var(--border);
+}
+
+/* A group after an explicit divider has already been separated, so it does not
+   also get the dashed rule. */
+.ma-divide + .ma-group {
+  border-top: 0;
+}
+
 .ma-group h4 {
+  display: flex;
+  align-items: center;
+  gap: 6px;
   margin: 0;
-  min-width: 96px;
+  min-width: 116px;
   font-size: 12px;
   text-transform: uppercase;
   letter-spacing: 0.06em;
   color: var(--muted);
 }
+
+.ma-group h4 svg { flex: none; opacity: 0.75; }
+
+.ma-group .btn svg { flex: none; }
+
+/* A control with its own label, so a row of three dropdowns is readable without
+   counting across to the heading. */
+.ma-inline {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 11.5px;
+  font-weight: 700;
+  color: var(--muted);
+  min-width: 0;
+}
+
+.ma-inline > span {
+  max-width: 12ch;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+/* Dropdowns match the buttons beside them: same height, same border, same
+   square corners. A native select next to a styled button is the single most
+   obvious way for a panel to look unfinished. */
+.ma-select {
+  padding: 6px 8px;
+  border: 1px solid var(--border);
+  background: var(--bg-soft);
+  color: var(--text);
+  font: inherit;
+  font-size: 12.5px;
+  min-width: 0;
+}
+
+.ma-select:disabled { opacity: 0.55; }
+
+.ma-select option:disabled { color: var(--muted); }
+
+.ma-wide { flex: 1; min-width: 160px; }
 
 .ma-group input {
   width: 72px;

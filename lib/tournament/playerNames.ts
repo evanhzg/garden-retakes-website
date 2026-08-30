@@ -10,7 +10,7 @@ import { prisma } from "@/lib/db";
 //      inherit clan tags and jokes, so when it exists it wins.
 //   2. PlayerProfile.LastKnownName — their Steam name, for anybody who never
 //      set a tournament name.
-//   3. The SteamID64.
+//   3. "Player 4821", from the tail of the id.
 //
 // Third was happening far too often. The tournament page looked only at the
 // profile and fell straight through to the raw id — so a player who had never
@@ -18,6 +18,13 @@ import { prisma } from "@/lib/db";
 // stats table, and every bot appeared that way too because a synthetic account
 // has no profile row at all. DisplayName was populated the whole time and was
 // simply never read.
+//
+// The last resort is a readable label rather than the id itself. A match made
+// from the lobby carries whatever names the socket knew, which for a player who
+// has never signed in is nothing — and a scoreboard captioned 76561198… is not
+// a name, it is the absence of one printed as though it were. The shape matches
+// the client's own fallback in components/playerHooks, so the two surfaces
+// cannot disagree about what an unnamed player is called.
 
 /** Pure, so the ordering can be reasoned about without a database. */
 export function resolveName(
@@ -31,7 +38,7 @@ export function resolveName(
   const profile = profileName?.trim();
   if (profile) return profile;
 
-  return steamId;
+  return `Player ${steamId.slice(-4)}`;
 }
 
 /**

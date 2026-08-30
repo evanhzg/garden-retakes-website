@@ -110,6 +110,13 @@
   color: var(--color-accent);
 }
 
+/* Whoever is reading. Colour only, no border: the left border belongs to
+   "on the clock", which is a thing happening right now and has to stay
+   distinguishable from "this is you", which is true for the whole match. */
+.tp-player.me .tp-player-name {
+  color: var(--color-accent);
+}
+
 .tp-player-name {
   color: inherit;
   font-weight: 700;

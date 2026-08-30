@@ -1800,6 +1800,11 @@ model TournamentMatch {
   State            String    @default("pending") @db.VarChar(16)
   WinnerTeamId     Int?
   ServerId         Int?
+  /// Where a live match has been told to move to, applied at the next round
+  /// end. A move cannot happen the moment it is asked for — the match is
+  /// mid-round on the old box, and yanking it there loses the round rather
+  /// than the server. Null is the normal state.
+  PendingServerId  Int?
   NextMatchId      Int?
   NextSlot         Int?      @db.TinyInt
   LoserNextMatchId Int?

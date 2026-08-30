@@ -3016,5 +3016,21 @@
   "servers.sinkHint": "Ajoutez ceci à l'autoexec du serveur pour que sa sortie survive à un redémarrage :",
   "servers.searchPlayers": "Rechercher — un nom, un SteamID, ou une regex",
   "servers.pickHint": "Un clic pour l'équipe A, un deuxième pour l'équipe B, un troisième pour retirer.",
-  "servers.sides": "A : {a} · B : {b}"
+  "servers.sides": "A : {a} · B : {b}",
+  "matchAdmin.copyId": "Copier l'identifiant du match",
+  "matchAdmin.tier": "Palier Blitz",
+  "matchAdmin.tierN.1": "Palier 1 — Bas",
+  "matchAdmin.tierN.2": "Palier 2 — Moyen",
+  "matchAdmin.tierN.3": "Palier 3 — Haut",
+  "matchAdmin.pickPlayer": "Choisir un joueur…",
+  "matchAdmin.map": "Carte",
+  "matchAdmin.pickMap": "Changer de carte…",
+  "matchAdmin.mapResets": "Changer {map} remet son score à 0-0.",
+  "matchAdmin.mapNoLive": "Aucune carte n'est en cours, rien ne sera remis à zéro.",
+  "matchAdmin.server": "Serveur",
+  "matchAdmin.noServer": "Aucun serveur",
+  "matchAdmin.serverBusy": "{name} — occupé par {match}",
+  "matchAdmin.serverPending": "Un déplacement attend la fin de ce round.",
+  "matchAdmin.serverAtRoundEnd": "Le déplacement aura lieu à la fin du round en cours, en conservant le score et le palier.",
+  "matchAdmin.serverNow": "Le match n'est pas en cours, le déplacement est immédiat."
 }

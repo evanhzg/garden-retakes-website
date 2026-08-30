@@ -4,7 +4,7 @@ import { prisma } from "@/lib/db";
 import { logAdminAction } from "@/lib/adminAuth";
 import { canManage, getTournamentContext, type TournamentContext } from "@/lib/tournamentAuth";
 import { roundRobin, singleElimination, resolveByes, type PlannedMatch } from "@/lib/tournament/bracket";
-import { forceEndMatch, restartMatch, startMatch } from "@/lib/tournament/matchRunner";
+import { forceEndMatch, moveMatchToServer, restartMatch, startMatch } from "@/lib/tournament/matchRunner";
 import { parseBackups, parseRoundDetail } from "@/lib/tournament/backups";
 import {
   checkMatchTeamChange,
@@ -52,6 +52,8 @@ type Body = {
     | "admin"
     | "end"
     | "restart"
+    | "move-server"
+    | "set-map"
     | "backups"
     | "roundinfo"
     | "adminlog"
@@ -62,6 +64,9 @@ type Body = {
     | "add-organizer"
     | "remove-organizer";
   tournamentId?: number;
+  serverId?: number;
+  map?: string;
+  mapId?: number;
   stageId?: number;
   matchId?: number;
   // create
@@ -339,6 +344,131 @@ export async function POST(req: Request) {
 
       await logAdminAction(ctx, "tournament.end", undefined, `match ${body.matchId} to ${body.winner}`);
       return NextResponse.json(result);
+    }
+
+    /**
+     * Move a live match to another server.
+     *
+     * Immediate when the match is not live, and scheduled for the end of the
+     * current round when it is: a match mid-round on the old box cannot be
+     * yanked without losing the round rather than the server, and the round end
+     * is the one moment the site is told about.
+     *
+     * The target is checked here rather than only in the dropdown. Two admins
+     * with the panel open see the same free server, and the first to press wins
+     * — the second is told why instead of both matches landing on one box.
+     */
+    case "move-server": {
+      if (!body.matchId || !body.serverId) {
+        return NextResponse.json({ error: "matchId and serverId?" }, { status: 400 });
+      }
+
+      const match = await prisma.tournamentMatch.findUnique({
+        where: { Id: body.matchId },
+        select: { Id: true, State: true, ServerId: true },
+      });
+
+      if (!match) return NextResponse.json({ error: "No such match." }, { status: 404 });
+      if (match.ServerId === body.serverId) {
+        return NextResponse.json({ error: "The match is already on that server." }, { status: 409 });
+      }
+
+      const target = await prisma.gameServer.findUnique({
+        where: { Id: body.serverId },
+        select: { Id: true, Name: true, IsTournament: true, CurrentMatchId: true },
+      });
+
+      if (!target?.IsTournament) {
+        return NextResponse.json({ error: "That is not a tournament server." }, { status: 400 });
+      }
+
+      if (target.CurrentMatchId !== null && target.CurrentMatchId !== match.Id) {
+        return NextResponse.json(
+          { error: `${target.Name} is running match ${target.CurrentMatchId}.` },
+          { status: 409 },
+        );
+      }
+
+      if (match.State === "live") {
+        await prisma.tournamentMatch.update({
+          where: { Id: match.Id },
+          data: { PendingServerId: target.Id },
+        });
+
+        await logAdminAction(ctx, "match.move-server.pending", undefined, `${match.Id} -> ${target.Name}`);
+        return NextResponse.json({ ok: true, pending: true, reply: `Moving to ${target.Name} at the end of this round.` });
+      }
+
+      const moved = await moveMatchToServer(match.Id, target.Id);
+      if (!moved.ok) return NextResponse.json({ error: moved.error }, { status: 409 });
+
+      await logAdminAction(ctx, "match.move-server", undefined, `${match.Id} -> ${target.Name}`);
+      return NextResponse.json({ ok: true, reply: `Moved to ${target.Name}.` });
+    }
+
+    /**
+     * Change a map of the series, including the one being played.
+     *
+     * Changing the LIVE map resets its score, and that is the point rather than
+     * a side effect: the rounds already played were played somewhere else, and
+     * carrying "9-4" onto a different map would be a scoreboard describing a
+     * game nobody had. A map that has not started yet keeps its 0-0 either way.
+     */
+    case "set-map": {
+      if (!body.matchId || !body.map) {
+        return NextResponse.json({ error: "matchId and map?" }, { status: 400 });
+      }
+
+      const wanted = body.map.trim().toLowerCase();
+      if (!/^[a-z0-9_]{3,32}$/.test(wanted)) {
+        return NextResponse.json({ error: "That is not a map name." }, { status: 400 });
+      }
+
+      const match = await prisma.tournamentMatch.findUnique({
+        where: { Id: body.matchId },
+        select: {
+          Id: true,
+          ServerId: true,
+          Maps: { select: { Id: true, State: true, Ordinal: true }, orderBy: { Ordinal: "asc" } },
+        },
+      });
+
+      if (!match) return NextResponse.json({ error: "No such match." }, { status: 404 });
+
+      const row = body.mapId
+        ? match.Maps.find((m) => m.Id === body.mapId)
+        : match.Maps.find((m) => m.State === "live") ?? match.Maps[0];
+
+      if (!row) return NextResponse.json({ error: "That match has no maps." }, { status: 409 });
+
+      const isLive = row.State === "live";
+
+      await prisma.tournamentMatchMap.update({
+        where: { Id: row.Id },
+        data: { Map: wanted, ...(isLive ? { ScoreA: 0, ScoreB: 0 } : {}) },
+      });
+
+      let reply = isLive ? `Map ${row.Ordinal + 1} is now ${wanted}, score reset.` : `Map ${row.Ordinal + 1} is now ${wanted}.`;
+
+      // Only the live map touches the server. Rewriting map three of a series
+      // should not change the level under a game being played on map one.
+      if (isLive && match.ServerId) {
+        try {
+          const changed = await execOnServer(match.ServerId, `css_gmap ${wanted}`);
+          if (/unknown command/i.test(changed)) {
+            await execOnServer(match.ServerId, `changelevel ${wanted}`);
+          }
+          // The plugin keeps its own score, and a reset here that only touched
+          // the database would leave the two disagreeing the moment the next
+          // round was reported.
+          await execOnServer(match.ServerId, "css_score 0 0");
+        } catch (err) {
+          reply += ` The server did not answer: ${err instanceof Error ? err.message : String(err)}`;
+        }
+      }
+
+      await logAdminAction(ctx, "match.set-map", undefined, `${match.Id}: ${wanted}`);
+      return NextResponse.json({ ok: true, reply });
     }
 
     case "restart": {
