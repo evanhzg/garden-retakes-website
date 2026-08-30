@@ -312,8 +312,23 @@ export default function RetakesLobby({ signedIn, lobbyId }: { signedIn: boolean,
     socket.emit("rq:hello", { lobbyId });
 
     const onState = (s: State) => setState(s);
-    const onNotice = (n: { kind: string; code: string; fromName?: string | null; toName?: string | null }) => {
-      setNotice({ kind: n.kind, text: t(`lobby.notice.${n.code}`, { name: n.fromName ?? n.toName ?? "" }) });
+    const onNotice = (n: {
+      kind: string;
+      code: string;
+      fromName?: string | null;
+      toName?: string | null;
+      detail?: string | null;
+    }) => {
+      const text = t(`lobby.notice.${n.code}`, { name: n.fromName ?? n.toName ?? "" });
+
+      // The reason, when there is one, appended rather than swallowed.
+      //
+      // "The match could not be created" with nothing after it is a dead end
+      // for the person it happens to AND for whoever they report it to — this
+      // one cost an evening, and the answer turned out to be a missing
+      // environment variable that the server knew about the whole time and had
+      // no way to say.
+      setNotice({ kind: n.kind, text: n.detail ? `${text} (${n.detail})` : text });
     };
 
     socket.on("rq:state", onState);
