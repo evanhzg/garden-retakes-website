@@ -56,6 +56,7 @@ export default function TournamentView({
   previews,
   rules,
   slug,
+  isPickup = false,
   name,
   podium,
 }: {
@@ -66,6 +67,14 @@ export default function TournamentView({
   previews: Record<number, MatchPreview>;
   rules: RulesFacts;
   slug: string;
+  /**
+   * A matchmaking event rather than a bracket somebody organised.
+   *
+   * Recognised by the slug the pickup path writes, because that is what the
+   * page already has — a column for it would be a migration for one boolean
+   * that one component reads.
+   */
+  isPickup?: boolean;
   name: string;
   /** Empty until the bracket has a decided final. */
   podium: Podium[];
@@ -87,7 +96,16 @@ export default function TournamentView({
       ? [{ id: "results" as Tab, label: t("tournaments.tabs.results") }]
       : []),
     { id: "bracket", label: t("tournaments.tabs.bracket"), count: stages.length },
-    { id: "teams", label: t("tournaments.tabs.teams"), count: teams.length },
+    // No roster tab on a pickup event.
+    //
+    // Matchmaking files every game into one long-running tournament, so its
+    // "teams" are two throwaway sides per match — hundreds of them, named after
+    // whoever captained, most of them the same six people in a different
+    // arrangement. A tab listing all of that answers no question anybody has,
+    // and it is the tab that grows without bound.
+    ...(isPickup
+      ? []
+      : [{ id: "teams" as Tab, label: t("tournaments.tabs.teams"), count: teams.length }]),
     { id: "stats", label: t("tournaments.tabs.stats"), count: stats.length },
     { id: "rules", label: t("tournaments.tabs.rules") },
   ];
@@ -116,7 +134,7 @@ export default function TournamentView({
           <Results podium={podium} players={stats} teams={teams} tournamentName={name} />
         )}
         {tab === "bracket" && <BracketPanel stages={stages} previews={previews} slug={slug} rules={rules} />}
-        {tab === "teams" && <TeamsPanel teams={teams} />}
+        {tab === "teams" && !isPickup && <TeamsPanel teams={teams} />}
         {tab === "stats" && <StatsPanel stats={stats} />}
         {tab === "rules" && <Rules facts={rules} />}
       </div>

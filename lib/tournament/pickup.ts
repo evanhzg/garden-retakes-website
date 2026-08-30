@@ -39,6 +39,15 @@ export const pickupSlug = (teamSize: number) => `pickup-${teamSize}v${teamSize}`
 
 export const pickupName = (teamSize: number) => `Pickup ${teamSize}v${teamSize}`;
 
+/**
+ * Whether a slug names one of the matchmaking events.
+ *
+ * The slug is the marker rather than a column, because it already is one: the
+ * pickup path writes exactly these and nothing else does. A boolean on the row
+ * would be a migration for a fact the primary key already carries.
+ */
+export const isPickupSlug = (slug: string): boolean => /^pickup-\d+v\d+$/.test(slug);
+
 /** Whether this is a size the fleet can run. */
 export const isPickupSize = (n: number): n is PickupSize =>
   (PICKUP_SIZES as readonly number[]).includes(n);

@@ -3032,5 +3032,7 @@
   "matchAdmin.serverBusy": "{name} — occupé par {match}",
   "matchAdmin.serverPending": "Un déplacement attend la fin de ce round.",
   "matchAdmin.serverAtRoundEnd": "Le déplacement aura lieu à la fin du round en cours, en conservant le score et le palier.",
-  "matchAdmin.serverNow": "Le match n'est pas en cours, le déplacement est immédiat."
+  "matchAdmin.serverNow": "Le match n'est pas en cours, le déplacement est immédiat.",
+  "lobby.notReady": "Connexion en cours",
+  "lobby.notReadyBody": "Le serveur de matchmaking n'a pas fini de démarrer. Votre clic n'est pas perdu — réessayez dans un instant."
 }

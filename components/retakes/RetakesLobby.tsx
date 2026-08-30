@@ -8,6 +8,7 @@ import { mapName } from "@/lib/maps";
 import { notify, playMatchFound, playServerReady, primeNotifications } from "@/lib/matchAlert";
 import { useOverlay } from "@/lib/useOverlay";
 import { usePlayerNames, displayNameFor, type PlayerNameMap } from "@/components/playerHooks";
+import { useNotices } from "@/components/Notices";
 import AvatarImage from "@/components/AvatarImage";
 import { FormCard, FormLine, useRosterForm, type RecentForm } from "./PlayerForm";
 import LevelBadge from "./LevelBadge";
@@ -174,6 +175,7 @@ const clock = (ms: number) => {
 export default function RetakesLobby({ signedIn, lobbyId }: { signedIn: boolean, lobbyId?: string }) {
   const { t } = useI18n();
   const { socket, isAuthed, steamId } = useSocket();
+  const notices = useNotices();
 
   const [state, setState] = useState<State | null>(null);
   const [friends, setFriends] = useState<Friend[]>([]);
@@ -381,9 +383,41 @@ export default function RetakesLobby({ signedIn, lobbyId }: { signedIn: boolean,
     };
   }, [socket]);
 
+  /**
+   * Whether the lobby can act at all.
+   *
+   * Every control here is an emit, and an emit on a socket that has connected
+   * but not yet been identified is accepted by socket.io and dropped by the
+   * server — so the button "worked", nothing happened, and there was no way to
+   * tell that from a bug. That is the "no button did anything, reloaded, then
+   * they worked" report: the page had loaded faster than the handshake.
+   */
+  const ready = Boolean(socket && isAuthed);
+
+  /**
+   * Emits, and says so when it cannot.
+   *
+   * A dropped click is worse than a refused one. The controls are disabled
+   * while the handshake is in flight, but a click that slips through the gap —
+   * or one on a control that cannot be disabled without hiding what it does —
+   * gets told rather than swallowed.
+   */
   const send = useCallback(
-    (event: string, payload?: unknown) => socket?.emit(event, payload ?? {}),
-    [socket]
+    (event: string, payload?: unknown) => {
+      if (!socket || !isAuthed) {
+        notices.push({
+          kind: "busy",
+          title: t("lobby.notReady"),
+          body: t("lobby.notReadyBody"),
+          ms: 4000,
+          tag: "lobby-not-ready",
+        });
+        return;
+      }
+
+      socket.emit(event, payload ?? {});
+    },
+    [socket, isAuthed, notices, t],
   );
 
   // --------------------------------------------------------------- derived UI
@@ -653,7 +687,7 @@ export default function RetakesLobby({ signedIn, lobbyId }: { signedIn: boolean,
                 <button
                   type="button"
                   className="rq-stage-name"
-                  disabled={!party.isLeader}
+                  disabled={!ready || !party.isLeader}
                   onClick={() => {
                     if (!party.isLeader) return;
                     setDraftName(party.name || "");
@@ -756,7 +790,7 @@ export default function RetakesLobby({ signedIn, lobbyId }: { signedIn: boolean,
               <button
                 data-tutorial="queue-play"
                 className="btn btn-primary rq-play"
-                disabled={match ? false : !party?.isLeader || conflicts.length > 0}
+                disabled={!ready || (match ? false : !party?.isLeader || conflicts.length > 0)}
                 onClick={() => {
                   if (match) {
                     setHideMatchRoom(false);

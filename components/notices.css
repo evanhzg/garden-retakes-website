@@ -1,0 +1,133 @@
+/* The notification stack, top right.
+   Distinct from components/Toast.tsx, which is the inline "Saved." confirmation
+   bottom right — same word, different job: one acknowledges what you just did,
+   this one tells you about something that happened elsewhere. */
+
+.tst {
+  position: fixed;
+  top: 68px;
+  right: 14px;
+  z-index: 120;
+  display: grid;
+  gap: 8px;
+  width: min(340px, calc(100vw - 28px));
+  /* The column does not eat clicks between cards — only the cards do. */
+  pointer-events: none;
+}
+
+.tst-card {
+  pointer-events: auto;
+  position: relative;
+  overflow: hidden;
+  border: 1px solid var(--color-divider);
+  background: var(--color-surface);
+  box-shadow: 0 8px 24px rgb(0 0 0 / 0.28);
+}
+
+/* A stripe rather than a tinted card: four coloured panels stacked is a
+   traffic light nobody can read, and the kind matters less than the words. */
+.tst-card::before {
+  content: "";
+  position: absolute;
+  inset: 0 auto 0 0;
+  width: 3px;
+  background: var(--color-text-muted);
+}
+
+.tst-card.kind-ok::before { background: #4ade80; }
+.tst-card.kind-warn::before { background: #f87171; }
+.tst-card.kind-busy::before { background: var(--color-accent); }
+
+.tst-row {
+  display: flex;
+  align-items: flex-start;
+  gap: 8px;
+  padding: 10px 10px 10px 13px;
+}
+
+.tst-main {
+  display: flex;
+  align-items: flex-start;
+  gap: 9px;
+  flex: 1;
+  min-width: 0;
+  color: inherit;
+  text-decoration: none;
+}
+
+a.tst-main:hover strong { color: var(--color-accent); }
+
+.tst-icon {
+  flex: none;
+  margin-top: 1px;
+  color: var(--color-text-muted);
+}
+
+.kind-ok .tst-icon { color: #4ade80; }
+.kind-warn .tst-icon { color: #f87171; }
+.kind-busy .tst-icon { color: var(--color-accent); }
+
+.tst-icon.spin { animation: tst-spin 1s linear infinite; }
+
+@keyframes tst-spin {
+  to { transform: rotate(360deg); }
+}
+
+.tst-text {
+  display: grid;
+  gap: 2px;
+  min-width: 0;
+}
+
+.tst-text strong {
+  font-size: 13px;
+  font-weight: 800;
+  line-height: 1.25;
+  overflow-wrap: anywhere;
+}
+
+.tst-body {
+  font-size: 12px;
+  line-height: 1.35;
+  color: var(--color-text-muted);
+  overflow-wrap: anywhere;
+}
+
+.tst-x {
+  flex: none;
+  padding: 2px;
+  border: 0;
+  background: transparent;
+  color: var(--color-text-muted);
+  cursor: pointer;
+  line-height: 0;
+}
+
+.tst-x:hover { color: var(--color-text); }
+
+/* The time left, as a bar that empties left to right. transform rather than
+   width so it animates on the compositor and does not relayout the card
+   sixty times a second. */
+.tst-bar {
+  display: block;
+  height: 2px;
+  transform-origin: left;
+  background: var(--color-accent);
+  opacity: 0.55;
+}
+
+@media (max-width: 560px) {
+  .tst {
+    top: auto;
+    bottom: 12px;
+    right: 12px;
+    left: 12px;
+    width: auto;
+  }
+}
+
+/* Somebody who has asked for less motion still gets the card and the bar; what
+   they do not get is the slide and the spinner. */
+@media (prefers-reduced-motion: reduce) {
+  .tst-icon.spin { animation: none; }
+}

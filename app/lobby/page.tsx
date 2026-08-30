@@ -1,9 +1,8 @@
 import { redirect } from "next/navigation";
-import { v4 as uuidv4 } from "uuid";
+import { newLobbyId } from "@/lib/lobbyId";
 
 export const dynamic = "force-dynamic";
 
 export default function LobbyRedirect() {
-  const newLobbyId = uuidv4();
-  redirect(`/lobby/${newLobbyId}`);
+  redirect(`/lobby/${newLobbyId()}`);
 }

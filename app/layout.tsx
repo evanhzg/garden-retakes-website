@@ -12,6 +12,7 @@ import { I18nProvider } from "@/components/I18nProvider";
 import SiteFooter from "@/components/SiteFooter";
 import { ToastProvider } from "@/components/Toast";
 import { SocketProvider } from "@/components/SocketProvider";
+import NoticeProvider from "@/components/Notices";
 import PassportWorkflow from "@/components/PassportWorkflow";
 import { resolveLocale, LOCALE_COOKIE } from "@/lib/i18n";
 
@@ -134,6 +135,7 @@ export default async function RootLayout({ children }: { children: React.ReactNo
         <ThemeProvider attribute="class" defaultTheme="system" enableSystem>
         <I18nProvider initial={locale}>
         <SocketProvider steamId={session?.steamId} isDemoMode={isDemoMode}>
+        <NoticeProvider>
         <ToastProvider>
           {/* The three blurred orbs were the last of the old purple/pink wash
               (#ec4899 / #a855f7 / #d946ef) and fought the Modernist ground. */}
@@ -153,6 +155,7 @@ export default async function RootLayout({ children }: { children: React.ReactNo
           </div>
           {session && <PassportWorkflow session={session} />}
         </ToastProvider>
+        </NoticeProvider>
         </SocketProvider>
         </I18nProvider>
         </ThemeProvider>

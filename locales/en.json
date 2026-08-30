@@ -3032,5 +3032,7 @@
   "matchAdmin.serverBusy": "{name} — running {match}",
   "matchAdmin.serverPending": "A move is waiting for this round to end.",
   "matchAdmin.serverAtRoundEnd": "A move happens at the end of the current round, keeping the score and the tier.",
-  "matchAdmin.serverNow": "The match is not live, so a move happens immediately."
+  "matchAdmin.serverNow": "The match is not live, so a move happens immediately.",
+  "lobby.notReady": "Still connecting",
+  "lobby.notReadyBody": "The match server has not finished waking up. Your click was not lost — try again in a moment."
 }

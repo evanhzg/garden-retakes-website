@@ -8,6 +8,7 @@ import { getT } from "@/lib/serverI18n";
 import TournamentView, { type PoolMap, type StageView, type TeamView } from "@/components/tournament/TournamentView";
 import { standings } from "@/lib/tournament/bracket";
 import { podiumFrom } from "@/lib/tournament/hub";
+import { isPickupSlug } from "@/lib/tournament/pickup";
 import type { Podium } from "@/components/tournament/Results";
 import { previewsForTournament, type MatchPreview } from "@/lib/tournament/preview";
 import { tournamentStats } from "@/lib/tournament/statsDb";
@@ -342,6 +343,7 @@ export default async function TournamentPage({ params }: { params: { slug: strin
       />
 
       <TournamentView
+        isPickup={isPickupSlug(params.slug)}
         stages={stages}
         teams={teams}
         stats={stats.map((row) => ({ ...row, teamName: teamOfPlayer.get(row.steamId) ?? null }))}
