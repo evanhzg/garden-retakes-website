@@ -205,3 +205,16 @@
     padding: 6px 7px;
   }
 }
+
+/* ---------------------------------------------------------- not selectable --
+   Column headers and tabs are labels: they exist to be read and clicked, not
+   copied. Dragging across the table to copy a row used to take "K D A ADR" and
+   the tab strip with it, which is never what anybody wanted and looks like the
+   table is broken. The rows themselves stay selectable — names and numbers are
+   exactly what somebody would want to paste. */
+.sb-table th,
+.sb-tabs,
+.sb-tabs button {
+  user-select: none;
+  -webkit-user-select: none;
+}

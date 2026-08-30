@@ -18,6 +18,22 @@ import "./mapcards.css";
 // the bottom, because a demo is of a map, and on a BO3 "which one is this"
 // is exactly the question a single list makes you answer twice.
 
+/**
+ * Which side a team starts on, or "-" when nothing has decided yet.
+ *
+ * The stored value is team A's side; team B's is the other one. A knife map
+ * stores null, because the sides are settled in game and the website only finds
+ * out afterwards — so both teams read "-" until the knife result lands, rather
+ * than one of them being guessed.
+ */
+function sideOf(startSideTeamA: string | null, team: "a" | "b"): string {
+  if (!startSideTeamA) return "-";
+
+  const a = startSideTeamA.toUpperCase() === "CT" ? "CT" : "T";
+  if (team === "a") return a;
+  return a === "CT" ? "T" : "CT";
+}
+
 export default function MapCards({
   maps,
   teamA,
@@ -67,8 +83,29 @@ export default function MapCards({
                 )}
               </p>
 
+              {/* Both teams, each on its own line, each saying which side it
+                  starts on — and marked if it picked the map.
+                  
+                  It used to be "Starting side: CT", one line, naming neither
+                  team. That is only readable if you already know it means team
+                  A, which is exactly the thing the card never says. A knife map
+                  has no answer yet, so it shows (-) rather than inventing one:
+                  the sides are settled in game, and until they are, "unknown"
+                  is the honest word. */}
               <p className="mc-side muted">
-                {t("match.startSide")}: {m.startSideTeamA ?? t("match.knife")}
+                <span className="mc-side-team">
+                  {teamA}
+                  {m.pickedBy === "a" && <span className="mc-pick">({t("match.pick")})</span>}
+                </span>
+                <span className="mc-side-value">{sideOf(m.startSideTeamA, "a")}</span>
+              </p>
+
+              <p className="mc-side muted">
+                <span className="mc-side-team">
+                  {teamB}
+                  {m.pickedBy === "b" && <span className="mc-pick">({t("match.pick")})</span>}
+                </span>
+                <span className="mc-side-value">{sideOf(m.startSideTeamA, "b")}</span>
               </p>
 
               {/* How the knife went. Only a map whose sides the veto did NOT
@@ -97,10 +134,13 @@ export default function MapCards({
                   the top of the page, not on every card. On a BO3 where the
                   same two teams appear three times, "13-7" answers nothing on
                   its own. So a map that is OVER says who won it. */}
+              {/* The trophy and the name, and no sentence around them. "won the
+                  map" on a card headed by the map, under a scoreline, next to a
+                  trophy, is the fourth thing saying the same thing. */}
               {m.winner && (
                 <p className="mc-won">
                   <Trophy size={12} aria-hidden />
-                  <span>{t("match.mapWonBy", { team: m.winner === "a" ? teamA : teamB })}</span>
+                  <span>{m.winner === "a" ? teamA : teamB}</span>
                 </p>
               )}
 

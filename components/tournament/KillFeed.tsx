@@ -4,17 +4,20 @@ import { useEffect, useRef, useState } from "react";
 import { AnimatePresence, motion } from "framer-motion";
 
 import { useI18n } from "@/components/I18nProvider";
-import WeaponIcon, { HeadshotIcon } from "./WeaponIcon";
+import WeaponIcon, { BombIcon, DefuseIcon, HeadshotIcon } from "./WeaponIcon";
 import "./killfeed.css";
 
 type Who = { steamId: string; name: string | null; slot: string | null } | null;
 
-type Kill = {
+type Entry = {
   id: number;
+  kind: string;
+  winnerSlot: string | null;
+  reason: string | null;
   round: number;
   mapOrdinal: number;
   attacker: Who;
-  victim: NonNullable<Who>;
+  victim: Who;
   assister: Who;
   weapon: string;
   headshot: boolean;
@@ -26,32 +29,44 @@ type Kill = {
 };
 
 /** How many lines the panel keeps. */
-const KEEP = 6;
+const KEEP = 7;
 
 /**
  * Faster than the rest of the page on purpose.
  *
- * A scoreboard that lags five seconds is a scoreboard; a killfeed that lags
- * five seconds is a list. The payload is a handful of rows and usually empty —
- * `after` means the steady state returns nothing at all — so this is cheap
- * enough to run at the speed the thing is worth watching.
+ * A scoreboard that lags five seconds is a scoreboard; a feed that lags five
+ * seconds is a list. The payload is a handful of rows and usually empty —
+ * `after` means the steady state returns nothing at all.
  */
 const POLL_MS = 1500;
 
 /**
- * The killfeed, as a panel rather than an overlay.
+ * The match feed: kills, defuses and how each round ended.
  *
- * Nothing on the match page said what was happening inside a round. The
- * scoreboard moves, but totals do not tell you that the AWP just traded into a
- * retake — and that is the part anybody watching actually talks about.
+ * Nothing on the match page said what happened inside a round. The scoreboard
+ * moves, but totals cannot tell you the AWP traded into a retake, and they
+ * certainly cannot tell you a round was won on the defuse with two down — which
+ * is the part anybody watching actually talks about.
  *
- * Capped at six lines and fixed in height. A feed that grows pushes the page
- * around every few seconds, which is worse than showing less: the whole value
- * is that it sits still and changes in place.
+ * Three row shapes, one grid. Every row puts the actor on the left, the icon in
+ * the middle and the subject on the right, in fixed columns, so the icons form
+ * a straight line down the panel instead of sliding around with the length of
+ * the names beside them.
  */
-export default function KillFeed({ matchId, live }: { matchId: number; live: boolean }) {
+export default function KillFeed({
+  matchId,
+  live,
+  teamA,
+  teamB,
+}: {
+  matchId: number;
+  live: boolean;
+  /** Names, so a round line can say who took it rather than "A". */
+  teamA: string;
+  teamB: string;
+}) {
   const { t } = useI18n();
-  const [kills, setKills] = useState<Kill[]>([]);
+  const [entries, setEntries] = useState<Entry[]>([]);
   /** Highest id seen, so the poll asks only for what is new. */
   const cursor = useRef<number | null>(null);
 
@@ -65,13 +80,13 @@ export default function KillFeed({ matchId, live }: { matchId: number; live: boo
         const res = await fetch(url, { cache: "no-store" });
         if (!res.ok) return;
 
-        const data: { kills: Kill[] } = await res.json();
+        const data: { kills: Entry[] } = await res.json();
         if (!alive || data.kills.length === 0) return;
 
         cursor.current = data.kills[data.kills.length - 1].id;
-        // Appended and trimmed from the front: the newest line is the one at
-        // the bottom, the way a feed in game reads.
-        setKills((prev) => [...prev, ...data.kills].slice(-KEEP));
+        // Appended and trimmed from the front: the newest line is at the
+        // bottom, the way a feed in game reads.
+        setEntries((prev) => [...prev, ...data.kills].slice(-KEEP));
       } catch {
         // A dropped poll costs one line's latency. Saying so on screen would be
         // noisier than the fault.
@@ -91,56 +106,88 @@ export default function KillFeed({ matchId, live }: { matchId: number; live: boo
     };
   }, [matchId, live]);
 
-  if (kills.length === 0) return null;
+  if (entries.length === 0) return null;
+
+  const name = (who: Who, slot?: string | null) => (
+    <span className={`kf-name slot-${(who?.slot ?? slot ?? "none").toLowerCase()}`}>
+      {who?.name ?? "—"}
+    </span>
+  );
 
   return (
-    <section className="kf" aria-label={t("match.killfeed")}>
+    <section className="kf" aria-label={t("match.feed")}>
       <header className="kf-head">
-        <h3>{t("match.killfeed")}</h3>
+        <h3>{t("match.feed")}</h3>
         {live && <span className="kf-live" aria-hidden="true" />}
       </header>
 
       <ul className="kf-list">
         <AnimatePresence initial={false}>
-          {kills.map((k) => (
+          {entries.map((e) => (
             <motion.li
-              key={k.id}
+              key={e.id}
               className={[
                 "kf-row",
-                k.teamKill ? "teamkill" : "",
+                `kind-${e.kind}`,
+                e.teamKill ? "teamkill" : "",
               ].filter(Boolean).join(" ")}
               // Slides in from the side it is written towards, so a new line
               // reads as arriving rather than as the list jumping.
-              initial={{ opacity: 0, x: 14 }}
+              initial={{ opacity: 0, x: 12 }}
               animate={{ opacity: 1, x: 0 }}
               exit={{ opacity: 0, height: 0, marginBottom: 0 }}
               transition={{ duration: 0.2, ease: [0.22, 1, 0.36, 1] }}
               layout
             >
-              <span className={`kf-name slot-${k.attacker?.slot?.toLowerCase() ?? "none"}`}>
-                {k.attacker?.name ?? t("match.killfeedWorld")}
-              </span>
-
-              {k.assister && (
-                <span className="kf-assist">
-                  + <span className={`kf-name slot-${k.assister.slot?.toLowerCase() ?? "none"}`}>
-                    {k.assister.name ?? "—"}
+              {e.kind === "round" ? (
+                <>
+                  <span className="kf-left kf-round-label">
+                    {t("match.feedRound", { n: String(e.round) })}
                   </span>
-                </span>
+                  <span className="kf-mid">
+                    {e.reason === "bomb" || e.reason === "defused"
+                      ? (e.reason === "bomb" ? <BombIcon className="kf-weapon" /> : <DefuseIcon className="kf-weapon" />)
+                      : <span className="kf-reason">{t(`match.feedReason.${e.reason ?? "elimination"}`)}</span>}
+                  </span>
+                  <span className="kf-right">
+                    <span className={`kf-name slot-${(e.winnerSlot ?? "none").toLowerCase()}`}>
+                      {e.winnerSlot === "A" ? teamA : e.winnerSlot === "B" ? teamB : "—"}
+                    </span>
+                  </span>
+                </>
+              ) : e.kind === "defuse" ? (
+                <>
+                  <span className="kf-left">{name(e.victim)}</span>
+                  <span className="kf-mid">
+                    <DefuseIcon className="kf-weapon" />
+                  </span>
+                  <span className="kf-right kf-verb">{t("match.feedDefused")}</span>
+                </>
+              ) : (
+                <>
+                  {/* The attacker, and nobody at all when the bomb or a fall did
+                      it. An empty left column reads as "no killer", which is
+                      what happened — naming it "world" invented a player who
+                      does not exist and put them on a scoreboard nobody can
+                      click. */}
+                  <span className="kf-left">
+                    {e.attacker ? name(e.attacker) : <span className="kf-nokiller" aria-hidden="true" />}
+                    {e.assister && (
+                      <span className="kf-assist">+ {name(e.assister)}</span>
+                    )}
+                  </span>
+
+                  <span className="kf-mid">
+                    {e.throughSmoke && <i className="kf-tag" title="through smoke">S</i>}
+                    {e.penetrated && <i className="kf-tag" title="wallbang">W</i>}
+                    {e.noScope && <i className="kf-tag" title="no scope">N</i>}
+                    <WeaponIcon weapon={e.weapon} className="kf-weapon" />
+                    {e.headshot && <HeadshotIcon className="kf-hs" />}
+                  </span>
+
+                  <span className="kf-right">{name(e.victim)}</span>
+                </>
               )}
-
-              <span className="kf-mid">
-                {k.throughSmoke && <i className="kf-tag" title="through smoke">S</i>}
-                {k.penetrated && <i className="kf-tag" title="wallbang">W</i>}
-                {k.noScope && <i className="kf-tag" title="no scope">N</i>}
-                {k.attackerBlind && <i className="kf-tag" title="blind">B</i>}
-                <WeaponIcon weapon={k.weapon} className="kf-weapon" />
-                {k.headshot && <HeadshotIcon className="kf-hs" />}
-              </span>
-
-              <span className={`kf-name slot-${k.victim.slot?.toLowerCase() ?? "none"}`}>
-                {k.victim.name ?? k.victim.steamId}
-              </span>
             </motion.li>
           ))}
         </AnimatePresence>

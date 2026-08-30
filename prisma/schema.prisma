@@ -1916,6 +1916,19 @@ model TournamentKill {
   AssisterName    String?  @db.VarChar(64)
   AssisterSlot    String?  @db.VarChar(1)
 
+  /// "kill", "defuse", "plant" or "round".
+  ///
+  /// One table because they are one feed: "how did they win that" is answered
+  /// by "defused with two down", not by the last kill in the round, and
+  /// interleaving two lists by timestamp on the page would be the same order
+  /// arrived at the hard way.
+  Kind            String   @default("kill") @db.VarChar(16)
+  /// Round rows only: which side took it.
+  WinnerSlot      String?  @db.VarChar(1)
+  /// Round rows only: the engine's reason, normalised — "defused", "bomb",
+  /// "elimination", "time".
+  Reason          String?  @db.VarChar(24)
+
   Weapon          String   @default("") @db.VarChar(32)
   Headshot        Boolean  @default(false)
   TeamKill        Boolean  @default(false)

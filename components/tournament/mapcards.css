@@ -110,11 +110,46 @@
   color: var(--color-accent);
 }
 
+/* One line per team: the name, whether it picked, and the side it starts on.
+   Justified apart so the two sides line up under each other and the pair reads
+   as a table of two rows rather than as two sentences. */
 .mc-side {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 8px;
   margin: 0;
   font-size: 11px;
   text-transform: uppercase;
   letter-spacing: 0.06em;
+}
+
+.mc-side-team {
+  display: inline-flex;
+  align-items: baseline;
+  gap: 4px;
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+/* Which team picked the map. Quiet, because it modifies the name rather than
+   competing with it. */
+.mc-pick {
+  font-size: 9.5px;
+  font-weight: 700;
+  color: var(--color-accent);
+}
+
+/* The side. Monospaced so CT and T line up in a column of their own — the two
+   lines are read against each other, and proportional text makes that a
+   ragged edge. */
+.mc-side-value {
+  font-family: var(--font-mono);
+  font-weight: 800;
+  flex: none;
+  color: var(--color-text);
 }
 
 /* How the knife went, on the maps that had one. Quiet: it is a footnote about
@@ -280,4 +315,20 @@
 
 .mvp-lead {
   color: var(--color-accent);
+}
+
+/* ---------------------------------------------------------- not selectable --
+   Labels, badges and numbering exist to be read, not copied. A drag across a
+   card used to highlight "1", "LIVE" and "CT" along with everything else, which
+   reads as the page being half broken. The scores and the map names stay
+   selectable — those are the parts somebody might actually want to paste. */
+.mc-ordinal,
+.mc-live,
+.mc-by,
+.mc-side,
+.mc-won,
+.mc-decider,
+.mc-knife {
+  user-select: none;
+  -webkit-user-select: none;
 }

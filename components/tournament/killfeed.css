@@ -1,32 +1,38 @@
-/* The killfeed panel.
-   Fixed height and a fixed number of lines: the whole value of a feed on a page
-   that also holds a scoreboard and a bracket is that it changes in place
-   instead of pushing everything below it down every few seconds. */
+/* The match feed.
+   Fixed height, fixed number of lines, and a fixed width: the value of a feed
+   on a page that also holds a scoreboard and a bracket is that it changes in
+   place instead of pushing everything below it down every few seconds. */
 
 .kf {
   border: 1px solid var(--color-divider);
   background: var(--color-surface);
+  /* Narrow on purpose. Every line is two short names and an icon, so a
+     full-width panel is mostly empty space with the names stranded at either
+     end — the eye then has to travel the width of the page to read one kill. */
+  max-width: 460px;
+  width: 100%;
+  margin-top: 12px;
 }
 
 .kf-head {
   display: flex;
   align-items: center;
   gap: 8px;
-  padding: 8px 12px;
+  padding: 7px 10px;
   border-bottom: 1px solid var(--color-divider);
 }
 
 .kf-head h3 {
   margin: 0;
-  font-size: 11px;
+  font-size: 10.5px;
   font-weight: 800;
-  letter-spacing: 0.08em;
+  letter-spacing: 0.09em;
   text-transform: uppercase;
   color: var(--color-text-muted);
 }
 
-/* A quiet pulse rather than the word "LIVE" again — the page already says it
-   twice above this. */
+/* A quiet pulse rather than the word "LIVE" again — the page says it twice
+   above this already. */
 .kf-live {
   width: 6px;
   height: 6px;
@@ -43,38 +49,78 @@
 .kf-list {
   list-style: none;
   margin: 0;
-  padding: 6px;
+  padding: 5px;
   display: flex;
   flex-direction: column;
   gap: 2px;
-  /* Six rows plus the gaps. Fixed so the panel does not resize as it fills,
+  /* Seven rows plus the gaps. Fixed so the panel does not resize as it fills,
      and bottom-aligned so the newest line is always in the same place. */
-  min-height: 168px;
+  min-height: 182px;
   justify-content: flex-end;
 }
 
+/* The grid is the whole point of this file.
+   Three fixed tracks — actor, icon, subject — so the icons form a straight line
+   down the panel instead of sliding left and right with the length of whatever
+   name happens to be beside them. The middle track is sized to the widest icon
+   rather than to its content, so a headshot marker does not shove the column. */
 .kf-row {
-  display: flex;
+  display: grid;
+  grid-template-columns: 1fr 96px 1fr;
   align-items: center;
   gap: 6px;
   padding: 4px 8px;
   font-size: 12.5px;
-  line-height: 1.2;
+  line-height: 1.25;
   background: color-mix(in srgb, var(--color-text) 4%, transparent);
   overflow: hidden;
-  white-space: nowrap;
 }
 
 /* Killing your own side is the one line that should stop the eye. */
 .kf-row.teamkill {
   background: color-mix(in srgb, #ef4444 14%, transparent);
-  border-left: 2px solid #ef4444;
+  box-shadow: inset 2px 0 0 #ef4444;
+}
+
+/* A round result is a divider as much as a line: it separates one round's kills
+   from the next, so it is drawn quieter and heavier at once. */
+.kf-row.kind-round {
+  background: color-mix(in srgb, var(--color-text) 9%, transparent);
+  font-size: 11.5px;
+}
+
+/* The actor, hard against the icon column. */
+.kf-left {
+  display: flex;
+  align-items: center;
+  justify-content: flex-end;
+  gap: 5px;
+  min-width: 0;
+  overflow: hidden;
+}
+
+/* The subject, hard against the other side of it. */
+.kf-right {
+  display: flex;
+  align-items: center;
+  gap: 5px;
+  min-width: 0;
+  overflow: hidden;
+}
+
+.kf-mid {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 4px;
+  color: var(--color-text);
 }
 
 .kf-name {
   font-weight: 700;
   overflow: hidden;
   text-overflow: ellipsis;
+  white-space: nowrap;
   min-width: 0;
 }
 
@@ -85,62 +131,85 @@
 .kf-name.slot-b { color: #f59e0b; }
 .kf-name.slot-none { color: var(--color-text-muted); }
 
+/* Nobody killed them — the bomb, or a fall. The column stays empty rather than
+   naming a player who does not exist. */
+.kf-nokiller {
+  display: inline-block;
+  width: 0;
+}
+
 .kf-assist {
-  font-size: 11px;
+  font-size: 10.5px;
   color: var(--color-text-muted);
   display: inline-flex;
   align-items: center;
   gap: 3px;
   min-width: 0;
+  overflow: hidden;
 }
 
 .kf-assist .kf-name {
-  font-size: 11px;
+  font-size: 10.5px;
   font-weight: 600;
-}
-
-/* The middle block: modifiers, weapon, headshot. Pushed to sit between the two
-   names with the victim hard against the right, which is how a feed in game is
-   read — you look at the right-hand name first. */
-.kf-mid {
-  display: inline-flex;
-  align-items: center;
-  gap: 4px;
-  margin-left: auto;
-  color: var(--color-text);
-  flex: none;
 }
 
 .kf-weapon {
   display: block;
+  flex: none;
 }
 
 .kf-hs {
   color: var(--color-accent);
+  flex: none;
 }
 
-/* Wallbang, smoke, no-scope, blind. One letter each — spelled out they are
-   longer than the names they sit between. */
+/* "round 12", on the left of a round line where a name would be. */
+.kf-round-label {
+  font-size: 10px;
+  font-weight: 800;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  color: var(--color-text-muted);
+}
+
+/* Won on time, or by elimination: no icon worth drawing, so the word. */
+.kf-reason {
+  font-size: 9.5px;
+  font-weight: 800;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  color: var(--color-text-muted);
+  white-space: nowrap;
+}
+
+.kf-verb {
+  font-size: 11px;
+  color: var(--color-text-muted);
+}
+
+/* Wallbang, smoke, no-scope. One letter each — spelled out they are longer than
+   the names they sit between. */
 .kf-tag {
   font-style: normal;
-  font-size: 9px;
+  font-size: 8.5px;
   font-weight: 800;
   line-height: 1;
   padding: 2px 3px;
   color: var(--color-text-muted);
   border: 1px solid var(--color-divider);
+  flex: none;
 }
 
-.kf-row:last-child .kf-mid {
-  color: var(--color-text);
-}
-
-/* Narrow screens: the weapon and the names still fit, the modifiers are the
-   first thing that can go. */
+/* Narrow screens: the modifiers are the first thing that can go, then the
+   middle column tightens. */
 @media (max-width: 560px) {
+  .kf { max-width: none; }
   .kf-tag { display: none; }
-  .kf-row { font-size: 11.5px; }
-  .kf-list { min-height: 150px; }
+  .kf-row {
+    grid-template-columns: 1fr 74px 1fr;
+    font-size: 11.5px;
+  }
+  .kf-list { min-height: 164px; }
 }
 
 @media (prefers-reduced-motion: reduce) {

@@ -55,12 +55,17 @@ export async function GET(req: NextRequest) {
     // is also the order they are drawn in.
     kills: rows.reverse().map((k) => ({
       id: k.Id,
+      kind: k.Kind,
+      winnerSlot: k.WinnerSlot,
+      reason: k.Reason,
       round: k.Round,
       mapOrdinal: k.MapOrdinal,
       attacker: k.AttackerSteamId.toString() === "0"
         ? null
         : { steamId: k.AttackerSteamId.toString(), name: k.AttackerName, slot: k.AttackerSlot },
-      victim: { steamId: k.VictimSteamId.toString(), name: k.VictimName, slot: k.VictimSlot },
+      victim: k.VictimSteamId.toString() === "0"
+        ? null
+        : { steamId: k.VictimSteamId.toString(), name: k.VictimName, slot: k.VictimSlot },
       assister: k.AssisterSteamId.toString() === "0"
         ? null
         : { steamId: k.AssisterSteamId.toString(), name: k.AssisterName, slot: k.AssisterSlot },

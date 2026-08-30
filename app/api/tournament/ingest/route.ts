@@ -45,6 +45,12 @@ type Event =
  * should not rewrite last month's match.
  */
 type KillLine = {
+  /** "kill", "defuse", "plant" or "round". */
+  kind?: string;
+  /** Round rows only: which side took it. */
+  winnerSlot?: "A" | "B";
+  /** Round rows only: how it was won. */
+  reason?: string;
   round?: number;
   attackerSteamId?: string;
   attackerName?: string;
@@ -198,7 +204,12 @@ export async function POST(req: Request) {
      */
     case "kill": {
       const k = body.kill;
-      if (!k?.victimSteamId) break;
+      if (!k) break;
+
+      // A kill and a defuse are about a person and must name one. A round is
+      // about a side and never does, so the check cannot be blanket.
+      const kind = k.kind ?? "kill";
+      if (kind !== "round" && !k.victimSteamId) break;
 
       const map = await mapForStats(match.Id);
 
@@ -210,7 +221,10 @@ export async function POST(req: Request) {
           AttackerSteamId: BigInt(k.attackerSteamId ?? "0"),
           AttackerName: k.attackerName?.slice(0, 64) ?? null,
           AttackerSlot: k.attackerSlot ?? null,
-          VictimSteamId: BigInt(k.victimSteamId),
+          Kind: kind.slice(0, 16),
+          WinnerSlot: k.winnerSlot ?? null,
+          Reason: k.reason?.slice(0, 24) ?? null,
+          VictimSteamId: BigInt(k.victimSteamId || "0"),
           VictimName: k.victimName?.slice(0, 64) ?? null,
           VictimSlot: k.victimSlot ?? null,
           AssisterSteamId: BigInt(k.assisterSteamId ?? "0"),

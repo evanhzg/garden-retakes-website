@@ -300,6 +300,8 @@ export default function MatchStage({
               // something to poll for. A finished match still loads once, so the
               // last rounds can be read afterwards.
               live={initialBoard.tabs.some((tab) => tab.live)}
+              teamA={teamA.name}
+              teamB={teamB.name}
             />
           </>
         )}
