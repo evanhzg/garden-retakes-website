@@ -22,6 +22,7 @@ import {
   T_ROLES,
   autoRolePick,
   availableRoles,
+  mustTakePlanter,
   draftOrder,
   draftState,
   roleLabel,
@@ -240,6 +241,76 @@ check("five a side auto-drafts in full", big.length === 10, String(big.length));
 check("a team with every role set is complete", rolesComplete([{ roleT: "planter", roleCt: "roamer" }]));
 check("a half-filled team is not", !rolesComplete([{ roleT: "planter", roleCt: null }]));
 check("an empty team is not complete", !rolesComplete([]));
+
+
+// ---- somebody has to carry the bomb ---------------------------------------
+//
+// A side with no planter is not playing a worse strategy, it is playing a round
+// that cannot happen: nobody carries the bomb, and the plugin's fallback for an
+// unknown role is a generalist, which does not carry one either.
+//
+// Forced on the LAST turn rather than the first, so a team gets every other
+// turn to volunteer instead of having the job handed to whoever drafts first.
+
+{
+  // A3 is the last of team A. A1 and A2 took other things.
+  const late = [
+    pick("a1", "sniper", "roamer", 0),
+    pick("b1", "planter", "roamer", 1),
+    pick("b2", "sniper", "frontrunner", 2),
+    pick("a2", "burner", "frontrunner", 3),
+  ];
+
+  const state = draftState(A3, B3, late);
+  check("the draft is waiting on A's last player", state.next?.steamId === "a3", String(state.next?.steamId));
+  check("A has one turn left", state.left.A === 1, String(state.left.A));
+  check("A must take the planter", mustTakePlanter(state, "A"));
+
+  const offered = availableRoles(state, "A", "T");
+  check("and is offered nothing else", offered.length === 1 && offered[0].id === "planter",
+    offered.map((r) => r.id).join());
+
+  // CT is untouched by the rule — it has no bomb.
+  check("the CT side is not narrowed", availableRoles(state, "A", "CT").length > 1);
+
+  check(
+    "a last pick that is not the planter is refused",
+    validateRolePick(A3, B3, late, { steamId: "a3", roleT: "rifler", roleCt: "backup" }).ok === false,
+  );
+  check(
+    "the planter is accepted",
+    validateRolePick(A3, B3, late, { steamId: "a3", roleT: "planter", roleCt: "backup" }).ok === true,
+  );
+
+  // The timeout has no rule of its own: availableRoles has already narrowed it.
+  check("a timed-out last turn autos to the planter", autoRolePick(A3, B3, late)?.roleT === "planter");
+}
+
+{
+  // A team that already has one is under no constraint on its last turn.
+  const has = [
+    pick("a1", "planter", "roamer", 0),
+    pick("b1", "planter", "roamer", 1),
+    pick("b2", "sniper", "frontrunner", 2),
+    pick("a2", "burner", "frontrunner", 3),
+  ];
+
+  const state = draftState(A3, B3, has);
+  check("a team with a planter is not forced", !mustTakePlanter(state, "A"));
+  check("and keeps its choices", availableRoles(state, "A", "T").length > 1);
+  check(
+    "so its last player may take anything free",
+    validateRolePick(A3, B3, has, { steamId: "a3", roleT: "rifler", roleCt: "backup" }).ok === true,
+  );
+}
+
+{
+  // Not forced early. On the first turn there are plenty of turns left, and
+  // taking the choice away then would make the role a chore rather than a pick.
+  const state = draftState(A3, B3, []);
+  check("nobody is forced on the first turn", !mustTakePlanter(state, "A"));
+  check("every T role is on offer", availableRoles(state, "A", "T").length === 4);
+}
 
 if (fails) {
   console.log(`\n${fails} failed`);

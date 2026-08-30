@@ -227,14 +227,30 @@ export function validateAction(
  * What to do when a captain's turn runs out.
  *
  * A veto that can stall forever stalls a bracket, and a bracket that stalls
- * stalls a broadcast. The auto-pick is deliberately the least surprising one —
- * the first map still available in pool order, and T for a side — and it is
- * recorded as automatic so nobody has to guess later whether it was deliberate.
+ * stalls a broadcast. The turn is therefore taken for them, and recorded as
+ * automatic so nobody has to guess later whether it was deliberate.
+ *
+ * The map is drawn at random from what is left rather than taken in pool order.
+ * Pool order is fixed, so "first still available" made every timed-out veto
+ * produce the same answer — the top of the pool was banned first in every
+ * bracket where somebody went afk, and on a decider it meant the same map was
+ * played every time. That is not a neutral default, it is a standing bias in
+ * favour of whatever sorts first, and a team that noticed could use it.
+ *
+ * `random` is a parameter so the choice can be pinned in a test. Defaulting it
+ * here rather than at the call sites keeps every caller honestly random without
+ * having to remember to be.
+ *
+ * The side is still T. A side is one of two rather than one of seven, so there
+ * is no ordering to exploit — and a coin flip on which end of a knife round you
+ * start is a different question from which maps get played, worth deciding
+ * deliberately rather than as a side effect of this change.
  */
 export function autoAction(
   pool: string[],
   bestOf: number,
   actions: VetoAction[],
+  random: () => number = Math.random,
 ): { kind: VetoKind; map?: string; side?: Side } | null {
   const state = vetoState(pool, bestOf, actions);
   if (!state.next) return null;
@@ -243,7 +259,12 @@ export function autoAction(
     return { kind: "side", side: "T" };
   }
 
-  return state.remaining.length > 0
-    ? { kind: state.next.kind, map: state.remaining[0] }
-    : null;
+  if (state.remaining.length === 0) return null;
+
+  // Clamped, because a `random` that returns exactly 1 — or anything outside
+  // [0, 1) from a caller's own source — would index past the end and auto-pick
+  // undefined, which reads downstream as "no map" rather than as a bad draw.
+  const at = Math.min(state.remaining.length - 1, Math.floor(random() * state.remaining.length));
+
+  return { kind: state.next.kind, map: state.remaining[at] };
 }

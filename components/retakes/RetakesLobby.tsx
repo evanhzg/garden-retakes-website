@@ -7,7 +7,7 @@ import { DEFAULT_UTILITY, isRoleUnique, type Side } from "@/lib/retakeLoadout";
 import { mapName } from "@/lib/maps";
 import { notify, playMatchFound, playServerReady, primeNotifications } from "@/lib/matchAlert";
 import { useOverlay } from "@/lib/useOverlay";
-import { usePlayerNames, displayNameFor } from "@/components/playerHooks";
+import { usePlayerNames, displayNameFor, type PlayerNameMap } from "@/components/playerHooks";
 import AvatarImage from "@/components/AvatarImage";
 import { FormCard, FormLine, useRosterForm, type RecentForm } from "./PlayerForm";
 import LevelBadge from "./LevelBadge";
@@ -1409,7 +1409,7 @@ function InviteModal({
   send,
   t,
   names,
-}: { invite: any; send: any; t: any; names: Record<string, { name: string; avatar: string | null }> }) {
+}: { invite: any; send: any; t: any; names: PlayerNameMap }) {
   useEffect(() => {
     const tId = setTimeout(() => {
       send("rq:party:decline");

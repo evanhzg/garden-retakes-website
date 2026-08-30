@@ -179,8 +179,41 @@ check(
 
 const auto = autoAction(POOL, 3, []);
 check("a timed-out turn has something to do", auto !== null);
-check("it takes the first map still available", auto?.map === POOL[0], String(auto?.map));
+check("it picks a map that is actually available", POOL.includes(auto?.map ?? ""), String(auto?.map));
 check("a finished veto has nothing left to auto", autoAction(POOL, 3, three.actions) === null);
+
+// The draw is random rather than pool order. It was "first still available",
+// which is a fixed answer: the top of the pool was banned in every veto anybody
+// timed out of, and on a decider the same map was played every time. A team
+// that noticed could plan around it.
+check("a low draw takes the first", autoAction(POOL, 3, [], () => 0)?.map === POOL[0]);
+check(
+  "a high draw takes the last",
+  autoAction(POOL, 3, [], () => 0.999)?.map === POOL[POOL.length - 1],
+  String(autoAction(POOL, 3, [], () => 0.999)?.map),
+);
+
+// A source that returns exactly 1 would index past the end and auto-pick
+// undefined, which reads downstream as "no map" rather than as a bad draw.
+check("a source at the top of the range still picks a map", autoAction(POOL, 3, [], () => 1)?.map === POOL[POOL.length - 1]);
+
+// Over many draws every map should come up. Seeded rather than Math.random so a
+// failure here is reproducible instead of a flake somebody re-runs away.
+{
+  let seed = 12345;
+  const seeded = () => {
+    seed = (seed * 1103515245 + 12345) % 2147483648;
+    return seed / 2147483648;
+  };
+
+  const seen = new Set<string>();
+  for (let i = 0; i < 400; i++) {
+    const drawn = autoAction(POOL, 3, [], seeded)?.map;
+    if (drawn) seen.add(drawn);
+  }
+
+  check("every map in the pool can be drawn", seen.size === POOL.length, `${seen.size}/${POOL.length}`);
+}
 
 // A side turn must auto to a side, not to a map — autoing a map there would
 // desync the sequence from the actions and corrupt everything after it.

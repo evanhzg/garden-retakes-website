@@ -256,6 +256,11 @@
 }
 .rq-roster.right > li { flex-direction: row-reverse; text-align: right; }
 .rq-roster > li.me { border-color: color-mix(in srgb, var(--color-accent) 55%, transparent); }
+
+/* Your own name in the accent. The tinted border alone was easy to miss on a
+   roster of six at a glance, and finding yourself is the first thing anybody
+   does when the matchroom opens. */
+.rq-roster > li.me .rq-member-name { color: var(--color-accent); font-weight: 700; }
 .rq-roster > li.bot { opacity: 0.72; }
 .rq-roster > li.bot .rq-avatar { background: color-mix(in srgb, var(--color-text) 18%, transparent); }
 

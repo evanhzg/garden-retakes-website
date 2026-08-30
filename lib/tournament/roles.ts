@@ -102,7 +102,18 @@ export type DraftState = {
   done: boolean;
   /** Roles already claimed, per team and side, so the board can grey them out. */
   taken: Record<DraftSlot, { T: string[]; CT: string[] }>;
+  /**
+   * Turns each team has not taken yet, including the one in progress.
+   *
+   * Carried on the state rather than recomputed by callers because it is what
+   * "the last player" means, and the forced-planter rule below is wrong by one
+   * if anybody counts it differently.
+   */
+  left: Record<DraftSlot, number>;
 };
+
+/** The T role every side must field. */
+export const REQUIRED_T_ROLE = "planter";
 
 /**
  * The order players choose in.
@@ -174,13 +185,46 @@ export function draftState(rosterA: string[], rosterB: string[], picks: RolePick
   // not shift everybody else's turn.
   const next = order.find((turn) => !byPlayer.has(turn.steamId)) ?? null;
 
-  return { order, next, done: next === null, taken };
+  const left: Record<DraftSlot, number> = { A: 0, B: 0 };
+  for (const turn of order) {
+    if (!byPlayer.has(turn.steamId)) left[turn.team]++;
+  }
+
+  return { order, next, done: next === null, taken, left };
 }
 
-/** Which roles this team may still take on a side. */
+/**
+ * Whether this team has run out of chances to choose a planter.
+ *
+ * A side without one has nobody carrying the bomb, which is not a worse
+ * strategy — it is a round that cannot be played. The plugin falls back to a
+ * generalist for an unknown role, and that generalist does not carry a bomb
+ * either, so nothing downstream rescues it.
+ *
+ * Forced on the LAST turn rather than the first: taking the choice away up
+ * front would make the role a chore handed to whoever drafts first, when the
+ * point of a draft is that a team decides between them. They get every turn but
+ * the final one to volunteer.
+ */
+export const mustTakePlanter = (state: DraftState, team: DraftSlot): boolean =>
+  !state.taken[team].T.includes(REQUIRED_T_ROLE) && state.left[team] <= 1;
+
+/**
+ * Which roles this team may still take on a side.
+ *
+ * On a team's last T turn with no planter yet, this is exactly the planter:
+ * offering the rest and refusing the click afterwards would be the same rule
+ * told twice, the second time as an error.
+ */
 export function availableRoles(state: DraftState, team: DraftSlot, side: RoleSide): RoleDef[] {
   const claimed = state.taken[team][side];
-  return rolesFor(side).filter((role) => !role.unique || !claimed.includes(role.id));
+  const free = rolesFor(side).filter((role) => !role.unique || !claimed.includes(role.id));
+
+  if (side === "T" && mustTakePlanter(state, team)) {
+    return free.filter((role) => role.id === REQUIRED_T_ROLE);
+  }
+
+  return free;
 }
 
 /**
@@ -218,6 +262,17 @@ export function validateRolePick(
     }
   }
 
+  // The last player on a side with no planter has no choice. Checked here as
+  // well as hidden from the board, because the board is not the only way in:
+  // a captain filling somebody in, or a client that skipped the refresh, would
+  // otherwise seat a side that cannot plant the bomb.
+  if (mustTakePlanter(state, team) && proposed.roleT !== REQUIRED_T_ROLE) {
+    return {
+      ok: false,
+      error: "Somebody has to carry the bomb — the last pick on a side without a planter is the planter.",
+    };
+  }
+
   return { ok: true };
 }
 
@@ -227,6 +282,10 @@ export function validateRolePick(
  * The least surprising legal answer — the first role still free on each side,
  * in the order they are listed — recorded as automatic so nobody has to guess
  * afterwards whether somebody meant it.
+ *
+ * It needs no rule of its own about the planter: `availableRoles` has already
+ * narrowed a last-turn side with no planter to exactly that role, so the first
+ * free role IS the planter. One rule, applied wherever roles are offered.
  */
 export function autoRolePick(
   rosterA: string[],

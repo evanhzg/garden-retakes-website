@@ -39,10 +39,19 @@ export async function POST(req: Request) {
 
   const avatars = new Map(webProfiles.map((p) => [p.SteamId.toString(), p.AvatarUrl]));
 
-  const players: Record<string, { name: string; avatar: string | null }> = {};
+  // A name nobody has comes back null, NOT as the id itself.
+  //
+  // Answering with the id made every caller's fallback unreachable:
+  // `displayNameFor` has a "Player 4821" for exactly this case and could never
+  // reach it, because a 17-digit string satisfies `??` perfectly well. The
+  // matchroom showed people their own SteamID as their nickname. The avatar is
+  // kept either way — having a picture and no name is a real state.
+  const players: Record<string, { name: string | null; avatar: string | null }> = {};
   for (const id of ids) {
+    const name = names.get(id);
+
     players[id] = {
-      name: names.get(id) ?? id,
+      name: name && name !== id ? name : null,
       avatar: avatars.get(id) ?? null,
     };
   }

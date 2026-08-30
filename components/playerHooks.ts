@@ -47,7 +47,16 @@ export function useGameEvents(events: GameEvent[] | undefined, handler: (e: Game
   }, [events]);
 }
 
-export type ResolvedPlayer = { name: string; avatar: string | null };
+/**
+ * `name` is null when nobody has one for this id.
+ *
+ * It used to be a string that the API filled with the SteamID when it had
+ * nothing better, which made every caller's "Player 4821" fallback dead code —
+ * a 17-digit string satisfies `??` perfectly well — and put people's own
+ * SteamIDs on screen as their nicknames. An avatar can exist without a name, so
+ * the two are separate rather than the whole entry being dropped.
+ */
+export type ResolvedPlayer = { name: string | null; avatar: string | null };
 export type PlayerNameMap = Record<string, ResolvedPlayer>;
 
 // Module-level cache so navigating hub <-> lobby doesn't refetch the same ids
@@ -136,5 +145,5 @@ export function displayNameFor(
   if (player?.isBot) return player.botName ? `${player.botName} (bot)` : "Bot";
   if (steamId.startsWith("BOT_")) return "Bot";
   if (steamId.startsWith("GUEST_")) return `Guest ${steamId.slice(-4).toUpperCase()}`;
-  return names[steamId]?.name ?? `Player ${steamId.slice(-4)}`;
+  return names[steamId]?.name || `Player ${steamId.slice(-4)}`;
 }
