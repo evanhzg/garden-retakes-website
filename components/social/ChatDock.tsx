@@ -182,9 +182,13 @@ export default function ChatDock({
         body: JSON.stringify({ targetSteamId: friendId, content }),
       });
       if (!res.ok) throw new Error("send failed");
+      // The mapped shape from lib/webMessage, not the ORM row. Reading `Id` and
+      // `CreatedAtUtc` here was the other half of the same mismatch: even once
+      // the route stopped 500ing, those field names would have been undefined
+      // and every sent message would have kept its temporary id for ever.
       const data = await res.json();
-      const id = data?.message?.Id ?? tempId;
-      const ts = data?.message?.CreatedAtUtc ? new Date(data.message.CreatedAtUtc).getTime() : optimistic.ts;
+      const id = data?.message?.id ?? tempId;
+      const ts = typeof data?.message?.ts === "number" ? data.message.ts : optimistic.ts;
 
       setMessages((prev) => prev.map((m) => (m.id === tempId ? { ...m, id, ts, pending: false } : m)));
       socket?.emit("send_message", { type: "dm", targetSteamId: friendId, content, id, ts });

@@ -1,14 +1,21 @@
 import { NextResponse } from "next/server";
-import { PrismaClient } from "@prisma/client";
+import { prisma } from "@/lib/db";
+import { toWireMessage } from "@/lib/webMessage";
 
-const prisma = new PrismaClient();
+// Direct messages between two players.
+//
+// Both handlers answer with `toWireMessage`. They used to disagree: the GET
+// mapped its rows and the POST returned the Prisma row, which carries BigInt
+// SteamIDs that JSON.stringify cannot serialise — so every send wrote its row
+// and then answered 500, and the sender watched their own message get pulled
+// back off the screen and their text returned to the box.
 
 export async function GET(request: Request) {
   try {
     const steamIdHeader = request.headers.get("Authorization")?.replace("Bearer ", "");
     if (!steamIdHeader) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
     const steamId = BigInt(steamIdHeader);
-    
+
     const { searchParams } = new URL(request.url);
     const targetIdStr = searchParams.get("targetId");
     if (!targetIdStr) return NextResponse.json({ error: "Missing targetId" }, { status: 400 });
@@ -25,16 +32,11 @@ export async function GET(request: Request) {
       take: 50
     });
 
-    const adminIds = (await prisma.gardenAdmin.findMany()).map(a => a.SteamId);
+    const adminIds = (await prisma.gardenAdmin.findMany({ select: { SteamId: true } })).map(a => a.SteamId);
 
-    return NextResponse.json(messages.map(m => ({
-      id: m.Id,
-      from: m.SenderSteamId.toString(),
-      to: m.RecipientSteamId?.toString(),
-      content: m.Content,
-      ts: m.CreatedAtUtc.getTime(),
-      isAdmin: adminIds.includes(m.SenderSteamId)
-    })));
+    return NextResponse.json(
+      messages.map((m) => toWireMessage(m, adminIds.includes(m.SenderSteamId))),
+    );
   } catch (error) {
     console.error(error);
     return NextResponse.json({ error: "Internal Server Error" }, { status: 500 });
@@ -60,7 +62,7 @@ export async function POST(request: Request) {
       }
     });
 
-    return NextResponse.json({ success: true, message });
+    return NextResponse.json({ success: true, message: toWireMessage(message) });
   } catch (error) {
     console.error(error);
     return NextResponse.json({ error: "Internal Server Error" }, { status: 500 });
