@@ -52,6 +52,11 @@ type KillLine = {
   winnerSlot?: "A" | "B";
   /** Round rows only: how it was won. */
   reason?: string;
+  /** Round rows only: each side's Blitz Tier after the round, and how far it moved. */
+  tierA?: number;
+  tierB?: number;
+  moveA?: number;
+  moveB?: number;
   round?: number;
   attackerSteamId?: string;
   attackerName?: string;
@@ -230,6 +235,13 @@ export async function POST(req: Request) {
           Kind: kind.slice(0, 16),
           WinnerSlot: k.winnerSlot ?? null,
           Reason: k.reason?.slice(0, 24) ?? null,
+          // Clamped rather than trusted: these land in a TINYINT, and the
+          // ingest is the boundary where a plugin the site did not deploy
+          // stops being able to write something the column cannot hold.
+          TierA: tinyOrNull(k.tierA),
+          TierB: tinyOrNull(k.tierB),
+          MoveA: tinyOrNull(k.moveA),
+          MoveB: tinyOrNull(k.moveB),
           VictimSteamId: BigInt(k.victimSteamId || "0"),
           VictimName: k.victimName?.slice(0, 64) ?? null,
           VictimSlot: k.victimSlot ?? null,
@@ -309,6 +321,16 @@ export async function POST(req: Request) {
 }
 
 const num = (v: unknown) => (typeof v === "number" && Number.isFinite(v) ? Math.trunc(v) : 0);
+
+/**
+ * A number small enough for a TINYINT column, or null.
+ *
+ * Absent stays absent — a kill row has no tier, and a round played before the
+ * ladder existed has none either, so null is the honest answer rather than a
+ * zero that would draw as "stayed put".
+ */
+const tinyOrNull = (v: unknown): number | null =>
+  typeof v === "number" && Number.isFinite(v) ? Math.max(-128, Math.min(127, Math.trunc(v))) : null;
 
 /**
  * Which map a stat line belongs to.

@@ -32,16 +32,6 @@ type Entry = { at: string; actor: string; action: string; detail: string };
 const weapon = (item: string) => item.replace(/^weapon_/, "").replace(/_/g, " ");
 
 
-/**
- * Cash, for the loadout view.
- *
- * Still used there and only there. The round row above dropped its economy
- * column because a CS2 backup carries no cash at all; this survives because the
- * per-player block is drawn only when the file DID yield players, and a file
- * that yields players yields their money with them.
- */
-const money = (n: number) => `$${n.toLocaleString("en-US")}`;
-
 /** One line of the feed, as the history panel needs it. */
 type FeedLine = {
   id: number;
@@ -266,8 +256,12 @@ export default function MatchHistoryModal({
                   {p.kills}–{p.deaths}–{p.assists}
                 </span>
 
-                <span className="mh-cash num">{money(p.cash)}</span>
-
+                {/* No cash column. The mode has no money — a side has a Blitz
+                    Tier, and the plugin zeroes every account so CS2's buy menu
+                    stays shut — so this could only ever read "$0" for everybody
+                    and would say the match was broken rather than that money is
+                    not how the mode works. The tier is on the round line in the
+                    feed, where the round that changed it is. */}
                 {/* The loadout is the point of the whole view: "how did they
                     lose a 3-0 lead" is usually answered by what they bought. */}
                 <span className="mh-items">

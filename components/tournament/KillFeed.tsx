@@ -9,11 +9,50 @@ import "./killfeed.css";
 
 type Who = { steamId: string; name: string | null; slot: string | null } | null;
 
+/**
+ * A side's move on the Blitz Tier ladder, as chevrons.
+ *
+ * One per rung moved, so a two-rung swing is two arrows rather than a bigger
+ * one — the count IS the size, and a reader does not have to learn a second
+ * visual language for it. Nothing at all when the move is zero, which is how
+ * staying put reads as staying put: winning at High and losing at Low are both
+ * "no change", and an arrow there would be a lie about what the round did.
+ *
+ * Null rather than zero for a round played before the ladder existed, so the
+ * old rounds in a long match draw nothing instead of claiming they held.
+ */
+function TierMove({ move }: { move: number | null }) {
+  if (!move) return null;
+
+  const up = move > 0;
+
+  return (
+    <span
+      className={`kf-tier-move ${up ? "up" : "down"}`}
+      aria-label={up ? `up ${move}` : `down ${-move}`}
+    >
+      {Array.from({ length: Math.min(Math.abs(move), 3) }).map((_, i) => (
+        <svg key={i} viewBox="0 0 24 24" width="9" height="9" aria-hidden>
+          <path
+            d={up ? "M12 5 L21 19 L3 19 Z" : "M12 19 L3 5 L21 5 Z"}
+            fill="currentColor"
+          />
+        </svg>
+      ))}
+    </span>
+  );
+}
+
 type Entry = {
   id: number;
   kind: string;
   winnerSlot: string | null;
   reason: string | null;
+  /** Round rows: each side's Blitz Tier after the round, and how far it moved. */
+  tierA: number | null;
+  tierB: number | null;
+  moveA: number | null;
+  moveB: number | null;
   round: number;
   mapOrdinal: number;
   attacker: Who;
@@ -153,6 +192,12 @@ export default function KillFeed({
                     <span className={`kf-name slot-${(e.winnerSlot ?? "none").toLowerCase()}`}>
                       {e.winnerSlot === "A" ? teamA : e.winnerSlot === "B" ? teamB : "—"}
                     </span>
+                    {/* Both sides' moves, winner's first. Two arrows rather
+                        than one because a round moves both teams, and the
+                        interesting half is often the other one — a side that
+                        just fell to Low is the story of the next round. */}
+                    <TierMove move={e.winnerSlot === "B" ? e.moveB : e.moveA} />
+                    <TierMove move={e.winnerSlot === "B" ? e.moveA : e.moveB} />
                   </span>
                 </>
               ) : e.kind === "defuse" ? (

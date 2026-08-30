@@ -131,6 +131,24 @@
 .kf-name.slot-b { color: #f59e0b; }
 .kf-name.slot-none { color: var(--color-text-muted); }
 
+/* A side's move on the Blitz Tier ladder: one chevron per rung, coloured by
+   direction rather than by team.
+
+   Direction, because that is what the mark means — the team is already named
+   beside it, and colouring these by slot would make two arrows saying opposite
+   things look like the same thing. `flex: none` so a long team name ellipsises
+   before the arrows do: the arrows are three glyphs and the name has room to
+   spare, and an arrow clipped in half reads as a rendering fault. */
+.kf-tier-move {
+  display: inline-flex;
+  align-items: center;
+  gap: 1px;
+  flex: none;
+}
+
+.kf-tier-move.up { color: #4ade80; }
+.kf-tier-move.down { color: #f87171; }
+
 /* Nobody killed them — the bomb, or a fall. The column stays empty rather than
    naming a player who does not exist. */
 .kf-nokiller {

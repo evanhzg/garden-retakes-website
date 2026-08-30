@@ -68,6 +68,10 @@ export async function GET(req: NextRequest) {
       kind: k.Kind,
       winnerSlot: k.WinnerSlot,
       reason: k.Reason,
+      tierA: k.TierA,
+      tierB: k.TierB,
+      moveA: k.MoveA,
+      moveB: k.MoveB,
       round: k.Round,
       mapOrdinal: k.MapOrdinal,
       attacker: k.AttackerSteamId.toString() === "0"

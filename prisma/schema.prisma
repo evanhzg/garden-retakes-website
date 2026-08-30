@@ -1995,6 +1995,16 @@ model TournamentKill {
   /// "elimination", "time".
   Reason          String?  @db.VarChar(24)
 
+  /// Round rows only: each side's Blitz Tier after the round, 1 to 3, and how
+  /// far it just moved. The move is signed and is the arrow count — the feed
+  /// draws one chevron per rung, so a zero draws nothing and staying put reads
+  /// as staying put. Null on every row that is not a round, and on every round
+  /// played before the ladder replaced the money economy.
+  TierA           Int?     @db.TinyInt
+  TierB           Int?     @db.TinyInt
+  MoveA           Int?     @db.TinyInt
+  MoveB           Int?     @db.TinyInt
+
   Weapon          String   @default("") @db.VarChar(32)
   Headshot        Boolean  @default(false)
   TeamKill        Boolean  @default(false)
