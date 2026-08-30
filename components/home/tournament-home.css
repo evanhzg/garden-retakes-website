@@ -262,17 +262,17 @@
 .th-key.t { color: var(--color-accent); }
 .th-key.ct { color: #3b82f6; margin-left: 8px; }
 
-.mirage {
+.bs {
   display: block;
   width: 100%;
   height: auto;
   padding: 14px;
 }
 
-/* The floor has no stroke of its own. The outline is .mirage-wall below, drawn
-   as separate segments so the gaps between them are the entrances — a stroke
-   here would close every one of them. */
-.mirage-floor {
+/* The floor has no stroke of its own. The outline is .bs-wall below, drawn as
+   separate segments so the gaps between them are the entrances — a stroke here
+   would close every one of them. */
+.bs-floor {
   fill: color-mix(in srgb, var(--color-text) 5%, transparent);
   stroke: none;
 }
@@ -280,7 +280,7 @@
 /* Solid geometry: what you can stand on or behind. Butt caps, because a round
    cap on a wall segment bleeds into the doorway beside it and closes the gap
    the segment exists to leave. */
-.mirage-wall {
+.bs-wall {
   fill: none;
   stroke: var(--color-text);
   stroke-width: 1.6;
@@ -288,18 +288,17 @@
   stroke-linecap: butt;
 }
 
-.mirage-block {
+.bs-block {
   fill: color-mix(in srgb, var(--color-text) 13%, transparent);
   stroke: var(--color-text);
   stroke-width: 1;
   stroke-opacity: 0.4;
 }
 
-/* The plantable area, as the radar draws it: a dashed outline around the ground
-   the bomb can go on, not a wall. Dashed and in the bomb's own colour so it
-   cannot be mistaken for cover — it is the one shape here you can walk through
-   and still be somewhere that matters. */
-.mirage-zone {
+/* The plantable ground: a dashed outline around where the bomb can go, not a
+   wall. In the bomb's own colour so it cannot be mistaken for cover — it is the
+   one shape here you can walk through and still be somewhere that matters. */
+.bs-zone {
   fill: color-mix(in srgb, var(--color-accent) 5%, transparent);
   stroke: var(--color-accent);
   stroke-width: 1.4;
@@ -307,30 +306,36 @@
   stroke-dasharray: 5 4;
 }
 
-/* The ways in. White rather than per-side: several of these six are used by
-   both teams, and colouring them implied an ownership the map does not have.
+/* The ways in and the ways back, in the two colours the legend above the figure
+   names. The whole point of the drawing is that the two attack routes share a
+   corner and the three retake routes do not, and that is unreadable if every
+   line is the same colour.
 
    Butt caps, not round. Round caps blunt the ends of every dash and make a
    dashed line read as a row of lozenges rather than as a route. */
-.mirage-path {
+.bs-path {
   fill: none;
-  stroke: #fff;
   stroke-width: 2;
   stroke-dasharray: 7 6;
   stroke-linecap: butt;
-  stroke-opacity: 0.85;
+  stroke-opacity: 0.9;
 }
 
-.mirage-arrow { fill: #fff; fill-opacity: 0.85; }
+.bs-path.t { stroke: var(--color-accent); }
+.bs-path.ct { stroke: #3b82f6; }
 
-.mirage-plant {
+.bs-head { fill-opacity: 0.9; }
+.bs-head.t { fill: var(--color-accent); }
+.bs-head.ct { fill: #3b82f6; }
+
+.bs-plant {
   fill: none;
   stroke: var(--color-accent);
   stroke-width: 1.5;
   stroke-dasharray: 3 3;
 }
 
-.mirage-plant-label {
+.bs-plant-label {
   font-family: var(--font-mono);
   font-size: 9px;
   font-weight: 700;
@@ -338,7 +343,8 @@
   text-anchor: middle;
 }
 
-.mirage-site {
+.bs-site {
+  font-family: var(--font-mono);
   font-size: 34px;
   font-weight: 900;
   fill: var(--color-text);

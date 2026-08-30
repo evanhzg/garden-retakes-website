@@ -17,7 +17,7 @@ import {
   X,
 } from "lucide-react";
 import { useI18n } from "@/components/I18nProvider";
-import MirageASite from "./MirageASite";
+import BombsiteDiagram from "./BombsiteDiagram";
 import "./tournament-home.css";
 
 // The homepage.
@@ -185,7 +185,7 @@ export default function TournamentHome({
             </span>
           </figcaption>
 
-          <MirageASite />
+          <BombsiteDiagram />
 
           <p className="th-fignote">{t("home.map.note")}</p>
         </figure>
