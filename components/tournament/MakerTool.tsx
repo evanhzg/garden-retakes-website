@@ -3,6 +3,7 @@
 import { useCallback, useEffect, useMemo, useState } from "react";
 import { useI18n } from "@/components/I18nProvider";
 import MapPicker from "@/components/admin/MapPicker";
+import { CT_ROLES, T_ROLES } from "@/lib/tournament/roles";
 import "./maker.css";
 
 // The Maker tool.
@@ -43,10 +44,13 @@ type Spawn = {
   variants: Variant[];
 };
 
-const CT_ROLES = ["frontrunner", "backup", "roamer", "awper"];
-const T_ROLES = ["planter", "rifler", "sniper"];
+// From the role module rather than written out again: this was its own copy,
+// and a stale copy here means the newest role cannot be given a spawn at all.
+const CT_ROLE_IDS = CT_ROLES.map((r) => r.id);
+const T_ROLE_IDS = T_ROLES.map((r) => r.id);
 
-/** Matches the marker colours in game, so a role reads the same in both places. */
+/** Matches the marker colours in game (SpawnMarkers.ColourFor), so a role reads
+ *  the same in both places. */
 const ROLE_COLOUR: Record<string, string> = {
   frontrunner: "#ff3b30",
   backup: "#3b82f6",
@@ -55,6 +59,7 @@ const ROLE_COLOUR: Record<string, string> = {
   planter: "#f59e0b",
   sniper: "#ec4899",
   rifler: "#4ade80",
+  burner: "#a3e635",
 };
 
 /** The four lists a map is authored in: each site, each side. */
@@ -206,7 +211,7 @@ export default function MakerTool({
     [adminKey, load, t],
   );
 
-  const roles = draft.team === 2 ? T_ROLES : CT_ROLES;
+  const roles = draft.team === 2 ? T_ROLE_IDS : CT_ROLE_IDS;
 
   // A role from the other side stays selected when the side is switched, which
   // the server would reject — so it is corrected here rather than at submit.

@@ -124,6 +124,17 @@ check("frontrunner is unique", CT_ROLES.find((r) => r.id === "frontrunner")?.uni
 check("backup is the CT generalist", CT_ROLES.find((r) => r.id === "backup")?.unique === false);
 check("rifler is the T generalist", T_ROLES.find((r) => r.id === "rifler")?.unique === false);
 
+// The burner is unique for the most literal reason any of them are: it is the
+// only T role that can hold a molotov, so a second one is a second molotov and
+// the scarcity the role exists to create is gone.
+check("burner is a T role", T_ROLES.some((r) => r.id === "burner"));
+check("burner is unique", T_ROLES.find((r) => r.id === "burner")?.unique === true);
+check("burner reads as Burner", roleLabel("burner") === "Burner");
+check(
+  "the rifler is the only T role that is not unique",
+  T_ROLES.filter((r) => !r.unique).map((r) => r.id).join() === "rifler",
+);
+
 // The AWPer is called Sniper on both sides now. The id stays `awper` because the
 // plugin keys its role kits by id across both sides and cannot hold two called
 // `sniper` — so the label is the rename and the wire is untouched.

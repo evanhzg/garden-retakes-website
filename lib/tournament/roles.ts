@@ -30,10 +30,19 @@ export type RoleDef = {
   unique: boolean;
 };
 
-/** The T-side roles, in the order they are offered. */
+/**
+ * The T-side roles, in the order they are offered.
+ *
+ * `burner` is unique for the same reason `roamer` is, and more literally: it is
+ * the only role on the side that can hold a molotov, so two of them is two
+ * molotovs and the scarcity the role exists to create is gone. The plugin's
+ * RoleKits enforces the same thing, and its loadout keeps fire out of the
+ * ordinary T mix so no other role can be handed one by accident.
+ */
 export const T_ROLES: RoleDef[] = [
   { id: "planter", label: "Planter", unique: true },
   { id: "sniper", label: "Sniper", unique: true },
+  { id: "burner", label: "Burner", unique: true },
   { id: "rifler", label: "Rifler", unique: false },
 ];
 

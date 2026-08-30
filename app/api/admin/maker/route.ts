@@ -3,6 +3,7 @@ import { prisma } from "@/lib/db";
 import { getAdminContext, logAdminAction } from "@/lib/adminAuth";
 import { AdminLevel } from "@/lib/adminImmunity";
 import { makerExec, NoMakerServerError } from "@/lib/tournament/makerServer";
+import { CT_ROLES, T_ROLES } from "@/lib/tournament/roles";
 
 export const dynamic = "force-dynamic";
 export const runtime = "nodejs";
@@ -14,10 +15,12 @@ export const runtime = "nodejs";
 // from in game, deliberately: an admin standing in a map should not be able to
 // invent a spawn that the page knows nothing about.
 
-/** Roles the plugin will accept, per side. Kept here so a bad pick is refused
- *  before it becomes an RCON command that fails silently on the server. */
-const CT_ROLES = ["roamer", "frontrunner", "awper", "backup"] as const;
-const T_ROLES = ["planter", "sniper", "rifler"] as const;
+/** Roles the plugin will accept, per side, so a bad pick is refused before it
+ *  becomes an RCON command that fails silently on the server. Read from the
+ *  role module rather than written out again — this list was its own copy and
+ *  went stale, which here means the newest role cannot be authored a spawn. */
+const CT_ROLE_IDS = CT_ROLES.map((r) => r.id);
+const T_ROLE_IDS = T_ROLES.map((r) => r.id);
 
 type Body = {
   key?: string;
@@ -103,7 +106,7 @@ async function handle(
     return NextResponse.json({ error: "A map and a name are required." }, { status: 400 });
   }
 
-  const legal: readonly string[] = team === 2 ? T_ROLES : CT_ROLES;
+  const legal: readonly string[] = team === 2 ? T_ROLE_IDS : CT_ROLE_IDS;
   if (!legal.includes(role)) {
     return NextResponse.json(
       { error: `'${role}' is not a ${team === 2 ? "T" : "CT"} role. Try: ${legal.join(", ")}` },

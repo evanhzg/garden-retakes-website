@@ -5,7 +5,7 @@ import { createPortal } from "react-dom";
 import { motion } from "framer-motion";
 import { Ban, Mic } from "lucide-react";
 import { useI18n } from "@/components/I18nProvider";
-import { ROLE_ICON } from "@/components/retakes/roleIcons";
+import { ROLE_ICON } from "@/components/roleIcons";
 import { useAnchoredPosition } from "@/components/retakes/useAnchoredPosition";
 import { isRoleUnique, rolesFor, type Side } from "@/lib/retakeLoadout";
 

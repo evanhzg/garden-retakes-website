@@ -7,7 +7,7 @@ import { useI18n } from "@/components/I18nProvider";
 import BundlePicker from "@/components/retakes/BundlePicker";
 import MapPreferences from "@/components/retakes/MapPreferences";
 import RetakesIcon from "@/components/retakes/RetakesIcon";
-import { ROLE_ICON } from "@/components/retakes/roleIcons";
+import { ROLE_ICON } from "@/components/roleIcons";
 import { RETAKES_MAPS, mapName } from "@/lib/maps";
 import {
   ROLES,

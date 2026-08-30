@@ -2,21 +2,10 @@
 
 import { useState } from "react";
 import Link from "next/link";
-import {
-  ArrowRight,
-  Bomb,
-  Check,
-  Crosshair,
-  Flame,
-  GitBranch,
-  Shield,
-  Swords,
-  Target,
-  Trophy,
-  Users,
-  X,
-} from "lucide-react";
+import { ArrowRight, Check, GitBranch, Trophy, Users, X } from "lucide-react";
 import { useI18n } from "@/components/I18nProvider";
+import { ROLE_ICON } from "@/components/roleIcons";
+import { CT_ROLES, T_ROLES } from "@/lib/tournament/roles";
 import BombsiteDiagram from "./BombsiteDiagram";
 import "./tournament-home.css";
 
@@ -47,22 +36,24 @@ export type HomeTournament = {
   canRegister: boolean;
 };
 
-/** The seven tournament roles, from R5eGames.Tournament.Core/Roles/RoleKit.cs. */
+/**
+ * The tournament roles, from lib/tournament/roles.ts — which is itself the
+ * plugin's list, from R5eGames.Tournament.Core/Roles/RoleKit.cs.
+ *
+ * Derived rather than written out again. This page kept its own copy until it
+ * disagreed with the real one: the roamer was unique everywhere that enforces
+ * it and non-unique here, which is the worst possible place to be wrong, since
+ * this is the page that explains the rule to people who do not know it.
+ */
 type Role = {
   id: string;
   side: "ct" | "t";
-  icon: React.ReactNode;
   unique: boolean;
 };
 
 const ROLES: Role[] = [
-  { id: "roamer", side: "ct", icon: <Crosshair size={16} />, unique: false },
-  { id: "frontrunner", side: "ct", icon: <Swords size={16} />, unique: true },
-  { id: "awper", side: "ct", icon: <Target size={16} />, unique: true },
-  { id: "backup", side: "ct", icon: <Shield size={16} />, unique: false },
-  { id: "planter", side: "t", icon: <Bomb size={16} />, unique: true },
-  { id: "sniper", side: "t", icon: <Target size={16} />, unique: true },
-  { id: "rifler", side: "t", icon: <Flame size={16} />, unique: false },
+  ...CT_ROLES.map((r) => ({ id: r.id, side: "ct" as const, unique: r.unique })),
+  ...T_ROLES.map((r) => ({ id: r.id, side: "t" as const, unique: r.unique })),
 ];
 
 const FLOW_STEPS = ["ready", "veto", "warmup", "live", "result"] as const;
@@ -208,21 +199,25 @@ export default function TournamentHome({
                   {side === "ct" ? t("home.roles.ct") : t("home.roles.t")}
                 </span>
 
-                {ROLES.filter((r) => r.side === side).map((r) => (
-                  <button
-                    key={r.id}
-                    role="tab"
-                    aria-selected={role.id === r.id}
-                    className={`th-role ${role.id === r.id ? "on" : ""} ${side}`}
-                    onClick={() => setRole(r)}
-                  >
-                    {r.icon}
-                    <span>{t(`role.${r.id}.name`)}</span>
-                    {/* One per team, and saying so is the whole reason the
-                        badge exists — it is the constraint people get wrong. */}
-                    {r.unique && <em>{t("home.roles.one")}</em>}
-                  </button>
-                ))}
+                {ROLES.filter((r) => r.side === side).map((r) => {
+                  const Icon = ROLE_ICON[r.id];
+
+                  return (
+                    <button
+                      key={r.id}
+                      role="tab"
+                      aria-selected={role.id === r.id}
+                      className={`th-role ${role.id === r.id ? "on" : ""} ${side}`}
+                      onClick={() => setRole(r)}
+                    >
+                      {Icon && <Icon size={16} />}
+                      <span>{t(`role.${r.id}.name`)}</span>
+                      {/* One per team, and saying so is the whole reason the
+                          badge exists — it is the constraint people get wrong. */}
+                      {r.unique && <em>{t("home.roles.one")}</em>}
+                    </button>
+                  );
+                })}
               </div>
             ))}
           </div>
