@@ -194,3 +194,36 @@
     animation: none;
   }
 }
+
+/* Space held for the buttons that arrive with the detail fetch.
+   Two bars the size of the buttons that will replace them, so the card is its
+   final height from the first frame and the match room button above them never
+   moves under the cursor. */
+.mm-skeleton {
+  display: flex;
+  gap: 8px;
+  width: 100%;
+}
+
+.mm-skeleton > span {
+  flex: 1;
+  height: 34px;
+  border: 1px solid var(--color-divider);
+  background: linear-gradient(
+    90deg,
+    color-mix(in srgb, var(--color-text) 5%, transparent) 25%,
+    color-mix(in srgb, var(--color-text) 10%, transparent) 37%,
+    color-mix(in srgb, var(--color-text) 5%, transparent) 63%
+  );
+  background-size: 400% 100%;
+  animation: mm-shimmer 1.4s ease-in-out infinite;
+}
+
+@keyframes mm-shimmer {
+  0% { background-position: 100% 50%; }
+  100% { background-position: 0 50%; }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .mm-skeleton > span { animation: none; }
+}

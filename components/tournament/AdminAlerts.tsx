@@ -50,6 +50,7 @@ export default function AdminAlerts({ tournamentId }: { tournamentId: number }) 
   const [alerts, setAlerts] = useState<Alert[]>([]);
   const [recent, setRecent] = useState<Alert[]>([]);
   const [canManage, setCanManage] = useState(false);
+  const [discord, setDiscord] = useState<{ organizers: number; linked: number; mine: boolean } | null>(null);
   const [open, setOpen] = useState(false);
 
   /** The newest id already seen, so the sound fires for new calls only. */
@@ -63,8 +64,14 @@ export default function AdminAlerts({ tournamentId }: { tournamentId: number }) 
       });
       if (!res.ok) return;
 
-      const data: { canManage: boolean; alerts?: Alert[]; recent?: Alert[] } = await res.json();
+      const data: {
+        canManage: boolean;
+        alerts?: Alert[];
+        recent?: Alert[];
+        discord?: { organizers: number; linked: number; mine: boolean };
+      } = await res.json();
       setCanManage(Boolean(data.canManage));
+      setDiscord(data.discord ?? null);
       setAlerts(data.alerts ?? []);
       setRecent(data.recent ?? []);
 
@@ -194,6 +201,24 @@ export default function AdminAlerts({ tournamentId }: { tournamentId: number }) 
               </header>
 
               <div className="aa-body">
+                {/* Said here rather than discovered at 2am. A DM to an
+                    organizer who has not linked Discord fails silently — no
+                    error, no message, nothing to notice — so the panel counts
+                    who will actually be reached. */}
+                {discord && !discord.mine && (
+                  <a className="aa-link-discord" href="/settings">
+                    {t("alerts.linkDiscord")}
+                  </a>
+                )}
+                {discord && discord.mine && discord.linked < discord.organizers && (
+                  <p className="aa-discord-note">
+                    {t("alerts.someUnlinked", {
+                      linked: String(discord.linked),
+                      total: String(discord.organizers),
+                    })}
+                  </p>
+                )}
+
                 {alerts.length === 0 && recent.length === 0 && (
                   <p className="aa-none">{t("alerts.none")}</p>
                 )}

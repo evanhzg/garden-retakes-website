@@ -148,6 +148,34 @@ export default function MatchModal({
         )}
 
         <div className="mm-actions">
+          {/* First, and always rendered.
+
+              This used to be last, after everything that depends on the detail
+              fetch — so the one button that is always there, and the one people
+              actually aim for, moved down the card a moment after opening as
+              the watch buttons appeared above it. Clicking where it was and
+              landing on "Watch" is the specific failure that fixes.
+
+              Nothing below it can move it now: things are added underneath. */}
+          <Link className="btn mm-btn" href={`/tournaments/${slug}/match/${match.id}`}>
+            <ExternalLink size={15} />
+            {t("match.openPage")}
+          </Link>
+
+          {/* And a placeholder for what is still loading, so the card does not
+              grow under the cursor either.
+
+              Only when there is something to wait FOR. A match nobody has
+              played has no server and never will have one until it starts, so
+              reserving space for buttons that are not coming is a hole in the
+              card rather than a promise. */}
+          {!detail && (match.state === "live" || match.state === "finished") && (
+            <span className="mm-skeleton" aria-hidden="true">
+              <span />
+              <span />
+            </span>
+          )}
+
           {/* Only offered when there is genuinely something to watch and this
               viewer is allowed to. The server decides both; this only renders
               what it was told. */}
@@ -198,10 +226,6 @@ export default function MatchModal({
             </p>
           )}
 
-          <Link className="btn mm-btn" href={`/tournaments/${slug}/match/${match.id}`}>
-            <ExternalLink size={15} />
-            {t("match.openPage")}
-          </Link>
         </div>
       </div>
     </div>,

@@ -2907,6 +2907,8 @@
   "match.mvp": "MVP du match",
   "match.serverLabel": "Serveur",
   "alerts.title": "Appels admin",
+  "alerts.linkDiscord": "Liez Discord pour être prévenu en MP quand un admin est appelé →",
+  "alerts.someUnlinked": "{linked} organisateurs sur {total} recevront un MP Discord.",
   "alerts.call": "Appeler un admin",
   "alerts.called": "Admin appelé",
   "alerts.callFailed": "Réessayer",

@@ -2907,6 +2907,8 @@
   "match.mvp": "Match MVP",
   "match.serverLabel": "Server",
   "alerts.title": "Admin calls",
+  "alerts.linkDiscord": "Link Discord to be DM'd when somebody calls an admin →",
+  "alerts.someUnlinked": "{linked} of {total} organizers will get a Discord DM.",
   "alerts.call": "Call an admin",
   "alerts.called": "Admin called",
   "alerts.callFailed": "Try again",

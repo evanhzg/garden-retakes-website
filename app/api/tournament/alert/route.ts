@@ -70,10 +70,41 @@ export async function GET(req: NextRequest) {
     ackedAt: a.AckedAt ? a.AckedAt.toISOString() : null,
   });
 
+  /**
+   * Whether the Discord half of this will actually do anything.
+   *
+   * DMs are the point of the feature — organizers are not sitting on a bracket
+   * at 2am — and they fail silently for anybody who has not linked their
+   * account: no error, no DM, nothing to notice. Counted here so the panel can
+   * say so, rather than leaving an organizer to discover it the first time
+   * somebody needs them.
+   */
+  const organizers = await prisma.tournamentOrganizer.findMany({
+    where: { TournamentId: tournamentId },
+    select: { SteamId: true },
+  });
+
+  const linked = organizers.length
+    ? await prisma.gardenDiscordLink.count({
+        where: { SteamId: { in: organizers.map((o) => o.SteamId) } },
+      })
+    : 0;
+
   return NextResponse.json({
     canManage: true,
     alerts: open.map(shape),
     recent: recent.map(shape),
+    discord: {
+      organizers: organizers.length,
+      linked,
+      // Whether THIS organizer will get one, which is the only part they can
+      // do anything about.
+      mine: ctx.steamId
+        ? (await prisma.gardenDiscordLink.findUnique({
+            where: { SteamId: BigInt(ctx.steamId) },
+          })) !== null
+        : false,
+    },
   });
 }
 
