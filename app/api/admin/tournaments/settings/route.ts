@@ -1,6 +1,8 @@
 import { NextResponse } from "next/server";
 import { randomBytes } from "node:crypto";
 import { prisma } from "@/lib/db";
+import { background } from "@/lib/background";
+import { notifyFollowers } from "@/lib/tournament/orgNotify";
 import { logAdminAction } from "@/lib/adminAuth";
 import { canManage, getTournamentContext } from "@/lib/tournamentAuth";
 import { canEditFormat, TEAM_SIZES, type EditionState } from "@/lib/tournament/edition";
@@ -120,6 +122,12 @@ export async function POST(req: Request) {
         where: { Id: tournament.Id },
         data: { Published: true, State: tournament.State === "draft" ? "registration" : tournament.State },
       });
+
+      // The followers of the org that runs it hear about it. Not awaited for
+      // its result: a tournament that published but could not announce itself
+      // is a much smaller problem than one that failed to publish, and
+      // notifyFollowers never throws for the same reason.
+      background("org:published", () => notifyFollowers(tournament.Id, "published"));
       await logAdminAction(ctx, "tournament.publish", undefined, tournament.Slug);
       return NextResponse.json({ ok: true });
 

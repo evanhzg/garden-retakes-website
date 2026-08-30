@@ -1,0 +1,265 @@
+/* An organization's page. */
+
+.org-hero {
+  position: relative;
+  overflow: hidden;
+}
+
+/* The presentation image, behind the name rather than above it: a banner with
+   the title sitting on it is one block, where a banner and then a title is two
+   and pushes everything else down a screen. */
+.org-banner {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  opacity: 0.28;
+}
+
+.org-hero-inner {
+  position: relative;
+}
+
+.org-actions {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  margin-top: 8px;
+}
+
+.org-follow {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 5px 10px;
+  border: 1px solid var(--color-divider);
+  background: var(--color-surface);
+  color: var(--color-text);
+  font: inherit;
+  font-size: 12px;
+  font-weight: 700;
+  cursor: pointer;
+}
+
+.org-follow.on {
+  border-color: var(--color-accent);
+  color: var(--color-accent);
+}
+
+.org-follow:disabled { opacity: 0.6; cursor: default; }
+
+/* Next to the button, not elsewhere: on its own it reads as vanity, here it is
+   context for the decision to press it. */
+.org-follow-count {
+  padding-left: 6px;
+  border-left: 1px solid var(--color-divider);
+  font-variant-numeric: tabular-nums;
+  color: var(--color-text-muted);
+}
+
+.org-followers {
+  font-size: 12px;
+  color: var(--color-text-muted);
+}
+
+.org-links {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px;
+  margin: 10px 0 0;
+}
+
+.org-links a {
+  font-size: 12px;
+  font-weight: 700;
+  color: var(--color-text-muted);
+  text-decoration: none;
+}
+
+.org-links a:hover { color: var(--color-accent); }
+
+.org-desc {
+  margin: 0;
+  max-width: 70ch;
+  white-space: pre-wrap;
+  overflow-wrap: anywhere;
+}
+
+/* 16:9 without a magic height. */
+.org-trailer {
+  position: relative;
+  width: 100%;
+  max-width: 760px;
+  aspect-ratio: 16 / 9;
+  border: 1px solid var(--color-divider);
+}
+
+.org-trailer iframe {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  border: 0;
+}
+
+.org-members {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(220px, 1fr));
+  gap: 8px;
+}
+
+.org-members > li {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 7px 9px;
+  border: 1px solid var(--color-divider);
+  background: var(--color-surface);
+  min-width: 0;
+}
+
+.org-member-avatar {
+  width: 28px;
+  height: 28px;
+  flex: none;
+  object-fit: cover;
+}
+
+.org-member-name {
+  flex: 1;
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  font-weight: 700;
+  color: inherit;
+  text-decoration: none;
+}
+
+.org-member-name:hover { color: var(--color-accent); }
+
+/* The two roles, told apart. Organizer is the accent because it is the one that
+   can change the bracket. */
+.org-role {
+  flex: none;
+  font-size: 9px;
+  font-weight: 800;
+  letter-spacing: 0.07em;
+  text-transform: uppercase;
+  padding: 2px 5px;
+  border: 1px solid var(--color-divider);
+  color: var(--color-text-muted);
+  user-select: none;
+}
+
+.org-role.role-organizer {
+  border-color: var(--color-accent);
+  color: var(--color-accent);
+}
+
+.org-tournaments {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.org-tournaments > li {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 10px;
+  padding: 7px 9px;
+  border: 1px solid var(--color-divider);
+  background: var(--color-surface);
+}
+
+.org-tournaments a {
+  font-weight: 700;
+  color: inherit;
+  text-decoration: none;
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.org-tournaments a:hover { color: var(--color-accent); }
+
+.org-tournaments time {
+  flex: none;
+  font-size: 11px;
+  color: var(--color-text-muted);
+  font-variant-numeric: tabular-nums;
+}
+
+/* ------------------------------------------------------------------ admin */
+
+.org-admin { border-color: var(--color-accent); }
+
+.org-form {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  max-width: 720px;
+  margin-bottom: 14px;
+}
+
+.org-form label {
+  display: flex;
+  flex-direction: column;
+  gap: 3px;
+  font-size: 11px;
+  font-weight: 700;
+  color: var(--color-text-muted);
+}
+
+.org-form input,
+.org-form textarea,
+.org-form select {
+  padding: 6px 8px;
+  border: 1px solid var(--color-divider);
+  background: var(--color-bg);
+  color: var(--color-text);
+  font: inherit;
+  font-size: 13px;
+}
+
+.org-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+  gap: 8px;
+}
+
+.org-member-add {
+  border-top: 1px solid var(--color-divider);
+  padding-top: 12px;
+}
+
+.org-note {
+  margin: 0 0 10px;
+  font-size: 12px;
+  color: var(--color-accent);
+}
+
+/* "by <org>" under a tournament's title. Quiet, because the tournament is the
+   headline and the org is the attribution — but a link, because it is the way
+   to everything else they have run. */
+.tournament-by {
+  margin: 2px 0 0;
+  font-size: 12.5px;
+}
+
+.tournament-by a {
+  color: var(--color-text-muted);
+  text-decoration: none;
+  font-weight: 700;
+}
+
+.tournament-by a:hover { color: var(--color-accent); }

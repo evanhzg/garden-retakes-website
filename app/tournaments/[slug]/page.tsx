@@ -1,6 +1,7 @@
 import { getSession } from "@/lib/auth";
 import { resolveName } from "@/lib/tournament/playerNames";
 import Link from "next/link";
+import "@/components/tournament/org.css";
 import { notFound } from "next/navigation";
 import { prisma } from "@/lib/db";
 import { getT } from "@/lib/serverI18n";
@@ -42,6 +43,15 @@ export default async function TournamentPage({ params }: { params: { slug: strin
       Organizers: true,
     },
   });
+
+  // Which org runs it. Null for every tournament that predates orgs, which is
+  // most of them — the byline simply is not drawn for those.
+  const org = tournament?.OrgId
+    ? await prisma.gardenOrg.findUnique({
+        where: { Id: tournament.OrgId },
+        select: { Slug: true, Name: true },
+      })
+    : null;
 
   if (!tournament) notFound();
 
@@ -223,6 +233,16 @@ export default async function TournamentPage({ params }: { params: { slug: strin
         <div className="hero-inner">
           <p className="eyebrow">{tournament.State}</p>
           <h1 className="grad">{tournament.Name}</h1>
+
+          {/* Who runs it, and a way to their other events. A tournament without
+              an org says nothing here rather than "by nobody" — most of them
+              predate orgs entirely. */}
+          {org && (
+            <p className="tournament-by">
+              <Link href={`/orgs/${org.Slug}`}>{t("org.by", { org: org.Name })}</Link>
+            </p>
+          )}
+
           {tournament.Description && <p className="muted">{tournament.Description}</p>}
 
           <p className="muted" style={{ fontSize: 13 }}>

@@ -1,4 +1,5 @@
 import { NextResponse } from "next/server";
+import { organizerSteamIdsOf } from "@/lib/tournament/orgs";
 import { prisma } from "@/lib/db";
 import { logAdminAction } from "@/lib/adminAuth";
 import { canManage, getTournamentContext, type TournamentContext } from "@/lib/tournamentAuth";
@@ -68,6 +69,8 @@ type Body = {
   slug?: string;
   teamSize?: number;
   maxTeams?: number;
+  /** Which org runs it. Optional — a tournament need not belong to one. */
+  orgId?: number;
   // add-stage
   stageName?: string;
   kind?: "group" | "swiss" | "single" | "double";
@@ -172,6 +175,11 @@ export async function POST(req: Request) {
           MaxTeams: body.maxTeams ?? 16,
           State: "registration",
           OwnerSteamId: ctx.steamId ? BigInt(ctx.steamId) : null,
+          // Which org is running it, when one was chosen. Everything that
+          // existed before orgs has null here and behaves exactly as it did.
+          OrgId: Number.isFinite(Number(body.orgId)) && Number(body.orgId) > 0
+            ? Number(body.orgId)
+            : null,
         },
       });
 
@@ -189,6 +197,35 @@ export async function POST(req: Request) {
             IsCreator: true,
           },
         });
+      }
+
+      /**
+       * The org's organizers get access, immediately.
+       *
+       * Written onto the tournament's own organizer list rather than left to be
+       * inferred, because that list is what the rest of the site reads — the
+       * settings page, the match admin panel, the organizer badge. Inferring it
+       * everywhere instead would mean every one of those places having to know
+       * about orgs, and the first one that forgot would silently deny access.
+       *
+       * Only the ORGANIZERS. An org's moderators are granted through the org
+       * role instead: this list is what canManageTournament reads, and
+       * everything on it can edit the bracket.
+       */
+      if (tournament.OrgId) {
+        const orgOrganizers = await organizerSteamIdsOf(tournament.OrgId);
+        const already = ctx.steamId ? new Set([ctx.steamId]) : new Set<string>();
+
+        for (const steamId of orgOrganizers) {
+          if (already.has(steamId)) continue;
+          await prisma.tournamentOrganizer.create({
+            data: {
+              TournamentId: tournament.Id,
+              SteamId: BigInt(steamId),
+              IsCreator: false,
+            },
+          });
+        }
       }
 
       await logAdminAction(ctx, "tournament.create", undefined, slug);
