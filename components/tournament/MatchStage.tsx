@@ -7,6 +7,7 @@ import RoleDraft, { type DraftWire } from "./RoleDraft";
 import VetoBoard, { type VetoWire } from "./VetoBoard";
 import Scoreboard from "./Scoreboard";
 import KillFeed from "./KillFeed";
+import RoomChat from "./RoomChat";
 import TeamPanel, { type PanelPlayer } from "./TeamPanel";
 import type { Scoreboard as Board } from "@/lib/tournament/scoreboard";
 import "./teampanel.css";
@@ -235,7 +236,7 @@ export default function MatchStage({
   }, [draft, mySlot, teamA.id, teamB.id]);
 
   return (
-    <div className="tp-frame">
+    <div className={`tp-frame ${stage === "match" ? "with-room" : ""}`}>
       <TeamPanel
         name={teamA.name}
         tag={teamA.tag}
@@ -250,11 +251,16 @@ export default function MatchStage({
         {/* One heading that says which of the four things this is. The panel
             used to be titled "Maps" throughout, including while it was showing
             ready-up buttons. */}
-        <h3 className="tp-stage-head">
-          {stage === "roles" && t("roledraft.title")}
-          {stage === "veto" && t("match.veto")}
-          {stage === "match" && t("tournaments.tabs.stats")}
-        </h3>
+        {/* No heading on the match stage.
+            "Stats" described neither of the two things under it, and unlike the
+            other three stages this one does not need announcing: a scoreboard
+            and a feed are self-evidently a scoreboard and a feed. */}
+        {stage !== "match" && (
+          <h3 className="tp-stage-head">
+            {stage === "roles" && t("roledraft.title")}
+            {stage === "veto" && t("match.veto")}
+          </h3>
+        )}
 
         {stage === "roles" && <p className="muted tp-stage-lead">{t("roledraft.lead")}</p>}
 
@@ -288,11 +294,14 @@ export default function MatchStage({
 
         {stage === "match" && (
           <>
-            <Scoreboard initial={initialBoard} />
+            {/* Above the scoreboard, and centred.
 
-            {/* Under the scoreboard, not beside it. The feed is narrow and the
-                scoreboard is wide; side by side one of them is always the wrong
-                shape, and on a phone the pair becomes two columns of nothing. */}
+                The feed is what is happening; the scoreboard is what has
+                happened. Under the table it was below the fold on a laptop for
+                the whole of a live match — the one time anybody wants it — and
+                a narrow panel left-aligned under a wide table reads as
+                something that failed to fill its space rather than as something
+                deliberately small. */}
             <KillFeed
               matchId={matchId}
               // "live" is per tab on the board, not a property of the match, so
@@ -303,6 +312,8 @@ export default function MatchStage({
               teamA={teamA.name}
               teamB={teamB.name}
             />
+
+            <Scoreboard initial={initialBoard} />
           </>
         )}
       </div>
@@ -316,6 +327,14 @@ export default function MatchStage({
         score={stage === "match" ? initialBoard.scoreB : undefined}
         ready={stage === "veto" && !veto?.started ? veto?.readyB : undefined}
       />
+
+      {/* The room, to the right of everything else.
+
+          Only once there is a match to talk about. During the role draft and
+          the veto the page is a sequence of turns with its own instructions,
+          and a chat column beside them is somewhere for two captains to argue
+          about a decision the interface is already making for them. */}
+      {stage === "match" && <RoomChat matchId={matchId} />}
     </div>
   );
 }

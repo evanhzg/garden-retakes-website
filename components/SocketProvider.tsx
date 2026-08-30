@@ -57,14 +57,37 @@ export const SocketProvider = ({
           : "https://node-sockets-reeeeetakes.onrender.com");
     const socketInstance = socketUrl ? io(socketUrl) : io();
 
+    /**
+     * Identify, every time there is a connection to identify on.
+     *
+     * The server drops `send_message` from a socket with no steamId on it —
+     * silently, because there is nobody to tell — so a socket that never
+     * authenticated is a chat that never delivers live. The reconcile poll then
+     * makes it look like messages take thirty seconds rather than like
+     * something is broken, which is why this took a while to see.
+     */
+    const identify = () => {
+      if (steamId) socketInstance.emit('authenticate', { steamId });
+    };
+
     socketInstance.on('connect', () => {
       console.log('Connected to Game Hub Socket:', socketInstance.id);
       setIsConnected(true);
-
-      if (steamId) {
-        socketInstance.emit('authenticate', { steamId });
-      }
+      identify();
     });
+
+    // And once now, because `connect` may already have fired before this
+    // listener was attached — socket.io can connect synchronously off a warm
+    // transport, and then the handler above never runs at all.
+    if (socketInstance.connected) {
+      setIsConnected(true);
+      identify();
+    }
+
+    // A reconnect gives a NEW server-side socket with none of the old one's
+    // identity or rooms on it. Without this, chat works until the first blip
+    // and is quietly dead afterwards.
+    socketInstance.io.on('reconnect', identify);
 
     socketInstance.on('authenticated', () => {
       setIsAuthed(true);
@@ -79,6 +102,7 @@ export const SocketProvider = ({
     setSocket(socketInstance);
 
     return () => {
+      socketInstance.io.off('reconnect', identify);
       socketInstance.disconnect();
     };
   }, [steamId]);

@@ -1,4 +1,6 @@
-import React from "react";
+"use client";
+
+import React, { useState } from "react";
 
 /**
  * The weapon on a feed line, in CS2's killfeed style.
@@ -321,7 +323,40 @@ function shapeFor(weapon: string): React.ReactNode {
   return SKULL;
 }
 
+/**
+ * Real sprites, when they are there.
+ *
+ * CS2's own killfeed icons are Valve's art and are not in this repo — extracting
+ * them from a game install and committing them is a decision about somebody
+ * else's copyright, and not one a deploy should make quietly. So the mechanism
+ * is here and the assets are not: drop `<weapon>.svg` into public/killfeed/
+ * (ak47.svg, awp.svg, deagle.svg, …) and it is used instead of the drawing.
+ *
+ * The drawing stays as the fallback rather than being replaced, because a feed
+ * with a hole in it where an unrecognised weapon should be is worse than one
+ * with an approximate shape. `onError` is what makes it a fallback rather than
+ * a promise: a name with no file behind it silently becomes the silhouette.
+ */
 export default function WeaponIcon({ weapon, className }: Props) {
+  const name = weapon.toLowerCase().replace(/^weapon_/, "").replace(/[^a-z0-9_]/g, "");
+  const [useSprite, setUseSprite] = useState(name.length > 0);
+
+  if (useSprite) {
+    return (
+      // eslint-disable-next-line @next/next/no-img-element
+      <img
+        className={className}
+        src={`/killfeed/${name}.svg`}
+        alt=""
+        width={40}
+        height={13}
+        aria-hidden="true"
+        style={{ display: "block", objectFit: "contain" }}
+        onError={() => setUseSprite(false)}
+      />
+    );
+  }
+
   return (
     <svg {...BOX} className={className} width="40" height="13" aria-hidden="true" focusable="false">
       {shapeFor(weapon)}

@@ -2012,6 +2012,29 @@ model TournamentSpectator {
 
 /// A player asking for an admin, raised on the owner's page and in the desktop
 /// app.
+/// One line in a match room's chat.
+///
+/// Persisted rather than socket-only: somebody opening the page five minutes
+/// into an argument needs to see it, and a live-only room means the person who
+/// most needs the context is the one guaranteed not to have it.
+///
+/// Not the site's DM system. That is WebMessage, it is between two people, and
+/// it has an inbox. A room message belongs to a match and dies with it.
+model TournamentRoomMessage {
+  Id           Int      @id @default(autoincrement())
+  MatchId      Int
+  SteamId      BigInt   @db.UnsignedBigInt
+  /// What was on screen at the time — see the killfeed for the same reasoning.
+  Name         String?  @db.VarChar(64)
+  /// "a", "b", "organizer" or null. Who is speaking changes how a line reads.
+  Role         String?  @db.VarChar(12)
+  Body         String   @db.VarChar(500)
+  CreatedAtUtc DateTime @default(now()) @db.DateTime(6)
+
+  @@index([MatchId, Id], map: "IX_TournamentRoomMessages_Match")
+  @@map("TournamentRoomMessages")
+}
+
 model TournamentAlert {
   Id        Int       @id @default(autoincrement())
   MatchKey  String    @db.VarChar(64)

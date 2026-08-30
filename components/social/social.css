@@ -25,10 +25,19 @@
   position: fixed;
   top: var(--social-top, 64px);
   right: 0;
-  height: calc(100dvh - var(--social-top, 64px));
+  /* Pinned to both edges rather than given a computed height. dvh plus a
+     measured header is two numbers that can disagree — and when they did, the
+     panel stopped short of the bottom of the screen by however much they were
+     out. Anchoring it means it cannot. */
+  bottom: 0;
+  height: auto;
   width: 56px;
   z-index: 1001;
+  /* Clipped, because the two views inside keep their own fixed widths and this
+     narrows over them. */
+  overflow: hidden;
   transition: width 0.28s cubic-bezier(0.22, 1, 0.36, 1);
+  will-change: width;
 }
 
 .social-dock.open {
@@ -46,9 +55,17 @@
 /* ---------- Sidebar ---------- */
 .friends-sidebar {
   position: absolute;
-  inset: 0;
-  width: 100%;
-  height: 100%;
+  top: 0;
+  bottom: 0;
+  right: 0;
+  /* Fixed, NOT 100%.
+     
+     This is what makes the open/close smooth. At 100% the panel re-laid itself
+     out on every frame of the dock's width animation — every row re-wrapping,
+     every name re-ellipsising, sixty times a second — which is the judder. At a
+     fixed width the content is laid out once and the dock simply reveals more
+     of it, and the only thing the browser animates is a clip. */
+  width: 165px;
   background:
     linear-gradient(180deg, color-mix(in srgb, var(--accent) 14%, transparent), transparent 30%),
     color-mix(in srgb, var(--color-surface) 92%, transparent);
@@ -715,8 +732,11 @@ html[data-motion="off"] .dm-bubble.typing i { animation: none; }
    hard-coded, because a fixed figure is wrong the moment the header wraps. */
 .friends-rail {
   position: absolute;
-  inset: 0;
-  width: 100%;
+  top: 0;
+  bottom: 0;
+  right: 0;
+  /* Fixed for the same reason as the panel above. */
+  width: 56px;
   display: flex;
   flex-direction: column;
   align-items: center;

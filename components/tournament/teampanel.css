@@ -166,6 +166,26 @@
   align-items: start;
 }
 
+/* A fourth column for the match room.
+   Only on the match stage — during the draft and the veto the middle column is
+   a sequence of turns with its own instructions, and a chat beside them is
+   somewhere for two captains to argue about a decision the interface is
+   already making. */
+.tp-frame.with-room {
+  grid-template-columns:
+    minmax(180px, 220px)
+    minmax(0, 1fr)
+    minmax(180px, 220px)
+    minmax(220px, 300px);
+}
+
+/* The feed sits in the middle column and is deliberately narrow, so it is
+   centred rather than stranded against the left edge of a wide column. */
+.tp-frame-main > .kf {
+  margin-left: auto;
+  margin-right: auto;
+}
+
 .tp-frame-main {
   min-width: 0;
   display: grid;
@@ -193,5 +213,19 @@
 
   .tp-frame-main {
     order: -1;
+  }
+}
+
+/* Below the width where four columns stop being columns.
+   The room goes full width under the stage rather than becoming a 120px strip
+   nobody can read a sentence in. */
+@media (max-width: 1200px) {
+  .tp-frame.with-room {
+    grid-template-columns: minmax(180px, 220px) minmax(0, 1fr) minmax(180px, 220px);
+  }
+
+  .tp-frame.with-room > .rc {
+    grid-column: 1 / -1;
+    max-height: 340px;
   }
 }
