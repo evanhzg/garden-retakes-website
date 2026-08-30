@@ -1,6 +1,10 @@
 import { prisma } from "@/lib/db";
 import { registrationBlockedReason, type EditionState } from "@/lib/tournament/edition";
-import TournamentHome, { type HomeStats, type HomeTournament } from "@/components/home/TournamentHome";
+import TournamentHome, {
+  type HomeStats,
+  type HomeOngoing,
+  type HomeTournament,
+} from "@/components/home/TournamentHome";
 
 // The homepage is the tournament system.
 //
@@ -16,7 +20,7 @@ export const dynamic = "force-dynamic";
 export const revalidate = 60;
 
 export default async function HomePage() {
-  const [tournamentsPlayed, matchesPlayed, playerRows, candidates] = await Promise.all([
+  const [tournamentsPlayed, matchesPlayed, playerRows, candidates, started] = await Promise.all([
     prisma.tournament.count({ where: { Published: true, State: "finished" } }),
     prisma.tournamentMatch.count({
       where: { State: "finished", Tournament: { Published: true } },
@@ -41,6 +45,19 @@ export default async function HomePage() {
       where: { Published: true, State: { notIn: ["finished", "cancelled"] } },
       orderBy: [{ StartsAt: "asc" }, { Id: "asc" }],
       take: 8,
+      include: { _count: { select: { Teams: true } } },
+    }),
+    // What is actually being played, for the card above the counts.
+    //
+    // A different question from `featured` above, which answers "what can a
+    // visitor DO" and therefore prefers an event still taking registrations.
+    // This one answers "what is on right now", so it is ordered by when things
+    // started and takes the finished ones too — the fallback is the last one
+    // that ran, and only when nothing has ever run does the card go empty.
+    prisma.tournament.findMany({
+      where: { Published: true, StartedAt: { not: null }, State: { not: "cancelled" } },
+      orderBy: [{ StartedAt: "desc" }, { Id: "desc" }],
+      take: 4,
       include: { _count: { select: { Teams: true } } },
     }),
   ]);
@@ -89,5 +106,23 @@ export default async function HomePage() {
       }
     : null;
 
-  return <TournamentHome stats={stats} featured={featured} />;
+  // Live first, then the most recent to have run. Both are already ordered by
+  // StartedAt descending, so this is "the newest one still going, else the
+  // newest one at all" without a second sort.
+  const live = started.find((x) => x.State !== "finished") ?? started[0] ?? null;
+
+  const ongoing: HomeOngoing | null = live
+    ? {
+        slug: live.Slug,
+        name: live.Name,
+        state: live.State,
+        live: live.State !== "finished",
+        startedAt: live.StartedAt?.toISOString() ?? null,
+        teamCount: live._count.Teams,
+        maxTeams: live.MaxTeams,
+        teamSize: live.TeamSize,
+      }
+    : null;
+
+  return <TournamentHome stats={stats} featured={featured} ongoing={ongoing} />;
 }

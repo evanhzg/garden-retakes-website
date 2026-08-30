@@ -1830,17 +1830,23 @@ tbody tr:hover {
   color: #d6336c;
 }
 
+/* Square, and barely raised.
+   A 999px pill with the full --shadow reads as a button — it sits next to real
+   ones in every admin-head it appears in, and it is the only thing in those
+   rows that cannot be clicked. Square agrees with the rest of the surfaces (see
+   the radius sweep further down) and the shadow is now just enough to separate
+   it from the panel behind it. */
 .role-badge {
   display: inline-flex;
   align-items: center;
   padding: 3px 12px;
-  border-radius: 999px;
+  border-radius: 0;
   background: var(--gradient);
   color: #fff;
   font-size: 0.75rem;
   font-weight: 800;
   letter-spacing: 0.02em;
-  box-shadow: var(--shadow);
+  box-shadow: var(--shadow-sm);
 }
 
 .role-badge.sm {
@@ -11544,24 +11550,3 @@ button.btn {
   border-radius: 0;
 }
 
-/* ---------- The Blitz explainer, on /tournaments ----------
-   Two columns that become one on a narrow screen: the two halves answer
-   different questions ("what is it" and "why is it called that") and reading
-   them as one paragraph loses the distinction. */
-.blitz {
-  display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(min(100%, 280px), 1fr));
-  gap: var(--space-5);
-}
-
-.blitz-col h2 {
-  margin: 0 0 var(--space-2);
-  font-size: 15px;
-  letter-spacing: 0.02em;
-}
-
-.blitz-col p {
-  margin: 0;
-  max-width: 62ch;
-  line-height: 1.6;
-}

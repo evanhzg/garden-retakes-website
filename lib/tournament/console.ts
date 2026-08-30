@@ -23,6 +23,18 @@ import {
 // a table of it would be a table nobody ever reads and everybody's backup pays
 // for. It survives as long as the node process, which is longer than any match.
 
+/**
+ * Where a line came from.
+ *
+ * "command" is somebody typing at the console and the server's reply to it.
+ * "log" is the server talking on its own — a connect, a kill, a plugin error,
+ * the reason a map did not load. They share one buffer because they are one
+ * conversation in time order: a command whose reply looks fine and a plugin
+ * exception logged half a second later are the same story, and reading them in
+ * two places is how you miss that.
+ */
+export type ConsoleKind = "command" | "log";
+
 export type ConsoleLine = {
   /** Monotonic per server, so a poller can ask for "everything after n". */
   seq: number;
@@ -32,6 +44,7 @@ export type ConsoleLine = {
   command: string;
   output: string;
   ok: boolean;
+  kind: ConsoleKind;
 };
 
 type Buffer = { next: number; lines: ConsoleLine[] };
@@ -39,8 +52,15 @@ type Buffer = { next: number; lines: ConsoleLine[] };
 /** Per server. Bounded, because a console left open for a day is not a log. */
 const BUFFERS = new Map<number, Buffer>();
 
-/** Enough to read back through a whole match's worth of intervention. */
-const KEEP = 200;
+/**
+ * Enough to read back through a whole match's worth of intervention.
+ *
+ * Raised from 200 when the server's own log started landing here. Two hundred
+ * was a comfortable hour of typed commands; it is about ninety seconds of a
+ * live round, and a buffer that has already dropped the exception you came to
+ * read is a buffer that was not worth keeping.
+ */
+const KEEP = 600;
 
 function bufferFor(serverId: number): Buffer {
   let buffer = BUFFERS.get(serverId);
@@ -53,11 +73,16 @@ function bufferFor(serverId: number): Buffer {
 
 export function append(
   serverId: number,
-  entry: Omit<ConsoleLine, "seq" | "at">,
+  entry: Omit<ConsoleLine, "seq" | "at" | "kind"> & { kind?: ConsoleKind },
 ): ConsoleLine {
   const buffer = bufferFor(serverId);
 
-  const line: ConsoleLine = { ...entry, seq: buffer.next++, at: new Date().toISOString() };
+  const line: ConsoleLine = {
+    kind: "command",
+    ...entry,
+    seq: buffer.next++,
+    at: new Date().toISOString(),
+  };
   buffer.lines.push(line);
 
   if (buffer.lines.length > KEEP) {
@@ -65,6 +90,18 @@ export function append(
   }
 
   return line;
+}
+
+/**
+ * One line the server said without being asked.
+ *
+ * No `who` worth attributing and no command that caused it — that is the whole
+ * difference from an `append`, and it is why the two are not the same call. A
+ * log line dressed up as a command with an empty command string reads in the UI
+ * as somebody having run nothing, which is a worse lie than saying "server".
+ */
+export function appendLog(serverId: number, output: string): ConsoleLine {
+  return append(serverId, { who: "server", command: "", output, ok: true, kind: "log" });
 }
 
 /** Everything after `since`. A fresh viewer passes 0 and gets the scrollback. */

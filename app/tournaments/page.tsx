@@ -1,10 +1,13 @@
 import Link from "next/link";
+import { Building2, Map as MapIcon, Plus, Trophy, Wrench } from "lucide-react";
 import { prisma } from "@/lib/db";
 import { getT } from "@/lib/serverI18n";
-import { getTournamentContext, manageableTournamentIds } from "@/lib/tournamentAuth";
+import { canUseOrgs, getTournamentContext, manageableTournamentIds } from "@/lib/tournamentAuth";
 import { AdminLevel } from "@/lib/adminAuth";
 import {
+  bracketDecided,
   countdown,
+  displayedState,
   registrationBlockedReason,
   type EditionState,
 } from "@/lib/tournament/edition";
@@ -27,7 +30,13 @@ export default async function TournamentsPage() {
   // Everything an organizer runs, including drafts, plus every public one.
   // Drafts are otherwise invisible to the person who just created one, which
   // reads as "the create button did nothing".
-  const mine = await manageableTournamentIds(ctx);
+  // showOrgs is asked here and not derived from canCreate: the two are
+  // different standings, and an org's organizer who is not in the global
+  // registry holds one without the other.
+  const [mine, showOrgs] = await Promise.all([
+    manageableTournamentIds(ctx),
+    canUseOrgs(ctx),
+  ]);
   const canSeeDrafts = mine === null ? true : mine.length > 0;
 
   const tournaments = await prisma.tournament.findMany({
@@ -37,7 +46,15 @@ export default async function TournamentsPage() {
         : { OR: [{ State: { not: "draft" } }, { Id: { in: mine } }] }
       : { State: { not: "draft" } },
     orderBy: [{ StartsAt: "desc" }, { Id: "desc" }],
-    include: { _count: { select: { Teams: true } } },
+    include: {
+      _count: { select: { Teams: true } },
+      // EVERY match, not only the finished ones, and two columns of each.
+      // Whether a tournament is over is answered by the round depth of the
+      // bracket — see decidingMatch — so the unplayed rows are what say which
+      // match is the final. Two small integers across thirty tournaments is a
+      // cheaper way to be right than a State column nothing maintains.
+      Matches: { select: { Round: true, WinnerTeamId: true } },
+    },
     take: 30,
   });
 
@@ -88,67 +105,77 @@ export default async function TournamentsPage() {
 
   return (
     <>
-      <section className="hero hero-compact">
-        <div className="hero-inner">
-          <p className="eyebrow">{t("tournaments.eyebrow")}</p>
-          <h1 className="grad">{t("tournaments.title")}</h1>
-          <p className="muted">{t("tournaments.blurb")}</p>
-        </div>
-      </section>
-
-      {/* What the mode is, before the bracket.
-          A visitor who has found this page has been told "Blitz" by the nav and
-          by the hero and has no idea what it means — and the name is the one
-          piece of the system that cannot explain itself. It sits above the
-          organizer tools because it is for the people who are NOT organizers,
-          which is almost everybody who arrives here. */}
-      <section className="panel blitz">
-        <div className="blitz-col">
-          <h2>{t("tournaments.whatIs")}</h2>
-          <p className="muted">{t("tournaments.whatIsBody")}</p>
-        </div>
-        <div className="blitz-col">
-          <h2>{t("tournaments.whyBlitz")}</h2>
-          <p className="muted">{t("tournaments.whyBlitzBody")}</p>
-        </div>
-      </section>
-
-      {/* The way in. These pages existed and were reachable only by knowing the
-          URL, which meant an organizer could be given the role and still have no
-          way to use it. */}
-      {ctx.canCreate && (
-        <section className="panel">
-          <div className="admin-head">
-            <h2>{t("tournaments.organizerTools")}</h2>
-            <span className="role-badge">{ctx.roleName}</span>
+      {/* Title and tools share the hero, side by side.
+          The tools were a full-width panel of their own between the explainer
+          and the list, which put the one section only a handful of people can
+          use in the middle of the page everybody else came to read. Beside the
+          title they are out of the way of the list and still the first thing an
+          organizer's eye lands on. */}
+      <section className="hero hero-compact tl-hero">
+        <div className="tl-hero-grid">
+          <div className="hero-inner">
+            <h1 className="tl-title">
+              {/* Outside the gradient span on purpose: .grad paints text with
+                  background-clip and sets colour to transparent, which would
+                  erase an icon nested inside it. */}
+              <Trophy className="tl-title-icon" aria-hidden focusable="false" />
+              <span className="grad">{t("tournaments.title")}</span>
+            </h1>
+            <p className="muted">{t("tournaments.blurb")}</p>
           </div>
 
-          <p className="muted" style={{ marginTop: -4 }}>
-            {t("tournaments.organizerBlurb")}
-          </p>
+          {/* The way in. These pages existed and were reachable only by knowing
+              the URL, which meant an organizer could be given the role and still
+              have no way to use it. */}
+          {(ctx.canCreate || showOrgs) && (
+            <aside className="tl-tools">
+              <div className="tl-tools-head">
+                <h2>{t("tournaments.organizerTools")}</h2>
+                <span className="role-badge">{ctx.roleName}</span>
+              </div>
 
-          <div style={{ display: "flex", gap: "var(--space-2)", flexWrap: "wrap", marginTop: "var(--space-3)" }}>
-            <Link className="btn btn-primary" href="/admin/tournaments">
-              {t("tournaments.createOne")}
-            </Link>
+              <p className="muted tl-tools-blurb">{t("tournaments.organizerBlurb")}</p>
 
-            {/* Admin and above only, and the button is hidden rather than shown
-                and refused. Spawns are global per-map data shared by every
-                tournament, so authoring them is a wider grant than running your
-                own event — an organizer editing them would change everybody's. */}
-            {ctx.level >= AdminLevel.Admin && (
-              <>
-                <Link className="btn btn-secondary" href="/admin/maker">
-                  {t("setup.makerLink")}
-                </Link>
-                <Link className="btn btn-secondary" href="/admin?tab=maps">
-                  {t("tournaments.mapLibrary")}
-                </Link>
-              </>
-            )}
-          </div>
-        </section>
-      )}
+              <div className="tl-tools-list">
+                {ctx.canCreate && (
+                  <Link className="btn btn-primary tl-tool" href="/admin/tournaments">
+                    <Plus size={16} aria-hidden focusable="false" />
+                    {t("tournaments.createOne")}
+                  </Link>
+                )}
+
+                {/* Admin and above only, and the button is hidden rather than
+                    shown and refused. Spawns are global per-map data shared by
+                    every tournament, so authoring them is a wider grant than
+                    running your own event — an organizer editing them would
+                    change everybody's. */}
+                {ctx.level >= AdminLevel.Admin && (
+                  <>
+                    <Link className="btn btn-secondary tl-tool" href="/admin/maker">
+                      <Wrench size={16} aria-hidden focusable="false" />
+                      {t("setup.makerLink")}
+                    </Link>
+                    <Link className="btn btn-secondary tl-tool" href="/admin?tab=maps">
+                      <MapIcon size={16} aria-hidden focusable="false" />
+                      {t("tournaments.mapLibrary")}
+                    </Link>
+                  </>
+                )}
+
+                {/* Wider than canCreate: somebody can hold the organizer role in
+                    an org without being in the global organizer registry, and
+                    their own org's page was reachable only by knowing its slug. */}
+                {showOrgs && (
+                  <Link className="btn btn-secondary tl-tool" href="/orgs">
+                    <Building2 size={16} aria-hidden focusable="false" />
+                    {t("tournaments.orgsLink")}
+                  </Link>
+                )}
+              </div>
+            </aside>
+          )}
+        </div>
+      </section>
 
       <section className="panel">
         <HubTabs archive={archive} teams={teamRanks} boards={boards} schedule={schedule}>
@@ -187,6 +214,14 @@ export default async function TournamentsPage() {
               const openToJoin = registrationBlockedReason(edition, false) === null;
               const when = countdown(edition, now);
 
+              // A tournament with a champion is over, whatever its row says —
+              // nothing writes State back to "finished", so the card used to
+              // sit on "In progress" with a pulsing LIVE dot for as long as the
+              // event existed.
+              const decided = bracketDecided(
+                tournament.Matches.map((m) => ({ round: m.Round, winnerTeamId: m.WinnerTeamId })),
+              );
+
               return (
                 <li key={tournament.Id} className={`tl-card ${tournament.BannerImage ? "has-banner" : ""}`}>
                   {/* The banner is a background behind the title, not a
@@ -208,7 +243,10 @@ export default async function TournamentsPage() {
                     </Link>
 
                     <div className="tl-facts">
-                      <StatusTag kind="tournament" value={tournament.State} />
+                      <StatusTag
+                        kind="tournament"
+                        value={displayedState(tournament.State, decided)}
+                      />
                       <span className="tl-fact">
                         {tournament.TeamSize}v{tournament.TeamSize}
                       </span>
@@ -216,7 +254,9 @@ export default async function TournamentsPage() {
                         {tournament._count.Teams} / {tournament.MaxTeams}{" "}
                         {t("tournaments.teams").toLowerCase()}
                       </span>
-                      {when.kind === "live" && <span className="tl-live">{t("countdown.live")}</span>}
+                      {when.kind === "live" && !decided && (
+                        <span className="tl-live">{t("countdown.live")}</span>
+                      )}
                       {when.kind === "starting-soon" && (
                         <span className="tl-fact">{t("countdown.soon")}</span>
                       )}

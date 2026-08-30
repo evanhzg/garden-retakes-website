@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useState } from "react";
+import { BarTrend, StatusMeter, type DayPoint } from "./AdminCharts";
 import { useI18n } from '@/components/I18nProvider';
 import { freezeDate, freezeLeft, isFrozen } from "@/lib/seasonFreeze";
 
@@ -25,6 +26,10 @@ type Overview = {
   };
   poll: { id: number; seasonId: number; closesAt: string; open: boolean } | null;
   demoMode?: boolean;
+  /** Fourteen days of daily counts, zero-filled and oldest first. */
+  trends?: { matches: DayPoint[]; actions: DayPoint[] };
+  /** Published tournaments by state, for the bracket meter. */
+  tournaments?: { state: string; count: number }[];
 };
 
 type Tile = {
@@ -182,6 +187,57 @@ export default function AdminOverview({
           <strong>{t("admin.freeze.title")}</strong>
           <span>{t("admin.freeze.body")}</span>
           <span className="adm-freeze-when">{t("admin.freeze.when", { date: freezeAt, left: freezeIn })}</span>
+        </div>
+      )}
+
+      {(data.trends || data.tournaments) && (
+        <div className="adm-charts">
+          {data.trends && (
+            <>
+              <section className="adm-chart-card">
+                <BarTrend
+                  title={t("admin.chart.matches")}
+                  points={data.trends.matches}
+                  unit={t("admin.chart.matchesUnit")}
+                  locale={locale}
+                  emptyText={t("admin.chart.none")}
+                />
+              </section>
+
+              {/* Admin actions as context rather than as a measure of health:
+                  a busy fortnight in the log is not good or bad on its own, so
+                  it is drawn in the neutral tone. */}
+              <section className="adm-chart-card">
+                <BarTrend
+                  title={t("admin.chart.actions")}
+                  points={data.trends.actions}
+                  unit={t("admin.chart.actionsUnit")}
+                  locale={locale}
+                  tone="neutral"
+                  emptyText={t("admin.chart.none")}
+                />
+              </section>
+            </>
+          )}
+
+          {data.tournaments && data.tournaments.length > 0 && (
+            <section className="adm-chart-card">
+              <h4 className="adm-chart-title">{t("admin.chart.brackets")}</h4>
+              <StatusMeter
+                total={data.tournaments.reduce((n, row) => n + row.count, 0)}
+                emptyText={t("admin.chart.none")}
+                segments={data.tournaments.map((row) => ({
+                  label: row.state,
+                  value: row.count,
+                  tone:
+                    row.state === "live" ? "busy"
+                      : row.state === "finished" ? "good"
+                      : row.state === "cancelled" ? "bad"
+                      : "idle",
+                }))}
+              />
+            </section>
+          )}
         </div>
       )}
 

@@ -1,6 +1,6 @@
 import { prisma } from "@/lib/db";
 import { getAdminContext, type AdminContext } from "@/lib/adminAuth";
-import { orgRoleForTournament } from "@/lib/tournament/orgs";
+import { orgRoleForTournament, orgsOrganizedBy } from "@/lib/tournament/orgs";
 import {
   canCreateTournament,
   canManageTournament,
@@ -113,6 +113,34 @@ export async function canModerate(ctx: TournamentContext, tournamentId: number):
     { ...actorOf(ctx), orgRole },
     await organizersOf(tournamentId),
   );
+}
+
+/**
+ * May this caller reach the organization tools?
+ *
+ * Admin and above always, because creating an org is a site-wide act — an org
+ * grants tournament permissions to everybody in it. Below that, the people who
+ * already hold the `organizer` role in one: they run it, and until now the only
+ * way to their own org's page was to know its slug.
+ *
+ * No new rule. `managesEverything` is the same predicate every other tournament
+ * gate opens on, and the org role is read exactly as canModerate reads it.
+ */
+export async function canUseOrgs(ctx: TournamentContext): Promise<boolean> {
+  if (canCreateOrg(ctx)) return true;
+  return (await orgsOrganizedBy(ctx.steamId)).length > 0;
+}
+
+/**
+ * May this caller MAKE an organization?
+ *
+ * Narrower than reaching the tools, and deliberately the same answer that
+ * app/api/orgs/route.ts gives: an org grants tournament permissions to
+ * everybody in it, so who may mint one is answered conservatively. The two must
+ * agree or the form is offered to somebody the server will refuse.
+ */
+export function canCreateOrg(ctx: TournamentContext): boolean {
+  return managesEverything(actorOf(ctx));
 }
 
 /** May this caller change the global organizer registry? */

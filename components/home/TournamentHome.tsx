@@ -6,6 +6,7 @@ import { ArrowRight, Check, GitBranch, Trophy, Users, X } from "lucide-react";
 import { useI18n } from "@/components/I18nProvider";
 import { ROLE_ICON } from "@/components/roleIcons";
 import { CT_ROLES, T_ROLES } from "@/lib/tournament/roles";
+import BlitzTiers from "./BlitzTiers";
 import BombsiteDiagram from "./BombsiteDiagram";
 import "./tournament-home.css";
 
@@ -37,6 +38,27 @@ export type HomeTournament = {
 };
 
 /**
+ * What is being played right now, for the card above the counts.
+ *
+ * Separate from HomeTournament because the two answer different questions. That
+ * one is "what can you do" and prefers an event still taking sign-ups; this one
+ * is "what is on", and falls back to the last event that ran rather than to a
+ * scheduled one — a card headed "ongoing" pointing at something that has not
+ * started is the one thing it must not do.
+ */
+export type HomeOngoing = {
+  slug: string;
+  name: string;
+  state: string;
+  /** Still running, as against the most recent finished one. */
+  live: boolean;
+  startedAt: string | null;
+  teamCount: number;
+  maxTeams: number;
+  teamSize: number;
+};
+
+/**
  * The tournament roles, from lib/tournament/roles.ts — which is itself the
  * plugin's list, from R5eGames.Tournament.Core/Roles/RoleKit.cs.
  *
@@ -51,9 +73,40 @@ type Role = {
   unique: boolean;
 };
 
+/**
+ * The two sniper slots, on the same row.
+ *
+ * They are the same job on opposite sides and share a name and a mark, and the
+ * two columns sit next to each other — so having them on different rows made
+ * the pairing invisible and invited the reader to line up "Sniper" with
+ * "Front runner" instead.
+ *
+ * Done HERE and not in the role module, which lists them in draft order. That
+ * order is what `autoRolePick` walks when a turn times out, so reordering it to
+ * tidy a layout would quietly change which role an absent player is given. The
+ * page presents; the module decides.
+ */
+const sniperFirstOfTheSpecialists = (roles: typeof CT_ROLES) => {
+  const at = roles.findIndex((r) => r.label === "Sniper");
+  if (at < 1) return roles;
+
+  const out = [...roles];
+  const [sniper] = out.splice(at, 1);
+  out.splice(1, 0, sniper);
+  return out;
+};
+
 const ROLES: Role[] = [
-  ...CT_ROLES.map((r) => ({ id: r.id, side: "ct" as const, unique: r.unique })),
-  ...T_ROLES.map((r) => ({ id: r.id, side: "t" as const, unique: r.unique })),
+  ...sniperFirstOfTheSpecialists(CT_ROLES).map((r) => ({
+    id: r.id,
+    side: "ct" as const,
+    unique: r.unique,
+  })),
+  ...sniperFirstOfTheSpecialists(T_ROLES).map((r) => ({
+    id: r.id,
+    side: "t" as const,
+    unique: r.unique,
+  })),
 ];
 
 const FLOW_STEPS = ["ready", "veto", "warmup", "live", "result"] as const;
@@ -62,10 +115,13 @@ const FORMATS = ["single", "double", "group", "swiss"] as const;
 export default function TournamentHome({
   stats,
   featured,
+  ongoing,
 }: {
   stats: HomeStats;
   /** The event to point people at, or null when there is not one. */
   featured: HomeTournament | null;
+  /** What is being played, for the card above the counts. */
+  ongoing: HomeOngoing | null;
 }) {
   const { t } = useI18n();
 
@@ -126,25 +182,52 @@ export default function TournamentHome({
           )}
         </div>
 
-        {/* Counts, not a season number.
-            The old version showed "SEASON 01", which does not exist here — the
-            ladder has seasons and tournaments do not, so it named a concept the
-            system has no idea about. What it can honestly say is how much has
-            actually been played. */}
-        <dl className="th-counts">
-          <div>
-            <dt>{t("home.count.tournaments")}</dt>
-            <dd>{stats.tournamentsPlayed}</dd>
-          </div>
-          <div>
-            <dt>{t("home.count.matches")}</dt>
-            <dd>{stats.matchesPlayed}</dd>
-          </div>
-          <div>
-            <dt>{t("home.count.players")}</dt>
-            <dd>{stats.playersPlayed}</dd>
-          </div>
-        </dl>
+        <div className="th-aside">
+          {/* What is on right now, above the totals.
+              The totals below are the archive — how much has ever been played —
+              and a visitor's first question is the opposite one. The card keeps
+              its frame when there is nothing to put in it, dashed rather than
+              solid, because a slot that disappears makes the column jump every
+              time an event ends. */}
+          {ongoing ? (
+            <Link className={`th-now ${ongoing.live ? "live" : "past"}`} href={`/tournaments/${ongoing.slug}`}>
+              <span className="th-now-head">
+                {ongoing.live && <span className="th-featured-dot" aria-hidden />}
+                {ongoing.live ? t("home.now.live") : t("home.now.last")}
+              </span>
+              <strong className="th-now-name">{ongoing.name}</strong>
+              <span className="th-now-meta">
+                {ongoing.teamSize}v{ongoing.teamSize} · {ongoing.teamCount}/{ongoing.maxTeams}{" "}
+                {t("tournaments.teams").toLowerCase()}
+              </span>
+            </Link>
+          ) : (
+            <div className="th-now empty">
+              <span className="th-now-head">{t("home.now.live")}</span>
+              <span className="th-now-meta">{t("home.now.none")}</span>
+            </div>
+          )}
+
+          {/* Counts, not a season number.
+              The old version showed "SEASON 01", which does not exist here — the
+              ladder has seasons and tournaments do not, so it named a concept the
+              system has no idea about. What it can honestly say is how much has
+              actually been played. */}
+          <dl className="th-counts">
+            <div>
+              <dt>{t("home.count.tournaments")}</dt>
+              <dd>{stats.tournamentsPlayed}</dd>
+            </div>
+            <div>
+              <dt>{t("home.count.matches")}</dt>
+              <dd>{stats.matchesPlayed}</dd>
+            </div>
+            <div>
+              <dt>{t("home.count.players")}</dt>
+              <dd>{stats.playersPlayed}</dd>
+            </div>
+          </dl>
+        </div>
       </header>
 
       {/* ---------------------------------------------------- 01 · the veto */}
@@ -243,6 +326,8 @@ export default function TournamentHome({
           </div>
         </div>
       </section>
+
+      <BlitzTiers />
 
       {/* ---------------------------------------------------- 03 · the flow */}
       <section className="th-module">

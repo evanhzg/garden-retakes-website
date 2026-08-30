@@ -14,6 +14,9 @@ import { tournamentStats } from "@/lib/tournament/statsDb";
 import { canManage, getTournamentContext } from "@/lib/tournamentAuth";
 import Countdown from "@/components/tournament/Countdown";
 import Community from "@/components/tournament/Community";
+import BackToTournament from "@/components/tournament/BackToTournament";
+import StatusTag from "@/components/tournament/StatusTag";
+import { bracketDecided, displayedState } from "@/lib/tournament/edition";
 import type { RulesFacts } from "@/components/tournament/Rules";
 import { notFound as pageNotFound } from "next/navigation";
 
@@ -198,6 +201,19 @@ export default async function TournamentPage({ params }: { params: { slug: strin
 
   const previews: Record<number, MatchPreview> = Object.fromEntries(previewMap);
 
+  /**
+   * Whether this event is over, which the row does not know.
+   *
+   * Nothing writes Tournament.State back to "finished" — starting sets it to
+   * "live" and the final match has no idea it was the final — so the hero used
+   * to print the raw word "live" above a results tab naming the champion.
+   * Asking the bracket instead is the same question the podium below already
+   * asks, and both of them go through decidingMatch to answer it.
+   */
+  const decided = bracketDecided(
+    matches.map((m) => ({ round: m.Round, winnerTeamId: m.WinnerTeamId })),
+  );
+
   // Read off the same function the hub's archive uses, so a tournament's own
   // results page and its card in the archive can never disagree about who won.
   const podium: Podium[] = podiumFrom(matches, tournament.Teams).map((entry) => ({
@@ -229,9 +245,19 @@ export default async function TournamentPage({ params }: { params: { slug: strin
 
   return (
     <>
+      {/* Out of the tournament, not just out of a page inside it. Every step of
+          the flow already has a way back to here; here had none, and the
+          browser's back button on a phone opened from a Discord link goes
+          nowhere useful. */}
+      <BackToTournament />
+
       <section className="hero hero-compact">
         <div className="hero-inner">
-          <p className="eyebrow">{tournament.State}</p>
+          {/* Was `<p className="eyebrow">{tournament.State}</p>`: a raw database
+              word, in English for everybody, and wrong once the bracket had been
+              won because nothing sets State to "finished". */}
+          <StatusTag kind="tournament" value={displayedState(tournament.State, decided)} />
+
           <h1 className="grad">{tournament.Name}</h1>
 
           {/* Who runs it, and a way to their other events. A tournament without
@@ -268,15 +294,21 @@ export default async function TournamentPage({ params }: { params: { slug: strin
             </p>
           )}
 
-          <Countdown
-            startsAt={tournament.StartsAt?.toISOString() ?? null}
-            startedAt={tournament.StartedAt?.toISOString() ?? null}
-            state={tournament.State}
-            published={tournament.Published}
-            maxTeams={tournament.MaxTeams}
-            teamCount={tournament.Teams.length}
-            visibility={tournament.Visibility}
-          />
+          {/* Not drawn once the bracket has been won. countdown() answers
+              "live" for anything with a StartedAt, which is true of a tournament
+              that ended in March — and a pulsing LIVE next to a podium is the
+              loudest possible way to be wrong. */}
+          {!decided && (
+            <Countdown
+              startsAt={tournament.StartsAt?.toISOString() ?? null}
+              startedAt={tournament.StartedAt?.toISOString() ?? null}
+              state={tournament.State}
+              published={tournament.Published}
+              maxTeams={tournament.MaxTeams}
+              teamCount={tournament.Teams.length}
+              visibility={tournament.Visibility}
+            />
+          )}
 
           {/* Only for somebody who actually runs this one.
               Was a grey secondary button reading "Manage", which said nothing

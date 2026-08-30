@@ -7,6 +7,100 @@
    A card is a poster, not a table row: the banner is the background behind the
    title rather than a thumbnail beside it, and the whole thing is square. */
 
+/* ---------- Hero: title on the left, tools on the right ---------- */
+
+/* One column until there is genuinely room for two. The tools are a stack of
+   full-width buttons, and squeezing them beside a title on a phone gives both
+   halves about 160px, which is too narrow for either. */
+.tl-hero-grid {
+  display: grid;
+  gap: var(--space-4);
+  align-items: start;
+}
+
+@media (min-width: 900px) {
+  .tl-hero-grid {
+    grid-template-columns: minmax(0, 1fr) minmax(240px, 300px);
+    gap: var(--space-6);
+  }
+}
+
+/* Qualified by .tl-hero so it outranks `.hero h1`, which sets a negative
+   letter-spacing that closes uppercase letters up until they touch. */
+.tl-hero .tl-title {
+  display: flex;
+  align-items: center;
+  gap: 0.4em;
+  text-transform: uppercase;
+  letter-spacing: 0.01em;
+}
+
+/* Sized in em so it tracks the fluid clamp on .hero h1 rather than being the
+   right size at one viewport width and wrong at every other. */
+.tl-title-icon {
+  width: 0.9em;
+  height: 0.9em;
+  flex: none;
+  color: var(--color-accent);
+}
+
+/* ---------- Hero: organizer tools ---------- */
+
+.tl-tools {
+  border: 1px solid var(--color-divider);
+  border-radius: 0;
+  background: var(--color-surface);
+  padding: var(--space-4);
+  display: grid;
+  gap: var(--space-3);
+}
+
+.tl-tools-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--space-2);
+  flex-wrap: wrap;
+}
+
+.tl-tools-head h2 {
+  margin: 0;
+  font-size: 14px;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+}
+
+/* Qualified for the same reason as the title: `.hero p` carries a 1.05rem body
+   size and a 20px bottom margin, which is right for the blurb under the title
+   and far too loud for a caption inside a box. */
+.tl-hero .tl-tools-blurb {
+  margin: 0;
+  font-size: 12.5px;
+  line-height: 1.5;
+}
+
+/* Vertical, always. These are a menu of destinations rather than a row of
+   actions, and a wrapped row of four leaves an orphan on its own line. */
+.tl-tools-list {
+  display: grid;
+  gap: var(--space-2);
+}
+
+/* Qualified past `.btn`, which centres its content: these read as a menu, and a
+   column of centred labels of different lengths has no left edge to scan. */
+.tl-tools-list .tl-tool {
+  display: inline-flex;
+  align-items: center;
+  justify-content: flex-start;
+  gap: var(--space-2);
+  width: 100%;
+  min-height: 40px;
+  border-radius: 0;
+  text-align: left;
+}
+
+/* ---------- The list ---------- */
+
 .tl-list {
   list-style: none;
   margin: 0;

@@ -1,0 +1,375 @@
+/* ---------------------------------------------------------------------------
+   Admin area — the pieces the two panels share.
+
+   Only NEW classes live here. Anything that adjusts a rule already written in
+   globals.css is edited there instead: a component stylesheet and the global
+   sheet load in an order the bundler decides, and an override that depends on
+   winning that race is a bug that only shows up in a production build.
+
+   Spacing is the token scale and nothing else. Every surface in here was a
+   hand-picked 11px, 12px or 14px before, which is why no two admin panels lined
+   up. Radius is --radius-md, which the site defines as 0 — square corners are
+   the design language, and the admin area was the one place still rounding.
+   --------------------------------------------------------------------------- */
+
+/* Status colours. Reserved: these mean a state and are never reused as the
+   "next series colour". Restated for dark because a mid-weight green that
+   clears contrast on paper-white disappears against the dark ground. */
+.adm-nav,
+.adm-panel,
+.adm-chart,
+.adm-meter,
+.adm-block {
+  --adm-good: #157f3d;
+  --adm-busy: #b45309;
+  --adm-bad: var(--color-accent);
+  --adm-idle: color-mix(in srgb, var(--color-text) 34%, transparent);
+}
+[data-theme="dark"] .adm-nav,
+[data-theme="dark"] .adm-panel,
+[data-theme="dark"] .adm-chart,
+[data-theme="dark"] .adm-meter,
+[data-theme="dark"] .adm-block {
+  --adm-good: #4ade80;
+  --adm-busy: #fbbf24;
+}
+
+/* ---- panel switcher ------------------------------------------------------ */
+
+/* Which of the two panels you are in, and the way to the other one. It is the
+   first thing in the sidebar because it is the widest jump the nav offers, and
+   a viewer who can only open one panel never sees it at all. */
+.adm-switch {
+  display: grid;
+  gap: 2px;
+  padding-bottom: var(--space-2);
+  border-bottom: 1px solid var(--color-divider);
+}
+
+.adm-switch-item {
+  display: flex;
+  align-items: center;
+  gap: var(--space-2);
+  padding: var(--space-2);
+  border-radius: var(--radius-md);
+  font-size: 12px;
+  font-weight: 700;
+  color: var(--muted);
+  text-decoration: none;
+  transition: background 0.14s ease, color 0.14s ease;
+}
+.adm-switch-item:hover { background: color-mix(in srgb, var(--color-text) 8%, transparent); color: var(--color-text); }
+.adm-switch-item.active {
+  color: var(--color-text);
+  background: color-mix(in srgb, var(--color-accent) 12%, transparent);
+  box-shadow: inset 2px 0 0 var(--color-accent);
+}
+
+/* ---- blocks -------------------------------------------------------------- */
+
+/* One section of a dashboard: a heading, an optional line of explanation, and
+   whatever it is about. Every admin page grew its own version of this with its
+   own padding, which is most of why the area looked assembled rather than
+   designed. */
+.adm-block {
+  display: grid;
+  gap: var(--space-3);
+  padding: var(--space-4);
+  background: var(--color-bg);
+  border: 1px solid var(--color-divider);
+  border-radius: var(--radius-md);
+}
+
+.adm-block-head {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: var(--space-3);
+  flex-wrap: wrap;
+}
+.adm-block-head h3 {
+  margin: 0;
+  font-size: 13px;
+  font-weight: 800;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+}
+.adm-block-head p { margin: 0; font-size: 12px; color: var(--muted); }
+
+.adm-block-link {
+  font-size: 12px;
+  font-weight: 700;
+  color: var(--color-accent);
+  text-decoration: none;
+  background: none;
+  border: 0;
+  padding: 0;
+  cursor: pointer;
+  font-family: inherit;
+}
+.adm-block-link:hover { text-decoration: underline; }
+
+/* Two side by side where there is room, one where there is not. The breakpoint
+   is the width at which a fortnight of bars stops being readable, not a round
+   number. */
+.adm-grid-2 {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(260px, 1fr));
+  gap: var(--space-3);
+}
+
+/* ---- charts -------------------------------------------------------------- */
+
+.adm-chart {
+  display: grid;
+  gap: var(--space-2);
+  margin: 0;
+  padding: var(--space-3);
+  background: var(--color-bg);
+  border: 1px solid var(--color-divider);
+  border-radius: var(--radius-md);
+  min-width: 0;
+}
+
+.adm-chart-head {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: var(--space-2);
+  padding: 0;
+}
+.adm-chart-title {
+  font-size: 11px;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.07em;
+  color: var(--muted);
+}
+.adm-chart-read { display: flex; align-items: baseline; gap: var(--space-2); min-width: 0; }
+/* Proportional figures: equal-width digits make a headline number look loose. */
+.adm-chart-read strong { font-size: 20px; font-weight: 800; line-height: 1; font-variant-numeric: normal; }
+.adm-chart-when { font-size: 11px; color: var(--muted); white-space: nowrap; }
+
+.adm-chart-svg {
+  display: block;
+  width: 100%;
+  height: auto;
+  overflow: visible;
+}
+
+.adm-chart-grid { stroke: var(--color-divider); stroke-width: 1; opacity: 0.45; }
+.adm-chart-axis { stroke: var(--color-divider); stroke-width: 1; }
+
+.adm-chart-bar { fill: var(--color-accent); opacity: 0.75; transition: opacity 0.12s ease; }
+.adm-chart-bar.hot { opacity: 1; }
+.adm-chart-neutral .adm-chart-bar { fill: color-mix(in srgb, var(--color-text) 55%, transparent); }
+
+.adm-chart-hit { fill: transparent; outline: none; cursor: default; }
+.adm-chart-hit:focus-visible { fill: color-mix(in srgb, var(--color-text) 10%, transparent); }
+
+.adm-chart-axislabels {
+  display: flex;
+  justify-content: space-between;
+  font-size: 10px;
+  color: var(--muted);
+}
+
+.adm-chart-empty {
+  margin: 0;
+  padding: var(--space-4) 0;
+  font-size: 12px;
+  color: var(--muted);
+  text-align: center;
+}
+
+.adm-chart-table summary {
+  font-size: 11px;
+  color: var(--muted);
+  cursor: pointer;
+  list-style: none;
+}
+.adm-chart-table summary::-webkit-details-marker { display: none; }
+.adm-chart-table summary::before { content: "▸ "; }
+.adm-chart-table[open] summary::before { content: "▾ "; }
+.adm-chart-table table { margin-top: var(--space-2); font-size: 11px; }
+.adm-chart-table td { padding: 2px var(--space-2); }
+
+/* ---- meter --------------------------------------------------------------- */
+
+.adm-meter { display: grid; gap: var(--space-3); }
+
+.adm-meter-bar {
+  display: flex;
+  /* The gap is the separator. A border around each segment would thicken the
+     marks and make four servers look like eight. */
+  gap: 2px;
+  height: 10px;
+}
+.adm-meter-seg { display: block; min-width: 4px; border-radius: var(--radius-md); }
+.adm-meter-seg.tone-good { background: var(--adm-good); }
+.adm-meter-seg.tone-busy { background: var(--adm-busy); }
+.adm-meter-seg.tone-bad { background: var(--adm-bad); }
+.adm-meter-seg.tone-idle { background: var(--adm-idle); }
+
+.adm-meter-keys {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--space-2) var(--space-4);
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+.adm-meter-keys li { display: flex; align-items: center; gap: 6px; font-size: 12px; }
+.adm-meter-keys li.is-zero { opacity: 0.45; }
+.adm-meter-k { color: var(--muted); }
+.adm-meter-v { font-weight: 700; }
+
+.adm-dot { width: 8px; height: 8px; flex: none; border-radius: 50%; }
+.adm-dot.tone-good { background: var(--adm-good); }
+.adm-dot.tone-busy { background: var(--adm-busy); }
+.adm-dot.tone-bad { background: var(--adm-bad); }
+.adm-dot.tone-idle { background: var(--adm-idle); }
+
+/* ---- server list --------------------------------------------------------- */
+
+.adm-fleet { display: grid; gap: 1px; }
+.adm-fleet-row {
+  display: grid;
+  grid-template-columns: 10px minmax(0, 1fr) auto;
+  align-items: center;
+  gap: var(--space-2);
+  padding: 6px var(--space-2);
+  font-size: 12px;
+  border-bottom: 1px solid var(--color-divider);
+}
+.adm-fleet-row:last-child { border-bottom: 0; }
+.adm-fleet-name { font-weight: 700; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.adm-fleet-state { font-size: 11px; color: var(--muted); text-transform: uppercase; letter-spacing: 0.05em; }
+
+/* ---- recent activity ----------------------------------------------------- */
+
+.adm-feed { display: grid; gap: 0; }
+.adm-feed-row {
+  display: grid;
+  grid-template-columns: auto minmax(0, 1fr) auto;
+  gap: var(--space-2);
+  align-items: baseline;
+  padding: 6px 0;
+  font-size: 12px;
+  border-bottom: 1px solid var(--color-divider);
+}
+.adm-feed-row:last-child { border-bottom: 0; }
+.adm-feed-actor { font-weight: 700; }
+.adm-feed-what { color: var(--muted); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.adm-feed-when { font-size: 11px; color: var(--muted); white-space: nowrap; }
+
+/* ---- players ------------------------------------------------------------- */
+
+/* The row was six buttons, a select and two badges wide, times however many
+   players matched. Everything still exists; only the row you opened shows it. */
+.adm-pl { display: grid; gap: var(--space-3); }
+
+.adm-pl-bar {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--space-2);
+  align-items: center;
+}
+.adm-pl-bar .input { max-width: 320px; }
+
+.adm-seg {
+  display: inline-flex;
+  border: 1px solid var(--color-divider);
+  border-radius: var(--radius-md);
+  overflow: hidden;
+}
+.adm-seg button {
+  padding: 5px var(--space-3);
+  font: inherit;
+  font-size: 12px;
+  font-weight: 700;
+  color: var(--muted);
+  background: none;
+  border: 0;
+  border-right: 1px solid var(--color-divider);
+  cursor: pointer;
+}
+.adm-seg button:last-child { border-right: 0; }
+.adm-seg button:hover { background: color-mix(in srgb, var(--color-text) 7%, transparent); }
+.adm-seg button.active { background: var(--btn-primary-bg); color: var(--btn-primary-ink); }
+
+.adm-pl-count { font-size: 12px; color: var(--muted); margin-left: auto; }
+
+.adm-pl-list { display: grid; gap: 0; }
+
+.adm-pl-row {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto auto;
+  align-items: center;
+  gap: var(--space-3);
+  width: 100%;
+  padding: var(--space-2) var(--space-2);
+  background: none;
+  border: 0;
+  border-bottom: 1px solid var(--color-divider);
+  border-radius: var(--radius-md);
+  font: inherit;
+  color: inherit;
+  text-align: left;
+  cursor: pointer;
+}
+.adm-pl-row:hover { background: color-mix(in srgb, var(--color-text) 5%, transparent); }
+.adm-pl-row[aria-expanded="true"] { background: color-mix(in srgb, var(--color-text) 7%, transparent); }
+.adm-pl-row.is-banned { box-shadow: inset 2px 0 0 var(--color-accent); }
+
+.adm-pl-who { display: grid; gap: 1px; min-width: 0; }
+.adm-pl-name { display: flex; align-items: center; gap: 6px; font-weight: 700; font-size: 13px; }
+.adm-pl-id { font-size: 10px; color: color-mix(in srgb, var(--color-text) 45%, transparent); }
+.adm-pl-tags { display: flex; align-items: center; gap: 6px; flex-wrap: wrap; justify-content: flex-end; }
+.adm-pl-chev { color: var(--muted); display: inline-flex; }
+
+/* The drawer. Grouped by what the action touches, because "kick" and "set role"
+   are different kinds of decision and a flat strip of eight buttons said they
+   were the same one. */
+.adm-pl-open {
+  display: grid;
+  gap: var(--space-3);
+  padding: var(--space-3);
+  margin-bottom: var(--space-2);
+  background: color-mix(in srgb, var(--color-text) 4%, transparent);
+  border-bottom: 1px solid var(--color-divider);
+}
+
+.adm-pl-group { display: grid; gap: 6px; }
+.adm-pl-group > span {
+  font-size: 10px;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.07em;
+  color: var(--muted);
+}
+.adm-pl-actions { display: flex; flex-wrap: wrap; gap: var(--space-2); align-items: center; }
+.adm-pl-actions .btn { font-size: 12px; padding: 4px var(--space-3); }
+.adm-pl-actions .input { min-height: 28px; padding: 2px var(--space-2); font-size: 12px; }
+.adm-pl-actions .input.grow { flex: 1 1 160px; }
+.adm-pl-actions .input.mins { width: 92px; }
+
+.adm-pl-empty { padding: var(--space-6); text-align: center; color: var(--muted); font-size: 13px; }
+
+/* ---- blitz --------------------------------------------------------------- */
+
+.adm-events { display: grid; gap: 1px; }
+.adm-event {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  align-items: center;
+  gap: var(--space-3);
+  padding: var(--space-2);
+  border-bottom: 1px solid var(--color-divider);
+  color: inherit;
+  text-decoration: none;
+}
+.adm-event:last-child { border-bottom: 0; }
+.adm-event:hover { background: color-mix(in srgb, var(--color-text) 5%, transparent); }
+.adm-event-name { font-weight: 700; font-size: 13px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.adm-event-meta { font-size: 11px; color: var(--muted); }

@@ -61,6 +61,53 @@ export async function orgRoleForTournament(
   }
 }
 
+/** Just enough of an org to list it and link to it. */
+export type OrgCard = { Id: number; Slug: string; Name: string; ImageMime: string | null };
+
+/**
+ * The orgs this person is an ORGANIZER of.
+ *
+ * Moderators are deliberately absent. A moderator works an event and cannot
+ * change what it is, and an org's own settings — who is in it, what it links to
+ * — are exactly "what it is".
+ *
+ * Two queries rather than a relation traversal because GardenOrgMember has no
+ * declared relation to GardenOrg; the SteamId index makes the first one cheap
+ * and the second is an `IN` over a handful of ids.
+ */
+export async function orgsOrganizedBy(steamId: string | null | undefined): Promise<OrgCard[]> {
+  if (!steamId) return [];
+
+  try {
+    const memberships = await prisma.gardenOrgMember.findMany({
+      where: { SteamId: BigInt(steamId), Role: "organizer" },
+      select: { OrgId: true },
+    });
+    if (memberships.length === 0) return [];
+
+    return await listOrgs({ Id: { in: memberships.map((m) => m.OrgId) } });
+  } catch {
+    // Same direction as orgRoleForTournament: a lookup that cannot establish
+    // standing grants nothing.
+    return [];
+  }
+}
+
+/**
+ * Orgs for a listing, without their images.
+ *
+ * The bytes are a LongBlob on the row and are served by their own route, so
+ * selecting the whole record to print a name would pull every logo in the
+ * database through the connection to render a list of links.
+ */
+export function listOrgs(where?: { Id?: { in: number[] } }): Promise<OrgCard[]> {
+  return prisma.gardenOrg.findMany({
+    where,
+    orderBy: { Name: "asc" },
+    select: { Id: true, Slug: true, Name: true, ImageMime: true },
+  });
+}
+
 /** Everybody in an org, organizers first. */
 export async function membersOf(orgId: number) {
   return prisma.gardenOrgMember.findMany({

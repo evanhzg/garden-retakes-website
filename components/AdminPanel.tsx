@@ -1,6 +1,17 @@
 "use client";
 
 import { useCallback, useEffect, useState } from "react";
+import AdminNav from "@/components/admin/AdminNav";
+import {
+  BLITZ_SECTIONS,
+  SITE_SECTIONS,
+  findItem,
+  panelsFor,
+  tabIds,
+  visibleSections,
+  type AdminPanelId,
+  type AdminViewer,
+} from "@/components/admin/adminSections";
 import RconConsole from "@/components/RconConsole";
 import SkinManager from "@/components/admin/SkinManager";
 import PluginConfigEditor from "@/components/admin/PluginConfigEditor";
@@ -41,51 +52,9 @@ type LogEntry = {
   detail: string | null;
 };
 
-type TabId = "overview" | "players" | "server" | "config" | "console" | "skins" | "demos" | "captures" | "log" | "season" | "safequeue" | "maps" | "gamemaker";
-
-/**
- * Sections, grouped.
- *
- * A flat strip of seven tabs made every section look equally likely to be what
- * you wanted, and gave no clue what any of them did before clicking. Grouping
- * them by what they act on — people, the server itself, what players posted,
- * the system — plus a line of description each, means the panel can be read
- * rather than explored.
- */
-const SECTIONS: {
-  group: string;
-  items: { id: TabId; label: string; icon: string; hint: string; level: number }[];
-}[] = [
-  {
-    group: "Overview",
-    items: [{ id: "overview", label: "Dashboard", icon: "◈", hint: "What needs attention", level: 1 }],
-  },
-  {
-    group: "Community",
-    items: [
-      { id: "players", label: "Players", icon: "◉", hint: "Roles, names, bans", level: 0 },
-      { id: "skins", label: "Custom skins", icon: "✦", hint: "VPKs served to clients", level: 0 },
-      { id: "demos", label: "Queue", icon: "⏵", hint: "Demos and clip marks waiting", level: 2 },
-      { id: "captures", label: "Captures", icon: "📷", hint: "Capture suggestions", level: 1 },
-      { id: "safequeue", label: "Safe Queue", icon: "🛡️", hint: "Review queue requests", level: 1 },
-    ],
-  },
-  {
-    group: "Server",
-    items: [
-      { id: "server", label: "Control", icon: "▣", hint: "Map, game mode, restarts", level: 1 },
-      { id: "maps", label: "Maps", icon: "🗺️", hint: "Workshop maps by mode", level: 1 },
-      { id: "config", label: "Plugin config", icon: "⚙", hint: "Rankings, allocator, game rules", level: 2 },
-      { id: "season", label: "Season", icon: "🏆", hint: "Season management, elo reset", level: 3 },
-      { id: "console", label: "Console", icon: "❯", hint: "Raw RCON", level: 2 },
-      { id: "gamemaker", label: "Game Maker", icon: "✧", hint: "Spawns, strats and new mode pitches", level: 2 },
-    ],
-  },
-  {
-    group: "System",
-    items: [{ id: "log", label: "Audit log", icon: "☰", hint: "Who did what", level: 0 }],
-  },
-];
+/** A tab id. Checked against the panel's own section list, not a union —
+ *  the list is data now, and a union here would be a second copy of it. */
+type TabId = string;
 
 const ROLE_LABEL = ["—", "Moderator", "Admin", "Owner"];
 
@@ -120,9 +89,24 @@ const STOCK_MAPS: { id: string; label: string; colour: string }[] = [
 export default function AdminPanel({
   viewerLevel,
   adminKey,
+  panel = "site",
+  isOrganizer = false,
+  managesSome = false,
 }: {
   viewerLevel: number;
   adminKey?: string;
+  /**
+   * Which of the two panels this is.
+   *
+   * Defaulted rather than required so every existing call site keeps meaning
+   * what it meant: /admin was the whole panel before there were two, and a
+   * default of "blitz" would have silently narrowed it.
+   */
+  panel?: AdminPanelId;
+  /** In the organizer registry — may run events of their own. */
+  isOrganizer?: boolean;
+  /** Named on somebody else's event without being in the registry. */
+  managesSome?: boolean;
 }) {
     const { t, locale } = useI18n();
 
@@ -150,21 +134,24 @@ export default function AdminPanel({
   const canAdmin = viewerLevel >= 2;
   const canOwner = viewerLevel >= 3;
 
-  // Sections above a viewer's level are hidden rather than shown disabled: a
-  // greyed-out row invites a request for access the panel cannot grant.
-  const visible = SECTIONS.map((sec) => ({
-    ...sec,
-    items: sec.items.filter((i) => viewerLevel >= i.level),
-  })).filter((sec) => sec.items.length > 0);
+  // Which panel this is, and therefore which list of sections. The two are
+  // separate grants: Blitz is the one an organizer with no admin level at all
+  // can open, so it must never be reached by falling through from the other.
+  const sections = panel === "blitz" ? BLITZ_SECTIONS : SITE_SECTIONS;
 
-  const current = SECTIONS.flatMap((s) => s.items).find((i) => i.id === tab);
+  const viewer: AdminViewer = { level: viewerLevel, isOrganizer, managesSome };
+
+  // Filtering lives in adminSections so a caller cannot forget the gate by
+  // forgetting to pass a flag.
+  const visible = visibleSections(sections, viewer);
+  const current = findItem(sections, tab);
 
   // The open section lives in the URL, so a reload — or a link to someone —
   // lands where it should.
   useEffect(() => {
-    const t = new URLSearchParams(window.location.search).get("tab");
-    if (t && SECTIONS.some((s) => s.items.some((i) => i.id === t))) setTab(t as TabId);
-  }, []);
+    const wanted = new URLSearchParams(window.location.search).get("tab");
+    if (wanted && tabIds(sections).includes(wanted)) setTab(wanted);
+  }, [sections]);
 
   const go = (id: string) => {
     setTab(id as TabId);
@@ -263,32 +250,16 @@ export default function AdminPanel({
       {toast && <div className={`admin-toast ${toast.ok ? "ok" : "error"}`}>{toast.text}</div>}
 
       <div className="adm-shell">
-      <nav className="adm-nav" aria-label={t("auto.adminpanel.admin_sections")}>
-        {visible.map((sec) => (
-          <div key={sec.group} className="adm-nav-group">
-            <span className="adm-nav-title">{sec.group}</span>
-            {sec.items.map((t) => (
-          <button
-            key={t.id}
-            id={`adm-tab-${t.id}`}
-            aria-current={tab === t.id ? "page" : undefined}
-            aria-controls={`adm-panel-${t.id}`}
-            className={`adm-nav-item ${tab === t.id ? "active" : ""}`}
-            onClick={() => go(t.id)}
-          >
-            <span className="adm-nav-icon" aria-hidden>{t.icon}</span>
-            <span className="adm-nav-text">
-              <span className="adm-nav-label">
-                {t.label}
-                {t.id === "players" && players.length > 0 && <span className="pro-tab-count">{players.length}</span>}
-              </span>
-              <span className="adm-nav-hint">{t.hint}</span>
-            </span>
-          </button>
-            ))}
-          </div>
-        ))}
-      </nav>
+      <AdminNav
+        panel={panel}
+        panels={panelsFor(viewer)}
+        groups={visible}
+        active={tab}
+        onSelect={go}
+        counts={{ players: players.length }}
+        keyQuery={adminKey ? `?key=${encodeURIComponent(adminKey)}` : ""}
+        label={t("auto.adminpanel.admin_sections")}
+      />
 
       <div className="adm-panel" id={`adm-panel-${tab}`} aria-labelledby={`adm-tab-${tab}`}>
         {current && (

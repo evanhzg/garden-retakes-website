@@ -122,13 +122,76 @@
   50% { opacity: 0.3; }
 }
 
+/* The right-hand column of the hero: what is on now, then the totals.
+   The rule that used to sit on .th-counts moves here so it runs the full
+   height of the column rather than starting halfway down it. */
+.th-aside {
+  display: grid;
+  gap: 20px;
+  align-content: end;
+  padding-left: clamp(16px, 2vw, 28px);
+  border-left: 1px solid var(--border);
+}
+
+/* What is being played. A link when there is something to point at, and a
+   frame with nothing in it when there is not — dashed, because a solid empty
+   box reads as a thing that failed to load rather than as an honest "nothing
+   yet", and because keeping the frame stops the column jumping every time an
+   event ends. */
+.th-now {
+  display: grid;
+  gap: 4px;
+  padding: 12px 14px;
+  border: 1px solid var(--border);
+  background: var(--color-surface);
+  text-decoration: none;
+  color: inherit;
+  min-width: 0;
+  transition: border-color 0.15s ease, background 0.15s ease;
+}
+
+a.th-now:hover {
+  border-color: var(--color-accent);
+  background: color-mix(in srgb, var(--color-accent) 8%, transparent);
+}
+
+.th-now.empty {
+  border-style: dashed;
+  border-color: color-mix(in srgb, var(--color-text) 22%, transparent);
+  background: transparent;
+}
+
+.th-now-head {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  font-family: var(--font-mono);
+  font-size: 9.5px;
+  font-weight: 700;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  color: var(--color-text-muted);
+}
+
+.th-now.live .th-now-head { color: var(--color-accent); }
+
+.th-now-name {
+  font-size: 15px;
+  font-weight: 800;
+  line-height: 1.15;
+  overflow-wrap: anywhere;
+}
+
+.th-now-meta {
+  font-size: 11.5px;
+  color: var(--color-text-muted);
+}
+
 /* Counts, not a season number — tournaments have no seasons. */
 .th-counts {
   display: grid;
   gap: 18px;
   margin: 0;
-  padding-left: clamp(16px, 2vw, 28px);
-  border-left: 1px solid var(--border);
 }
 
 .th-counts div {
@@ -757,4 +820,192 @@
   .th-featured-dot {
     animation: none;
   }
+}
+
+/* ------------------------------------------------- the Blitz Tier ladder */
+
+/* A full-width band rather than another alternating two-column module: the
+   ladder is what makes the mode different from every other retake server, and
+   a fifth copy of the copy-and-figure layout would have filed it under "one
+   more feature". No section number for the same reason. */
+.bt {
+  padding: clamp(48px, 8vw, 96px) 0;
+  border-bottom: 1px solid var(--border);
+}
+
+.bt-head {
+  max-width: 62ch;
+  margin-bottom: clamp(24px, 4vw, 40px);
+}
+
+.bt-head h2 {
+  margin: 0 0 12px;
+  font-size: clamp(28px, 4.2vw, 52px);
+  line-height: 0.98;
+  letter-spacing: -0.035em;
+  font-weight: 900;
+}
+
+.bt-head p {
+  margin: 0;
+  font-size: 15px;
+  line-height: 1.55;
+  color: color-mix(in srgb, var(--color-text) 76%, transparent);
+}
+
+/* Three across on a wide screen, stacked below. auto-fit rather than a fixed
+   three columns so the middle rung does not get crushed to a sliver on the
+   tablet widths between the two. */
+.bt-ladder {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(min(100%, 260px), 1fr));
+  gap: 1px;
+  background: var(--border);
+  border: 1px solid var(--border);
+}
+
+.bt-tier {
+  display: grid;
+  align-content: start;
+  gap: 14px;
+  padding: clamp(16px, 2vw, 22px);
+  background: var(--color-surface);
+}
+
+/* The rung climbed to, in the accent. Low is deliberately not red-flagged as a
+   failure state — it is a rung of the ladder, not a punishment. */
+.bt-tier-head {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+.bt-rungs {
+  width: 22px;
+  height: 34px;
+  flex: none;
+}
+
+.bt-rungs rect {
+  fill: color-mix(in srgb, var(--color-text) 14%, transparent);
+}
+
+.bt-rungs rect.on {
+  fill: var(--color-accent);
+}
+
+.bt-tier-n {
+  display: block;
+  font-family: var(--font-mono);
+  font-size: 9.5px;
+  font-weight: 700;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+  color: var(--color-text-muted);
+}
+
+.bt-tier h3 {
+  margin: 2px 0 0;
+  font-size: 20px;
+  font-weight: 900;
+  letter-spacing: -0.02em;
+}
+
+.bt-meters {
+  display: grid;
+  gap: 7px;
+}
+
+/* Two quantities per rung, because the mode's whole trick is that they trade
+   against each other in the middle. Blocks rather than a filled bar: four
+   discrete steps can be counted at a glance and compared between rungs without
+   measuring a length. */
+.bt-meter {
+  display: grid;
+  grid-template-columns: 4.5rem 1fr;
+  align-items: center;
+  gap: 10px;
+}
+
+.bt-meter-label {
+  font-family: var(--font-mono);
+  font-size: 9px;
+  font-weight: 700;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  color: var(--color-text-muted);
+}
+
+.bt-meter-bars {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 3px;
+}
+
+.bt-meter-bars i {
+  height: 6px;
+  background: color-mix(in srgb, var(--color-text) 12%, transparent);
+}
+
+.bt-meter-bars i.on {
+  background: var(--color-accent);
+}
+
+.bt-tier-body {
+  margin: 0;
+  font-size: 13px;
+  line-height: 1.5;
+  color: color-mix(in srgb, var(--color-text) 74%, transparent);
+}
+
+/* Mid's two halves. Bordered off from the body above so they read as a
+   qualification of the rung rather than as two more rungs. */
+.bt-split {
+  list-style: none;
+  margin: 0;
+  padding: 12px 0 0;
+  border-top: 1px solid var(--border);
+  display: grid;
+  gap: 8px;
+}
+
+.bt-split li {
+  display: grid;
+  grid-template-columns: 14px 1fr;
+  align-items: start;
+  gap: 8px;
+  font-size: 12.5px;
+  line-height: 1.4;
+}
+
+.bt-move {
+  width: 11px;
+  height: 11px;
+  margin-top: 3px;
+}
+
+.bt-move.up { color: #4ade80; }
+.bt-move.down { color: #f87171; }
+
+/* The movement rules, under the ladder. A row of short statements rather than
+   a paragraph: each one is a rule, and a reader checking "what happens if I
+   lose" should find it without reading the other three. */
+.bt-rules {
+  list-style: none;
+  margin: 18px 0 0;
+  padding: 0;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px 22px;
+  font-size: 12.5px;
+  color: var(--color-text-muted);
+}
+
+.bt-rules li {
+  display: inline-flex;
+  align-items: center;
+  gap: 7px;
 }

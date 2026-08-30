@@ -77,6 +77,64 @@ export const canRegister = (e: EditionState, hasInvite: boolean): boolean =>
   registrationBlockedReason(e, hasInvite) === null;
 
 /**
+ * One line of a bracket, as far as "has this been won" is concerned.
+ *
+ * Two fields on purpose. Scores, maps and rosters say nothing about whether the
+ * event is over, and naming them here would tie the rule to the database row it
+ * happens to be read off.
+ */
+export type BracketLine = { round: number; winnerTeamId: number | null };
+
+/**
+ * The match that decides the tournament, or null when the bracket has no single
+ * one.
+ *
+ * The final is the last round of the BRACKET, not the last round played. Taking
+ * the deepest round among FINISHED matches instead calls a first-round winner
+ * the champion of a tournament that has barely started — the bracket's own
+ * depth is the only thing that says which match is the final.
+ *
+ * Two matches in the deepest round means this is not a complete single-winner
+ * bracket: a group stage, or a final row that was never generated. Picking one
+ * of them would crown whichever happened to be first in the list, so null — "it
+ * cannot be said" — is the honest answer.
+ */
+export function decidingMatch<T extends BracketLine>(matches: readonly T[]): T | null {
+  if (matches.length === 0) return null;
+
+  const finalRound = Math.max(...matches.map((m) => m.round));
+  const lastRound = matches.filter((m) => m.round === finalRound);
+
+  return lastRound.length === 1 ? lastRound[0] : null;
+}
+
+/** Whether the bracket has produced a champion. */
+export const bracketDecided = (matches: readonly BracketLine[]): boolean =>
+  decidingMatch(matches)?.winnerTeamId != null;
+
+/**
+ * The state to SHOW, which is not always the state that is stored.
+ *
+ * Nothing ever writes Tournament.State back to "finished". Starting an event
+ * sets it to "live", and the last match of a bracket has no idea it was the
+ * last — so a tournament whose final was played weeks ago still reads
+ * "In progress" on its own page and on every card in the list, directly above a
+ * podium naming the team that won it.
+ *
+ * Derived rather than repaired on read. A page render that writes fires for
+ * every visitor, including the ones merely looking at somebody else's event,
+ * and turns a bracket bug into a row nobody can explain. The row stays as the
+ * organizer left it; what is shown tells the truth.
+ */
+export function displayedState(state: string, decided: boolean): string {
+  if (!decided) return state;
+
+  // Cancelled outranks a result. An event called off after its final was played
+  // is still cancelled, and overriding that erases the only record that it was.
+  return state === "cancelled" ? state : "finished";
+}
+
+/**
  * What the page should say about time, and what it should count down to.
  *
  * The countdown only appears on the last day. A tournament three weeks out

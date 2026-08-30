@@ -1,4 +1,5 @@
 import { prisma } from "@/lib/db";
+import { decidingMatch } from "@/lib/tournament/edition";
 
 // The tournaments hub: what has happened, what is happening, who is winning.
 //
@@ -70,24 +71,16 @@ export function podiumFrom(
   const teamById = new Map(teams.map((x) => [x.Id, x]));
   const named = (id: number | null) => (id === null ? null : teamById.get(id) ?? null);
 
-  /**
-   * The final is the last round of the BRACKET, not the last round played.
-   *
-   * This used to take the highest round among finished matches, which meant an
-   * ongoing tournament with only its first round played reported a round-one
-   * winner as the champion — a tournament in progress showing a trophy and a
-   * podium for a team that had won one game. The bracket's own depth is the
-   * only thing that says which match is the final.
-   */
+  // Which match is the final is decided in lib/tournament/edition.ts, and only
+  // there. The status shown on a tournament card asks the same question — "is
+  // this over" — and two implementations of "the final is the single deepest
+  // round" is how a card ends up saying In progress above a podium.
   const finalRound = Math.max(...matches.map((m) => m.Round));
-  const lastRound = matches.filter((m) => m.Round === finalRound);
+  const final = decidingMatch(
+    matches.map((m) => ({ round: m.Round, winnerTeamId: m.WinnerTeamId, row: m })),
+  )?.row;
 
-  // A final is one match. Two matches in the deepest round means this is not a
-  // complete bracket — the final row is missing — and picking one of them as
-  // the decider would crown whichever happened to be first in the list.
-  if (lastRound.length !== 1) return [];
-
-  const final = lastRound[0];
+  if (!final) return [];
 
   // Not played yet: there is no podium, and saying so is the correct answer.
   if (!final.WinnerTeamId) return [];
