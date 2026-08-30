@@ -269,11 +269,23 @@
   padding: 14px;
 }
 
+/* The floor has no stroke of its own. The outline is .mirage-wall below, drawn
+   as separate segments so the gaps between them are the entrances — a stroke
+   here would close every one of them. */
 .mirage-floor {
   fill: color-mix(in srgb, var(--color-text) 5%, transparent);
+  stroke: none;
+}
+
+/* Solid geometry: what you can stand on or behind. Butt caps, because a round
+   cap on a wall segment bleeds into the doorway beside it and closes the gap
+   the segment exists to leave. */
+.mirage-wall {
+  fill: none;
   stroke: var(--color-text);
-  stroke-width: 1.5;
+  stroke-width: 1.6;
   stroke-opacity: 0.55;
+  stroke-linecap: butt;
 }
 
 .mirage-block {
@@ -285,28 +297,21 @@
 
 /* Dashed, because these are routes rather than walls. A solid line into the
    site would read as another piece of cover. */
+/* The ways in. White rather than per-side: three of these five are used by both
+   teams, and colouring them implied an ownership the map does not have.
+
+   Butt caps, not round. Round caps blunt the ends of every dash and make a
+   dashed line read as a row of lozenges rather than as a route. */
 .mirage-path {
   fill: none;
+  stroke: #fff;
   stroke-width: 2;
-  stroke-dasharray: 6 5;
-  stroke-linecap: round;
+  stroke-dasharray: 7 6;
+  stroke-linecap: butt;
+  stroke-opacity: 0.85;
 }
 
-.mirage-path.t { stroke: var(--color-accent); }
-.mirage-path.ct { stroke: #3b82f6; }
-
-.mirage-arrow-t { fill: var(--color-accent); }
-.mirage-arrow-ct { fill: #3b82f6; }
-
-.mirage-label {
-  font-family: var(--font-mono);
-  font-size: 10px;
-  font-weight: 700;
-  letter-spacing: 0.08em;
-}
-
-.mirage-label.t { fill: var(--color-accent); }
-.mirage-label.ct { fill: #3b82f6; }
+.mirage-arrow { fill: #fff; fill-opacity: 0.85; }
 
 .mirage-tiny {
   font-family: var(--font-mono);
