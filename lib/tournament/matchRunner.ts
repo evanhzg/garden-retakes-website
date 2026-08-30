@@ -574,6 +574,34 @@ export async function forceEndMatch(
   // everybody can already see.
   await advance(match.Id);
 
+  // The game is stopped BEFORE the server goes back in the pool.
+  //
+  // It used to be the other way round, and the order was the bug: releasing
+  // first marks the box idle while a live round is still being played on it, so
+  // the next match to look could claim a server with a game in progress — and
+  // if the command then failed, nothing stopped the old one at all. That is the
+  // "I awarded the match and they kept playing" report.
+  //
+  // Still tolerant of a server that has gone away, which is a normal reason to
+  // be awarding a match by hand in the first place. The difference is that the
+  // failure is now reported rather than swallowed: the match is over either
+  // way, and an admin who needs to go and stop it themselves has to be told.
+  let reply: string | undefined;
+  let stopped = true;
+
+  if (match.ServerId) {
+    try {
+      reply = await execOnServer(match.ServerId, `css_endmatch ${winner}`);
+
+      // The plugin answers with a line rather than a status, so a refusal
+      // arrives looking exactly like success unless it is read.
+      stopped = !/unknown command|no match|not live/i.test(reply ?? "");
+    } catch (err) {
+      reply = err instanceof Error ? err.message : String(err);
+      stopped = false;
+    }
+  }
+
   // The server goes back in the pool, but the match KEEPS naming it: "which
   // server did that run on" is asked after the fact, and the match route gates
   // the spectate button on State being ready or live, so a finished match
@@ -582,19 +610,11 @@ export async function forceEndMatch(
 
   background("match:promoteNext", () => promoteNext());
 
-  // Best effort, and last. A server that has no match answers with a refusal
-  // line rather than an error, and that refusal must not undo any of the above.
-  let reply: string | undefined;
-  if (match.ServerId) {
-    try {
-      reply = await execOnServer(match.ServerId, `css_endmatch ${winner}`);
-    } catch {
-      reply = undefined;
-    }
-  }
-
   void loserTeamId;
-  return { ok: true, reply };
+  return {
+    ok: true,
+    reply: stopped ? reply : `Ended, but the server did not confirm it stopped: ${reply ?? "no answer"}`,
+  };
 }
 
 /**
