@@ -639,6 +639,22 @@ function attachRetakesMatchmaking(
             plan: match.plan,
           }
         : null,
+      /**
+       * How the hand-off is going, whatever phase we are in.
+       *
+       * This used to exist ONLY inside `result` below, which is built only when
+       * the phase is "ready" — so a hand-off that FAILED, which never reaches
+       * ready, could not report why by construction. The lobby said
+       * "handoff_failed" and the actual message sat on the server object where
+       * nothing could read it.
+       *
+       * That is the whole reason this took several passes to diagnose: the one
+       * piece of information needed was being computed, attached and synced,
+       * and then filtered out on the way to the screen.
+       */
+      server: match.server
+        ? { state: match.server.state, step: match.server.step, error: match.server.error }
+        : null,
       // `connect` stays null until the game server has confirmed it is on the
       // right map and taken the roster. `server` is what the lobby shows in the
       // meantime — including when it never gets there, which is a thing the
@@ -933,6 +949,11 @@ function attachRetakesMatchmaking(
             : reason === "handoff_failed"
               ? "handoff_failed"
               : "match_cancelled",
+          // What actually went wrong, when anything did. "The match could not
+          // be created" with no reason is a dead end for whoever is trying to
+          // fix it, and the person it happens to is usually the person who
+          // would report it.
+          detail: reason === "handoff_failed" ? (match.server?.error ?? null) : null,
         });
         emitTo(p.steamId, "rq:state", stateFor(p.steamId));
       }
