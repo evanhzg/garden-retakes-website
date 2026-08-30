@@ -78,7 +78,24 @@ export const MAP_LABELS: Record<string, string> = {
   de_vertigo: "Vertigo",
 };
 
-export const mapName = (map: string) => MAP_LABELS[map] ?? map.replace(/^de_/, "");
+/**
+ * What to show for a map id.
+ *
+ * Takes null, and returns "" for it, because the callers cannot all promise a
+ * map. A queued match has no map until the veto decides one, and the lobby
+ * socket sends `map: null` for exactly that window — while the client type said
+ * `string`, so the first bot match to reach the ready card crashed the page on
+ * `null.replace`. A label helper is the wrong place to enforce that invariant:
+ * it is called from a dozen render paths and any one of them being handed a
+ * null is a blank word, not a white screen.
+ *
+ * Empty rather than a placeholder like "Unknown": the callers know what an
+ * absent map means in their own context — "not vetoed yet" is not the same
+ * sentence as "the server did not say" — and a helper with no context should
+ * not choose their wording for them.
+ */
+export const mapName = (map: string | null | undefined): string =>
+  map ? MAP_LABELS[map] ?? map.replace(/^de_/, "") : "";
 
 /**
  * A stored exclusion list, made safe to use.

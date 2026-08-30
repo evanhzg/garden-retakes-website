@@ -112,7 +112,15 @@ type State = {
       plan: { type: string }[];
     } | null;
     result: {
-      map: string;
+      /**
+       * Null until a map is decided.
+       *
+       * It said `string` and the socket has always been able to send null — a
+       * match that reaches "ready" without a veto, which is every bot match,
+       * has no map yet. The type being wrong is what let `mapName(null)` reach
+       * a render and take the page down, so it says what the wire says.
+       */
+      map: string | null;
       connect: string | null;
       /** Where the draft, the veto and the server live now. */
       matchUrl?: string | null;
@@ -290,7 +298,11 @@ export default function RetakesLobby({ signedIn, lobbyId }: { signedIn: boolean,
       playServerReady();
       notify(
         t("lobby.alert.ready"),
-        t("lobby.alert.readyBody", { map: mapName(match.result.map) }),
+        // The map may not be decided yet, and "— connect now." with a blank in
+        // front of it reads as a missing word rather than as an absent map.
+        t("lobby.alert.readyBody", {
+          map: mapName(match.result.map) || t("lobby.live.unknownMap"),
+        }),
         "rq-ready"
       );
     }
@@ -988,10 +1000,20 @@ function MatchRoom({
         <div className="rq-center">
           {ready && match.result ? (
             <div className="rq-ready">
+              {/* The map can genuinely be absent here: a match that reached
+                  "ready" without a veto — every bot match does — has no map
+                  until the server picks one. The card drops the image rather
+                  than requesting /maps/null.webp and drawing a broken frame. */}
               <div className="rq-ready-map">
-                {/* eslint-disable-next-line @next/next/no-img-element */}
-                <img src={`/maps/${match.result.map}.webp`} alt={mapName(match.result.map)} />
-                <span className="rq-ready-name">{mapName(match.result.map)}</span>
+                {match.result.map ? (
+                  <>
+                    {/* eslint-disable-next-line @next/next/no-img-element */}
+                    <img src={`/maps/${match.result.map}.webp`} alt={mapName(match.result.map)} />
+                    <span className="rq-ready-name">{mapName(match.result.map)}</span>
+                  </>
+                ) : (
+                  <span className="rq-ready-name">{t("lobby.live.unknownMap")}</span>
+                )}
               </div>
               <div className="rq-sides">
                 {match.teams.map((t) => (
