@@ -55,7 +55,73 @@ export async function startMatch(matchId: number): Promise<StartResult> {
 
   if (!match) return { ok: false, error: "No such match." };
   if (!match.TeamAId || !match.TeamBId) return { ok: false, error: "The match does not have two teams yet." };
-  if (match.State === "live") return { ok: false, error: "That match is already live." };
+
+  /** Set when this start is recovering a match the server forgot. */
+  let restoreScore: { a: number; b: number } | null = null;
+
+  /**
+   * "Already live" is a claim about the server, not about this row.
+   *
+   * A game server that restarts — a deploy, a crash, an admin — comes back with
+   * no match in it, while this row still says "live". startMatch then refused
+   * on the strength of the row alone, so the match was live nowhere and
+   * unstartable: the website would not run it because it thought it already
+   * was, and the plugin had never heard of it. The only way out was somebody
+   * editing the database by hand, which is where three of these ended up.
+   *
+   * So the row is checked against the server before it is believed. If the
+   * plugin is still running THIS match, refusing is right and the state is
+   * left alone. If it is not — no match, or a different one — the row is stale
+   * and this restarts it, which is the reconciliation the rest of the function
+   * was already written to perform (it cancels and resets the plugin before
+   * declaring anything).
+   *
+   * Unreachable counts as "still live". A server that cannot be asked is not a
+   * server that has lost the match, and restarting on a dropped RCON packet
+   * would take a real match away from the people playing it.
+   */
+  if (match.State === "live") {
+    if (!match.ServerId) {
+      return { ok: false, error: "That match is already live." };
+    }
+
+    let plugin: string;
+    try {
+      plugin = await execOnServer(match.ServerId, "css_t_status");
+    } catch {
+      return { ok: false, error: "That match is already live." };
+    }
+
+    const stillOurs =
+      /live=yes/i.test(plugin) &&
+      (!match.MatchKey || plugin.includes(match.MatchKey));
+
+    if (stillOurs) return { ok: false, error: "That match is already live." };
+
+    // Stale. Put the row back where the rest of this function expects to find
+    // it: the map it was on goes back to pending so there is something to play.
+    const stranded = match.Maps.find((m) => m.State === "live");
+    if (stranded) {
+      await prisma.tournamentMatchMap.update({
+        where: { Id: stranded.Id },
+        data: { State: "pending" },
+      });
+      stranded.State = "pending";
+
+      // And remember where the match had got to. The plugin lost the score with
+      // the match; the website did not, and a recovery that restarts a 9-9 map
+      // at 0-0 has thrown away nine rounds nobody wants to play twice.
+      if (stranded.ScoreA > 0 || stranded.ScoreB > 0) {
+        restoreScore = { a: stranded.ScoreA, b: stranded.ScoreB };
+      }
+    }
+
+    await prisma.tournamentMatch.update({
+      where: { Id: match.Id },
+      data: { State: "ready" },
+    });
+    match.State = "ready";
+  }
 
   const nextMap = match.Maps.find((m) => m.State === "pending");
   if (!nextMap) return { ok: false, error: "No map left to play." };
@@ -228,6 +294,17 @@ export async function startMatch(matchId: number): Promise<StartResult> {
       throw new Error(reply.trim() || "The plugin refused without saying why.");
     }
 
+    // Recovering a match the server lost: put the scoreline back.
+    //
+    // Only ever after a reconcile — a normal start is 0-0 and setting it would
+    // be a no-op with a side-effect, since css_score also decides which side
+    // each team is on for the scoreline it is given. That is wanted here: a map
+    // resumed at 9-9 has to come back with the teams where those nine rounds
+    // left them, not where the fresh map put them.
+    if (restoreScore) {
+      await execOnServer(server.id, `css_score ${restoreScore.a} ${restoreScore.b}`);
+    }
+
     await prisma.$transaction([
       prisma.tournamentMatch.update({
         where: { Id: matchId },
@@ -235,6 +312,8 @@ export async function startMatch(matchId: number): Promise<StartResult> {
       }),
       prisma.tournamentMatchMap.update({
         where: { Id: nextMap.Id },
+        // The score stays as it was on a recovery; the map is being resumed,
+        // not replayed.
         data: { State: "live" },
       }),
     ]);

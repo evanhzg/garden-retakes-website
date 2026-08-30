@@ -3,6 +3,9 @@ import { prisma } from "@/lib/db";
 import { getSession } from "@/lib/auth";
 import { canManage, getTournamentContext } from "@/lib/tournamentAuth";
 import { queueState } from "@/lib/tournament/queue";
+import { background } from "@/lib/background";
+import { startMatch } from "@/lib/tournament/matchRunner";
+import { execOnServer } from "@/lib/tournament/servers";
 
 export const dynamic = "force-dynamic";
 export const runtime = "nodejs";
@@ -14,6 +17,63 @@ export const runtime = "nodejs";
 // one of them, to every viewer, so that one of them might be clicked, would be
 // both wasteful and the wrong permission model. It is fetched per match, and
 // only for somebody entitled to it.
+
+/**
+ * When each match was last checked against its server, so this does not run an
+ * RCON round trip on every poll of every open match page.
+ *
+ * Module scope, which on a serverless host means per instance and not global.
+ * That is fine: the check is idempotent and cheap to repeat occasionally — the
+ * point is to stop one viewer's ten-second poll turning into ten-second RCON
+ * traffic, not to guarantee exactly-once.
+ */
+const lastReconciled = new Map<number, number>();
+const RECONCILE_EVERY_MS = 60_000;
+
+/**
+ * Notices a match whose server has forgotten it, and restarts it.
+ *
+ * A game server that restarts — a deploy, a crash, an admin — comes back empty
+ * while the row still says "live". Nothing then reconciled the two: the plugin
+ * had never heard of the match and the website would not restart it because it
+ * believed it was already running. The match sat live nowhere until somebody
+ * edited the database, which happened three times in one evening of deploys.
+ *
+ * Runs from the match page's own poll because that is exactly when somebody is
+ * looking at a match and wondering why nothing is happening. startMatch does
+ * the real work and is safe to call: it re-claims the server, cancels and
+ * resets whatever the plugin still believes, and refuses outright if the server
+ * turns out to be running this match after all.
+ */
+async function reconcileWithServer(match: {
+  Id: number;
+  State: string;
+  ServerId: number | null;
+  MatchKey: string | null;
+}) {
+  if (!match.ServerId) return;
+  if (match.State !== "live" && match.State !== "ready") return;
+
+  const now = Date.now();
+  const last = lastReconciled.get(match.Id) ?? 0;
+  if (now - last < RECONCILE_EVERY_MS) return;
+  lastReconciled.set(match.Id, now);
+
+  let plugin: string;
+  try {
+    plugin = await execOnServer(match.ServerId, "css_t_status");
+  } catch {
+    // A server that cannot be reached is not a server that has lost the match.
+    return;
+  }
+
+  const stillOurs =
+    /live=yes/i.test(plugin) && (!match.MatchKey || plugin.includes(match.MatchKey));
+
+  if (stillOurs) return;
+
+  background(`match:reconcile:${match.Id}`, () => startMatch(match.Id));
+}
 
 export async function GET(req: Request) {
   const matchId = Number(new URL(req.url).searchParams.get("matchId"));
@@ -28,6 +88,13 @@ export async function GET(req: Request) {
       Tournament: { select: { Id: true, Published: true, SpectatorsPublic: true } },
     },
   });
+
+  // Checked here rather than on a timer, because a stale match is only a
+  // problem while somebody is waiting for it — and somebody waiting for it is
+  // exactly who is polling this route.
+  if (match) {
+    background(`match:check:${match.Id}`, () => reconcileWithServer(match));
+  }
 
   if (!match) return NextResponse.json({ error: "No such match." }, { status: 404 });
 
