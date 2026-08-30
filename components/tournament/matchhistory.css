@@ -16,9 +16,12 @@
 }
 
 .mh-card {
-  /* Wider than the controls modal: this one has a table in it, and a loadout is
-     five weapon names on one line. */
-  width: min(920px, 100%);
+  /* Narrower than it was.
+     920px was chosen for a loadout — five weapon names on one line — from a
+     round backup that, on CS2, contains no players and therefore no loadout.
+     What the panel actually holds is a list of rounds and a feed, both of which
+     are short lines, so the extra 300px was empty on every row. */
+  width: min(620px, 100%);
   border: 1px solid var(--color-divider);
   background: var(--color-bg);
   box-shadow: var(--shadow-lg);
@@ -112,7 +115,9 @@
 .mh-round {
   width: 100%;
   display: grid;
-  grid-template-columns: 16px 2rem 3.2rem 1fr auto;
+  /* chevron, round number, sides. The score and economy columns went with the
+     fields behind them, which a CS2 backup does not carry. */
+  grid-template-columns: 16px 2rem 1fr;
   align-items: center;
   gap: var(--space-2);
   padding: 6px 8px;
@@ -282,4 +287,65 @@
   color: var(--color-text-muted);
   overflow-wrap: anywhere;
   min-width: 0;
+}
+
+/* ------------------------------------------------------------------- feed --
+   What actually happened in the round, under the row that opens it.
+   This is the part that always has something in it: the loadout view below
+   comes from the round backup, and a CS2 backup carries no players at all. */
+.mh-feed {
+  list-style: none;
+  margin: 0;
+  padding: 6px 8px;
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+
+.mh-feed > li {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 11.5px;
+  padding: 2px 4px;
+  background: color-mix(in srgb, var(--color-text) 4%, transparent);
+}
+
+/* The round result is the line the others lead up to, so it is the one that
+   is allowed to be louder. */
+.mh-feed > li.mh-feed-round {
+  background: color-mix(in srgb, var(--color-accent) 12%, transparent);
+  font-weight: 700;
+}
+
+.mh-feed b {
+  font-weight: 700;
+}
+
+.mh-feed b.slot-a { color: #60a5fa; }
+.mh-feed b.slot-b { color: #f59e0b; }
+.mh-feed b.slot-none { color: var(--color-text-muted); }
+
+.mh-feed-weapon {
+  font-size: 10px;
+  padding: 1px 4px;
+  color: var(--color-text-muted);
+  background: color-mix(in srgb, var(--color-text) 7%, transparent);
+}
+
+.mh-feed-verb,
+.mh-feed-reason {
+  font-size: 10px;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  color: var(--color-text-muted);
+}
+
+/* Labels and numbering, read rather than copied. */
+.mh-round,
+.mh-feed-verb,
+.mh-feed-reason,
+.mh-rn {
+  user-select: none;
+  -webkit-user-select: none;
 }

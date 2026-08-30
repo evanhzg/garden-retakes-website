@@ -31,7 +31,28 @@ type Entry = { at: string; actor: string; action: string; detail: string };
 /** A weapon_ prefix is noise once you know you are looking at a loadout. */
 const weapon = (item: string) => item.replace(/^weapon_/, "").replace(/_/g, " ");
 
+
+/**
+ * Cash, for the loadout view.
+ *
+ * Still used there and only there. The round row above dropped its economy
+ * column because a CS2 backup carries no cash at all; this survives because the
+ * per-player block is drawn only when the file DID yield players, and a file
+ * that yields players yields their money with them.
+ */
 const money = (n: number) => `$${n.toLocaleString("en-US")}`;
+
+/** One line of the feed, as the history panel needs it. */
+type FeedLine = {
+  id: number;
+  kind: string;
+  winnerSlot: string | null;
+  reason: string | null;
+  attacker: { name: string | null; slot: string | null } | null;
+  victim: { name: string | null; slot: string | null } | null;
+  weapon: string;
+  headshot: boolean;
+};
 
 export default function MatchHistoryModal({
   matchId,
@@ -55,6 +76,16 @@ export default function MatchHistoryModal({
   // open round that is still loading renders as "loading" rather than as empty.
   const [open, setOpen] = useState<Set<number>>(new Set());
   const [detail, setDetail] = useState<Map<number, RoundDetail | null>>(new Map());
+
+  /**
+   * What actually happened in a round, from the feed.
+   *
+   * The loadout view below is fed by the round backup, and a CS2 backup holds
+   * no players and no cash — so on its own an opened round showed nothing at
+   * all. The feed does have the round: every kill in it, the defuse, and how it
+   * ended. That is the history anybody opening this panel is looking for.
+   */
+  const [feed, setFeed] = useState<Map<number, FeedLine[]>>(new Map());
 
   const post = useCallback(
     async (body: Record<string, unknown>) => {
@@ -126,6 +157,24 @@ export default function MatchHistoryModal({
         return next;
       });
 
+      // The feed for this round, which is the part that always has something in
+      // it. Fetched independently of the backup detail below, so a match with
+      // no readable backups still opens into a useful history.
+      if (!feed.has(round)) {
+        try {
+          const res = await fetch(
+            `/api/tournament/killfeed?matchId=${matchId}&round=${round}`,
+            { cache: "no-store" },
+          );
+          if (res.ok) {
+            const data: { kills: FeedLine[] } = await res.json();
+            setFeed((m) => new Map(m).set(round, data.kills ?? []));
+          }
+        } catch {
+          setFeed((m) => new Map(m).set(round, []));
+        }
+      }
+
       if (detail.has(round)) return;
 
       const wanted = [round, round - 1].filter((n) => n >= 0 && !detail.has(n));
@@ -147,14 +196,53 @@ export default function MatchHistoryModal({
         return next;
       });
     },
-    [detail, matchId, post],
+    [detail, feed, matchId, post],
   );
 
   const roundBody = (round: number) => {
-    if (!detail.has(round)) return <p className="mh-note">{t("history.loading")}</p>;
+    const lines = feed.get(round) ?? [];
+
+    // The feed first, because it is the part that is always there. The loadout
+    // view under it comes from the round backup, which on CS2 carries no
+    // players at all — so it is drawn when there is something to draw and
+    // silently absent when there is not, rather than showing a row of dashes.
+    const feedBlock = lines.length > 0 && (
+      <ul className="mh-feed">
+        {lines.map((l) => (
+          <li key={l.id} className={`mh-feed-${l.kind}`}>
+            {l.kind === "round" ? (
+              <>
+                <span className="mh-feed-verb">{t("history.roundWon")}</span>
+                <b className={`slot-${(l.winnerSlot ?? "none").toLowerCase()}`}>
+                  {l.winnerSlot === "A" ? "A" : l.winnerSlot === "B" ? "B" : "—"}
+                </b>
+                <span className="mh-feed-reason">{l.reason}</span>
+              </>
+            ) : l.kind === "defuse" ? (
+              <>
+                <b className={`slot-${(l.victim?.slot ?? "none").toLowerCase()}`}>{l.victim?.name}</b>
+                <span className="mh-feed-verb">{t("match.feedDefused")}</span>
+              </>
+            ) : (
+              <>
+                <b className={`slot-${(l.attacker?.slot ?? "none").toLowerCase()}`}>
+                  {l.attacker?.name ?? "—"}
+                </b>
+                <code className="mh-feed-weapon">{l.weapon}{l.headshot ? " · hs" : ""}</code>
+                <b className={`slot-${(l.victim?.slot ?? "none").toLowerCase()}`}>{l.victim?.name}</b>
+              </>
+            )}
+          </li>
+        ))}
+      </ul>
+    );
+
+    if (!detail.has(round)) {
+      return feedBlock || <p className="mh-note">{t("history.loading")}</p>;
+    }
 
     const here = detail.get(round) ?? null;
-    if (!here) return <p className="mh-note">{t("history.noDetail")}</p>;
+    if (!here) return feedBlock || <p className="mh-note">{t("history.noDetail")}</p>;
 
     const before = detail.get(round - 1) ?? null;
     const played = roundDelta(before, here);
@@ -244,20 +332,23 @@ export default function MatchHistoryModal({
 
                       <span className="mh-rn num">{r.round}</span>
 
-                      <span className="mh-score num">
-                        {r.t.score}–{r.ct.score}
-                      </span>
-
                       {/* Sides, spelled out. Two backups either side of halftime
                           have the same teams the other way round, and nothing
-                          else on the row says so. */}
+                          else on the row says so.
+
+                          The score and the economy used to sit here and were
+                          always "0–0" and "$0 / $0", because a CS2 round backup
+                          does not contain either. The file holds the team names,
+                          the map, the round, RoundResults, PlayersAlive and the
+                          timeouts — no cash, and a FirstHalfScore the engine
+                          leaves at zero because this plugin owns the score
+                          rather than the engine. Showing a field that can only
+                          ever be zero is worse than not showing it: it reads as
+                          the match being broken rather than as the file not
+                          having it. */}
                       <span className="mh-sides">
                         <span className="mh-t">T {r.t.team || "—"}</span>
                         <span className="mh-ct">CT {r.ct.team || "—"}</span>
-                      </span>
-
-                      <span className="mh-econ num">
-                        {money(r.t.cash)} / {money(r.ct.cash)}
                       </span>
                     </button>
 

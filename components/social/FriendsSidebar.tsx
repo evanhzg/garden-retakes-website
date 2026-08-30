@@ -617,8 +617,19 @@ export default function FriendsSidebar() {
        *
        * Hidden entirely while an overlay owns the screen — the accept window
        * and the loadout gate both cover the page, and this is position:fixed. */}
+      {/* One dock, two widths.
+          The rail and the panel used to be two fixed elements at different
+          z-indexes, so collapsing did not shrink anything — it slid a 330px
+          panel off screen and revealed a separate 56px bar that had been
+          sitting behind it the whole time. You could see the seam.
+
+          Now they are two views inside one element whose WIDTH animates, and
+          only one of them is rendered at a time. There is nothing behind
+          anything, and the collapsed state is the same dock, narrower. */}
+      <div className={`social-dock ${isOpen ? "open" : ""}`}>
+      {!isOpen && (
       <div
-        className={`friends-rail ${isOpen ? "hidden" : ""}`}
+        className="friends-rail"
         ref={railRef}
         role="button"
         tabIndex={0}
@@ -697,6 +708,7 @@ export default function FriendsSidebar() {
           )}
         </div>
       </div>
+      )}
 
 
       {/* The chats are docks, not a panel view.
@@ -763,14 +775,15 @@ export default function FriendsSidebar() {
       {/* The panel carries the hover surface, not the rail: .friends-rail.hidden
           sets pointer-events: none, so once the panel is open the rail cannot
           receive a mouseleave and the pair would latch open forever. */}
+      {isOpen && (
       <div
-        className={`friends-sidebar ${isOpen ? "open" : ""} ${isPinned ? "pinned" : ""}`}
+        className={`friends-sidebar open ${isPinned ? "pinned" : ""}`}
         ref={panelRef}
         onMouseEnter={openNow}
         onMouseLeave={closeSoon}
       >
         <div className="friends-header">
-          <h2>{t("social.friends.header")}</h2>
+          <h2>{t("social.header")}</h2>
           <button
             className="close-btn"
             onClick={() => {
@@ -792,7 +805,7 @@ export default function FriendsSidebar() {
             title={t("social.friends.tabFriends")}
           >
             <Users size={18} />
-            <span>{t("social.friends.tabFriends")}</span>
+
             {totalUnread > 0 && <span className="tab-badge">{totalUnread}</span>}
           </button>
           <button
@@ -803,7 +816,7 @@ export default function FriendsSidebar() {
             title={t("social.friends.tabInvites")}
           >
             <Mail size={18} />
-            <span>{t("social.friends.tabInvites")}</span>
+
             {pendingRequests.length > 0 && <span className="tab-badge">{pendingRequests.length}</span>}
           </button>
         </div>
@@ -1017,6 +1030,8 @@ export default function FriendsSidebar() {
             </div>
           </div>
         )}
+      </div>
+      )}
       </div>
     </>
   );

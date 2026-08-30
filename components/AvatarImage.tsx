@@ -2,6 +2,8 @@
 
 import { useState, useEffect } from "react";
 
+import BotAvatar, { isBotSteamId } from "./BotAvatar";
+
 const DEFAULT_AVATAR = "/default_pp.png";
 
 /**
@@ -31,7 +33,26 @@ export default function AvatarImage({
   const idStr = steamId.toString();
   const [imgSrc, setImgSrc] = useState<string>(src || DEFAULT_AVATAR);
 
+  /**
+   * A bot gets a bot's face, everywhere.
+   *
+   * Its SteamID is synthetic, so there is no profile to look up and the fetch
+   * below can only ever fall through to the placeholder — which is also what a
+   * real player with no avatar gets. An all-bot match therefore looked like a
+   * row of anonymous humans, most visibly on the MVP card.
+   *
+   * Decided here rather than at each call site because every avatar on the site
+   * comes through this component, and the alternative is remembering to special
+   * case bots in the scoreboard, the roster, the feed, the MVP card and
+   * whatever is added next.
+   */
+  const isBot = isBotSteamId(idStr);
+
   useEffect(() => {
+    // Nothing to look up for a bot, and asking would be a request per bot per
+    // list for an answer that does not exist.
+    if (isBot) return;
+
     if (src) {
       setImgSrc(src);
       return;
@@ -46,7 +67,11 @@ export default function AvatarImage({
       })
       .catch(() => {});
     return () => ac.abort();
-  }, [src, idStr]);
+  }, [src, idStr, isBot]);
+
+  if (isBot) {
+    return <BotAvatar steamId={idStr} className={className} style={style} />;
+  }
 
   return (
     // eslint-disable-next-line @next/next/no-img-element

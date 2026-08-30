@@ -27,6 +27,12 @@ export async function GET(req: NextRequest) {
   const afterRaw = req.nextUrl.searchParams.get("after");
   const after = afterRaw === null ? null : Number(afterRaw);
 
+  // One round, for the history panel, which asks "what happened in round 12"
+  // rather than "what happened last". A round is a handful of lines, so it is
+  // returned whole and in order rather than as a tail.
+  const roundRaw = req.nextUrl.searchParams.get("round");
+  const round = roundRaw === null ? null : Number(roundRaw);
+
   // Only published tournaments. A killfeed is as much a leak of an unpublished
   // bracket as the bracket is.
   const match = await prisma.tournamentMatch.findUnique({
@@ -38,16 +44,20 @@ export async function GET(req: NextRequest) {
     return NextResponse.json({ kills: [] });
   }
 
+  const byRound = round !== null && Number.isFinite(round);
+
   const rows = await prisma.tournamentKill.findMany({
     where: {
       MatchId: matchId,
-      ...(after !== null && Number.isFinite(after) ? { Id: { gt: after } } : {}),
+      ...(byRound ? { Round: round } : {}),
+      ...(!byRound && after !== null && Number.isFinite(after) ? { Id: { gt: after } } : {}),
     },
     // Newest first, capped. A long match produces hundreds of these and the
-    // panel shows a handful; asking for all of them to throw most away is a
-    // query that gets slower every round.
+    // live panel shows a handful; asking for all of them to throw most away is
+    // a query that gets slower every round. A single round is small enough to
+    // return whole.
     orderBy: { Id: "desc" },
-    take: 12,
+    take: byRound ? 40 : 12,
   });
 
   return NextResponse.json({

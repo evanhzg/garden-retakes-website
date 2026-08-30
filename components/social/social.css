@@ -12,12 +12,43 @@
   box-shadow: 0 0 0 2px rgba(0, 0, 0, 0.25);
 }
 
-/* ---------- Sidebar ---------- */
-.friends-sidebar {
+/* ---------- The dock ----------
+   One element, two widths.
+
+   The rail and the panel used to be two fixed elements at different z-indexes,
+   so "collapsed" did not shrink anything: it slid a 330px panel off screen and
+   revealed a separate 56px bar that had been sitting behind it the whole time,
+   seam and all. They are two views inside this now, only one rendered at a
+   time, and what animates is the dock's own width — so the collapsed state is
+   the same dock, narrower. */
+.social-dock {
   position: fixed;
   top: var(--social-top, 64px);
-  width: 330px;
+  right: 0;
   height: calc(100dvh - var(--social-top, 64px));
+  width: 56px;
+  z-index: 1001;
+  transition: width 0.28s cubic-bezier(0.22, 1, 0.36, 1);
+}
+
+.social-dock.open {
+  /* Half of the 330px it was. Every row in here is an avatar and a name; the
+     other half was empty on all of them. */
+  width: 165px;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .social-dock {
+    transition-duration: 0.01ms;
+  }
+}
+
+/* ---------- Sidebar ---------- */
+.friends-sidebar {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
   background:
     linear-gradient(180deg, color-mix(in srgb, var(--accent) 14%, transparent), transparent 30%),
     color-mix(in srgb, var(--color-surface) 92%, transparent);
@@ -30,15 +61,10 @@
      than animating `right` from -360px. A transform is composited; `right`
      relayouts the panel on every frame, which is what made this judder next to
      the rail's fade. */
-  right: 0;
-  transform: translateX(100%);
-  transition: transform 0.3s cubic-bezier(0.22, 1, 0.36, 1);
+  /* No transform. The dock animates its width and this fills it; a panel that
+     also slid would be two animations fighting over one edge. */
   display: flex;
   flex-direction: column;
-}
-
-.friends-sidebar.open {
-  transform: translateX(0);
 }
 
 /* Somebody who has asked for less movement gets the state change without the
@@ -688,11 +714,9 @@ html[data-motion="off"] .dm-bubble.typing i { animation: none; }
    --social-top is measured from the live header by FriendsSidebar rather than
    hard-coded, because a fixed figure is wrong the moment the header wraps. */
 .friends-rail {
-  position: fixed;
-  top: var(--social-top, 64px);
-  bottom: 0;
-  right: 0;
-  z-index: 900;
+  position: absolute;
+  inset: 0;
+  width: 100%;
   display: flex;
   flex-direction: column;
   align-items: center;
@@ -716,11 +740,8 @@ html[data-motion="off"] .dm-bubble.typing i { animation: none; }
  * the collapsed avatars showed through the expanded ones for the whole
  * transition and, at low opacity, after it. Sliding it its own width off the
  * edge means there is nothing behind the panel to see through to. */
-.friends-rail.hidden {
-  opacity: 0;
-  pointer-events: none;
-  transform: translateX(100%);
-}
+/* No .hidden rule any more. The rail is not rendered at all while the panel is
+   open — hiding it was what made it "the panel behind the panel". */
 
 /* Expand lives at the top, which is the whole point of the rearrangement. */
 .friends-rail-expand {
@@ -877,15 +898,22 @@ html[data-motion="off"] .dm-bubble.typing i { animation: none; }
     display: grid;
   }
 
-  /* The panel takes the screen on a phone rather than 330px of it with the
-     page showing through the gap. */
-  .friends-sidebar {
-    width: min(360px, 100vw);
-    right: calc(-1 * min(360px, 100vw) - 30px);
+  /* The panel takes the screen on a phone rather than a strip of it with the
+     page showing through the gap.
+     
+     The width lives on the dock now, and the rail is display:none below this
+     width — so on a phone the dock has only one view and only one size: none
+     at all when closed, the whole screen when open. */
+  .social-dock {
+    width: 0;
   }
 
-  .friends-sidebar.open {
-    right: 0;
+  .social-dock.open {
+    width: min(360px, 100vw);
+  }
+
+  .friends-sidebar {
+    width: 100%;
   }
 }
 
@@ -1380,4 +1408,42 @@ html[data-motion="off"] .dm-bubble.typing i { animation: none; }
 .sg-times {
   font-size: 10px;
   white-space: nowrap;
+}
+
+/* ---------- half width ----------
+   The dock is 165px open, so anything sized for 330px needs saying again. */
+
+/* Tabs are icons now. The labels wrapped to two lines at this width, and an
+   icon with a word under it is twice the height for the same information. */
+.friends-tabs button {
+  flex-direction: row;
+  justify-content: center;
+  gap: 0;
+  padding: 8px 4px;
+}
+
+.friends-tabs button span:empty {
+  display: none;
+}
+
+.friends-header {
+  padding: 12px 10px 10px;
+}
+
+.friends-header h2 {
+  font-size: 13px;
+}
+
+/* A name has half the room it had. Ellipsis rather than wrap, so every row is
+   one line high and the list stays scannable. */
+.friend-name,
+.friends-category-title {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.friend-item {
+  padding: 6px 8px;
+  gap: 7px;
 }
