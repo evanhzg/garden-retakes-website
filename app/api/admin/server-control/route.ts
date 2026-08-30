@@ -2,6 +2,7 @@ import { NextResponse } from "next/server";
 import { prisma } from "@/lib/db";
 import { logAdminAction } from "@/lib/adminAuth";
 import { execOnServer } from "@/lib/tournament/servers";
+import { startMatch } from "@/lib/tournament/matchRunner";
 import {
   actorName,
   append,
@@ -56,6 +57,8 @@ type Body = {
   family?: ModeFamily;
   /** What `css_plugins list` said when the UI offered the swap. */
   plugin?: PluginKind;
+  /** `start-blitz`: exactly two sides, each with its picked players. */
+  teams?: { name: string; players: { steamId: string; name?: string; isBot?: boolean }[] }[];
 };
 
 /** Runs one command and puts it, and whatever came back, in the scrollback. */
@@ -303,6 +306,129 @@ export async function POST(req: Request) {
 
       await logAdminAction(target.ctx, "server.mode", undefined, `${target.serverName}: ${mode}`);
       return NextResponse.json({ ok: true, message: outputs.join("\n") });
+    }
+
+    /**
+     * A Blitz match between two hand-picked sides, on this server.
+     *
+     * Builds the same objects a bracket match is made of — a tournament, two
+     * teams, one match — and then hands off to the ordinary `startMatch`. It
+     * would have been shorter to send the plugin a match-start command
+     * directly, and that is exactly the trap: every other thing the site does
+     * with a live match (the room, the feed, recovery after a restart, the
+     * scoreboard, force-end) is keyed on those rows existing. A match with no
+     * rows behind it looks identical right up to the first time anybody tries
+     * to look at it.
+     *
+     * The tournament it makes is unpublished and marked as a pickup. Unpublished
+     * keeps it off the homepage counts and the public list, which is what the
+     * `Published` filter on those queries is for — a scrim between six people is
+     * not an event, and counting it as one is how "tournaments played" stops
+     * meaning anything.
+     */
+    case "start-blitz": {
+      const sides = body.teams ?? [];
+
+      if (sides.length !== 2 || sides.some((side) => side.players.length === 0)) {
+        return NextResponse.json(
+          { error: "Two sides, each with at least one player." },
+          { status: 400 },
+        );
+      }
+
+      // One player on two sides would be seated twice and swapped between
+      // teams every round. Caught here rather than by the plugin, which has no
+      // way to say which side was meant.
+      const everyone = sides.flatMap((side) => side.players.map((p) => p.steamId));
+      if (new Set(everyone).size !== everyone.length) {
+        return NextResponse.json(
+          { error: "The same player is on both sides." },
+          { status: 400 },
+        );
+      }
+
+      const stamp = new Date().toISOString().replace(/[^0-9]/g, "").slice(0, 14);
+      const teamSize = Math.max(...sides.map((side) => side.players.length));
+
+      const tournament = await prisma.tournament.create({
+        data: {
+          Name: `Pickup ${stamp}`,
+          Slug: `pickup-${stamp}`,
+          TeamSize: teamSize,
+          MaxTeams: 2,
+          State: "live",
+          Published: false,
+          Visibility: "invite",
+          StartedAt: new Date(),
+        },
+      });
+
+      const made = [];
+      for (const side of sides) {
+        const captain = side.players[0];
+        const team = await prisma.tournamentTeam.create({
+          data: {
+            TournamentId: tournament.Id,
+            Name: side.name.slice(0, 64) || "Team",
+            CaptainSteamId: BigInt(captain.steamId),
+            Status: "ready",
+            Members: {
+              create: side.players.map((player, i) => ({
+                SteamId: BigInt(player.steamId),
+                IsCaptain: i === 0,
+                Status: "ready",
+                DisplayName: player.name?.slice(0, 32) || null,
+                IsBot: Boolean(player.isBot),
+              })),
+            },
+          },
+        });
+        made.push(team);
+      }
+
+      // A match belongs to a stage, so a one-match bracket still needs one.
+      // Kept as a real single-elimination stage rather than a special kind:
+      // everything that walks a bracket then works on it unmodified.
+      const stage = await prisma.tournamentStage.create({
+        data: {
+          TournamentId: tournament.Id,
+          Name: "Pickup",
+          Kind: "single",
+          Ordinal: 0,
+          BestOf: 1,
+          State: "live",
+        },
+      });
+
+      const match = await prisma.tournamentMatch.create({
+        data: {
+          TournamentId: tournament.Id,
+          StageId: stage.Id,
+          MatchKey: `pickup-${tournament.Id}-1`,
+          Round: 1,
+          Slot: 1,
+          BestOf: 1,
+          State: "pending",
+          TeamAId: made[0].Id,
+          TeamBId: made[1].Id,
+          ServerId: target.serverId,
+        },
+      });
+
+      const started = await startMatch(match.Id);
+
+      await logAdminAction(
+        target.ctx,
+        "server.start-blitz",
+        undefined,
+        `${target.serverName}: ${made[0].Name} vs ${made[1].Name}`,
+      );
+
+      if (!started.ok) {
+        return NextResponse.json({ error: started.error ?? "The match could not be started." }, { status: 409 });
+      }
+
+      return NextResponse.json({ ok: true, matchId: match.Id, tournamentSlug: tournament.Slug });
     }
 
     /**

@@ -2,6 +2,7 @@
 
 import { useCallback, useEffect, useState } from "react";
 import AdminNav from "@/components/admin/AdminNav";
+import ServerControl from "@/components/admin/ServerControl";
 import {
   BLITZ_SECTIONS,
   SITE_SECTIONS,
@@ -12,7 +13,6 @@ import {
   type AdminPanelId,
   type AdminViewer,
 } from "@/components/admin/adminSections";
-import RconConsole from "@/components/RconConsole";
 import SkinManager from "@/components/admin/SkinManager";
 import PluginConfigEditor from "@/components/admin/PluginConfigEditor";
 import SeasonManager from "@/components/admin/SeasonManager";
@@ -23,8 +23,6 @@ import SafeQueue from "@/components/admin/SafeQueue";
 import MapManager from "@/components/admin/MapManager";
 import GameMaker from "@/components/admin/GameMaker";
 import { useI18n } from '@/components/I18nProvider';
-import { GAME_MODES, RETAKE_FLAVOURS } from "@/lib/gameModes";
-import { freezeDate, freezeLeft, isFrozen, type FreezePoll } from "@/lib/seasonFreeze";
 
 // The panel was three stacked sections with the player table — the tallest of
 // them — dominating the page, and the admin log and custom skins living on
@@ -58,34 +56,6 @@ type TabId = string;
 
 const ROLE_LABEL = ["—", "Moderator", "Admin", "Owner"];
 
-/**
- * Maps the plugin can load.
- *
- * Train came back into the base game, so it is a stock map again rather than a
- * workshop id — everything here ships with CS2 and needs no addon mounted.
- */
-/**
- * Maps, with the names people actually say.
- *
- * The buttons showed raw file names — "de_dust2" — which is what the command
- * needs, not what anyone calls it. The id goes to the server, the label goes on
- * the button.
- */
-const STOCK_MAPS: { id: string; label: string; colour: string }[] = [
-  // Each map's own palette rather than the site accent, so the row is scannable
-  // by colour before it is read.
-  { id: "de_mirage", label: "Mirage", colour: "#d9c39a" },
-  { id: "de_inferno", label: "Inferno", colour: "#c0392b" },
-  { id: "de_nuke", label: "Nuke", colour: "#2c3e6b" },
-  { id: "de_ancient", label: "Ancient", colour: "#4b8b3b" },
-  { id: "de_dust2", label: "Dust II", colour: "#e0b642" },
-  { id: "de_anubis", label: "Anubis", colour: "#d66a9c" },
-  { id: "de_cache", label: "Cache", colour: "#5a5a5a" },
-  { id: "de_overpass", label: "Overpass", colour: "#e08a3c" },
-  { id: "de_vertigo", label: "Vertigo", colour: "#7fb6d9" },
-  { id: "de_train", label: "Train", colour: "#b6b6b6" },
-];
-
 export default function AdminPanel({
   viewerLevel,
   adminKey,
@@ -115,20 +85,7 @@ export default function AdminPanel({
   const [q, setQ] = useState("");
   const [loading, setLoading] = useState(false);
   const [toast, setToast] = useState<{ ok: boolean; text: string } | null>(null);
-  const [mapInput, setMapInput] = useState("");
   const [log, setLog] = useState<LogEntry[] | null>(null);
-  /** What is actually running, so the panel can mark the current answer. */
-  const [live, setLive] = useState<{ map: string | null; mode: string | null; players: number | null }>({
-    map: null, mode: null, players: null,
-  });
-  /**
-   * The season-end vote, which is the whole of what "the season is over" means
-   * here. It comes from the public /api/vote rather than from the server itself
-   * because the freeze is a website fact — the poll's own window — and asking
-   * the game server about it would cost an RCON round trip to learn something
-   * the database already knows.
-   */
-  const [poll, setPoll] = useState<FreezePoll>(null);
 
   const canMod = viewerLevel >= 1;
   const canAdmin = viewerLevel >= 2;
@@ -181,24 +138,6 @@ export default function AdminPanel({
     load("");
   }, [load]);
 
-  useEffect(() => {
-    fetch(`/api/admin/overview${adminKey ? `?key=${encodeURIComponent(adminKey)}` : ""}`, { cache: "no-store" })
-      .then((r) => r.json())
-      .then((j) => j.live && setLive(j.live))
-      .catch(() => {});
-  }, [adminKey, toast]);
-
-  // Re-read on every visit to the Server section rather than once on mount, so
-  // an owner who has just started the season from the dashboard does not come
-  // back to a control that is still greyed out by a freeze that has lifted.
-  useEffect(() => {
-    if (tab !== "server") return;
-    fetch("/api/vote", { cache: "no-store" })
-      .then((r) => r.json())
-      .then((j) => setPoll(j.poll ?? null))
-      .catch(() => setPoll(null));
-  }, [tab]);
-
   // The log is only fetched when its tab is first opened.
   useEffect(() => {
     if (tab !== "log" || log !== null) return;
@@ -241,9 +180,6 @@ export default function AdminPanel({
   // Computed once for the whole Server section: the banner and each disabled
   // flavour have to name the same moment, and formatting them separately is how
   // two parts of one screen end up disagreeing by a minute.
-  const frozen = isFrozen(poll);
-  const freezeAt = poll?.closesAt ? freezeDate(poll.closesAt, locale) : "";
-  const freezeIn = poll?.closesAt ? freezeLeft(poll.closesAt, t) : "";
 
   return (
     <>
@@ -369,151 +305,14 @@ export default function AdminPanel({
           </>
         )}
 
-        {tab === "server" && canMod && (
-          <div className="adm-server">
-            {frozen && (
-              // Stated above the control rather than only inside the disabled
-              // buttons' tooltips, because a tooltip is unreachable on a touch
-              // screen and a greyed-out button that cannot say why it is
-              // greyed-out reads as a bug. The date and the time remaining are
-              // both here: one answers "when", the other answers "how long".
-              <div className="adm-freeze" role="status">
-                <strong>{t("admin.freeze.title")}</strong>
-                <span>{t("admin.freeze.body")}</span>
-                <span className="adm-freeze-when">{t("admin.freeze.when", { date: freezeAt, left: freezeIn })}</span>
-                {canOwner && (
-                  <button 
-                    className="btn btn-secondary" 
-                    style={{ marginTop: 12, alignSelf: "flex-start" }}
-                    onClick={async () => {
-                      if (!confirm("Are you sure you want to start the season?")) return;
-                      const res = await fetch("/api/admin/rcon", {
-                        method: "POST",
-                        headers: { "Content-Type": "application/json" },
-                        body: JSON.stringify({ command: "!season_start", key: adminKey }),
-                      });
-                      const data = await res.json();
-                      flash(res.ok, res.ok ? "Season started." : data.error ?? "Failed to start season.");
-                      if (res.ok) load(q);
-                    }}
-                  >
-                    {t("season.break.start_season")}
-                  </button>
-                )}
-              </div>
-            )}
-
-            <section>
-              <h3>{t("auto.adminpanel.game_mode")}</h3>
-              <p className="muted" style={{ fontSize: 13, marginTop: 0 }}>
-                {t("auto.adminpanel.switches_the_plugin_s_active_m")}
-                                                </p>
-              {/* Retakes is one mode to the plugin but three different nights
-                  to the people playing, so the three share a control: picking
-                  between them is one decision. Ranked and competitive need
-                  bodies on the server, so they are disabled rather than
-                  failing somewhere the admin cannot see. */}
-              <div className="adm-flavours" role="group" aria-label={t("auto.adminpanel.retakes")}>
-                {RETAKE_FLAVOURS.map((f) => {
-                  const short = live.players !== null && live.players < f.minPlayers;
-                  const odd = f.evenTeams && live.players !== null && live.players % 2 !== 0;
-                  // Classic is the flavour with points off, so it is the one
-                  // thing a frozen season does not stop. The other two exist to
-                  // move ELO, and ELO does not move until the next season
-                  // starts.
-                  const paused = frozen && f.id !== "retakes";
-                  return (
-                    <button
-                      key={f.id}
-                      className={`adm-flavour ${live.mode === "retakes" && f.id === "retakes" ? "live" : ""} ${paused ? "is-paused is-disabled-hatch" : ""}`}
-                      disabled={!canAdmin || paused || short || odd}
-                      title={
-                        !canAdmin ? "Admin role required"
-                        // The freeze is checked before the player counts because
-                        // it outranks them: filling the server does not bring
-                        // ranked back, and "needs 4 players" would send an admin
-                        // chasing the wrong fix.
-                        : paused ? t("admin.freeze.flavour_title", { date: freezeAt, left: freezeIn })
-                        : short ? `Needs ${f.minPlayers} players — ${live.players} on the server`
-                        : odd ? `Needs an even number of players — ${live.players} on the server`
-                        : f.hint
-                      }
-                      onClick={() => doAction({ type: "gamemode", mode: f.id })}
-                    >
-                      <span className="adm-flavour-name">{f.label}</span>
-                      <span className="adm-flavour-hint">
-                        {paused ? t("admin.freeze.flavour_hint") : short ? `needs ${f.minPlayers}` : odd ? "needs even teams" : f.hint}
-                      </span>
-                    </button>
-                  );
-                })}
-              </div>
-
-              <div className="adm-modes">
-                {GAME_MODES.filter((m) => m.id !== "retakes").map((m) => (
-                  <button
-                    key={m.id}
-                    className={`adm-mode ${live.mode === m.id ? "live" : ""}`}
-                    disabled={!canAdmin}
-                    title={canAdmin ? m.hint : "Admin role required"}
-                    onClick={() => doAction({ type: "gamemode", mode: m.id })}
-                  >
-                    <span className="adm-mode-name">{m.label}</span>
-                    <span className="adm-mode-hint">{m.hint}</span>
-                  </button>
-                ))}
-              </div>
-            </section>
-
-            <section>
-              <h3>{t("auto.adminpanel.map")}</h3>
-              <p className="muted" style={{ fontSize: 13, marginTop: 0 }}>
-                {t("auto.adminpanel.all_of_these_ship_with_cs2_tra")}
-                                                </p>
-              {/* Same control as the game modes beside them: these do the same
-                  kind of thing and looked like two different features. */}
-              <div className="adm-modes">
-                {STOCK_MAPS.map((m) => (
-                  <button
-                    key={m.id}
-                    className={`adm-mode adm-map ${live.map === m.id ? "live" : ""}`}
-                    title={live.map === m.id ? `${m.label} — running now` : m.id}
-                    style={{ ["--map" as string]: m.colour }}
-                    onClick={() => doAction({ type: "map", map: m.id })}
-                  >
-                    <span className="adm-mode-name">{m.label}</span>
-                    <span className="adm-mode-hint num">{m.id}</span>
-                  </button>
-                ))}
-              </div>
-              <form
-                className="admin-inline-form"
-                style={{ marginTop: "var(--space-4)" }}
-                onSubmit={(e) => {
-                  e.preventDefault();
-                  if (mapInput.trim()) doAction({ type: "map", map: mapInput });
-                }}
-              >
-                <label className="sr-only" htmlFor="adm-map">{t("auto.adminpanel.workshop_or_custom_map")}</label>
-                <input
-                  id="adm-map"
-                  className="input"
-                  value={mapInput}
-                  placeholder={t("auto.adminpanel.workshop_or_custom_map_name")}
-                  onChange={(e) => setMapInput(e.target.value)}
-                  style={{ maxWidth: 280 }}
-                />
-                <button className="btn btn-secondary" type="submit">{t("auto.adminpanel.change_map")}</button>
-              </form>
-            </section>
-          </div>
-        )}
+        {/* One surface for the fleet. Console used to be a tab of its own,
+            which meant running a command in one place and going somewhere else
+            to find out what it did. */}
+        {tab === "server" && canMod && <ServerControl adminKey={adminKey} />}
 
         {tab === "config" && canAdmin && <PluginConfigEditor adminKey={adminKey} />}
 
         {tab === "season" && canOwner && <SeasonManager adminKey={adminKey} />}
-
-        {tab === "console" && canAdmin && <RconConsole adminKey={adminKey} />}
 
         {tab === "skins" && <SkinManager adminKey={adminKey} canUpload={canAdmin} />}
 

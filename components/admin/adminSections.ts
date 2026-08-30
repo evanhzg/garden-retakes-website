@@ -11,7 +11,6 @@ import {
   ShieldCheck,
   SlidersHorizontal,
   Sparkles,
-  SquareTerminal,
   Swords,
   Trophy,
   Users,
@@ -84,11 +83,10 @@ export type AdminViewer = {
 /**
  * The server, the plugin and the people who play on it.
  *
- * Console sits directly under Control rather than in its own group: they drive
- * the same machines, and a raw RCON prompt is what Control falls back to. The
- * two are being merged into one server-fleet surface separately; until that
- * lands Console keeps its own entry, because removing it early would orphan the
- * only way to reach a server the buttons do not cover.
+ * Console is not a separate entry: it folded into Server control. They were
+ * never two jobs — every question the buttons raise is answered by the console,
+ * and the split meant running a command in one tab and going to the other to
+ * see what it did.
  */
 export const SITE_SECTIONS: AdminNavGroup[] = [
   {
@@ -110,8 +108,7 @@ export const SITE_SECTIONS: AdminNavGroup[] = [
   {
     group: "Server",
     items: [
-      { id: "server", label: "Control", hint: "Map, game mode, restarts", icon: MonitorCog, level: AdminLevel.Moderator },
-      { id: "console", label: "Console", hint: "Raw RCON", icon: SquareTerminal, level: AdminLevel.Admin },
+      { id: "server", label: "Server control", hint: "The fleet: consoles, maps, modes, matches", icon: MonitorCog, level: AdminLevel.Moderator },
       { id: "maps", label: "Maps", hint: "Workshop maps by mode", icon: MapIcon, level: AdminLevel.Moderator },
       { id: "config", label: "Plugin config", hint: "Rankings, allocator, game rules", icon: SlidersHorizontal, level: AdminLevel.Admin },
       { id: "gamemaker", label: "Game maker", hint: "Spawns, strats and mode pitches", icon: Wand2, level: AdminLevel.Admin },
