@@ -295,10 +295,20 @@
   stroke-opacity: 0.4;
 }
 
-/* Dashed, because these are routes rather than walls. A solid line into the
-   site would read as another piece of cover. */
-/* The ways in. White rather than per-side: three of these five are used by both
-   teams, and colouring them implied an ownership the map does not have.
+/* The plantable area, as the radar draws it: a dashed outline around the ground
+   the bomb can go on, not a wall. Dashed and in the bomb's own colour so it
+   cannot be mistaken for cover — it is the one shape here you can walk through
+   and still be somewhere that matters. */
+.mirage-zone {
+  fill: color-mix(in srgb, var(--color-accent) 5%, transparent);
+  stroke: var(--color-accent);
+  stroke-width: 1.4;
+  stroke-opacity: 0.45;
+  stroke-dasharray: 5 4;
+}
+
+/* The ways in. White rather than per-side: several of these six are used by
+   both teams, and colouring them implied an ownership the map does not have.
 
    Butt caps, not round. Round caps blunt the ends of every dash and make a
    dashed line read as a row of lozenges rather than as a route. */
@@ -312,15 +322,6 @@
 }
 
 .mirage-arrow { fill: #fff; fill-opacity: 0.85; }
-
-.mirage-tiny {
-  font-family: var(--font-mono);
-  font-size: 7.5px;
-  letter-spacing: 0.06em;
-  fill: var(--color-text);
-  fill-opacity: 0.55;
-  text-anchor: middle;
-}
 
 .mirage-plant {
   fill: none;

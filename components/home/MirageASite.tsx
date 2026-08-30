@@ -3,34 +3,29 @@
 import { useI18n } from "@/components/I18nProvider";
 
 /**
- * Mirage A, from above.
+ * Mirage A, from above, north up.
  *
- * Laid out to the map rather than to the page: the site is the wide room with
- * the cut-off south-west corner that it actually is, the five ways in are where
- * they are relative to each other, and the cover is in the right corners.
- * Orientation follows the in-game radar — ramp from the south-west and palace
- * from the south where the T side arrives, connector and jungle on the east,
- * CT stairs from the north.
+ * Orientation traced off a callouts radar rather than remembered, because the
+ * remembered one was wrong on every side: everything the T side uses comes in
+ * from the EAST, and the CT side arrives from the west and south-west. Going
+ * clockwise from the top-left the six ways in are jungle (north-west), the
+ * connector neck (north), ramp (east, upper), heaven (east, the raised lip over
+ * shadow directly in front of palace), palace (south-east) and CT (south-west).
  *
- * A faithful schematic, not a traced floorplan. The proportions and the
- * positions are right; the numbers are not surveyed units and nothing here
- * should be measured off.
+ * A schematic, not a traced floorplan. The shape and the placements are right;
+ * the numbers are not surveyed units and nothing here should be measured off.
  *
  * The walls are SEPARATE SEGMENTS rather than one closed shape, and the gaps
  * between them are the entrances. That is the whole trick: a closed outline
  * with arrows around it says "here is a room, and here are some arrows"; a
  * broken one says "here is a room you can walk into, there, there and there",
  * which is the only thing this diagram is for. The floor is drawn with no
- * stroke of its own, because a stroke would close every gap.
+ * stroke, because a stroke would close every gap.
  *
- * The approach lines are white, straight and unlabelled. Colouring them per
- * side implied an ownership the map does not have — three of the five are used
- * by both teams — and labels turned a diagram into a legend that anybody who
- * has played the map does not need.
- *
- * Each arrow lands on the CENTRE of its own gap, and the cover is placed so
- * that no entrance opens straight into a box: an arrow that appears to spear
- * a crate reads as a mistake even when the crate is where it belongs.
+ * The approach lines are white, straight and unlabelled. Per-side colours
+ * implied an ownership the map does not have — several of the six are used by
+ * both teams — and callouts turned a diagram into a legend. Each arrow lands on
+ * the centre of its own gap, from outside.
  */
 export default function MirageASite({ className = "" }: { className?: string }) {
   const { t } = useI18n();
@@ -38,7 +33,7 @@ export default function MirageASite({ className = "" }: { className?: string }) 
   return (
     <svg
       className={`mirage ${className}`}
-      viewBox="0 0 420 340"
+      viewBox="0 0 420 380"
       role="img"
       aria-label={t("home.map.aria")}
       preserveAspectRatio="xMidYMid meet"
@@ -57,74 +52,50 @@ export default function MirageASite({ className = "" }: { className?: string }) 
         </marker>
       </defs>
 
-      {/* The floor. Fill only — see the note above about strokes closing gaps. */}
-      <path className="mirage-floor" d="M96 84 L300 84 L300 250 L150 250 L96 196 Z" />
+      {/* The floor, including the connector neck at the top. Fill only — a
+          stroke here would close the gaps the wall segments leave. */}
+      <path
+        className="mirage-floor"
+        d="M96 96 L140 68 L176 68 L176 40 L218 40 L218 68 L284 68 L328 100 L328 248 L300 292 L236 320 L156 326 L96 268 Z"
+      />
 
-      {/* North wall, broken for CT stairs. */}
-      <path className="mirage-wall" d="M96 84 L236 84" />
-      <path className="mirage-wall" d="M276 84 L300 84" />
+      {/* West wall, from the CT gap up to the jungle gap on the NW chamfer. */}
+      <path className="mirage-wall" d="M111 282.5 L96 268 L96 96 L108.3 88.2" />
+      {/* Past jungle, along to the connector neck. */}
+      <path className="mirage-wall" d="M127.7 75.8 L140 68 L176 68 L176 40" />
+      {/* Other side of the neck, north edge, NE chamfer, down to ramp. */}
+      <path className="mirage-wall" d="M218 40 L218 68 L284 68 L328 100 L328 114" />
+      {/* The pier between ramp and heaven. */}
+      <path className="mirage-wall" d="M328 150 L328 190" />
+      {/* Below heaven, down to the palace gap on the SE chamfer. */}
+      <path className="mirage-wall" d="M328 224 L328 248 L322.4 256.8" />
+      {/* Past palace, along the south edge, back up to the CT gap. */}
+      <path className="mirage-wall" d="M305.6 283.2 L300 292 L236 320 L156 326 L141 311.5" />
 
-      {/* East wall, broken twice: jungle high, connector low. */}
-      <path className="mirage-wall" d="M300 84 L300 108" />
-      <path className="mirage-wall" d="M300 146 L300 178" />
-      <path className="mirage-wall" d="M300 212 L300 250" />
+      {/* The plantable zone, and the crates that ring it. */}
+      <path className="mirage-zone" d="M162 214 L252 206 L258 272 L172 282 Z" />
 
-      {/* South wall, broken for palace. */}
-      <path className="mirage-wall" d="M300 250 L272 250" />
-      <path className="mirage-wall" d="M232 250 L150 250" />
+      <rect className="mirage-block" x="132" y="212" width="26" height="26" />
+      <rect className="mirage-block" x="160" y="176" width="24" height="20" />
+      <rect className="mirage-block" x="214" y="166" width="22" height="20" />
+      <rect className="mirage-block" x="258" y="176" width="26" height="22" />
+      <rect className="mirage-block" x="262" y="252" width="24" height="22" />
+      <rect className="mirage-block" x="196" y="286" width="24" height="20" />
 
-      {/* The cut south-west corner, broken for ramp. */}
-      <path className="mirage-wall" d="M150 250 L138 238" />
-      <path className="mirage-wall" d="M110 210 L96 196" />
-
-      {/* West wall, solid. */}
-      <path className="mirage-wall" d="M96 196 L96 84" />
-
-      {/* ---------------------------------------------------------- the cover */}
-
-      {/* Triple, west, the thing ramp has to deal with. */}
-      <rect className="mirage-block" x="112" y="124" width="38" height="54" />
-      <text className="mirage-tiny" x="131" y="154">
-        {t("home.map.triple")}
-      </text>
-
-      {/* Sandwich, north, short of the CT entrance. */}
-      <rect className="mirage-block" x="186" y="100" width="44" height="26" />
-      <text className="mirage-tiny" x="208" y="116">
-        {t("home.map.sandwich")}
-      </text>
-
-      {/* Tetris, south-centre, west of where palace lands. */}
-      <rect className="mirage-block" x="190" y="198" width="52" height="32" />
-      <text className="mirage-tiny" x="216" y="217">
-        {t("home.map.tetris")}
-      </text>
-
-      {/* Default plant, between triple and tetris, which is where it goes. */}
-      <circle className="mirage-plant" cx="180" cy="164" r="14" />
-      <text className="mirage-plant-label" x="180" y="168">
+      <circle className="mirage-plant" cx="210" cy="244" r="13" />
+      <text className="mirage-plant-label" x="210" y="248">
         C4
       </text>
 
-      {/* -------------------------------------------------------- the ways in */}
+      {/* The six ways in, each landing on the centre of its own gap. */}
+      <path className="mirage-path" markerEnd="url(#mir-arrow)" d="M84.7 29.7 L118 82" />
+      <path className="mirage-path" markerEnd="url(#mir-arrow)" d="M197 6 L197 40" />
+      <path className="mirage-path" markerEnd="url(#mir-arrow)" d="M392 132 L328 132" />
+      <path className="mirage-path" markerEnd="url(#mir-arrow)" d="M392 207 L328 207" />
+      <path className="mirage-path" markerEnd="url(#mir-arrow)" d="M362.9 301.1 L314 270" />
+      <path className="mirage-path" markerEnd="url(#mir-arrow)" d="M85.7 338.7 L126 297" />
 
-      {/* CT stairs, from the north. */}
-      <path className="mirage-path" markerEnd="url(#mir-arrow)" d="M256 26 L256 84" />
-
-      {/* Jungle, from the east, high. */}
-      <path className="mirage-path" markerEnd="url(#mir-arrow)" d="M392 127 L300 127" />
-
-      {/* Connector, from the east, low. */}
-      <path className="mirage-path" markerEnd="url(#mir-arrow)" d="M392 195 L300 195" />
-
-      {/* Palace, from the south. */}
-      <path className="mirage-path" markerEnd="url(#mir-arrow)" d="M252 312 L252 250" />
-
-      {/* Ramp, into the cut corner. */}
-      <path className="mirage-path" markerEnd="url(#mir-arrow)" d="M66 282 L124 224" />
-
-      {/* ------------------------------------------------------------ callout */}
-      <text className="mirage-site" x="268" y="170">
+      <text className="mirage-site" x="110" y="150">
         A
       </text>
     </svg>
