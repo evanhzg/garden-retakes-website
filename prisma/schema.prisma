@@ -2015,6 +2015,15 @@ model TournamentSpectator {
 model TournamentAlert {
   Id        Int       @id @default(autoincrement())
   MatchKey  String    @db.VarChar(64)
+  /// "game" — a player typed .admin in the server — or "chat", somebody
+  /// pressing the button in the match room. An organizer reacts differently to
+  /// the two: one of them means the match is paused right now.
+  Source    String    @default("game") @db.VarChar(8)
+  /// Written when the alert is raised, because MatchKey alone means a lookup on
+  /// every render of every alert to answer "which tournament" and "where do I
+  /// click".
+  TournamentId Int?
+  MatchId      Int?
   Map       String?   @db.VarChar(64)
   SteamId   BigInt    @db.UnsignedBigInt
   Name      String?   @db.VarChar(64)
@@ -2026,5 +2035,6 @@ model TournamentAlert {
   AckedBy   BigInt?   @db.UnsignedBigInt
 
   @@index([AckedAt, CreatedAt])
+  @@index([TournamentId, AckedAt, CreatedAt], map: "IX_TournamentAlerts_Tournament")
   @@map("TournamentAlerts")
 }

@@ -1,5 +1,6 @@
 import { NextResponse } from "next/server";
 import { prisma } from "@/lib/db";
+import { raiseAlert } from "@/lib/tournament/alerts";
 
 export const dynamic = "force-dynamic";
 export const runtime = "nodejs";
@@ -40,37 +41,23 @@ export async function POST(req: Request) {
     return NextResponse.json({ error: "A SteamID64 is required." }, { status: 400 });
   }
 
-  const alert = await prisma.tournamentAlert.create({
-    data: {
-      MatchKey: (body.matchKey ?? "").slice(0, 64),
-      Map: (body.map ?? "").slice(0, 64) || null,
-      SteamId: BigInt(steamId),
-      Name: (body.name ?? "").slice(0, 64) || null,
-      Team: (body.team ?? "").slice(0, 64) || null,
-      Score: (body.score ?? "").slice(0, 16) || null,
-      Reason: (body.reason ?? "").slice(0, 240) || null,
-    },
+  // Through the shared path rather than writing the row here.
+  //
+  // It resolves the match and its tournament, which is what gives an organizer
+  // a link to click and scopes the alert to the event they actually run, and it
+  // DMs them. None of that existed when this route was the only writer, and
+  // duplicating it here would mean a call from the game and a call from the
+  // match room behaving differently for no reason anybody chose.
+  const alert = await raiseAlert({
+    source: "game",
+    matchKey: (body.matchKey ?? "").slice(0, 64),
+    map: body.map ?? null,
+    steamId,
+    name: body.name ?? null,
+    team: body.team ?? null,
+    score: body.score ?? null,
+    reason: body.reason ?? null,
   });
-
-  // The socket is the fast path, the row is the durable one. A failed emit
-  // leaves an alert somebody still sees on the page; a failed write would lose
-  // it entirely, which is why the order is this way round.
-  try {
-    const io = (globalThis as { __gardenIo?: { emit: (event: string, payload: unknown) => void } }).__gardenIo;
-    io?.emit("t:alert", {
-      id: alert.Id,
-      matchKey: alert.MatchKey,
-      map: alert.Map,
-      steamId,
-      name: alert.Name,
-      team: alert.Team,
-      score: alert.Score,
-      reason: alert.Reason,
-      at: alert.CreatedAt.toISOString(),
-    });
-  } catch {
-    // Nothing to do about it here.
-  }
 
   return NextResponse.json({ ok: true, id: alert.Id });
 }

@@ -12,6 +12,8 @@ import { scoreboardFor } from "@/lib/tournament/scoreboard";
 import { RoleLegend } from "@/components/tournament/RoleIcon";
 import MapCards from "@/components/tournament/MapCards";
 import MatchServer from "@/components/tournament/MatchServer";
+import AdminAlerts from "@/components/tournament/AdminAlerts";
+import CallAdmin from "@/components/tournament/CallAdmin";
 import "@/components/tournament/matchhead.css";
 
 export const dynamic = "force-dynamic";
@@ -135,6 +137,18 @@ export default async function MatchPage({
                   matches means "go and look at the one that is wrong" needs a
                   name, and the page never said one. */}
               <MatchServer matchId={match.Id} />
+
+              {/* The bell, beside the server rather than in the page's corner.
+                  An organizer reading a match page is already looking here, and
+                  a call is about THIS match. Renders nothing for anybody who
+                  cannot manage the tournament. */}
+              <AdminAlerts tournamentId={match.TournamentId} />
+
+              {/* And the way to raise one. Anybody in the room may press it —
+                  the people who need an admin are the players, and a button only
+                  organizers can press is a button for a problem that has already
+                  been noticed. */}
+              <CallAdmin matchId={match.Id} />
               {match.ScoreA + match.ScoreB > 0 && (
                 <span className="mh-score num">
                   {match.ScoreA} – {match.ScoreB}
