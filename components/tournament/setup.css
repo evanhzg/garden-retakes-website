@@ -122,7 +122,7 @@
 }
 
 .su-organizer a:hover {
-  text-decoration: underline;
+  color: var(--color-accent);
 }
 
 /* The creator. Marked rather than sorted first, so the list stays in the order

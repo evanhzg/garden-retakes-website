@@ -119,7 +119,6 @@
 
 .tp-player-name:hover {
   color: var(--color-accent);
-  text-decoration: underline;
 }
 
 .tp-cap {

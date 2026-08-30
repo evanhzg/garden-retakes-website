@@ -457,7 +457,7 @@ html[data-motion="off"] .rq-server-pip.now { animation: none; }
   margin-right: 5px;
   cursor: pointer;
 }
-.rq-chat-line strong:hover { text-decoration: underline; }
+.rq-chat-line strong:hover { opacity: 0.8; }
 .rq-chat-line.mine strong { color: var(--color-text); }
 
 .rq-chat-text { color: var(--color-text); }

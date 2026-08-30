@@ -240,7 +240,6 @@
 
 .mvp-name:hover {
   color: var(--color-accent);
-  text-decoration: underline;
 }
 
 .mvp-team {

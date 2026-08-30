@@ -157,7 +157,6 @@
 
 .sb-col-name a:hover {
   color: var(--color-accent);
-  text-decoration: underline;
 }
 
 .sb-bot {
