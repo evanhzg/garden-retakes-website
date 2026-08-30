@@ -101,6 +101,35 @@ export default function AdminAlerts({ tournamentId }: { tournamentId: number }) 
   }, [load]);
 
   // The fast path. The poll above is the safety net.
+  /**
+   * Nothing scrolls behind the modal while it is open.
+   *
+   * The backdrop already covers the viewport, but covering is not blocking: a
+   * wheel over it kept scrolling the page underneath, so the list an organizer
+   * was reading slid around behind a dark sheet. Escape closes it for the same
+   * reason a modal should always have a keyboard way out.
+   *
+   * `.main-content` is the site's scroller rather than the document, which is
+   * why setting overflow on the body alone does nothing here.
+   */
+  useEffect(() => {
+    if (!open) return;
+
+    const onKey = (e: KeyboardEvent) => {
+      if (e.key === "Escape") setOpen(false);
+    };
+    document.addEventListener("keydown", onKey);
+
+    const scroller = document.querySelector<HTMLElement>(".main-content");
+    const previous = scroller?.style.overflow ?? "";
+    if (scroller) scroller.style.overflow = "hidden";
+
+    return () => {
+      document.removeEventListener("keydown", onKey);
+      if (scroller) scroller.style.overflow = previous;
+    };
+  }, [open]);
+
   useEffect(() => {
     if (!socket) return;
     const onAlert = (a: { tournamentId?: number }) => {

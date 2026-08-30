@@ -1,4 +1,5 @@
 import { prisma } from "@/lib/db";
+import { resolveName } from "@/lib/tournament/playerNames";
 import {
   ROLE_TURN_SECONDS,
   autoRolePick,
@@ -59,14 +60,35 @@ export async function draftRoster(teamId: number | null): Promise<DraftMember[]>
     orderBy: [{ IsCaptain: "desc" }, { Id: "asc" }],
   });
 
-  return members.map((m) => ({
-    steamId: m.SteamId.toString(),
-    name: m.DisplayName ?? m.SteamId.toString(),
-    isCaptain: m.IsCaptain,
-    isBot: m.IsBot,
-    roleT: m.RoleT,
-    roleCt: m.RoleCt,
-  }));
+  if (members.length === 0) return [];
+
+  // The Steam name, for anybody whose team row has no DisplayName.
+  //
+  // This used to be `DisplayName ?? SteamId`, which is the same fallback the
+  // rest of the site has already been taught not to make — and it is the one
+  // that reached the veto board and the match panels, so a player who never set
+  // a tournament name watched their own SteamID pick maps. A lobby match sets
+  // DisplayName only from what the socket happened to know, which for anybody
+  // who has not signed in is nothing, so this is the common case rather than
+  // the edge.
+  const profiles = await prisma.playerProfile.findMany({
+    where: { SteamId: { in: members.map((m) => m.SteamId) } },
+    select: { SteamId: true, LastKnownName: true },
+  });
+
+  const known = new Map(profiles.map((p) => [p.SteamId.toString(), p.LastKnownName]));
+
+  return members.map((m) => {
+    const id = m.SteamId.toString();
+    return {
+      steamId: id,
+      name: resolveName(m.DisplayName, known.get(id), id),
+      isCaptain: m.IsCaptain,
+      isBot: m.IsBot,
+      roleT: m.RoleT,
+      roleCt: m.RoleCt,
+    };
+  });
 }
 
 export async function picksFor(matchId: number): Promise<RolePick[]> {

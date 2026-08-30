@@ -328,10 +328,31 @@ export async function startMatch(matchId: number): Promise<StartResult> {
     // The server goes back in the pool. A failed start that holds a server is
     // how a pool of six quietly becomes a pool of four.
     await releaseServer(server.id);
-    await prisma.tournamentMatch.update({
-      where: { Id: matchId },
-      data: { ServerId: null, State: "pending" },
-    });
+
+    // The MAP goes back with it, and that is the half this was missing.
+    //
+    // Going live sets the match and the map together in one transaction; the
+    // revert used to put only the match back. A throw anywhere after that
+    // transaction — the connect string, a late write — therefore left a match
+    // reading "pending" with a map still reading "live" and no server at all.
+    // Nothing renders for that: the match page draws its controls from the
+    // match state, so the buttons vanish, and the next start finds a live map
+    // it did not create and treats the row as a recovery. That is the "no
+    // server, no buttons, and the previous game's score still on the board"
+    // state.
+    //
+    // Both together, so a failed start leaves exactly what a start has not
+    // happened yet looks like.
+    await prisma.$transaction([
+      prisma.tournamentMatch.update({
+        where: { Id: matchId },
+        data: { ServerId: null, State: "pending" },
+      }),
+      prisma.tournamentMatchMap.updateMany({
+        where: { MatchId: matchId, State: "live" },
+        data: { State: "pending" },
+      }),
+    ]);
 
     return { ok: false, error: err instanceof Error ? err.message : String(err) };
   }

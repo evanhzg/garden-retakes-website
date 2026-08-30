@@ -72,7 +72,9 @@ export async function teamBySlug(slug: string): Promise<TeamView | null> {
       const id = m.SteamId.toString();
       return {
         steamId: id,
-        name: names.get(id) ?? id,
+        // Never the id itself. A 17-digit string satisfies `??` perfectly well,
+        // which is how a SteamID ends up printed where a name should be.
+        name: names.get(id) || `Player ${id.slice(-4)}`,
         role: (m.Role as TeamRole) ?? "player",
         joinedAt: m.JoinedAt.toISOString(),
       };
