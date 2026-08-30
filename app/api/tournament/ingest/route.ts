@@ -34,7 +34,35 @@ type Event =
   | { kind: "map_end"; scoreA: number; scoreB: number }
   | { kind: "match_end"; scoreA: number; scoreB: number }
   | { kind: "player_stats"; players: PlayerLine[] }
+  | { kind: "kill"; kill: KillLine }
   | { kind: "knife_result"; winner?: "A" | "B"; choice?: "stay" | "switch" };
+
+/**
+ * One kill, for the feed.
+ *
+ * Names travel with the ids because the feed is a record of what was on screen:
+ * a bot has no profile to look up, and somebody renaming themselves next month
+ * should not rewrite last month's match.
+ */
+type KillLine = {
+  round?: number;
+  attackerSteamId?: string;
+  attackerName?: string;
+  attackerSlot?: "A" | "B";
+  victimSteamId: string;
+  victimName?: string;
+  victimSlot?: "A" | "B";
+  assisterSteamId?: string;
+  assisterName?: string;
+  assisterSlot?: "A" | "B";
+  weapon?: string;
+  headshot?: boolean;
+  teamKill?: boolean;
+  penetrated?: boolean;
+  noScope?: boolean;
+  throughSmoke?: boolean;
+  attackerBlind?: boolean;
+};
 
 type PlayerLine = {
   steamId: string;
@@ -103,7 +131,11 @@ export async function POST(req: Request) {
   // the process, so on the second map of a series every event arrived with a
   // seq the website had already seen and was silently discarded. A scoreboard
   // that works on map one and never updates again is exactly that bug.
-  if (body.kind !== "player_stats" && isDuplicate(matchKey, body.seq)) {
+  // player_stats and kill are exempt from the sequence check: the first is a
+  // whole-table snapshot where a repeat is harmless, and the second is an
+  // append where a genuine repeat (same pair, same weapon, seconds apart) is a
+  // real event that must not be mistaken for a retry.
+  if (body.kind !== "player_stats" && body.kind !== "kill" && isDuplicate(matchKey, body.seq)) {
     return NextResponse.json({ ok: true, duplicate: true });
   }
 
@@ -155,6 +187,47 @@ export async function POST(req: Request) {
     // Who won the knife round, and which way it sent them. Written onto the map
     // it decided — which is the live one, or the next one still to be played
     // when the report lands during the moment between the knife and going live.
+    /**
+     * A kill, appended to the feed.
+     *
+     * Not deduplicated by seq. Two identical kills a second apart are a real
+     * thing that happens — the same pair, the same weapon, in a retake — and
+     * dropping the second would silently shorten the feed. The append is
+     * cheap and a duplicate row is a cosmetic repeat, where a missing one is
+     * a hole in the record.
+     */
+    case "kill": {
+      const k = body.kill;
+      if (!k?.victimSteamId) break;
+
+      const map = await mapForStats(match.Id);
+
+      await prisma.tournamentKill.create({
+        data: {
+          MatchId: match.Id,
+          MapOrdinal: map?.Ordinal ?? 0,
+          Round: Number(k.round) || 0,
+          AttackerSteamId: BigInt(k.attackerSteamId ?? "0"),
+          AttackerName: k.attackerName?.slice(0, 64) ?? null,
+          AttackerSlot: k.attackerSlot ?? null,
+          VictimSteamId: BigInt(k.victimSteamId),
+          VictimName: k.victimName?.slice(0, 64) ?? null,
+          VictimSlot: k.victimSlot ?? null,
+          AssisterSteamId: BigInt(k.assisterSteamId ?? "0"),
+          AssisterName: k.assisterName?.slice(0, 64) ?? null,
+          AssisterSlot: k.assisterSlot ?? null,
+          Weapon: (k.weapon ?? "").replace(/^weapon_/, "").slice(0, 32),
+          Headshot: !!k.headshot,
+          TeamKill: !!k.teamKill,
+          Penetrated: !!k.penetrated,
+          NoScope: !!k.noScope,
+          ThroughSmoke: !!k.throughSmoke,
+          AttackerBlind: !!k.attackerBlind,
+        },
+      });
+      break;
+    }
+
     case "knife_result": {
       const map = await mapForStats(match.Id);
       const winner = body.winner === "A" ? match.TeamAId : body.winner === "B" ? match.TeamBId : null;

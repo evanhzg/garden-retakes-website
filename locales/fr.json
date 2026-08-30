@@ -3192,6 +3192,8 @@
   "match.demoRecorded": "Démo enregistrée",
   "match.mvp": "MVP du match",
   "match.serverLabel": "Serveur",
+  "match.killfeed": "Kills",
+  "match.killfeedWorld": "Le monde",
   "match.serverUnset": "Non attribué",
   "match.serverSettingUp": "Préparation",
   "bracket.matchNumber": "Match {n}",

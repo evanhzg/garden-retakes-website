@@ -99,9 +99,14 @@ export default function Scoreboard({ initial }: { initial: Board }) {
     // was computed before the first map existed — see the sync above.
     load();
 
-    // Five seconds. A round takes at least forty, so this is already faster
-    // than the data can change, and a scoreboard is not a live score bar.
-    const timer = setInterval(load, 5000);
+    // Two seconds, matching the plugin's own live push.
+    //
+    // Five was chosen against how fast a ROUND changes, which is the wrong
+    // clock: the plugin sends the whole table within two seconds of every kill,
+    // so the data moves mid-round and a five-second poll turned that into
+    // something that visibly stepped. Polling at the rate the source publishes
+    // is what makes the table move with the game rather than after it.
+    const timer = setInterval(load, 2000);
     return () => {
       alive = false;
       clearInterval(timer);

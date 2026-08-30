@@ -52,19 +52,38 @@ export default function MatchServer({ matchId }: { matchId: number }) {
   if (!wire) return null;
 
   /**
-   * No server at all, a server still preparing, or the server.
+   * No server at all, a match that is over, a server still preparing, or the
+   * server.
    *
    * "ready" in the match's own vocabulary means a server has been claimed and
    * the map is loading — which to a person reading the page is "setting up",
    * not "ready". The word is not reused.
+   *
+   * A finished match is checked FIRST, and that is the fix. serverIsUp is only
+   * true while the state is ready or live, so an ended match fell into the
+   * `!serverIsUp` branch and announced itself as still setting up — a match
+   * with a result on the page and "Setting up" beside it. It kept its server
+   * name on purpose ("which server did that run on" is asked afterwards), so
+   * the honest thing to show is the name, told apart by tone rather than by
+   * pretending the server is still coming.
    */
+  const over = wire.state === "finished" || wire.state === "ended";
+
   const value = !wire.serverName
     ? t("match.serverUnset")
-    : wire.state === "ready" || !wire.serverIsUp
-      ? t("match.serverSettingUp")
-      : wire.serverName;
+    : over
+      ? wire.serverName
+      : wire.state === "ready" || !wire.serverIsUp
+        ? t("match.serverSettingUp")
+        : wire.serverName;
 
-  const tone = !wire.serverName ? "none" : wire.serverIsUp && wire.state === "live" ? "on" : "wait";
+  const tone = !wire.serverName
+    ? "none"
+    : over
+      ? "done"
+      : wire.serverIsUp && wire.state === "live"
+        ? "on"
+        : "wait";
 
   return (
     <span className={`msv msv-${tone}`}>

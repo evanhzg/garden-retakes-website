@@ -1886,6 +1886,50 @@ model TournamentMap {
   @@map("TournamentMaps")
 }
 
+/// One kill in a tournament match, for the live killfeed.
+///
+/// TournamentPlayerStat holds the totals and is pushed as a whole table every
+/// couple of seconds. That draws a scoreboard and cannot draw a feed: totals do
+/// not say who killed whom with what.
+///
+/// Names are stored beside the ids on purpose. A bot has no profile row to join
+/// to, and a player renaming themselves later should not rewrite a feed of a
+/// match played last month.
+model TournamentKill {
+  Id              Int      @id @default(autoincrement())
+  MatchId         Int
+  /// Which map of the series. A BO3 has three feeds, not one.
+  MapOrdinal      Int      @default(0)
+  Round           Int      @default(0)
+
+  /// 0 for the world — a fall, or the bomb. Kept rather than dropped: "died to
+  /// nobody" is something a feed should show.
+  AttackerSteamId BigInt   @default(0)
+  AttackerName    String?  @db.VarChar(64)
+  AttackerSlot    String?  @db.VarChar(1)
+
+  VictimSteamId   BigInt
+  VictimName      String?  @db.VarChar(64)
+  VictimSlot      String?  @db.VarChar(1)
+
+  AssisterSteamId BigInt   @default(0)
+  AssisterName    String?  @db.VarChar(64)
+  AssisterSlot    String?  @db.VarChar(1)
+
+  Weapon          String   @default("") @db.VarChar(32)
+  Headshot        Boolean  @default(false)
+  TeamKill        Boolean  @default(false)
+  Penetrated      Boolean  @default(false)
+  NoScope         Boolean  @default(false)
+  ThroughSmoke    Boolean  @default(false)
+  AttackerBlind   Boolean  @default(false)
+
+  CreatedAtUtc    DateTime @default(now()) @db.DateTime(6)
+
+  @@index([MatchId, Id], map: "IX_TournamentKills_Match")
+  @@map("TournamentKills")
+}
+
 model TournamentPlayerStat {
   Id            Int      @id @default(autoincrement())
   MatchId       Int

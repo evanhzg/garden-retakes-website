@@ -46,8 +46,19 @@
   background: color-mix(in srgb, #3b82f6 12%, transparent);
 }
 
-/* No server yet. Deliberately the quietest of the three — it is the normal
-   state of every match in a bracket that has not started. */
+/* Over. Names the server the match ran on without suggesting anything is still
+   happening there — no colour, because nobody needs to act on it. It is a
+   record, and the state everybody reads long after the match. */
+.msv-done {
+  border-left-color: var(--color-divider);
+}
+
+.msv-done .msv-value {
+  color: var(--color-text-muted);
+}
+
+/* No server yet. Deliberately the quietest — it is the normal state of every
+   match in a bracket that has not started. */
 .msv-none .msv-value {
   color: var(--color-text-muted);
 }

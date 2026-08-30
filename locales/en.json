@@ -3192,6 +3192,8 @@
   "match.demoRecorded": "Demo recorded",
   "match.mvp": "Match MVP",
   "match.serverLabel": "Server",
+  "match.killfeed": "Killfeed",
+  "match.killfeedWorld": "World",
   "match.serverUnset": "Unset",
   "match.serverSettingUp": "Setting up",
   "bracket.matchNumber": "Match {n}",

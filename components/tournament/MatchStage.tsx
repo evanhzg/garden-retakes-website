@@ -6,6 +6,7 @@ import { useI18n } from "@/components/I18nProvider";
 import RoleDraft, { type DraftWire } from "./RoleDraft";
 import VetoBoard, { type VetoWire } from "./VetoBoard";
 import Scoreboard from "./Scoreboard";
+import KillFeed from "./KillFeed";
 import TeamPanel, { type PanelPlayer } from "./TeamPanel";
 import type { Scoreboard as Board } from "@/lib/tournament/scoreboard";
 import "./teampanel.css";
@@ -285,7 +286,23 @@ export default function MatchStage({
             <p className="muted">{t("veto.loading")}</p>
           ))}
 
-        {stage === "match" && <Scoreboard initial={initialBoard} />}
+        {stage === "match" && (
+          <>
+            <Scoreboard initial={initialBoard} />
+
+            {/* Under the scoreboard, not beside it. The feed is narrow and the
+                scoreboard is wide; side by side one of them is always the wrong
+                shape, and on a phone the pair becomes two columns of nothing. */}
+            <KillFeed
+              matchId={matchId}
+              // "live" is per tab on the board, not a property of the match, so
+              // it is derived: any map still being played means the feed has
+              // something to poll for. A finished match still loads once, so the
+              // last rounds can be read afterwards.
+              live={initialBoard.tabs.some((tab) => tab.live)}
+            />
+          </>
+        )}
       </div>
 
       <TeamPanel
