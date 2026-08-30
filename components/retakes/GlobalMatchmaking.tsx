@@ -1,7 +1,7 @@
 "use client";
 
 import React, { useEffect, useMemo, useRef, useState } from "react";
-import { useSocket } from "@/components/games/SocketProvider";
+import { useSocket } from "@/components/SocketProvider";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import "./matchmaking.css";

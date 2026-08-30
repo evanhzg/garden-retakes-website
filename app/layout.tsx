@@ -11,7 +11,7 @@ import "./globals.css";
 import { I18nProvider } from "@/components/I18nProvider";
 import SiteFooter from "@/components/SiteFooter";
 import { ToastProvider } from "@/components/Toast";
-import { SocketProvider } from "@/components/games/SocketProvider";
+import { SocketProvider } from "@/components/SocketProvider";
 import PassportWorkflow from "@/components/PassportWorkflow";
 import { resolveLocale, LOCALE_COOKIE } from "@/lib/i18n";
 

@@ -1,13 +1,13 @@
 "use client";
 
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
-import { useSocket } from "@/components/games/SocketProvider";
+import { useSocket } from "@/components/SocketProvider";
 import { useI18n } from "@/components/I18nProvider";
 import { DEFAULT_UTILITY, isRoleUnique, type Side } from "@/lib/retakeLoadout";
 import { mapName } from "@/lib/maps";
 import { notify, playMatchFound, playServerReady, primeNotifications } from "@/lib/matchAlert";
 import { useOverlay } from "@/lib/useOverlay";
-import { usePlayerNames, displayNameFor } from "@/components/games/hooks";
+import { usePlayerNames, displayNameFor } from "@/components/playerHooks";
 import AvatarImage from "@/components/AvatarImage";
 import { FormCard, FormLine, useRosterForm, type RecentForm } from "./PlayerForm";
 import LevelBadge from "./LevelBadge";

@@ -1,7 +1,7 @@
 "use client";
 
 import React, { useState, useEffect } from "react";
-import { useSocket } from "@/components/games/SocketProvider";
+import { useSocket } from "@/components/SocketProvider";
 import { useRouter } from "next/navigation";
 import { useI18n } from "@/components/I18nProvider";
 import "./social.css";

@@ -2,7 +2,7 @@
 
 import { useEffect, useMemo, useState, useRef } from "react";
 import { useI18n } from "@/components/I18nProvider";
-import { useSocket } from "@/components/games/SocketProvider";
+import { useSocket } from "@/components/SocketProvider";
 import { useOverlay } from "@/lib/useOverlay";
 import {
   CLICK_HINT,

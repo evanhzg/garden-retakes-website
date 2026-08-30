@@ -15,9 +15,9 @@ const SocketContext = createContext<SocketContextType>({ socket: null, isConnect
 
 export const useSocket = () => useContext(SocketContext);
 
-import FriendsSidebar from "../social/FriendsSidebar";
-import NotificationToast from "../social/NotificationToast";
-import SocketStatusBanner from "../social/SocketStatusBanner";
+import FriendsSidebar from "./social/FriendsSidebar";
+import NotificationToast from "./social/NotificationToast";
+import SocketStatusBanner from "./social/SocketStatusBanner";
 
 export const SocketProvider = ({
   children,

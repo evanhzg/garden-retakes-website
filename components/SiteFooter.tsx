@@ -44,7 +44,6 @@ export default async function SiteFooter({ serverAddress }: { serverAddress: str
             <Link href="/stats">{t("auto.sitefooter.stats")}</Link>
             <Link href="/feed">{t("auto.sitefooter.feed")}</Link>
             <Link href="/utility">{t("auto.sitefooter.utility")}</Link>
-            <Link href="/docs">{t("auto.sitefooter.docs")}</Link>
           </nav>
         </div>
       </div>

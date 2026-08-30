@@ -1,7 +1,7 @@
 "use client";
 
 import React, { useEffect, useState, useRef } from "react";
-import { useSocket } from "../games/SocketProvider";
+import { useSocket } from "../SocketProvider";
 import { motion, AnimatePresence } from "framer-motion";
 import { useI18n } from '@/components/I18nProvider';
 import { Wifi, Loader2 } from "lucide-react";

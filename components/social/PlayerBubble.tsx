@@ -6,7 +6,7 @@ import { motion, AnimatePresence } from "framer-motion";
 import Link from "next/link";
 import AvatarImage from "@/components/AvatarImage";
 import { useI18n } from '@/components/I18nProvider';
-import { useSocket } from "@/components/games/SocketProvider";
+import { useSocket } from "@/components/SocketProvider";
 
 interface PlayerBubbleProps {
   steamId: string;

@@ -43,29 +43,16 @@ export default function LeftSidebar({
 
   if (players.length === 0) return null;
 
-  const getHref = (path: string) => {
-    const subdomain = host.split(".")[0];
-    const isKnownSubdomain = ["games", "docs", "pkmn"].includes(subdomain);
-    const baseHost = isKnownSubdomain ? host.substring(subdomain.length + 1) : host;
-
-    // LeftSidebar links are typically main domain paths like /players/id
-    const targetSubMatch = ["/games", "/docs", "/pkmn"].find(s => path === s || path.startsWith(`${s}/`));
-    
-    let targetHost = baseHost;
-    let targetPath = path;
-
-    if (targetSubMatch) {
-      const sub = targetSubMatch.replace("/", "");
-      targetHost = `${sub}.${baseHost}`;
-      targetPath = path.substring(targetSubMatch.length) || "/";
-    }
-
-    if (targetHost === host) {
-      return targetPath;
-    } else {
-      return `${protocol}://${targetHost}${targetPath}`;
-    }
-  };
+  /**
+   * A link, as typed.
+   *
+   * The subdomain rewriting here only ever applied to /games, /docs and
+   * /pkmn, and its own comment said this sidebar links to main-domain paths
+   * like /players/id. Those three sections moved out to ~/projects, so every
+   * branch of it was unreachable — and unreachable host-rewriting is how
+   * somebody ends up sent to a hostname that does not resolve.
+   */
+  const getHref = (path: string) => path;
 
   const sortedPlayers = [...players].sort((a, b) => {
     const aLive = livePlayers.find(p => p.steamId === a.steamId);

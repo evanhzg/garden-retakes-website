@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import { useSocket } from "@/components/games/SocketProvider";
+import { useSocket } from "@/components/SocketProvider";
 import { useI18n } from "@/components/I18nProvider";
 import RetakesIcon from "@/components/retakes/RetakesIcon";
 import { mapImage, mapName } from "@/lib/maps";

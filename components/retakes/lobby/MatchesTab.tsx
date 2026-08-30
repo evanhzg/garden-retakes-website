@@ -5,7 +5,7 @@ import { ExternalLink } from "lucide-react";
 import { useI18n } from "@/components/I18nProvider";
 import RetakesIcon from "@/components/retakes/RetakesIcon";
 import AvatarImage from "@/components/AvatarImage";
-import { usePlayerNames, displayNameFor } from "@/components/games/hooks";
+import { usePlayerNames, displayNameFor } from "@/components/playerHooks";
 import { mapImage, mapName } from "@/lib/maps";
 
 type Match = {

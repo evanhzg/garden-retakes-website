@@ -42,20 +42,21 @@ function sources(dir, out = []) {
 }
 
 const files = ["app", "components", "lib"]
-  .flatMap((d) => sources(d))
-  // The games' dictionary defines keys, it does not consume them, and its
-  // `return key` fallback looks exactly like a call site to a regex.
-  .filter((f) => f !== path.join("components", "games", "i18n.tsx"));
+  .flatMap((d) => sources(d));
 
 /**
- * The party games have their own dictionary keyed the same way
- * (`components/games/i18n.tsx`, driven by localStorage rather than the site
- * cookie), and its keys shadow same-named ones in locales/. A key served from
- * there is not a site translation however much it looks like one.
+ * The party games used to carry their own dictionary, keyed the same way and
+ * driven by localStorage rather than the site cookie, and its keys shadowed
+ * same-named ones in locales/ — so a key served from there was not a site
+ * translation however much it looked like one.
+ *
+ * The games left for ~/projects/garden-games, and the dictionary went with
+ * them. Nothing shadows anything now, so this always answers false rather than
+ * reading a file that is no longer here. It stays as a function because the
+ * report below still counts what it excludes, and because a site that grows a
+ * second dictionary again will want this to be the place it is declared.
  */
-const gameDict = fs.readFileSync(path.join(ROOT, "components/games/i18n.tsx"), "utf8");
-const shadowedByGames = (key) =>
-  !key.includes(".") && new RegExp(`^\\s*${key}\\s*:\\s*\\{`, "m").test(gameDict);
+const shadowedByGames = () => false;
 
 // ---- keys the code asks for ------------------------------------------------
 

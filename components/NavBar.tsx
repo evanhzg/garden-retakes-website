@@ -56,18 +56,10 @@ const CS2_LINKS: NavLink[] = [
   { href: "/compare", label: "Compare", key: "nav.compare" },
   { href: "/duels", label: "Duels", key: "nav.duels" },
   { href: "/request-skin", label: "Request skin", key: "nav.requestSkin" },
-  { href: "/docs", label: "Docs", key: "nav.docs" },
   { href: "/commands", label: "Commands", key: "nav.commands" },
   { href: "/roadmap", label: "Roadmap", key: "nav.roadmap" },
-  { href: "/games", label: "Games", key: "nav.games", isSection: true },
 ];
 
-const GAMES_LINKS: NavLink[] = [
-  { href: "/games", label: "Games Hub", key: "nav.gamesHub", primary: true },
-  { href: "/games/ladder", label: "Ladder", key: "nav.ladder", primary: true },
-  { href: "/games/roadmap", label: "Roadmap", key: "nav.roadmap" },
-  { href: "/", label: "CS2", isSection: true },
-];
 
 type Session = {
   authenticated: boolean;
@@ -189,9 +181,13 @@ export default function NavBar({
       .catch(() => {});
   }, []);
 
-  const isGamesSection = pathname.startsWith("/games");
-  
-  let baseLinks = isGamesSection ? [...GAMES_LINKS] : [...CS2_LINKS];
+  // One nav. There used to be a second one for /games, which moved out to
+  // ~/projects/garden-games along with /docs and /pkmn — see their READMEs.
+  // Nothing in the site links to those paths any more, so nothing needs to
+  // switch between two sets of links.
+  const isGamesSection = false;
+
+  let baseLinks = [...CS2_LINKS];
   if (isDemoMode) {
     // An allowlist, not a blocklist. The blocklist that used to be here named
     // ten routes to hide, so every route added afterwards appeared in the demo
@@ -211,42 +207,22 @@ export default function NavBar({
     baseLinks = baseLinks.filter((l) => shownInDemo.includes(l.href));
   }
   
-  if (isGamesSection) {
-    baseLinks.push({ href: "/games/profile", label: "Profile" });
-    if (session.authenticated) {
-      baseLinks.push({ href: "/api/auth/logout", label: "Log out" });
-    } else {
-      baseLinks.push({ href: `/games/login?returnTo=${encodeURIComponent(pathname)}`, label: "Sign in" });
-    }
-  }
-  
   const links = baseLinks.filter(l => !l.adminOnly || (session.adminLevel ?? 0) > 0);
 
-  const getHref = (path: string) => {
-    let cleanHost = host;
-    if (cleanHost.startsWith("www.")) {
-      cleanHost = cleanHost.substring(4);
-    }
-    const subdomain = cleanHost.split(".")[0];
-    const isKnownSubdomain = ["games", "docs", "pkmn"].includes(subdomain);
-    const baseHost = isKnownSubdomain ? cleanHost.substring(subdomain.length + 1) : cleanHost;
-    const targetSubMatch = ["/games", "/docs", "/pkmn"].find(s => path === s || path.startsWith(`${s}/`));
-    
-    let targetHost = baseHost;
-    let targetPath = path;
-
-    if (targetSubMatch) {
-      const sub = targetSubMatch.replace("/", "");
-      targetHost = `${sub}.${baseHost}`;
-      targetPath = path.substring(targetSubMatch.length) || "/";
-    }
-
-    if (targetHost === host || targetHost === cleanHost) {
-      return targetPath;
-    } else {
-      return `${protocol}://${targetHost}${targetPath}`;
-    }
-  };
+  /**
+   * A link, as typed.
+   *
+   * This used to rewrite /games, /docs and /pkmn onto their own subdomains,
+   * and rewrite back off them when the site was served from one. Those three
+   * sections left for ~/projects and nothing links to those paths any more,
+   * so every branch of it was dead — and dead host-rewriting is the kind of
+   * thing that silently sends somebody to a hostname that does not resolve.
+   *
+   * When the standalone sites exist they are external URLs, which belong in
+   * the link list as absolute hrefs rather than as a rule inferred from a
+   * path.
+   */
+  const getHref = (path: string) => path;
 
   if (collapsed) {
     return (
