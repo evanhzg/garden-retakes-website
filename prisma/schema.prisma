@@ -2092,8 +2092,13 @@ model TournamentRoomMessage {
   SteamId      BigInt   @db.UnsignedBigInt
   /// What was on screen at the time — see the killfeed for the same reasoning.
   Name         String?  @db.VarChar(64)
-  /// "a", "b", "organizer" or null. Who is speaking changes how a line reads.
+  /// "a", "b", "admin" or null. Who is speaking changes how a line reads —
+  /// and playing beats staff, so somebody on a roster is "a" or "b" even when
+  /// they are also an organizer.
   Role         String?  @db.VarChar(12)
+  /// "room" — typed on the website — or "game", said in the server and relayed
+  /// by the plugin. One conversation seen from two places.
+  Source       String   @default("room") @db.VarChar(8)
   Body         String   @db.VarChar(500)
   CreatedAtUtc DateTime @default(now()) @db.DateTime(6)
 

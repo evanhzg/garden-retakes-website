@@ -2907,6 +2907,7 @@
   "match.mvp": "Match MVP",
   "match.serverLabel": "Server",
   "room.title": "Room chat",
+  "room.toggleGame": "Show in-game chat",
   "room.empty": "Nothing said yet.",
   "room.placeholder": "Message the room",
   "room.send": "Send",

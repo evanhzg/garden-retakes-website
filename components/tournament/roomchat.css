@@ -157,3 +157,57 @@
   line-height: 1.4;
   user-select: none;
 }
+
+/* The in-game toggle, and how a relayed line is marked. */
+.rc-head-actions {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.rc-toggle {
+  position: relative;
+  display: grid;
+  place-items: center;
+  width: 26px;
+  height: 24px;
+  border: 1px solid var(--color-divider);
+  background: var(--color-bg);
+  color: var(--color-text-muted);
+  cursor: pointer;
+}
+
+.rc-toggle.on {
+  border-color: var(--color-accent);
+  color: var(--color-accent);
+}
+
+/* What is being hidden. Turning the game feed down should not be the same as
+   not knowing anything is happening in it. */
+.rc-toggle-count {
+  position: absolute;
+  top: -5px;
+  right: -5px;
+  min-width: 14px;
+  height: 14px;
+  padding: 0 3px;
+  display: grid;
+  place-items: center;
+  background: var(--color-text-muted);
+  color: var(--color-bg);
+  font-size: 8.5px;
+  font-weight: 800;
+  line-height: 1;
+}
+
+/* Said in the server. Marked rather than recoloured — the colours already say
+   which side somebody is on, which is the more useful thing to keep. */
+.rc-ingame {
+  flex: none;
+  align-self: center;
+  color: var(--color-text-muted);
+}
+
+.rc-line.from-game {
+  background: color-mix(in srgb, var(--color-text) 3%, transparent);
+}

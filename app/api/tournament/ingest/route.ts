@@ -35,6 +35,7 @@ type Event =
   | { kind: "match_end"; scoreA: number; scoreB: number }
   | { kind: "player_stats"; players: PlayerLine[] }
   | { kind: "kill"; kill: KillLine }
+  | { kind: "chat"; kill: KillLine }
   | { kind: "knife_result"; winner?: "A" | "B"; choice?: "stay" | "switch" };
 
 /**
@@ -141,7 +142,12 @@ export async function POST(req: Request) {
   // whole-table snapshot where a repeat is harmless, and the second is an
   // append where a genuine repeat (same pair, same weapon, seconds apart) is a
   // real event that must not be mistaken for a retry.
-  if (body.kind !== "player_stats" && body.kind !== "kill" && isDuplicate(matchKey, body.seq)) {
+  if (
+    body.kind !== "player_stats" &&
+    body.kind !== "kill" &&
+    body.kind !== "chat" &&
+    isDuplicate(matchKey, body.seq)
+  ) {
     return NextResponse.json({ ok: true, duplicate: true });
   }
 
@@ -239,6 +245,41 @@ export async function POST(req: Request) {
           AttackerBlind: !!k.attackerBlind,
         },
       });
+      break;
+    }
+
+    /**
+     * Somebody said something in the server.
+     *
+     * Stored as a room message with Source "game", so the match room shows one
+     * conversation rather than two lists the page would have to interleave by
+     * timestamp to get back into the order they already happened in.
+     *
+     * The role is taken from the plugin's own view of the rosters rather than
+     * recomputed here: it knows who is on which side of THIS match, which is
+     * the question, and it knew it at the moment the line was said.
+     */
+    case "chat": {
+      const k = body.kill;
+      if (!k?.victimSteamId || !k.reason) break;
+
+      await prisma.tournamentRoomMessage.create({
+        data: {
+          MatchId: match.Id,
+          SteamId: BigInt(k.victimSteamId),
+          Name: k.victimName?.slice(0, 64) ?? null,
+          Role: k.victimSlot ? k.victimSlot.toLowerCase() : null,
+          Source: "game",
+          Body: (k.kind === "chat_team" ? "[team] " : "") + k.reason.slice(0, 480),
+        },
+      });
+
+      try {
+        const io = (globalThis as { __gardenIo?: { emit: (e: string, p: unknown) => void } }).__gardenIo;
+        io?.emit("t:room", { matchId: match.Id });
+      } catch {
+        /* the poll will catch it */
+      }
       break;
     }
 

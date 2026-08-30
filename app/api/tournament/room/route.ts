@@ -4,6 +4,8 @@ import { prisma } from "@/lib/db";
 import { getSession } from "@/lib/auth";
 import { canModerate, getTournamentContext } from "@/lib/tournamentAuth";
 import { resolveName } from "@/lib/names";
+import { background } from "@/lib/background";
+import { execOnServer } from "@/lib/tournament/servers";
 
 export const dynamic = "force-dynamic";
 export const runtime = "nodejs";
@@ -92,6 +94,7 @@ export async function GET(req: NextRequest) {
       steamId: m.SteamId.toString(),
       name: m.Name,
       role: m.Role,
+      source: m.Source,
       body: m.Body,
       at: m.CreatedAtUtc.toISOString(),
     })),
@@ -119,15 +122,42 @@ export async function POST(req: NextRequest) {
   const match = await prisma.tournamentMatch.findUnique({ where: { Id: matchId } });
   if (!match) return NextResponse.json({ error: "no such match" }, { status: 404 });
 
+  const role = await roleFor(matchId, steamId);
+
   const created = await prisma.tournamentRoomMessage.create({
     data: {
       MatchId: matchId,
       SteamId: BigInt(steamId),
       Name: await resolveName(steamId),
-      Role: await roleFor(matchId, steamId),
+      Role: role,
+      Source: "room",
       Body: text,
     },
   });
+
+  /**
+   * Staff are heard in the server, not only on the website.
+   *
+   * The whole reason an admin is in a match room is that somebody in the game
+   * needs an answer, and an answer they cannot see is not one. Relayed in the
+   * format every server uses — ADMIN - name: message — so it is unmistakably
+   * staff rather than another player's opinion.
+   *
+   * Only staff, and only when there is a server. A player's line stays on the
+   * website: they are already in the server and can type there, and echoing it
+   * back would show them their own message twice.
+   *
+   * Best effort and last, exactly like the force-end reply: a server that
+   * cannot be reached must not turn a sent message into an error, because the
+   * message IS sent — it is in the room.
+   */
+  if (role === "admin" && match.ServerId) {
+    background("room:relay", async () => {
+      const who = (await resolveName(steamId)).replace(/["\\;]/g, "").slice(0, 32);
+      const line = text.replace(/["\\;]/g, "").slice(0, 200);
+      await execOnServer(match.ServerId!, `css_t_say "${who}" "${line}"`);
+    });
+  }
 
   // The socket is the fast path; the poll below it is what makes a dropped
   // socket a slower room rather than a silent one.
@@ -145,6 +175,7 @@ export async function POST(req: NextRequest) {
       steamId,
       name: created.Name,
       role: created.Role,
+      source: created.Source,
       body: created.Body,
       at: created.CreatedAtUtc.toISOString(),
     },

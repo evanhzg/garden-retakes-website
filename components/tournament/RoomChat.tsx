@@ -1,7 +1,7 @@
 "use client";
 
 import { useCallback, useEffect, useRef, useState } from "react";
-import { Send } from "lucide-react";
+import { Gamepad2, Send } from "lucide-react";
 
 import { useI18n } from "@/components/I18nProvider";
 import { useSocket } from "@/components/SocketProvider";
@@ -13,6 +13,8 @@ type Line = {
   steamId: string;
   name: string | null;
   role: string | null;
+  /** "room" — typed here — or "game", said in the server. */
+  source: string;
   body: string;
   at: string;
 };
@@ -45,6 +47,16 @@ export default function RoomChat({ matchId }: { matchId: number }) {
   const [lines, setLines] = useState<Line[]>([]);
   const [input, setInput] = useState("");
   const [sending, setSending] = useState(false);
+
+  /**
+   * Whether in-game chat is mixed in.
+   *
+   * On by default, because the whole reason an admin has this open is to see
+   * what is being said in the server. Off is for the moment a match is loud and
+   * the two people arranging something need to hear each other — which is the
+   * clarity the toggle is for.
+   */
+  const [showGame, setShowGame] = useState(true);
 
   const cursor = useRef<number | null>(null);
   const logRef = useRef<HTMLDivElement>(null);
@@ -123,18 +135,43 @@ export default function RoomChat({ matchId }: { matchId: number }) {
     }
   };
 
+  const shown = showGame ? lines : lines.filter((l) => l.source !== "game");
+  const gameCount = lines.reduce((n, l) => n + (l.source === "game" ? 1 : 0), 0);
+
   return (
     <aside className="rc" aria-label={t("room.title")}>
       <header className="rc-head">
         <h3>{t("room.title")}</h3>
-        <CallAdmin matchId={matchId} />
+
+        <div className="rc-head-actions">
+          {/* In-game chat, on or off. A count when it is off, so turning it
+              down is not the same as not knowing anything happened. */}
+          <button
+            className={`rc-toggle ${showGame ? "on" : ""}`}
+            onClick={() => setShowGame((v) => !v)}
+            title={t("room.toggleGame")}
+            aria-pressed={showGame}
+          >
+            <Gamepad2 size={13} />
+            {!showGame && gameCount > 0 && <span className="rc-toggle-count">{gameCount}</span>}
+          </button>
+
+          <CallAdmin matchId={matchId} />
+        </div>
       </header>
 
       <div className="rc-log" ref={logRef}>
-        {lines.length === 0 && <p className="rc-empty">{t("room.empty")}</p>}
+        {shown.length === 0 && <p className="rc-empty">{t("room.empty")}</p>}
 
-        {lines.map((l) => (
-          <div key={l.id} className={`rc-line ${l.steamId === steamId ? "mine" : ""}`}>
+        {shown.map((l) => (
+          <div
+            key={l.id}
+            className={`rc-line ${l.steamId === steamId ? "mine" : ""} from-${l.source}`}
+          >
+            {/* Said in the server, not here. Marked rather than colour-coded,
+                because the colours are already spoken for by which side you are
+                on and that is the more useful thing to keep. */}
+            {l.source === "game" && <Gamepad2 size={11} className="rc-ingame" />}
             {/* Staff say so, and players do not — even when the player IS
                 staff. Somebody on one of the two rosters is playing this match,
                 and an ADMIN badge on their opinion about their own game reads
