@@ -61,6 +61,41 @@ export default function RoomChat({ matchId }: { matchId: number }) {
   const cursor = useRef<number | null>(null);
   const logRef = useRef<HTMLDivElement>(null);
 
+  /**
+   * Adds lines, keyed by id.
+   *
+   * Three things append to this room and they race: the POST that sent a
+   * message, the socket event the same POST emits, and the two-second poll.
+   * Appending blindly meant your own line could arrive twice, and a poll that
+   * had already advanced the cursor past it could drop it instead — which is
+   * how a message showed for a moment, vanished, and was only there again
+   * after a reload.
+   *
+   * A temporary line is replaced rather than duplicated: it carries a negative
+   * id until the server gives it a real one, so the same body from the same
+   * sender collapses onto the real row when it lands.
+   */
+  const merge = useCallback((incoming: Line[]) => {
+    setLines((prev) => {
+      const byId = new Map(prev.map((l) => [l.id, l]));
+
+      for (const line of incoming) {
+        // Whatever pending copy this line is the real version of.
+        for (const [id, held] of Array.from(byId.entries())) {
+          if (id < 0 && held.body === line.body && held.steamId === line.steamId) {
+            byId.delete(id);
+          }
+        }
+        byId.set(line.id, line);
+      }
+
+      // Capped at a couple of hundred: a long match room is not something
+      // anybody scrolls back through in the browser, and an unbounded list is a
+      // page that gets slower the longer it is left open.
+      return Array.from(byId.values()).sort((a, b) => a.id - b.id).slice(-200);
+    });
+  }, []);
+
   const load = useCallback(async () => {
     try {
       const url = `/api/tournament/room?matchId=${matchId}` +
@@ -71,15 +106,12 @@ export default function RoomChat({ matchId }: { matchId: number }) {
       const data: { messages: Line[] } = await res.json();
       if (data.messages.length === 0) return;
 
-      cursor.current = data.messages[data.messages.length - 1].id;
-      // Capped at a couple of hundred: a long match room is not something
-      // anybody scrolls back through in the browser, and an unbounded list is a
-      // page that gets slower the longer it is left open.
-      setLines((prev) => [...prev, ...data.messages].slice(-200));
+      cursor.current = Math.max(cursor.current ?? 0, data.messages[data.messages.length - 1].id);
+      merge(data.messages);
     } catch {
       // A dropped poll is a late line, not a broken room.
     }
-  }, [matchId]);
+  }, [matchId, merge]);
 
   useEffect(() => {
     load();
@@ -111,6 +143,36 @@ export default function RoomChat({ matchId }: { matchId: number }) {
 
     setInput("");
     setSending(true);
+
+    /**
+     * Shown straight away, under a negative id.
+     *
+     * It used to wait for the response and put the text back into the box if
+     * one did not arrive with a `message` on it — so a save that worked but
+     * answered slowly, or answered without the echo, looked exactly like a
+     * failure: the line flashed, went, and the text reappeared ready to be sent
+     * a second time. The message was in the room the whole time, which is why a
+     * reload showed it.
+     *
+     * Negative because every real id is positive and `merge` uses the sign to
+     * know which lines are still waiting for one.
+     */
+    const pendingId = -Date.now();
+    merge([
+      {
+        id: pendingId,
+        steamId: steamId ?? "",
+        // Left blank rather than guessed: the server decides the name and the
+        // role badge, and inventing one here then correcting it a moment later
+        // is what made your own line flicker between two colours.
+        name: null,
+        role: null,
+        source: "room",
+        body,
+        at: new Date().toISOString(),
+      } as Line,
+    ]);
+
     try {
       const res = await fetch("/api/tournament/room", {
         method: "POST",
@@ -119,17 +181,29 @@ export default function RoomChat({ matchId }: { matchId: number }) {
       });
       const data = await res.json().catch(() => null);
 
-      // Appended from the response rather than optimistically: the server
-      // decides the role badge, and guessing it here then correcting it a
-      // moment later makes your own line flicker between two colours.
       if (data?.message) {
         cursor.current = Math.max(cursor.current ?? 0, data.message.id);
-        setLines((prev) => [...prev, data.message].slice(-200));
-      } else {
-        setInput(body);
+        merge([data.message]);
+        return;
       }
+
+      // Refused outright — signed out, or a body the server would not take. The
+      // text goes back because there is nothing in the room to keep.
+      if (!res.ok) {
+        setLines((prev) => prev.filter((l) => l.id !== pendingId));
+        setInput(body);
+        return;
+      }
+
+      // Accepted, but the echo did not come back. The message is in the room,
+      // so the pending line stays and the next poll replaces it with the real
+      // one. Putting the text back here is what caused people to send twice.
+      load();
     } catch {
-      setInput(body);
+      // The request never completed, which does NOT mean it never arrived. The
+      // poll is the arbiter: if it shows up, merge collapses the pending copy
+      // onto it; if it does not, the line disappears on its own.
+      load();
     } finally {
       setSending(false);
     }
