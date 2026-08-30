@@ -26,7 +26,22 @@ export type TournamentActor = {
   isOrganizer: boolean;
   /** Authorized by ?key= — the superuser path, which is Owner everywhere. */
   viaKey?: boolean;
+  /**
+   * This actor's role in the org that runs the tournament in question, if any.
+   *
+   * "organizer" runs the event and can do everything a named tournament
+   * organizer can. "moderator" WORKS the event: tickets, admin calls, fixing a
+   * score, restarting a match, messaging players — and cannot change what the
+   * tournament is.
+   *
+   * That split is the point of having roles at all: the person you want awake
+   * at 2am to restart a server is not necessarily the person you want able to
+   * delete the bracket.
+   */
+  orgRole?: OrgRole | null;
 };
+
+export type OrgRole = "organizer" | "moderator";
 
 /** The level at and above which an admin manages every tournament. */
 export const MANAGE_ALL_LEVEL = 2;
@@ -63,6 +78,24 @@ export function canManageTournament(
  * normal way a second person gets access, and requiring an admin for it would
  * make every co-host a support request.
  */
+/**
+ * Whether this actor may INTERVENE in a running tournament without being able
+ * to change what it is.
+ *
+ * Deliberately wider than canManageTournament: everybody who can manage can
+ * also moderate, plus the org's moderators. The two are asked separately
+ * because they protect different things — one guards the bracket, the other
+ * guards the match — and collapsing them into a single boolean is how a
+ * moderator ends up able to delete a stage.
+ */
+export function canModerateTournament(
+  actor: TournamentActor,
+  organizerSteamIds: readonly string[],
+): boolean {
+  if (canManageTournament(actor, organizerSteamIds)) return true;
+  return actor.orgRole === "moderator";
+}
+
 export function canEditOrganizers(
   actor: TournamentActor,
   organizerSteamIds: readonly string[],

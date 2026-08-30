@@ -74,7 +74,7 @@
    player, and the colour says which without a badge. */
 .rc-who.role-a { color: #60a5fa; }
 .rc-who.role-b { color: #f59e0b; }
-.rc-who.role-organizer { color: var(--color-accent); }
+.rc-who.role-admin { color: #a855f7; }
 .rc-who.role-none { color: var(--color-text-muted); }
 
 .rc-who::after {
@@ -140,4 +140,20 @@
   border-top: 1px solid var(--color-divider);
   font-size: 11px;
   color: var(--color-text-muted);
+}
+
+/* Staff, said before the name so it is read first.
+   Purple, because the two team colours are already spoken for and a third that
+   is neither reads as "not one of the two sides" without being explained. */
+.rc-admin {
+  flex: none;
+  align-self: center;
+  padding: 1px 4px;
+  background: #a855f7;
+  color: #fff;
+  font-size: 8.5px;
+  font-weight: 800;
+  letter-spacing: 0.08em;
+  line-height: 1.4;
+  user-select: none;
 }

@@ -1422,6 +1422,10 @@ model TournamentMakerSession {
 
 /// A tournament. Stages hold the format; this holds the identity.
 model Tournament {
+  /// Which org runs it. Null for every tournament that predates orgs, which
+  /// is all of them — nothing about those changes.
+  OrgId Int?
+
   Id           Int       @id @default(autoincrement())
   Slug         String    @unique(map: "UX_Tournaments_Slug") @db.VarChar(64)
   Name         String    @db.VarChar(128)
@@ -1503,12 +1507,74 @@ model Tournament {
   Spectators TournamentSpectator[]
   Organizers TournamentOrganizer[]
 
+  @@index([OrgId], map: "IX_Tournaments_Org")
   @@map("Tournaments")
 }
 
 /// May create tournaments. Deliberately not a fourth GardenAdmins level — that
 /// column is a ladder used for immunity, and an organizer is a different job
 /// rather than a rung on it. See lib/tournamentRoles.ts.
+/// A group that runs tournaments.
+///
+/// Today a tournament names a list of organizer SteamIDs and nothing else, so
+/// "who runs this" is a set of people rather than a thing with a name and a
+/// history — and there is nowhere to send somebody who liked the last event and
+/// wants to know when the next one is.
+model GardenOrg {
+  Id          Int     @id @default(autoincrement())
+  Slug        String  @unique(map: "UX_GardenOrgs_Slug") @db.VarChar(64)
+  Name        String  @db.VarChar(80)
+  Description String? @db.Text
+
+  /// Bytes rather than a URL: tournament banners already work this way because
+  /// there is no object storage in this deployment.
+  ImageBytes Bytes?  @db.LongBlob
+  ImageMime  String? @db.VarChar(32)
+
+  DiscordUrl String? @db.VarChar(255)
+  TwitchUrl  String? @db.VarChar(255)
+  YoutubeUrl String? @db.VarChar(255)
+  WebsiteUrl String? @db.VarChar(255)
+  TwitterUrl String? @db.VarChar(255)
+
+  /// Just the id. It is embedded, and storing a watch URL means parsing it back
+  /// out on every render to build the embed source.
+  TrailerYoutubeId String? @db.VarChar(24)
+
+  CreatedAtUtc DateTime @default(now()) @db.DateTime(6)
+
+  @@map("GardenOrgs")
+}
+
+/// Who is in an org, and what they may do with its tournaments.
+///
+/// "organizer" runs the event. "moderator" works it: tickets, admin calls,
+/// fixing a score, restarting a match — and cannot change what the tournament
+/// IS. See lib/tournamentRoles.ts, where that decision lives and is tested.
+model GardenOrgMember {
+  Id      Int      @id @default(autoincrement())
+  OrgId   Int
+  SteamId BigInt   @db.UnsignedBigInt
+  Role    String   @default("moderator") @db.VarChar(16)
+  AddedAt DateTime @default(now()) @db.DateTime(6)
+
+  @@unique([OrgId, SteamId], map: "UX_GardenOrgMembers")
+  @@index([SteamId], map: "IX_GardenOrgMembers_SteamId")
+  @@map("GardenOrgMembers")
+}
+
+/// "Tell me when they run another one."
+model GardenOrgFollow {
+  Id         Int      @id @default(autoincrement())
+  OrgId      Int
+  SteamId    BigInt   @db.UnsignedBigInt
+  FollowedAt DateTime @default(now()) @db.DateTime(6)
+
+  @@unique([OrgId, SteamId], map: "UX_GardenOrgFollows")
+  @@index([SteamId], map: "IX_GardenOrgFollows_SteamId")
+  @@map("GardenOrgFollows")
+}
+
 model GardenOrganizer {
   SteamId        BigInt   @id @db.UnsignedBigInt
   Name           String?  @db.VarChar(64)

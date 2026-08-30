@@ -135,6 +135,11 @@ export default function RoomChat({ matchId }: { matchId: number }) {
 
         {lines.map((l) => (
           <div key={l.id} className={`rc-line ${l.steamId === steamId ? "mine" : ""}`}>
+            {/* Staff say so, and players do not — even when the player IS
+                staff. Somebody on one of the two rosters is playing this match,
+                and an ADMIN badge on their opinion about their own game reads
+                as a ruling on it. The server decides which; see roleFor. */}
+            {l.role === "admin" && <span className="rc-admin">ADMIN</span>}
             <span className={`rc-who role-${l.role ?? "none"}`}>{l.name ?? l.steamId}</span>
             <span className="rc-body">{l.body}</span>
           </div>

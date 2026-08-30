@@ -14,6 +14,7 @@
 import {
   canCreateTournament,
   canManageTournament,
+  canModerateTournament,
   canEditOrganizerRegistry,
   isLastOrganizer,
   managesEverything,
@@ -88,6 +89,39 @@ check("web key reads Owner", tournamentRoleName(webKey) === "Owner");
 check("an admin-organizer reads Admin", tournamentRoleName({ ...admin, isOrganizer: true }) === "Admin");
 
 check("managesEverything is admin-and-up only", managesEverything(admin) && !managesEverything(modOrganizer));
+
+// ------------------------------------------------------- org moderators ----
+//
+// The split that makes an org worth having: the person you want awake at 2am to
+// restart a server is not necessarily the person you want able to delete the
+// bracket. These two must never collapse into one boolean.
+
+const orgModerator = { adminLevel: 0, steamId: "7", isOrganizer: false, orgRole: "moderator" as const };
+const orgOrganizer = { adminLevel: 0, steamId: "8", isOrganizer: false, orgRole: "organizer" as const };
+
+check("an org moderator may moderate", canModerateTournament(orgModerator, someoneElses));
+check("an org moderator may NOT manage", !canManageTournament(orgModerator, someoneElses));
+
+// The one that would be silently wrong: an org role must not smuggle structure
+// access in through the tournament's own organizer list being empty.
+check("an org moderator may not manage an unowned tournament", !canManageTournament(orgModerator, []));
+
+check(
+  "an org organizer is not granted structure by the role alone",
+  // Being "organizer" IN AN ORG is not the same as being named on the
+  // tournament — the grant happens when the tournament is created, by writing
+  // them onto it. Anything else means one org's role leaking onto another org's
+  // event.
+  !canManageTournament(orgOrganizer, someoneElses),
+);
+
+check("moderating implies nothing about creating", !canCreateTournament(orgModerator));
+
+// Everyone who can manage can also moderate — otherwise an organizer would be
+// locked out of the tools their own moderators have.
+check("a tournament organizer may moderate it", canModerateTournament(organizer, theirs));
+check("an admin may moderate anything", canModerateTournament(admin, someoneElses));
+check("a nobody may not moderate", !canModerateTournament(nobody, someoneElses));
 
 if (fails) {
   console.log(`\n${fails} failed`);

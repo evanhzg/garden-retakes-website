@@ -2,7 +2,7 @@ import { NextRequest, NextResponse } from "next/server";
 
 import { prisma } from "@/lib/db";
 import { getSession } from "@/lib/auth";
-import { canManage, getTournamentContext } from "@/lib/tournamentAuth";
+import { canModerate, getTournamentContext } from "@/lib/tournamentAuth";
 import { resolveName } from "@/lib/names";
 
 export const dynamic = "force-dynamic";
@@ -21,16 +21,26 @@ export const runtime = "nodejs";
  * the ones a roster check would silence.
  */
 
-/** Who this person is in this match, which changes how a line reads. */
+/**
+ * Who this person is in this match, which changes how a line reads.
+ *
+ * PLAYING BEATS STAFF, and the order of the two checks is the whole rule. An
+ * organizer who is also on one of the two rosters is playing this match — their
+ * line is a player's line, and badging it ADMIN would make an opinion about
+ * their own game look like a ruling on it. Get the order wrong and the person
+ * with the most authority is the one whose word carries the most weight in an
+ * argument they are a party to.
+ *
+ * Everybody else with standing — the site's admins, the org's organizers, its
+ * moderators — is staff, and says so.
+ */
 async function roleFor(matchId: number, steamId: string | null): Promise<string | null> {
   if (!steamId) return null;
 
   const match = await prisma.tournamentMatch.findUnique({ where: { Id: matchId } });
   if (!match) return null;
 
-  const ctx = await getTournamentContext(null);
-  if (await canManage(ctx, match.TournamentId)) return "organizer";
-
+  // Playing, first.
   const id = BigInt(steamId);
   for (const [slot, teamId] of [["a", match.TeamAId], ["b", match.TeamBId]] as const) {
     if (!teamId) continue;
@@ -39,6 +49,12 @@ async function roleFor(matchId: number, steamId: string | null): Promise<string 
     });
     if (member) return slot;
   }
+
+  // Then standing. canModerate is the wider of the two gates and covers both
+  // an org's organizers and its moderators, plus site admins — which is exactly
+  // the set of people whose word in a match room is a ruling.
+  const ctx = await getTournamentContext(null);
+  if (await canModerate(ctx, match.TournamentId)) return "admin";
 
   return null;
 }

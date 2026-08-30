@@ -1,8 +1,10 @@
 import { prisma } from "@/lib/db";
 import { getAdminContext, type AdminContext } from "@/lib/adminAuth";
+import { orgRoleForTournament } from "@/lib/tournament/orgs";
 import {
   canCreateTournament,
   canManageTournament,
+  canModerateTournament,
   canEditOrganizerRegistry,
   managesEverything,
   tournamentRoleName,
@@ -74,7 +76,43 @@ export async function organizersOf(tournamentId: number): Promise<string[]> {
  */
 export async function canManage(ctx: TournamentContext, tournamentId: number): Promise<boolean> {
   if (managesEverything(actorOf(ctx))) return true;
-  return canManageTournament(actorOf(ctx), await organizersOf(tournamentId));
+
+  const organizers = await organizersOf(tournamentId);
+  if (canManageTournament(actorOf(ctx), organizers)) return true;
+
+  // An org's organizers manage its tournaments even if they are not named on
+  // this one. Creating a tournament writes them onto it, so this is normally
+  // redundant — but somebody added to the org afterwards would otherwise be
+  // locked out of events their own org is running, which reads as the role not
+  // working.
+  return (await orgRoleForTournament(ctx.steamId, tournamentId)) === "organizer";
+}
+
+/**
+ * May this caller INTERVENE in this tournament without being able to change
+ * what it is?
+ *
+ * Tickets, admin calls, fixing a score, restarting a match, messaging players.
+ * Everybody who canManage can also moderate; on top of them, the moderators of
+ * the org that runs it.
+ *
+ * Asked separately from canManage on purpose. The two protect different things
+ * — one guards the bracket, the other guards the match — and a single boolean
+ * is how a moderator ends up able to delete a stage.
+ *
+ * The org role is fetched HERE rather than being carried on the context,
+ * because it is per tournament: somebody can be a moderator for one org and
+ * nothing at all for another, and a role cached on a request would be the wrong
+ * answer as soon as it was asked about a second event.
+ */
+export async function canModerate(ctx: TournamentContext, tournamentId: number): Promise<boolean> {
+  if (managesEverything(actorOf(ctx))) return true;
+
+  const orgRole = await orgRoleForTournament(ctx.steamId, tournamentId);
+  return canModerateTournament(
+    { ...actorOf(ctx), orgRole },
+    await organizersOf(tournamentId),
+  );
 }
 
 /** May this caller change the global organizer registry? */
