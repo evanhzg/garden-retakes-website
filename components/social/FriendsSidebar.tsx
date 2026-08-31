@@ -622,74 +622,48 @@ export default function FriendsSidebar() {
           only one of them is rendered at a time. There is nothing behind
           anything, and the collapsed state is the same dock, narrower. */}
       <div className={`social-dock ${isOpen ? "open" : ""}`}>
-      <div
-        className="friends-rail"
-        ref={railRef}
-      >
-        {/* The expand arrow is gone.
-            Hovering the rail opens the panel and clicking any avatar opens that
-            person's chat, so the arrow was a third way to do what two other
-            gestures already did — and it took the top slot, which is where the
-            eye lands first. What it usefully carried was the unread count, so
-            that stays as a badge on the rail itself rather than on a control.
-            The rail keeps its keyboard route: it is focusable and Enter opens
-            it, which is what the button was actually needed for. */}
-        {(pendingRequests.length > 0 || totalUnread > 0) && (
-          <span className="friends-rail-badge" aria-hidden>
-            {pendingRequests.length + totalUnread}
-          </span>
-        )}
+      {/* The navigation, down the left.
 
-        {/* Everybody, online first.
-            The rail used to render `onlineFriends` only, so a friend going
-            offline vanished from the bar entirely — which reads as "they
-            removed me" rather than "they logged off". Both groups are here
-            now, told apart by treatment rather than by absence: online in
-            colour behind an accent ring, offline desaturated behind a dark
-            one. The divider is what makes it a ranking instead of a list with
-            some faded entries in it. */}
-        <div className="friends-rail-list">
-          {onlineFriends.map((f) => (
-            <PlayerBubble key={f.id} steamId={f.friendId} name={f.name} isFriend>
-              <span className="friends-rail-friend is-online" title={f.name} aria-label={f.name}>
-                <AvatarStatus
-                  steamId={f.friendId}
-                  name={f.name}
-                  src={f.avatarUrl}
-                  presence={presenceOf(f.friendId, livePlayers, true)}
-                  size={28}
-                />
-                {(unread[f.friendId] ?? 0) > 0 && <span className="dot-badge" />}
-              </span>
-            </PlayerBubble>
-          ))}
+          It used to be a horizontal strip across the top of the panel, which
+          is what made the panel look like it still had a header — and this
+          column held a second copy of the friends list, beside the friends
+          list. So the panel was a list next to the same list, under a bar.
 
-          {onlineFriends.length > 0 && offlineFriends.length > 0 && (
-            <span className="friends-rail-split" aria-hidden />
+          The icons are the column now. Everything to the right of them is
+          whichever section they select, which is the shape this was asked
+          for and is the reason there is room for it to be concise. */}
+      <nav className="friends-rail" ref={railRef} aria-label={t("social.header.nav")}>
+        <button
+          className={`friends-nav-btn ${activeTab === "TOURNAMENTS" ? "active" : ""}`}
+          aria-current={activeTab === "TOURNAMENTS"}
+          onClick={() => setActiveTab("TOURNAMENTS")}
+          title={t("social.tournaments")}
+        >
+          <Trophy size={18} />
+        </button>
+
+        <button
+          className={`friends-nav-btn ${activeTab === "FRIENDS" ? "active" : ""}`}
+          aria-current={activeTab === "FRIENDS"}
+          onClick={() => setActiveTab("FRIENDS")}
+          title={t("social.friends.tabFriends")}
+        >
+          <Users size={18} />
+          {totalUnread > 0 && <span className="friends-nav-badge">{totalUnread}</span>}
+        </button>
+
+        <button
+          className={`friends-nav-btn ${activeTab === "MAIL" ? "active" : ""}`}
+          aria-current={activeTab === "MAIL"}
+          onClick={() => setActiveTab("MAIL")}
+          title={t("social.friends.tabInvites")}
+        >
+          <Mail size={18} />
+          {pendingRequests.length > 0 && (
+            <span className="friends-nav-badge">{pendingRequests.length}</span>
           )}
-
-          {offlineFriends.map((f) => (
-            <PlayerBubble key={f.id} steamId={f.friendId} name={f.name} isFriend>
-              <span className="friends-rail-friend is-offline" title={f.name} aria-label={f.name}>
-                <AvatarStatus
-                  steamId={f.friendId}
-                  name={f.name}
-                  src={f.avatarUrl}
-                  presence="offline"
-                  size={28}
-                />
-                {(unread[f.friendId] ?? 0) > 0 && <span className="dot-badge" />}
-              </span>
-            </PlayerBubble>
-          ))}
-
-          {friends.length === 0 && (
-            <span className="friends-rail-none" title={t("social.friends.noneOnline")}>
-              <Users size={16} />
-            </span>
-          )}
-        </div>
-      </div>
+        </button>
+      </nav>
 
 
       {/* The chats are docks, not a panel view.
@@ -757,39 +731,6 @@ export default function FriendsSidebar() {
           sets pointer-events: none, so once the panel is open the rail cannot
           receive a mouseleave and the pair would latch open forever. */}
       <div className="friends-sidebar" ref={panelRef}>
-        <div className="friends-tabs" role="tablist">
-          <button
-            role="tab"
-            aria-selected={activeTab === "TOURNAMENTS"}
-            className={activeTab === "TOURNAMENTS" ? "active" : ""}
-            onClick={() => setActiveTab("TOURNAMENTS")}
-            title={t("social.tournaments")}
-          >
-            <Trophy size={18} />
-          </button>
-          <button
-            role="tab"
-            aria-selected={activeTab === "FRIENDS"}
-            className={activeTab === "FRIENDS" ? "active" : ""}
-            onClick={() => setActiveTab("FRIENDS")}
-            title={t("social.friends.tabFriends")}
-          >
-            <Users size={18} />
-
-            {totalUnread > 0 && <span className="tab-badge">{totalUnread}</span>}
-          </button>
-          <button
-            role="tab"
-            aria-selected={activeTab === "MAIL"}
-            className={activeTab === "MAIL" ? "active" : ""}
-            onClick={() => setActiveTab("MAIL")}
-            title={t("social.friends.tabInvites")}
-          >
-            <Mail size={18} />
-
-            {pendingRequests.length > 0 && <span className="tab-badge">{pendingRequests.length}</span>}
-          </button>
-        </div>
 
         {activeTab === "TOURNAMENTS" && (
           <div className="friends-content">

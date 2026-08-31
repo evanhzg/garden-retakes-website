@@ -3066,5 +3066,6 @@
   "social.presence.ingame": "In game",
   "social.presence.spectating": "Spectating",
   "social.presence.online": "Online",
-  "social.presence.offline": "Offline"
+  "social.presence.offline": "Offline",
+  "social.header.nav": "Social sections"
 }

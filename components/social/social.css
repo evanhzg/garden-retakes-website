@@ -1575,3 +1575,61 @@ html[data-motion="off"] .dm-bubble.typing i { animation: none; }
   font-size: 12px;
   color: var(--muted);
 }
+
+/* ---------- The left navbar ----------
+ *
+ * The sections live down the rail rather than across the top of the panel.
+ * The horizontal strip that used to do this read as a header — which is
+ * exactly what it was reported as — and it cost 40px of the panel's height to
+ * say what three icons in a column already say.
+ */
+.friends-nav-btn {
+  position: relative;
+  display: grid;
+  place-items: center;
+  width: 40px;
+  height: 40px;
+  border: 0;
+  border-left: 2px solid transparent;
+  background: none;
+  color: var(--muted);
+  cursor: pointer;
+  transition: color 0.15s ease, background 0.15s ease;
+}
+
+.friends-nav-btn:hover {
+  color: var(--color-text);
+  background: color-mix(in srgb, var(--color-text) 7%, transparent);
+}
+
+/* The marker is on the left edge, which is the edge nearest the page — so the
+   eye reads "this section" pointing at the content it selects. */
+.friends-nav-btn.active {
+  color: var(--color-accent);
+  border-left-color: var(--color-accent);
+  background: color-mix(in srgb, var(--color-accent) 12%, transparent);
+}
+
+.friends-nav-badge {
+  position: absolute;
+  top: 2px;
+  right: 2px;
+  min-width: 15px;
+  height: 15px;
+  padding: 0 3px;
+  display: grid;
+  place-items: center;
+  background: var(--color-accent);
+  color: #fff;
+  font-size: 9px;
+  font-weight: 800;
+  line-height: 1;
+}
+
+/* The rail is a nav now, so it stacks from the top rather than centring a
+   list of faces. */
+.friends-rail {
+  justify-content: flex-start;
+  padding: 8px 0;
+  gap: 2px;
+}
