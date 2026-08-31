@@ -88,48 +88,12 @@
    was the ONLY way to unpin a panel that could be pinned — so it could not be
    removed until the pinning was. Both went together. */
 
-.friends-tabs {
-  display: flex;
-  gap: 2px;
-  padding: 6px 10px 0;
-  flex: 0 0 auto;
-}
 
 /* Icon plus a word. The icon-only version needed a hover to tell Messages from
    Invites, which on a panel with three tabs is a riddle, not a design. */
-.friends-tabs button {
-  position: relative;
-  flex: 1;
-  display: flex; flex-direction: column;
-  justify-content: center; align-items: center; gap: 3px;
-  padding: 10px 6px 11px;
-  background: none; border: none;
-  color: var(--muted); font: inherit;
-  cursor: pointer;
-  transition: color 0.2s ease, background 0.2s ease;
-}
 
-.friends-tabs button span {
-  font-size: 10.5px; font-weight: 800;
-  letter-spacing: 0.06em; text-transform: uppercase;
-}
 
-.friends-tabs button.active {
-  color: var(--text);
-  background: color-mix(in srgb, var(--accent) 12%, transparent);
-}
-.friends-tabs button.active::after {
-  content: "";
-  position: absolute;
-  left: 0; right: 0; bottom: 0;
-  height: 2px;
-  background: var(--accent);
-}
 
-.friends-tabs button:hover:not(.active) {
-  background: color-mix(in srgb, var(--text) 6%, transparent);
-  color: var(--text);
-}
 
 .friends-content {
   flex: 1 1 auto;
@@ -729,19 +693,6 @@ html[data-motion="off"] .dm-bubble.typing i { animation: none; }
    open — hiding it was what made it "the panel behind the panel". */
 
 /* Expand lives at the top, which is the whole point of the rearrangement. */
-.friends-rail-expand {
-  position: relative;
-  width: 34px;
-  height: 26px;
-  display: grid;
-  place-items: center;
-  border: 1px solid var(--color-divider);
-  border-radius: 999px;
-  background: transparent;
-  color: var(--muted);
-  cursor: pointer;
-  transition: color 0.15s ease, border-color 0.15s ease;
-}
 .friends-rail-expand:hover {
   color: var(--color-text);
   border-color: color-mix(in srgb, var(--color-accent) 55%, transparent);
@@ -754,32 +705,11 @@ html[data-motion="off"] .dm-bubble.typing i { animation: none; }
 
 /* Fills the rail rather than capping at half the viewport — the rail is full
    height now, so the list should use it and only scroll once it truly runs out. */
-.friends-rail-list {
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  gap: 8px;
-  flex: 1 1 auto;
-  min-height: 0;
-  overflow-y: auto;
-  scrollbar-width: none;
-}
-.friends-rail-list::-webkit-scrollbar { display: none; }
+.friends-rail::-webkit-scrollbar { display: none; }
 
 /* A <span> rather than a <button>: it is the trigger inside PlayerBubble,
    which owns the click, and a button nested in a clickable wrapper is a
    double target for keyboards and screen readers. */
-.friends-rail-friend {
-  position: relative;
-  display: block;
-  padding: 0;
-  border: 0;
-  background: none;
-  cursor: pointer;
-  line-height: 0;
-  border-radius: 50%;
-  transition: transform 0.14s ease;
-}
 .friends-rail-friend:hover { transform: scale(1.08); }
 .friends-rail-friend .dot-badge {
   position: absolute;
@@ -787,14 +717,6 @@ html[data-motion="off"] .dm-bubble.typing i { animation: none; }
   right: -1px;
 }
 
-.friends-rail-none {
-  display: grid;
-  place-items: center;
-  width: 34px;
-  height: 34px;
-  color: var(--muted);
-  opacity: 0.55;
-}
 
 @media (max-width: 760px) {
   /* A fixed column down the edge of a phone is most of the phone. */
@@ -978,13 +900,6 @@ html[data-motion="off"] .dm-bubble.typing i { animation: none; }
 
 /* Separates the two groups, so the rail reads as a ranking rather than as a
    list with some faded entries in it. */
-.friends-rail-split {
-  flex: 0 0 auto;
-  width: 18px;
-  height: 1px;
-  margin: 2px 0;
-  background: var(--color-divider);
-}
 
 /* ---------- Hover to expand ----------
    The rail opens the panel on hover and the panel closes on leave, unless it
@@ -995,9 +910,6 @@ html[data-motion="off"] .dm-bubble.typing i { animation: none; }
   cursor: pointer;
 }
 
-.friends-rail-list {
-  cursor: default;
-}
 
 /* A pinned panel is the deliberate state and gets a slightly firmer edge, so
    "I clicked this open" and "this is following my pointer" are distinguishable
@@ -1283,18 +1195,8 @@ html[data-motion="off"] .dm-bubble.typing i { animation: none; }
   }
 
   /* Header and tabs get real targets. */
-  .friends-tabs button {
-    min-height: 52px;
-  }
 
-  .friends-header {
-    padding: 14px 14px 12px;
-  }
 
-  .close-btn {
-    width: 40px;
-    height: 40px;
-  }
 
   .friend-item {
     min-height: 56px;
@@ -1384,20 +1286,6 @@ html[data-motion="off"] .dm-bubble.typing i { animation: none; }
 }
 
 /* The rail carries the count now that the expand arrow is gone. */
-.friends-rail-badge {
-  min-width: 18px;
-  height: 18px;
-  padding: 0 4px;
-  display: grid;
-  place-items: center;
-  background: var(--color-accent);
-  color: var(--btn-primary-ink, #fff);
-  font-size: 10px;
-  font-weight: 800;
-  font-variant-numeric: tabular-nums;
-  line-height: 1;
-  flex: none;
-}
 
 .sg-why {
   margin: -2px 0 8px;
@@ -1444,24 +1332,9 @@ html[data-motion="off"] .dm-bubble.typing i { animation: none; }
 
 /* Tabs are icons now. The labels wrapped to two lines at this width, and an
    icon with a word under it is twice the height for the same information. */
-.friends-tabs button {
-  flex-direction: row;
-  justify-content: center;
-  gap: 0;
-  padding: 8px 4px;
-}
 
-.friends-tabs button span:empty {
-  display: none;
-}
 
-.friends-header {
-  padding: 12px 10px 10px;
-}
 
-.friends-header h2 {
-  font-size: 13px;
-}
 
 /* A name has half the room it had. Ellipsis rather than wrap, so every row is
    one line high and the list stays scannable. */
