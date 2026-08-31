@@ -238,8 +238,17 @@ const requiredPoolSize = (msWaiting) => {
 
 /** How long everyone has to accept a found match. */
 const ACCEPT_MS = 20_000;
-/** How long one veto turn lasts before it is taken automatically. */
-const VETO_TURN_MS = 25_000;
+/**
+ * How long one veto turn lasts before it is taken automatically.
+ *
+ * Ten seconds, deliberately shorter than a tournament's turn. This is a pickup
+ * queue: a 2v2 ban phase is a handful of turns between people who have already
+ * decided, and the previous 25 meant a full minute of watching a timer before
+ * a five-minute match. A tournament veto is a different thing with a different
+ * clock — see VETO_TURN_SECONDS in lib/tournament/edition.ts, which is not
+ * this and should not be made to match it.
+ */
+const VETO_TURN_MS = 10_000;
 /** How long a completed match stays on screen before the lobby resets. */
 const READY_LINGER_MS = 15 * 60_000;
 

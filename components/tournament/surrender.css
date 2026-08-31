@@ -1,0 +1,86 @@
+/* Concede the map.
+ *
+ * Sized and shaped like the Call Admin button next to it, because they sit in
+ * the same row and are the same kind of thing: something you press when the
+ * match is not going to finish the normal way. Sharp corners, per the site's
+ * --radius-* of 0.
+ *
+ * Deliberately NOT accent-coloured at rest. The accent is the site's "look
+ * here" and this is the one button on the page nobody should press by accident;
+ * it stays quiet until it is hovered, and only the confirm step is loud.
+ */
+
+.sr-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  padding: 3px 8px;
+  border: 1px solid var(--color-divider);
+  background: var(--color-surface);
+  color: var(--muted);
+  font: inherit;
+  font-size: 11px;
+  font-weight: 700;
+  cursor: pointer;
+}
+
+.sr-btn:hover {
+  border-color: var(--color-accent);
+  color: var(--color-accent);
+}
+
+.sr-btn.err {
+  border-color: var(--color-accent);
+  color: var(--color-accent);
+}
+
+/* The confirm step. Two buttons and a sentence saying what will happen, rather
+   than a yes/no with no stakes written on it. */
+.sr-ask {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  flex-wrap: wrap;
+}
+
+.sr-warn {
+  font-size: 11px;
+  font-weight: 700;
+  color: var(--color-accent);
+}
+
+.sr-go,
+.sr-no {
+  padding: 3px 8px;
+  border: 1px solid var(--color-divider);
+  background: var(--color-surface);
+  color: var(--color-text);
+  font: inherit;
+  font-size: 11px;
+  font-weight: 700;
+  cursor: pointer;
+}
+
+/* The destructive half is the one that gets the colour. */
+.sr-go {
+  border-color: var(--color-accent);
+  background: var(--color-accent);
+  color: #fff;
+}
+
+.sr-go:disabled,
+.sr-no:disabled {
+  opacity: 0.6;
+  cursor: default;
+}
+
+.sr-no:hover:not(:disabled) {
+  border-color: var(--color-accent);
+  color: var(--color-accent);
+}
+
+.sr-done {
+  font-size: 11px;
+  font-weight: 700;
+  color: var(--muted);
+}

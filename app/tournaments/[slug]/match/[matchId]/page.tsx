@@ -14,6 +14,7 @@ import MapCards from "@/components/tournament/MapCards";
 import MatchServer from "@/components/tournament/MatchServer";
 import AdminAlerts from "@/components/tournament/AdminAlerts";
 import CallAdmin from "@/components/tournament/CallAdmin";
+import Surrender from "@/components/tournament/Surrender";
 import "@/components/tournament/matchhead.css";
 
 export const dynamic = "force-dynamic";
@@ -149,6 +150,20 @@ export default async function MatchPage({
                   organizers can press is a button for a problem that has already
                   been noticed. */}
               <CallAdmin matchId={match.Id} />
+
+              {/* Concede. Only for somebody actually playing this match, and
+                  only while it is being played — an organizer who wants to end
+                  a match they are not in has the admin panel, which can award
+                  it either way rather than only against one team.
+
+                  The endpoint checks all of this again. This is which button to
+                  draw, not who is allowed to press it. */}
+              {mySlot && (match.State === "live" || match.State === "ready") && (
+                <Surrender
+                  matchId={match.Id}
+                  teamName={(mySlot === "A" ? teamB?.Name : teamA?.Name) ?? undefined}
+                />
+              )}
               {match.ScoreA + match.ScoreB > 0 && (
                 <span className="mh-score num">
                   {match.ScoreA} – {match.ScoreB}
