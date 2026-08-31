@@ -1546,14 +1546,28 @@ html[data-motion="off"] .dm-bubble.typing i { animation: none; }
   border-right: 1px solid var(--rail-line);
   box-shadow: -18px 0 44px rgba(0, 0, 0, 0.5);
 
-  /* Out from behind the rail. Transform only — composited, and the reason this
-     no longer judders. */
-  animation: social-slide 0.22s cubic-bezier(0.22, 1, 0.36, 1);
+  /* A short slide and a fade, not a full-width sweep.
+     
+     It slid its own 300px out from behind the rail, which meant the animation's
+     first frame WAS "off screen" — and an entry animation that determines the
+     resting position is one frozen frame away from a panel nobody can see. A
+     backgrounded tab freezes CSS animations at frame zero, which is exactly
+     how this was caught.
+     
+     Twelve pixels and an opacity fade read as "this arrived" just as well, and
+     if the animation never runs at all the panel is simply there. */
+  animation: social-slide 0.18s cubic-bezier(0.22, 1, 0.36, 1);
 }
 
 @keyframes social-slide {
-  from { transform: translateX(100%); }
-  to { transform: none; }
+  from {
+    transform: translateX(12px);
+    opacity: 0;
+  }
+  to {
+    transform: none;
+    opacity: 1;
+  }
 }
 
 @media (prefers-reduced-motion: reduce) {
