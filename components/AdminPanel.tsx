@@ -23,6 +23,7 @@ import SafeQueue from "@/components/admin/SafeQueue";
 import MapManager from "@/components/admin/MapManager";
 import GameMaker from "@/components/admin/GameMaker";
 import { useI18n } from '@/components/I18nProvider';
+import PlayersList from "@/components/admin/PlayersList";
 
 // The panel was three stacked sections with the player table — the tallest of
 // them — dominating the page, and the admin log and custom skins living on
@@ -54,7 +55,6 @@ type LogEntry = {
  *  the list is data now, and a union here would be a second copy of it. */
 type TabId = string;
 
-const ROLE_LABEL = ["—", "Moderator", "Admin", "Owner"];
 
 export default function AdminPanel({
   viewerLevel,
@@ -163,19 +163,10 @@ export default function AdminPanel({
     if (res.ok) load(q);
   };
 
-  const onBan = (p: Player) => {
-    const reason = window.prompt(`Ban ${p.name} — reason?`, "Cheating");
-    if (reason === null) return;
-    const durRaw = window.prompt("Duration in minutes (0 or blank = permanent):", "0");
-    if (durRaw === null) return;
-    doAction({ type: "ban", steamId: p.steamId, reason, minutes: Number(durRaw) || 0 });
-  };
-
-  const onRename = (p: Player) => {
-    const name = window.prompt(`New display name for ${p.name}:`, p.name);
-    if (name === null || name.trim() === "") return;
-    doAction({ type: "setName", steamId: p.steamId, name });
-  };
+  // onBan and onRename lived here and were two window.prompt calls each: a
+  // blocking dialog that looks like the browser asking rather than the site,
+  // and that loses the first answer if you cancel the second. Both are inline
+  // fields in the player drawer now — see components/admin/PlayersList.tsx.
 
   // Computed once for the whole Server section: the banner and each disabled
   // flavour have to name the same moment, and formatting them separately is how
@@ -231,77 +222,14 @@ export default function AdminPanel({
               {loading && <span className="muted">{t("auto.adminpanel.loading")}</span>}
             </form>
 
-            <div className="adm-scroll">
-              <table className="table adm-players">
-                <thead>
-                  <tr>
-                    <th scope="col">{t("auto.adminpanel.player")}</th>
-                    <th scope="col">{t("auto.adminpanel.role")}</th>
-                    <th scope="col">{t("auto.adminpanel.status")}</th>
-                    <th scope="col" className="adm-actions-col">{t("auto.adminpanel.actions")}</th>
-                  </tr>
-                </thead>
-                <tbody>
-                  {players.length === 0 ? (
-                    <tr>
-                      <td colSpan={4} className="muted" style={{ textAlign: "center", padding: 24 }}>
-                        {loading ? "Loading…" : "No players found."}
-                      </td>
-                    </tr>
-                  ) : (
-                    players.map((p) => (
-                      <tr key={p.steamId} className={p.banned ? "row-banned" : ""}>
-                        <td>
-                          <a href={`/players/${p.steamId}`} className="adm-pname">{p.name}</a>
-                          {p.hasOverride && <span className="mini-badge">{t("auto.adminpanel.override")}</span>}
-                          <div className="adm-steamid num">{p.steamId}</div>
-                        </td>
-                        <td>{p.role > 0 ? <span className="role-badge sm">{ROLE_LABEL[p.role]}</span> : "—"}</td>
-                        <td>
-                          {p.banned ? (
-                            <span className="mini-badge danger" title={p.banReason ?? ""}>
-                              {t("auto.adminpanel.banned")}{p.banExpires ? "" : " ∞"}
-                            </span>
-                          ) : (
-                            <span className="muted">{t("auto.adminpanel.ok")}</span>
-                          )}
-                        </td>
-                        <td className="adm-actions-col">
-                          <div className="adm-actions">
-                            {canMod && <button className="btn btn-secondary" onClick={() => doAction({ type: "kick", name: p.steamName })}>{t("auto.adminpanel.kick")}</button>}
-                            {canAdmin && <button className="btn btn-secondary" onClick={() => doAction({ type: "slay", name: p.steamName })}>{t("auto.adminpanel.slay")}</button>}
-                            {canAdmin && !p.banned && <button className="btn btn-secondary" onClick={() => onBan(p)}>{t("auto.adminpanel.ban")}</button>}
-                            {canAdmin && p.banned && <button className="btn btn-secondary" onClick={() => doAction({ type: "unban", steamId: p.steamId })}>{t("auto.adminpanel.unban")}</button>}
-                            {canAdmin && <button className="btn btn-ghost" onClick={() => onRename(p)}>{t("auto.adminpanel.rename")}</button>}
-                            {canAdmin && p.hasOverride && <button className="btn btn-ghost" onClick={() => doAction({ type: "clearName", steamId: p.steamId })}>{t("auto.adminpanel.reset")}</button>}
-                            {canOwner && (
-                              <>
-                                <label className="sr-only" htmlFor={`role-${p.steamId}`}>{t("auto.adminpanel.role_for")} {p.name}</label>
-                                <select
-                                  id={`role-${p.steamId}`}
-                                  className="input adm-role"
-                                  value={p.role}
-                                  onChange={(e) => {
-                                    const level = Number(e.target.value);
-                                    if (level === 0) doAction({ type: "removeRole", steamId: p.steamId });
-                                    else doAction({ type: "setRole", steamId: p.steamId, level });
-                                  }}
-                                >
-                                  <option value={0}>{t("auto.adminpanel.no_role")}</option>
-                                  <option value={1}>{t("auto.adminpanel.moderator")}</option>
-                                  <option value={2}>{t("auto.adminpanel.admin")}</option>
-                                  <option value={3}>{t("auto.adminpanel.owner")}</option>
-                                </select>
-                              </>
-                            )}
-                          </div>
-                        </td>
-                      </tr>
-                    ))
-                  )}
-                </tbody>
-              </table>
-            </div>
+            <PlayersList
+              players={players}
+              loading={loading}
+              canMod={canMod}
+              canAdmin={canAdmin}
+              canOwner={canOwner}
+              doAction={doAction}
+            />
           </>
         )}
 

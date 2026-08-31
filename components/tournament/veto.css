@@ -403,3 +403,54 @@
     justify-content: center;
   }
 }
+
+/* Skip the veto and name the map. Organizers, bot matches only.
+ *
+ * Deliberately below the board and deliberately plain: it is an escape hatch,
+ * not the primary control, and an admin looking for it knows it is there. It
+ * used to not exist at all — the backend action did, with nothing calling it —
+ * so a bot match meant sitting through a veto with nobody on the other side. */
+.vt-skip {
+  margin-top: 14px;
+  padding-top: 12px;
+  border-top: 1px solid var(--color-divider);
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.vt-skip-label {
+  font-size: 10.5px;
+  font-weight: 800;
+  letter-spacing: 0.09em;
+  text-transform: uppercase;
+  color: var(--color-text-muted);
+}
+
+.vt-skip-maps {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+}
+
+.vt-skip-map {
+  padding: 4px 10px;
+  border: 1px solid var(--color-divider);
+  background: var(--color-surface);
+  color: var(--color-text);
+  font: inherit;
+  font-size: 11px;
+  font-weight: 700;
+  text-transform: uppercase;
+  cursor: pointer;
+}
+
+.vt-skip-map:hover:not(:disabled) {
+  border-color: var(--color-accent);
+  color: var(--color-accent);
+}
+
+.vt-skip-map:disabled {
+  opacity: 0.5;
+  cursor: default;
+}

@@ -57,6 +57,7 @@ export default function VetoBoard({
   teamB,
   mySlot,
   isOrganizer,
+  hasBots = false,
   act,
   busy,
   notice,
@@ -67,6 +68,15 @@ export default function VetoBoard({
   /** Which side this viewer captains, if either. */
   mySlot: "A" | "B" | null;
   isOrganizer: boolean;
+  /**
+   * Whether either roster has a bot in it.
+   *
+   * The only thing it decides is whether an organizer is offered the
+   * skip-the-veto strip. A bot cannot object to a map, so a veto against one is
+   * a countdown nobody is participating in — an admin testing something should
+   * be able to say "play Mirage" and be done.
+   */
+  hasBots?: boolean;
   act: (body: Record<string, unknown>) => void | Promise<void>;
   busy: boolean;
   notice: string | null;
@@ -251,6 +261,37 @@ export default function VetoBoard({
 
       {!myTurn && !wire.state.done && (
         <p className="muted vt-hint">{t("veto.notYourTurn", { team: turnName ?? "" })}</p>
+      )}
+
+      {/* Skip the whole thing and name the map.
+
+          Organizers only, and only when a bot is playing. A bot has no opinion
+          about a map, so a veto against one is a countdown with nobody on the
+          other end of it — an admin testing something waits out three bans to
+          reach a map they could have named. Against humans the veto is the
+          point and this stays hidden, which is why it is gated on the rosters
+          rather than on being an admin.
+
+          One map, because a bot match is a BO1. admin-set-maps takes the whole
+          series and would happily take three; offering that here would be a
+          second way to build a series that disagrees with the bracket's. */}
+      {isOrganizer && hasBots && !wire.state.done && (
+        <div className="vt-skip">
+          <span className="vt-skip-label">{t("veto.skipWithBots")}</span>
+
+          <div className="vt-skip-maps">
+            {wire.pool.map((map) => (
+              <button
+                key={map}
+                className="vt-skip-map"
+                disabled={busy}
+                onClick={() => act({ action: "admin-set-maps", maps: [{ map }] })}
+              >
+                {map.replace(/^de_/, "")}
+              </button>
+            ))}
+          </div>
+        </div>
       )}
     </div>
   );

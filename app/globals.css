@@ -6642,17 +6642,17 @@ body.inv-fullscreen .inv4 {
    The player table used to own the page. Everything is a tab now and the rows
    are dense enough that a full server fits without scrolling. */
 .adm-tabs { display: flex; gap: 2px; flex-wrap: wrap; border-bottom: 2px solid var(--color-divider); }
-.adm-panel { padding-top: var(--space-6); }
+/* .adm-panel's padding lives with the rest of its box, further down. It was
+   declared here too, as a lone padding-top that the later shorthand has
+   always overridden — so this said 24px and the panel rendered 16px. */
 .adm-scroll { max-height: 62vh; overflow-y: auto; }
 
-.adm-players td { padding: 6px var(--space-2); vertical-align: middle; }
 .adm-pname { font-weight: 700; color: inherit; text-decoration: none; }
 .adm-pname:hover { color: var(--color-accent); }
 .adm-steamid { font-size: 10px; color: color-mix(in srgb, var(--color-text) 45%, transparent); }
 .adm-actions-col { text-align: right; }
 .adm-actions { display: flex; gap: 4px; justify-content: flex-end; flex-wrap: wrap; }
 .adm-actions .btn { font-size: 11px; padding: 3px 8px; }
-.adm-role { width: auto; min-height: 26px; padding: 2px 6px; font-size: 11px; }
 .row-banned { background: color-mix(in srgb, var(--color-accent) 8%, transparent); }
 
 .adm-server { display: grid; gap: var(--space-8); }
@@ -8162,7 +8162,7 @@ header .avatar-sm { width: 34px; height: 34px; }
 .adm-nav-label { display: flex; align-items: center; gap: 6px; font-size: 13px; font-weight: 700; }
 .adm-nav-hint { font-size: 11px; color: var(--muted); line-height: 1.35; }
 
-.adm-head { margin-bottom: 14px; padding-bottom: 12px; border-bottom: 1px solid var(--color-divider); }
+.adm-head { margin-bottom: var(--space-4); padding-bottom: var(--space-3); border-bottom: 1px solid var(--color-divider); }
 .adm-head h2 { margin: 0 0 2px; font-size: 20px; letter-spacing: -0.015em; }
 .adm-head p { margin: 0; font-size: 13px; color: var(--muted); }
 
@@ -8243,8 +8243,10 @@ header .avatar-sm { width: 34px; height: 34px; }
 .adm-panel {
   background: var(--color-bg);
   border: 1px solid var(--color-divider);
-  border-radius: 12px;
-  padding: 16px;
+  /* Sharp, like every other surface on the site: --radius-* is 0 by design and
+     this was the one rounded panel in the admin area. */
+  border-radius: var(--radius-md, 0);
+  padding: var(--space-4);
   min-height: 100%;
 }
 .adm-shell { align-items: stretch; }
@@ -10161,11 +10163,6 @@ body.inv-fullscreen .main-content > main.container { flex: none; }
   .adm-actions .btn {
     min-height: 40px;
     padding: 6px 12px;
-    font-size: 12px;
-  }
-  .adm-role {
-    min-height: 40px;
-    padding: 6px 10px;
     font-size: 12px;
   }
   .cfg-target,

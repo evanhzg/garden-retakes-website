@@ -227,6 +227,18 @@ export default function MatchStage({
     [matchId, adminKey, load, veto],
   );
 
+  /**
+   * Whether a bot is playing this match.
+   *
+   * Read off the role draft's rosters, which are the one payload carrying both
+   * sides with their flags — so this asks the same source the team panels do
+   * rather than a second one that could disagree.
+   */
+  const hasBots = useMemo(
+    () => Boolean(draft && [...draft.rosters.A, ...draft.rosters.B].some((p) => p.isBot)),
+    [draft],
+  );
+
   const stage: Stage = useMemo(() => {
     if (decided) return "match";
     if (draft?.started && !draft.state.done && !veto?.started) return "roles";
@@ -333,6 +345,7 @@ export default function MatchStage({
               teamB={teamB.name}
               mySlot={mySlot}
               isOrganizer={isOrganizer}
+              hasBots={hasBots}
               act={act}
               busy={busy}
               notice={notice}

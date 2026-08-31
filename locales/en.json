@@ -2820,6 +2820,7 @@
   "match.copyWatch": "Copy address",
   "veto.auto": "auto",
   "veto.decider": "{map} is the decider — nobody picked it, and it knifes for sides.",
+  "veto.skipWithBots": "Bots are playing — set the map and skip the veto",
   "roledraft.title": "Roles",
   "roledraft.lead": "Each player picks a role for each side. A role marked unique can only be held by one player on the team.",
   "roledraft.toPick": "to pick a role",
@@ -3044,5 +3045,12 @@
   "matchAdmin.serverAtRoundEnd": "A move happens at the end of the current round, keeping the score and the tier.",
   "matchAdmin.serverNow": "The match is not live, so a move happens immediately.",
   "lobby.notReady": "Still connecting",
-  "lobby.notReadyBody": "The match server has not finished waking up. Your click was not lost — try again in a moment."
+  "lobby.notReadyBody": "The match server has not finished waking up. Your click was not lost — try again in a moment.",
+  "admin.players.session": "This session",
+  "admin.players.access": "Access",
+  "admin.players.identity": "Name",
+  "admin.players.role": "Staff role",
+  "admin.players.banReason": "Reason",
+  "admin.players.banMinutes": "Minutes",
+  "auto.adminpanel.no_players_found": "No players found."
 }

@@ -2820,6 +2820,7 @@
   "match.copyWatch": "Copier l’adresse",
   "veto.auto": "auto",
   "veto.decider": "{map} est la belle — personne ne l’a choisie, et le camp se joue au couteau.",
+  "veto.skipWithBots": "Des bots jouent — choisissez la map et passez le veto",
   "roledraft.title": "Rôles",
   "roledraft.lead": "Chaque joueur choisit un rôle par camp. Un rôle unique ne peut être pris que par un seul joueur de l’équipe.",
   "roledraft.toPick": "doit choisir un rôle",
@@ -3044,5 +3045,12 @@
   "matchAdmin.serverAtRoundEnd": "Le déplacement aura lieu à la fin du round en cours, en conservant le score et le palier.",
   "matchAdmin.serverNow": "Le match n'est pas en cours, le déplacement est immédiat.",
   "lobby.notReady": "Connexion en cours",
-  "lobby.notReadyBody": "Le serveur de matchmaking n'a pas fini de démarrer. Votre clic n'est pas perdu — réessayez dans un instant."
+  "lobby.notReadyBody": "Le serveur de matchmaking n'a pas fini de démarrer. Votre clic n'est pas perdu — réessayez dans un instant.",
+  "admin.players.session": "Cette session",
+  "admin.players.access": "Accès",
+  "admin.players.identity": "Nom",
+  "admin.players.role": "Rôle staff",
+  "admin.players.banReason": "Motif",
+  "admin.players.banMinutes": "Minutes",
+  "auto.adminpanel.no_players_found": "Aucun joueur trouvé."
 }
