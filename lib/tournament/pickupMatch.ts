@@ -1,5 +1,6 @@
 import { prisma } from "@/lib/db";
 import { VETO_MAPS } from "@/lib/maps";
+import { beginRolesOrVeto } from "@/lib/tournament/vetoRunner";
 import {
   isBotId,
   pickupMatchKey,
@@ -188,8 +189,36 @@ export async function createPickupMatch(args: {
 
   await prisma.tournamentMatch.update({
     where: { Id: match.Id },
-    data: { MatchKey: pickupMatchKey(match.Id) },
+    data: {
+      MatchKey: pickupMatchKey(match.Id),
+      // Already ready, both sides.
+      //
+      // A pickup only exists because everybody in the lobby pressed Accept
+      // within twenty seconds. Landing them on a ready-up screen asks the same
+      // question again, of the same people, about the same match — and the
+      // match cannot go anywhere until they answer it a second time. That is
+      // the "useless screen before the veto": not a step that was slow, a step
+      // that had already been taken.
+      //
+      // A real tournament keeps its ready-up. There the two teams arrive from
+      // a bracket, at a time they did not choose, and "are you actually here"
+      // is a genuine question.
+      ReadyA: true,
+      ReadyB: true,
+    },
   });
+
+  // Straight into the roles, or the maps if there is nothing to draft. Not
+  // awaited for its result beyond the error: beginRolesOrVeto drives bot turns
+  // on a timer so they can be watched, and the lobby is holding this request
+  // open while everybody stares at a spinner.
+  try {
+    await beginRolesOrVeto(match.Id);
+  } catch (err) {
+    // The match exists and is correct; it simply has not opened yet. The match
+    // page's own ready-up is the fallback, and an organizer can force it.
+    console.error(`pickup ${match.Id}: could not open the draft —`, err);
+  }
 
   return {
     ok: true,

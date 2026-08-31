@@ -64,20 +64,49 @@ export default function MatchStage({
   // match renders the scoreboard rather than a flash of the veto board.
   const [decided, setDecided] = useState(initialDecided);
 
+  /**
+   * How many times the local state has been moved on purpose.
+   *
+   * THIS IS WHAT STOPPED THE BOARD ROLLING BACK. A poll runs every two
+   * seconds; a click starts its own request. If a poll was already in flight
+   * when somebody banned a map, its answer — fetched BEFORE the ban and
+   * therefore not containing it — arrived after the optimistic update and
+   * overwrote it. The tile flipped back, the clock reappeared, and the ban
+   * looked ignored, so people clicked again and banned a second map.
+   *
+   * A response is only allowed to replace what is on screen if nothing has
+   * moved since it was asked for. Anything older is thrown away: it is not
+   * wrong, it is just out of date, and the request that superseded it is
+   * already on its way with the truth.
+   */
+  const generation = useRef(0);
+
   const load = useCallback(async () => {
+    const asked = generation.current;
+
     try {
       const [v, d] = await Promise.all([
         fetch(`/api/tournament/veto?matchId=${matchId}`, { cache: "no-store" }),
         fetch(`/api/tournament/roles?matchId=${matchId}`, { cache: "no-store" }),
       ]);
 
+      // Somebody acted while this was in the air. Drop it.
+      if (generation.current !== asked) return;
+
       if (v.ok) {
         const wire: VetoWire = await v.json();
+        // Re-checked after the body is read, which is a second await and so a
+        // second chance for a click to land mid-flight.
+        if (generation.current !== asked) return;
         setVeto(wire);
         if (wire.state.done) setDecided(true);
       }
 
-      if (d.ok) setDraft(await d.json());
+      if (d.ok) {
+        const wire: DraftWire = await d.json();
+        if (generation.current !== asked) return;
+        setDraft(wire);
+      }
     } catch {
       // A dropped poll is a stale board, not a broken one; the next one fixes
       // it. Saying so on screen would be noisier than the fault.
@@ -128,6 +157,13 @@ export default function MatchStage({
       const kind = body.action;
       const map = typeof body.map === "string" ? body.map : null;
 
+      // Everything asked for before this instant is now out of date. Bumped
+      // BEFORE the optimistic paint, so a poll that is already in the air
+      // cannot land on top of it — that race is what made a ban appear and
+      // then undo itself.
+      generation.current += 1;
+      const mine = generation.current;
+
       if (veto && map && (kind === "ban" || kind === "pick")) {
         setVeto({
           ...veto,
@@ -166,13 +202,22 @@ export default function MatchStage({
         });
         const data = await res.json();
 
+        // Somebody has acted again since this request went out — a second ban,
+        // or the other captain's turn arriving. Their state is newer than
+        // anything this response can say, including its refusal.
+        if (generation.current !== mine) return;
+
         if (data.error) {
           setNotice(data.error);
           if (rollback) setVeto(rollback);
         }
 
+        // The authoritative answer. `load` compares against the CURRENT
+        // generation, which is still `mine` here, so this one is allowed to
+        // land — it is the reconcile the optimistic paint was standing in for.
         await load();
       } catch (err) {
+        if (generation.current !== mine) return;
         setNotice(String(err));
         if (rollback) setVeto(rollback);
       } finally {
@@ -274,6 +319,9 @@ export default function MatchStage({
             canActForTurn={canActForTurn}
             isOrganizer={isOrganizer}
             adminKey={adminKey}
+            beginChange={() => {
+              generation.current += 1;
+            }}
           />
         )}
 

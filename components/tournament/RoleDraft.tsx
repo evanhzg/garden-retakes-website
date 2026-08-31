@@ -64,10 +64,17 @@ export default function RoleDraft({
   canActForTurn,
   isOrganizer,
   adminKey,
+  /**
+   * Tells the parent that a local change is happening now, so a poll already
+   * in flight cannot land on top of it. Optional, so this component still
+   * renders in isolation.
+   */
+  beginChange = () => {},
 }: {
   matchId: number;
   wire: DraftWire;
   reload: () => void | Promise<void>;
+  beginChange?: () => void;
   mySteamId: string | null;
   canActForTurn: boolean;
   isOrganizer: boolean;
@@ -91,6 +98,19 @@ export default function RoleDraft({
   const [wantT, setWantT] = useState<string | null>(null);
   const [wantCt, setWantCt] = useState<string | null>(null);
 
+  /**
+   * A pick that has been sent and not yet come back.
+   *
+   * Held so the board can show it as done the instant it is pressed. Cleared
+   * when the server's own answer arrives carrying it — or immediately, if the
+   * server refuses, because a refusal means it never happened.
+   */
+  const [pending, setPending] = useState<{
+    steamId: string;
+    roleT: string | null;
+    roleCt: string | null;
+  } | null>(null);
+
   // A new player on the clock clears the half-made choice belonging to the
   // previous one, which would otherwise be submitted for the wrong person.
   useEffect(() => {
@@ -98,10 +118,39 @@ export default function RoleDraft({
     setWantCt(null);
   }, [turn?.steamId]);
 
+  // The real answer has landed and includes the pick, so the stand-in is no
+  // longer needed. Comparing against the roster rather than clearing on any
+  // reload matters: a reload that arrives BEFORE the write is visible would
+  // otherwise drop the optimistic paint and flash the turn back.
+  useEffect(() => {
+    if (!pending) return;
+    const player = [...wire.rosters.A, ...wire.rosters.B].find((p) => p.steamId === pending.steamId);
+    if (player?.picked) setPending(null);
+  }, [wire, pending]);
+
+  /**
+   * The board moves on the click, not on the round trip.
+   *
+   * A role pick used to POST, wait, and then reload — two to three seconds on
+   * a thirty-second clock, during which the board still showed your own turn
+   * and the roles you had just chosen sitting unconfirmed. It read as a button
+   * that had not worked, so people pressed it again.
+   *
+   * `beginChange` tells the parent that anything it asked for before now is
+   * out of date. Without it a poll already in flight lands after this and puts
+   * the turn back — the same race that was undoing map bans.
+   */
   const act = useCallback(
     async (body: Record<string, unknown>) => {
       setBusy(true);
       setNotice(null);
+      beginChange();
+
+      // Paint the pick immediately, and only for a real pick: the two admin
+      // actions rewrite the whole board and there is nothing honest to guess.
+      const optimistic = body.action === "pick" && typeof body.steamId === "string";
+      if (optimistic) setPending({ steamId: body.steamId as string, roleT: wantT, roleCt: wantCt });
+
       try {
         const res = await fetch("/api/tournament/roles", {
           method: "POST",
@@ -109,15 +158,19 @@ export default function RoleDraft({
           body: JSON.stringify({ ...body, matchId, key: adminKey }),
         });
         const data = await res.json();
-        if (data.error) setNotice(data.error);
+        if (data.error) {
+          setNotice(data.error);
+          setPending(null);
+        }
         await reload();
       } catch (err) {
         setNotice(String(err));
+        setPending(null);
       } finally {
         setBusy(false);
       }
     },
-    [matchId, adminKey, reload],
+    [matchId, adminKey, reload, beginChange, wantT, wantCt],
   );
 
   const msLeft = wire.deadline ? Math.max(0, new Date(wire.deadline).getTime() - now) : 0;
@@ -165,13 +218,17 @@ export default function RoleDraft({
         {wire.state.order.map((step) => {
           const player =
             [...wire.rosters.A, ...wire.rosters.B].find((p) => p.steamId === step.steamId) ?? null;
-          const done = player?.picked ?? false;
+          // Ticked the moment it is sent, not when the server says so. The
+          // "sent" class is what animates, so the step visibly lands under the
+          // cursor instead of a second later.
+          const sent = pending?.steamId === step.steamId;
+          const done = (player?.picked ?? false) || sent;
           return (
             <li
               key={step.ordinal}
               className={`rd-step rd-team-${step.team.toLowerCase()} ${done ? "done" : ""} ${
-                step.ordinal === turn?.ordinal ? "on" : ""
-              }`}
+                sent ? "sent" : ""
+              } ${step.ordinal === turn?.ordinal && !sent ? "on" : ""}`}
             >
               <span className="rd-step-n num">{step.ordinal + 1}</span>
               <span className="rd-step-name">{player?.name ?? step.steamId}</span>
@@ -202,7 +259,7 @@ export default function RoleDraft({
       <div className="rd-actions">
         <button
           className="btn btn-primary"
-          disabled={busy || !mine || !wantT || !wantCt}
+          disabled={busy || !mine || !wantT || !wantCt || pending !== null}
           onClick={() => act({ action: "pick", steamId: turn?.steamId, roleT: wantT, roleCt: wantCt })}
         >
           {t("roledraft.confirm")}

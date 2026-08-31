@@ -41,13 +41,50 @@ async function waitForMap(serverId: number, map: string, attempts = 20): Promise
 }
 
 /**
+ * Starts that are currently running, by match id.
+ *
+ * A start is not quick: it claims a server, changes the map, waits for the map
+ * to load, cancels whatever the server was doing and hands over two rosters.
+ * Several seconds, during which the row reads "ready".
+ *
+ * Two starts for the same match must never run at once. When they did, the
+ * loser threw, and the throw path releases the server and writes ServerId null
+ * — so a match that was starting perfectly well ended up with no server at
+ * all, a few seconds after being given one. That was reported as the page
+ * "giving a server and then saying there is none", including for a server an
+ * admin had just assigned by hand.
+ *
+ * Module scope, so this is per instance rather than global. That is enough for
+ * the case that actually happens: the match page's own poll and whatever else
+ * that same request handler triggers. A cross-instance guard would need a
+ * claim row, and the reconcile that produced most of these no longer fires on
+ * a "ready" match at all.
+ */
+const starting = new Map<number, Promise<StartResult>>();
+
+/**
  * Puts a match on a server and starts it.
  *
  * Claims a server first and releases it again on any failure, so a match that
  * did not start cannot leave a server marked busy forever — which would silently
  * shrink the pool by one every time something went wrong.
+ *
+ * Concurrent callers get the SAME start rather than a second one; see
+ * `starting` above for why that matters.
  */
 export async function startMatch(matchId: number): Promise<StartResult> {
+  const running = starting.get(matchId);
+  if (running) return running;
+
+  const attempt = startMatchOnce(matchId).finally(() => {
+    starting.delete(matchId);
+  });
+
+  starting.set(matchId, attempt);
+  return attempt;
+}
+
+async function startMatchOnce(matchId: number): Promise<StartResult> {
   const match = await prisma.tournamentMatch.findUnique({
     where: { Id: matchId },
     include: { Maps: { orderBy: { Ordinal: "asc" } } },

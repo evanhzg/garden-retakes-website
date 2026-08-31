@@ -52,7 +52,28 @@ async function reconcileWithServer(match: {
   MatchKey: string | null;
 }) {
   if (!match.ServerId) return;
-  if (match.State !== "live" && match.State !== "ready") return;
+
+  /**
+   * LIVE ONLY. "ready" is not a match that has been forgotten — it is a match
+   * that is being started RIGHT NOW.
+   *
+   * startMatch sets "ready" as its first act, then loads the map, waits for it,
+   * cancels whatever the server was doing and hands over the rosters. That is
+   * many seconds long, and for every one of them the plugin correctly answers
+   * that no match is live, because none is yet.
+   *
+   * This used to reconcile "ready" as well, so a poll landing inside that
+   * window read a correct "not live" as amnesia and fired a SECOND startMatch
+   * alongside the first. The two raced; whichever lost threw, and its catch
+   * releases the server and writes ServerId null. That is exactly the reported
+   * "it gives a server and a few seconds later says there is none", including
+   * when the server was assigned by hand from the admin panel.
+   *
+   * A live match is the only one where "the plugin has never heard of this" is
+   * genuinely wrong, and it is the case this was written for: a server that
+   * restarted mid-match and came back empty.
+   */
+  if (match.State !== "live") return;
 
   const now = Date.now();
   const last = lastReconciled.get(match.Id) ?? 0;

@@ -2,7 +2,8 @@ import { background } from "@/lib/background";
 import { prisma } from "@/lib/db";
 import { autoAction, vetoState, type VetoAction, type Side } from "@/lib/tournament/veto";
 import { startMatch } from "@/lib/tournament/matchRunner";
-import { VETO_TURN_SECONDS } from "@/lib/tournament/edition";
+import { turnSecondsFor } from "@/lib/tournament/edition";
+import { isPickupSlug } from "@/lib/tournament/pickup";
 import { beginRoleDraft } from "@/lib/tournament/roleDraft";
 import { driveBotMatch, isAllBots } from "@/lib/tournament/botDriver";
 
@@ -53,19 +54,24 @@ async function poolFor(tournamentId: number): Promise<string[]> {
 export async function beginVeto(matchId: number): Promise<void> {
   const match = await prisma.tournamentMatch.findUnique({
     where: { Id: matchId },
-    select: { VetoStartedAt: true },
+    select: { VetoStartedAt: true, Tournament: { select: { Slug: true } } },
   });
 
   // Already running. Reached twice when the last role pick and an expired role
   // turn land together, and redrawing the deadline would hand somebody a fresh
-  // thirty seconds they had already spent.
+  // turn they had already spent.
   if (!match || match.VetoStartedAt) return;
+
+  // A pickup gets ten seconds a turn, a tournament thirty. The first turn's
+  // clock is written here and every later one by the veto route, so both have
+  // to ask the same question — see turnSecondsFor.
+  const seconds = turnSecondsFor(isPickupSlug(match.Tournament.Slug));
 
   await prisma.tournamentMatch.update({
     where: { Id: matchId },
     data: {
       VetoStartedAt: new Date(),
-      VetoDeadline: new Date(Date.now() + VETO_TURN_SECONDS * 1000),
+      VetoDeadline: new Date(Date.now() + seconds * 1000),
       State: "veto",
     },
   });

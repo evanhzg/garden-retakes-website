@@ -14,7 +14,8 @@ import { autoRoleDraft } from "@/lib/tournament/roleDraft";
 import { getSession } from "@/lib/auth";
 import { canManage, getTournamentContext } from "@/lib/tournamentAuth";
 import { autoAction, validateAction, vetoState } from "@/lib/tournament/veto";
-import { VETO_TURN_SECONDS, vetoExpired, vetoMayStart } from "@/lib/tournament/edition";
+import { VETO_TURN_SECONDS, turnSecondsFor, vetoExpired, vetoMayStart } from "@/lib/tournament/edition";
+import { isPickupSlug } from "@/lib/tournament/pickup";
 
 /**
  * Long enough for a match to start.
@@ -58,8 +59,16 @@ type Body = {
   side?: "T" | "CT";
 };
 
-/** A fresh deadline for the turn that is about to begin. */
-const nextDeadline = () => new Date(Date.now() + VETO_TURN_SECONDS * 1000);
+/**
+ * A fresh deadline for the turn that is about to begin.
+ *
+ * Takes the slug because a pickup runs a ten-second clock and a tournament a
+ * thirty-second one — see turnSecondsFor. It used to be a bare constant, which
+ * is why a lobby of friends waited half a minute per ban for a five-minute
+ * game.
+ */
+const nextDeadline = (slug: string) =>
+  new Date(Date.now() + turnSecondsFor(isPickupSlug(slug)) * 1000);
 
 export async function POST(req: Request) {
   let body: Body;
@@ -187,7 +196,7 @@ export async function POST(req: Request) {
 
       if (!check.ok) return NextResponse.json({ error: check.error }, { status: 400 });
 
-      await recordAction(match.Id, actions.length, teamId, body.action, body.map, body.side, false);
+      await recordAction(match.Id, actions.length, teamId, body.action, body.map, body.side, false, match.Tournament.Slug);
 
       // The step that was missing. The veto recorded its actions and computed a
       // state containing the picks, and nothing ever turned those picks into
@@ -302,7 +311,7 @@ export async function GET(req: Request) {
 
     if (auto) {
       const teamId = state.next.team === "A" ? match.TeamAId : match.TeamBId;
-      await recordAction(match.Id, actions.length, teamId, auto.kind, auto.map, auto.side, true);
+      await recordAction(match.Id, actions.length, teamId, auto.kind, auto.map, auto.side, true, match.Tournament.Slug);
       // An expired turn can be the last one, and a veto that completed by
       // timeout needs its maps as much as one that completed by choice.
       const done = await materialiseMaps(match.Id);
@@ -321,7 +330,7 @@ export async function GET(req: Request) {
       });
 
       state = vetoState(pool, match.BestOf, actions);
-      deadline = state.next ? nextDeadline() : null;
+      deadline = state.next ? nextDeadline(match.Tournament.Slug) : null;
 
       await prisma.tournamentMatch.update({
         where: { Id: match.Id },
@@ -335,7 +344,7 @@ export async function GET(req: Request) {
     readyA: match.ReadyA,
     readyB: match.ReadyB,
     deadline: deadline?.toISOString() ?? null,
-    turnSeconds: VETO_TURN_SECONDS,
+    turnSeconds: turnSecondsFor(isPickupSlug(match.Tournament.Slug)),
     pool,
     state,
     // The audit trail, resolved to slots.
@@ -363,6 +372,8 @@ async function recordAction(
   map: string | undefined,
   side: string | undefined,
   wasAuto: boolean,
+  /** The tournament's slug, which is what says whether this is a pickup. */
+  slug: string,
 ) {
   await prisma.$transaction([
     prisma.tournamentVetoAction.create({
@@ -380,7 +391,7 @@ async function recordAction(
     // transaction so a turn can never exist without a deadline.
     prisma.tournamentMatch.update({
       where: { Id: matchId },
-      data: { VetoDeadline: nextDeadline() },
+      data: { VetoDeadline: nextDeadline(slug) },
     }),
   ]);
 }

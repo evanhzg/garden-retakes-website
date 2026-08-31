@@ -6,6 +6,9 @@
  * all of which are wrong in ways that look like nothing until a real event.
  */
 import {
+  turnSecondsFor,
+  VETO_TURN_SECONDS,
+  PICKUP_TURN_SECONDS,
   canEditFormat,
   canRegister,
   countdown,
@@ -147,6 +150,23 @@ const bothUnranked = seedTeams(
   "faceit",
 );
 check("unranked ties break on id", bothUnranked.map((t) => t.id).join() === "2,5");
+
+
+// ---- how long a turn lasts ------------------------------------------------
+//
+// Two clocks, and they are read by four different places: the veto route, the
+// veto runner, the roles route and the role draft. A turn whose deadline is
+// written by one of them with one number and counted down by another with a
+// different one expires while the board still says six seconds left.
+//
+// The pickup number exists because a lobby of friends was waiting thirty
+// seconds a ban for a five-minute game, having already spent twenty seconds
+// accepting the match.
+
+check("a tournament turn is thirty seconds", turnSecondsFor(false) === VETO_TURN_SECONDS);
+check("a pickup turn is ten", turnSecondsFor(true) === PICKUP_TURN_SECONDS);
+check("and ten is actually ten", PICKUP_TURN_SECONDS === 10);
+check("a pickup turn is shorter than a tournament one", PICKUP_TURN_SECONDS < VETO_TURN_SECONDS);
 
 if (fails) {
   console.log(`\n${fails} failed`);

@@ -1,5 +1,7 @@
 import { prisma } from "@/lib/db";
 import { resolveName } from "@/lib/tournament/playerNames";
+import { turnSecondsFor } from "@/lib/tournament/edition";
+import { isPickupSlug } from "@/lib/tournament/pickup";
 import {
   ROLE_TURN_SECONDS,
   autoRolePick,
@@ -23,8 +25,14 @@ import {
 // conflict got caught. Catching it here means it is caught while somebody can
 // still do something about it.
 
-/** A fresh deadline for the turn about to begin. */
-const nextDeadline = () => new Date(Date.now() + ROLE_TURN_SECONDS * 1000);
+/**
+ * A fresh deadline for the turn about to begin.
+ *
+ * Takes the slug because a pickup drafts on a ten-second clock and a
+ * tournament on a thirty-second one. See turnSecondsFor.
+ */
+const nextDeadline = (slug: string) =>
+  new Date(Date.now() + turnSecondsFor(isPickupSlug(slug)) * 1000);
 
 /**
  * Where carried-forward picks are written, well clear of the draft's own
@@ -237,7 +245,12 @@ export async function roleDraftOutstanding(matchId: number): Promise<boolean> {
 export async function beginRoleDraft(matchId: number): Promise<boolean> {
   const match = await prisma.tournamentMatch.findUnique({
     where: { Id: matchId },
-    select: { TeamAId: true, TeamBId: true, RolesStartedAt: true },
+    select: {
+      TeamAId: true,
+      TeamBId: true,
+      RolesStartedAt: true,
+      Tournament: { select: { Slug: true } },
+    },
   });
 
   if (!match?.TeamAId || !match.TeamBId) return false;
@@ -262,7 +275,7 @@ export async function beginRoleDraft(matchId: number): Promise<boolean> {
       data: {
         RolesFirstTeamId: first,
         RolesStartedAt: new Date(),
-        RolesDeadline: nextDeadline(),
+        RolesDeadline: nextDeadline(match.Tournament.Slug),
         State: "roles",
       },
     });
@@ -331,6 +344,18 @@ export async function recordRolePick(
   roleCt: string,
   wasAuto: boolean,
 ): Promise<void> {
+  // Looked up here rather than threaded through all three callers. One indexed
+  // read against a caller that could forget the argument and silently write a
+  // thirty-second clock into a ten-second draft — the deadline has to match the
+  // one the board is counting down, or a turn expires while it still says 6s.
+  const slug =
+    (
+      await prisma.tournamentMatch.findUnique({
+        where: { Id: matchId },
+        select: { Tournament: { select: { Slug: true } } },
+      })
+    )?.Tournament.Slug ?? "";
+
   await prisma.$transaction([
     prisma.tournamentRolePick.upsert({
       where: { MatchId_SteamId: { MatchId: matchId, SteamId: BigInt(steamId) } },
@@ -347,7 +372,7 @@ export async function recordRolePick(
     }),
     prisma.tournamentMatch.update({
       where: { Id: matchId },
-      data: { RolesDeadline: nextDeadline() },
+      data: { RolesDeadline: nextDeadline(slug) },
     }),
   ]);
 

@@ -224,3 +224,35 @@
   padding-top: var(--space-3);
   font-size: 13px;
 }
+
+/* A pick that has been sent but not yet confirmed.
+ *
+ * The board used to wait for the round trip, so a confirmed pick appeared two
+ * to three seconds after the click — on a ten-second clock in a pickup, that is
+ * a quarter of the turn spent looking at a button that seemed not to have
+ * worked. The step is ticked on the click and this is what makes that legible
+ * as "done" rather than as a render glitch.
+ *
+ * Deliberately the same end state as .done: it IS done, as far as the person
+ * who pressed it is concerned, and the server disagreeing is the rare case. The
+ * animation is the only thing that marks it as new. */
+.rd-step.sent {
+  animation: rd-step-sent 0.22s ease-out;
+}
+
+@keyframes rd-step-sent {
+  from {
+    transform: translateX(-3px);
+    opacity: 0.5;
+  }
+  to {
+    transform: none;
+    opacity: 1;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .rd-step.sent {
+    animation: none;
+  }
+}

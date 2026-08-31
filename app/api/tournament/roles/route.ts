@@ -2,8 +2,9 @@ import { NextResponse } from "next/server";
 import { prisma } from "@/lib/db";
 import { getSession } from "@/lib/auth";
 import { canManage, getTournamentContext } from "@/lib/tournamentAuth";
+import { turnSecondsFor } from "@/lib/tournament/edition";
+import { isPickupSlug } from "@/lib/tournament/pickup";
 import {
-  ROLE_TURN_SECONDS,
   autoRolePick,
   availableRoles,
   draftState,
@@ -170,7 +171,13 @@ export async function GET(req: Request) {
 
   const match = await prisma.tournamentMatch.findUnique({
     where: { Id: id },
-    select: { Id: true, RolesStartedAt: true, RolesDeadline: true, RolesFirstTeamId: true },
+    select: {
+      Id: true,
+      RolesStartedAt: true,
+      RolesDeadline: true,
+      RolesFirstTeamId: true,
+      Tournament: { select: { Slug: true } },
+    },
   });
 
   if (!match) return NextResponse.json({ error: "No such match." }, { status: 404 });
@@ -199,7 +206,7 @@ export async function GET(req: Request) {
         await beginVeto(id);
         deadline = null;
       } else {
-        deadline = new Date(Date.now() + ROLE_TURN_SECONDS * 1000);
+        deadline = new Date(Date.now() + turnSecondsFor(isPickupSlug(match.Tournament.Slug)) * 1000);
         await prisma.tournamentMatch.update({ where: { Id: id }, data: { RolesDeadline: deadline } });
       }
     }
@@ -229,7 +236,7 @@ export async function GET(req: Request) {
   return NextResponse.json({
     started: match.RolesStartedAt !== null,
     deadline: deadline?.toISOString() ?? null,
-    turnSeconds: ROLE_TURN_SECONDS,
+    turnSeconds: turnSecondsFor(isPickupSlug(match.Tournament.Slug)),
     firstTeamId: sides.first,
     teamIdOf: sides.teamIdOf,
     rosters: { A: roster("A"), B: roster("B") },

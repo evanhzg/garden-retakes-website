@@ -12,8 +12,35 @@ export type Visibility = "public" | "invite";
 export type Seeding = "random" | "faceit" | "manual";
 export type Format = "single" | "double" | "group" | "swiss";
 
-/** How long a team gets for one veto action. */
+/** How long a team gets for one veto action, in a real tournament. */
 export const VETO_TURN_SECONDS = 30;
+
+/**
+ * The same, in a pickup — a lobby of friends who queued together.
+ *
+ * Ten, not thirty. A pickup is five people who are already talking to each
+ * other and have just spent twenty seconds accepting; the maps are a formality
+ * on the way to a five-minute game, and a full BO1 ban phase at thirty seconds
+ * a turn is longer than the match. A tournament is the opposite case — two
+ * teams who may be reading a coach's notes — and keeps its thirty.
+ *
+ * Applied to the role draft too. The two clocks are the same question asked
+ * about the same people in the same lobby, and having one of them be three
+ * times the other only makes the fast one feel broken.
+ */
+export const PICKUP_TURN_SECONDS = 10;
+
+/**
+ * How long one turn lasts, given whether this is a pickup.
+ *
+ * A function rather than two constants imported in seven places, because the
+ * deadline is written by the veto route, the veto runner, the roles route and
+ * the role draft — and a turn whose clock is written by one of them and read by
+ * another is a turn that expires at the wrong moment. There is one answer and
+ * this is where it lives.
+ */
+export const turnSecondsFor = (isPickup: boolean): number =>
+  isPickup ? PICKUP_TURN_SECONDS : VETO_TURN_SECONDS;
 
 export type EditionState = {
   published: boolean;
