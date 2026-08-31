@@ -88,6 +88,32 @@ export function getSession(): Session | null {
   }
 }
 
+/**
+ * The signed-in viewer's SteamID64, or null.
+ *
+ * The point of it is what it does NOT do: it never looks at the request. The
+ * friends endpoints used to identify their caller from an
+ * `Authorization: Bearer <steamId>` header, which is a value the caller writes,
+ * so any of them could read or edit anybody's friends list by typing a
+ * different number — and the ownership checks underneath ("only the addressee
+ * may accept") were checking the attacker's claim against itself.
+ *
+ * A session cookie is signed and cannot be typed. Anything deciding "who is
+ * asking" should come through here.
+ */
+export function sessionSteamId(): bigint | null {
+  const id = getSession()?.steamId;
+  if (!id) return null;
+
+  try {
+    return BigInt(id);
+  } catch {
+    // A guest id ("GUEST_1a2b") is not a SteamID and never has friends. Null,
+    // so the caller decides whether that is an empty list or a refusal.
+    return null;
+  }
+}
+
 export const sessionCookieOptions = {
   httpOnly: true,
   sameSite: "lax" as const,

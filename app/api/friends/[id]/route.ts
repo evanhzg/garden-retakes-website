@@ -1,13 +1,17 @@
 import { NextResponse } from "next/server";
 import { prisma } from "@/lib/db";
+import { sessionSteamId } from "@/lib/auth";
 
 
 export async function PATCH(request: Request, { params }: { params: { id: string } }) {
   try {
-    const steamIdHeader = request.headers.get("Authorization")?.replace("Bearer ", "");
-    if (!steamIdHeader) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
-
-    const steamId = BigInt(steamIdHeader);
+    // From the session cookie, and this one is why it matters most. The
+    // ownership check below — only the addressee may accept — compared the
+    // friendship against a SteamID the CALLER supplied, so it was checking an
+    // attacker's claim against itself: send the id of the person the request
+    // was sent to, and accept or delete it on their behalf.
+    const steamId = sessionSteamId();
+    if (!steamId) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
     const friendshipId = parseInt(params.id, 10);
     const { action } = await request.json(); // "ACCEPT" or "REJECT"
 

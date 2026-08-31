@@ -1,13 +1,16 @@
 import { NextResponse } from "next/server";
 import { prisma } from "@/lib/db";
+import { sessionSteamId } from "@/lib/auth";
 
 
 export async function POST(request: Request) {
   try {
-    const steamIdHeader = request.headers.get("Authorization")?.replace("Bearer ", "");
-    if (!steamIdHeader) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
-
-    const steamId = BigInt(steamIdHeader);
+    // From the session cookie. The "are you actually friends" check below is
+    // the only thing stopping this route inviting strangers, and it was asked
+    // about a SteamID the caller wrote down — so borrowing any two friends'
+    // ids sent an invite between them.
+    const steamId = sessionSteamId();
+    if (!steamId) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
     const { targetSteamId, lobbyId, password, kind } = await request.json();
 
     if (!targetSteamId || !lobbyId) {

@@ -1,5 +1,6 @@
 import { NextResponse } from "next/server";
 import { prisma } from "@/lib/db";
+import { sessionSteamId } from "@/lib/auth";
 import { toWireMessage } from "@/lib/webMessage";
 
 // Direct messages between two players.
@@ -12,9 +13,11 @@ import { toWireMessage } from "@/lib/webMessage";
 
 export async function GET(request: Request) {
   try {
-    const steamIdHeader = request.headers.get("Authorization")?.replace("Bearer ", "");
-    if (!steamIdHeader) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
-    const steamId = BigInt(steamIdHeader);
+    // From the session cookie, never the Authorization header. That header held
+    // whatever SteamID the caller typed and this endpoint returns a private
+    // conversation, so anybody could read anybody's DMs by asking as them.
+    const steamId = sessionSteamId();
+    if (!steamId) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
 
     const { searchParams } = new URL(request.url);
     const targetIdStr = searchParams.get("targetId");
@@ -45,9 +48,10 @@ export async function GET(request: Request) {
 
 export async function POST(request: Request) {
   try {
-    const steamIdHeader = request.headers.get("Authorization")?.replace("Bearer ", "");
-    if (!steamIdHeader) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
-    const steamId = BigInt(steamIdHeader);
+    // From the session cookie. Sending a DM AS somebody else was one header
+    // away — see the GET above and lib/auth.ts.
+    const steamId = sessionSteamId();
+    if (!steamId) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
 
     const { targetSteamId, content } = await request.json();
     if (!targetSteamId || !content) return NextResponse.json({ error: "Missing fields" }, { status: 400 });

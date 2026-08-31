@@ -1,14 +1,19 @@
 import { NextResponse } from "next/server";
 import { prisma } from "@/lib/db";
+import { sessionSteamId } from "@/lib/auth";
+import { resolveName } from "@/lib/names";
 
 
-export async function GET(request: Request) {
+export async function GET() {
   try {
-    const steamIdHeader = request.headers.get("Authorization")?.replace("Bearer ", "");
-    if (!steamIdHeader) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
-    if (steamIdHeader.startsWith("GUEST_")) return NextResponse.json([]);
-
-    const steamId = BigInt(steamIdHeader);
+    // The session cookie, NOT the Authorization header the callers still send.
+    // That header carried whatever SteamID the caller typed, so this endpoint
+    // would hand anybody anybody else's friends list.
+    //
+    // A guest has no SteamID and therefore no friends: an empty list rather
+    // than a 401, because that is what the page wants to draw.
+    const steamId = sessionSteamId();
+    if (!steamId) return NextResponse.json([]);
 
     // Fetch friendships where the user is either the requester or addressee
     const friendships = await prisma.webFriendship.findMany({
@@ -104,11 +109,13 @@ export async function GET(request: Request) {
 
 export async function POST(request: Request) {
   try {
-    const steamIdHeader = request.headers.get("Authorization")?.replace("Bearer ", "");
-    if (!steamIdHeader) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
-    if (steamIdHeader.startsWith("GUEST_")) return NextResponse.json({ error: "Guests cannot add friends" }, { status: 403 });
+    // From the cookie. Sending a friend request AS somebody else was one
+    // header away — see the GET above and lib/auth.ts.
+    const steamId = sessionSteamId();
+    if (!steamId) {
+      return NextResponse.json({ error: "Sign in to add friends" }, { status: 401 });
+    }
 
-    const steamId = BigInt(steamIdHeader);
     const { targetSteamId } = await request.json();
 
     if (!targetSteamId) return NextResponse.json({ error: "Missing targetSteamId" }, { status: 400 });
@@ -162,7 +169,11 @@ export async function POST(request: Request) {
       data: {
         SteamId: target,
         Type: "FRIEND_REQUEST",
-        Content: `${steamIdHeader} sent you a friend request.`,
+        // The sender's name, not their SteamID. This read
+        // "76561198… sent you a friend request" because it interpolated the
+        // raw header it used to authenticate with, which is a number nobody
+        // recognises — least of all as the person they just met in a server.
+        Content: `${await resolveName(steamId.toString())} sent you a friend request.`,
         IsRead: false
       }
     });
