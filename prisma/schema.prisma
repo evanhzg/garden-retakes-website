@@ -2114,10 +2114,19 @@ model TournamentRoomMessage {
   /// "room" — typed on the website — or "game", said in the server and relayed
   /// by the plugin. One conversation seen from two places.
   Source       String   @default("room") @db.VarChar(8)
+  /// Who it is FOR: "room" (everybody), or "a"/"b" for one team only.
+  ///
+  /// A different question from Role, which is who is SPEAKING. A captain
+  /// talking to their own side is Role "a" and Scope "a"; the same captain
+  /// talking to the room is Role "a" and Scope "room". This one is a
+  /// permission, so it is filtered in the query and never sent to the other
+  /// team — see app/api/tournament/room/route.ts.
+  Scope        String   @default("room") @db.VarChar(8)
   Body         String   @db.VarChar(500)
   CreatedAtUtc DateTime @default(now()) @db.DateTime(6)
 
   @@index([MatchId, Id], map: "IX_TournamentRoomMessages_Match")
+  @@index([MatchId, Scope, Id], map: "IX_TournamentRoomMessages_Match_Scope")
   @@map("TournamentRoomMessages")
 }
 

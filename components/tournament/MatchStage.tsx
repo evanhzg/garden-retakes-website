@@ -332,11 +332,17 @@ export default function MatchStage({
 
       {/* The room, to the right of everything else.
 
-          Only once there is a match to talk about. During the role draft and
-          the veto the page is a sequence of turns with its own instructions,
-          and a chat column beside them is somewhere for two captains to argue
-          about a decision the interface is already making for them. */}
-      {stage === "match" && <RoomChat matchId={matchId} />}
+          Now during the veto too, which is the opposite of what this used to
+          say. The reasoning was that a chat column beside a sequence of turns
+          is "somewhere for two captains to argue about a decision the interface
+          is already making for them" — true of the ROOM, and it is exactly
+          wrong about the team channel. A veto is the one moment a side has
+          something to decide together and no way to say it, so the conversation
+          moved to Discord and the match page watched it happen.
+
+          Not during the role draft: that one really is a turn each, with
+          nothing to agree on between them. */}
+      {(stage === "match" || stage === "veto") && <RoomChat matchId={matchId} />}
     </div>
   );
 }

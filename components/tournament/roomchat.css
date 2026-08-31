@@ -211,3 +211,68 @@
 .rc-line.from-game {
   background: color-mix(in srgb, var(--color-text) 3%, transparent);
 }
+
+/* The two channels: the room, and your own team.
+ *
+ * Sized to the h3 they replace — same 10.5px uppercase — so a panel with tabs
+ * and a panel without one do not have differently tall headers. The count on
+ * the inactive tab is the whole reason the tabs are legible during a veto: a
+ * team talking while the room tab is open is otherwise silent. */
+.rc-tabs {
+  display: flex;
+  align-items: center;
+  gap: 2px;
+  min-width: 0;
+}
+
+.rc-tab {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  padding: 3px 8px;
+  border: 1px solid transparent;
+  background: none;
+  color: var(--color-text-muted);
+  font: inherit;
+  font-size: 10.5px;
+  font-weight: 800;
+  letter-spacing: 0.09em;
+  text-transform: uppercase;
+  cursor: pointer;
+  user-select: none;
+}
+
+.rc-tab:hover {
+  color: var(--color-text);
+}
+
+.rc-tab.on {
+  border-color: var(--color-divider);
+  background: var(--color-surface);
+  color: var(--color-accent);
+}
+
+/* Not a real unread count — it does not track what has been read — so it is
+   deliberately quiet: it says "something is over there", not "you have 4". */
+.rc-tab-count {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-width: 15px;
+  padding: 0 4px;
+  background: var(--color-accent);
+  color: #fff;
+  font-size: 9px;
+  font-weight: 800;
+  letter-spacing: 0;
+  line-height: 15px;
+}
+
+/* A line said in the team channel, in the team channel. Marked rather than
+   colour-coded for the same reason the in-game lines are: the panel already
+   uses colour for who is speaking, and a second colour axis for where makes
+   both harder to read. */
+.rc-line.scope-team {
+  border-left: 2px solid var(--color-accent);
+  padding-left: 6px;
+}

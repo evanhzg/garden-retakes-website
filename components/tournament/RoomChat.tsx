@@ -15,6 +15,8 @@ type Line = {
   role: string | null;
   /** "room" — typed here — or "game", said in the server. */
   source: string;
+  /** Who it is for: "room" (everybody) or "a"/"b" (one team). */
+  scope?: string;
   body: string;
   at: string;
 };
@@ -44,9 +46,37 @@ export default function RoomChat({ matchId }: { matchId: number }) {
   const { t } = useI18n();
   const { socket, steamId } = useSocket();
 
+  /**
+   * Which team this viewer is on, as the endpoint sees it. Null for anybody
+   * else, and null until the first fetch lands.
+   *
+   * Asked of the server rather than passed in, because the match page's own
+   * "mySlot" means CAPTAIN — it is what decides who may ban a map — and every
+   * player on a roster has a team channel. Threading that prop down would have
+   * offered the tab to two people per match.
+   *
+   * It only decides whether the tab is drawn. What is readable is decided in
+   * the query, which never sends the other team's lines at all.
+   */
+  const [mySlot, setMySlot] = useState<"a" | "b" | null>(null);
+
   const [lines, setLines] = useState<Line[]>([]);
   const [input, setInput] = useState("");
   const [sending, setSending] = useState(false);
+
+  /**
+   * Which channel is on screen, and where a new line goes.
+   *
+   * One fetch feeds both: the endpoint returns the room plus whichever team
+   * channel this viewer may read, so switching tabs is a filter rather than a
+   * request. Two polls for one panel would double the traffic to show strictly
+   * less than one already returns.
+   *
+   * Defaults to the room even for a player. The room is where the other team
+   * is, and a first message meant for them that silently went to your own side
+   * is worse than one extra click.
+   */
+  const [channel, setChannel] = useState<"room" | "team">("room");
 
   /**
    * Whether in-game chat is mixed in.
@@ -103,7 +133,12 @@ export default function RoomChat({ matchId }: { matchId: number }) {
       const res = await fetch(url, { cache: "no-store" });
       if (!res.ok) return;
 
-      const data: { messages: Line[] } = await res.json();
+      const data: { messages: Line[]; viewer?: "a" | "b" | null } = await res.json();
+
+      // Set every time, not only on the first fetch: a player added to a roster
+      // mid-veto gets their team tab on the next poll rather than on a reload.
+      setMySlot(data.viewer ?? null);
+
       if (data.messages.length === 0) return;
 
       cursor.current = Math.max(cursor.current ?? 0, data.messages[data.messages.length - 1].id);
@@ -135,6 +170,15 @@ export default function RoomChat({ matchId }: { matchId: number }) {
     const el = logRef.current;
     if (el) el.scrollTop = el.scrollHeight;
   }, [lines.length]);
+
+  /**
+   * Where a new line goes: the tab that is open, resolved to a real scope.
+   *
+   * Falls back to the room if the team tab is somehow open without a team —
+   * a scope of "team" is not a thing the endpoint accepts, and sending one
+   * would be refused rather than delivered somewhere unexpected.
+   */
+  const sendScope: "room" | "a" | "b" = channel === "team" && mySlot ? mySlot : "room";
 
   const send = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -168,6 +212,10 @@ export default function RoomChat({ matchId }: { matchId: number }) {
         name: null,
         role: null,
         source: "room",
+        // The pending line has to carry the scope it was sent with, or a team
+        // message shows for a moment in the room tab before the real one lands
+        // in the right place.
+        scope: sendScope,
         body,
         at: new Date().toISOString(),
       } as Line,
@@ -177,7 +225,7 @@ export default function RoomChat({ matchId }: { matchId: number }) {
       const res = await fetch("/api/tournament/room", {
         method: "POST",
         headers: { "content-type": "application/json" },
-        body: JSON.stringify({ matchId, body }),
+        body: JSON.stringify({ matchId, body, scope: sendScope }),
       });
       const data = await res.json().catch(() => null);
 
@@ -209,13 +257,63 @@ export default function RoomChat({ matchId }: { matchId: number }) {
     }
   };
 
-  const shown = showGame ? lines : lines.filter((l) => l.source !== "game");
-  const gameCount = lines.reduce((n, l) => n + (l.source === "game" ? 1 : 0), 0);
+  // The channel first, then the in-game toggle within it.
+  //
+  // A line with no scope is a room line: every row written before the column
+  // existed is one, and so is everything the plugin relays from the server —
+  // in-game chat is said out loud to everybody in it, which is the room.
+  const inChannel = lines.filter((l) =>
+    channel === "team" ? l.scope === mySlot : (l.scope ?? "room") === "room",
+  );
+
+  const shown = showGame ? inChannel : inChannel.filter((l) => l.source !== "game");
+  const gameCount = inChannel.reduce((n, l) => n + (l.source === "game" ? 1 : 0), 0);
+
+  // Unread-ish: how much is waiting in the tab that is not open. Not a real
+  // unread count — it does not track what has been read — but "there is
+  // something over there" is the part that matters when a team is talking
+  // during a veto and the room tab is open.
+  const otherCount = mySlot
+    ? channel === "team"
+      ? lines.filter((l) => (l.scope ?? "room") === "room").length
+      : lines.filter((l) => l.scope === mySlot).length
+    : 0;
 
   return (
     <aside className="rc" aria-label={t("room.title")}>
       <header className="rc-head">
-        <h3>{t("room.title")}</h3>
+        {/* The two channels, where the title was.
+
+            Only for somebody with a second one to switch to: a spectator has
+            one channel and a pair of tabs with one tab in it is furniture. */}
+        {mySlot ? (
+          <div className="rc-tabs" role="tablist" aria-label={t("room.title")}>
+            <button
+              role="tab"
+              aria-selected={channel === "room"}
+              className={`rc-tab ${channel === "room" ? "on" : ""}`}
+              onClick={() => setChannel("room")}
+            >
+              {t("room.title")}
+              {channel === "team" && otherCount > 0 && (
+                <span className="rc-tab-count">{otherCount}</span>
+              )}
+            </button>
+            <button
+              role="tab"
+              aria-selected={channel === "team"}
+              className={`rc-tab ${channel === "team" ? "on" : ""}`}
+              onClick={() => setChannel("team")}
+            >
+              {t("room.team")}
+              {channel === "room" && otherCount > 0 && (
+                <span className="rc-tab-count">{otherCount}</span>
+              )}
+            </button>
+          </div>
+        ) : (
+          <h3>{t("room.title")}</h3>
+        )}
 
         <div className="rc-head-actions">
           {/* In-game chat, on or off. A count when it is off, so turning it
@@ -235,12 +333,20 @@ export default function RoomChat({ matchId }: { matchId: number }) {
       </header>
 
       <div className="rc-log" ref={logRef}>
-        {shown.length === 0 && <p className="rc-empty">{t("room.empty")}</p>}
+        {shown.length === 0 && (
+          <p className="rc-empty">{channel === "team" ? t("room.emptyTeam") : t("room.empty")}</p>
+        )}
 
         {shown.map((l) => (
           <div
             key={l.id}
-            className={`rc-line ${l.steamId === steamId ? "mine" : ""} from-${l.source}`}
+            className={
+              `rc-line ${l.steamId === steamId ? "mine" : ""} from-${l.source}` +
+              // Marked in the team channel, so a line that is private looks it.
+              // Nobody can see this class on a channel they cannot read — the
+              // endpoint never sends those lines — it is a reminder, not a gate.
+              (l.scope && l.scope !== "room" ? " scope-team" : "")
+            }
           >
             {/* Said in the server, not here. Marked rather than colour-coded,
                 because the colours are already spoken for by which side you are
@@ -263,7 +369,7 @@ export default function RoomChat({ matchId }: { matchId: number }) {
             type="text"
             value={input}
             onChange={(e) => setInput(e.target.value)}
-            placeholder={t("room.placeholder")}
+            placeholder={channel === "team" ? t("room.placeholderTeam") : t("room.placeholder")}
             maxLength={500}
           />
           <button type="submit" disabled={!input.trim() || sending} aria-label={t("room.send")}>
