@@ -110,8 +110,25 @@ export function sequenceFor(bestOf: number, poolSize: number): VetoStep[] {
  * the actions are what is stored, so deriving from them means the page, the API
  * and the audit trail cannot disagree with each other.
  */
-export function vetoState(pool: string[], bestOf: number, actions: VetoAction[]): VetoState {
-  const steps = sequenceFor(bestOf, pool.length);
+export function vetoState(
+  pool: string[],
+  bestOf: number,
+  actions: VetoAction[],
+  /**
+   * The order of play, when it is not the one a best-of implies.
+   *
+   * A rematch is the case this exists for: its bans are 1-2-1 with the loser
+   * first and neither team picks a side, which is a rule about compensating
+   * the team that is a map down rather than a way of getting a pool down to N.
+   * `sequenceFor` would answer with a standard BO3 — alternating bans, and a
+   * side-pick after each map — which is a different game.
+   *
+   * Everything downstream of the sequence is unchanged: the replay, the
+   * decider, the audit trail. Only the order differs.
+   */
+  sequence?: VetoStep[],
+): VetoState {
+  const steps = sequence ?? sequenceFor(bestOf, pool.length);
   const ordered = [...actions].sort((a, b) => a.ordinal - b.ordinal);
 
   const remaining = [...pool];
@@ -251,8 +268,10 @@ export function autoAction(
   bestOf: number,
   actions: VetoAction[],
   random: () => number = Math.random,
+  /** The order of play, when it is not the one the best-of implies. */
+  sequence?: VetoStep[],
 ): { kind: VetoKind; map?: string; side?: Side } | null {
-  const state = vetoState(pool, bestOf, actions);
+  const state = vetoState(pool, bestOf, actions, sequence);
   if (!state.next) return null;
 
   if (state.next.kind === "side") {

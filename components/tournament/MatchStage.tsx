@@ -8,6 +8,7 @@ import VetoBoard, { type VetoWire } from "./VetoBoard";
 import Scoreboard from "./Scoreboard";
 import KillFeed from "./KillFeed";
 import RoomChat from "./RoomChat";
+import Rematch from "./Rematch";
 import TeamPanel, { type PanelPlayer } from "./TeamPanel";
 import type { Scoreboard as Board } from "@/lib/tournament/scoreboard";
 import "./teampanel.css";
@@ -376,6 +377,13 @@ export default function MatchStage({
             />
 
             <Scoreboard initial={initialBoard} />
+
+            {/* Under the scoreboard, because the ten seconds after a match ends
+                is the entire window in which anybody wants this. It draws
+                nothing at all unless a rematch is actually possible — most
+                finished matches are a bracket fixture or a series, and a
+                greyed-out button explaining that is worse than no button. */}
+            {mySlot && <Rematch matchId={matchId} />}
           </>
         )}
       </div>

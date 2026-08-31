@@ -1809,6 +1809,13 @@ model TournamentMatch {
   NextSlot         Int?      @db.TinyInt
   LoserNextMatchId Int?
   LoserNextSlot    Int?      @db.TinyInt
+  /// The match this is a rematch OF, if it is one.
+  ///
+  /// A rematch is a BO3 whose first game is already in the books — the map that
+  /// was just played. This link is how the new match finds that map, and how a
+  /// finished match answers "have these two already run this back" without a
+  /// second table.
+  RematchOfMatchId Int?
   ScheduledAt      DateTime? @db.DateTime(6)
   StartedAt        DateTime? @db.DateTime(6)
   EndedAt          DateTime? @db.DateTime(6)
@@ -1851,7 +1858,25 @@ model TournamentMatch {
 
   @@index([StageId, Round, Slot])
   @@index([TournamentId, State])
+  @@index([RematchOfMatchId], map: "IX_TournamentMatches_RematchOf")
   @@map("TournamentMatches")
+}
+
+/// One person's answer to "shall we run it back", on the match that ENDED.
+///
+/// The rematch does not exist while the vote is running, so it cannot be what
+/// the vote hangs off. A row is an answer; no row is silence, which is the
+/// third state and the one everybody is waiting on.
+model TournamentRematchVote {
+  Id       Int      @id @default(autoincrement())
+  MatchId  Int
+  SteamId  BigInt   @db.UnsignedBigInt
+  Accepted Boolean  @default(true)
+  AtUtc    DateTime @default(now()) @db.DateTime(6)
+
+  @@unique([MatchId, SteamId], map: "UX_TournamentRematchVotes")
+  @@index([MatchId], map: "IX_TournamentRematchVotes_Match")
+  @@map("TournamentRematchVotes")
 }
 
 model TournamentMatchMap {

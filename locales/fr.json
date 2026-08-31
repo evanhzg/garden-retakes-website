@@ -3052,5 +3052,11 @@
   "admin.players.role": "Rôle staff",
   "admin.players.banReason": "Motif",
   "admin.players.banMinutes": "Minutes",
-  "auto.adminpanel.no_players_found": "Aucun joueur trouvé."
+  "auto.adminpanel.no_players_found": "Aucun joueur trouvé.",
+  "rematch.title": "Revanche",
+  "rematch.yes": "On remet ça",
+  "rematch.no": "Sans moi",
+  "rematch.waiting": "{done} sur {total} sont partants.",
+  "rematch.starting": "Tout le monde est partant — préparation…",
+  "rematch.declined": "Quelqu'un a décliné. Pas de revanche cette fois."
 }

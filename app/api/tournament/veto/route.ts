@@ -16,6 +16,7 @@ import { canManage, getTournamentContext } from "@/lib/tournamentAuth";
 import { autoAction, validateAction, vetoState } from "@/lib/tournament/veto";
 import { VETO_TURN_SECONDS, turnSecondsFor, vetoExpired, vetoMayStart } from "@/lib/tournament/edition";
 import { isPickupSlug } from "@/lib/tournament/pickup";
+import { vetoShapeFor } from "@/lib/tournament/rematchRunner";
 
 /**
  * Long enough for a match to start.
@@ -105,7 +106,10 @@ export async function POST(req: Request) {
     );
   }
 
-  const pool = match.Tournament.Maps.map((m) => m.Map);
+  // The pool AND the order of play, together. A rematch differs in both — its
+  // pool excludes game one and its bans are 1-2-1 with the loser first — and
+  // taking one without the other silently changes who is favoured.
+  const { pool, sequence } = await vetoShapeFor(match.Id);
 
   switch (body.action) {
     case "ready":
@@ -173,7 +177,7 @@ export async function POST(req: Request) {
         side: (v.Side as "T" | "CT" | undefined) ?? undefined,
       }));
 
-      const state = vetoState(pool, match.BestOf, actions);
+      const state = vetoState(pool, match.BestOf, actions, sequence);
       if (!state.next) return NextResponse.json({ error: "The veto is finished." }, { status: 400 });
 
       // Whose turn it is, as a slot rather than a team id, because that is what
@@ -293,7 +297,10 @@ export async function GET(req: Request) {
 
   if (!match) return NextResponse.json({ error: "No such match." }, { status: 404 });
 
-  const pool = match.Tournament.Maps.map((m) => m.Map);
+  // The pool AND the order of play, together. A rematch differs in both — its
+  // pool excludes game one and its bans are 1-2-1 with the loser first — and
+  // taking one without the other silently changes who is favoured.
+  const { pool, sequence } = await vetoShapeFor(match.Id);
   const actions = match.Veto.map((v) => ({
     ordinal: v.Ordinal,
     teamId: v.TeamId,
@@ -303,11 +310,11 @@ export async function GET(req: Request) {
     wasAuto: v.WasAuto,
   }));
 
-  let state = vetoState(pool, match.BestOf, actions);
+  let state = vetoState(pool, match.BestOf, actions, sequence);
   let deadline = match.VetoDeadline;
 
   if (match.VetoStartedAt && state.next && vetoExpired(deadline, new Date())) {
-    const auto = autoAction(pool, match.BestOf, actions);
+    const auto = autoAction(pool, match.BestOf, actions, Math.random, sequence);
 
     if (auto) {
       const teamId = state.next.team === "A" ? match.TeamAId : match.TeamBId;
@@ -329,7 +336,7 @@ export async function GET(req: Request) {
         wasAuto: true,
       });
 
-      state = vetoState(pool, match.BestOf, actions);
+      state = vetoState(pool, match.BestOf, actions, sequence);
       deadline = state.next ? nextDeadline(match.Tournament.Slug) : null;
 
       await prisma.tournamentMatch.update({

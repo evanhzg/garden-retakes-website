@@ -3052,5 +3052,11 @@
   "admin.players.role": "Staff role",
   "admin.players.banReason": "Reason",
   "admin.players.banMinutes": "Minutes",
-  "auto.adminpanel.no_players_found": "No players found."
+  "auto.adminpanel.no_players_found": "No players found.",
+  "rematch.title": "Rematch",
+  "rematch.yes": "Run it back",
+  "rematch.no": "No thanks",
+  "rematch.waiting": "{done} of {total} are in.",
+  "rematch.starting": "Everybody is in — setting it up…",
+  "rematch.declined": "Somebody has passed. No rematch this time."
 }

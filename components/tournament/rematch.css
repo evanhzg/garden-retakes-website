@@ -1,0 +1,63 @@
+/* "Run it back."
+ *
+ * Sits under the scoreboard of a finished match. Loud enough to be seen in the
+ * ten seconds before people close the tab — which is the entire window this
+ * has to work in — and sharp-cornered like everything else. */
+
+.rm {
+  margin-top: var(--space-4);
+  padding: var(--space-3);
+  border: 1px solid var(--color-divider);
+  background: var(--color-surface);
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-2);
+}
+
+.rm-head {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 10.5px;
+  font-weight: 800;
+  letter-spacing: 0.09em;
+  text-transform: uppercase;
+  color: var(--color-accent);
+}
+
+.rm-note {
+  margin: 0;
+  font-size: 13px;
+  color: var(--color-text);
+}
+
+.rm-actions {
+  display: flex;
+  gap: var(--space-2);
+  flex-wrap: wrap;
+}
+
+/* How close, not who. The names are already down both sides of the page. */
+.rm-bar {
+  height: 3px;
+  background: color-mix(in srgb, var(--color-text) 12%, transparent);
+  overflow: hidden;
+}
+
+.rm-bar-fill {
+  height: 100%;
+  background: var(--color-accent);
+  transition: width 0.25s ease-out;
+}
+
+.rm-error {
+  margin: 0;
+  font-size: 12px;
+  color: var(--color-accent);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .rm-bar-fill {
+    transition: none;
+  }
+}

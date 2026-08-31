@@ -131,6 +131,35 @@ export function rematchSteps(winner: Slot): { team: Slot; kind: "ban" | "pick" }
   }));
 }
 
+/**
+ * The order of play for a match, whether or not it is a rematch.
+ *
+ * One function so no caller has to remember to ask. Every place that replays a
+ * veto — the route, the runner, the bot driver — goes through here, and a
+ * caller that forgot would silently run a rematch on the standard BO3 sequence:
+ * alternating bans, a side-pick after each map, and the loser's compensation
+ * gone.
+ *
+ * Takes the winner rather than the match row so it stays import-free; the
+ * caller resolves "who won" from whatever it has.
+ */
+export function sequenceForMatch(
+  isRematch: boolean,
+  winner: Slot | null,
+  fallback: () => { team: "A" | "B"; kind: "ban" | "pick" | "side" }[],
+): { team: "A" | "B"; kind: "ban" | "pick" | "side" }[] {
+  // A rematch with no recorded winner cannot lay out its own sequence — the
+  // whole order is "loser first, winner picks". Falling back is wrong in a way
+  // that favours somebody, so it is refused upstream instead; this is the
+  // belt-and-braces for a row that got there anyway.
+  if (!isRematch || !winner) return fallback();
+
+  return rematchSteps(winner).map((s) => ({
+    team: s.team === "a" ? ("A" as const) : ("B" as const),
+    kind: s.kind,
+  }));
+}
+
 // ---------------------------------------------------------------- the vote
 
 export type Voter = {
