@@ -2,7 +2,13 @@
 
 import AvatarImage from "@/components/AvatarImage";
 
-export type Presence = "online" | "offline" | "ingame" | "away";
+/**
+ * `spectating` is the one LeftSidebar has always drawn and this component
+ * never had a name for — somebody in the server watching rather than playing.
+ * The two feeds call it "Spectator" and "1" depending on version; see
+ * presenceOf in useLivePlayers.ts, which is where that is reconciled.
+ */
+export type Presence = "online" | "offline" | "ingame" | "spectating" | "away";
 
 /**
  * A rounded avatar with a presence dot on it.

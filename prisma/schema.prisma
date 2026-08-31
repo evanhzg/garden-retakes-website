@@ -1478,6 +1478,14 @@ model Tournament {
   BannerImage Bytes?  @db.MediumBlob
   BannerMime  String? @db.VarChar(32)
 
+  /// The square one, for the social rail. Separate from the banner because the
+  /// banner is 16:9 and composed for the top of the tournament page — cropped
+  /// to a thirty-pixel circle it is whatever was in the middle, which is
+  /// usually half a word of the name. Named to match GardenTeam, which carries
+  /// the same pair for the same reason.
+  AvatarBytes Bytes?  @db.MediumBlob
+  AvatarMime  String? @db.VarChar(32)
+
   /// Whether anybody may spectate, or only the TournamentSpectators allowlist.
   /// An allowlist is right for a competitive match — a GOTV slot is a seat in
   /// the server — and wrong for a showmatch, where adding every viewer by

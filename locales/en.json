@@ -1604,7 +1604,6 @@
   "social.friends.inviteSent": "Invite Sent",
   "social.friends.toggleBtn": "Toggle Btn",
   "social.friends.header": "Header",
-  "social.header": "Social",
   "social.friends.tabFriends": "Tab Friends",
   "social.friends.tabInvites": "Invites",
   "social.friends.adminCategory": "Staff",
@@ -3058,5 +3057,14 @@
   "rematch.no": "No thanks",
   "rematch.waiting": "{done} of {total} are in.",
   "rematch.starting": "Everybody is in — setting it up…",
-  "rematch.declined": "Somebody has passed. No rematch this time."
+  "rematch.declined": "Somebody has passed. No rematch this time.",
+  "social.tournaments": "Tournaments",
+  "social.tournamentsCreate": "Create a tournament",
+  "social.tournamentsExplore": "Explore tournaments",
+  "social.tournamentsNone": "Nothing on right now.",
+  "social.friends.playBtn": "Play",
+  "social.presence.ingame": "In game",
+  "social.presence.spectating": "Spectating",
+  "social.presence.online": "Online",
+  "social.presence.offline": "Offline"
 }

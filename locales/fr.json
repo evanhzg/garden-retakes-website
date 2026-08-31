@@ -1598,7 +1598,6 @@
   "social.friends.inviteSent": "Invitation envoyée",
   "social.friends.toggleBtn": "Basculer",
   "social.friends.header": "Amis",
-  "social.header": "Social",
   "social.friends.tabFriends": "Amis",
   "social.friends.tabInvites": "Invitations",
   "social.friends.adminCategory": "Équipe du site",
@@ -3058,5 +3057,14 @@
   "rematch.no": "Sans moi",
   "rematch.waiting": "{done} sur {total} sont partants.",
   "rematch.starting": "Tout le monde est partant — préparation…",
-  "rematch.declined": "Quelqu'un a décliné. Pas de revanche cette fois."
+  "rematch.declined": "Quelqu'un a décliné. Pas de revanche cette fois.",
+  "social.tournaments": "Tournois",
+  "social.tournamentsCreate": "Créer un tournoi",
+  "social.tournamentsExplore": "Explorer les tournois",
+  "social.tournamentsNone": "Rien en cours.",
+  "social.friends.playBtn": "Jouer",
+  "social.presence.ingame": "En jeu",
+  "social.presence.spectating": "Spectateur",
+  "social.presence.online": "En ligne",
+  "social.presence.offline": "Hors ligne"
 }

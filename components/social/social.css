@@ -3,7 +3,7 @@
    ============================================ */
 
 .notification-badge {
-  background: #ef4444;
+  background: var(--color-accent);
   color: white;
   font-size: 0.72rem;
   padding: 1px 7px;
@@ -31,41 +31,45 @@
      out. Anchoring it means it cannot. */
   bottom: 0;
   height: auto;
-  width: 56px;
   z-index: 1001;
-  /* Clipped, because the two views inside keep their own fixed widths and this
-     narrows over them. */
-  overflow: hidden;
-  transition: width 0.28s cubic-bezier(0.22, 1, 0.36, 1);
-  will-change: width;
+
+  /* One width, always. This used to animate between 56px and 165px with the
+     rail and the panel taking turns inside it — which is where every reported
+     judder came from: `width` is a layout property, so the whole panel re-laid
+     itself out sixty times a second, with a backdrop-filter being re-sampled
+     inside the animating clip and the chat docks beside it chasing an edge
+     that was still moving.
+
+     64 for the icon rail plus 300 for the list. The old open width was 165,
+     which was half of an original 330 and was chosen when this was a peek
+     rather than somewhere you read a conversation. */
+  width: calc(var(--social-rail-w) + var(--social-list-w));
+  display: flex;
 }
 
-.social-dock.open {
-  /* Half of the 330px it was. Every row in here is an avatar and a name; the
-     other half was empty on all of them. */
-  width: 165px;
-}
-
-@media (prefers-reduced-motion: reduce) {
-  .social-dock {
-    transition-duration: 0.01ms;
-  }
+:root {
+  --social-rail-w: 64px;
+  --social-list-w: 300px;
 }
 
 /* ---------- Sidebar ---------- */
 .friends-sidebar {
-  position: absolute;
-  top: 0;
-  bottom: 0;
-  right: 0;
+  /* In the flow beside the rail, not layered over it. Absolute positioning is
+     what let the two overlap while the dock's width animated between them. */
+  position: relative;
+  flex: 0 0 var(--social-list-w);
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
   /* Fixed, NOT 100%.
      
      This is what makes the open/close smooth. At 100% the panel re-laid itself
      out on every frame of the dock's width animation — every row re-wrapping,
      every name re-ellipsising, sixty times a second — which is the judder. At a
-     fixed width the content is laid out once and the dock simply reveals more
-     of it, and the only thing the browser animates is a clip. */
-  width: 165px;
+     fixed width the content is laid out once. Nothing animates it now at all
+     on a desktop; the width is a token so the rail and the docks can agree
+     with it rather than each carrying their own copy of the number. */
+  width: var(--social-list-w);
   background:
     linear-gradient(180deg, color-mix(in srgb, var(--accent) 14%, transparent), transparent 30%),
     color-mix(in srgb, var(--color-surface) 92%, transparent);
@@ -74,56 +78,15 @@
   border-left: 1px solid color-mix(in srgb, var(--border) 80%, transparent);
   box-shadow: -18px 0 50px rgba(0, 0, 0, 0.45);
   z-index: 1001;
-  /* Positioned at its open place and pushed off-screen with a transform, rather
-     than animating `right` from -360px. A transform is composited; `right`
-     relayouts the panel on every frame, which is what made this judder next to
-     the rail's fade. */
-  /* No transform. The dock animates its width and this fills it; a panel that
-     also slid would be two animations fighting over one edge. */
-  display: flex;
-  flex-direction: column;
 }
 
-/* Somebody who has asked for less movement gets the state change without the
-   slide, rather than a slower version of it. */
-@media (prefers-reduced-motion: reduce) {
-  .friends-sidebar,
-  .friends-rail {
-    transition-duration: 0.01ms;
-  }
-}
+/* Neither the panel nor the rail transitions any more — there is nothing left
+   for a reduced-motion rule to slow down here. The phone drawer keeps its own,
+   further down, because that one really does move. */
 
-.friends-header {
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-  padding: 16px 16px 14px;
-  border-bottom: 1px solid color-mix(in srgb, var(--text) 12%, transparent);
-  flex: 0 0 auto;
-}
-
-.friends-header h2 {
-  margin: 0;
-  color: var(--text);
-  font-size: 1.05rem;
-  letter-spacing: -0.01em;
-}
-
-.close-btn {
-  display: grid; place-items: center;
-  background: none;
-  border: none;
-  color: var(--muted);
-  padding: 4px;
-  border-radius: 6px;
-  cursor: pointer;
-  transition: color 0.15s ease, background 0.15s ease;
-}
-
-.close-btn:hover {
-  color: var(--text);
-  background: color-mix(in srgb, var(--text) 10%, transparent);
-}
+/* The header is gone. It was a title and a close button, and the close button
+   was the ONLY way to unpin a panel that could be pinned — so it could not be
+   removed until the pinning was. Both went together. */
 
 .friends-tabs {
   display: flex;
@@ -190,10 +153,13 @@
   align-items: center;
   gap: 8px;
   width: 100%;
-  padding: 9px 10px;
+  /* 6px and a 28px avatar, down from 9px and 34px: a 46px row meant a friends
+     list of any length needed scrolling inside a panel that is now permanently
+     on screen, where the whole point is seeing the list at a glance. */
+  padding: 6px 8px;
   background: color-mix(in srgb, var(--text) 4%, transparent);
   border: 1px solid transparent;
-  border-radius: 8px;
+  border-radius: var(--radius-md, 0);
   margin-bottom: 6px;
   text-align: left;
   color: inherit; font: inherit;
@@ -281,7 +247,7 @@
   color: var(--color-accent-2);
   border: 1px solid var(--color-accent);
   padding: 4px 12px;
-  border-radius: 4px;
+  border-radius: var(--radius-md, 0);
   cursor: pointer;
   font-size: 0.8rem;
   font-weight: bold;
@@ -299,8 +265,8 @@
   justify-content: space-between;
   align-items: center;
   padding: 12px;
-  background: rgba(255, 255, 255, 0.03);
-  border-radius: 8px;
+  background: color-mix(in srgb, var(--color-text) 3%, transparent);
+  border-radius: var(--radius-md, 0);
   margin-bottom: 8px;
 }
 
@@ -315,7 +281,7 @@
   border: 1px solid #22c55e;
   width: 28px;
   height: 28px;
-  border-radius: 4px;
+  border-radius: var(--radius-md, 0);
   cursor: pointer;
   display: flex;
   align-items: center;
@@ -330,10 +296,10 @@
 .btn-reject {
   background: rgba(239, 68, 68, 0.2);
   color: #f87171;
-  border: 1px solid #ef4444;
+  border: 1px solid var(--color-accent);
   width: 28px;
   height: 28px;
-  border-radius: 4px;
+  border-radius: var(--radius-md, 0);
   cursor: pointer;
   display: flex;
   align-items: center;
@@ -341,7 +307,7 @@
 }
 
 .btn-reject:hover {
-  background: #ef4444;
+  background: var(--color-accent);
   color: #fff;
 }
 
@@ -354,9 +320,9 @@
 
 .add-friend-form input {
   background: rgba(0, 0, 0, 0.3);
-  border: 1px solid rgba(255, 255, 255, 0.1);
+  border: 1px solid color-mix(in srgb, var(--color-text) 10%, transparent);
   padding: 12px;
-  border-radius: 8px;
+  border-radius: var(--radius-md, 0);
   color: #fff;
   font-size: 1rem;
 }
@@ -381,9 +347,9 @@
 .notification-toast {
   background: rgba(15, 23, 42, 0.95);
   backdrop-filter: blur(8px);
-  border: 1px solid rgba(255, 255, 255, 0.1);
+  border: 1px solid color-mix(in srgb, var(--color-text) 10%, transparent);
   padding: 16px;
-  border-radius: 12px;
+  border-radius: var(--radius-md, 0);
   width: 300px;
   box-shadow: 0 10px 25px rgba(0, 0, 0, 0.5);
   pointer-events: auto;
@@ -421,7 +387,7 @@
 .notif-actions button {
   flex: 1;
   padding: 8px;
-  border-radius: 6px;
+  border-radius: var(--radius-md, 0);
   font-weight: bold;
   cursor: pointer;
 }
@@ -456,7 +422,7 @@
   position: absolute;
   top: 8px;
   right: 25%;
-  background: #ef4444;
+  background: var(--color-accent);
   color: white;
   font-size: 0.65rem;
   padding: 2px 6px;
@@ -475,14 +441,14 @@
   display: flex;
   align-items: center;
   justify-content: center;
-  border-radius: 6px;
+  border-radius: var(--radius-md, 0);
   font-weight: bold;
   transition: all 0.2s;
 }
 
 .btn-social:hover {
   color: var(--text);
-  background: rgba(255,255,255,0.05);
+  background: color-mix(in srgb, var(--color-text) 5%, transparent);
   transform: scale(1.05);
 }
 
@@ -493,9 +459,9 @@
 
 /* Mail Section */
 .mail-section {
-  background: rgba(255,255,255,0.02);
-  border: 1px solid rgba(255,255,255,0.05);
-  border-radius: 12px;
+  background: color-mix(in srgb, var(--color-text) 2%, transparent);
+  border: 1px solid color-mix(in srgb, var(--color-text) 5%, transparent);
+  border-radius: var(--radius-md, 0);
   padding: 16px;
 }
 .mail-section h3 {
@@ -554,7 +520,7 @@
   color: var(--muted);
   cursor: pointer;
   padding: 4px;
-  border-radius: 4px;
+  border-radius: var(--radius-md, 0);
   display: flex;
   transition: background 0.15s ease, color 0.15s ease;
 }
@@ -614,7 +580,7 @@
 
 .dm-bubble {
   padding: 8px 12px;
-  border-radius: 14px;
+  border-radius: var(--radius-md, 0);
   font-size: 0.88rem;
   line-height: 1.42;
   overflow-wrap: anywhere;
@@ -643,7 +609,7 @@
   display: block;
   max-width: 100%;
   margin-top: 8px;
-  border-radius: 8px;
+  border-radius: var(--radius-md, 0);
 }
 
 .admin-badge { font-size: 0.8rem; margin-right: 4px; }
@@ -731,26 +697,25 @@ html[data-motion="off"] .dm-bubble.typing i { animation: none; }
    --social-top is measured from the live header by FriendsSidebar rather than
    hard-coded, because a fixed figure is wrong the moment the header wraps. */
 .friends-rail {
-  position: absolute;
-  top: 0;
-  bottom: 0;
-  right: 0;
-  /* Fixed for the same reason as the panel above. */
-  width: 56px;
+  /* The icon column, in the flow beside the list rather than layered under it.
+     It used to be absolutely positioned over the same space as the panel and
+     swapped in and out — which is why it needed a fade, a slide, and a comment
+     about being "the panel behind the panel". Neither of them moves now, so
+     there is nothing to hide and nothing to race. */
+  position: relative;
+  flex: 0 0 var(--social-rail-w);
   display: flex;
   flex-direction: column;
   align-items: center;
   gap: 8px;
   padding: 12px 8px;
+  overflow-y: auto;
+  overflow-x: hidden;
   border-left: 1px solid var(--color-divider);
   background: color-mix(in srgb, var(--color-surface) 92%, transparent);
-  backdrop-filter: blur(12px);
-  -webkit-backdrop-filter: blur(12px);
-  box-shadow: -4px 0 18px rgba(0, 0, 0, 0.28);
-  /* The same curve and duration as the panel, so the two read as one movement
-     rather than as a fade racing a slide. */
-  transition: opacity 0.3s cubic-bezier(0.22, 1, 0.36, 1),
-              transform 0.3s cubic-bezier(0.22, 1, 0.36, 1);
+  /* No backdrop-filter. It was being re-sampled on every frame of a width
+     animation that no longer exists, and a blur behind an opaque-enough
+     surface costs a compositor pass for something nobody can see. */
 }
 
 /* Out of the way, not merely invisible.
@@ -834,6 +799,35 @@ html[data-motion="off"] .dm-bubble.typing i { animation: none; }
 @media (max-width: 760px) {
   /* A fixed column down the edge of a phone is most of the phone. */
   .friends-rail { display: none; }
+
+  /* So on a phone the whole thing is a drawer again, driven by the FAB — the
+     one case where a toggle is still the right shape. It slides on TRANSFORM,
+     which is composited; the desktop version used to animate `width`, which is
+     not, and that was the judder.
+
+     `.open` is written by the component and means "the phone drawer is out". On
+     a desktop nothing reads it. */
+  .social-dock {
+    width: min(var(--social-list-w), 92vw);
+    transform: translateX(100%);
+    transition: transform 0.24s cubic-bezier(0.22, 1, 0.36, 1);
+    will-change: transform;
+  }
+
+  .social-dock.open {
+    transform: none;
+  }
+
+  .friends-sidebar {
+    flex: 1 1 auto;
+    width: 100%;
+  }
+}
+
+@media (max-width: 760px) and (prefers-reduced-motion: reduce) {
+  .social-dock {
+    transition-duration: 0.01ms;
+  }
 }
 
 /* ---------- Avatar with a presence dot ----------
@@ -875,6 +869,15 @@ html[data-motion="off"] .dm-bubble.typing i { animation: none; }
   background: var(--color-accent);
   box-shadow: 0 0 8px var(--color-accent);
 }
+/* In the server, watching rather than playing. Amber, which is the colour the
+   left sidebar has used for this since long before the dot existed here — the
+   two are showing the same fact and should not disagree about what it looks
+   like. */
+.avatar-status.presence-spectating .avatar-status-dot {
+  background: #f97316;
+  box-shadow: 0 0 8px rgba(249, 115, 22, 0.8);
+}
+
 .avatar-status.presence-away .avatar-status-dot { background: #eab308; }
 
 /* ---------- The phone's floating opener ----------
@@ -1006,7 +1009,7 @@ html[data-motion="off"] .dm-bubble.typing i { animation: none; }
 /* "You:" prefix on a thread's last line. */
 .dm-you {
   font-weight: 700;
-  color: var(--color-text-muted);
+  color: var(--muted);
 }
 
 /* ================================================================= chat dock
@@ -1167,14 +1170,20 @@ html[data-motion="off"] .dm-bubble.typing i { animation: none; }
    other on a wide screen. */
 @media (min-width: 761px) {
   .dm-docks {
-    /* Clear of the collapsed rail. */
-    right: 68px;
-  }
+    /* Clear of the whole dock, computed from the same tokens the dock is built
+       from rather than written out again.
 
-  /* With the panel open the row steps left rather than hiding behind it. */
-  .friends-sidebar.open ~ .dm-docks,
-  body:has(.friends-sidebar.open) .dm-docks {
-    right: 348px;
+       This is "the opened chat moves way too far": it was a flat 348px, which
+       was sized for a 330px panel that had since become 165px — so the docks
+       stepped left by about 167px more than there was panel to clear. And
+       because .dm-docks had no transition of its own, they teleported that
+       distance while the panel eased.
+
+       There is nothing to step around any more. The panel does not open or
+       close on a desktop, so this is one offset that never changes, and the
+       two selectors that used to switch between offsets are gone with the
+       state they were reading. */
+    right: calc(var(--social-rail-w) + var(--social-list-w) + 8px);
   }
 }
 
@@ -1466,4 +1475,103 @@ html[data-motion="off"] .dm-bubble.typing i { animation: none; }
 .friend-item {
   padding: 6px 8px;
   gap: 7px;
+}
+
+/* ---------- Tournaments, where FaceIT puts clubs ---------- */
+
+.tr { display: flex; flex-direction: column; gap: 8px; }
+
+.tr-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+}
+
+.tr-title {
+  font-size: 10.5px;
+  font-weight: 800;
+  letter-spacing: 0.09em;
+  text-transform: uppercase;
+  color: var(--muted);
+}
+
+.tr-actions { display: flex; gap: 4px; }
+
+.tr-btn {
+  display: grid;
+  place-items: center;
+  width: 24px;
+  height: 24px;
+  border: 1px solid var(--color-divider);
+  color: var(--muted);
+  background: none;
+  cursor: pointer;
+}
+
+.tr-btn:hover { border-color: var(--color-accent); color: var(--color-accent); }
+
+.tr-list { list-style: none; margin: 0; padding: 0; display: grid; gap: 2px; }
+
+.tr-item {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 5px 6px;
+  color: inherit;
+  text-decoration: none;
+  min-width: 0;
+}
+
+.tr-item:hover { background: color-mix(in srgb, var(--color-text) 7%, transparent); }
+
+/* Round, which is one of the two sanctioned exceptions to the sharp corners —
+   an avatar and a live dot. Everything else in this panel is square. */
+.tr-face {
+  position: relative;
+  flex: 0 0 auto;
+  width: 28px;
+  height: 28px;
+  border-radius: 50%;
+  overflow: hidden;
+  display: grid;
+  place-items: center;
+  background: color-mix(in srgb, var(--color-text) 10%, transparent);
+}
+
+.tr-face img { width: 100%; height: 100%; object-fit: cover; }
+
+.tr-initials {
+  font-size: 10px;
+  font-weight: 800;
+  letter-spacing: 0.02em;
+  color: var(--muted);
+}
+
+/* Outside the circle, like the presence dot, so a bright avatar cannot
+   swallow it. */
+.tr-live {
+  position: absolute;
+  right: -1px;
+  bottom: -1px;
+  width: 9px;
+  height: 9px;
+  border-radius: 50%;
+  border: 2px solid var(--color-surface);
+  background: var(--color-accent);
+  box-shadow: 0 0 8px var(--color-accent);
+}
+
+.tr-name {
+  font-size: 12px;
+  font-weight: 600;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.tr-none {
+  margin: 0;
+  font-size: 12px;
+  color: var(--muted);
 }

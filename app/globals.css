@@ -10908,10 +10908,14 @@ body.overlay-open .friends-rail {
   opacity: 0;
   pointer-events: none;
 }
-/* Beats .friends-sidebar.open on specificity, so a drawer left open when a
-   takeover appears slides away rather than sitting beside it. */
-body.overlay-open .friends-sidebar {
-  right: -360px;
+/* A takeover hides the whole social dock rather than sliding the panel.
+
+   This used to be `right: -360px` on .friends-sidebar, sized for a width the
+   panel has not had for two redesigns — and the panel is not positioned by
+   `right` any more at all, so it moved nothing. The dock is the thing on
+   screen now, so the dock is what gets hidden. */
+body.overlay-open .social-dock {
+  opacity: 0;
   pointer-events: none;
 }
 body.overlay-open .notification-toast-stack,

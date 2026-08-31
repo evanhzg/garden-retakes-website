@@ -8,9 +8,11 @@ import { useRouter } from "next/navigation";
 import PlayerBubble from "./PlayerBubble";
 import AvatarImage from "@/components/AvatarImage";
 import AvatarStatus from "@/components/social/AvatarStatus";
+import { useLivePlayers, presenceOf } from "@/components/social/useLivePlayers";
+import TournamentRail from "@/components/social/TournamentRail";
 import ChatDock from "./ChatDock";
 import { useToast } from "@/components/Toast";
-import { MessageSquare, UserPlus, Gamepad2, Eye, Users, Mail, Send, X } from "lucide-react";
+import { MessageSquare, UserPlus, Gamepad2, Users, Mail, Send, X, Trophy } from "lucide-react";
 import { useI18n } from "@/components/I18nProvider";
 import {
   MessageBody,
@@ -30,9 +32,9 @@ type Friend = {
   avatarUrl: string | null;
   status: string;
   isRequester: boolean;
-  elo?: number;
-  lastSeen?: string | number;
-  inLobby?: boolean;
+  /* elo, lastSeen and inLobby were declared here and never populated by
+     /api/friends — the route selects none of them. They are gone rather than
+     left as three optional fields that are always undefined. */
 };
 
 /** One conversation with somebody who is not on the friends list. */
@@ -69,50 +71,26 @@ export default function FriendsSidebar() {
   const router = useRouter();
   const toast = useToast();
 
-  const [isOpen, setIsOpen] = useState(false);
-
   /**
-   * Pinned open by a deliberate click, rather than by the pointer being here.
+   * The phone drawer. On a desktop this decides nothing.
    *
-   * The panel opens on hover and closes when the pointer leaves, which is right
-   * for a glance and wrong for anything that takes both hands — reading a
-   * thread, typing a reply, accepting a request. The expand button pins it, and
-   * the close button unpins it, so a hover is a peek and a click is a decision.
+   * The panel used to be a drawer everywhere: it expanded on hover, shrank on
+   * an outside click, and could be pinned open by a click with the header's
+   * close button as the only way to unpin. Every reported judder came out of
+   * that mechanism rather than out of tuning it — it animated `width`, which is
+   * a layout property, with a backdrop-filter being re-sampled inside the
+   * animating clip, while the rail unmounted and the panel mounted on the same
+   * tick and the chat docks teleported to an offset sized for a width the panel
+   * no longer had.
+   *
+   * So the mechanism is gone rather than tuned. On a desktop the rail and the
+   * panel are both simply there, at fixed widths, and nothing animates.
+   *
+   * A phone is the one case that still needs a toggle — a full-height column
+   * down the side of a phone is most of the phone — so this survives to drive
+   * the FAB and a CSS class, and nothing else reads it.
    */
-  const [isPinned, setIsPinned] = useState(false);
-
-  /* Same open-now / close-soon pair as components/AvatarMenu.tsx. The delay is
-     what makes the gap between the rail and the panel crossable — without it
-     the panel closes in the few pixels between them. */
-  const hoverTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
-
-  const openNow = useCallback(() => {
-    if (hoverTimer.current) clearTimeout(hoverTimer.current);
-    setIsOpen(true);
-  }, []);
-
-  const closeSoon = useCallback(() => {
-    if (hoverTimer.current) clearTimeout(hoverTimer.current);
-    hoverTimer.current = setTimeout(() => {
-      // A player resume is portalled to <body>, so moving the pointer onto one
-      // is physically a mouseleave from the panel that opened it. Closing here
-      // would shut the panel out from under whatever the reader just clicked.
-      if (document.querySelector(".player-bubble")) return;
-
-      // A pin outranks the pointer leaving.
-      setIsPinned((pinned) => {
-        if (!pinned) setIsOpen(false);
-        return pinned;
-      });
-    }, 220);
-  }, []);
-
-  useEffect(
-    () => () => {
-      if (hoverTimer.current) clearTimeout(hoverTimer.current);
-    },
-    [],
-  );
+  const [isOpen, setIsOpen] = useState(false);
 
   /**
    * The panel shrinks when you click away from it.
@@ -140,7 +118,6 @@ export default function FriendsSidebar() {
       if (railRef.current?.contains(target)) return;
       if ((target as HTMLElement).closest?.(".player-bubble, .friends-bubble")) return;
 
-      setIsPinned(false);
       setIsOpen(false);
     };
 
@@ -174,6 +151,14 @@ export default function FriendsSidebar() {
     observer.observe(header);
     return () => observer.disconnect();
   }, []);
+  /**
+   * Who is in a game right now, from the same feed the left sidebar uses.
+   *
+   * This is the half that was missing: the dot has had an `ingame` state and
+   * an accent glow for as long as it has existed, and nothing ever passed it.
+   */
+  const livePlayers = useLivePlayers();
+
   const [friends, setFriends] = useState<Friend[]>([]);
   const [pendingRequests, setPendingRequests] = useState<Friend[]>([]);
   const [onlineUsers, setOnlineUsers] = useState<string[]>([]);
@@ -181,7 +166,8 @@ export default function FriendsSidebar() {
   const [addBusy, setAddBusy] = useState(false);
   // MESSAGES went with the Chat tab: those conversations are in the friends
   // list now, under their own headings.
-  const [activeTab, setActiveTab] = useState<"FRIENDS" | "MAIL">("FRIENDS");
+  const [activeTab, setActiveTab] = useState<"TOURNAMENTS" | "FRIENDS" | "MAIL">("FRIENDS");
+
   /**
    * Every conversation that is open, oldest first.
    *
@@ -458,8 +444,12 @@ export default function FriendsSidebar() {
   // feed the admin category on the friends list now, so waiting for a tab that
   // no longer exists would mean it never loaded at all.
   useEffect(() => {
-    if (isOpen) loadThreads();
-  }, [isOpen, loadThreads]);
+    // Always. The panel is on screen from the moment the page is, so there is
+    // no "opened" moment left to hang this off — waiting for one meant a
+    // permanently visible Mail tab that stayed empty until somebody toggled a
+    // drawer that no longer exists.
+    loadThreads();
+  }, [loadThreads]);
 
   // Only when the tab that shows them is open: this is a join across every
   // roster the viewer has ever been on, and it is not worth running for
@@ -554,20 +544,20 @@ export default function FriendsSidebar() {
           steamId={f.friendId}
           name={f.name}
           src={f.avatarUrl}
-          presence={isOnline ? "online" : "offline"}
-          size={34}
+          presence={presenceOf(f.friendId, livePlayers, isOnline)}
+          size={28}
         />
         <PlayerBubble steamId={f.friendId} name={f.name} isFriend>
           <div className="friend-lines">
             <span className="friend-name">{f.name}</span>
+            {/* What they are actually doing, which is the line this always
+                wanted to be. It read `f.elo ? "Elo N" : "Online"` and
+                `f.lastSeen ? "Last seen X" : "Offline"` — and since
+                /api/friends populates neither field, every row on every screen
+                said exactly "Online" or "Offline". The live feed knows more
+                than that and has done all along. */}
             <span className="friend-stats">
-              {isOnline
-                ? f.elo
-                  ? `Elo ${f.elo}`
-                  : "Online"
-                : f.lastSeen
-                  ? `Last seen ${new Date(f.lastSeen).toLocaleDateString()}`
-                  : "Offline"}
+              {t(`social.presence.${presenceOf(f.friendId, livePlayers, isOnline)}`)}
             </span>
           </div>
         </PlayerBubble>
@@ -592,12 +582,17 @@ export default function FriendsSidebar() {
             <UserPlus size={16} />
           </button>
         )}
-        {f.inLobby ? (
-          <button className="btn-social" onClick={() => router.push("/lobby")} title="Spectate">
-            <Eye size={16} />
-          </button>
-        ) : isOnline ? (
-          <button className="btn-social" onClick={() => router.push("/lobby")} title="Play">
+        {/* The Spectate button is gone. It was gated on `f.inLobby`, which
+            /api/friends has never set — the field is declared on the Friend
+            type and nothing populates it — so the branch could not run and the
+            button could not be seen. Presence is now shown by the dot on the
+            avatar, which is fed by a feed that actually exists. */}
+        {isOnline ? (
+          <button
+            className="btn-social"
+            onClick={() => router.push("/lobby")}
+            title={t("social.friends.playBtn")}
+          >
             <Gamepad2 size={16} />
           </button>
         ) : null}
@@ -627,22 +622,9 @@ export default function FriendsSidebar() {
           only one of them is rendered at a time. There is nothing behind
           anything, and the collapsed state is the same dock, narrower. */}
       <div className={`social-dock ${isOpen ? "open" : ""}`}>
-      {!isOpen && (
       <div
         className="friends-rail"
         ref={railRef}
-        role="button"
-        tabIndex={0}
-        aria-label={t("social.friends.toggleBtn")}
-        onMouseEnter={openNow}
-        onMouseLeave={closeSoon}
-        onFocus={openNow}
-        onKeyDown={(e) => {
-          if (e.key !== "Enter" && e.key !== " ") return;
-          e.preventDefault();
-          setIsPinned(true);
-          setIsOpen(true);
-        }}
       >
         {/* The expand arrow is gone.
             Hovering the rail opens the panel and clicking any avatar opens that
@@ -674,8 +656,8 @@ export default function FriendsSidebar() {
                   steamId={f.friendId}
                   name={f.name}
                   src={f.avatarUrl}
-                  presence="online"
-                  size={34}
+                  presence={presenceOf(f.friendId, livePlayers, true)}
+                  size={28}
                 />
                 {(unread[f.friendId] ?? 0) > 0 && <span className="dot-badge" />}
               </span>
@@ -694,7 +676,7 @@ export default function FriendsSidebar() {
                   name={f.name}
                   src={f.avatarUrl}
                   presence="offline"
-                  size={34}
+                  size={28}
                 />
                 {(unread[f.friendId] ?? 0) > 0 && <span className="dot-badge" />}
               </span>
@@ -708,7 +690,6 @@ export default function FriendsSidebar() {
           )}
         </div>
       </div>
-      )}
 
 
       {/* The chats are docks, not a panel view.
@@ -775,28 +756,17 @@ export default function FriendsSidebar() {
       {/* The panel carries the hover surface, not the rail: .friends-rail.hidden
           sets pointer-events: none, so once the panel is open the rail cannot
           receive a mouseleave and the pair would latch open forever. */}
-      {isOpen && (
-      <div
-        className={`friends-sidebar open ${isPinned ? "pinned" : ""}`}
-        ref={panelRef}
-        onMouseEnter={openNow}
-        onMouseLeave={closeSoon}
-      >
-        <div className="friends-header">
-          <h2>{t("social.header")}</h2>
-          <button
-            className="close-btn"
-            onClick={() => {
-              setIsPinned(false);
-              setIsOpen(false);
-            }}
-            aria-label="Close"
-          >
-            <X size={18} />
-          </button>
-        </div>
-
+      <div className="friends-sidebar" ref={panelRef}>
         <div className="friends-tabs" role="tablist">
+          <button
+            role="tab"
+            aria-selected={activeTab === "TOURNAMENTS"}
+            className={activeTab === "TOURNAMENTS" ? "active" : ""}
+            onClick={() => setActiveTab("TOURNAMENTS")}
+            title={t("social.tournaments")}
+          >
+            <Trophy size={18} />
+          </button>
           <button
             role="tab"
             aria-selected={activeTab === "FRIENDS"}
@@ -820,6 +790,12 @@ export default function FriendsSidebar() {
             {pendingRequests.length > 0 && <span className="tab-badge">{pendingRequests.length}</span>}
           </button>
         </div>
+
+        {activeTab === "TOURNAMENTS" && (
+          <div className="friends-content">
+            <TournamentRail />
+          </div>
+        )}
 
         {activeTab === "FRIENDS" && (
           <div className="friends-content">
@@ -848,8 +824,8 @@ export default function FriendsSidebar() {
                         steamId={a.steamId}
                         name={a.name}
                         src={a.avatarUrl}
-                        presence={onlineUsers.includes(a.steamId) ? "online" : "offline"}
-                        size={34}
+                        presence={presenceOf(a.steamId, livePlayers, onlineUsers.includes(a.steamId))}
+                        size={28}
                       />
                       <div className="friend-lines">
                         <span className="friend-name">{a.name}</span>
@@ -904,8 +880,8 @@ export default function FriendsSidebar() {
                       steamId={f.friendId}
                       name={f.name}
                       src={f.avatarUrl}
-                      presence={online(f.friendId) ? "online" : "offline"}
-                      size={34}
+                      presence={presenceOf(f.friendId, livePlayers, online(f.friendId))}
+                      size={28}
                     />
                     <div className="friend-lines">
                       <span className="friend-name">{f.name}</span>
@@ -966,7 +942,7 @@ export default function FriendsSidebar() {
                         steamId={sug.steamId}
                         name={sug.name}
                         src={null}
-                        presence={onlineUsers.includes(sug.steamId) ? "online" : "offline"}
+                        presence={presenceOf(sug.steamId, livePlayers, onlineUsers.includes(sug.steamId))}
                         size={28}
                       />
                       <span className="sg-name">{sug.name}</span>
@@ -1031,7 +1007,6 @@ export default function FriendsSidebar() {
           </div>
         )}
       </div>
-      )}
       </div>
     </>
   );
