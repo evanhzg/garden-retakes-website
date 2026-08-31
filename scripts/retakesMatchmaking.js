@@ -609,7 +609,27 @@ function attachRetakesMatchmaking(
     const party = partyFor(id);
     const matchId = matchOf.get(id);
     const match = matchId ? matches.get(matchId) : null;
-    const invite = invites.get(id) ?? null;
+    /**
+     * An invite you have already acted on is not an invite.
+     *
+     * `rq:party:accept` deletes it, but that is only one of the ways somebody
+     * ends up in a party: an invite link opened in a browser joins through a
+     * different path entirely, and nothing there knew to clear the pending
+     * row. So a friend who joined by link sat in the party with the "invited"
+     * card and its countdown still on screen — in the party AND being asked to
+     * join it — and the card's ten-second timer then fired a decline for an
+     * invite they had effectively taken.
+     *
+     * Checked here because this is the only place the client learns about an
+     * invite at all, so one test covers every route in and every route that
+     * might be added later. The stale row is dropped as well as hidden, so the
+     * decline timer has nothing left to act on.
+     */
+    let invite = invites.get(id) ?? null;
+    if (invite && party && invite.partyId === party.id) {
+      invites.delete(id);
+      invite = null;
+    }
 
     const cfg = party ? queueOf(party) : null;
 

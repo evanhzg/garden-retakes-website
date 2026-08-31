@@ -1444,12 +1444,23 @@ function InviteModal({
   t,
   names,
 }: { invite: any; send: any; t: any; names: PlayerNameMap }) {
+  /**
+   * Auto-decline after ten seconds, matching the bar underneath.
+   *
+   * Keyed on WHICH invite this is, not on the object carrying it. The server
+   * rebuilds its whole state object on every push — a team-mate readying up, a
+   * queue tick, anything — so depending on `invite` restarted this timer
+   * several times a second while the bar carried on emptying. The countdown on
+   * screen and the countdown that actually fires were unrelated.
+   */
+  const inviteKey = `${invite?.partyId ?? ""}:${invite?.at ?? ""}`;
+
   useEffect(() => {
     const tId = setTimeout(() => {
       send("rq:party:decline");
     }, 10000);
     return () => clearTimeout(tId);
-  }, [invite, send]);
+  }, [inviteKey, send]);
 
   return (
     <div style={{
