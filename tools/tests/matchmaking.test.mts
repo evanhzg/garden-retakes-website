@@ -129,5 +129,76 @@ check(
   "...and waiting does not change that",
   mm.acceptableGap(mm.QUEUES[mm.DEFAULT_QUEUE], 10_000) === Number.POSITIVE_INFINITY);
 
+// ---- where the handoff goes ----------------------------------------------
+//
+// Added after 31 Aug 2026, when SITE_URL on the socket server was still the
+// placeholder "https://garden-retakes.example.com". It is not a URL that is
+// down; it is one that has never existed, so every handoff died at DNS with
+// Node's "fetch failed" — which names neither the host nor the setting. Every
+// match formed was abandoned the moment everybody accepted, and it looked from
+// the lobby like somebody had failed to accept.
+
+const origin = (env: Record<string, string>) => mm.resolveWebsiteOrigin(env);
+
+check(
+  "an explicit WEBSITE_ORIGIN is used as given",
+  origin({ WEBSITE_ORIGIN: "https://staging.example-host.net" }) === "https://staging.example-host.net",
+);
+check(
+  "a trailing slash is trimmed, so the path is not doubled",
+  origin({ WEBSITE_ORIGIN: "https://a.test-site.net/" }) === "https://a.test-site.net",
+);
+check(
+  "WEBSITE_ORIGIN beats SITE_URL",
+  origin({ WEBSITE_ORIGIN: "https://chosen.site.net", SITE_URL: "https://other.site.net" }) ===
+    "https://chosen.site.net",
+);
+
+check(
+  "a real SITE_URL is used",
+  origin({ SITE_URL: "https://www.retakes.fr" }) === "https://www.retakes.fr",
+);
+
+// The regression. Each of these used to be believed and posted to.
+for (const placeholder of [
+  "https://garden-retakes.example.com",
+  "https://example.com",
+  "https://foo.example.net",
+  "https://anything.invalid",
+  "https://host.test",
+]) {
+  check(
+    `a reserved placeholder is refused: ${placeholder}`,
+    origin({ SITE_URL: placeholder }) === "https://www.retakes.fr",
+    origin({ SITE_URL: placeholder }),
+  );
+}
+
+check(
+  "a Render host is still refused — that is this service talking to itself",
+  origin({ SITE_URL: "https://garden.onrender.com" }) === "https://www.retakes.fr",
+);
+check(
+  "and so is a subdomain of one",
+  origin({ SITE_URL: "https://a.b.onrender.com" }) === "https://www.retakes.fr",
+);
+
+check(
+  "a SITE_URL that is not a URL falls back instead of throwing",
+  origin({ SITE_URL: "not a url" }) === "https://www.retakes.fr",
+);
+check("no environment at all still yields the public site", origin({}) === "https://www.retakes.fr");
+check(
+  "an empty SITE_URL is not treated as a host",
+  origin({ SITE_URL: "   " }) === "https://www.retakes.fr",
+);
+
+// localhost is deliberately allowed: a developer running both halves on one
+// machine is the normal case, and refusing it would break them.
+check(
+  "localhost is left alone, for development",
+  origin({ SITE_URL: "http://localhost:3000" }) === "http://localhost:3000",
+);
+
 console.log(fails ? `\n${fails} FAILED` : "\nall passed");
 process.exit(fails ? 1 : 0);

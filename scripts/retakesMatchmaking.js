@@ -310,6 +310,66 @@ const acceptableGap = (cfg, secondsWaiting) => {
   return Number.POSITIVE_INFINITY;
 };
 
+/**
+ * Hosts that are configured but cannot serve the website, whatever they say.
+ *
+ *   *.onrender.com — this service talking to itself. The process also serves
+ *   Next when it can, so on Render SITE_URL is its own hostname; Next is not
+ *   ready there, so every route 404s. That is why a bot match once formed,
+ *   everybody accepted, and the lobby abandoned it.
+ *
+ *   example.com and friends — RFC 2606 and RFC 6761 reserve these precisely so
+ *   they never resolve. A placeholder left in a config is not a host that is
+ *   down, it is a host that has never existed, and treating it as a real value
+ *   turns a config mistake into a network error a long way from the cause.
+ *
+ *   localhost and 127.x — fine in development, and a production socket server
+ *   posting a match to itself is the same self-reference as the Render case.
+ *   Deliberately NOT rejected: a developer running both halves locally is the
+ *   normal case and rejecting it would break them. See the guard's caller.
+ */
+const UNUSABLE_HOST = /(^|\.)onrender\.com$|(^|\.)example\.(com|net|org)$|\.(example|invalid|test)$/i;
+
+/**
+ * Where the website lives, as seen from the socket server.
+ *
+ * Takes the environment rather than reading it, so it can be tested — this is
+ * the function that decides where a match handoff is POSTed, and getting it
+ * wrong takes down matchmaking for everybody while looking like a network
+ * blip.
+ *
+ * WEBSITE_ORIGIN is the explicit override and is trusted as given: somebody
+ * who sets it means it. SITE_URL is a general-purpose value that other things
+ * also use, so it is checked before being believed — a placeholder there fails
+ * at DNS with Node's "fetch failed", which names neither the host nor the
+ * setting. That cost an evening of matchmaking on 31 Aug 2026, when SITE_URL
+ * on the VPS was still "https://garden-retakes.example.com".
+ *
+ * The fallback is the public site, which is the only origin certain to serve
+ * /api/lobby/match.
+ */
+function resolveWebsiteOrigin(env = {}) {
+  const explicit = (env.WEBSITE_ORIGIN || "").trim();
+  if (explicit) return explicit.replace(/\/$/, "");
+
+  const site = (env.SITE_URL || "").trim().replace(/\/$/, "");
+
+  if (site) {
+    let host = "";
+    try {
+      host = new URL(site).host;
+    } catch {
+      // Not a URL at all. Unusable, and `new URL` throwing here used to take
+      // the whole handoff down rather than falling through to the default.
+      host = "";
+    }
+
+    if (host && !UNUSABLE_HOST.test(host)) return site;
+  }
+
+  return "https://www.retakes.fr";
+}
+
 /** How often the map-load gate re-reads `status`, and for how long it keeps trying. */
 const STATUS_POLL_MS = 3_000;
 const STATUS_POLL_LIMIT = 30;
@@ -1057,28 +1117,8 @@ function attachRetakesMatchmaking(
    * itself, and wiring that through the lobby is a separate piece of work. Said
    * plainly here rather than failing deeper in with something cryptic.
    */
-  /**
-   * Where the website lives, as seen from the socket server.
-   *
-   * NOT SITE_URL on its own. This process also serves Next when it can, so on
-   * Render SITE_URL is set to this service's own hostname — and Next is not
-   * ready there, so every route 404s. The hand-off was posting to itself and
-   * getting "HTTP 404" back, which is the whole of why a bot match formed,
-   * everybody accepted, and the lobby then abandoned it.
-   *
-   * WEBSITE_ORIGIN is the explicit override. Failing that, the public site,
-   * which is the only origin certain to serve /api/lobby/match.
-   */
   function websiteOrigin() {
-    const explicit = (process.env.WEBSITE_ORIGIN || "").trim();
-    if (explicit) return explicit.replace(/\/$/, "");
-
-    const site = (process.env.SITE_URL || "").trim().replace(/\/$/, "");
-
-    // A SITE_URL pointing at a Render host is this service talking to itself.
-    if (site && !/\.onrender\.com$/i.test(new URL(site).host)) return site;
-
-    return "https://www.retakes.fr";
+    return resolveWebsiteOrigin(process.env);
   }
 
   async function createTournamentMatch({ teamSize, teamA, teamB, botIds, names }) {
@@ -1090,11 +1130,29 @@ function attachRetakesMatchmaking(
       throw new Error(`a side is short (${teamA.length}v${teamB.length}), expected ${teamSize}v${teamSize}`);
     }
 
-    const res = await fetch(`${base}/api/lobby/match`, {
-      method: "POST",
-      headers: { "content-type": "application/json" },
-      body: JSON.stringify({ apiKey, teamSize, teamA, teamB, botIds, names }),
-    });
+    /**
+     * The URL goes in the message on the NETWORK failure too, not only on a
+     * bad status.
+     *
+     * The check below already does this for a response — "the interesting part
+     * is not the status, it is which host answered with it". A connection that
+     * never happens throws before reaching it, and Node's undici says exactly
+     * "fetch failed": no host, no cause, no setting to look at. So the one
+     * failure that is always a configuration mistake was the one that named
+     * nothing, and matchmaking went down for an evening pointing at a DNS
+     * error nobody could see.
+     */
+    let res;
+    try {
+      res = await fetch(`${base}/api/lobby/match`, {
+        method: "POST",
+        headers: { "content-type": "application/json" },
+        body: JSON.stringify({ apiKey, teamSize, teamA, teamB, botIds, names }),
+      });
+    } catch (err) {
+      const cause = err?.cause?.code || err?.cause?.message || err?.message || String(err);
+      throw new Error(`cannot reach the website at ${base} (${cause}) — check SITE_URL or WEBSITE_ORIGIN on the socket server`);
+    }
 
     const data = await res.json().catch(() => ({}));
     if (!res.ok || !data.ok) {
@@ -1895,6 +1953,10 @@ module.exports = {
   sanitiseExcluded,
   allowedMaps,
   requiredPoolSize,
+  // Where a match handoff is POSTed. Pure, takes its environment, and the one
+  // in this list whose failure is not subtle: get it wrong and every match
+  // formed is abandoned the moment everybody accepts.
+  resolveWebsiteOrigin,
   effectiveElo,
   acceptableGap,
   MAX_EXCLUDED_MAPS,
