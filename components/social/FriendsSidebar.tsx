@@ -126,31 +126,11 @@ export default function FriendsSidebar() {
   }, [isOpen]);
 
 
-  /**
-   * Publish the header's real height as --social-top.
-   *
-   * The rail and the panel both run from directly under the header to the
-   * bottom of the viewport, so they need that number. globals.css already
-   * carries a warning about the last attempt at this: a hard-coded 72px that
-   * "broke whenever the header wrapped". Measuring is the fix — a wrapped
-   * header on a narrow screen reports its wrapped height, and the rail follows.
-   */
-  useEffect(() => {
-    const header = document.querySelector<HTMLElement>(".site-header");
-    if (!header) return;
+  /* The --social-top measurement is gone with the header it measured.
+     There is no bar across the top any more — the rails run the full height of
+     the viewport — so the variable is 0 and nothing has to observe anything to
+     know that. */
 
-    const publish = () => {
-      document.documentElement.style.setProperty(
-        "--social-top",
-        `${Math.round(header.getBoundingClientRect().height)}px`,
-      );
-    };
-
-    publish();
-    const observer = new ResizeObserver(publish);
-    observer.observe(header);
-    return () => observer.disconnect();
-  }, []);
   /**
    * Who is in a game right now, from the same feed the left sidebar uses.
    *
@@ -166,7 +146,23 @@ export default function FriendsSidebar() {
   const [addBusy, setAddBusy] = useState(false);
   // MESSAGES went with the Chat tab: those conversations are in the friends
   // list now, under their own headings.
-  const [activeTab, setActiveTab] = useState<"TOURNAMENTS" | "FRIENDS" | "MAIL">("FRIENDS");
+  type Section = "TOURNAMENTS" | "FRIENDS" | "MAIL";
+
+  /**
+   * Which section the drawer is showing, or null for closed.
+   *
+   * Null is the resting state. The rail is always there; the 300px of panel is
+   * not, because a friends list is something you go and look at rather than
+   * something that should take a third of every page you visit.
+   *
+   * Pressing the section you are already in closes it — the same button, the
+   * same place, both ways — so there is no separate close control to find.
+   */
+  const [activeTab, setActiveTab] = useState<Section | null>(null);
+
+  const openSection = useCallback((next: Section) => {
+    setActiveTab((cur) => (cur === next ? null : next));
+  }, []);
 
   /**
    * Every conversation that is open, oldest first.
@@ -622,21 +618,19 @@ export default function FriendsSidebar() {
           only one of them is rendered at a time. There is nothing behind
           anything, and the collapsed state is the same dock, narrower. */}
       <div className={`social-dock ${isOpen ? "open" : ""}`}>
-      {/* The navigation, down the left.
+      {/* The rail. First in the DOM, last on screen.
 
-          It used to be a horizontal strip across the top of the panel, which
-          is what made the panel look like it still had a header — and this
-          column held a second copy of the friends list, beside the friends
-          list. So the panel was a list next to the same list, under a bar.
+          It is a nav, so it belongs first in the reading order; it is the edge
+          of the screen, so it belongs last visually. Flex `order` in social.css
+          gives both — moving the markup would have traded one for the other.
 
-          The icons are the column now. Everything to the right of them is
-          whichever section they select, which is the shape this was asked
-          for and is the reason there is room for it to be concise. */}
+          It used to sit INBOARD of the panel, which is what made it look like
+          a navbar parked next to the panel rather than the edge of it. */}
       <nav className="friends-rail" ref={railRef} aria-label={t("social.header.nav")}>
         <button
           className={`friends-nav-btn ${activeTab === "TOURNAMENTS" ? "active" : ""}`}
           aria-current={activeTab === "TOURNAMENTS"}
-          onClick={() => setActiveTab("TOURNAMENTS")}
+          onClick={() => openSection("TOURNAMENTS")}
           title={t("social.tournaments")}
         >
           <Trophy size={18} />
@@ -645,7 +639,7 @@ export default function FriendsSidebar() {
         <button
           className={`friends-nav-btn ${activeTab === "FRIENDS" ? "active" : ""}`}
           aria-current={activeTab === "FRIENDS"}
-          onClick={() => setActiveTab("FRIENDS")}
+          onClick={() => openSection("FRIENDS")}
           title={t("social.friends.tabFriends")}
         >
           <Users size={18} />
@@ -655,7 +649,7 @@ export default function FriendsSidebar() {
         <button
           className={`friends-nav-btn ${activeTab === "MAIL" ? "active" : ""}`}
           aria-current={activeTab === "MAIL"}
-          onClick={() => setActiveTab("MAIL")}
+          onClick={() => openSection("MAIL")}
           title={t("social.friends.tabInvites")}
         >
           <Mail size={18} />
@@ -730,6 +724,7 @@ export default function FriendsSidebar() {
       {/* The panel carries the hover surface, not the rail: .friends-rail.hidden
           sets pointer-events: none, so once the panel is open the rail cannot
           receive a mouseleave and the pair would latch open forever. */}
+      {activeTab !== null && (
       <div className="friends-sidebar" ref={panelRef}>
 
         {activeTab === "TOURNAMENTS" && (
@@ -948,6 +943,7 @@ export default function FriendsSidebar() {
           </div>
         )}
       </div>
+      )}
       </div>
     </>
   );

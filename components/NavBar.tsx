@@ -9,6 +9,26 @@ import AvatarImage from "./AvatarImage";
 import AvatarMenu from "./AvatarMenu";
 import NotificationCenter from "@/components/NotificationCenter";
 import { useI18n } from "@/components/I18nProvider";
+import {
+  BarChart3,
+  Crosshair,
+  Flame,
+  GitCompare,
+  HeartHandshake,
+  LineChart,
+  Map,
+  MessagesSquare,
+  Palette,
+  Radio,
+  Rss,
+  Shield,
+  Swords,
+  Terminal,
+  Trophy,
+  MoreHorizontal,
+  LogIn,
+  type LucideIcon,
+} from "lucide-react";
 import GlobalMatchmaking from "./retakes/GlobalMatchmaking";
 
 type NavLink = {
@@ -21,6 +41,8 @@ type NavLink = {
   adminOnly?: boolean;
   /** Shown inline in the bar; everything else falls into the More menu. */
   primary?: boolean;
+  /** The rail is 64px wide, so every primary link needs a glyph. */
+  icon?: LucideIcon;
 };
 
 // /players, /pros and /teams are deliberately absent: the ladder, stats tables
@@ -29,35 +51,35 @@ type NavLink = {
 // thin enough that surfacing them cost more attention than they returned. The
 // routes still exist and still resolve.
 const CS2_LINKS: NavLink[] = [
-  { href: "/insights", label: "Insights", key: "nav.insights", primary: true },
-  { href: "/stats", label: "Stats", key: "nav.stats", primary: true },
+  { href: "/insights", label: "Insights", key: "nav.insights", primary: true, icon: LineChart },
+  { href: "/stats", label: "Stats", key: "nav.stats", primary: true, icon: BarChart3 },
   // Inventory and Admin are not here any more: both are account destinations
   // rather than places on the site, so they live in the avatar menu with
   // Profile and Settings. See components/AvatarMenu.tsx.
   // The old homepage. Moved off "/" when the tournament system took that slot,
   // and linked here so it is not orphaned at a URL nobody would guess.
-  { href: "/community", label: "Community", key: "nav.community", primary: true },
-  { href: "/feed", label: "Feed", key: "nav.feed", primary: true },
-  { href: "/utility", label: "Utility", key: "nav.utility", primary: true },
-  { href: "/live", label: "Live", key: "nav.live", isLive: true, primary: true },
-  { href: "/lobby", label: "Matchmaking", key: "nav.lobby", primary: true },
+  { href: "/community", label: "Community", key: "nav.community", primary: true, icon: MessagesSquare },
+  { href: "/feed", label: "Feed", key: "nav.feed", primary: true, icon: Rss },
+  { href: "/utility", label: "Utility", key: "nav.utility", primary: true, icon: Flame },
+  { href: "/live", label: "Live", key: "nav.live", isLive: true, primary: true, icon: Radio },
+  { href: "/lobby", label: "Matchmaking", key: "nav.lobby", primary: true, icon: Swords },
   // Tournaments and Matchmaking are both in the demo allowlist further down. A
   // demo is shown to somebody being pitched an event, and those two are the
   // event and the way into it. (This used to say "deliberately absent from
   // hiddenInDemo", which stopped being true when the blocklist became an
   // allowlist — a comment naming a thing that no longer exists is worse than
   // none, because it is read as current.)
-  { href: "/tournaments", label: "Tournaments", key: "nav.tournaments", primary: true },
+  { href: "/tournaments", label: "Tournaments", key: "nav.tournaments", primary: true, icon: Trophy },
   // Standing teams, and the Blitz ladder under them. Primary because a team is
   // the unit a tournament is entered as now, so "where is my team" is a
   // question with an answer worth reaching in one click.
-  { href: "/teams", label: "Teams", key: "nav.teams", primary: true },
-  { href: "/safe-place", label: "Safe Place", key: "nav.safe_place", primary: true },
-  { href: "/compare", label: "Compare", key: "nav.compare" },
-  { href: "/duels", label: "Duels", key: "nav.duels" },
-  { href: "/request-skin", label: "Request skin", key: "nav.requestSkin" },
-  { href: "/commands", label: "Commands", key: "nav.commands" },
-  { href: "/roadmap", label: "Roadmap", key: "nav.roadmap" },
+  { href: "/teams", label: "Teams", key: "nav.teams", primary: true, icon: Shield },
+  { href: "/safe-place", label: "Safe Place", key: "nav.safe_place", primary: true, icon: HeartHandshake },
+  { href: "/compare", label: "Compare", key: "nav.compare", icon: GitCompare },
+  { href: "/duels", label: "Duels", key: "nav.duels", icon: Crosshair },
+  { href: "/request-skin", label: "Request skin", key: "nav.requestSkin", icon: Palette },
+  { href: "/commands", label: "Commands", key: "nav.commands", icon: Terminal },
+  { href: "/roadmap", label: "Roadmap", key: "nav.roadmap", icon: Map },
 ];
 
 
@@ -244,161 +266,93 @@ export default function NavBar({
   const primary = links.filter((l) => l.primary);
   const overflow = links.filter((l) => !l.primary);
 
-  const linkStyle = (active: boolean): React.CSSProperties => ({
-    fontSize: 13,
-    letterSpacing: "0.06em",
-    textTransform: "uppercase",
-    textDecoration: "none",
-    color: active ? "var(--color-accent)" : "var(--color-text)",
-    whiteSpace: "nowrap",
-  });
-
   return (
     <>
-    <header
-      ref={headerRef}
-      style={{
-        display: "flex",
-        alignItems: "center",
-        justifyContent: "space-between",
-        gap: "clamp(12px, 2vw, 28px)",
-        padding: "22px var(--page-pad)",
-        borderBottom: "2px solid var(--color-divider)",
-        position: "sticky",
-        top: 0,
-        background: "var(--color-bg)",
-        zIndex: 30,
-      }}
-    >
-      {/* Wordmark. At rest it reads RETAKES; the accent E stretch it out to
-          REEEEETAKES on hover, one letter at a time. */}
-      <Link href={getHref("/")} className="wordmark" aria-label={t("auto.navbar.reeeeetakes")}>
-        {t("auto.navbar.re")}
-                      <span className="wordmark-ee" aria-hidden>
-          {[0, 1, 2, 3].map((i) => (
-            <span
-              key={i}
-              className="wordmark-e"
-              style={{ ["--e-delay" as string]: `${i * 55}ms` }}
-            >
-              E
-            </span>
-          ))}
-        </span>
-        {t("auto.navbar.takes")}
-                    </Link>
+    {/* The site's navigation, down the left edge.
 
-      <nav style={{ display: "flex", alignItems: "center", gap: "clamp(14px, 2.4vw, 36px)" }}>
+        It was a sticky bar across the top, and the top of the page is the one
+        strip every piece of content also wants. A column costs 64px of width
+        on a screen that has width to spare and gives the whole height back —
+        and it puts the site nav and the social nav on opposite edges, framing
+        the content rather than pushing it down.
+
+        Icons with tooltips, because a 64px column has room for a glyph and not
+        a word. Every one of them is in the phone drawer as text, so nothing is
+        reachable only by recognising a picture. */}
+    <nav
+      ref={headerRef as React.RefObject<HTMLElement>}
+      className="site-rail"
+      aria-label={t("auto.navbar.reeeeetakes")}
+    >
+      {/* The mark. Short here — the full REEEETAKES stretch needs a line of
+          text to stretch along, and this column has none. */}
+      <Link href={getHref("/")} className="site-rail-mark" aria-label={t("auto.navbar.reeeeetakes")}>
+        R
+      </Link>
+
+      <div className="site-rail-links">
         {primary.map((l) => {
           const active = l.href === "/" ? pathname === "/" : pathname.startsWith(l.href);
           const live = l.isLive && isLiveServer;
+          const Icon = l.icon;
+
           return (
             <Link
               key={l.href}
               href={getHref(l.href)}
-              className="link-underline"
-              style={{
-                ...linkStyle(active),
-                ...(live ? { color: "var(--color-accent-700)", display: "flex", alignItems: "center", gap: 6 } : null),
-              }}
+              className={`site-rail-btn ${active ? "active" : ""}`}
+              title={tr(l)}
+              aria-label={tr(l)}
+              aria-current={active ? "page" : undefined}
             >
-              {live && <span className="live-dot" />}
-              {tr(l)}
+              {Icon ? <Icon size={18} /> : <span className="site-rail-initial">{tr(l).slice(0, 1)}</span>}
+              {live && <span className="live-dot site-rail-live" aria-hidden />}
             </Link>
           );
         })}
 
         {overflow.length > 0 && (
-          <div ref={moreRef} style={{ position: "relative" }}>
+          <div ref={moreRef} className="site-rail-more">
             <button
               type="button"
               onClick={() => setMenuOpen((v) => !v)}
               aria-expanded={menuOpen}
               aria-haspopup="menu"
-              style={{
-                ...linkStyle(false),
-                background: "none",
-                border: 0,
-                cursor: "pointer",
-                font: "inherit",
-                fontSize: 13,
-                letterSpacing: "0.06em",
-                textTransform: "uppercase",
-                display: "flex",
-                alignItems: "center",
-                gap: 6,
-                padding: 0,
-              }}
+              className={`site-rail-btn ${menuOpen ? "active" : ""}`}
+              title={t("nav.more")}
+              aria-label={t("nav.more")}
             >
-              {t("nav.more")}
-              <motion.svg
-                viewBox="0 0 24 24"
-                width="12"
-                height="12"
-                fill="none"
-                stroke="currentColor"
-                strokeWidth="3"
-                strokeLinecap="round"
-                strokeLinejoin="round"
-                animate={{ rotate: menuOpen ? 180 : 0 }}
-                transition={{ duration: 0.2 }}
-              >
-                <path d="M6 9l6 6 6-6" />
-              </motion.svg>
+              <MoreHorizontal size={18} />
             </button>
 
             <AnimatePresence>
               {menuOpen && (
                 <motion.div
                   role="menu"
-                  // Grows out of the button it belongs to rather than sliding in
-                  // from nowhere: the corner it scales from is the corner the
-                  // button is in.
-                  initial={{ opacity: 0, scaleY: 0.86, y: -8 }}
-                  animate={{ opacity: 1, scaleY: 1, y: 0 }}
-                  exit={{ opacity: 0, scaleY: 0.9, y: -6, transition: { duration: 0.12 } }}
-                  transition={{ duration: 0.24, ease: [0.16, 1, 0.3, 1] }}
-                  style={{
-                    transformOrigin: "top right",
-                    position: "absolute",
-                    top: "calc(100% + 14px)",
-                    right: 0,
-                    display: "flex",
-                    flexDirection: "column",
-                    minWidth: 200,
-                    padding: "var(--space-2)",
-                    background: "var(--color-surface)",
-                    border: "1px solid var(--color-divider)",
-                    boxShadow: "var(--shadow-lg)",
-                    zIndex: 40,
-                  }}
+                  // Out of the button's own edge, which is now the right one:
+                  // the rail is against the left of the screen and there is
+                  // nowhere left to grow into.
+                  initial={{ opacity: 0, x: -8 }}
+                  animate={{ opacity: 1, x: 0 }}
+                  exit={{ opacity: 0, x: -6, transition: { duration: 0.12 } }}
+                  transition={{ duration: 0.2, ease: [0.16, 1, 0.3, 1] }}
+                  className="site-rail-menu"
                 >
-                  {overflow.map((l, i) => {
+                  {overflow.map((l) => {
                     const active = pathname.startsWith(l.href);
+                    const Icon = l.icon;
                     return (
-                      <motion.div
-                        key={l.href}
-                        initial={{ opacity: 0, x: 8 }}
-                        animate={{ opacity: 1, x: 0 }}
-                        transition={{ duration: 0.2, delay: 0.03 + i * 0.022, ease: [0.16, 1, 0.3, 1] }}
-                        style={{ display: "flex" }}
-                      >
                       <Link
+                        key={l.href}
                         href={getHref(l.href)}
                         onClick={() => setMenuOpen(false)}
-                        className="nav-more-item"
+                        className="site-rail-menu-item"
                         data-section={l.isSection ? "true" : undefined}
-                        style={{
-                          flex: 1,
-                          padding: "9px 12px",
-                          fontSize: 13,
-                          textDecoration: "none",
-                          color: active ? "var(--color-accent)" : "var(--color-text)",
-                        }}
+                        style={{ color: active ? "var(--color-accent)" : undefined }}
                       >
-                        {tr(l)}
+                        {Icon && <Icon size={14} />}
+                        <span>{tr(l)}</span>
                       </Link>
-                      </motion.div>
                     );
                   })}
                 </motion.div>
@@ -406,28 +360,14 @@ export default function NavBar({
             </AnimatePresence>
           </div>
         )}
+      </div>
 
-        <button
-          type="button"
-          className="nav-burger"
-          aria-expanded={drawerOpen}
-          aria-controls="nav-drawer"
-          aria-label={drawerOpen ? "Close menu" : "Open menu"}
-          onClick={() => setDrawerOpen((v) => !v)}
-        >
-          <span className={`nav-burger-box ${drawerOpen ? "open" : ""}`} aria-hidden>
-            <span /><span /><span />
-          </span>
-        </button>
-
+      {/* Account, at the bottom. The two things that are about YOU rather than
+          about the site, kept away from the places you go. */}
+      <div className="site-rail-foot">
         <NotificationCenter steamId={session.steamId} />
 
         {session.authenticated ? (
-          /* The log-out button is gone from the header. It sat permanently
-             beside the avatar, which gave the single most destructive action on
-             the page the most prominent slot in it. It now lives at the bottom
-             of the account menu, where it is one hover away rather than one
-             stray click away. */
           <div className="nav-identity">
             <AvatarMenu
               steamId={session.steamId}
@@ -438,99 +378,99 @@ export default function NavBar({
             />
           </div>
         ) : (
-          // The CS2 side signs in with Steam and comes back where you were.
-          // This button pointed at /games/login regardless of which side of the
-          // site you were on, so it crossed to the games subdomain and landed
-          // on its default page instead of the one you left.
           <a
-            className="btn btn-secondary nav-identity"
+            className="site-rail-btn"
+            title={t("nav.signIn")}
+            aria-label={t("nav.signIn")}
             href={
               isGamesSection
                 ? `/games/login?returnTo=${encodeURIComponent(pathname)}`
                 : `/api/auth/steam/login?returnTo=${encodeURIComponent(pathname)}`
             }
-            style={{ fontSize: 12 }}
           >
-            {t("nav.signIn")}
+            <LogIn size={18} />
           </a>
         )}
+      </div>
+    </nav>
 
-        {inGame && (
-          <button
-            type="button"
-            onClick={() => setHidden(true)}
-            title={t("auto.navbar.hide_header_for_a_distraction")}
-            className="btn btn-icon btn-secondary"
+    {/* The phone's way in. The rail is display:none below 760px — a column
+        down the side of a phone is width a phone does not have — and this
+        opens the same drawer the burger in the old header opened. */}
+    <button
+      type="button"
+      className="nav-burger-fab"
+      aria-expanded={drawerOpen}
+      aria-controls="nav-drawer"
+      aria-label={drawerOpen ? "Close menu" : "Open menu"}
+      onClick={() => setDrawerOpen((v) => !v)}
+    >
+      <span className={`nav-burger-box ${drawerOpen ? "open" : ""}`} aria-hidden>
+        <span /><span /><span />
+      </span>
+    </button>
+
+    {/* The phone menu. Every link is in here — primary and overflow both —
+        because a burger that only holds half the site is worse than none:
+        you cannot tell which half you are missing. */}
+    {drawerOpen && (
+      <div className="nav-drawer-scrim" onClick={() => setDrawerOpen(false)} aria-hidden />
+    )}
+    <div id="nav-drawer" className={`nav-drawer ${drawerOpen ? "open" : ""}`} role="dialog" aria-modal="true" aria-label={t("nav.more")}>
+      <div className="nav-drawer-inner">
+        {session.authenticated && session.steamId && (
+          <Link
+            href={getHref("/profile")}
+            className="nav-drawer-me"
+            onClick={() => setDrawerOpen(false)}
           >
-            <svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" strokeWidth="2.4" strokeLinecap="round" strokeLinejoin="round">
-              <path d="M6 15l6-6 6 6" />
-            </svg>
-          </button>
+            <AvatarImage
+              steamId={session.steamId}
+              src={session.avatar}
+              alt=""
+              className="avatar avatar-lg"
+            />
+            <span className="nav-drawer-me-text">
+              <span className="nav-drawer-me-name">{session.name ?? t("nav.profile")}</span>
+              <span className="nav-drawer-me-sub">{t("nav.profile")}</span>
+            </span>
+          </Link>
         )}
-      </nav>
 
-      {/* The phone menu. Every link is in here — primary and overflow both —
-          because a burger that only holds half the site is worse than none:
-          you cannot tell which half you are missing. */}
-      {drawerOpen && (
-        <div className="nav-drawer-scrim" onClick={() => setDrawerOpen(false)} aria-hidden />
-      )}
-      <div id="nav-drawer" className={`nav-drawer ${drawerOpen ? "open" : ""}`} role="dialog" aria-modal="true" aria-label={t("nav.more")}>
-        <div className="nav-drawer-inner">
-          {session.authenticated && session.steamId && (
+        {links.map((l) => {
+          const active = l.href === "/" ? pathname === "/" : pathname.startsWith(l.href);
+          return (
             <Link
-              href={getHref("/profile")}
-              className="nav-drawer-me"
+              key={l.href}
+              href={getHref(l.href)}
+              className={`nav-drawer-item ${active ? "active" : ""}`}
+              data-section={l.isSection ? "true" : undefined}
               onClick={() => setDrawerOpen(false)}
             >
-              <AvatarImage
-                steamId={session.steamId}
-                src={session.avatar}
-                alt=""
-                className="avatar avatar-lg"
-              />
-              <span className="nav-drawer-me-text">
-                <span className="nav-drawer-me-name">{session.name ?? t("nav.profile")}</span>
-                <span className="nav-drawer-me-sub">{t("nav.profile")}</span>
-              </span>
+              {tr(l)}
+              {l.isLive && isLiveServer && <span className="live-dot" aria-hidden />}
             </Link>
+          );
+        })}
+
+        <div className="nav-drawer-foot">
+          {session.authenticated ? (
+            <a className="btn btn-secondary" href="/api/auth/logout">{t("nav.signOut")}</a>
+          ) : (
+            <a
+              className="btn btn-primary"
+              href={
+                isGamesSection
+                  ? `/games/login?returnTo=${encodeURIComponent(pathname)}`
+                  : `/api/auth/steam/login?returnTo=${encodeURIComponent(pathname)}`
+              }
+            >
+              {t("nav.signIn")}
+            </a>
           )}
-
-          {links.map((l) => {
-            const active = l.href === "/" ? pathname === "/" : pathname.startsWith(l.href);
-            return (
-              <Link
-                key={l.href}
-                href={getHref(l.href)}
-                className={`nav-drawer-item ${active ? "active" : ""}`}
-                data-section={l.isSection ? "true" : undefined}
-                onClick={() => setDrawerOpen(false)}
-              >
-                {tr(l)}
-                {l.isLive && isLiveServer && <span className="live-dot" aria-hidden />}
-              </Link>
-            );
-          })}
-
-          <div className="nav-drawer-foot">
-            {session.authenticated ? (
-              <a className="btn btn-secondary" href="/api/auth/logout">{t("nav.signOut")}</a>
-            ) : (
-              <a
-                className="btn btn-primary"
-                href={
-                  isGamesSection
-                    ? `/games/login?returnTo=${encodeURIComponent(pathname)}`
-                    : `/api/auth/steam/login?returnTo=${encodeURIComponent(pathname)}`
-                }
-              >
-                {t("nav.signIn")}
-              </a>
-            )}
-          </div>
         </div>
       </div>
-    </header>
+    </div>
     <GlobalMatchmaking avatarPlayers={avatarPlayers} />
     </>
   );

@@ -11551,3 +11551,191 @@ button.btn {
   border-radius: 0;
 }
 
+
+/* ============================================================
+   The two rails
+   ============================================================
+
+   The site's navigation on the left, the social panel on the right, and no
+   bar across the top. The top of a page is the one strip every piece of
+   content also wants; a column costs 64px of width on a screen that has width
+   to spare and hands the whole height back.
+
+   Both are position:fixed rather than flex children of <body>. The body is a
+   flex COLUMN with half a dozen other children — the background canvas, the
+   route loader, the matchmaking overlay, the phone drawer — so making it a row
+   to seat two rails would have re-parented all of them. The wrapper is padded
+   by the rails' widths instead, which is one declaration and cannot surprise
+   anything.
+*/
+
+:root {
+  --site-rail-w: 64px;
+  /* Darker than the page, both of them. A rail is chrome: it should sit behind
+     the content in the eye's order, and on a dark ground the way to do that is
+     to go darker still rather than lighter. */
+  --rail-bg: color-mix(in srgb, var(--color-bg) 62%, #000);
+  --rail-line: color-mix(in srgb, var(--color-text) 10%, transparent);
+}
+
+.site-rail {
+  position: fixed;
+  left: 0;
+  top: 0;
+  bottom: 0;
+  width: var(--site-rail-w);
+  z-index: 1002;
+
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 4px;
+  padding: 10px 0;
+
+  background: var(--rail-bg);
+  border-right: 1px solid var(--rail-line);
+}
+
+/* The mark. One letter, because the full REEEETAKES stretch needs a line of
+   text to stretch along and this column has none. */
+.site-rail-mark {
+  display: grid;
+  place-items: center;
+  width: 40px;
+  height: 40px;
+  margin-bottom: 6px;
+  color: var(--color-accent);
+  font-family: var(--font-heading);
+  font-size: 22px;
+  font-weight: 900;
+  text-decoration: none;
+  letter-spacing: -0.02em;
+}
+
+.site-rail-links {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 2px;
+  /* The one part that may scroll: eleven destinations on a short laptop. */
+  overflow-y: auto;
+  overflow-x: hidden;
+  scrollbar-width: none;
+  min-height: 0;
+}
+.site-rail-links::-webkit-scrollbar { display: none; }
+
+.site-rail-btn {
+  position: relative;
+  display: grid;
+  place-items: center;
+  width: 40px;
+  height: 40px;
+  border: 0;
+  border-left: 2px solid transparent;
+  background: none;
+  color: var(--muted);
+  cursor: pointer;
+  text-decoration: none;
+  transition: color 0.15s ease, background 0.15s ease;
+}
+
+.site-rail-btn:hover {
+  color: var(--color-text);
+  background: color-mix(in srgb, var(--color-text) 8%, transparent);
+}
+
+/* Marked on the left edge — the edge against the screen — so the flag reads as
+   pointing at the content the link opens. */
+.site-rail-btn.active {
+  color: var(--color-accent);
+  border-left-color: var(--color-accent);
+  background: color-mix(in srgb, var(--color-accent) 12%, transparent);
+}
+
+.site-rail-live {
+  position: absolute;
+  top: 6px;
+  right: 6px;
+}
+
+.site-rail-more { position: relative; }
+
+/* Out of the rail's right edge. The old one grew down from a bar and had the
+   width of a page to fall into; this one has 64px of rail to its left and the
+   whole page to its right. */
+.site-rail-menu {
+  position: absolute;
+  left: calc(100% + 8px);
+  top: 0;
+  transform-origin: left top;
+  display: flex;
+  flex-direction: column;
+  min-width: 190px;
+  padding: var(--space-2);
+  background: var(--color-surface);
+  border: 1px solid var(--color-divider);
+  box-shadow: var(--shadow-lg);
+  z-index: 40;
+}
+
+.site-rail-menu-item {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 8px 10px;
+  font-size: 13px;
+  color: var(--color-text);
+  text-decoration: none;
+}
+
+.site-rail-menu-item:hover {
+  background: color-mix(in srgb, var(--color-text) 8%, transparent);
+}
+
+/* Pushed to the bottom: the two controls that are about YOU rather than about
+   the site, kept away from the places you go. */
+.site-rail-foot {
+  margin-top: auto;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 6px;
+  padding-top: 8px;
+}
+
+/* The content sits between the rails. */
+.layout-wrapper {
+  padding-left: var(--site-rail-w);
+  padding-right: var(--social-rail-w, 0px);
+}
+
+/* Below this the rails are width a phone does not have. */
+@media (max-width: 760px) {
+  .site-rail { display: none; }
+
+  .layout-wrapper {
+    padding-left: 0;
+    padding-right: 0;
+  }
+}
+
+/* The phone's way into the same drawer the old burger opened. */
+.nav-burger-fab {
+  position: fixed;
+  left: 12px;
+  bottom: 12px;
+  z-index: 1003;
+  display: none;
+  place-items: center;
+  width: 44px;
+  height: 44px;
+  border: 1px solid var(--color-divider);
+  background: var(--rail-bg);
+  color: var(--color-text);
+  cursor: pointer;
+}
+
+@media (max-width: 760px) {
+  .nav-burger-fab { display: grid; }
+}

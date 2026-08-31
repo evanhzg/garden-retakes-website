@@ -187,7 +187,7 @@ export default function NotificationCenter({ isAdmin, steamId }: { isAdmin?: boo
         className={`notif-bell ${unread > 0 ? "has-unread" : ""}`}
         onClick={toggle}
         aria-expanded={open}
-        aria-label={unread > 0 ? t('notifications.unreadCount', { unread }) : t('notif.title')}
+        aria-label={unread > 0 ? t('notifications.unreadCount', { n: unread }) : t('notif.title')}
       >
         {/* A drawn bell rather than an emoji: the emoji renders differently on
             every platform and cannot take the accent colour when unread. */}

@@ -23,7 +23,8 @@
    the same dock, narrower. */
 .social-dock {
   position: fixed;
-  top: var(--social-top, 64px);
+  /* Full height. There is no header above it any more. */
+  top: 0;
   right: 0;
   /* Pinned to both edges rather than given a computed height. dvh plus a
      measured header is two numbers that can disagree — and when they did, the
@@ -968,7 +969,7 @@ html[data-motion="off"] .dm-bubble.typing i { animation: none; }
   min-width: 200px;
   max-width: 340px;
   height: 440px;
-  max-height: calc(100dvh - var(--social-top, 64px) - 16px);
+  max-height: calc(100dvh - 16px);
   display: flex;
   flex-direction: column;
   border: 1px solid var(--color-divider);
@@ -1505,4 +1506,68 @@ html[data-motion="off"] .dm-bubble.typing i { animation: none; }
   justify-content: flex-start;
   padding: 8px 0;
   gap: 2px;
+}
+
+/* ---------- The right rail, and the drawer that comes out of it ----------
+ *
+ * The rail is the edge of the screen and the panel arrives to its left. It was
+ * the other way round — panel flush against the viewport, rail inboard of it —
+ * which is what made the rail read as a navbar parked next to the panel rather
+ * than as the edge.
+ *
+ * `order` rather than moving the markup: the rail is a <nav> and belongs first
+ * in the reading order, and it belongs last on screen. Reordering the JSX would
+ * have traded one for the other.
+ */
+.friends-rail { order: 2; }
+.friends-sidebar { order: 1; }
+
+/* The dock is only as wide as what is in it. With the drawer shut that is the
+   rail, so the page gets its 300px back — which is the point of a drawer. */
+.social-dock {
+  width: auto;
+  top: 0;
+}
+
+.friends-rail {
+  background: var(--rail-bg);
+  border-left: 1px solid var(--rail-line);
+  border-right: 0;
+}
+
+.friends-sidebar {
+  /* Darker than the page, like the rail it comes out of, and no longer
+     translucent: a blurred panel over a dark page reads as fog, and the blur
+     cost a compositor pass on every scroll behind it. */
+  background: var(--rail-bg);
+  backdrop-filter: none;
+  -webkit-backdrop-filter: none;
+  border-left: 1px solid var(--rail-line);
+  border-right: 1px solid var(--rail-line);
+  box-shadow: -18px 0 44px rgba(0, 0, 0, 0.5);
+
+  /* Out from behind the rail. Transform only — composited, and the reason this
+     no longer judders. */
+  animation: social-slide 0.22s cubic-bezier(0.22, 1, 0.36, 1);
+}
+
+@keyframes social-slide {
+  from { transform: translateX(100%); }
+  to { transform: none; }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .friends-sidebar { animation: none; }
+}
+
+/* The page reserves the rail, not the drawer: the drawer is over the content,
+   the way a drawer is. */
+:root { --social-rail-w: 64px; }
+
+/* Chat docks clear the rail only. They used to clear rail + panel, which was
+   a permanent 364px gap for a panel that is now usually not there. */
+@media (min-width: 761px) {
+  .dm-docks {
+    right: calc(var(--social-rail-w) + 8px);
+  }
 }
