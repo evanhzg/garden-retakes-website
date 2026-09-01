@@ -218,3 +218,26 @@
   user-select: none;
   -webkit-user-select: none;
 }
+
+/* The face in the name column.
+ *
+ * The scoreboard is the one table people screenshot, and it named ten players
+ * with nothing to tell them apart at a glance. 22px keeps the row height the
+ * rest of the table is built around — the numbers beside it are what set the
+ * rhythm, and a taller row would stretch a table that already scrolls
+ * sideways on a phone. */
+.sb-who {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  min-width: 0;
+}
+
+.sb-face {
+  width: 22px;
+  height: 22px;
+  border-radius: 50%;
+  object-fit: cover;
+  flex: 0 0 auto;
+  background: color-mix(in srgb, var(--color-text) 10%, transparent);
+}

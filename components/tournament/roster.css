@@ -323,3 +323,21 @@
     min-height: 44px;
   }
 }
+
+/* Same face, smaller: a roster row also carries a rename field and a save
+   button, so the picture is the smallest thing that still reads as a person. */
+.rs-profile {
+  display: inline-flex;
+  align-items: center;
+  gap: 7px;
+  min-width: 0;
+}
+
+.rs-face {
+  width: 20px;
+  height: 20px;
+  border-radius: 50%;
+  object-fit: cover;
+  flex: 0 0 auto;
+  background: color-mix(in srgb, var(--color-text) 10%, transparent);
+}

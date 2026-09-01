@@ -3,6 +3,7 @@
 import { useState, useEffect } from "react";
 
 import BotAvatar, { isBotSteamId } from "./BotAvatar";
+import { cachedAvatar, requestAvatar } from "./avatarBatch";
 
 const DEFAULT_AVATAR = "/default_pp.png";
 
@@ -31,7 +32,10 @@ export default function AvatarImage({
   style?: React.CSSProperties;
 }) {
   const idStr = steamId.toString();
-  const [imgSrc, setImgSrc] = useState<string>(src || DEFAULT_AVATAR);
+  // A face this page has already resolved is used immediately rather than
+  // starting at the placeholder and swapping — that swap is visible on every
+  // row of a list that scrolls back into view.
+  const [imgSrc, setImgSrc] = useState<string>(src || cachedAvatar(idStr) || DEFAULT_AVATAR);
 
   /**
    * A bot gets a bot's face, everywhere.
@@ -57,16 +61,23 @@ export default function AvatarImage({
       setImgSrc(src);
       return;
     }
-    // No resolved URL from the server — look it up. Aborted on unmount so a
-    // fast list scroll does not set state on unmounted components.
-    const ac = new AbortController();
-    fetch(`/api/avatars?ids=${encodeURIComponent(idStr)}`, { signal: ac.signal })
-      .then((r) => (r.ok ? r.json() : null))
-      .then((m) => {
-        if (m?.[idStr]) setImgSrc(m[idStr]);
-      })
-      .catch(() => {});
-    return () => ac.abort();
+    /* No resolved URL from the server — look it up.
+     *
+     * Through the batcher rather than directly: this component is one row of a
+     * list, and it used to issue its own request, so a ten-player scoreboard
+     * was ten calls to /api/avatars for an endpoint that takes two hundred ids
+     * at a time. Everything that mounts in the same tick now travels together.
+     *
+     * `alive` rather than an AbortController because the request is shared —
+     * aborting it on one row's unmount would cancel it for every other row in
+     * the same batch. */
+    let alive = true;
+    requestAvatar(idStr).then((url) => {
+      if (alive && url) setImgSrc(url);
+    });
+    return () => {
+      alive = false;
+    };
   }, [src, idStr, isBot]);
 
   if (isBot) {

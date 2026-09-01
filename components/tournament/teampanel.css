@@ -236,3 +236,32 @@
     max-height: 340px;
   }
 }
+
+/* The face beside the name.
+ *
+ * 20px, and the row switched from baseline to centre alignment to hold it:
+ * baseline is right for text against text, and wrong the moment one of the
+ * items is a picture with no baseline of its own — the avatar hung below the
+ * name by a couple of pixels on every row.
+ *
+ * A bot's synthetic id resolves to the bot face rather than the placeholder,
+ * which is what makes an all-bot roster readable as one. */
+.tp-face {
+  width: 20px;
+  height: 20px;
+  border-radius: 50%;
+  object-fit: cover;
+  flex: 0 0 auto;
+  background: color-mix(in srgb, var(--color-text) 10%, transparent);
+}
+
+.tp-player {
+  align-items: center;
+}
+
+.tp-player-name {
+  display: inline-flex;
+  align-items: center;
+  gap: 7px;
+  min-width: 0;
+}

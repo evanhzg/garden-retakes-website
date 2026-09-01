@@ -256,3 +256,24 @@
     animation: none;
   }
 }
+
+/* The face in the pick order.
+ *
+ * The draft board is the one screen where knowing WHO is on the clock matters
+ * within a couple of seconds — the step highlights, and a name alone is
+ * something you have to read. 18px, between the ordinal and the name, so the
+ * row still fits the ten steps a 5v5 draft has. */
+.rd-step-face {
+  width: 18px;
+  height: 18px;
+  border-radius: 50%;
+  object-fit: cover;
+  flex: 0 0 auto;
+  background: color-mix(in srgb, var(--color-text) 10%, transparent);
+}
+
+/* Centre, not baseline: an image has no baseline of its own, so the avatar
+   hung below the ordinal and the name on every step. */
+.rd-step {
+  align-items: center;
+}

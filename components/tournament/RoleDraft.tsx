@@ -6,6 +6,7 @@ import { formatRemaining } from "@/lib/tournament/edition";
 import type { DraftTurn, RoleDef } from "@/lib/tournament/roles";
 import RoleIcon from "./RoleIcon";
 import "./roledraft.css";
+import AvatarImage from "@/components/AvatarImage";
 
 // The role draft: the step between ready-up and the veto.
 //
@@ -231,6 +232,7 @@ export default function RoleDraft({
               } ${step.ordinal === turn?.ordinal && !sent ? "on" : ""}`}
             >
               <span className="rd-step-n num">{step.ordinal + 1}</span>
+              <AvatarImage steamId={step.steamId} alt="" className="rd-step-face" />
               <span className="rd-step-name">{player?.name ?? step.steamId}</span>
             </li>
           );

@@ -5,6 +5,7 @@ import { useI18n } from "@/components/I18nProvider";
 import "./roster.css";
 import StatusTag from "./StatusTag";
 import Collapsible from "./Collapsible";
+import AvatarImage from "@/components/AvatarImage";
 
 // The organizer's view of who is playing.
 //
@@ -157,6 +158,7 @@ export default function Roster({
                 return (
                   <li key={m.steamId}>
                     <a className="rs-profile" href={`/players/${m.steamId}`}>
+                      <AvatarImage steamId={m.steamId} alt="" className="rs-face" />
                       {m.profileName}
                     </a>
                     {m.captain && <span className="rs-cap" title="Captain">★</span>}

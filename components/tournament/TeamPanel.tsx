@@ -1,5 +1,6 @@
 "use client";
 
+import AvatarImage from "@/components/AvatarImage";
 import { useI18n } from "@/components/I18nProvider";
 import { RolePair } from "./RoleIcon";
 import "./teampanel.css";
@@ -82,6 +83,7 @@ export default function TeamPanel({
               }`}
             >
               <a className="tp-player-name" href={`/players/${p.steamId}`}>
+                <AvatarImage steamId={p.steamId} alt="" className="tp-face" />
                 {p.name}
               </a>
 

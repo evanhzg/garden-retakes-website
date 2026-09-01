@@ -6,6 +6,7 @@ import type { Scoreboard as Board, ScoreboardRow } from "@/lib/tournament/scoreb
 import { RolePair } from "./RoleIcon";
 import { MvpCard } from "./MapCards";
 import "./scoreboard.css";
+import AvatarImage from "@/components/AvatarImage";
 
 // The match scoreboard: one tab per map, and the series across all of them.
 //
@@ -268,7 +269,10 @@ function Side({
             {rows.map((r) => (
               <tr key={r.steamId}>
                 <td className="sb-col-name">
-                  <a href={`/players/${r.steamId}`}>{r.name}</a>
+                  <a className="sb-who" href={`/players/${r.steamId}`}>
+                    <AvatarImage steamId={r.steamId} alt="" className="sb-face" />
+                    {r.name}
+                  </a>
                   {r.isBot && <span className="sb-bot">{t("scoreboard.bot")}</span>}
                 </td>
 
