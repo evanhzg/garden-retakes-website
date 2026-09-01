@@ -6159,10 +6159,18 @@ html { scroll-behavior: smooth; }
   flex-wrap: wrap;
 }
 .pro-id > .avatar-xl { flex: none; }
+/* A player's name is the largest proper noun on the site, and the serif is
+   what marks those everywhere else — the MVP card, a champion, a tournament,
+   BLITZ itself. At 900-weight grotesque it was the only one set like a
+   headline. Roman, not italic: italic is for the things beside the argument
+   and a profile IS about this person. */
 .pro-name {
   display: flex; align-items: center; gap: var(--space-3); flex-wrap: wrap;
-  font-size: clamp(30px, 4.6vw, 56px);
-  letter-spacing: -0.025em;
+  font-family: var(--font-serif);
+  font-weight: 400;
+  font-size: clamp(38px, 5.4vw, 68px);
+  line-height: 1;
+  letter-spacing: -0.02em;
   margin: 8px 0 6px;
 }
 .pro-name-btn { font-size: 12px; }
@@ -6178,7 +6186,42 @@ html { scroll-behavior: smooth; }
   font-size: 14px;
   color: color-mix(in srgb, var(--color-text) 78%, transparent);
 }
-.pro-id-actions { margin-left: auto; display: flex; gap: var(--space-2); flex-wrap: wrap; }
+.pro-id-actions { margin-left: auto; display: flex; gap: 6px; flex-wrap: wrap; }
+
+/* The hero's actions.
+ *
+ * Three filled boxes — one accent, two grey — at the top right of every
+ * profile, all shouting equally and none of them the reason anybody opened
+ * the page. Ghosts with icons: they say where they go and get out of the way
+ * until they are wanted. Same shape as the tournament list's .tl-btn and the
+ * stats hub's .sh-ghost, which is the point. */
+.pro-act {
+  display: inline-flex;
+  align-items: center;
+  gap: 7px;
+  padding: 9px 13px;
+  border: 1px solid var(--color-divider);
+  background: none;
+  color: var(--color-text);
+  font: inherit;
+  font-size: 12.5px;
+  font-weight: 700;
+  text-decoration: none;
+  cursor: pointer;
+  transition: border-color 0.15s ease, background 0.15s ease, color 0.15s ease;
+}
+
+.pro-act:hover {
+  color: var(--color-accent);
+  border-color: color-mix(in srgb, var(--color-accent) 55%, transparent);
+  background: color-mix(in srgb, var(--color-accent) 10%, transparent);
+}
+
+/* Report. Muted until hovered — it is the least likely thing anybody wants,
+   and it used to be painted with var(--color-danger), a token this site has
+   never defined. */
+.pro-act.is-danger { color: var(--muted); }
+.pro-act.is-danger:hover { color: var(--color-accent); }
 
 /* Headline figures — same treatment as the homepage Standout block. */
 .pro-headline {
@@ -8599,10 +8642,14 @@ header a > .avatar { display: block; }
 
 /* Buttons that had drifted from the system: the live page's join button, the
    profile's settings and save controls. */
-.pro-id-actions .btn,
+/* Was `border-radius: 8px` on these three groups — against a documented
+   convention that says sharp corners and three radius tokens that are all 0.
+   DESIGN-CONVENTIONS.md: "do not add rounded cards, pills, or floating glass
+   treatments". The profile hero's buttons have left .btn entirely; these two
+   join the rest of the site. */
 .pro-settings .btn,
 .live-join .btn {
-  border-radius: 8px;
+  border-radius: 0;
 }
 
 /* Checkboxes were the browser default next to a designed form. */

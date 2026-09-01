@@ -6,21 +6,31 @@
   gap: var(--space-4);
 }
 
+/* A circle, like every other avatar on the site. The square with a rule was
+   the one face that did not match the friends list, the scoreboard, the MVP
+   card or the rail. */
 .dp-face {
-  width: 64px;
-  height: 64px;
+  width: 76px;
+  height: 76px;
   flex: none;
   object-fit: cover;
-  border: 1px solid var(--color-divider);
+  border-radius: 50%;
+  background: color-mix(in srgb, var(--color-text) 10%, transparent);
 }
 
 .dp-id {
   min-width: 0;
 }
 
+/* The name, in the second face — the same treatment /profile gives it and
+   the stats hub gives an MVP. It is the largest proper noun on the page. */
 .dp-id h1 {
   margin: 0;
-  font-size: 22px;
+  font-family: var(--font-serif);
+  font-weight: 400;
+  font-size: clamp(30px, 4.4vw, 44px);
+  line-height: 1;
+  letter-spacing: -0.02em;
 }
 
 .dp-id p {

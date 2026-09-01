@@ -11,7 +11,9 @@ import RankLevelBadge from "@/components/profile/RankLevelBadge";
 import { M4A1S, M4A4, SIGNATURE_SLOTS, normaliseStore } from "@/lib/inventory";
 import type { InventoryItem, InventoryStore, Loadout, Side } from "@/lib/inventory";
 import { useI18n } from '@/components/I18nProvider';
+import { useToast } from '@/components/Toast';
 import type { ProfileHeroStats } from "@/app/profile/page";
+import { Flag, GitCompare, Settings2, Swords, UserPlus } from "lucide-react";
 
 // Replaces ProfileShowcase, which framed the profile around a 3D Garden-Pop on
 // a bitmap backdrop with the stats and loadout floating over it as absolutely
@@ -59,6 +61,7 @@ export default function ProfileHero({
   owner?: boolean;
 }) {
     const { t } = useI18n();
+  const toast = useToast();
 
   const [publicLoadout, setPublicLoadout] = useState<PublicLoadout | null>(null);
   const [store, setStore] = useState<InventoryStore | null>(null);
@@ -252,17 +255,28 @@ export default function ProfileHero({
           {owner && (
             <>
               {/* Settings used to live in a panel at the very bottom of the page. */}
-              <button className="btn btn-primary" onClick={() => setSettingsOpen(true)}>
+              <button className="pro-act" onClick={() => setSettingsOpen(true)}>
+                <Settings2 size={14} aria-hidden focusable="false" />
                 {t("auto.profilehero.settings")}
-                                            </button>
-              <Link className="btn btn-secondary" href="/inventory">{t("auto.profilehero.loadouts")}</Link>
+              </button>
+              <Link className="pro-act" href="/inventory">
+                <Swords size={14} aria-hidden focusable="false" />
+                {t("auto.profilehero.loadouts")}
+              </Link>
             </>
           )}
-          <Link className="btn btn-secondary" href={`/compare?a=${steamId}`}>{t("auto.profilehero.compare")}</Link>
+          <Link className="pro-act" href={`/compare?a=${steamId}`}>
+            <GitCompare size={14} aria-hidden focusable="false" />
+            {t("auto.profilehero.compare")}
+          </Link>
           {!owner && (
             <>
+              {/* Was two alert() calls — a browser dialog for a friend
+                  request, which blocks the page and looks like the site
+                  broke. The site has had a toast for this since the social
+                  panel was written. */}
               <button
-                className="btn btn-secondary"
+                className="pro-act"
                 onClick={async () => {
                   try {
                     const res = await fetch("/api/friends", {
@@ -271,19 +285,27 @@ export default function ProfileHero({
                       body: JSON.stringify({ targetSteamId: steamId })
                     });
                     if (res.ok) {
-                      alert(t("social.friends.requestSent") || "Friend request sent!");
+                      toast(t("social.friends.requestSent"), "ok");
                     } else {
-                      const err = await res.json();
-                      alert(t("social.friends.error", { error: err.error }) || err.error);
+                      const err = await res.json().catch(() => ({}));
+                      toast(t("social.friends.error", { error: err?.error ?? "" }), "error");
                     }
-                  } catch (e) {
-                    console.error(e);
+                  } catch {
+                    toast(t("social.friends.error", { error: "" }), "error");
                   }
                 }}
               >
-                {t("social.friends.addFriend") || "Add Friend"}
+                <UserPlus size={14} aria-hidden focusable="false" />
+                {t("social.friends.addFriend")}
               </button>
-              <button className="btn btn-secondary" onClick={() => setReportOpen(true)} style={{ color: 'var(--color-danger)' }}>Report</button>
+
+              {/* The label was the English word "Report", and the colour was
+                  var(--color-danger) — a token this site has never defined, so
+                  the button was styled by a rule that did nothing. */}
+              <button className="pro-act is-danger" onClick={() => setReportOpen(true)}>
+                <Flag size={14} aria-hidden focusable="false" />
+                {t("auto.playerbubble.report_player")}
+              </button>
             </>
           )}
         </div>

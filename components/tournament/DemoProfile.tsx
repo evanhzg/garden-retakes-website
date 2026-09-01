@@ -1,10 +1,11 @@
 import Link from "next/link";
 import { prisma } from "@/lib/db";
-import { getT } from "@/lib/serverI18n";
+import { getT, serverLocale } from "@/lib/serverI18n";
 import AvatarImage from "@/components/AvatarImage";
 import RoleIcon from "@/components/tournament/RoleIcon";
 import { roleLabel } from "@/lib/tournament/roles";
 import { teamsOf } from "@/lib/tournament/teamStore";
+import { allPlayerNames } from "@/lib/tournament/playerNames";
 import "./teams.css";
 import "./demoprofile.css";
 
@@ -26,9 +27,16 @@ import "./demoprofile.css";
 
 export default async function DemoProfile({ steamId }: { steamId: string }) {
   const t = getT();
+  const locale = serverLocale();
   const id = BigInt(steamId);
 
-  const [stats, entries, teams, roles] = await Promise.all([
+  const [names, stats, entries, teams, roles] = await Promise.all([
+    // WHO THIS PAGE IS ABOUT. The heading was the literal word "Player" — a
+    // profile that never says whose it is, on the page a tournament links to
+    // from every scoreboard row. The name is one lookup away and every other
+    // surface on the site already does it.
+    allPlayerNames([id]).catch(() => ({}) as Record<string, string>),
+
     prisma.tournamentPlayerStat.findMany({ where: { SteamId: id } }),
 
     prisma.tournamentTeamMember.findMany({
@@ -87,12 +95,16 @@ export default async function DemoProfile({ steamId }: { steamId: string }) {
 
   const nothing = rounds === 0 && played === 0 && teams.length === 0;
 
+  // Falls back to the generic word, which is what a player with no name
+  // anywhere in the system genuinely is — a bot, or an id nobody has met.
+  const name = names[steamId] || t("demoProfile.title");
+
   return (
     <>
       <section className="panel dp-head">
         <AvatarImage steamId={steamId} className="dp-face" alt="" />
         <div className="dp-id">
-          <h1>{t("demoProfile.title")}</h1>
+          <h1>{name}</h1>
           <p className="muted">{t("demoProfile.blurb")}</p>
         </div>
       </section>
@@ -139,9 +151,16 @@ export default async function DemoProfile({ steamId }: { steamId: string }) {
                     <Link className="tm-hrow" href={`/tournaments/${e.Team.Tournament.Slug}`}>
                       <span className="tm-htitle">{e.Team.Tournament.Name}</span>
                       <span className="muted tm-hwhen">{e.Team.Name}</span>
+                      {/* toLocaleDateString() with no arguments takes the
+                          SERVER's locale, which is why a French page showed
+                          8/28/2026. Named month, both languages, and the same
+                          shape the archive cards use. */}
                       <span className="muted tm-hrec">
                         {e.Team.Tournament.StartedAt
-                          ? new Date(e.Team.Tournament.StartedAt).toLocaleDateString()
+                          ? new Date(e.Team.Tournament.StartedAt).toLocaleDateString(
+                              locale === "fr" ? "fr-FR" : "en-GB",
+                              { day: "numeric", month: "short", year: "numeric" },
+                            )
                           : ""}
                       </span>
                     </Link>
