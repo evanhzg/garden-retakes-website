@@ -1,0 +1,109 @@
+/* The settings page.
+ *
+ * Same vocabulary as the rest of the rebuild: a kicker, a name in the serif,
+ * square surfaces, one ghost link. The body below it is the dialog's, which
+ * already has its own two-column layout — this file only frames it.
+ */
+
+.set {
+  display: grid;
+  gap: 14px;
+}
+
+.set-head {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+  padding: 4px 0 10px;
+  border-bottom: 1px solid var(--color-divider);
+}
+
+.set-face {
+  width: 68px;
+  height: 68px;
+  flex: 0 0 auto;
+  border-radius: 50%;
+  object-fit: cover;
+  background: color-mix(in srgb, var(--color-text) 10%, transparent);
+}
+
+.set-id {
+  display: grid;
+  gap: 2px;
+  min-width: 0;
+  flex: 1;
+}
+
+.set-kicker {
+  font-family: var(--font-mono);
+  font-size: 10px;
+  font-weight: 700;
+  letter-spacing: 0.16em;
+  text-transform: uppercase;
+  color: var(--color-accent);
+}
+
+.set-name {
+  margin: 0;
+  font-family: var(--font-serif);
+  font-weight: 400;
+  font-size: clamp(28px, 4vw, 42px);
+  line-height: 1;
+  letter-spacing: -0.02em;
+}
+
+.set-steamid {
+  font-size: 11.5px;
+  color: var(--muted);
+}
+
+.set-link {
+  display: inline-flex;
+  align-items: center;
+  gap: 7px;
+  flex: 0 0 auto;
+  padding: 9px 13px;
+  border: 1px solid var(--color-divider);
+  color: var(--color-text);
+  font-size: 12.5px;
+  font-weight: 700;
+  text-decoration: none;
+  transition: border-color 0.15s ease, background 0.15s ease, color 0.15s ease;
+}
+
+.set-link:hover {
+  color: var(--color-accent);
+  border-color: color-mix(in srgb, var(--color-accent) 55%, transparent);
+  background: color-mix(in srgb, var(--color-accent) 10%, transparent);
+}
+
+/* The dialog's body was written to sit in a 720px card. On a page it has the
+   whole column, and its two halves would drift apart at 1400px. */
+.set-panel {
+  padding: 20px;
+}
+
+.set-panel .pro-settings {
+  max-width: 860px;
+}
+
+.set-signin {
+  display: grid;
+  gap: 14px;
+  justify-items: start;
+}
+
+.set-signin p {
+  margin: 0;
+}
+
+@media (max-width: 700px) {
+  .set-head {
+    flex-wrap: wrap;
+  }
+
+  .set-link {
+    flex-basis: 100%;
+    justify-content: center;
+  }
+}

@@ -174,10 +174,20 @@ export default function MatchesTab({ steamId }: { steamId?: string | null }) {
               aria-expanded={expanded}
               onClick={() => setOpen(expanded ? null : m.id)}
             >
-              <img className="rq-match-map" src={mapImage(m.map)} alt="" loading="lazy" />
+              {/* A match that was aborted before a map was picked has no
+                  picture to show, and mapImage() answers with a path that
+                  404s — so the row drew a broken-image glyph, or nothing, and
+                  the column collapsed. A dashed placeholder says "there was
+                  no map here" deliberately, which is the truth about an
+                  abandoned match. */}
+              {m.map ? (
+                <img className="rq-match-map" src={mapImage(m.map)} alt="" loading="lazy" />
+              ) : (
+                <span className="rq-match-map is-none" aria-hidden />
+              )}
 
               <span className="rq-match-where">
-                <strong>{mapName(m.map)}</strong>
+                <strong>{m.map ? mapName(m.map) : t("lobby.matches.noMap")}</strong>
                 <span className="muted">
                   {new Date(m.startedAt).toLocaleDateString()}
                   {minutes ? ` · ${t("lobby.matches.minutes", { n: minutes })}` : ""}

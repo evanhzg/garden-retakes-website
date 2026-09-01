@@ -3144,5 +3144,7 @@
   "lobby.matches.filter.all": "Tous",
   "lobby.matches.filter.wins": "Victoires",
   "lobby.matches.filter.losses": "Défaites",
-  "lobby.matches.noneMatching": "Aucun match de ce type pour l'instant."
+  "lobby.matches.noneMatching": "Aucun match de ce type pour l'instant.",
+  "lobby.matches.noMap": "Aucune carte jouée",
+  "form.page.match": "Match {n}"
 }

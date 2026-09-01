@@ -39,8 +39,21 @@ export default function PlayerBubble({ steamId, name, isFriend = false, isOnline
    * could do on that card was fail. It also offered it to people who already
    * were friends, where the answer is "Friendship already exists".
    */
-  const { steamId: mySteamId } = useSocket();
+  const { steamId: mySteamId, onlineUsers } = useSocket();
   const isMe = Boolean(mySteamId) && mySteamId === steamId;
+
+  /**
+   * Are they online?
+   *
+   * Three sources, in order of how much they know. The prop wins when a
+   * caller passed one — the friends panel has the authoritative list for its
+   * own rows. Otherwise the socket provider's list, which every page now has.
+   * And you are always online to yourself: you are looking at the site.
+   *
+   * Before this the card took the prop alone, defaulting to false, so every
+   * card opened outside the friends panel — a scoreboard row, a lobby seat,
+   * your OWN card — said "Offline" under the name in grey. */
+  const connected = isOnline || isMe || onlineUsers.includes(steamId);
 
   const [isOpen, setIsOpen] = useState(false);
   const [data, setData] = useState<any>(null);
@@ -234,7 +247,7 @@ export default function PlayerBubble({ steamId, name, isFriend = false, isOnline
   }, [steamId, name, t]);
 
   const shown = shownPresence({
-    connected: isOnline,
+    connected,
     inGame: gameState,
     chosen: (data?.presence ?? null) as ChosenStatus,
   });

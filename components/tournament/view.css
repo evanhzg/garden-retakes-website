@@ -426,3 +426,16 @@
   font-size: 12.5px;
   color: var(--color-text-muted);
 }
+
+/* A team name that opens its page. Underlined on hover only — a heading is
+   already prominent, and a permanent underline makes the card look like a
+   list of links. */
+.tv-team-link {
+  color: inherit;
+  text-decoration: none;
+}
+
+.tv-team-link:hover {
+  color: var(--color-accent);
+  text-decoration: underline;
+}

@@ -39,6 +39,14 @@ export type TeamView = {
   name: string;
   tag: string | null;
   status: string;
+  /**
+   * The standing team this entry belongs to, if any.
+   *
+   * A TournamentTeam is one roster in one tournament — it has no page of its
+   * own. GardenTeam does, and TournamentTeam.GardenTeamId is the link. Null
+   * for a side thrown together for one bracket, which is most of them.
+   */
+  slug: string | null;
   players: { steamId: string; name: string; captain: boolean; roleT: string | null; roleCt: string | null }[];
 };
 
@@ -239,7 +247,18 @@ function TeamsPanel({ teams }: { teams: TeamView[] }) {
                 so it offered a pointer cursor and a hover lift for something
                 that does nothing. */}
             {team.tag && <span className="tv-tag">{team.tag}</span>}
-            <h3>{team.name}</h3>
+            {/* Openable when the entry belongs to a standing team. A name
+                invented for one bracket has nowhere to go, and a link that
+                404s is worse than plain text. */}
+            {team.slug ? (
+              <h3>
+                <Link className="tv-team-link" href={`/teams/${team.slug}`}>
+                  {team.name}
+                </Link>
+              </h3>
+            ) : (
+              <h3>{team.name}</h3>
+            )}
             <StatusTag kind="team" value={team.status} />
           </header>
 

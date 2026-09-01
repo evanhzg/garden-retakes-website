@@ -895,13 +895,81 @@ html[data-motion="off"] .rq-server-pip.now { animation: none; }
 .rq-match.win .rq-match-score .us { color: #43a047; }
 .rq-match.loss .rq-match-score .us { color: var(--color-accent); }
 
+/* The result.
+ *
+ * It was an outlined word in one of two colours, with draw and cancelled
+ * falling through to the same grey outline as each other — so a match you
+ * drew and a match that never happened looked identical. Four states, four
+ * treatments, and the fill carries it rather than a 1.5px border: this is the
+ * one thing a row is read for.
+ *
+ * Colour is never alone. Each state keeps its own word, which is what the
+ * conventions file asks for and what makes the column work for somebody who
+ * cannot separate the green from the accent. */
 .rq-match-outcome {
-  padding: 3px 10px; border-radius: 0;
-  font-size: 10px; font-weight: 800; letter-spacing: 0.08em; text-transform: uppercase;
-  border: 1.5px solid var(--border); color: var(--muted);
+  padding: 4px 11px;
+  border-radius: 0;
+  font-size: 10px;
+  font-weight: 800;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  border: 1px solid var(--border);
+  color: var(--muted);
 }
-.rq-match-outcome.win { color: #43a047; border-color: color-mix(in srgb, #43a047 45%, transparent); }
-.rq-match-outcome.loss { color: var(--color-accent); border-color: color-mix(in srgb, var(--color-accent) 45%, transparent); }
+
+.rq-match-outcome.win {
+  color: #43a047;
+  border-color: color-mix(in srgb, #43a047 55%, transparent);
+  background: color-mix(in srgb, #43a047 14%, transparent);
+}
+
+.rq-match-outcome.loss {
+  color: var(--color-accent);
+  border-color: color-mix(in srgb, var(--color-accent) 55%, transparent);
+  background: color-mix(in srgb, var(--color-accent) 12%, transparent);
+}
+
+/* A draw is a result, so it is filled like one — in the neutral ramp, since
+   it belongs to neither side. */
+.rq-match-outcome.draw {
+  color: var(--color-text);
+  border-color: color-mix(in srgb, var(--color-text) 35%, transparent);
+  background: color-mix(in srgb, var(--color-text) 10%, transparent);
+}
+
+/* Cancelled is NOT a result, and should not look like one: dashed, hollow,
+   and dimmed. The dashes are the same language as the missing-map tile. */
+.rq-match-outcome.cancelled {
+  color: var(--muted);
+  border-style: dashed;
+  background: none;
+  opacity: 0.75;
+}
+
+/* The left edge of the whole row carries it too, so the outcome is legible
+   while scrolling past without reading the column. */
+.rq-match { border-left: 2px solid transparent; }
+.rq-match.win { border-left-color: color-mix(in srgb, #43a047 70%, transparent); }
+.rq-match.loss { border-left-color: color-mix(in srgb, var(--color-accent) 70%, transparent); }
+.rq-match.draw { border-left-color: color-mix(in srgb, var(--color-text) 30%, transparent); }
+.rq-match.cancelled { border-left-color: color-mix(in srgb, var(--color-text) 16%, transparent); }
+.rq-match.cancelled .rq-match-score,
+.rq-match.cancelled .rq-match-elo { opacity: 0.5; }
+
+/* No map to show. A dashed well rather than a broken image: mapImage() of an
+   empty map name is a path that 404s, and an abandoned match genuinely has
+   no map — saying so is better than an icon apologising for itself. */
+.rq-match-map.is-none {
+  display: block;
+  width: 96px;
+  min-height: 54px;
+  border: 1px dashed color-mix(in srgb, var(--color-text) 28%, transparent);
+  background: repeating-linear-gradient(
+    -45deg,
+    color-mix(in srgb, var(--color-text) 6%, transparent) 0 6px,
+    transparent 6px 12px
+  );
+}
 
 .rq-match-elo { font-family: var(--font-mono); font-size: 13px; font-weight: 700; min-width: 44px; text-align: right; }
 .rq-match-elo.up { color: #43a047; }
@@ -1480,9 +1548,16 @@ html[data-motion="off"] .rq-server-pip.now { animation: none; }
   background: var(--color-surface);
 }
 
+/* Full height of the row, not a fixed 18px.
+   The strip sits in a flex row whose siblings are two-line stat blocks, so a
+   pip with its own height left a band of empty surface above and below it and
+   the streak read as floating in the cell. */
+.rq-mform { align-items: stretch; }
+
 .rq-mform-pip {
-  width: 7px;
-  height: 18px;
+  flex: 0 0 7px;
+  align-self: stretch;
+  min-height: 18px;
   background: color-mix(in srgb, var(--color-text) 18%, transparent);
 }
 

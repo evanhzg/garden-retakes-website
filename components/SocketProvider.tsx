@@ -9,9 +9,25 @@ interface SocketContextType {
   /** true once the server has acked our steamId — safe to emit lobby events */
   isAuthed: boolean;
   steamId?: string;
+  /**
+   * Every SteamID the socket server currently has a connection for.
+   *
+   * This used to live inside FriendsSidebar, which is the only component that
+   * subscribed to the three presence events. Everything else — the player
+   * card most of all — had no way to ask, so it defaulted to "offline" and
+   * said so with a grey dot on people who were plainly online, including on
+   * your own card. The list belongs where every consumer can reach it.
+   */
+  onlineUsers: string[];
 }
 
-const SocketContext = createContext<SocketContextType>({ socket: null, isConnected: false, isAuthed: false, steamId: undefined });
+const SocketContext = createContext<SocketContextType>({
+  socket: null,
+  isConnected: false,
+  isAuthed: false,
+  steamId: undefined,
+  onlineUsers: [],
+});
 
 export const useSocket = () => useContext(SocketContext);
 
@@ -39,6 +55,7 @@ export const SocketProvider = ({
   const [socket, setSocket] = useState<Socket | null>(null);
   const [isConnected, setIsConnected] = useState(false);
   const [isAuthed, setIsAuthed] = useState(false);
+  const [onlineUsers, setOnlineUsers] = useState<string[]>([]);
 
   useEffect(() => {
     // NEXT_PUBLIC_SOCKET_URL wins; else localhost in dev, the Render host in prod.
@@ -91,24 +108,44 @@ export const SocketProvider = ({
 
     socketInstance.on('authenticated', () => {
       setIsAuthed(true);
+      // Ask as soon as we are known: the server answers this one only for an
+      // identified socket.
+      socketInstance.emit('get_online_users');
     });
+
+    /* Presence, kept here rather than in whichever panel happens to be open.
+       The server sends the whole list once and deltas after it. */
+    const onSync = (ids: string[]) => setOnlineUsers(Array.isArray(ids) ? ids : []);
+    const onUp = (id: string) =>
+      setOnlineUsers((cur) => (cur.includes(id) ? cur : [...cur, id]));
+    const onDown = (id: string) => setOnlineUsers((cur) => cur.filter((x) => x !== id));
+
+    socketInstance.on('online_friends_sync', onSync);
+    socketInstance.on('user_online', onUp);
+    socketInstance.on('user_offline', onDown);
 
     socketInstance.on('disconnect', () => {
       console.log('Disconnected from Game Hub Socket');
       setIsConnected(false);
       setIsAuthed(false);
+      // Nobody is known to be online through a socket that is down. Keeping
+      // the last list would show a page full of green dots during an outage.
+      setOnlineUsers([]);
     });
 
     setSocket(socketInstance);
 
     return () => {
       socketInstance.io.off('reconnect', identify);
+      socketInstance.off('online_friends_sync', onSync);
+      socketInstance.off('user_online', onUp);
+      socketInstance.off('user_offline', onDown);
       socketInstance.disconnect();
     };
   }, [steamId]);
 
   return (
-    <SocketContext.Provider value={{ socket, isConnected, isAuthed, steamId }}>
+    <SocketContext.Provider value={{ socket, isConnected, isAuthed, steamId, onlineUsers }}>
       {children}
       {!isDemoMode && <SocketStatusBanner />}
       {steamId && <FriendsSidebar />}

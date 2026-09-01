@@ -3144,5 +3144,7 @@
   "lobby.matches.filter.all": "All",
   "lobby.matches.filter.wins": "Wins",
   "lobby.matches.filter.losses": "Losses",
-  "lobby.matches.noneMatching": "No matches of that kind yet."
+  "lobby.matches.noneMatching": "No matches of that kind yet.",
+  "lobby.matches.noMap": "No map played",
+  "form.page.match": "Match {n}"
 }

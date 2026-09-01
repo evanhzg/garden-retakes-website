@@ -1,14 +1,31 @@
+import Link from "next/link";
+import { ExternalLink } from "lucide-react";
+
 import { getT } from "@/lib/serverI18n";
 import { getSession } from "@/lib/auth";
-import DiscordConnect from "@/components/DiscordConnect";
-import GoogleConnect from "@/components/GoogleConnect";
-import AllstarConnect from "@/components/AllstarConnect";
-import Link from "next/link";
 import AvatarImage from "@/components/AvatarImage";
 import { resolveName } from "@/lib/names";
+import { ProfileSettingsBody } from "@/components/profile/ProfileSettingsModal";
+import "./settings.css";
 
 export const dynamic = "force-dynamic";
 
+/**
+ * Everything you can change about yourself, on one page.
+ *
+ * WHAT WAS MISSING. This page held a hero and three linked-account cards.
+ * Your display name, your avatar, your bio, your country, the theme, the
+ * accent, the language and the motion preference were all in a dialog opened
+ * from the avatar menu in the left rail — and that menu went when the
+ * duplicate avatar did, which left every one of them unreachable while the
+ * rail's Settings button pointed here at the three cards.
+ *
+ * So the dialog's body is a component now (ProfileSettingsBody) and this page
+ * renders it. One implementation, two frames: the profile page keeps the
+ * dialog for a quick edit, this is the full page for the rail's button. The
+ * connection cards it already had are inside that body, which is why they are
+ * not repeated below.
+ */
 export default async function SettingsPage() {
   const t = getT();
   const session = getSession();
@@ -17,9 +34,9 @@ export default async function SettingsPage() {
     return (
       <section className="panel">
         <h2>{t("settings.title")}</h2>
-        <div className="empty-hint" style={{ display: "grid", gap: 14, justifyItems: "start" }}>
-          <p style={{ margin: 0 }}>{t("settings.signInPrompt")}</p>
-          <a className="btn" href="/api/auth/steam/login">
+        <div className="empty-hint set-signin">
+          <p>{t("settings.signInPrompt")}</p>
+          <a className="btn btn-primary" href="/api/auth/steam/login">
             {t("settings.signInButton")}
           </a>
         </div>
@@ -30,45 +47,26 @@ export default async function SettingsPage() {
   const name = await resolveName(BigInt(session.steamId));
 
   return (
-    <>
-      <section className="panel">
-        <div className="player-hero">
-          <div className="player-avatar">
-            <AvatarImage steamId={session.steamId} />
-          </div>
-          <div style={{ flex: 1, minWidth: 220 }}>
-            <h1 className="hero-name">
-              {name}
-            </h1>
-            <div className="hero-sub">
-              {t("settings.steamIdPrefix")} {session.steamId}
-            </div>
-          </div>
-          <div className="player-hero-actions">
-            <Link className="btn small secondary" href="/profile">
-              {t("settings.editProfile")}
-            </Link>
-          </div>
+    <div className="set">
+      <header className="set-head">
+        <AvatarImage steamId={session.steamId} className="set-face" alt="" />
+
+        <div className="set-id">
+          <span className="set-kicker">{t("settings.title")}</span>
+          {/* The name in the serif, as everywhere else a person is named. */}
+          <h1 className="set-name">{name}</h1>
+          <span className="set-steamid num">{session.steamId}</span>
         </div>
+
+        <Link className="set-link" href="/profile">
+          {t("settings.editProfile")}
+          <ExternalLink size={14} aria-hidden focusable="false" />
+        </Link>
+      </header>
+
+      <section className="panel set-panel">
+        <ProfileSettingsBody />
       </section>
-      
-      <section className="panel">
-        <h2>{t("settings.linkedAccounts.title")}</h2>
-        <p className="muted" style={{ marginBottom: 16 }}>
-          {t("settings.linkedAccounts.description")}
-        </p>
-        <div className="split-cards">
-          <div className="side-card">
-            <DiscordConnect />
-          </div>
-          <div className="side-card">
-            <GoogleConnect />
-          </div>
-          <div className="side-card">
-            <AllstarConnect />
-          </div>
-        </div>
-      </section>
-    </>
+    </div>
   );
 }

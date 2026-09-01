@@ -195,3 +195,20 @@
   color: var(--color-accent);
   background: color-mix(in srgb, var(--color-accent) 12%, transparent);
 }
+
+/* A friend row's trigger holds the face AND the two lines, so it needs the
+   row's own gap — before this the avatar sat outside the trigger and only
+   the text opened the card. */
+.friend-info .pb-anchor,
+.friend-info .pb-trigger {
+  display: inline-flex;
+  align-items: center;
+  gap: 10px;
+  min-width: 0;
+}
+
+/* The strip of eight faces: the anchor must not add a box of its own. */
+.friends-quick-face .pb-anchor,
+.friends-quick-face .pb-trigger {
+  display: block;
+}

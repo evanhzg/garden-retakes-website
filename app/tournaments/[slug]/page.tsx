@@ -177,12 +177,31 @@ export default async function TournamentPage({ params }: { params: { slug: strin
     };
   }).filter((stage) => stage.matches.length > 0 || stage.standings !== null);
 
+  /* The standing teams behind these entries, in one query. Only the ones
+     that HAVE a GardenTeamId — a bracket-only side has nothing to look up. */
+  const gardenTeamIds = Array.from(
+    new Set(
+      tournament.Teams.map((x) => x.GardenTeamId).filter((x): x is number => x !== null),
+    ),
+  );
+  const teamSlugs = new Map(
+    gardenTeamIds.length === 0
+      ? []
+      : (
+          await prisma.gardenTeam.findMany({
+            where: { Id: { in: gardenTeamIds } },
+            select: { Id: true, Slug: true },
+          })
+        ).map((x) => [x.Id, x.Slug] as const),
+  );
+
   const teams: TeamView[] = tournament.Teams.map((team) => ({
     id: team.Id,
     seed: team.Seed,
     name: team.Name,
     tag: team.Tag,
     status: team.Status,
+    slug: team.GardenTeamId ? teamSlugs.get(team.GardenTeamId) ?? null : null,
     players: team.Members.filter((m) => m.Status === "accepted").map((m) => ({
       steamId: m.SteamId.toString(),
       // DisplayName first: it is the name the organizer set FOR this event,

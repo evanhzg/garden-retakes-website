@@ -8445,12 +8445,31 @@ header a > .avatar { display: block; }
   font-size: 9px; font-weight: 800; line-height: 1;
 }
 
+/* Out of the RAIL'S RIGHT EDGE, from the bottom.
+ *
+ * These coordinates were written for a bell in a bar across the top:
+ * `top: calc(100% + 8px)` hangs the panel below the trigger and `right: 0`
+ * lines their right edges up so it extends leftwards. Both were right then
+ * and both are wrong now — the bell is near the BOTTOM of a 64px column
+ * against the LEFT edge of the screen, so the panel opened downwards off the
+ * bottom and leftwards off the side. It was almost entirely outside the
+ * viewport.
+ *
+ * Beside the rail and anchored to the bell's bottom instead. z-index above
+ * the rail's own 1002, or the rail paints over the panel it opened. */
 .notif-panel {
-  position: absolute; top: calc(100% + 8px); right: 0; z-index: 60;
-  width: min(340px, 88vw);
+  position: absolute;
+  top: auto;
+  bottom: 0;
+  left: calc(100% + 10px);
+  right: auto;
+  z-index: 1200;
+  width: min(340px, calc(100vw - var(--site-rail-w) - 24px));
+  max-height: min(70vh, 520px);
+  overflow-y: auto;
   background: var(--color-bg);
   border: 1px solid var(--color-divider);
-  border-radius: 12px;
+  border-radius: 0;
   box-shadow: 0 18px 40px rgb(0 0 0 / 0.28);
   overflow: hidden;
 }
@@ -11940,4 +11959,18 @@ button.btn {
 .hub-team-link:hover {
   color: var(--color-accent);
   text-decoration: underline;
+}
+
+
+/* On a phone the left rail is display:none and the bell lives in the drawer,
+   where there is no column to open beside — so the panel goes back to hanging
+   under its trigger, full width. */
+@media (max-width: 760px) {
+  .notif-panel {
+    top: calc(100% + 8px);
+    bottom: auto;
+    left: auto;
+    right: 0;
+    width: min(340px, calc(100vw - 24px));
+  }
 }

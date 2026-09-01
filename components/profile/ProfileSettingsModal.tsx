@@ -32,7 +32,27 @@ const BIO_MAX = 280;
 /** Output size of the cropper. Square, and small enough to stay well under 1 MB. */
 const AVATAR_SIZE = 256;
 
-export default function ProfileSettingsModal({ onClose }: { onClose: () => void }) {
+/**
+ * Everything the settings dialog holds, without the dialog.
+ *
+ * Extracted because it was reachable through one avatar menu and nothing
+ * else — and that menu went when the duplicate avatar did, which left the
+ * identity form, the appearance controls and the motion preference with no
+ * way in at all. /settings, where the rail's Settings button goes, had only
+ * the three linked-account cards.
+ *
+ * `onSaved` is what the dialog used to do inline: save() called
+ * handleClose(), so every save closed the window. On a page there is
+ * nothing to close, so the body reports and the caller decides.
+ */
+export function ProfileSettingsBody({
+  onSaved,
+  onCropOpenChange,
+}: {
+  onSaved?: () => void;
+  /** So a dialog can stop Escape closing it while the cropper is open. */
+  onCropOpenChange?: (open: boolean) => void;
+}) {
     const { t } = useI18n();
 
   const [data, setData] = useState<ProfileData | null>(null);
@@ -42,12 +62,12 @@ export default function ProfileSettingsModal({ onClose }: { onClose: () => void 
   const [status, setStatus] = useState<{ kind: "idle" | "saving" | "ok" | "error"; message?: string }>({ kind: "idle" });
   const [cropping, setCropping] = useState<string | null>(null);
   const [avatarPreview, setAvatarPreview] = useState<string | null>(null);
-  const [closing, setClosing] = useState(false);
 
-  const handleClose = useCallback(() => {
-    setClosing(true);
-    setTimeout(onClose, 180);
-  }, [onClose]);
+  // The cropper's state belongs to the body; a frame around it may still
+  // want to know, which is what onCropOpenChange is for.
+  useEffect(() => {
+    onCropOpenChange?.(cropping !== null);
+  }, [cropping, onCropOpenChange]);
 
   useEffect(() => {
     fetch("/api/profile")
@@ -61,23 +81,6 @@ export default function ProfileSettingsModal({ onClose }: { onClose: () => void 
       })
       .catch(() => setStatus({ kind: "error", message: "Could not load your profile." }));
   }, []);
-
-  // Escape closes, and focus is parked inside the dialog on open.
-  const cardRef = useRef<HTMLDivElement>(null);
-  // Portalled to <body>: rendered in place it sat inside an animated section,
-  // and an ancestor with a transform in its keyframes becomes the containing
-  // block for position:fixed — so the dialog anchored to the section instead
-  // of the viewport. Same fix the clip modal needed.
-  const [mounted, setMounted] = useState(false);
-  useEffect(() => setMounted(true), []);
-  useEffect(() => {
-    const onKey = (e: KeyboardEvent) => {
-      if (e.key === "Escape" && !cropping) handleClose();
-    };
-    window.addEventListener("keydown", onKey);
-    cardRef.current?.focus();
-    return () => window.removeEventListener("keydown", onKey);
-  }, [handleClose, cropping]);
 
   const save = async (payload: Record<string, unknown>) => {
     setStatus({ kind: "saving" });
@@ -93,7 +96,7 @@ export default function ProfileSettingsModal({ onClose }: { onClose: () => void 
         return false;
       }
       setStatus({ kind: "ok", message: "Saved." });
-      handleClose();
+      onSaved?.();
       return true;
     } catch {
       setStatus({ kind: "error", message: "Network error." });
@@ -153,16 +156,9 @@ export default function ProfileSettingsModal({ onClose }: { onClose: () => void 
     }
   };
 
-  if (!mounted) return null;
 
-  return createPortal(
-    <div className="pro-modal" style={closing ? { animation: 'gr-pop 0.18s ease reverse both' } : {}} role="dialog" aria-modal="true" aria-labelledby="pro-settings-title" onClick={handleClose}>
-      <div className="pro-modal-card" ref={cardRef} tabIndex={-1} onClick={(e) => e.stopPropagation()}>
-        <div className="pro-modal-head">
-          <h2 id="pro-settings-title">{t("auto.profilesettingsmodal.profile_settings")}</h2>
-          <button type="button" className="btn btn-secondary" onClick={handleClose} aria-label={t("auto.profilesettingsmodal.close_settings")}>{t("auto.profilesettingsmodal.close")}</button>
-        </div>
-
+  return (
+    <>
         {!data ? (
           <p className="muted">{t("auto.profilesettingsmodal.loading_your_profile")}</p>
         ) : (
@@ -287,8 +283,6 @@ export default function ProfileSettingsModal({ onClose }: { onClose: () => void 
           </section>
           </>
         )}
-      </div>
-
       {cropping && (
         <AvatarCropper
           src={cropping}
@@ -299,8 +293,65 @@ export default function ProfileSettingsModal({ onClose }: { onClose: () => void 
           onDone={onCropped}
         />
       )}
+    </>
+  );
+}
+
+/**
+ * The same body in a dialog, for the profile page's Settings button.
+ */
+export default function ProfileSettingsModal({ onClose }: { onClose: () => void }) {
+  const { t } = useI18n();
+  const [closing, setClosing] = useState(false);
+  const [cropOpen, setCropOpen] = useState(false);
+  const cardRef = useRef<HTMLDivElement>(null);
+  const [mounted, setMounted] = useState(false);
+
+  const handleClose = useCallback(() => {
+    setClosing(true);
+    setTimeout(onClose, 180);
+  }, [onClose]);
+
+  useEffect(() => setMounted(true), []);
+
+  // Escape closes — unless the cropper is up, which owns the key first.
+  useEffect(() => {
+    const onKey = (e: KeyboardEvent) => {
+      if (e.key === "Escape" && !cropOpen) handleClose();
+    };
+    window.addEventListener("keydown", onKey);
+    cardRef.current?.focus();
+    return () => window.removeEventListener("keydown", onKey);
+  }, [handleClose, cropOpen]);
+
+  if (!mounted) return null;
+
+  return createPortal(
+    <div
+      className="pro-modal"
+      style={closing ? { animation: "gr-pop 0.18s ease reverse both" } : {}}
+      role="dialog"
+      aria-modal="true"
+      aria-labelledby="pro-settings-title"
+      onClick={handleClose}
+    >
+      <div className="pro-modal-card" ref={cardRef} tabIndex={-1} onClick={(e) => e.stopPropagation()}>
+        <div className="pro-modal-head">
+          <h2 id="pro-settings-title">{t("auto.profilesettingsmodal.profile_settings")}</h2>
+          <button
+            type="button"
+            className="btn btn-secondary"
+            onClick={handleClose}
+            aria-label={t("auto.profilesettingsmodal.close_settings")}
+          >
+            {t("auto.profilesettingsmodal.close")}
+          </button>
+        </div>
+
+        <ProfileSettingsBody onSaved={handleClose} onCropOpenChange={setCropOpen} />
+      </div>
     </div>,
-    document.body
+    document.body,
   );
 }
 

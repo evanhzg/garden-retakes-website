@@ -1,4 +1,5 @@
 import Link from "next/link";
+import { matchesInSession, spanOf, type LinkableMatch } from "@/lib/sessionMatches";
 import { getSession } from "@/lib/auth";
 import { prisma } from "@/lib/db";
 import { recentForm, type SessionSummary } from "@/lib/recentForm";
@@ -85,6 +86,48 @@ export default async function RecentFormPage({
   const lifetimeRating = lifetime._avg.Rating ?? 0;
   const delta = form.rating - lifetimeRating;
 
+  /* THE SESSIONS HAD NOWHERE TO GO.
+   *
+   * A session is a run of ranked ROUNDS grouped by time — PlayerRoundRecord
+   * carries no match identity, so there was no id to link with and the rows
+   * were inert. What a session does have is a window, and a tournament match
+   * has a clock, so the join is on time: a match that started inside the
+   * window is a match played during that session. Only tournament matches,
+   * because only they have a page — a CrMatch has nowhere to point.
+   *
+   * One query for the whole span rather than one per row. */
+  const span = spanOf(form.sessions);
+  const myTeams = span
+    ? await prisma.tournamentTeamMember.findMany({
+        where: { SteamId: steamId, Status: { not: "removed" } },
+        select: { TeamId: true },
+      })
+    : [];
+  const myTeamIds = myTeams.map((x) => x.TeamId);
+
+  const playedMatches =
+    span && myTeamIds.length > 0
+      ? await prisma.tournamentMatch.findMany({
+          where: {
+            StartedAt: { gte: span.from, lte: span.to },
+            OR: [{ TeamAId: { in: myTeamIds } }, { TeamBId: { in: myTeamIds } }],
+          },
+          select: {
+            Id: true,
+            StartedAt: true,
+            Tournament: { select: { Slug: true } },
+            Maps: { select: { Map: true }, take: 1, orderBy: { Ordinal: "asc" } },
+          },
+        })
+      : [];
+
+  const linkable: LinkableMatch[] = playedMatches.map((m) => ({
+    id: m.Id,
+    slug: m.Tournament.Slug,
+    startedAt: m.StartedAt ? m.StartedAt.getTime() : null,
+    map: m.Maps[0]?.Map ?? null,
+  }));
+
   return (
     <>
       <section className="panel rf-head">
@@ -131,7 +174,7 @@ export default async function RecentFormPage({
         <p className="muted rf-note">{t("form.page.sessionexplainer")}</p>
         <ul className="rf-sessions">
           {form.sessions.map((s, i) => (
-            <SessionRow key={i} s={s} t={t} />
+            <SessionRow key={i} s={s} t={t} links={matchesInSession(s, linkable)} />
           ))}
         </ul>
       </section>
@@ -157,7 +200,15 @@ function Tile({ label, value }: { label: string; value: string }) {
   );
 }
 
-function SessionRow({ s, t }: { s: SessionSummary; t: (k: string, v?: Record<string, string | number>) => string }) {
+function SessionRow({
+  s,
+  t,
+  links,
+}: {
+  s: SessionSummary;
+  t: (k: string, v?: Record<string, string | number>) => string;
+  links: LinkableMatch[];
+}) {
   const kd = s.deaths > 0 ? s.kills / s.deaths : s.kills;
   return (
     <li className={`rf-session ${s.won ? "won" : "lost"}`}>
@@ -178,6 +229,19 @@ function SessionRow({ s, t }: { s: SessionSummary; t: (k: string, v?: Record<str
         <span className="muted"> ({kd.toFixed(2)})</span>
       </span>
       <span className={`rf-session-rating ${tone(s.rating)}`}>{s.rating.toFixed(2)}</span>
+
+      {/* The matches played in this window, each opening its own page. A
+          session with none — every ladder-only evening — shows nothing rather
+          than an empty control. */}
+      {links.length > 0 && (
+        <span className="rf-session-links">
+          {links.map((m, i) => (
+            <Link key={m.id} className="rf-session-link" href={`/tournaments/${m.slug}/match/${m.id}`}>
+              {m.map ? mapShort(m.map) : t("form.page.match", { n: i + 1 })}
+            </Link>
+          ))}
+        </span>
+      )}
     </li>
   );
 }

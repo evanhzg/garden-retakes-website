@@ -635,17 +635,8 @@ export default function FriendsSidebar() {
       }
     >
       <div className="friend-info">
-        <AvatarStatus
-          steamId={f.friendId}
-          name={f.name}
-          src={f.avatarUrl}
-          presence={presenceOf(f.friendId, livePlayers, isOnline)}
-          size={28}
-        />
-        {/* The card knows what this row knows: whether they have a tab
-            open, and how to start a conversation. Both were missing — the
-            card had no Message button at all, which is the reason most of
-            them are opened. */}
+        {/* The face is inside the trigger with the name. It was outside, so
+            half of every row — the half people aim at — did nothing. */}
         <PlayerBubble
           steamId={f.friendId}
           name={f.name}
@@ -653,6 +644,13 @@ export default function FriendsSidebar() {
           isOnline={isOnline}
           onMessage={openThread}
         >
+          <AvatarStatus
+            steamId={f.friendId}
+            name={f.name}
+            src={f.avatarUrl}
+            presence={presenceOf(f.friendId, livePlayers, isOnline)}
+            size={28}
+          />
           <div className="friend-lines">
             <span className="friend-name">{f.name}</span>
             {/* What they are actually doing, which is the line this always
@@ -905,26 +903,39 @@ export default function FriendsSidebar() {
                 first, the eight it keeps are the eight worth keeping. */}
             {railFriends.length > 0 && (
               <div className="friends-quick">
+                {/* A face opens the CARD, not a conversation.
+                    It used to call openThread directly, so clicking somebody
+                    to see who they are put a chat window on the screen — an
+                    action, from a control that looks like a link. The card is
+                    the thing being asked for, and it carries the Message
+                    button for when a conversation is what you wanted. */}
                 {railFriends.map((f, i) => (
-                  <motion.button
+                  <motion.div
                     key={f.friendId}
                     className="friends-quick-face"
-                    title={f.name}
-                    aria-label={f.name}
-                    onClick={() => openThread(f.friendId)}
                     initial={{ opacity: 0, scale: 0.86 }}
                     animate={{ opacity: 1, scale: 1 }}
                     transition={{ duration: 0.16, delay: i * 0.02, ease: [0.16, 1, 0.3, 1] }}
                   >
-                    <AvatarStatus
+                    <PlayerBubble
                       steamId={f.friendId}
                       name={f.name}
-                      src={f.avatarUrl}
-                      presence={f.shown}
-                      size={30}
-                    />
-                    {(unread[f.friendId] ?? 0) > 0 && <span className="dot-badge" />}
-                  </motion.button>
+                      isFriend
+                      isOnline={online(f.friendId)}
+                      onMessage={openThread}
+                    >
+                      <span title={f.name} aria-label={f.name}>
+                        <AvatarStatus
+                          steamId={f.friendId}
+                          name={f.name}
+                          src={f.avatarUrl}
+                          presence={f.shown}
+                          size={30}
+                        />
+                        {(unread[f.friendId] ?? 0) > 0 && <span className="dot-badge" />}
+                      </span>
+                    </PlayerBubble>
+                  </motion.div>
                 ))}
               </div>
             )}
