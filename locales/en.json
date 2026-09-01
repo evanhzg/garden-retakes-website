@@ -3100,5 +3100,11 @@
   "bubble.reported": "Reported. Staff will look.",
   "bubble.reportFailed": "Could not file that report.",
   "social.friends.addPlaceholder": "Find someone by name…",
-  "social.friends.addHint": "A nickname, or their SteamID64."
+  "social.friends.addHint": "A nickname, or their SteamID64.",
+  "social.status.offline": "Offline",
+  "chat.typing": "typing…",
+  "chat.empty": "No messages yet. Say hi.",
+  "chat.placeholder": "Message, or /invite",
+  "chat.send": "Send",
+  "social.friends.pendingTitle": "Friend requests"
 }

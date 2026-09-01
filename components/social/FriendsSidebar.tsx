@@ -763,6 +763,9 @@ export default function FriendsSidebar() {
           clip or move them. */}
       {openChats.length > 0 && typeof document !== "undefined" && createPortal(
         <div className="dm-docks" ref={dockRef}>
+          {/* Each dock animates itself; this is what lets a closed one leave
+              rather than blink out from under the row. */}
+          <AnimatePresence initial={false}>
           {openChats.map((id) => {
             const friend = friends.find((f) => f.friendId === id);
             return (
@@ -783,6 +786,7 @@ export default function FriendsSidebar() {
               />
             );
           })}
+          </AnimatePresence>
         </div>,
         document.body,
       )}
@@ -795,7 +799,12 @@ export default function FriendsSidebar() {
           A single floating button restores it without giving up the screen. */}
       <button
         className={`friends-fab ${isOpen ? "hidden" : ""}`}
-        onClick={() => setIsOpen(true)}
+        onClick={() => {
+          setIsOpen(true);
+          // The rail is display:none on a phone, so the FAB is the only way in
+          // — and with no section chosen it opened onto 300px of nothing.
+          setActiveTab((cur) => cur ?? "FRIENDS");
+        }}
         aria-label={t("social.friends.toggleBtn")}
         title={t("social.friends.toggleBtn")}
       >
@@ -808,8 +817,20 @@ export default function FriendsSidebar() {
       {/* The panel carries the hover surface, not the rail: .friends-rail.hidden
           sets pointer-events: none, so once the panel is open the rail cannot
           receive a mouseleave and the pair would latch open forever. */}
+      {/* The drawer slides the 300px it occupies, on transform and opacity —
+          never on width, which is what the whole panel used to animate and
+          what every reported judder came out of. The space is already
+          reserved by .social-dock, so nothing beside it moves. */}
+      <AnimatePresence initial={false}>
       {activeTab !== null && (
-      <div className="friends-sidebar" ref={panelRef}>
+      <motion.div
+        className="friends-sidebar"
+        ref={panelRef}
+        initial={{ opacity: 0, x: 24 }}
+        animate={{ opacity: 1, x: 0 }}
+        exit={{ opacity: 0, x: 24 }}
+        transition={{ duration: 0.2, ease: [0.22, 1, 0.36, 1] }}
+      >
 
         {activeTab === "TOURNAMENTS" && (
           <div className="friends-content">
@@ -1063,7 +1084,7 @@ export default function FriendsSidebar() {
             </div>
 
             <div className="mail-section mt-4">
-              <h3>Friend requests</h3>
+              <h3>{t("social.friends.pendingTitle")}</h3>
               <div className="pending-list">
                 {pendingRequests.length === 0 && <p className="muted-text">{t("social.friends.noPending")}</p>}
                 {pendingRequests.map((r) => (
@@ -1075,8 +1096,8 @@ export default function FriendsSidebar() {
                       <span className="friend-name">{r.name}</span>
                     </div>
                     <div className="pending-actions">
-                      <button className="btn-accept" onClick={() => respondToRequest(r.id, "ACCEPT")} aria-label="Accept">✓</button>
-                      <button className="btn-reject" onClick={() => respondToRequest(r.id, "REJECT")} aria-label="Reject">✕</button>
+                      <button className="btn-accept" onClick={() => respondToRequest(r.id, "ACCEPT")} aria-label={t("utility.accept")}>✓</button>
+                      <button className="btn-reject" onClick={() => respondToRequest(r.id, "REJECT")} aria-label={t("utility.reject")}>✕</button>
                     </div>
                   </div>
                 ))}
@@ -1084,8 +1105,9 @@ export default function FriendsSidebar() {
             </div>
           </div>
         )}
-      </div>
+      </motion.div>
       )}
+      </AnimatePresence>
       </div>
     </>
   );

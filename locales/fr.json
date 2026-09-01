@@ -3100,5 +3100,11 @@
   "bubble.reported": "Signalé. Le staff va regarder.",
   "bubble.reportFailed": "Signalement impossible.",
   "social.friends.addPlaceholder": "Chercher quelqu'un par son nom…",
-  "social.friends.addHint": "Un pseudo, ou son SteamID64."
+  "social.friends.addHint": "Un pseudo, ou son SteamID64.",
+  "social.status.offline": "Hors ligne",
+  "chat.typing": "écrit…",
+  "chat.empty": "Aucun message. Dites bonjour.",
+  "chat.placeholder": "Message, ou /invite",
+  "chat.send": "Envoyer",
+  "social.friends.pendingTitle": "Demandes d'ami"
 }

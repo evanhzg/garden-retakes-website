@@ -460,8 +460,12 @@
   align-items: center;
   gap: 10px;
   padding: 10px 12px;
-  border-bottom: 1px solid color-mix(in srgb, var(--text) 12%, transparent);
-  background: color-mix(in srgb, #000 18%, transparent);
+  border-bottom: 1px solid var(--color-divider);
+  /* A title bar reads as one by being a shade further back than the thread,
+     which is a step down the neutral ramp rather than a wash of #000 over
+     whatever is behind — that wash darkened the light theme too, and there it
+     is meant to be the lighter surface. */
+  background: color-mix(in srgb, var(--color-text) 6%, var(--color-surface));
 }
 
 .dm-header-avatar {
@@ -500,7 +504,7 @@
   overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
 }
 .dm-header-status { font-size: 0.7rem; color: var(--muted); }
-.dm-header-status.on { color: #22c55e; }
+.dm-header-status.on { color: var(--color-online, #22c55e); }
 
 .dm-messages {
   min-height: 0;
@@ -524,7 +528,6 @@
   align-self: center;
   margin: 12px 0 6px;
   padding: 2px 10px;
-  border-radius: 999px;
   background: color-mix(in srgb, var(--text) 8%, transparent);
   font-size: 0.65rem; font-weight: 800;
   letter-spacing: 0.08em; text-transform: uppercase;
@@ -550,15 +553,20 @@
   line-height: 1.42;
   overflow-wrap: anywhere;
 }
+/* Mine is the accent; theirs is a step up off the ground.
+   Both were losing a corner to a 4px radius, which is a rounded-bubble idiom
+   in a design where --radius-md is 0 — the two read as a different component
+   from every other surface on the page. The side is said by which edge the
+   line is on instead, which survives at any radius. */
 .dm-msg.own .dm-bubble {
-  background: var(--accent);
+  background: var(--color-accent);
   color: #fff;
-  border-bottom-right-radius: 4px;
+  border-right: 2px solid color-mix(in srgb, #000 22%, transparent);
 }
 .dm-msg.other .dm-bubble {
-  background: color-mix(in srgb, var(--text) 12%, transparent);
-  color: var(--text);
-  border-bottom-left-radius: 4px;
+  background: color-mix(in srgb, var(--color-text) 10%, transparent);
+  color: var(--color-text);
+  border-left: 2px solid var(--color-divider);
 }
 /* Sent, not yet acknowledged. Visible enough to notice if it sticks. */
 .dm-msg.pending .dm-bubble { opacity: 0.6; }
@@ -601,16 +609,15 @@
   align-items: center;
   gap: 8px;
   padding: 10px 12px;
-  background: color-mix(in srgb, #000 18%, transparent);
-  border-top: 1px solid color-mix(in srgb, var(--text) 12%, transparent);
+  background: color-mix(in srgb, var(--color-text) 6%, var(--color-surface));
+  border-top: 1px solid var(--color-divider);
 }
 .dm-input input {
   flex: 1 1 auto;
   min-width: 0;
-  background: color-mix(in srgb, var(--text) 7%, transparent);
-  border: 1px solid color-mix(in srgb, var(--text) 12%, transparent);
-  padding: 10px 14px;
-  border-radius: 999px;
+  background: color-mix(in srgb, var(--color-text) 7%, transparent);
+  border: 1px solid var(--color-divider);
+  padding: 10px 12px;
   color: var(--text);
   font: inherit;
   font-size: 0.88rem;
@@ -622,17 +629,19 @@
 }
 .dm-input button {
   flex: 0 0 auto;
-  background: var(--accent);
+  background: var(--color-accent);
   color: #fff;
   border: none;
   width: 38px; height: 38px;
-  border-radius: 50%;
   display: grid;
   place-items: center;
   cursor: pointer;
-  transition: transform 0.15s ease, opacity 0.15s ease;
+  transition: filter 0.15s ease, opacity 0.15s ease;
 }
-.dm-input button:hover:not(:disabled) { transform: scale(1.06); }
+/* Brightness rather than scale: a circle can grow without disturbing anything,
+   a square in a flex row with a 1px-bordered field beside it cannot — it
+   overlapped the input's border on hover. */
+.dm-input button:hover:not(:disabled) { filter: brightness(1.12); }
 .dm-input button:disabled {
   opacity: 0.4;
   cursor: default;
@@ -641,7 +650,7 @@
 
 @media (prefers-reduced-motion: reduce) {
   html:not([data-motion="full"]) .dm-bubble.typing i { animation: none; }
-  html:not([data-motion="full"]) .dm-input button:hover:not(:disabled) { transform: none; }
+  html:not([data-motion="full"]) .dm-input button:hover:not(:disabled) { filter: none; }
 }
 html[data-motion="off"] .dm-bubble.typing i { animation: none; }
 
@@ -976,7 +985,6 @@ html[data-motion="off"] .dm-bubble.typing i { animation: none; }
   border-bottom: 0;
   background: var(--color-surface);
   box-shadow: 0 -6px 32px rgba(0, 0, 0, 0.32);
-  animation: dm-rise 0.18s cubic-bezier(0.22, 1, 0.36, 1);
   transition: width 0.18s cubic-bezier(0.22, 1, 0.36, 1),
               flex-basis 0.18s cubic-bezier(0.22, 1, 0.36, 1);
 }
@@ -1009,11 +1017,6 @@ html[data-motion="off"] .dm-bubble.typing i { animation: none; }
   border-color: var(--color-accent);
   box-shadow: 0 -6px 32px rgba(0, 0, 0, 0.32),
               inset 0 2px 0 var(--color-accent);
-}
-
-@keyframes dm-rise {
-  from { transform: translateY(12px); opacity: 0; }
-  to { transform: none; opacity: 1; }
 }
 
 /* Collapsed to its header.
@@ -1170,12 +1173,6 @@ html[data-motion="off"] .dm-bubble.typing i { animation: none; }
   }
 }
 
-@media (prefers-reduced-motion: reduce) {
-  .dm-dock {
-    animation: none;
-  }
-}
-
 /* ============================================================ mobile social
    The panel itself on a phone. The rail is hidden below 760px — a full-height
    column down the side of a phone is most of the phone — so the FAB opens a
@@ -1226,12 +1223,11 @@ html[data-motion="off"] .dm-bubble.typing i { animation: none; }
   padding: 0 6px;
   display: grid;
   place-items: center;
-  background: var(--accent);
+  background: var(--color-accent);
   color: #fff;
   font-family: var(--font-mono);
   font-size: 11px;
   font-weight: 800;
-  border-radius: 999px;
 }
 
 /* With a badge present the close button must not also claim margin-left:auto,
@@ -1243,7 +1239,7 @@ html[data-motion="off"] .dm-bubble.typing i { animation: none; }
 /* A staff message, marked by its rule rather than by an emoji inside the
    bubble — a glyph in the text reads as part of what the person said. */
 .dm-msg.staff .dm-bubble {
-  border-left: 3px solid var(--accent);
+  border-left: 3px solid var(--color-accent);
 }
 
 /* ---------- unread, staff, and suggestions ---------- */
@@ -1744,4 +1740,31 @@ html[data-motion="off"] .dm-bubble.typing i { animation: none; }
 
 @media (prefers-reduced-motion: reduce) {
   .aff-spin { animation-duration: 2.4s; }
+}
+
+/* ---------- Docks and the drawer ----------
+ *
+ * The drawer is 300px of panel that opens inboard of the rail, and a dock is
+ * at z-index 1300 — over it. So an open friends list with a conversation
+ * running was a list with a chat window parked on top of it, which is the one
+ * combination the two are most often used in.
+ *
+ * The row steps aside by exactly the width the drawer opens, on transform,
+ * which is composited and cannot re-lay-out the docks the way the old
+ * `right` swap did. The max-width goes with it so a crowded row cannot be
+ * pushed off the left edge instead.
+ */
+@media (min-width: 761px) {
+  .dm-docks {
+    transition: transform 0.24s cubic-bezier(0.22, 1, 0.36, 1);
+  }
+
+  body:has(.friends-sidebar) .dm-docks {
+    transform: translateX(calc(-1 * var(--social-list-w)));
+    max-width: calc(100vw - 32px - var(--social-list-w));
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .dm-docks { transition-duration: 0.01ms; }
 }

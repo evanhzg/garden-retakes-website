@@ -5,6 +5,7 @@ import { AnimatePresence, motion } from "framer-motion";
 import { Send, X } from "lucide-react";
 
 import AvatarImage from "@/components/AvatarImage";
+import { useI18n } from "@/components/I18nProvider";
 import {
   MessageBody,
   RECONCILE_MS,
@@ -68,6 +69,7 @@ export default function ChatDock({
   onInvite,
   onError,
 }: Props) {
+  const { t } = useI18n();
   const [messages, setMessages] = useState<Message[]>([]);
   const [input, setInput] = useState("");
   const [minimised, setMinimised] = useState(false);
@@ -214,7 +216,17 @@ export default function ChatDock({
   const folded = compact || minimised;
 
   return (
-    <div className={`dm-dock ${folded ? "minimised" : ""} ${compact ? "compact" : ""}`}>
+    /* It used to arrive on a CSS keyframe and leave instantly — the element was
+       simply unmounted, so a closed conversation blinked out and the docks
+       beside it jumped into the gap. AnimatePresence in the parent holds it
+       long enough to leave the way it came. */
+    <motion.div
+      className={`dm-dock ${folded ? "minimised" : ""} ${compact ? "compact" : ""}`}
+      initial={{ opacity: 0, y: 14 }}
+      animate={{ opacity: 1, y: 0 }}
+      exit={{ opacity: 0, y: 14 }}
+      transition={{ duration: 0.18, ease: [0.22, 1, 0.36, 1] }}
+    >
       <div className="dm-view">
         {/* The whole header toggles the dock, the way every chat card people
             already use behaves — but the buttons inside it stop the click, or
@@ -259,7 +271,11 @@ export default function ChatDock({
           <div className="dm-header-info">
             <span className="dm-header-name">{name}</span>
             <span className={`dm-header-status ${isOnline ? "on" : ""}`}>
-              {typing ? "typing…" : isOnline ? "Online" : "Offline"}
+              {typing
+                ? t("chat.typing")
+                : isOnline
+                  ? t("social.status.online")
+                  : t("social.status.offline")}
             </span>
           </div>
 
@@ -270,7 +286,7 @@ export default function ChatDock({
 
           <button
             className="dm-x"
-            aria-label="Close"
+            aria-label={t("common.close")}
             onClick={(e) => {
               e.stopPropagation();
               onClose();
@@ -298,7 +314,7 @@ export default function ChatDock({
               transition={{ duration: 0.22, ease: [0.22, 1, 0.36, 1] }}
             >
               <div className="dm-messages" ref={logRef}>
-                {messages.length === 0 && <div className="dm-empty">No messages yet. Say hi.</div>}
+                {messages.length === 0 && <div className="dm-empty">{t("chat.empty")}</div>}
                 {messages.map((m, i) => {
                   const mine = m.from === steamId;
                   const prev = messages[i - 1];
@@ -341,10 +357,10 @@ export default function ChatDock({
                   type="text"
                   value={input}
                   onChange={(e) => onType(e.target.value)}
-                  placeholder="Message, or /invite"
+                  placeholder={t("chat.placeholder")}
                   maxLength={2000}
                 />
-                <button type="submit" disabled={!input.trim()} aria-label="Send">
+                <button type="submit" disabled={!input.trim()} aria-label={t("chat.send")}>
                   <Send size={16} />
                 </button>
               </form>
@@ -352,6 +368,6 @@ export default function ChatDock({
           )}
         </AnimatePresence>
       </div>
-    </div>
+    </motion.div>
   );
 }
