@@ -212,6 +212,14 @@ model GardenWebProfile {
   AllstarUsername String? @db.VarChar(64)
   AllstarSync     Boolean @default(true)
 
+  /// The status this player CHOSE: online | away | dnd | invisible.
+  ///
+  /// Distinct from the two the site observes — the socket knows who has a tab
+  /// open, /api/live knows who is in a game — because "here but do not message
+  /// me" is not something watching can infer. Null means online, which is what
+  /// every row written before this column meant.
+  Presence        String? @db.VarChar(12)
+
   @@map("GardenWebProfiles")
 }
 

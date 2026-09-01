@@ -10,6 +10,7 @@ import AvatarImage from "@/components/AvatarImage";
 import AvatarStatus from "@/components/social/AvatarStatus";
 import { useLivePlayers, presenceOf } from "@/components/social/useLivePlayers";
 import TournamentRail from "@/components/social/TournamentRail";
+import StatusBubble from "@/components/social/StatusBubble";
 import ChatDock from "./ChatDock";
 import { useToast } from "@/components/Toast";
 import { MessageSquare, UserPlus, Gamepad2, Users, Mail, Send, X, Trophy } from "lucide-react";
@@ -92,39 +93,10 @@ export default function FriendsSidebar() {
    */
   const [isOpen, setIsOpen] = useState(false);
 
-  /**
-   * The panel shrinks when you click away from it.
-   *
-   * It is a fixed overlay down the side of every page, so leaving it open is
-   * leaving a third of a phone screen covered by something you have finished
-   * with. Closing on an outside click is what every other panel on this site
-   * does, and the one that did not was this one.
-   *
-   * Capture phase, and the bubble is excluded: a player resume opened FROM the
-   * rail is portalled to <body>, so a plain contains() check would see a click
-   * inside the bubble as a click outside the panel and shut it underneath.
-   */
+  /* The panel and the rail, for the click-away handler further down — it has
+     to be declared after the state it reads. */
   const panelRef = useRef<HTMLDivElement>(null);
   const railRef = useRef<HTMLDivElement>(null);
-
-  useEffect(() => {
-    if (!isOpen) return;
-
-    const onPointerDown = (event: PointerEvent) => {
-      const target = event.target as Node | null;
-      if (!target) return;
-
-      if (panelRef.current?.contains(target)) return;
-      if (railRef.current?.contains(target)) return;
-      if ((target as HTMLElement).closest?.(".player-bubble, .friends-bubble")) return;
-
-      setIsOpen(false);
-    };
-
-    document.addEventListener("pointerdown", onPointerDown, true);
-    return () => document.removeEventListener("pointerdown", onPointerDown, true);
-  }, [isOpen]);
-
 
   /* The --social-top measurement is gone with the header it measured.
      There is no bar across the top any more — the rails run the full height of
@@ -179,6 +151,47 @@ export default function FriendsSidebar() {
   /** Mirror for the socket handler, which closes over its first render. */
   const openChatsRef = useRef<string[]>([]);
   openChatsRef.current = openChats;
+
+  /**
+   * A click on the page puts everything away: the drawer, the phone drawer,
+   * and any open conversations.
+   *
+   * The docks used to be exempt, and the comment saying so argued that folding
+   * a row of four because somebody clicked the page "is a lot of state to lose
+   * to a stray click". That over-valued the state. A dock holds no unsent
+   * work — the draft is per-dock and the history is on the server — so
+   * reopening one restores everything except the fact that it was open. What
+   * the exemption actually produced was a row of windows that outlived the
+   * task, which is the thing they were meant to avoid.
+   *
+   * Capture phase, and three exclusions. The player bubble and the status menu
+   * are portalled or absolutely placed outside the panel, so a plain
+   * contains() check reads a click inside them as a click outside everything
+   * and shuts the thing they were opened from.
+   */
+  useEffect(() => {
+    const somethingOpen = isOpen || activeTab !== null || openChats.length > 0;
+    if (!somethingOpen) return;
+
+    const onPointerDown = (event: PointerEvent) => {
+      const target = event.target as Node | null;
+      if (!target) return;
+
+      if (panelRef.current?.contains(target)) return;
+      if (railRef.current?.contains(target)) return;
+      if (dockRef.current?.contains(target)) return;
+
+      const el = target as HTMLElement;
+      if (el.closest?.(".player-bubble, .friends-bubble, .sb-menu, .dm-dock")) return;
+
+      setIsOpen(false);
+      setActiveTab(null);
+      setOpenChats([]);
+    };
+
+    document.addEventListener("pointerdown", onPointerDown, true);
+    return () => document.removeEventListener("pointerdown", onPointerDown, true);
+  }, [isOpen, activeTab, openChats.length]);
 
   /**
    * A click outside the docks closes nothing.
@@ -627,6 +640,12 @@ export default function FriendsSidebar() {
           It used to sit INBOARD of the panel, which is what made it look like
           a navbar parked next to the panel rather than the edge of it. */}
       <nav className="friends-rail" ref={railRef} aria-label={t("social.header.nav")}>
+        {/* You, above the rule. The three below are places to go; this one
+            is who you are, and it holds the one control the site had
+            nowhere for — the status you CHOOSE, as against the two it
+            observes about you. */}
+        {steamId && <StatusBubble steamId={steamId} />}
+
         <button
           className={`friends-nav-btn ${activeTab === "TOURNAMENTS" ? "active" : ""}`}
           aria-current={activeTab === "TOURNAMENTS"}

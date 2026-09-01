@@ -3078,5 +3078,14 @@
   "duels.point2": "Challenge anybody on the ladder; the server sets the map and the pistol.",
   "duels.point3": "Results carry to your profile, so a duel means something afterwards.",
   "duels.ctaPlay": "Play Blitz instead",
-  "duels.ctaTournaments": "See the tournaments"
+  "duels.ctaTournaments": "See the tournaments",
+  "social.status.title": "Status",
+  "social.status.online": "Online",
+  "social.status.onlineHint": "Visible, and open to messages.",
+  "social.status.away": "Away",
+  "social.status.awayHint": "Here, but not at the keyboard.",
+  "social.status.dnd": "Do not disturb",
+  "social.status.dndHint": "Messages are held. Stays on while you play.",
+  "social.status.invisible": "Invisible",
+  "social.status.invisibleHint": "You appear offline to everyone."
 }

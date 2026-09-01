@@ -3078,5 +3078,14 @@
   "duels.point2": "Défiez n'importe qui sur l'échelle ; le serveur choisit la map et le pistolet.",
   "duels.point3": "Les résultats rejoignent votre profil, pour qu'un duel compte après coup.",
   "duels.ctaPlay": "Jouer au Blitz",
-  "duels.ctaTournaments": "Voir les tournois"
+  "duels.ctaTournaments": "Voir les tournois",
+  "social.status.title": "Statut",
+  "social.status.online": "En ligne",
+  "social.status.onlineHint": "Visible, et joignable.",
+  "social.status.away": "Absent",
+  "social.status.awayHint": "Présent, mais pas au clavier.",
+  "social.status.dnd": "Ne pas déranger",
+  "social.status.dndHint": "Les messages attendent. Reste actif en jeu.",
+  "social.status.invisible": "Invisible",
+  "social.status.invisibleHint": "Vous apparaissez hors ligne pour tous."
 }

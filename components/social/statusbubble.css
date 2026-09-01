@@ -1,0 +1,118 @@
+/* You, at the top of the right rail.
+ *
+ * Above the rule, because the three buttons below it are places to go and this
+ * one is who you are. */
+
+.sb {
+  position: relative;
+  padding-bottom: 8px;
+  margin-bottom: 4px;
+  border-bottom: 1px solid var(--rail-line);
+}
+
+.sb-trigger {
+  position: relative;
+  display: grid;
+  place-items: center;
+  width: 40px;
+  height: 40px;
+  padding: 0;
+  border: 0;
+  background: none;
+  cursor: pointer;
+  line-height: 0;
+}
+
+.sb-face {
+  width: 30px;
+  height: 30px;
+  border-radius: 50%;
+  object-fit: cover;
+}
+
+/* Outside the circle, like every other presence dot on the site, so a light
+   avatar cannot swallow it. */
+.sb-dot {
+  position: absolute;
+  right: 4px;
+  bottom: 4px;
+  width: 11px;
+  height: 11px;
+  border-radius: 50%;
+  border: 2px solid var(--rail-bg);
+}
+
+/* The four states, in the colours the rest of the site already uses for them:
+   green for here, amber for away, accent for a request, grey for gone. */
+.sb-dot.is-online { background: #22c55e; }
+.sb-dot.is-away { background: #eab308; }
+.sb-dot.is-dnd { background: var(--color-accent); }
+.sb-dot.is-invisible { background: #64748b; }
+
+.sb-menu {
+  position: absolute;
+  top: 0;
+  right: calc(100% + 8px);
+  z-index: 1100;
+  display: flex;
+  flex-direction: column;
+  gap: 1px;
+  width: 216px;
+  padding: 6px;
+  background: var(--color-surface);
+  border: 1px solid var(--color-divider);
+  box-shadow: var(--shadow-lg);
+  transform-origin: right top;
+}
+
+.sb-menu-head {
+  padding: 4px 8px 6px;
+  font-size: 10px;
+  font-weight: 800;
+  letter-spacing: 0.09em;
+  text-transform: uppercase;
+  color: var(--muted);
+}
+
+/* Two lines: what it is called, and what it does. The second line is the
+   reason the menu exists — "Do not disturb" tells you the name of the setting
+   and nothing about whether messages still arrive. */
+.sb-menu-item {
+  display: grid;
+  grid-template-columns: auto 1fr;
+  grid-template-rows: auto auto;
+  align-items: center;
+  gap: 1px 8px;
+  padding: 7px 8px;
+  border: 0;
+  background: none;
+  color: var(--color-text);
+  font: inherit;
+  text-align: left;
+  cursor: pointer;
+}
+
+.sb-menu-item:hover {
+  background: color-mix(in srgb, var(--color-text) 8%, transparent);
+}
+
+.sb-menu-item.on {
+  background: color-mix(in srgb, var(--color-accent) 12%, transparent);
+}
+
+.sb-menu-icon { grid-row: 1 / span 2; }
+.sb-menu-icon.is-online { color: #22c55e; }
+.sb-menu-icon.is-away { color: #eab308; }
+.sb-menu-icon.is-dnd { color: var(--color-accent); }
+.sb-menu-icon.is-invisible { color: #64748b; }
+
+.sb-menu-label {
+  font-size: 13px;
+  font-weight: 700;
+}
+
+.sb-menu-hint {
+  font-size: 11px;
+  line-height: 1.3;
+  color: var(--muted);
+}
