@@ -50,6 +50,9 @@
 
 /* The second face, as on the homepage: larger, lighter, tighter. */
 .dz-title-serif {
+  /* Italic, with BLITZ. This treatment is quoted from the homepage and the
+     two have to stay the same thing or the quotation stops reading as one. */
+  font-style: italic;
   display: inline-block;
   font-family: var(--font-serif);
   font-style: normal;

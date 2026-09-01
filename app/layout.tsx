@@ -34,8 +34,16 @@ const sans = Archivo({
  * the Archivo it reads as an aside in another register — a name, an emphasis —
  * rather than as a different website.
  *
- * 400 only, and never for body text. Its whole value is that it appears twice
- * on a page.
+ * 400 only, and never for body text — but in both cuts, and in more than one
+ * place. It started as the headline's second half and nothing else, on the
+ * argument that a display face is worth having only if it is rare. That was
+ * true of the headline and false of the page: everything under it was one
+ * grotesque at one of two weights, which is not restraint, it is a monotone.
+ *
+ * The two cuts do different jobs and the difference is the point. Italic marks
+ * what is beside the argument — a name, a caption, an aside, the phrase a
+ * sentence is about. Roman marks what closes it: a lede, a total, a last line.
+ * Body text is still the grotesque, always.
  */
 const serif = Instrument_Serif({
   subsets: ["latin"],

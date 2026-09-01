@@ -47,25 +47,43 @@
  * A thin high-contrast serif against a 900-weight grotesque: the contrast is
  * the point, so it is set LARGER than the line above it and lighter, which is
  * how a display serif wants to be used and the opposite of how the grotesque
- * does. Tighter tracking than the sans because the serif's own sidebearings
- * are generous.
+ * does.
  *
- * Not italic. Instrument Serif's roman already leans display; italic on top of
- * the size jump reads as two effects rather than one. */
+ * And italic. The roman said "different face"; the italic says "signature" —
+ * it is the one word on the page that is a name rather than a description,
+ * and against a column of upright 900-weight capitals the slope is what makes
+ * that legible at a glance rather than on reflection.
+ *
+ * Two things follow from the slope. Tracking comes back towards zero, because
+ * italic sidebearings are already tighter than the roman's and -0.02em on top
+ * of that closes the counters. And the box needs a little room on the right,
+ * or the overhang of a final letter is clipped by whatever crops the line. */
 .th-title-serif {
   display: inline-block;
   font-family: var(--font-serif);
+  font-style: italic;
   font-weight: 400;
-  font-size: 1.12em;
-  letter-spacing: -0.02em;
+  font-size: 1.14em;
+  letter-spacing: -0.008em;
+  padding-right: 0.06em;
   /* A grotesque cap and a serif cap do not sit on the same optical line. */
   line-height: 0.92;
   color: var(--color-accent);
 }
 
-/* The phrase the lead is about. Not bolded as well — the colour is the
-   emphasis, and two emphases on one phrase is a shout. */
+/* The phrase the lead is about. Not bolded as well — the colour and the face
+   are the emphasis, and a third on one phrase is a shout.
+
+   Serif italic inside a sans paragraph is the oldest way of saying "this bit",
+   and it does something the colour cannot: it survives being printed, being
+   read by somebody who cannot separate the accent from the text around it, and
+   being looked at rather than read. Set a touch larger because this face has a
+   smaller x-height than the grotesque and matches it optically about 6% up. */
 .th-lead-accent {
+  font-family: var(--font-serif);
+  font-style: italic;
+  font-size: 1.06em;
+  letter-spacing: 0;
   color: var(--color-accent);
 }
 
@@ -132,7 +150,12 @@
   color: var(--color-text-muted);
 }
 
+/* A tournament's name is a proper noun, which is the one job this face has
+   anywhere on the site. Same reason BLITZ is in it. */
 .th-featured strong {
+  font-family: var(--font-serif);
+  font-weight: 400;
+  font-size: 1.14em;
   color: var(--color-text);
 }
 
@@ -202,10 +225,14 @@ a.th-now:hover {
 
 .th-now.live .th-now-head { color: var(--color-accent); }
 
+/* Also a name, so also the serif — and at 400 rather than 800, because this
+   face has one weight and faking the other with a heavier stack is how a
+   display serif turns to mud. The size carries the emphasis instead. */
 .th-now-name {
-  font-size: 15px;
-  font-weight: 800;
-  line-height: 1.15;
+  font-family: var(--font-serif);
+  font-size: 20px;
+  font-weight: 400;
+  line-height: 1.1;
   overflow-wrap: anywhere;
 }
 
@@ -238,8 +265,14 @@ a.th-now:hover {
 
 .th-counts dd {
   margin: 0;
-  font-size: clamp(26px, 3.4vw, 40px);
-  font-weight: 900;
+  /* The figures in the serif, against mono labels above them. Three totals in
+     the same 900-weight grotesque as everything else on the page were three
+     more of the same; a high-contrast serif numeral is the one place a number
+     gets to be a piece of typography rather than a readout. Bigger, because
+     400 next to a mono label needs the size to hold the column. */
+  font-family: var(--font-serif);
+  font-size: clamp(32px, 4vw, 48px);
+  font-weight: 400;
   line-height: 1;
   font-variant-numeric: tabular-nums;
 }
@@ -285,8 +318,14 @@ a.th-now:hover {
   color: color-mix(in srgb, var(--color-text) 76%, transparent);
 }
 
+/* The aside under a module's body. Same treatment as a figure caption,
+   because it is the same kind of sentence — a note beside the argument rather
+   than part of it. */
 .th-small {
-  font-size: 13px !important;
+  font-family: var(--font-serif) !important;
+  font-style: italic;
+  font-size: 15.5px !important;
+  line-height: 1.4 !important;
   color: var(--color-text-muted) !important;
 }
 
@@ -441,12 +480,16 @@ a.th-now:hover {
   fill-opacity: 0.16;
 }
 
+/* A caption, set like one: the serif italic is what separates a note ABOUT
+   the figure from the text of the page, without needing a label saying so. */
 .th-fignote {
   margin: 0;
   padding: 12px 14px;
   border-top: 1px solid var(--border);
-  font-size: 12.5px;
-  line-height: 1.45;
+  font-family: var(--font-serif);
+  font-style: italic;
+  font-size: 15px;
+  line-height: 1.35;
   color: var(--color-text-muted);
 }
 
@@ -775,10 +818,15 @@ a.th-now:hover {
   min-width: 0;
 }
 
+/* The last line on the page, and the only heading in the serif's roman —
+   the italic is for names and asides, so the close gets the upright cut and
+   ends the page in the second voice without pretending to be a title. */
 .th-close strong {
-  font-size: 19px;
-  font-weight: 900;
-  letter-spacing: -0.02em;
+  font-family: var(--font-serif);
+  font-size: 26px;
+  font-weight: 400;
+  letter-spacing: -0.01em;
+  line-height: 1.05;
 }
 
 .th-close span {
@@ -873,10 +921,15 @@ a.th-now:hover {
   font-weight: 900;
 }
 
+/* The one standfirst on the page, in the serif's roman: a lede is the
+   sentence that sits between a title and an argument, and setting it in the
+   second face is what makes it read as that rather than as the argument's
+   first paragraph. */
 .bt-head p {
   margin: 0;
-  font-size: 15px;
-  line-height: 1.55;
+  font-family: var(--font-serif);
+  font-size: 20px;
+  line-height: 1.35;
   color: color-mix(in srgb, var(--color-text) 76%, transparent);
 }
 
