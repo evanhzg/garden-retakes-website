@@ -120,7 +120,7 @@ export default async function TournamentLeaderboards() {
 
   const byId = new Map(tournaments.map((x) => [x.id, x]));
 
-  const view = (id: number): HubTournamentView | null => {
+  const view = (id: number, group: "current" | "past"): HubTournamentView | null => {
     const x = byId.get(id);
     if (!x) return null;
     return {
@@ -128,6 +128,7 @@ export default async function TournamentLeaderboards() {
       slug: x.slug,
       name: x.name,
       state: x.state,
+      group,
       startsAt: x.startsAt ? x.startsAt.toISOString() : null,
       endedAt: x.endedAt ? x.endedAt.toISOString() : null,
       rounds: x.rounds,
@@ -141,9 +142,10 @@ export default async function TournamentLeaderboards() {
     };
   };
 
-  const views = [...current, ...past]
-    .map((x) => view(x.id))
-    .filter((x): x is HubTournamentView => x !== null);
+  const views = [
+    ...current.map((x) => view(x.id, "current")),
+    ...past.map((x) => view(x.id, "past")),
+  ].filter((x): x is HubTournamentView => x !== null);
 
   return (
     <StatsHub

@@ -19,8 +19,15 @@
   gap: 10px;
 }
 
+/* One card instead of two: it takes the room both would have had rather than
+   leaving a hole where the second one was. */
+.sh-honours.is-sweep {
+  grid-template-columns: minmax(0, 1fr) minmax(160px, 0.4fr);
+}
+
 @media (max-width: 900px) {
-  .sh-honours {
+  .sh-honours,
+  .sh-honours.is-sweep {
     grid-template-columns: 1fr;
   }
 }

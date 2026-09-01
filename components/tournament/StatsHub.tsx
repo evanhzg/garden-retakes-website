@@ -37,6 +37,16 @@ export type HubTournamentView = {
   slug: string;
   name: string;
   state: string;
+  /**
+   * Which half of the page it belongs to.
+   *
+   * Sent rather than worked out here. splitTournaments in
+   * lib/tournament/honours.ts decides this — including that a draft or a
+   * cancelled tournament belongs to neither half — and it is covered by tests.
+   * Re-deriving it from `state` with a filter meant the rule existed twice and
+   * only one copy was checked.
+   */
+  group: "current" | "past";
   /** ISO, or null. Dates cross the server/client boundary as strings. */
   startsAt: string | null;
   endedAt: string | null;
@@ -79,8 +89,9 @@ type Props = {
 export default function StatsHub({ overall, tournaments, mvp, potm, potmMonth, totals }: Props) {
   const { t } = useI18n();
 
-  const current = useMemo(() => tournaments.filter((x) => x.state !== "finished"), [tournaments]);
-  const past = useMemo(() => tournaments.filter((x) => x.state === "finished"), [tournaments]);
+  // Order is the server's too: it arrives live-first, then newest-finished.
+  const current = useMemo(() => tournaments.filter((x) => x.group === "current"), [tournaments]);
+  const past = useMemo(() => tournaments.filter((x) => x.group === "past"), [tournaments]);
 
   /**
    * Which pane is showing.
@@ -95,6 +106,28 @@ export default function StatsHub({ overall, tournaments, mvp, potm, potmMonth, t
   const openTournament = tournaments.find((x) => String(x.id) === view) ?? null;
   const inArchive = view === "archive";
 
+  /**
+   * One player, both titles.
+   *
+   * Early on — and any month where one person simply played the best — the MVP
+   * and the player of the month are the same person with the same three
+   * numbers, and two identical cards side by side read as a rendering fault
+   * rather than as a fact about the month. So they collapse into one card that
+   * says both, which is the honest version and the better-looking one.
+   */
+  const sweep = mvp !== null && potm !== null && mvp.steamId === potm.steamId;
+
+  /**
+   * Which tab reads as current.
+   *
+   * Not always `view`: opening a finished tournament from the archive sets
+   * view to its id, and no tab has that id — so the marker vanished and the
+   * bar said "you are nowhere" while the pane below it showed a tournament.
+   * A tournament reached through the archive keeps the archive lit, which is
+   * also where its back button goes.
+   */
+  const activeTab = openTournament && openTournament.group === "past" ? "archive" : view;
+
   const dateLabel = (iso: string | null) =>
     iso
       ? new Date(iso).toLocaleDateString(undefined, { day: "numeric", month: "short", year: "numeric" })
@@ -104,18 +137,18 @@ export default function StatsHub({ overall, tournaments, mvp, potm, potmMonth, t
     <div className="sh">
       {/* ------------------------------------------------------------ honours */}
       {(mvp || potm) && (
-        <section className="sh-honours">
+        <section className={`sh-honours ${sweep ? "is-sweep" : ""}`}>
           {mvp && (
             <HonourCard
               kind="mvp"
               icon={<Crown size={15} />}
-              label={t("stats.hub.mvp")}
-              caption={t("stats.hub.mvpWhy")}
+              label={sweep ? `${t("stats.hub.mvp")} · ${t("stats.hub.potm")}` : t("stats.hub.mvp")}
+              caption={sweep ? `${t("stats.hub.mvpWhy")} · ${potmMonth}` : t("stats.hub.mvpWhy")}
               person={mvp}
               t={t}
             />
           )}
-          {potm && (
+          {potm && !sweep && (
             <HonourCard
               kind="potm"
               icon={<CalendarDays size={15} />}
@@ -136,7 +169,7 @@ export default function StatsHub({ overall, tournaments, mvp, potm, potmMonth, t
 
       {/* --------------------------------------------------------------- tabs */}
       <nav className="sh-tabs" role="tablist" aria-label={t("stats.hub.tabsLabel")}>
-        <Tab id="overall" view={view} onPick={setView} icon={<Globe2 size={14} />}>
+        <Tab id="overall" view={activeTab} onPick={setView} icon={<Globe2 size={14} />}>
           {t("stats.hub.overall")}
         </Tab>
 
@@ -144,7 +177,7 @@ export default function StatsHub({ overall, tournaments, mvp, potm, potmMonth, t
           <Tab
             key={x.id}
             id={String(x.id)}
-            view={view}
+            view={activeTab}
             onPick={setView}
             icon={x.state === "live" ? <span className="sh-live-dot" aria-hidden /> : <Calendar size={14} />}
           >
@@ -153,7 +186,7 @@ export default function StatsHub({ overall, tournaments, mvp, potm, potmMonth, t
         ))}
 
         {past.length > 0 && (
-          <Tab id="archive" view={view} onPick={setView} icon={<Layers size={14} />}>
+          <Tab id="archive" view={activeTab} onPick={setView} icon={<Layers size={14} />}>
             {t("stats.hub.archive")}
             <span className="sh-tab-count">{past.length}</span>
           </Tab>
@@ -240,7 +273,7 @@ export default function StatsHub({ overall, tournaments, mvp, potm, potmMonth, t
                   {/* Back to where it was opened from, and only when it was
                       opened from there — a tournament that has its own tab was
                       not reached through the archive. */}
-                  {openTournament.state === "finished" && (
+                  {openTournament.group === "past" && (
                     <button className="sh-back" onClick={() => setView("archive")}>
                       <ChevronLeft size={13} />
                       {t("stats.hub.archive")}
