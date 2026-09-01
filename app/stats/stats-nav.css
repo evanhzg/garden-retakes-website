@@ -1,0 +1,80 @@
+/* The /stats sub-nav.
+ *
+ * A rail on its side: the same icon-plus-flag vocabulary as the two columns
+ * down the edges of the page, so moving between a page's sections and the
+ * site's sections does not mean learning two different controls.
+ */
+
+.stats-rail {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0;
+  margin-bottom: 14px;
+  border-bottom: 1px solid var(--color-divider);
+}
+
+.stats-rail-btn {
+  position: relative;
+  display: inline-flex;
+  align-items: center;
+  gap: 7px;
+  padding: 11px 14px;
+  color: var(--muted);
+  font-size: 12px;
+  font-weight: 700;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+  text-decoration: none;
+  transition: color 0.15s ease, background 0.15s ease;
+}
+
+.stats-rail-btn:hover {
+  color: var(--color-text);
+  background: color-mix(in srgb, var(--color-text) 5%, transparent);
+}
+
+.stats-rail-btn.on {
+  color: var(--color-text);
+}
+
+/* Sits on the container's own line rather than beside it — bottom: -1px puts
+   the 2px flag over the 1px rule, which is what makes the tab look attached
+   to the pane below instead of floating above the line. */
+.stats-rail-mark {
+  position: absolute;
+  left: 0;
+  right: 0;
+  bottom: -1px;
+  height: 2px;
+  background: var(--color-accent);
+}
+
+/* Not yet. Dimmed and unclickable, and it keeps its icon — an icon-less gap in
+   a row of icons reads as a rendering failure. */
+.stats-rail-btn.is-soon {
+  opacity: 0.42;
+  cursor: not-allowed;
+}
+
+.stats-rail-btn.is-soon:hover {
+  color: var(--muted);
+  background: none;
+}
+
+@media (max-width: 700px) {
+  .stats-rail-btn {
+    padding: 10px 11px;
+    font-size: 11px;
+  }
+
+  /* The word goes on a phone; the icon carries it. Five labels at 11px wrap to
+     three rows, which is a third of the screen spent on a sub-nav. */
+  .stats-rail-btn span {
+    display: none;
+  }
+
+  .stats-rail-btn {
+    flex: 1 1 auto;
+    justify-content: center;
+  }
+}

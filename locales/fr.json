@@ -1438,7 +1438,6 @@
   "settings.editProfile": "Modifier le profil",
   "settings.linkedAccounts.title": "Titre",
   "settings.linkedAccounts.description": "Description",
-  "stats.layout.title": "Titre",
   "stats.layout.overview": "Vue d'ensemble",
   "stats.layout.beingRebuilt": "En cours de reconstruction",
   "stats.layout.mapHeatmaps": "Cartes de chaleur",
@@ -3107,5 +3106,16 @@
   "chat.placeholder": "Message, ou /invite",
   "chat.send": "Envoyer",
   "social.friends.pendingTitle": "Demandes d'ami",
-  "social.friends.tabChat": "Discuter"
+  "social.friends.tabChat": "Discuter",
+  "stats.hub.mvp": "MVP",
+  "stats.hub.mvpWhy": "Meilleur rating sur tous les tournois",
+  "stats.hub.potm": "Joueur du mois",
+  "stats.hub.overall": "Global",
+  "stats.hub.archive": "Archives",
+  "stats.hub.teams": "équipes",
+  "stats.hub.tournaments": "Tournois",
+  "stats.hub.openBoards": "Voir les classements",
+  "stats.hub.openTournament": "Page du tournoi",
+  "stats.hub.tabsLabel": "Quel tournoi",
+  "stats.layout.navLabel": "Sections des statistiques"
 }

@@ -1,6 +1,7 @@
 import { prisma } from "@/lib/db";
 import { aggregate, type PlayerTotals, type StatRow, type TournamentAppearance } from "@/lib/tournament/stats";
 import { allPlayerNames, tournamentPlayerNames } from "@/lib/tournament/playerNames";
+import { inWindow, lastMonthWindow } from "@/lib/tournament/honours";
 
 // Fetching for lib/tournament/stats.ts. Kept apart from the arithmetic so the
 // arithmetic can be tested without a database — see tools/tests/tstats.test.mts.
@@ -158,4 +159,146 @@ export async function playerTournamentHistory(steamId: string): Promise<Tourname
   }
 
   return out.sort((a, b) => b.tournamentId - a.tournamentId);
+}
+
+/**
+ * Everything the stats hub shows, from one query.
+ *
+ * The page needs four different cuts of the same rows: the career table, a
+ * table per tournament, last month's table, and the tournaments themselves.
+ * Asking the database four times — or once per tournament, which is what a
+ * loop over `tournamentStats` would do — is four round trips for rows that are
+ * already in memory after the first. So the join comes back once carrying the
+ * tournament and the end time, and the grouping happens here.
+ *
+ * `EndedAt` is the match's, not the tournament's: a tournament has no end
+ * column, and the last match to finish is what "when did it happen" means.
+ */
+export type HubTournament = {
+  id: number;
+  slug: string;
+  name: string;
+  state: string;
+  startsAt: Date | null;
+  endedAt: Date | null;
+  players: PlayerTotals[];
+  rounds: number;
+  /** How many teams entered. */
+  teams: number;
+  /** Who won it, or null while it is still being played. */
+  champion: string | null;
+};
+
+export async function statsHubData(): Promise<{
+  overall: PlayerTotals[];
+  lastMonth: PlayerTotals[];
+  tournaments: HubTournament[];
+}> {
+  const rows = await prisma.tournamentPlayerStat.findMany({
+    include: {
+      Match: {
+        select: {
+          TournamentId: true,
+          EndedAt: true,
+          Tournament: {
+            select: { Slug: true, Name: true, State: true, StartsAt: true },
+          },
+        },
+      },
+    },
+  });
+
+  if (rows.length === 0) return { overall: [], lastMonth: [], tournaments: [] };
+
+  const names = await allPlayerNames(Array.from(new Set(rows.map((r) => r.SteamId))));
+
+  const window = lastMonthWindow(new Date());
+  const monthRows: StatRow[] = [];
+  const byTournament = new Map<number, StatRow[]>();
+  const meta = new Map<number, Omit<HubTournament, "players" | "rounds" | "teams" | "champion">>();
+
+  for (const row of rows) {
+    const stat = { ...asRow(row), teamId: null };
+    const tid = row.Match.TournamentId;
+
+    const list = byTournament.get(tid) ?? [];
+    list.push(stat);
+    byTournament.set(tid, list);
+
+    if (!meta.has(tid)) {
+      meta.set(tid, {
+        id: tid,
+        slug: row.Match.Tournament.Slug,
+        name: row.Match.Tournament.Name,
+        state: row.Match.Tournament.State,
+        startsAt: row.Match.Tournament.StartsAt,
+        endedAt: row.Match.EndedAt,
+      });
+    } else {
+      // The tournament ended when its LAST match did.
+      const seen = meta.get(tid)!;
+      const at = row.Match.EndedAt;
+      if (at && (!seen.endedAt || at > seen.endedAt)) seen.endedAt = at;
+    }
+
+    if (inWindow(row.Match.EndedAt, window)) monthRows.push(stat);
+  }
+
+  const ids = Array.from(byTournament.keys());
+
+  /* Who won, and how many entered. Two small queries rather than two more
+     joins on the big one: this is one row per tournament either way, and
+     hanging them off the stat rows would repeat each answer once per player
+     per map. */
+  const teams = await prisma.tournamentTeam.findMany({
+    where: { TournamentId: { in: ids } },
+    select: { Id: true, Name: true, TournamentId: true },
+  });
+  const teamName = new Map(teams.map((x) => [x.Id, x.Name]));
+  const teamCount = new Map<number, number>();
+  for (const x of teams) teamCount.set(x.TournamentId, (teamCount.get(x.TournamentId) ?? 0) + 1);
+
+  /* The last match to finish is the final. Ordering by EndedAt rather than by
+     the bracket round because "highest round number" is only the final in
+     single elimination — a double-elimination grand final and the last
+     lower-bracket match can carry the same round, and a Swiss stage has no
+     final at all, just a last game. */
+  const decided = await prisma.tournamentMatch.findMany({
+    where: { TournamentId: { in: ids }, WinnerTeamId: { not: null } },
+    select: { TournamentId: true, WinnerTeamId: true, EndedAt: true, Round: true },
+    orderBy: [{ EndedAt: "desc" }, { Round: "desc" }],
+  });
+  const championOf = new Map<number, string>();
+  for (const m of decided) {
+    if (championOf.has(m.TournamentId)) continue;
+    const name = m.WinnerTeamId ? teamName.get(m.WinnerTeamId) : undefined;
+    if (name) championOf.set(m.TournamentId, name);
+  }
+
+  const tournaments: HubTournament[] = Array.from(byTournament.entries()).map(([id, statRows]) => {
+    const players = aggregate(statRows, names);
+    const info = meta.get(id)!;
+    return {
+      ...info,
+      players,
+      // Rounds are per-player rows, so the tournament's round count is the
+      // longest single line, not the sum — summing counts every round once
+      // per player who was in it.
+      rounds: players.reduce((n, p) => Math.max(n, p.roundsPlayed), 0),
+      teams: teamCount.get(id) ?? 0,
+      // Only a finished tournament has a champion. The last decided match of
+      // one still being played is a quarter-final, and putting its winner on
+      // the card would crown somebody mid-bracket.
+      champion: info.state === "finished" ? championOf.get(id) ?? null : null,
+    };
+  });
+
+  return {
+    overall: aggregate(
+      rows.map((r) => ({ ...asRow(r), teamId: null })),
+      names,
+    ),
+    lastMonth: monthRows.length > 0 ? aggregate(monthRows, names) : [],
+    tournaments,
+  };
 }

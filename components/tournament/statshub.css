@@ -1,0 +1,448 @@
+/* The stats hub.
+ *
+ * Built out of the same parts as the rails: square corners, token grounds, a
+ * 2px accent flag for what is selected, and no surface that is not either the
+ * page or one step up from it. The page it replaces was a stack of .panel
+ * boxes with inline styles for every margin.
+ */
+
+.sh {
+  display: grid;
+  gap: 14px;
+}
+
+/* ------------------------------------------------------------- the honours */
+
+.sh-honours {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr)) minmax(160px, 0.6fr);
+  gap: 10px;
+}
+
+@media (max-width: 900px) {
+  .sh-honours {
+    grid-template-columns: 1fr;
+  }
+}
+
+.sh-honour {
+  position: relative;
+  display: grid;
+  gap: 12px;
+  padding: 16px;
+  border: 1px solid var(--color-divider);
+  background:
+    linear-gradient(160deg, color-mix(in srgb, var(--color-accent) 10%, transparent), transparent 62%),
+    var(--color-surface);
+  overflow: hidden;
+}
+
+/* The rule down the edge, the same one the rails use for "this one". The MVP
+   gets the accent; the month gets it muted, because one is a standing title
+   and the other is a monthly one. */
+.sh-honour::before {
+  content: "";
+  position: absolute;
+  left: 0;
+  top: 0;
+  bottom: 0;
+  width: 2px;
+  background: var(--color-accent);
+}
+
+.sh-honour.is-potm::before {
+  background: color-mix(in srgb, var(--color-accent) 45%, transparent);
+}
+
+.sh-honour.is-potm {
+  background:
+    linear-gradient(160deg, color-mix(in srgb, var(--color-text) 7%, transparent), transparent 62%),
+    var(--color-surface);
+}
+
+.sh-honour-label {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  font-family: var(--font-mono);
+  font-size: 10px;
+  font-weight: 700;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  color: var(--color-accent);
+}
+
+.sh-honour.is-potm .sh-honour-label {
+  color: var(--muted);
+}
+
+.sh-honour-who {
+  display: inline-flex;
+  align-items: center;
+  gap: 12px;
+  min-width: 0;
+  cursor: pointer;
+}
+
+.sh-honour-face {
+  width: 52px;
+  height: 52px;
+  flex: 0 0 auto;
+  border-radius: 50%;
+  object-fit: cover;
+  background: color-mix(in srgb, var(--color-text) 10%, transparent);
+}
+
+.sh-honour-lines {
+  display: grid;
+  min-width: 0;
+}
+
+/* The name in the serif, at size. It is the one proper noun on the card and
+   the whole reason the card exists — the same job the face does on the
+   homepage headline. */
+.sh-honour-name {
+  font-family: var(--font-serif);
+  font-size: 27px;
+  font-weight: 400;
+  line-height: 1.05;
+  letter-spacing: -0.01em;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.sh-honour-cap {
+  font-size: 11.5px;
+  color: var(--muted);
+}
+
+.sh-honour-stats {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 1px;
+  margin: 0;
+  background: var(--color-divider);
+  border: 1px solid var(--color-divider);
+}
+
+.sh-honour-stats > div {
+  display: grid;
+  gap: 2px;
+  padding: 8px 10px;
+  background: var(--color-surface);
+}
+
+.sh-honour-stats dt {
+  font-family: var(--font-mono);
+  font-size: 9px;
+  font-weight: 700;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  color: var(--muted);
+}
+
+.sh-honour-stats dd {
+  margin: 0;
+  font-size: 17px;
+  font-weight: 800;
+  font-variant-numeric: tabular-nums;
+}
+
+/* ---- the three totals beside them ---- */
+
+.sh-totals {
+  display: grid;
+  gap: 1px;
+  background: var(--color-divider);
+  border: 1px solid var(--color-divider);
+}
+
+.sh-total {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 10px;
+  padding: 12px 14px;
+  background: var(--color-surface);
+}
+
+.sh-total-k {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  font-family: var(--font-mono);
+  font-size: 9.5px;
+  font-weight: 700;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  color: var(--muted);
+}
+
+.sh-total strong {
+  font-family: var(--font-serif);
+  font-size: 26px;
+  font-weight: 400;
+  line-height: 1;
+  font-variant-numeric: tabular-nums;
+}
+
+/* ---------------------------------------------------------------- the tabs */
+
+.sh-tabs {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0;
+  border-bottom: 1px solid var(--color-divider);
+}
+
+.sh-tab {
+  position: relative;
+  display: inline-flex;
+  align-items: center;
+  gap: 7px;
+  padding: 11px 15px;
+  border: 0;
+  background: none;
+  color: var(--muted);
+  font: inherit;
+  font-size: 12px;
+  font-weight: 700;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+  cursor: pointer;
+  transition: color 0.15s ease, background 0.15s ease;
+}
+
+.sh-tab:hover {
+  color: var(--color-text);
+  background: color-mix(in srgb, var(--color-text) 5%, transparent);
+}
+
+.sh-tab.on {
+  color: var(--color-text);
+}
+
+/* The flag, on the bottom edge because these tabs are a horizontal row — the
+   rails put it on the left because theirs are a column. Same element moved by
+   framer either way. */
+.sh-tab-mark {
+  position: absolute;
+  left: 0;
+  right: 0;
+  bottom: -1px;
+  height: 2px;
+  background: var(--color-accent);
+}
+
+.sh-tab-count {
+  padding: 1px 5px;
+  background: color-mix(in srgb, var(--color-text) 10%, transparent);
+  font-family: var(--font-mono);
+  font-size: 9.5px;
+  color: var(--muted);
+}
+
+.sh-live-dot {
+  width: 7px;
+  height: 7px;
+  border-radius: 50%;
+  background: var(--color-accent);
+  box-shadow: 0 0 0 3px color-mix(in srgb, var(--color-accent) 22%, transparent);
+}
+
+/* --------------------------------------------------------------- the panes */
+
+.sh-pane {
+  padding: 18px;
+}
+
+.sh-pane-head {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 14px;
+  margin-bottom: 14px;
+}
+
+.sh-pane-head h3 {
+  margin: 0;
+  font-size: 20px;
+  letter-spacing: -0.02em;
+}
+
+.sh-pane-head .muted {
+  display: flex;
+  align-items: center;
+  gap: 5px;
+  margin: 3px 0 0;
+  font-size: 12.5px;
+}
+
+/* A link that is not a button. The page had four filled buttons competing for
+   the same attention as the tabs; these say where they go and get out of the
+   way until they are wanted. */
+.sh-ghost {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  flex: 0 0 auto;
+  padding: 8px 12px;
+  border: 1px solid var(--color-divider);
+  background: none;
+  color: var(--color-text);
+  font-size: 12px;
+  font-weight: 700;
+  text-decoration: none;
+  transition: border-color 0.15s ease, background 0.15s ease, color 0.15s ease;
+}
+
+.sh-ghost:hover {
+  color: var(--color-accent);
+  border-color: color-mix(in srgb, var(--color-accent) 55%, transparent);
+  background: color-mix(in srgb, var(--color-accent) 10%, transparent);
+}
+
+.sh-back {
+  display: inline-flex;
+  align-items: center;
+  gap: 3px;
+  margin-bottom: 6px;
+  padding: 0;
+  border: 0;
+  background: none;
+  color: var(--muted);
+  font: inherit;
+  font-size: 11px;
+  font-weight: 700;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  cursor: pointer;
+}
+
+.sh-back:hover {
+  color: var(--color-accent);
+}
+
+/* -------------------------------------------------------------- the archive */
+
+.sh-cards {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(250px, 1fr));
+  gap: 10px;
+}
+
+.sh-card {
+  display: grid;
+  gap: 9px;
+  padding: 15px;
+  border: 1px solid var(--color-divider);
+  background: var(--color-surface);
+  color: inherit;
+  font: inherit;
+  text-align: left;
+  cursor: pointer;
+  transition: border-color 0.15s ease, background 0.15s ease;
+}
+
+.sh-card:hover {
+  border-color: color-mix(in srgb, var(--color-accent) 50%, transparent);
+  background: color-mix(in srgb, var(--color-accent) 6%, var(--color-surface));
+}
+
+.sh-card-top {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+}
+
+/* Initials, not a logo. A tournament has no image on this card and a grey
+   square with nothing in it is worse than two letters. */
+.sh-card-badge {
+  display: grid;
+  place-items: center;
+  width: 34px;
+  height: 34px;
+  background: color-mix(in srgb, var(--color-accent) 16%, transparent);
+  border: 1px solid color-mix(in srgb, var(--color-accent) 35%, transparent);
+  color: var(--color-accent);
+  font-family: var(--font-mono);
+  font-size: 12px;
+  font-weight: 700;
+}
+
+.sh-card-when {
+  font-family: var(--font-mono);
+  font-size: 10px;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  color: var(--muted);
+}
+
+.sh-card-name {
+  font-size: 15.5px;
+  font-weight: 800;
+  letter-spacing: -0.01em;
+  line-height: 1.2;
+}
+
+/* Who won, in the serif — a team name is a proper noun, same as everywhere
+   else this face is used. */
+.sh-card-champ {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  font-family: var(--font-serif);
+  font-size: 17px;
+  color: var(--color-accent);
+}
+
+.sh-card-facts {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 5px;
+  font-size: 11.5px;
+  color: var(--muted);
+}
+
+.sh-card-facts b {
+  color: var(--color-text);
+  font-variant-numeric: tabular-nums;
+}
+
+.sh-card-facts i {
+  font-style: normal;
+  opacity: 0.5;
+}
+
+.sh-card-go {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  margin-top: 2px;
+  padding-top: 9px;
+  border-top: 1px solid var(--color-divider);
+  font-size: 11px;
+  font-weight: 700;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  color: var(--muted);
+  transition: color 0.15s ease;
+}
+
+.sh-card:hover .sh-card-go {
+  color: var(--color-accent);
+}
+
+@media (max-width: 700px) {
+  .sh-honour-name {
+    font-size: 23px;
+  }
+
+  .sh-tab {
+    padding: 10px 12px;
+    font-size: 11px;
+  }
+}

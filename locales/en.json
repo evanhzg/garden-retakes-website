@@ -1444,7 +1444,6 @@
   "settings.editProfile": "Edit Profile",
   "settings.linkedAccounts.title": "Title",
   "settings.linkedAccounts.description": "Description",
-  "stats.layout.title": "Title",
   "stats.layout.overview": "Overview",
   "stats.layout.beingRebuilt": "Being Rebuilt",
   "stats.layout.mapHeatmaps": "Map Heatmaps",
@@ -3107,5 +3106,16 @@
   "chat.placeholder": "Message, or /invite",
   "chat.send": "Send",
   "social.friends.pendingTitle": "Friend requests",
-  "social.friends.tabChat": "Chat"
+  "social.friends.tabChat": "Chat",
+  "stats.hub.mvp": "MVP",
+  "stats.hub.mvpWhy": "Best rating across every tournament",
+  "stats.hub.potm": "Player of the month",
+  "stats.hub.overall": "Overall",
+  "stats.hub.archive": "Archive",
+  "stats.hub.teams": "teams",
+  "stats.hub.tournaments": "Tournaments",
+  "stats.hub.openBoards": "See the boards",
+  "stats.hub.openTournament": "Tournament page",
+  "stats.hub.tabsLabel": "Which tournament",
+  "stats.layout.navLabel": "Statistics sections"
 }
