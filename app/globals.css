@@ -6441,7 +6441,43 @@ body.inv-fullscreen .inv4 {
   transition: color 0.18s ease, border-color 0.18s ease, background 0.18s ease;
 }
 .pro-tab:hover { color: var(--color-text); background: color-mix(in srgb, var(--color-text) 5%, transparent); }
-.pro-tab.active { color: var(--color-text); border-bottom-color: var(--color-accent); }
+/* The colour stays; the rule is drawn by TabMark now, which is one element
+   framer moves between tabs rather than a border switching off one and on
+   another. Components that have not adopted it keep the border — hence
+   :not(:has(.tab-mark)), which is what stops a tab from wearing both. */
+.pro-tab.active { color: var(--color-text); }
+.pro-tab.active:not(:has(.tab-mark)) { border-bottom-color: var(--color-accent); }
+.pro-tab { position: relative; }
+
+/* Over the container's own rule, not beside it: -3px lines the 3px mark up
+   with the 3px transparent border every tab already reserves. */
+.tab-mark {
+  position: absolute;
+  left: 0;
+  right: 0;
+  bottom: -3px;
+  height: 3px;
+  background: var(--color-accent);
+}
+/* A team's tag, beside its name.
+   Here rather than in view.css because three different pages render a team
+   name and only one of them imports that file. The margin is part of the
+   rule: the name and the tag are two separate text nodes in the same cell,
+   and without it they run together. */
+.tv-tag {
+  display: inline-flex;
+  align-items: center;
+  margin-left: 7px;
+  padding: 2px 7px;
+  border: 1px solid var(--color-divider);
+  font-family: var(--font-mono);
+  font-size: 11px;
+  font-weight: 700;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+  color: var(--color-text-muted);
+}
+
 .pro-tab-count {
   font-family: var(--font-mono); font-size: 11px; font-weight: 400;
   padding: 1px 6px;

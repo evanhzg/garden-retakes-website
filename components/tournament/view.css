@@ -222,18 +222,9 @@
    .chip, which offered a pointer cursor and a hover lift for something that
    does nothing when you click it. Matches .tv-seed, which is the other small
    identifier on the same row. */
-.tv-tag {
-  display: inline-flex;
-  align-items: center;
-  padding: 2px 7px;
-  border: 1px solid var(--color-divider);
-  font-family: var(--font-mono);
-  font-size: 11px;
-  font-weight: 700;
-  letter-spacing: 0.04em;
-  text-transform: uppercase;
-  color: var(--color-text-muted);
-}
+/* .tv-tag moved to globals.css — the hub's team table uses it too and does
+   not import this file, so a team read as "Greyhaven BotsGRE": the tag was
+   rendering as unstyled text welded to the end of the name. */
 
 /* ---------- Empty-state bracket preview ----------
    The tree drawn before a tournament has one. Faded and captioned so nobody

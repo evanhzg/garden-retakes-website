@@ -1,5 +1,5 @@
 import Link from "next/link";
-import { Building2, Map as MapIcon, Plus, Trophy, Wrench } from "lucide-react";
+import { ArrowRight, Building2, Map as MapIcon, Plus, Settings2, Wrench } from "lucide-react";
 import { prisma } from "@/lib/db";
 import { getT } from "@/lib/serverI18n";
 import { canUseOrgs, getTournamentContext, manageableTournamentIds } from "@/lib/tournamentAuth";
@@ -111,35 +111,46 @@ export default async function TournamentsPage() {
           use in the middle of the page everybody else came to read. Beside the
           title they are out of the way of the list and still the first thing an
           organizer's eye lands on. */}
-      <section className="hero hero-compact tl-hero">
+      <section className="tl-hero">
         <div className="tl-hero-grid">
-          <div className="hero-inner">
+          <div className="tl-hero-copy">
+            <span className="tl-kicker">{t("tournaments.kicker")}</span>
+
+            {/* The homepage's two faces, quoted. The statement is in the
+                grotesque and the NAME is in the serif italic, which is the one
+                job that face has anywhere on the site — and this page is the
+                front door to the thing the homepage is naming, so the two have
+                to agree. The gradient is gone with it: .grad paints text with
+                background-clip, which is a third treatment competing with the
+                two that already say everything. */}
             <h1 className="tl-title">
-              {/* Outside the gradient span on purpose: .grad paints text with
-                  background-clip and sets colour to transparent, which would
-                  erase an icon nested inside it. */}
-              <Trophy className="tl-title-icon" aria-hidden focusable="false" />
-              <span className="grad">{t("tournaments.title")}</span>
+              {t("tournaments.titleLead")}{" "}
+              <em className="tl-title-serif">{t("tournaments.titleName")}</em>
             </h1>
-            <p className="muted">{t("tournaments.blurb")}</p>
+
+            <p className="tl-blurb">{t("tournaments.blurb")}</p>
           </div>
 
           {/* The way in. These pages existed and were reachable only by knowing
               the URL, which meant an organizer could be given the role and still
               have no way to use it. */}
+          {/* A toolbar, not a panel.
+              It was a bordered box with its own heading, its own paragraph and
+              four stacked buttons, taking a third of the page's first screen
+              to say what four labels already say — and putting the section only
+              a handful of people can use above the list everybody came for.
+              One row, one filled button, the rest ghosts. */}
           {(ctx.canCreate || showOrgs) && (
-            <aside className="tl-tools">
-              <div className="tl-tools-head">
-                <h2>{t("tournaments.organizerTools")}</h2>
-                <span className="role-badge">{ctx.roleName}</span>
-              </div>
-
-              <p className="muted tl-tools-blurb">{t("tournaments.organizerBlurb")}</p>
+            <aside className="tl-tools" aria-label={t("tournaments.organizerTools")}>
+              <span className="tl-role">
+                <Settings2 size={13} aria-hidden focusable="false" />
+                {ctx.roleName}
+              </span>
 
               <div className="tl-tools-list">
                 {ctx.canCreate && (
-                  <Link className="btn btn-primary tl-tool" href="/admin/tournaments">
-                    <Plus size={16} aria-hidden focusable="false" />
+                  <Link className="tl-tool is-primary" href="/admin/tournaments">
+                    <Plus size={15} aria-hidden focusable="false" />
                     {t("tournaments.createOne")}
                   </Link>
                 )}
@@ -151,12 +162,12 @@ export default async function TournamentsPage() {
                     change everybody's. */}
                 {ctx.level >= AdminLevel.Admin && (
                   <>
-                    <Link className="btn btn-secondary tl-tool" href="/admin/maker">
-                      <Wrench size={16} aria-hidden focusable="false" />
+                    <Link className="tl-tool" href="/admin/maker">
+                      <Wrench size={15} aria-hidden focusable="false" />
                       {t("setup.makerLink")}
                     </Link>
-                    <Link className="btn btn-secondary tl-tool" href="/admin?tab=maps">
-                      <MapIcon size={16} aria-hidden focusable="false" />
+                    <Link className="tl-tool" href="/admin?tab=maps">
+                      <MapIcon size={15} aria-hidden focusable="false" />
                       {t("tournaments.mapLibrary")}
                     </Link>
                   </>
@@ -166,8 +177,8 @@ export default async function TournamentsPage() {
                     an org without being in the global organizer registry, and
                     their own org's page was reachable only by knowing its slug. */}
                 {showOrgs && (
-                  <Link className="btn btn-secondary tl-tool" href="/orgs">
-                    <Building2 size={16} aria-hidden focusable="false" />
+                  <Link className="tl-tool" href="/orgs">
+                    <Building2 size={15} aria-hidden focusable="false" />
                     {t("tournaments.orgsLink")}
                   </Link>
                 )}
@@ -243,20 +254,31 @@ export default async function TournamentsPage() {
                     </Link>
 
                     <div className="tl-facts">
+                      {/* Compact: the two-line version is right in a table
+                          column where it is the only thing in the cell, and
+                          wrong here, where it sat under the name as the
+                          heaviest object on the card. */}
                       <StatusTag
                         kind="tournament"
+                        className="compact"
                         value={displayedState(tournament.State, decided)}
                       />
                       <span className="tl-fact">
                         {tournament.TeamSize}v{tournament.TeamSize}
                       </span>
+                      {/* A pickup lobby's cap is 9999, which is the schema
+                          saying "no limit" and the card saying "2 / 9999
+                          teams". A ceiling nobody can reach is not a fact
+                          about the tournament; below it, the count alone. */}
                       <span className="tl-fact">
-                        {tournament._count.Teams} / {tournament.MaxTeams}{" "}
+                        {tournament.MaxTeams >= 999
+                          ? tournament._count.Teams
+                          : `${tournament._count.Teams} / ${tournament.MaxTeams}`}{" "}
                         {t("tournaments.teams").toLowerCase()}
                       </span>
-                      {when.kind === "live" && !decided && (
-                        <span className="tl-live">{t("countdown.live")}</span>
-                      )}
+                      {/* The LIVE pip is gone: the status beside it already
+                          reads "Live", and two ways of saying one thing on one
+                          line is how a card stops being scannable. */}
                       {when.kind === "starting-soon" && (
                         <span className="tl-fact">{t("countdown.soon")}</span>
                       )}
@@ -272,23 +294,28 @@ export default async function TournamentsPage() {
                     </div>
                   </div>
 
+                  {/* Three filled grey boxes down the right of every card was
+                      three equal shouts per row, and on a list of ten
+                      tournaments the loudest thing on the page was the word
+                      "Voir" repeated ten times. Register is the only one that
+                      is ever the point, so it is the only filled one; the
+                      others are ghosts that say where they go. */}
                   <div className="tl-actions">
                     {openToJoin && (
                       <Link
-                        className="btn btn-primary tl-btn"
+                        className="tl-btn is-primary"
                         href={`/tournaments/${tournament.Slug}/register`}
                       >
                         {t("tournaments.register")}
+                        <ArrowRight size={14} aria-hidden focusable="false" />
                       </Link>
                     )}
-                    <Link className="btn btn-secondary tl-btn" href={`/tournaments/${tournament.Slug}`}>
+                    <Link className="tl-btn" href={`/tournaments/${tournament.Slug}`}>
                       {t("tournaments.view")}
                     </Link>
                     {manageable.has(tournament.Id) && (
-                      <Link
-                        className="btn btn-secondary tl-btn"
-                        href={`/admin/tournaments/${tournament.Id}`}
-                      >
+                      <Link className="tl-btn" href={`/admin/tournaments/${tournament.Id}`}>
+                        <Settings2 size={14} aria-hidden focusable="false" />
                         {t("tournaments.manage")}
                       </Link>
                     )}

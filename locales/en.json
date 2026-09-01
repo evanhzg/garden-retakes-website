@@ -3117,5 +3117,8 @@
   "stats.hub.openBoards": "See the boards",
   "stats.hub.openTournament": "Tournament page",
   "stats.hub.tabsLabel": "Which tournament",
-  "stats.layout.navLabel": "Statistics sections"
+  "stats.layout.navLabel": "Statistics sections",
+  "tournaments.kicker": "Reeeetakes · The circuit",
+  "tournaments.titleLead": "The",
+  "tournaments.titleName": "Blitz."
 }

@@ -4,6 +4,7 @@ import { useState } from "react";
 import Link from "next/link";
 import { Trophy, Medal, Users, CalendarDays } from "lucide-react";
 import { useI18n } from "@/components/I18nProvider";
+import TabMark from "@/components/TabMark";
 import LeaderboardTabs, { type Board } from "@/components/stats/LeaderboardTabs";
 import type { ArchiveEntry, TeamRanking, ScheduledTournament } from "@/lib/tournament/hub";
 import "./hub.css";
@@ -58,6 +59,7 @@ export default function HubTabs({
             {item.icon}
             {item.label}
             {item.count ? <span className="pro-tab-count">{item.count}</span> : null}
+            {tab === item.id && <TabMark group="hub" />}
           </button>
         ))}
       </div>

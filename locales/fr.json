@@ -3117,5 +3117,8 @@
   "stats.hub.openBoards": "Voir les classements",
   "stats.hub.openTournament": "Page du tournoi",
   "stats.hub.tabsLabel": "Quel tournoi",
-  "stats.layout.navLabel": "Sections des statistiques"
+  "stats.layout.navLabel": "Sections des statistiques",
+  "tournaments.kicker": "Reeeetakes · Le circuit",
+  "tournaments.titleLead": "Le tournoi",
+  "tournaments.titleName": "Blitz."
 }
