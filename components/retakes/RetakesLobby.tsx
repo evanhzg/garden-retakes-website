@@ -592,15 +592,31 @@ export default function RetakesLobby({ signedIn, lobbyId }: { signedIn: boolean,
               <button className="btn btn-ghost" onClick={() => send("rq:match:decline")}>
                 {t("lobby.decline")}
               </button>
-              <button className="btn btn-ghost" onClick={() => setHideMatchRoom(true)}>
-                Leave Game
+              {/* IT DOES NOT LEAVE ANYTHING. All three buttons that said
+                  "Leave Game" call setHideMatchRoom(true), which hides this
+                  panel and nothing else — the player stays in the match. On a
+                  twenty-second accept window that label is the worst thing it
+                  could say: somebody who wants out presses it, the takeover
+                  disappears, and they are still in a match they believe they
+                  left, now without the timer. Decline is how you leave; this
+                  is how you get the screen out of the way. */}
+              <button
+                className="btn btn-ghost"
+                title={t("lobby.hideroomHint")}
+                onClick={() => setHideMatchRoom(true)}
+              >
+                {t("lobby.hideroom")}
               </button>
             </div>
           )}
           {me?.accepted && (
             <div style={{ marginTop: "12px" }}>
-              <button className="btn btn-ghost" onClick={() => setHideMatchRoom(true)}>
-                Leave Game
+              <button
+                className="btn btn-ghost"
+                title={t("lobby.hideroomHint")}
+                onClick={() => setHideMatchRoom(true)}
+              >
+                {t("lobby.hideroom")}
               </button>
             </div>
           )}
@@ -899,28 +915,41 @@ export default function RetakesLobby({ signedIn, lobbyId }: { signedIn: boolean,
 
       {reportOpen && (
         <div className="modal-scrim" onClick={() => setReportOpen(false)}>
-           <div className="modal-content" onClick={e => e.stopPropagation()} style={{ background: 'var(--color-bg)', padding: '24px', borderRadius: '12px', maxWidth: '400px', width: '100%', zIndex: 9999 }}>
-              <h2 style={{ margin: '0 0 16px' }}>Report Lobby</h2>
-              <textarea 
-                 value={reportText} 
+           {/* Was four English strings, six inline styles, a 12px radius, a
+               hard-coded `color: white` and an alert() for the confirmation —
+               and a bare catch that swallowed a failed send, so a report that
+               never arrived looked exactly like one that did. */}
+           <div className="modal-content rq-report" onClick={e => e.stopPropagation()}>
+              <h2>{t("lobby.report.title")}</h2>
+              <textarea
+                 className="rq-report-text"
+                 value={reportText}
                  onChange={e => setReportText(e.target.value)}
-                 placeholder="Please provide details about the report..."
-                 style={{ width: '100%', height: '100px', padding: '8px', background: 'var(--color-surface)', border: '1px solid var(--color-divider)', color: 'white', borderRadius: '4px', resize: 'none' }}
+                 placeholder={t("lobby.report.placeholder")}
+                 maxLength={2000}
               />
-              <div style={{ display: 'flex', gap: '8px', marginTop: '16px', justifyContent: 'flex-end' }}>
-                 <button className="btn btn-ghost" onClick={() => setReportOpen(false)}>Cancel</button>
-                 <button className="btn btn-primary" onClick={async () => {
+              <div className="rq-report-actions">
+                 <button className="btn btn-ghost" onClick={() => setReportOpen(false)}>
+                   {t("common.cancel")}
+                 </button>
+                 <button
+                   className="btn btn-primary"
+                   disabled={!reportText.trim()}
+                   onClick={async () => {
                     try {
-                       await fetch("/api/tickets", {
+                       const res = await fetch("/api/tickets", {
                           method: "POST",
                           headers: { "Content-Type": "application/json", "Authorization": `Bearer ${steamId}` },
                           body: JSON.stringify({ message: `Report against Retakes party ${party?.leader}:\n${reportText}`, category: "REPORT" })
                        });
+                       if (!res.ok) throw new Error(String(res.status));
                        setReportOpen(false);
                        setReportText("");
-                       alert("Report submitted successfully.");
-                    } catch(e) {}
-                 }}>Submit Report</button>
+                       setNotice({ kind: "ok", text: t("lobby.report.sent") });
+                    } catch {
+                       setNotice({ kind: "error", text: t("lobby.report.failed") });
+                    }
+                 }}>{t("lobby.report.submit")}</button>
               </div>
            </div>
         </div>
@@ -993,12 +1022,14 @@ function MatchRoom({
   return (
     <div className="rq-room">
       <header className="rq-room-head" style={{ position: "relative" }}>
-        <button 
-          className="btn btn-ghost" 
-          onClick={onLeave} 
-          style={{ position: "absolute", top: -20, right: 0, fontSize: "12px", opacity: 0.7 }}
+        {/* Same button, same lie — it hides the room and the match carries
+            on without you looking at it. */}
+        <button
+          className="btn btn-ghost rq-room-hide"
+          onClick={onLeave}
+          title={t("lobby.hideroomHint")}
         >
-          Leave Game
+          {t("lobby.hideroom")}
         </button>
         <TeamHead team={match.teams[0]} nameOverride={t0Name} mine={match.yourTeam === 0} align="left" t={t} />
         <div className="rq-room-status">

@@ -3123,5 +3123,12 @@
   "tournaments.titleName": "Blitz.",
   "lobby.titleLead": "Matchmaking",
   "lobby.titleName": "Blitz.",
-  "lobby.role.yours": "Vos rôles"
+  "lobby.role.yours": "Vos rôles",
+  "lobby.hideroom": "Masquer",
+  "lobby.hideroomHint": "Masque ce panneau. Vous restez dans le match — rouvrez-le avec Salle de match.",
+  "lobby.report.title": "Signaler ce lobby",
+  "lobby.report.placeholder": "Que s'est-il passé ? Le staff lit chaque signalement.",
+  "lobby.report.submit": "Envoyer",
+  "lobby.report.sent": "Signalement envoyé. Le staff va regarder.",
+  "lobby.report.failed": "Envoi du signalement impossible."
 }
