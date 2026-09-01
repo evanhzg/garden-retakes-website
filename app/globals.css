@@ -362,7 +362,7 @@ body.is-loading-page .site-header .logo .brand-word {
   align-items: center;
   gap: 8px;
   padding: 5px 12px 5px 6px;
-  border-radius: 999px;
+  border-radius: 0;
   background: var(--accent-soft);
   border: 1px solid var(--border);
   font-weight: 700;
@@ -388,7 +388,7 @@ body.is-loading-page .site-header .logo .brand-word {
   font-size: 0.9rem;
   color: var(--accent);
   padding: 7px 16px;
-  border-radius: 999px;
+  border-radius: 0;
   border: 1.5px solid var(--accent-soft);
   transition: all 0.2s ease;
 }
@@ -731,7 +731,7 @@ tbody tr:hover {
   background: var(--panel);
   color: var(--muted);
   padding: 7px 16px;
-  border-radius: 999px;
+  border-radius: 0;
   font-weight: 600;
   font-size: 0.85rem;
   cursor: pointer;
@@ -963,7 +963,7 @@ tbody tr:hover {
   color: #fff;
   font-weight: 700;
   padding: 12px 22px;
-  border-radius: 999px;
+  border-radius: 0;
   box-shadow: var(--shadow-hover);
   animation: popIn 0.25s ease;
   z-index: 50;
@@ -997,7 +997,7 @@ tbody tr:hover {
   color: var(--accent);
   background: var(--accent-soft);
   padding: 5px 12px;
-  border-radius: 999px;
+  border-radius: 0;
   margin-bottom: 16px;
 }
 
@@ -1112,7 +1112,7 @@ tbody tr:hover {
   align-items: center;
   border: 1.5px solid var(--border);
   background: #fff;
-  border-radius: 999px;
+  border-radius: 0;
   overflow: hidden;
   transition: all 0.2s ease;
 }
@@ -1226,7 +1226,7 @@ tbody tr:hover {
   -webkit-appearance: none;
   appearance: none;
   height: 6px;
-  border-radius: 999px;
+  border-radius: 0;
   background: var(--accent-soft);
   outline: none;
   cursor: pointer;
@@ -1401,14 +1401,14 @@ tbody tr:hover {
 .meter .track {
   flex: 1;
   height: 10px;
-  border-radius: 999px;
+  border-radius: 0;
   background: var(--bg-soft);
   overflow: hidden;
 }
 
 .meter .fill {
   height: 100%;
-  border-radius: 999px;
+  border-radius: 0;
   background: var(--gradient);
   animation: meterGrow 0.8s cubic-bezier(0.22, 1, 0.36, 1) both;
 }
@@ -1477,7 +1477,7 @@ tbody tr:hover {
   font-size: 0.72rem;
   font-weight: 800;
   padding: 3px 10px;
-  border-radius: 999px;
+  border-radius: 0;
 }
 
 .side-t {
@@ -1542,7 +1542,7 @@ tbody tr:hover {
 
 .cmp-bar {
   height: 8px;
-  border-radius: 999px;
+  border-radius: 0;
   background: var(--bg-soft);
   position: relative;
   overflow: hidden;
@@ -1553,7 +1553,7 @@ tbody tr:hover {
   position: absolute;
   top: 0;
   bottom: 0;
-  border-radius: 999px;
+  border-radius: 0;
   background: var(--gradient);
   animation: meterGrow 0.7s cubic-bezier(0.22, 1, 0.36, 1) both;
 }
@@ -1605,7 +1605,7 @@ tbody tr:hover {
   font-size: 0.62rem;
   font-weight: 800;
   padding: 2px 7px;
-  border-radius: 999px;
+  border-radius: 0;
   color: #fff;
   box-shadow: 0 2px 6px rgba(43, 34, 51, 0.25);
   animation: popIn 0.25s ease;
@@ -1837,7 +1837,7 @@ tbody tr:hover {
   display: inline-block;
   margin-left: 8px;
   padding: 1px 8px;
-  border-radius: 999px;
+  border-radius: 0;
   background: var(--accent-soft);
   color: var(--accent);
   font-size: 0.68rem;
@@ -4994,7 +4994,7 @@ body.header-hidden .friends-fab {
   text-align: center;
   background: color-mix(in srgb, var(--bg) 85%, transparent);
   border: 1.5px solid var(--border);
-  border-radius: 999px;
+  border-radius: 0;
   box-shadow: 0 3px 10px -4px rgba(0, 0, 0, 0.18);
   padding: 8px 16px;
   box-shadow: 0 4px 12px rgba(0, 0, 0, 0.05);
@@ -6380,7 +6380,7 @@ html { scroll-behavior: smooth; }
   background: color-mix(in srgb, var(--color-text) 22%, transparent);
   border: 2px solid transparent;
   background-clip: content-box;
-  border-radius: 999px;
+  border-radius: 0;
 }
 ::-webkit-scrollbar-thumb:hover { background: color-mix(in srgb, var(--color-text) 40%, transparent); background-clip: content-box; }
 ::-webkit-scrollbar-corner { background: transparent; }
@@ -7403,7 +7403,7 @@ html[data-motion="off"] .main-content { scroll-behavior: auto; }
   margin: 0 auto 14px;
   padding: 8px 18px;
   border: 0;
-  border-radius: 999px;
+  border-radius: 0;
   background: var(--accent);
   color: var(--bg);
   font: inherit;
@@ -7671,7 +7671,7 @@ html[data-motion="off"] .main-content { scroll-behavior: auto; }
 .clip-tags { display: flex; gap: 5px; flex-wrap: wrap; margin: 7px 0 0; }
 .clip-tag {
   display: inline-flex; align-items: center;
-  padding: 2px 8px; border-radius: 999px;
+  padding: 2px 8px; border-radius: 0;
   font-size: 11px; font-weight: 700; letter-spacing: 0.01em;
   color: var(--tint);
   background: color-mix(in srgb, var(--tint) 16%, transparent);
@@ -7904,10 +7904,14 @@ header .avatar-sm { width: 34px; height: 34px; }
 
 .conn-bar { display: flex; flex-wrap: wrap; gap: 6px; margin-top: 10px; }
 
+/* Square, like everything else. These were the last pills on a profile — five
+   of them in a row under the name, which is where the eye lands first. The
+   brand colour stays: that is what identifies them, and it is carried on the
+   icon and the rule rather than by the shape. */
 .conn-chip {
   display: inline-flex; align-items: center; gap: 6px;
-  padding: 4px 10px;
-  border-radius: 999px;
+  padding: 5px 10px;
+  border-radius: 0;
   font-size: 12px; font-weight: 600;
   text-decoration: none;
   color: var(--color-text);
@@ -8008,7 +8012,7 @@ header .avatar-sm { width: 34px; height: 34px; }
   font-size: 10px; font-weight: 800; letter-spacing: 0.06em; text-transform: uppercase;
   color: var(--btn-primary-ink);
   background: var(--btn-primary-bg);
-  padding: 2px 8px; border-radius: 999px;
+  padding: 2px 8px; border-radius: 0;
   opacity: 0; transition: opacity 0.14s ease;
 }
 .inv4-skin-pick:hover .inv4-skin-equip,
@@ -8436,7 +8440,7 @@ header a > .avatar { display: block; }
   position: absolute; top: 1px; right: 0;
   min-width: 15px; height: 15px; padding: 0 3px;
   display: grid; place-items: center;
-  border-radius: 999px;
+  border-radius: 0;
   background: var(--color-accent); color: var(--color-bg);
   font-size: 9px; font-weight: 800; line-height: 1;
 }
@@ -8751,7 +8755,7 @@ header a > .avatar { display: block; }
   display: inline-flex; align-items: center; gap: 10px; flex-wrap: wrap;
   padding: 8px 12px; margin-bottom: 14px;
   border: 1px solid color-mix(in srgb, var(--color-bg) 40%, transparent);
-  border-radius: 999px;
+  border-radius: 0;
   font-size: 13px;
 }
 .live-card-dot {
@@ -8763,13 +8767,13 @@ header a > .avatar { display: block; }
 .live-card-players { font-weight: 700; }
 .live-card-map {
   display: inline-flex; align-items: center;
-  padding: 2px 9px; border-radius: 999px;
+  padding: 2px 9px; border-radius: 0;
   background: var(--map); color: #17130f; font-weight: 700; font-size: 12px;
 }
 .live-card-mode { opacity: 0.85; }
 .live-card-banner {
   text-transform: uppercase; letter-spacing: 0.06em; font-size: 12px; font-weight: 800;
-  padding: 2px 9px; border-radius: 999px;
+  padding: 2px 9px; border-radius: 0;
   background: var(--color-bg); color: var(--color-accent);
 }
 
@@ -10870,7 +10874,7 @@ body.inv-fullscreen .main-content > main.container { flex: none; }
 
 .util-shottabs { display: flex; gap: 6px; margin-bottom: 8px; flex-wrap: wrap; }
 .util-shottab {
-  padding: 4px 11px; border-radius: 999px;
+  padding: 4px 11px; border-radius: 0;
   border: 1.5px solid var(--btn-secondary-border);
   background: var(--btn-secondary-bg); color: var(--muted);
   font: inherit; font-size: 12px; font-weight: 600; cursor: pointer;
@@ -10949,7 +10953,7 @@ body.inv-fullscreen .main-content > main.container { flex: none; }
 .util-lightbox-tools { bottom: 12px; right: 12px; }
 
 .util-lightbox-pill {
-  padding: 7px 14px; border-radius: 999px;
+  padding: 7px 14px; border-radius: 0;
   border: 1px solid rgb(255 255 255 / 0.16);
   background: rgb(18 16 15 / 0.78);
   -webkit-backdrop-filter: blur(8px); backdrop-filter: blur(8px);
@@ -11057,7 +11061,7 @@ body.overlay-open .socket-status-banner {
 .ux-pools { display: flex; gap: 8px; flex-wrap: wrap; }
 .ux-maps { display: flex; gap: 6px; flex-wrap: wrap; justify-content: flex-end; }
 .ux-map {
-  padding: 6px 13px; border-radius: 999px;
+  padding: 6px 13px; border-radius: 0;
   border: 1.5px solid color-mix(in srgb, var(--color-text) 15%, transparent);
   background: transparent; color: var(--color-text);
   font: inherit; font-size: 12.5px; font-weight: 700; cursor: pointer;
@@ -11139,11 +11143,11 @@ body.overlay-open .socket-status-banner {
 .ux-levels { display: flex; gap: 6px; }
 .ux-count { flex: 1; font-size: 12px; color: var(--muted); font-variant-numeric: tabular-nums; }
 .ux-viewtabs {
-  display: flex; gap: 2px; padding: 2px; border-radius: 999px;
+  display: flex; gap: 2px; padding: 2px; border-radius: 0;
   background: color-mix(in srgb, var(--color-text) 8%, transparent);
 }
 .ux-viewtab {
-  padding: 5px 14px; border-radius: 999px; border: none; background: transparent;
+  padding: 5px 14px; border-radius: 0; border: none; background: transparent;
   color: var(--muted); font: inherit; font-size: 12px; font-weight: 800; cursor: pointer;
 }
 .ux-viewtab.on { background: var(--color-bg); color: var(--color-text); }
@@ -11259,7 +11263,7 @@ body.overlay-open .socket-status-banner {
 .ux-resources-empty p { margin: 0; max-width: 52ch; line-height: 1.5; }
 .ux-outlinks { display: flex; gap: 10px; margin-top: 6px; }
 .ux-outlinks a {
-  padding: 7px 15px; border-radius: 999px;
+  padding: 7px 15px; border-radius: 0;
   border: 1.5px solid color-mix(in srgb, var(--color-text) 16%, transparent);
   font-size: 12.5px; font-weight: 700; text-decoration: none; color: var(--color-text);
 }
@@ -11347,7 +11351,7 @@ body.overlay-open .socket-status-banner {
   overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
 }
 .clips-flag {
-  margin-left: 6px; padding: 1px 6px; border-radius: 999px; font-size: 10px; font-weight: 800;
+  margin-left: 6px; padding: 1px 6px; border-radius: 0; font-size: 10px; font-weight: 800;
   text-transform: uppercase; letter-spacing: 0.06em;
   background: color-mix(in srgb, var(--color-text) 12%, transparent);
 }
@@ -11388,7 +11392,7 @@ body.overlay-open .socket-status-banner {
    under 48 units — about a third of a smoke, close enough to be the same one. */
 .ux3d-error {
   font-variant-numeric: tabular-nums; font-weight: 700; font-size: 12px;
-  padding: 2px 8px; border-radius: 999px; white-space: nowrap;
+  padding: 2px 8px; border-radius: 0; white-space: nowrap;
   background: color-mix(in srgb, #f59e0b 22%, transparent);
 }
 .ux3d-error.good { background: color-mix(in srgb, #22c55e 22%, transparent); }
@@ -11512,7 +11516,7 @@ body.overlay-open .socket-status-banner {
   z-index: 300;
   display: flex; align-items: center; gap: 9px;
   padding: 9px 16px;
-  border-radius: 999px;
+  border-radius: 0;
   border: 1px solid var(--border);
   background: color-mix(in srgb, var(--panel) 92%, transparent);
   backdrop-filter: blur(8px);
