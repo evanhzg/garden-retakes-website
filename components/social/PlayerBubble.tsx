@@ -4,26 +4,53 @@ import React, { useState, useRef, useEffect, useCallback } from "react";
 import { createPortal } from "react-dom";
 import { motion, AnimatePresence } from "framer-motion";
 import Link from "next/link";
-import AvatarImage from "@/components/AvatarImage";
+import AvatarStatus from "@/components/social/AvatarStatus";
+import { useLivePlayers, gameStateOf } from "@/components/social/useLivePlayers";
+import { shownPresence, type ChosenStatus } from "@/lib/presence";
+import { ExternalLink, Flag, MessageSquare, UserPlus } from "lucide-react";
 import { useI18n } from '@/components/I18nProvider';
-import { useSocket } from "@/components/SocketProvider";
+import "./playerbubble.css";
 
 interface PlayerBubbleProps {
   steamId: string;
   name: string;
   isFriend?: boolean;
+  /** Whether they have a tab open. See the note by gameState below. */
+  isOnline?: boolean;
+  /**
+   * Open a conversation with this player.
+   *
+   * Optional, because the card is also opened from a leaderboard row where
+   * there is no chat to open — the button is simply not drawn there rather
+   * than drawn and inert.
+   */
+  onMessage?: (steamId: string) => void;
   children: React.ReactNode;
 }
 
-export default function PlayerBubble({ steamId, name, isFriend = false, children }: PlayerBubbleProps) {
+export default function PlayerBubble({ steamId, name, isFriend = false, isOnline = false, onMessage, children }: PlayerBubbleProps) {
     const { t } = useI18n();
 
   const [isOpen, setIsOpen] = useState(false);
   const [data, setData] = useState<any>(null);
   const [loading, setLoading] = useState(false);
+  /** In flight, so a second click cannot send a second request. */
+  const [busy, setBusy] = useState(false);
+  /** The one line of feedback an action gets. Cleared when the card closes. */
+  const [notice, setNotice] = useState<string | null>(null);
   const triggerRef = useRef<HTMLDivElement>(null);
   const popoverRef = useRef<HTMLDivElement>(null);
-  const { socket } = useSocket();
+  const livePlayers = useLivePlayers();
+
+  /**
+   * Whether they have a tab open, passed in rather than looked up.
+   *
+   * The socket context does not carry the online list — FriendsSidebar
+   * subscribes to the events and keeps it — so the caller that already knows
+   * says so. A leaderboard row, which does not, leaves it false and the card
+   * falls back to the game feed, which is the only thing that page knows too.
+   */
+  const gameState = gameStateOf(steamId, livePlayers);
 
   // The bubble is portalled to <body> and positioned in viewport coordinates.
   // It used to be position:absolute/bottom:100% inside the row, which meant two
@@ -89,6 +116,7 @@ export default function PlayerBubble({ steamId, name, isFriend = false, children
   const handleToggle = async () => {
     const nextOpen = !isOpen;
     setIsOpen(nextOpen);
+    if (!nextOpen) setNotice(null);
 
     if (nextOpen && !data && !loading) {
       setLoading(true);
@@ -106,20 +134,68 @@ export default function PlayerBubble({ steamId, name, isFriend = false, children
     }
   };
 
-  const handleAddFriend = () => {
-    if (socket) {
-      socket.emit("friend_request", { targetId: steamId });
-      setIsOpen(false);
+  /**
+   * Add friend, through the endpoint that exists.
+   *
+   * It emitted a `friend_request` socket event, and neither server.js nor
+   * scripts/ has ever had a handler for that name — so the button opened, the
+   * bubble closed, and nothing happened. /api/friends POST is the path the
+   * rest of the site uses and the one with the duplicate and self-add checks
+   * on it.
+   */
+  const handleAddFriend = useCallback(async () => {
+    setBusy(true);
+    try {
+      const res = await fetch("/api/friends", {
+        method: "POST",
+        headers: { "content-type": "application/json" },
+        body: JSON.stringify({ targetSteamId: steamId }),
+      });
+      const json = await res.json().catch(() => ({}));
+      setNotice(res.ok ? t("bubble.requestSent") : (json.error ?? t("bubble.requestFailed")));
+    } catch {
+      setNotice(t("bubble.requestFailed"));
+    } finally {
+      setBusy(false);
     }
-  };
+  }, [steamId, t]);
+
+  /**
+   * Report, which files an actual ticket.
+   *
+   * This was `alert('Reported!')` — a browser dialog claiming a report had
+   * been made, with nothing behind it. Anybody who used it believed staff had
+   * been told. /api/tickets is the queue the admin panel reads, so a report
+   * now lands somewhere a human looks.
+   */
+  const handleReport = useCallback(async () => {
+    setBusy(true);
+    try {
+      const res = await fetch("/api/tickets", {
+        method: "POST",
+        headers: { "content-type": "application/json" },
+        body: JSON.stringify({
+          category: "REPORT",
+          message: `Report against ${name} (${steamId}) from their player card.`,
+        }),
+      });
+      setNotice(res.ok ? t("bubble.reported") : t("bubble.reportFailed"));
+    } catch {
+      setNotice(t("bubble.reportFailed"));
+    } finally {
+      setBusy(false);
+    }
+  }, [steamId, name, t]);
+
+  const shown = shownPresence({
+    connected: isOnline,
+    inGame: gameState,
+    chosen: (data?.presence ?? null) as ChosenStatus,
+  });
 
   return (
-    <div style={{ position: "relative", display: "inline-block" }}>
-      <div
-        ref={triggerRef}
-        onClick={handleToggle}
-        style={{ cursor: "pointer", display: "inline-flex", alignItems: "center" }}
-      >
+    <div className="pb-anchor">
+      <div ref={triggerRef} onClick={handleToggle} className="pb-trigger">
         {children}
       </div>
 
@@ -128,116 +204,118 @@ export default function PlayerBubble({ steamId, name, isFriend = false, children
         {isOpen && (
           <motion.div
             ref={popoverRef}
-            className="player-bubble"
-            initial={{ opacity: 0, y: pos?.placement === "below" ? -10 : 10, scale: 0.95 }}
-            animate={{ opacity: 1, y: 0, scale: 1 }}
-            exit={{ opacity: 0, y: pos?.placement === "below" ? -10 : 10, scale: 0.95 }}
-            transition={{ type: "spring", stiffness: 300, damping: 25 }}
+            className="player-bubble pb"
+            initial={{ opacity: 0, scale: 0.96, x: 6 }}
+            animate={{ opacity: 1, scale: 1, x: 0 }}
+            exit={{ opacity: 0, scale: 0.97, x: 4, transition: { duration: 0.12 } }}
+            transition={{ duration: 0.18, ease: [0.16, 1, 0.3, 1] }}
             style={{
               position: "fixed",
               left: pos?.left ?? -9999,
               top: pos?.top ?? -9999,
               visibility: pos ? "visible" : "hidden",
-              width: 320,
-              backgroundColor: "rgba(20, 20, 25, 0.95)",
-              backdropFilter: "blur(12px)",
-              border: "1px solid rgba(255, 255, 255, 0.1)",
-              borderRadius: 16,
-              boxShadow: "0 8px 32px rgba(0,0,0,0.4)",
-              zIndex: 1002,
-              overflow: "hidden",
-              color: "#fff"
             }}
           >
-            {/* Bubble Header */}
-            <div style={{ padding: "16px 16px 12px", borderBottom: "1px solid rgba(255,255,255,0.05)", display: "flex", gap: 12, alignItems: "center" }}>
-              <div style={{ width: 48, height: 48, borderRadius: "50%", overflow: "hidden", flexShrink: 0, backgroundColor: "#222" }}>
-                <AvatarImage steamId={steamId} />
-              </div>
-              <div style={{ flex: 1, minWidth: 0 }}>
-                <div style={{ fontSize: 16, fontWeight: 700, whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>
-                  {name}
-                </div>
-                <div style={{ fontSize: 12, color: "rgba(255,255,255,0.5)", whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>
-                  {data?.country ? `🌎 ${data.country}` : "Steam User"}
-                </div>
-              </div>
-            </div>
+            <header className="pb-head">
+              <AvatarStatus
+                steamId={steamId}
+                name={name}
+                presence={shown}
+                size={44}
+              />
 
-            {/* Content Body */}
-            <div style={{ padding: 16 }}>
-              {loading ? (
-                <div style={{ fontSize: 13, color: "rgba(255,255,255,0.5)", textAlign: "center", padding: "20px 0" }}>{t("auto.playerbubble.loading")}</div>
-              ) : (
-                <div style={{ display: "flex", flexDirection: "column", gap: 12 }}>
-                  {data?.bio && (
-                    <div style={{ fontSize: 13, fontStyle: "italic", color: "rgba(255,255,255,0.7)" }}>
-                      "{data.bio}"
-                    </div>
+              <div className="pb-id">
+                <span className="pb-name">{data?.name || name}</span>
+                {/* What they are doing, then where they are from. The first is
+                    why somebody opened this card; the second used to be the
+                    only line and read "Steam User" for nearly everybody. */}
+                <span className="pb-sub">
+                  <span className={`pb-state is-${shown}`}>{t(`social.presence.${shown}`)}</span>
+                  {shown === "offline" && data?.lastSeen && (
+                    <span className="pb-seen">· {agoLabel(data.lastSeen)}</span>
                   )}
-                  
-                  {/* Quick Stats Summary */}
-                  <div style={{ display: "flex", gap: 8 }}>
-                    <div style={{ flex: 1, background: "rgba(255,255,255,0.03)", padding: 8, borderRadius: 8, textAlign: "center" }}>
-                      <div style={{ fontSize: 10, textTransform: "uppercase", color: "rgba(255,255,255,0.4)", marginBottom: 4 }}>{t("auto.playerbubble.rating")}</div>
-                      <div style={{ fontSize: 16, fontWeight: 700, color: "#fff" }}>{data?.rating?.toFixed(2) ?? "—"}</div>
+                  {data?.country && <span className="pb-country">· {data.country}</span>}
+                </span>
+              </div>
+
+              {data?.isPro && <span className="pb-pro">{t("bubble.pro")}</span>}
+            </header>
+
+            <div className="pb-body">
+              {loading ? (
+                <p className="pb-loading">{t("auto.playerbubble.loading")}</p>
+              ) : (
+                <>
+                  {data?.bio && <p className="pb-bio">{data.bio}</p>}
+
+                  {/* Three, not two. Rounds is what makes the other two
+                      readable — a 1.4 rating over 40 rounds and over 4000 are
+                      different claims, and the card showed no way to tell. */}
+                  <div className="pb-stats">
+                    <div className="pb-stat">
+                      <span className="pb-stat-k">{t("auto.playerbubble.rating")}</span>
+                      <span className="pb-stat-v num">{data?.rating?.toFixed(2) ?? "—"}</span>
                     </div>
-                    <div style={{ flex: 1, background: "rgba(255,255,255,0.03)", padding: 8, borderRadius: 8, textAlign: "center" }}>
-                      <div style={{ fontSize: 10, textTransform: "uppercase", color: "rgba(255,255,255,0.4)", marginBottom: 4 }}>{t("auto.playerbubble.win")}</div>
-                      <div style={{ fontSize: 16, fontWeight: 700, color: "#fff" }}>{data?.winPct ? `${data.winPct.toFixed(0)}%` : "—"}</div>
+                    <div className="pb-stat">
+                      <span className="pb-stat-k">{t("auto.playerbubble.win")}</span>
+                      <span className="pb-stat-v num">
+                        {typeof data?.winPct === "number" ? `${data.winPct.toFixed(0)}%` : "—"}
+                      </span>
+                    </div>
+                    <div className="pb-stat">
+                      <span className="pb-stat-k">{t("bubble.rounds")}</span>
+                      <span className="pb-stat-v num">
+                        {typeof data?.rounds === "number" ? compactNumber(data.rounds) : "—"}
+                      </span>
                     </div>
                   </div>
-                </div>
-              )}
-            </div>
-
-            {/* Footer Actions */}
-            <div style={{ display: "flex", borderTop: "1px solid rgba(255,255,255,0.05)", background: "rgba(0,0,0,0.2)" }}>
-              <Link 
-                href={`/players/${steamId}`} 
-                style={{ flex: 1, padding: 12, textAlign: "center", fontSize: 13, fontWeight: 600, color: "#fff", textDecoration: "none", transition: "background 0.2s" }}
-                onMouseEnter={(e) => e.currentTarget.style.background = "rgba(255,255,255,0.05)"}
-                onMouseLeave={(e) => e.currentTarget.style.background = "transparent"}
-              >
-                {t("auto.playerbubble.view_profile")}
-                                            </Link>
-              <div 
-                style={{ width: 1, background: "rgba(255,255,255,0.05)" }}
-              />
-              {!isFriend && (
-                <>
-                  <button 
-                    onClick={handleAddFriend}
-                    style={{ flex: 1, padding: 12, background: "none", border: "none", cursor: "pointer", fontSize: 13, fontWeight: 600, color: "#4ade80", transition: "background 0.2s" }}
-                    onMouseEnter={(e) => e.currentTarget.style.background = "rgba(74, 222, 128, 0.1)"}
-                    onMouseLeave={(e) => e.currentTarget.style.background = "transparent"}
-                    title={t("auto.playerbubble.add_friend")}
-                  >
-                    <svg viewBox="0 0 24 24" width="18" height="18" stroke="currentColor" strokeWidth="2" fill="none" strokeLinecap="round" strokeLinejoin="round" style={{ verticalAlign: "middle" }}>
-                      <path d="M16 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2" />
-                      <circle cx="8.5" cy="7" r="4" />
-                      <line x1="20" y1="8" x2="20" y2="14" />
-                      <line x1="23" y1="11" x2="17" y2="11" />
-                    </svg>
-                  </button>
-                  <div 
-                    style={{ width: 1, background: "rgba(255,255,255,0.05)" }}
-                  />
                 </>
               )}
-              <button  
-                onClick={() => { alert('Reported!'); setIsOpen(false); }}
-                style={{ flex: 1, padding: 12, background: "none", border: "none", cursor: "pointer", fontSize: 13, fontWeight: 600, color: "#f87171", transition: "background 0.2s" }}
-                onMouseEnter={(e) => e.currentTarget.style.background = "rgba(248, 113, 113, 0.1)"}
-                onMouseLeave={(e) => e.currentTarget.style.background = "transparent"}
+
+              {notice && <p className="pb-notice">{notice}</p>}
+            </div>
+
+            <footer className="pb-foot">
+              {/* The reason most cards are opened, and it was not on here. */}
+              {onMessage && (
+                <button
+                  className="pb-act primary"
+                  disabled={busy}
+                  onClick={() => {
+                    onMessage(steamId);
+                    setIsOpen(false);
+                  }}
+                >
+                  <MessageSquare size={15} />
+                  <span>{t("bubble.message")}</span>
+                </button>
+              )}
+
+              <Link href={`/players/${steamId}`} className="pb-act">
+                <ExternalLink size={15} />
+                <span>{t("auto.playerbubble.view_profile")}</span>
+              </Link>
+
+              {!isFriend && (
+                <button
+                  className="pb-act"
+                  disabled={busy}
+                  onClick={handleAddFriend}
+                  title={t("auto.playerbubble.add_friend")}
+                >
+                  <UserPlus size={15} />
+                </button>
+              )}
+
+              <button
+                className="pb-act danger"
+                disabled={busy}
+                onClick={handleReport}
                 title={t("auto.playerbubble.report_player")}
               >
-                <svg viewBox="0 0 24 24" width="18" height="18" stroke="currentColor" strokeWidth="2" fill="none" strokeLinecap="round" strokeLinejoin="round" style={{ verticalAlign: "middle" }}>
-                  <path d="M4 15s1-1 4-1 5 2 8 2 4-1 4-1V3s-1 1-4 1-5-2-8-2-4 1-4 1z" />
-                  <line x1="4" y1="22" x2="4" y2="15" />
-                </svg>
+                <Flag size={15} />
               </button>
-            </div>
+            </footer>
           </motion.div>
         )}
       </AnimatePresence>,
@@ -245,4 +323,19 @@ export default function PlayerBubble({ steamId, name, isFriend = false, children
       )}
     </div>
   );
+}
+
+/** "3 days ago", in the reader's language, without a countdown that ticks. */
+function agoLabel(epochMs: number): string {
+  const days = Math.round((epochMs - Date.now()) / 86_400_000);
+  const rel = new Intl.RelativeTimeFormat(undefined, { numeric: "auto" });
+  if (Math.abs(days) >= 1) return rel.format(days, "day");
+
+  const hours = Math.round((epochMs - Date.now()) / 3_600_000);
+  return Math.abs(hours) >= 1 ? rel.format(hours, "hour") : rel.format(0, "hour");
+}
+
+/** 4200 -> "4.2k". A five-digit round count in a 44px column wraps. */
+function compactNumber(n: number): string {
+  return new Intl.NumberFormat(undefined, { notation: "compact", maximumFractionDigits: 1 }).format(n);
 }

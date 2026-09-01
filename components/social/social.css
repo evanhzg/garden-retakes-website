@@ -1660,3 +1660,88 @@ html[data-motion="off"] .dm-bubble.typing i { animation: none; }
   border-color: var(--color-accent);
   box-shadow: inset 0 0 0 2px var(--color-accent);
 }
+
+/* ---------- Add a friend ----------
+ * One field and one button on one line. It was a full-width input above a
+ * "Send request" button, in a 300px panel — which left about four characters
+ * of visible typing once the button had its words. */
+.add-friend-form {
+  display: grid;
+  gap: 5px;
+}
+
+.aff-row {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  padding: 0 6px;
+  border: 1px solid var(--color-divider);
+  background: color-mix(in srgb, var(--color-text) 4%, transparent);
+  transition: border-color 0.15s ease;
+}
+
+.aff-row:focus-within {
+  border-color: var(--color-accent);
+}
+
+.aff-icon {
+  flex: 0 0 auto;
+  color: var(--muted);
+}
+
+.aff-input {
+  flex: 1 1 auto;
+  min-width: 0;
+  padding: 8px 0;
+  border: 0;
+  background: none;
+  color: var(--color-text);
+  font: inherit;
+  font-size: 12.5px;
+}
+
+.aff-input:focus { outline: none; }
+
+.aff-input::placeholder {
+  color: color-mix(in srgb, var(--color-text) 38%, transparent);
+}
+
+.aff-go {
+  flex: 0 0 auto;
+  display: grid;
+  place-items: center;
+  width: 26px;
+  height: 26px;
+  border: 0;
+  background: none;
+  color: var(--color-accent);
+  cursor: pointer;
+}
+
+.aff-go:disabled {
+  color: var(--muted);
+  cursor: default;
+}
+
+.aff-go:not(:disabled):hover {
+  background: color-mix(in srgb, var(--color-accent) 15%, transparent);
+}
+
+/* The format, under the field rather than inside it: it is what you need
+   AFTER deciding to add somebody, not while deciding who. */
+.aff-hint {
+  font-size: 10.5px;
+  color: var(--muted);
+}
+
+.aff-spin {
+  animation: aff-spin 0.8s linear infinite;
+}
+
+@keyframes aff-spin {
+  to { transform: rotate(360deg); }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .aff-spin { animation-duration: 2.4s; }
+}

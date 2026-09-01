@@ -14,7 +14,18 @@ import TournamentRail from "@/components/social/TournamentRail";
 import StatusBubble from "@/components/social/StatusBubble";
 import ChatDock from "./ChatDock";
 import { useToast } from "@/components/Toast";
-import { MessageSquare, UserPlus, Gamepad2, Users, Mail, Send, X, Trophy } from "lucide-react";
+import {
+  MessageSquare,
+  UserPlus,
+  Gamepad2,
+  Users,
+  Mail,
+  Send,
+  X,
+  Trophy,
+  Search,
+  Loader2,
+} from "lucide-react";
 import { useI18n } from "@/components/I18nProvider";
 import {
   MessageBody,
@@ -600,7 +611,17 @@ export default function FriendsSidebar() {
           presence={presenceOf(f.friendId, livePlayers, isOnline)}
           size={28}
         />
-        <PlayerBubble steamId={f.friendId} name={f.name} isFriend>
+        {/* The card knows what this row knows: whether they have a tab
+            open, and how to start a conversation. Both were missing — the
+            card had no Message button at all, which is the reason most of
+            them are opened. */}
+        <PlayerBubble
+          steamId={f.friendId}
+          name={f.name}
+          isFriend
+          isOnline={isOnline}
+          onMessage={openThread}
+        >
           <div className="friend-lines">
             <span className="friend-name">{f.name}</span>
             {/* What they are actually doing, which is the line this always
@@ -1004,16 +1025,40 @@ export default function FriendsSidebar() {
 
             <div className="mail-section">
               <h3>{t("social.friends.addTitle")}</h3>
+              {/* One field and one button, on one line.
+
+                  It was an untranslated "SteamID64 or nickname" — the format
+                  of the input, which is what a developer needs and not what
+                  somebody adding a friend is thinking about. The placeholder
+                  names the person now and the hint below carries the format,
+                  which is the order those two facts are wanted in.
+
+                  The button is an icon: the field is 300px wide in a 300px
+                  panel and "Send request" beside it left room for about four
+                  characters of typing. */}
               <form onSubmit={handleAddFriend} className="add-friend-form">
-                <input
-                  type="text"
-                  placeholder="SteamID64 or nickname"
-                  value={addFriendInput}
-                  onChange={(e) => setAddFriendInput(e.target.value)}
-                />
-                <button type="submit" className="btn-primary" disabled={!addFriendInput.trim() || addBusy}>
-                  {addBusy ? "Sending…" : t("social.friends.sendRequest")}
-                </button>
+                <div className="aff-row">
+                  <Search size={14} className="aff-icon" aria-hidden />
+                  <input
+                    type="text"
+                    className="aff-input"
+                    placeholder={t("social.friends.addPlaceholder")}
+                    aria-label={t("social.friends.addTitle")}
+                    value={addFriendInput}
+                    onChange={(e) => setAddFriendInput(e.target.value)}
+                  />
+                  <button
+                    type="submit"
+                    className="aff-go"
+                    disabled={!addFriendInput.trim() || addBusy}
+                    title={t("social.friends.sendRequest")}
+                    aria-label={t("social.friends.sendRequest")}
+                  >
+                    {addBusy ? <Loader2 size={14} className="aff-spin" /> : <UserPlus size={14} />}
+                  </button>
+                </div>
+
+                <span className="aff-hint">{t("social.friends.addHint")}</span>
               </form>
             </div>
 

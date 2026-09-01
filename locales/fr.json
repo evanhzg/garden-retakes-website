@@ -3091,5 +3091,14 @@
   "social.tournamentsOrganised": "Vous organisez",
   "social.tournamentsPlaying": "En cours",
   "social.tournamentsUpcoming": "À venir",
-  "social.tournamentsOnNow": "En ce moment"
+  "social.tournamentsOnNow": "En ce moment",
+  "bubble.message": "Message",
+  "bubble.rounds": "Rounds",
+  "bubble.pro": "Pro",
+  "bubble.requestSent": "Demande d'ami envoyée.",
+  "bubble.requestFailed": "Envoi impossible.",
+  "bubble.reported": "Signalé. Le staff va regarder.",
+  "bubble.reportFailed": "Signalement impossible.",
+  "social.friends.addPlaceholder": "Chercher quelqu'un par son nom…",
+  "social.friends.addHint": "Un pseudo, ou son SteamID64."
 }

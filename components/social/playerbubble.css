@@ -1,0 +1,197 @@
+/* The player card.
+ *
+ * Every rule here was an inline style before, with hard-coded colours —
+ * rgba(20,20,25,0.95) for the ground, #fff for the text, #4ade80 and #f87171
+ * for the two actions. That is a card that ignores the theme: it stayed dark
+ * in light mode, it could not follow the accent, and it was the only surface
+ * on the site with a 16px radius against a --radius-md of 0.
+ */
+
+.pb-anchor {
+  position: relative;
+  display: inline-block;
+}
+
+.pb-trigger {
+  cursor: pointer;
+  display: inline-flex;
+  align-items: center;
+}
+
+.pb {
+  width: 320px;
+  z-index: 1002;
+  overflow: hidden;
+  background: var(--color-surface);
+  border: 1px solid var(--color-divider);
+  box-shadow: 0 18px 48px rgba(0, 0, 0, 0.5);
+  color: var(--color-text);
+}
+
+/* ---------- head ---------- */
+
+.pb-head {
+  display: flex;
+  align-items: center;
+  gap: 11px;
+  padding: 14px;
+  border-bottom: 1px solid var(--color-divider);
+}
+
+.pb-id {
+  display: grid;
+  gap: 2px;
+  min-width: 0;
+  flex: 1;
+}
+
+.pb-name {
+  font-size: 15px;
+  font-weight: 800;
+  letter-spacing: -0.01em;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+/* What they are doing, then when, then where from. The old card had only the
+   last of those and it read "Steam User" for nearly everybody. */
+.pb-sub {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  font-size: 11.5px;
+  color: var(--muted);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.pb-state { font-weight: 700; }
+.pb-state.is-ingame { color: var(--color-accent); }
+.pb-state.is-spectating { color: #f97316; }
+.pb-state.is-online { color: #22c55e; }
+.pb-state.is-away { color: #eab308; }
+.pb-state.is-dnd { color: var(--color-accent); }
+
+.pb-pro {
+  flex: 0 0 auto;
+  padding: 2px 6px;
+  font-size: 9px;
+  font-weight: 800;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: var(--color-accent);
+  border: 1px solid color-mix(in srgb, var(--color-accent) 50%, transparent);
+}
+
+/* ---------- body ---------- */
+
+.pb-body {
+  display: grid;
+  gap: 11px;
+  padding: 14px;
+}
+
+.pb-loading,
+.pb-notice {
+  margin: 0;
+  font-size: 12px;
+  color: var(--muted);
+  text-align: center;
+}
+
+.pb-notice { color: var(--color-accent); }
+
+/* Quoted by the design rather than by a literal quote mark in the markup,
+   which is what it used to be — and which put a straight ASCII quote in every
+   language that does not use them. */
+.pb-bio {
+  margin: 0;
+  padding-left: 9px;
+  border-left: 2px solid var(--color-divider);
+  font-size: 12.5px;
+  line-height: 1.45;
+  color: color-mix(in srgb, var(--color-text) 74%, transparent);
+}
+
+.pb-stats {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 6px;
+}
+
+.pb-stat {
+  display: grid;
+  gap: 2px;
+  padding: 8px 6px;
+  text-align: center;
+  background: color-mix(in srgb, var(--color-text) 5%, transparent);
+}
+
+.pb-stat-k {
+  font-size: 9px;
+  font-weight: 700;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: var(--muted);
+}
+
+.pb-stat-v {
+  font-size: 15px;
+  font-weight: 800;
+}
+
+/* ---------- foot ---------- */
+
+.pb-foot {
+  display: flex;
+  border-top: 1px solid var(--color-divider);
+  background: color-mix(in srgb, var(--color-text) 3%, transparent);
+}
+
+.pb-act {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  flex: 0 0 auto;
+  padding: 11px 12px;
+  border: 0;
+  border-right: 1px solid var(--color-divider);
+  background: none;
+  color: var(--color-text);
+  font: inherit;
+  font-size: 12.5px;
+  font-weight: 700;
+  text-decoration: none;
+  cursor: pointer;
+  transition: background 0.15s ease, color 0.15s ease;
+}
+
+/* The ones with words share the room; the icon-only ones take what they need. */
+.pb-act:has(span) { flex: 1 1 auto; }
+
+.pb-act:last-child { border-right: 0; }
+
+.pb-act:hover:not(:disabled) {
+  background: color-mix(in srgb, var(--color-text) 8%, transparent);
+}
+
+.pb-act:disabled {
+  opacity: 0.5;
+  cursor: default;
+}
+
+.pb-act.primary { color: var(--color-accent); }
+.pb-act.primary:hover:not(:disabled) {
+  background: color-mix(in srgb, var(--color-accent) 14%, transparent);
+}
+
+/* Report. Muted until hovered — it is the least likely thing anybody wants
+   and it used to be a permanently red button beside two neutral ones. */
+.pb-act.danger { color: var(--muted); }
+.pb-act.danger:hover:not(:disabled) {
+  color: var(--color-accent);
+  background: color-mix(in srgb, var(--color-accent) 12%, transparent);
+}

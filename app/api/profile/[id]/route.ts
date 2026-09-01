@@ -18,6 +18,15 @@ export async function GET(
     const rows = await fetchRows(0, steamId, false); // season 0 usually gets active
     const total = summarize(rows);
 
+    // What the site knows about them beyond their stats: the name people
+    // actually see, and when they were last around. The bubble is opened to
+    // decide whether to talk to somebody, and "last seen in March" answers
+    // that better than a rating does.
+    const known = await prisma.playerProfile.findUnique({
+      where: { SteamId: steamId },
+      select: { LastKnownName: true, LastSeenAtUtc: true },
+    });
+
     return NextResponse.json({
       bio: profile?.Bio || "",
       country: profile?.Country || "",
@@ -25,6 +34,10 @@ export async function GET(
       rating: total.rating,
       winPct: total.winPct,
       rounds: total.rounds,
+      name: known?.LastKnownName ?? null,
+      lastSeen: known?.LastSeenAtUtc ? known.LastSeenAtUtc.getTime() : null,
+      /** The status they chose. Null means online — see lib/presence.ts. */
+      presence: profile?.Presence ?? null,
     });
   } catch (error) {
     return NextResponse.json({ error: "Invalid request" }, { status: 400 });

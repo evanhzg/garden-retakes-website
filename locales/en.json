@@ -3091,5 +3091,14 @@
   "social.tournamentsOrganised": "You run",
   "social.tournamentsPlaying": "Playing now",
   "social.tournamentsUpcoming": "Coming up",
-  "social.tournamentsOnNow": "On now"
+  "social.tournamentsOnNow": "On now",
+  "bubble.message": "Message",
+  "bubble.rounds": "Rounds",
+  "bubble.pro": "Pro",
+  "bubble.requestSent": "Friend request sent.",
+  "bubble.requestFailed": "Could not send that.",
+  "bubble.reported": "Reported. Staff will look.",
+  "bubble.reportFailed": "Could not file that report.",
+  "social.friends.addPlaceholder": "Find someone by name…",
+  "social.friends.addHint": "A nickname, or their SteamID64."
 }
