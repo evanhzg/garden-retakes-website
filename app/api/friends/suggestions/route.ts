@@ -48,11 +48,27 @@ export async function GET() {
       select: { RequesterId: true, AddresseeId: true },
     });
 
+    /**
+     * Staff, who appear in the friends list without being friends.
+     *
+     * /api/friends injects every GardenAdmin into the list as a default
+     * contact — a real row on screen with a synthetic negative id and no
+     * WebFriendship behind it. So the query above, which is the only place
+     * "already a friend" is decided, cannot see them: they showed in the
+     * friends list AND in the suggestions to add as a friend, at the same
+     * time, in the same panel.
+     *
+     * The two lists have to agree about who is already there, so this asks the
+     * same question the other one answers.
+     */
+    const staff = await prisma.gardenAdmin.findMany({ select: { SteamId: true } });
+
     const exclude = new Set<string>([session.steamId]);
     for (const k of known) {
       exclude.add(k.RequesterId.toString());
       exclude.add(k.AddresseeId.toString());
     }
+    for (const a of staff) exclude.add(a.SteamId.toString());
 
     const counts = new Map<string, number>();
     for (const row of together) {

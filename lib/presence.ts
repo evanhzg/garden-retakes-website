@@ -73,6 +73,10 @@ export const acceptsMessages = (chosen: ChosenStatus): boolean => chosen !== "dn
 /**
  * The order a friends list goes in.
  *
+ * Sorts on `shown`, not on `presence`: one is what anybody sees and the other
+ * is what the player chose, and a single field name meaning both is how an
+ * invisible friend ends up sorted among the online ones.
+ *
  * Online first, then by how recently they were seen — most recent at the top —
  * which is the list somebody actually wants: the people they might play with
  * now, then the people they played with last.
@@ -81,7 +85,7 @@ export const acceptsMessages = (chosen: ChosenStatus): boolean => chosen !== "dn
  * ago is above one last seen in March. Ties break on name so the list does not
  * reshuffle between renders.
  */
-export function friendOrder<T extends { presence: ShownPresence; lastSeen: number | null; name: string }>(
+export function friendOrder<T extends { shown: ShownPresence; lastSeen: number | null; name: string }>(
   friends: T[],
 ): T[] {
   const rank = (p: ShownPresence): number => {
@@ -102,7 +106,7 @@ export function friendOrder<T extends { presence: ShownPresence; lastSeen: numbe
   };
 
   return [...friends].sort((a, b) => {
-    const byState = rank(a.presence) - rank(b.presence);
+    const byState = rank(a.shown) - rank(b.shown);
     if (byState !== 0) return byState;
 
     // Most recently seen first. Nulls last: an unknown last-seen is not a

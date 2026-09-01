@@ -3087,5 +3087,9 @@
   "social.status.dnd": "Do not disturb",
   "social.status.dndHint": "Messages are held. Stays on while you play.",
   "social.status.invisible": "Invisible",
-  "social.status.invisibleHint": "You appear offline to everyone."
+  "social.status.invisibleHint": "You appear offline to everyone.",
+  "social.tournamentsOrganised": "You run",
+  "social.tournamentsPlaying": "Playing now",
+  "social.tournamentsUpcoming": "Coming up",
+  "social.tournamentsOnNow": "On now"
 }

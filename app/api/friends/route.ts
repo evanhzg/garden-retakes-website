@@ -31,6 +31,15 @@ export async function GET() {
       where: { SteamId: { in: friendIds } }
     });
 
+    // When they were last around, so the list can put the people you might
+    // play with now above the people you played with in March. The socket only
+    // knows about right now; this is the stats pipeline's own record.
+    const seen = await prisma.playerProfile.findMany({
+      where: { SteamId: { in: friendIds } },
+      select: { SteamId: true, LastSeenAtUtc: true },
+    });
+    const lastSeenOf = new Map(seen.map((s) => [s.SteamId.toString(), s.LastSeenAtUtc.getTime()]));
+
     // Also get overrides for names
     const names = await prisma.gardenNameOverride.findMany({
       where: { SteamId: { in: friendIds } }
@@ -79,7 +88,11 @@ export async function GET() {
         name: nameOver?.Name || `Player ${friendId.toString().slice(-4)}`,
         avatarUrl: profile?.AvatarUrl || null,
         status: f.Status,
-        isRequester: f.RequesterId === steamId
+        isRequester: f.RequesterId === steamId,
+        // The status they chose, and when they were last around. The list
+        // sorts on both — see lib/presence.ts.
+        presence: profile?.Presence ?? null,
+        lastSeen: lastSeenOf.get(friendId.toString()) ?? null,
       };
     });
 
@@ -96,7 +109,9 @@ export async function GET() {
         name: nameOver?.Name || admin.Name || `Admin ${admin.SteamId.toString().slice(-4)}`,
         avatarUrl: profile?.AvatarUrl || null,
         status: "ACCEPTED",
-        isRequester: false
+        isRequester: false,
+        presence: profile?.Presence ?? null,
+        lastSeen: lastSeenOf.get(admin.SteamId.toString()) ?? null,
       });
     }
 

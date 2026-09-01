@@ -3087,5 +3087,9 @@
   "social.status.dnd": "Ne pas déranger",
   "social.status.dndHint": "Les messages attendent. Reste actif en jeu.",
   "social.status.invisible": "Invisible",
-  "social.status.invisibleHint": "Vous apparaissez hors ligne pour tous."
+  "social.status.invisibleHint": "Vous apparaissez hors ligne pour tous.",
+  "social.tournamentsOrganised": "Vous organisez",
+  "social.tournamentsPlaying": "En cours",
+  "social.tournamentsUpcoming": "À venir",
+  "social.tournamentsOnNow": "En ce moment"
 }

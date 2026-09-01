@@ -8,7 +8,8 @@ import { useRouter } from "next/navigation";
 import PlayerBubble from "./PlayerBubble";
 import AvatarImage from "@/components/AvatarImage";
 import AvatarStatus from "@/components/social/AvatarStatus";
-import { useLivePlayers, presenceOf } from "@/components/social/useLivePlayers";
+import { useLivePlayers, presenceOf, gameStateOf } from "@/components/social/useLivePlayers";
+import { friendOrder, shownPresence, type ChosenStatus } from "@/lib/presence";
 import TournamentRail from "@/components/social/TournamentRail";
 import StatusBubble from "@/components/social/StatusBubble";
 import ChatDock from "./ChatDock";
@@ -33,9 +34,13 @@ type Friend = {
   avatarUrl: string | null;
   status: string;
   isRequester: boolean;
-  /* elo, lastSeen and inLobby were declared here and never populated by
-     /api/friends — the route selects none of them. They are gone rather than
-     left as three optional fields that are always undefined. */
+  /** The status they chose: online | away | dnd | invisible, or null. */
+  presence?: ChosenStatus;
+  /** When they were last around, epoch ms, or null if never recorded. */
+  lastSeen?: number | null;
+  /* elo and inLobby were declared here and never populated by /api/friends —
+     the route selects neither. They are gone rather than left as optional
+     fields that are always undefined. */
 };
 
 /** One conversation with somebody who is not on the friends list. */
@@ -401,13 +406,52 @@ export default function FriendsSidebar() {
 
   // ---------- derived ----------
 
-  const { onlineFriends, offlineFriends } = useMemo(() => {
-    const on: Friend[] = [];
-    const off: Friend[] = [];
-    for (const f of friends) (online(f.friendId) ? on : off).push(f);
-    const byName = (a: Friend, b: Friend) => a.name.localeCompare(b.name);
-    return { onlineFriends: on.sort(byName), offlineFriends: off.sort(byName) };
-  }, [friends, online]);
+  /**
+   * Everybody, in the order somebody reads a friends list.
+   *
+   * It was alphabetical, which is the order of a phone book: it answers "where
+   * is Xavier" and never "who could I play with right now". Presence first —
+   * in a game, then online, then away, then do-not-disturb — and inside each
+   * group the most recently seen at the top, so a friend who logged off an
+   * hour ago sits above one last seen in March.
+   *
+   * The rules live in lib/presence.ts with their own tests, because none of
+   * this fails loudly: a wrong order just quietly stops being useful.
+   */
+  const sortedFriends = useMemo(
+    () =>
+      friendOrder(
+        friends.map((f) => ({
+          ...f,
+          shown: shownPresence({
+            connected: online(f.friendId),
+            inGame: gameStateOf(f.friendId, livePlayers),
+            chosen: f.presence ?? null,
+          }),
+          lastSeen: f.lastSeen ?? null,
+        })),
+      ),
+    [friends, online, livePlayers],
+  );
+
+  const onlineFriends = useMemo(
+    () => sortedFriends.filter((f) => f.shown !== "offline"),
+    [sortedFriends],
+  );
+  const offlineFriends = useMemo(
+    () => sortedFriends.filter((f) => f.shown === "offline"),
+    [sortedFriends],
+  );
+
+  /**
+   * What the rail shows: eight, and the eight that matter.
+   *
+   * A rail is a glance. Past eight faces it is a list you scroll, which is
+   * what the panel beside it is for — and because the order above puts the
+   * reachable people first, the eight it keeps are the eight worth keeping.
+   */
+  const RAIL_FACES = 8;
+  const railFriends = useMemo(() => sortedFriends.slice(0, RAIL_FACES), [sortedFriends]);
 
   const totalUnread = useMemo(
     () => Object.values(unread).reduce((n, v) => n + v, 0),
@@ -798,6 +842,40 @@ export default function FriendsSidebar() {
                   </div>
                 ))}
               </>
+            )}
+
+            {/* Eight faces, straight to a conversation.
+
+                The list below is the whole roster and answers "who have I
+                got"; this row answers "who can I talk to now", which is the
+                question the panel is usually opened for. Capped at eight
+                because past that it stops being a glance and becomes the list
+                underneath it — and because the order puts the reachable people
+                first, the eight it keeps are the eight worth keeping. */}
+            {railFriends.length > 0 && (
+              <div className="friends-quick">
+                {railFriends.map((f, i) => (
+                  <motion.button
+                    key={f.friendId}
+                    className="friends-quick-face"
+                    title={f.name}
+                    aria-label={f.name}
+                    onClick={() => openThread(f.friendId)}
+                    initial={{ opacity: 0, scale: 0.86 }}
+                    animate={{ opacity: 1, scale: 1 }}
+                    transition={{ duration: 0.16, delay: i * 0.02, ease: [0.16, 1, 0.3, 1] }}
+                  >
+                    <AvatarStatus
+                      steamId={f.friendId}
+                      name={f.name}
+                      src={f.avatarUrl}
+                      presence={f.shown}
+                      size={30}
+                    />
+                    {(unread[f.friendId] ?? 0) > 0 && <span className="dot-badge" />}
+                  </motion.button>
+                ))}
+              </div>
             )}
 
             {onlineFriends.length > 0 && (

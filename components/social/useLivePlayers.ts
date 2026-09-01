@@ -84,3 +84,20 @@ export function presenceOf(
 
   return isOnline ? "online" : "offline";
 }
+
+/**
+ * What the game feed says about one player, in the vocabulary lib/presence.ts
+ * expects: "playing", "spectating", or null for neither.
+ *
+ * Separate from presenceOf because that one answers the whole question — it
+ * folds in whether the viewer is connected — and shownPresence wants the
+ * observed half on its own so it can weigh it against a chosen status.
+ */
+export function gameStateOf(
+  steamId: string,
+  live: LivePlayer[],
+): "playing" | "spectating" | null {
+  const found = live.find((p) => p.steamId === steamId);
+  if (!found) return null;
+  return found.team === "Spectator" || found.team === "1" ? "spectating" : "playing";
+}

@@ -77,7 +77,7 @@ check("anything else is not", !isChosenStatus("busy") && !isChosenStatus("") && 
 
 // ---- the friends list order ----------------------------------------------
 
-const f = (name: string, presence: ShownPresence, lastSeen: number | null) => ({ name, presence, lastSeen });
+const f = (name: string, shown: ShownPresence, lastSeen: number | null) => ({ name, shown, lastSeen });
 
 const ordered = friendOrder([
   f("offlineOld", "offline", 100),

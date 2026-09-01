@@ -1,14 +1,19 @@
 "use client";
 
 import AvatarImage from "@/components/AvatarImage";
+import type { ShownPresence } from "@/lib/presence";
 
 /**
- * `spectating` is the one LeftSidebar has always drawn and this component
- * never had a name for — somebody in the server watching rather than playing.
- * The two feeds call it "Spectator" and "1" depending on version; see
- * presenceOf in useLivePlayers.ts, which is where that is reconciled.
+ * The states a dot can show, which is exactly ShownPresence from lib/presence.
+ *
+ * Aliased rather than re-declared: this component had its own list, and the
+ * moment a sixth state was added — `dnd` — the two disagreed and the compiler
+ * caught it at one call site out of six. One definition means the next state
+ * cannot be half-added.
+ *
+ * `away` is kept on top of it for the callers that pass it directly.
  */
-export type Presence = "online" | "offline" | "ingame" | "spectating" | "away";
+export type Presence = ShownPresence | "away";
 
 /**
  * A rounded avatar with a presence dot on it.

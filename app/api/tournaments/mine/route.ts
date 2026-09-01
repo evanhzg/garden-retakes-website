@@ -31,6 +31,7 @@ export async function GET() {
     Slug: true,
     Name: true,
     State: true,
+    StartsAt: true,
     StartedAt: true,
     AvatarMime: true,
   } as const;
@@ -46,7 +47,13 @@ export async function GET() {
   });
 
   if (!steamId) {
-    return NextResponse.json({ tournaments: shape(running), canCreate: false });
+    return NextResponse.json({
+      organised: [],
+      playing: [],
+      upcoming: [],
+      running: shape(running),
+      canCreate: false,
+    });
   }
 
   const id = BigInt(steamId);
@@ -57,8 +64,8 @@ export async function GET() {
   // worth of state is one too many.
   const ctx = await getTournamentContext();
 
-  // Mine: a team I am on, or an event I run. Two queries rather than one with
-  // an OR across a join, because the two have nothing in common but the answer.
+  // Two separate relationships, asked separately because they mean different
+  // things: one is a team you are on, the other is an event you run.
   const [viaTeam, viaOrganiser] = await Promise.all([
     prisma.tournamentTeamMember.findMany({
       where: { SteamId: id, Status: { not: "removed" } },
@@ -70,34 +77,50 @@ export async function GET() {
     }),
   ]);
 
-  // De-duplicated without spreading a Set: this project's ES target predates
-  // that, and it is the third time it has been hit. Array.from is the same
-  // thing and compiles.
-  const mineIds = Array.from(
-    new Set([
-      ...viaTeam.map((m) => m.Team?.TournamentId).filter((x): x is number => typeof x === "number"),
-      ...viaOrganiser.map((o) => o.TournamentId),
-    ]),
+  const organiserIds = new Set(viaOrganiser.map((o) => o.TournamentId));
+  const playerIds = new Set(
+    viaTeam.map((m) => m.Team?.TournamentId).filter((x): x is number => typeof x === "number"),
   );
 
-  const mine = mineIds.length
+  // De-duplicated without spreading a Set: this project's ES target predates
+  // that, and it is the third time it has been hit.
+  const involvedIds = Array.from(new Set([...Array.from(organiserIds), ...Array.from(playerIds)]));
+
+  const involved = involvedIds.length
     ? await prisma.tournament.findMany({
-        where: { Id: { in: mineIds } },
-        orderBy: { StartedAt: "desc" },
+        where: { Id: { in: involvedIds } },
+        orderBy: [{ StartsAt: "asc" }, { StartedAt: "desc" }],
         select: card,
       })
     : [];
 
-  // Mine first, then what is on, with no repeats. A tournament I am playing in
-  // that is also live should appear once, at the top.
-  const seen = new Set<number>();
-  const merged = [...mine, ...running].filter((x) => {
-    if (seen.has(x.Id)) return false;
-    seen.add(x.Id);
-    return true;
-  });
+  /**
+   * Running counts as StartedAt set and not finished, NOT `State === "live"`.
+   *
+   * The state column is what an organizer set; StartedAt is what happened. A
+   * tournament whose bracket is being played while its row still says
+   * "registration" is running, whatever the column says, and that mismatch is
+   * common enough to have its own comment in the edition rules.
+   */
+  const isRunning = (x: (typeof involved)[number]) =>
+    x.StartedAt !== null && x.State !== "finished" && x.State !== "cancelled";
 
-  return NextResponse.json({ tournaments: shape(merged), canCreate: ctx.canCreate });
+  const organised = involved.filter((x) => organiserIds.has(x.Id));
+
+  // Playing and upcoming exclude the ones you organise: they are already
+  // above, and a name in two lists reads as two tournaments.
+  const asPlayer = involved.filter((x) => playerIds.has(x.Id) && !organiserIds.has(x.Id));
+
+  return NextResponse.json({
+    organised: shape(organised),
+    playing: shape(asPlayer.filter(isRunning)),
+    upcoming: shape(asPlayer.filter((x) => !isRunning(x) && x.State !== "finished")),
+    // What is on for everybody, minus anything already named above it.
+    running: shape(
+      running.filter((x) => !organiserIds.has(x.Id) && !playerIds.has(x.Id)),
+    ),
+    canCreate: ctx.canCreate,
+  });
 }
 
 function shape(rows: {
@@ -105,6 +128,7 @@ function shape(rows: {
   Slug: string;
   Name: string;
   State: string;
+  StartsAt: Date | null;
   StartedAt: Date | null;
   AvatarMime: string | null;
 }[]) {
@@ -118,7 +142,8 @@ function shape(rows: {
         slug: x.Slug,
         name: x.Name,
         state: x.State,
-        live: x.State === "live",
+        live: x.StartedAt !== null && x.State !== "finished" && x.State !== "cancelled",
+        startsAt: x.StartsAt ? x.StartsAt.toISOString() : null,
         hasAvatar: x.AvatarMime !== null,
       }))
   );
