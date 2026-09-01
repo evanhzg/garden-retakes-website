@@ -276,27 +276,6 @@
   color: #fff;
 }
 
-/* ---------- Add Friend ---------- */
-.add-friend-form {
-  display: flex;
-  flex-direction: column;
-  gap: 12px;
-}
-
-.add-friend-form input {
-  background: rgba(0, 0, 0, 0.3);
-  border: 1px solid color-mix(in srgb, var(--color-text) 10%, transparent);
-  padding: 12px;
-  border-radius: var(--radius-md, 0);
-  color: #fff;
-  font-size: 1rem;
-}
-
-.add-friend-form input:focus {
-  outline: none;
-  border-color: var(--color-accent);
-}
-
 /* ---------- Notification Toast ---------- */
 .notification-container {
   position: fixed;
@@ -1687,6 +1666,16 @@ html[data-motion="off"] .dm-bubble.typing i { animation: none; }
 .add-friend-form {
   display: grid;
   gap: 5px;
+  /* Both needed, and for the same reason: a grid track and a flex item are
+     each sized from their content unless told that the content may shrink.
+     Without them the row is as wide as an untouched <input size=20>, which in
+     a 300px panel is 20px of overflow and a horizontal scrollbar under the
+     whole panel — which is exactly what it had. */
+  min-width: 0;
+}
+
+.add-friend-form > * {
+  min-width: 0;
 }
 
 .aff-row {
