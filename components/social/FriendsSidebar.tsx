@@ -82,6 +82,24 @@ const MAX_DOCKS = 4;
  */
 const COMPACT_ABOVE = 2;
 
+/**
+ * The mark beside the section you are in.
+ *
+ * One element that framer moves between the three buttons — that is what the
+ * shared layoutId means — rather than a border colour that switches off one
+ * and on another. Three buttons is exactly the case where the eye can follow
+ * the move and learn the relationship between them.
+ */
+function RailFlag() {
+  return (
+    <motion.span
+      className="friends-nav-flag"
+      layoutId="socialRailFlag"
+      transition={{ type: "spring", stiffness: 520, damping: 42 }}
+    />
+  );
+}
+
 export default function FriendsSidebar() {
   const { t } = useI18n();
   const { socket, steamId, isConnected } = useSocket();
@@ -151,6 +169,19 @@ export default function FriendsSidebar() {
   const openSection = useCallback((next: Section) => {
     setActiveTab((cur) => (cur === next ? null : next));
   }, []);
+
+  /**
+   * The last section that was open, kept for the length of the closing
+   * animation.
+   *
+   * Closing sets activeTab to null, and AnimatePresence keeps the drawer
+   * mounted for another 200ms to animate it out — so rendering the content
+   * from activeTab emptied the panel first and faded an empty box second.
+   * The content comes from here instead, which does not go null.
+   */
+  const lastTabRef = useRef<Section>("FRIENDS");
+  if (activeTab) lastTabRef.current = activeTab;
+  const shownTab = activeTab ?? lastTabRef.current;
 
   /**
    * Every conversation that is open, oldest first.
@@ -717,6 +748,7 @@ export default function FriendsSidebar() {
           onClick={() => openSection("TOURNAMENTS")}
           title={t("social.tournaments")}
         >
+          {activeTab === "TOURNAMENTS" && <RailFlag />}
           <Trophy size={18} />
         </button>
 
@@ -726,6 +758,7 @@ export default function FriendsSidebar() {
           onClick={() => openSection("FRIENDS")}
           title={t("social.friends.tabFriends")}
         >
+          {activeTab === "FRIENDS" && <RailFlag />}
           <Users size={18} />
           {totalUnread > 0 && <span className="friends-nav-badge">{totalUnread}</span>}
         </button>
@@ -736,6 +769,7 @@ export default function FriendsSidebar() {
           onClick={() => openSection("MAIL")}
           title={t("social.friends.tabInvites")}
         >
+          {activeTab === "MAIL" && <RailFlag />}
           <Mail size={18} />
           {pendingRequests.length > 0 && (
             <span className="friends-nav-badge">{pendingRequests.length}</span>
@@ -832,13 +866,26 @@ export default function FriendsSidebar() {
         transition={{ duration: 0.2, ease: [0.22, 1, 0.36, 1] }}
       >
 
-        {activeTab === "TOURNAMENTS" && (
+        {/* One section at a time, and the outgoing one leaves before the
+            incoming one arrives — mode="wait", because two 300px columns
+            crossing over each other in a 300px panel is a smear rather than a
+            transition. */}
+        <AnimatePresence mode="wait" initial={false}>
+        <motion.div
+          key={shownTab}
+          className="friends-sections"
+          initial={{ opacity: 0, y: 6 }}
+          animate={{ opacity: 1, y: 0 }}
+          exit={{ opacity: 0, y: -6 }}
+          transition={{ duration: 0.13, ease: "easeOut" }}
+        >
+        {shownTab === "TOURNAMENTS" && (
           <div className="friends-content">
             <TournamentRail />
           </div>
         )}
 
-        {activeTab === "FRIENDS" && (
+        {shownTab === "FRIENDS" && (
           <div className="friends-content">
             {friends.length === 0 && adminThreads.length === 0 && (
               <p className="muted-text">{t("social.friends.noFriends")}</p>
@@ -1000,7 +1047,7 @@ export default function FriendsSidebar() {
         {/* Not inside .friends-content: the thread view owns the full height so
             its composer can sit on the bottom edge, which it cannot do inside a
             padded scroll container. */}
-        {activeTab === "MAIL" && (
+        {shownTab === "MAIL" && (
           <div className="friends-content">
             {/* Above the box, because it is the answer to the question the box
                 asks badly: the people you would actually add are here, and
@@ -1105,6 +1152,8 @@ export default function FriendsSidebar() {
             </div>
           </div>
         )}
+        </motion.div>
+        </AnimatePresence>
       </motion.div>
       )}
       </AnimatePresence>

@@ -101,25 +101,41 @@
 
 /* Dark is the same ramp read from the other end: grounds walk down the neutral
    scale, text walks up it, and the accent holds — #ec3013 clears AA on both the
-   light and dark grounds, so it needs no separate value. */
+   light and dark grounds, so it needs no separate value.
+ *
+ * Deepened, all of it. #1a1918 is a dark grey rather than a dark ground: with
+ * a full-height rail down each edge and cards on top of that, the page had
+ * three surfaces within eight points of lightness of each other and nothing
+ * read as being behind anything. The ground drops to #100f0e and the surface
+ * to #191817, which is the same step between them, taken lower — so a card
+ * still separates from the page, and the accent has somewhere dark to sit
+ * against instead of glowing on grey.
+ *
+ * The hue stays. This is a warm neutral (#100f0e is not #101010) and losing
+ * that is how a considered dark turns into a default one. */
 .dark {
   color-scheme: dark;
 
-  --color-bg: #1a1918;
-  --color-surface: #232120;
+  --color-bg: #100f0e;
+  --color-surface: #191817;
   --color-text: #f3f2f2;
   --color-accent: #ff4a28;
   --color-accent-2: #ef6853;
-  --color-divider: color-mix(in srgb, #f3f2f2 28%, transparent);
+  /* 28% white was a light grey rule against a dark grey ground; against this
+     one it is a stripe. A divider's job is to be found when looked for and
+     ignored otherwise. */
+  --color-divider: color-mix(in srgb, #f3f2f2 20%, transparent);
 
   /* The amber carries onto a dark ground unchanged; the blue does not — #3b82f6
      goes muddy against #1a1918 and stops reading as CT at a glance. */
   --color-team-t: #f5a623;
   --color-team-ct: #4f93ff;
 
-  --color-neutral-100: #2d2b2b;
-  --color-neutral-200: #383535;
-  --color-neutral-300: #444141;
+  /* The three elevated surfaces come down with the ground: they are read as
+     "one step up from the page", and a step is a ratio, not a constant. */
+  --color-neutral-100: #201f1e;
+  --color-neutral-200: #2a2827;
+  --color-neutral-300: #363433;
   --color-neutral-400: #605d5d;
   --color-neutral-500: #7d7979;
   --color-neutral-600: #9b9797;
@@ -147,9 +163,11 @@
   --color-accent-2-800: #ffc4b9;
   --color-accent-2-900: #ffe0da;
 
-  --shadow-sm: 0 1px 2px rgba(0, 0, 0, 0.5);
-  --shadow-md: 0 3px 10px rgba(0, 0, 0, 0.55);
-  --shadow-lg: 0 12px 32px rgba(0, 0, 0, 0.65);
+  /* Deeper and longer, because a shadow on a darker ground has less room to
+     be seen in — the same alpha over #100f0e reads as most of nothing. */
+  --shadow-sm: 0 1px 3px rgba(0, 0, 0, 0.6);
+  --shadow-md: 0 4px 14px rgba(0, 0, 0, 0.65);
+  --shadow-lg: 0 16px 40px rgba(0, 0, 0, 0.75);
 }
 
 * {
@@ -11650,11 +11668,24 @@ button.btn {
 }
 
 /* Marked on the left edge — the edge against the screen — so the flag reads as
-   pointing at the content the link opens. */
+   pointing at the content the link opens.
+ *
+ * The mark is .site-rail-flag, an element framer moves between buttons, not a
+ * border colour that switches on. The transparent border stays because it is
+ * what reserves the 2px: without it every button would shift when the flag
+ * arrived. */
 .site-rail-btn.active {
   color: var(--color-accent);
-  border-left-color: var(--color-accent);
   background: color-mix(in srgb, var(--color-accent) 12%, transparent);
+}
+
+.site-rail-flag {
+  position: absolute;
+  left: -2px;
+  top: 0;
+  bottom: 0;
+  width: 2px;
+  background: var(--color-accent);
 }
 
 .site-rail-live {

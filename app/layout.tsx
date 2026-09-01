@@ -82,6 +82,7 @@ export const viewport: Viewport = {
   themeColor: "#a855f7",
 };
 import { ThemeProvider } from "@/components/ThemeProvider";
+import MotionGate from "@/components/MotionGate";
 import { cookies, headers } from "next/headers";
 import DynamicGridBackground from "@/components/DynamicGridBackground";
 import { getSession } from "@/lib/auth";
@@ -153,6 +154,10 @@ export default async function RootLayout({ children }: { children: React.ReactNo
         />
         <PageLoader />
         <ThemeProvider attribute="class" defaultTheme="system" enableSystem>
+        {/* Above everything that animates: framer reads reducedMotion from
+            context, so this is the one place the site's motion toggle reaches
+            all twenty-odd motion components at once. */}
+        <MotionGate>
         <I18nProvider initial={locale}>
         <SocketProvider steamId={session?.steamId} isDemoMode={isDemoMode}>
         <NoticeProvider>
@@ -178,6 +183,7 @@ export default async function RootLayout({ children }: { children: React.ReactNo
         </NoticeProvider>
         </SocketProvider>
         </I18nProvider>
+        </MotionGate>
         </ThemeProvider>
       </body>
     </html>

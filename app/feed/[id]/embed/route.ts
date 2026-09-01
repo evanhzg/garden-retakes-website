@@ -43,7 +43,7 @@ export async function GET(_req: Request, { params }: { params: { id: string } })
 <meta name="viewport" content="width=device-width,initial-scale=1">
 <title>${esc(clip.title)} · REEEETAKES</title>
 <style>
-  :root { color-scheme: dark; --bg:#1a1918; --surface:#232120; --ink:#f3f2f2; --muted:#9b9797; --accent:#ff4a28; --line:#444141; }
+  :root { color-scheme: dark; --bg:#100f0e; --surface:#191817; --ink:#f3f2f2; --muted:#9b9797; --accent:#ff4a28; --line:#363433; }
   * { box-sizing: border-box; }
   html, body { margin:0; height:100%; background:var(--bg); color:var(--ink);
     font-family: ui-sans-serif, system-ui, "Segoe UI", Roboto, Helvetica, Arial, sans-serif; }

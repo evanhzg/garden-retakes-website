@@ -339,6 +339,19 @@ export default function NavBar({
               aria-label={tr(l)}
               aria-current={active ? "page" : undefined}
             >
+              {/* The marker, as one element that moves rather than a border
+                  that appears on one button and disappears from another.
+                  layoutId is what makes those the same element to framer: it
+                  measures both positions and animates between them. Scoped to
+                  this group so it never has to fly the height of the rail to
+                  reach the account buttons at the bottom. */}
+              {active && (
+                <motion.span
+                  className="site-rail-flag"
+                  layoutId="siteRailFlag"
+                  transition={{ type: "spring", stiffness: 520, damping: 42 }}
+                />
+              )}
               {Icon ? <Icon size={18} /> : <span className="site-rail-initial">{tr(l).slice(0, 1)}</span>}
               {live && <span className="live-dot site-rail-live" aria-hidden />}
               {l.soon && <span className="site-rail-soon-dot" aria-hidden />}
@@ -422,6 +435,13 @@ export default function NavBar({
                 aria-label={l.label}
                 aria-current={active ? "page" : undefined}
               >
+                {active && (
+                  <motion.span
+                    className="site-rail-flag"
+                    layoutId="siteRailStaffFlag"
+                    transition={{ type: "spring", stiffness: 520, damping: 42 }}
+                  />
+                )}
                 {Icon && <Icon size={18} />}
               </Link>
             );

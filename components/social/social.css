@@ -1473,11 +1473,21 @@ html[data-motion="off"] .dm-bubble.typing i { animation: none; }
 }
 
 /* The marker is on the left edge, which is the edge nearest the page — so the
-   eye reads "this section" pointing at the content it selects. */
+   eye reads "this section" pointing at the content it selects. It is an
+   element framer slides between the three buttons; the transparent border
+   stays to reserve its 2px so nothing shifts when it arrives. */
 .friends-nav-btn.active {
   color: var(--color-accent);
-  border-left-color: var(--color-accent);
   background: color-mix(in srgb, var(--color-accent) 12%, transparent);
+}
+
+.friends-nav-flag {
+  position: absolute;
+  left: -2px;
+  top: 0;
+  bottom: 0;
+  width: 2px;
+  background: var(--color-accent);
 }
 
 .friends-nav-badge {
@@ -1767,4 +1777,16 @@ html[data-motion="off"] .dm-bubble.typing i { animation: none; }
 
 @media (prefers-reduced-motion: reduce) {
   .dm-docks { transition-duration: 0.01ms; }
+}
+
+/* The swapping section.
+   A wrapper framer can animate, which has to carry the column the sections
+   were relying on the panel for — .friends-content is `flex: 1 1 auto` with
+   its own scroll, and an ordinary div between it and the panel would leave it
+   with no height to fill. */
+.friends-sections {
+  flex: 1 1 auto;
+  min-height: 0;
+  display: flex;
+  flex-direction: column;
 }
