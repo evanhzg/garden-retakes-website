@@ -2102,7 +2102,7 @@
   "lobby.mode.testing": "Test",
   "lobby.mode.testingSub": "Des bots complètent les places libres.",
   "lobby.mode.testingOn": "Test · {n}v{n}",
-  "lobby.mode.vs": "{n}VS",
+  "lobby.mode.vs": "{n}v{n}",
   "lobby.mode.vsSub": "{n} joueurs",
   "lobby.mode.premium": "Premium",
   "lobby.mode.premiumLocked": "Premium n'est pas encore disponible sur votre compte.",
@@ -3120,5 +3120,8 @@
   "stats.layout.navLabel": "Sections des statistiques",
   "tournaments.kicker": "Reeeetakes · Le circuit",
   "tournaments.titleLead": "Le tournoi",
-  "tournaments.titleName": "Blitz."
+  "tournaments.titleName": "Blitz.",
+  "lobby.titleLead": "Matchmaking",
+  "lobby.titleName": "Blitz.",
+  "lobby.role.yours": "Vos rôles"
 }

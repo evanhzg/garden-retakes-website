@@ -81,6 +81,12 @@ export default function RolePicker({
 
   return (
     <div className={`rq-roles ${compact ? "compact" : ""}`} ref={wrapRef}>
+      {/* Only on your own seat, and only three words.
+          The two pips are the one control on this card that opens something,
+          and they explained themselves through a title attribute — which is a
+          hover, on a control most people meet on a phone. Somebody who has
+          never queued here saw "– T  – CT" and no reason to touch it. */}
+      {editable && <span className="rq-roles-cap">{t("lobby.role.yours")}</span>}
       {SIDES.map((side) => {
         const id = roleFor(side);
         const Icon = id ? ROLE_ICON[id] : null;

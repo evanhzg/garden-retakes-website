@@ -637,9 +637,15 @@ export default function RetakesLobby({ signedIn, lobbyId }: { signedIn: boolean,
   return (
     <div className="rq">
       <MatchmakingWalkthrough signedIn={signedIn} />
+      {/* The homepage's two faces again: the statement in the grotesque, the
+          NAME in the serif italic. This is the third front door on the site —
+          home, tournaments, matchmaking — and it was the only one still
+          setting its title as one flat word. */}
       <section className="rq-hero">
         <span className="rq-kicker">{t("lobby.kicker")}</span>
-        <h1>{t("lobby.title")}</h1>
+        <h1>
+          {t("lobby.titleLead")} <em className="rq-title-serif">{t("lobby.titleName")}</em>
+        </h1>
         <p className="muted">{t("lobby.blurb")}</p>
       </section>
 
@@ -786,6 +792,30 @@ export default function RetakesLobby({ signedIn, lobbyId }: { signedIn: boolean,
           </div>
         ) : (
           <>
+            {/* WHAT YOU ARE QUEUEING FOR COMES FIRST.
+                It used to sit under the button, so the page read
+                "Find match — by the way, here is the size, and the maps" and
+                the two decisions the button acts on were both below it. The
+                order is the order of the task now: pick the size, drop the
+                maps you do not want, then press the one control that starts
+                anything. */}
+            <ModeBar
+              modes={modes}
+              canChange={Boolean(party?.isLeader) && !match}
+              partySize={party?.members.length ?? 1}
+              onChange={(next) => send("rq:party:queue", next)}
+              inline
+            />
+
+            <div className="rq-stage-maps">
+              <MapPreferences
+                variant="row"
+                value={party?.maps?.excluded ?? []}
+                busy={!party?.isLeader}
+                onChange={(excluded) => send("rq:party:maps", { excluded })}
+              />
+            </div>
+
             <div className="rq-actions">
               <button
                 data-tutorial="queue-play"
@@ -821,25 +851,6 @@ export default function RetakesLobby({ signedIn, lobbyId }: { signedIn: boolean,
                   {t("lobby.leaveparty")}
                 </button>
               )}
-            </div>
-
-            {/* Everything you can change about the queue, on one line under
-                the button, and the maps you never want on the next. */}
-            <ModeBar
-              modes={modes}
-              canChange={Boolean(party?.isLeader) && !match}
-              partySize={party?.members.length ?? 1}
-              onChange={(next) => send("rq:party:queue", next)}
-              inline
-            />
-
-            <div className="rq-stage-maps">
-              <MapPreferences
-                variant="row"
-                value={party?.maps?.excluded ?? []}
-                busy={!party?.isLeader}
-                onChange={(excluded) => send("rq:party:maps", { excluded })}
-              />
             </div>
 
             <p className="rq-online">{t("lobby.onlinenow", { n: state?.online ?? 0 })}</p>

@@ -2102,7 +2102,7 @@
   "lobby.mode.testing": "Testing",
   "lobby.mode.testingSub": "Bots fill the empty slots.",
   "lobby.mode.testingOn": "Testing · {n}v{n}",
-  "lobby.mode.vs": "{n}VS",
+  "lobby.mode.vs": "{n}v{n}",
   "lobby.mode.vsSub": "{n} players",
   "lobby.mode.premium": "Premium",
   "lobby.mode.premiumLocked": "Premium is not available on your account yet.",
@@ -3120,5 +3120,8 @@
   "stats.layout.navLabel": "Statistics sections",
   "tournaments.kicker": "Reeeetakes · The circuit",
   "tournaments.titleLead": "The",
-  "tournaments.titleName": "Blitz."
+  "tournaments.titleName": "Blitz.",
+  "lobby.titleLead": "Matchmaking",
+  "lobby.titleName": "Blitz.",
+  "lobby.role.yours": "Your roles"
 }

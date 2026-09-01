@@ -1,3 +1,15 @@
+/* Squared, everywhere.
+ *
+ * This file was the site's biggest holdout: seventeen 999px pills — the FIND
+ * MATCH button among them, which is the largest control on the page — and six
+ * cards rounded between 7 and 14px. DESIGN-CONVENTIONS.md says sharp corners
+ * and "do not add rounded cards, pills, or floating glass treatments", and all
+ * three radius tokens are 0, so every one of those was a local exception to a
+ * rule the rest of the site keeps.
+ *
+ * 50% survives. An avatar and a status dot are the documented exception, and
+ * a squared status dot reads as a bullet point, which is a different thing.
+ */
 /* Competitive matchmaking.
  *
  * This is the page the site is judged on, so it is deliberately quieter than
@@ -33,6 +45,19 @@
   line-height: 1.02;
 }
 .rq-hero p { max-width: 56ch; margin: 0 auto; }
+
+/* The name, in the second face. Same rules as the homepage's: italic, larger,
+   lighter, tracking back towards zero because italic sidebearings are already
+   tight, and a little room on the right so the overhang is not clipped. */
+.rq-title-serif {
+  font-family: var(--font-serif);
+  font-style: italic;
+  font-weight: 400;
+  font-size: 1.14em;
+  letter-spacing: -0.008em;
+  padding-right: 0.06em;
+  color: var(--color-accent);
+}
 
 .rq-kicker {
   display: inline-block;
@@ -92,7 +117,7 @@
 .rq-kick, .rq-invite { flex: none; }
 .rq-kick {
   width: 24px; height: 24px; padding: 0;
-  border: 0; border-radius: 7px;
+  border: 0; border-radius: 0;
   background: none; color: var(--muted);
   cursor: pointer; font-size: 13px;
 }
@@ -107,7 +132,7 @@
 .rq-play {
   padding: 16px 56px;
   font-size: 17px; font-weight: 800; letter-spacing: 0.06em;
-  border-radius: 999px;
+  border-radius: 0;
 }
 .rq-online { margin: 14px 0 0; font-size: 12.5px; color: var(--muted); }
 
@@ -194,8 +219,8 @@
   font-size: 40px; font-weight: 800; font-variant-numeric: tabular-nums;
 }
 
-.rq-accept-bar { width: min(320px, 70vw); height: 6px; border-radius: 999px; background: color-mix(in srgb, var(--color-text) 12%, transparent); overflow: hidden; }
-.rq-accept-bar > div { height: 100%; background: var(--color-accent); border-radius: 999px; transition: width 0.3s ease; }
+.rq-accept-bar { width: min(320px, 70vw); height: 6px; border-radius: 0; background: color-mix(in srgb, var(--color-text) 12%, transparent); overflow: hidden; }
+.rq-accept-bar > div { height: 100%; background: var(--color-accent); border-radius: 0; transition: width 0.3s ease; }
 .rq-accept-count { margin: 0; font-size: 13px; font-weight: 700; letter-spacing: 0.08em; color: var(--muted); }
 /* Accept on the right, where the primary action goes everywhere else on this
    site — and the destructive pair to its left, so the button under the cursor
@@ -227,14 +252,14 @@
 .rq-teamhead.right { justify-content: flex-end; }
 .rq-teamname { font-size: 16px; font-weight: 800; letter-spacing: -0.01em; }
 .rq-teamhead.mine .rq-teamname { color: var(--color-accent); }
-.rq-youtag { font-size: 10px; font-weight: 800; letter-spacing: 0.1em; text-transform: uppercase; padding: 2px 7px; border-radius: 999px; background: var(--color-accent); color: #fff; }
+.rq-youtag { font-size: 10px; font-weight: 800; letter-spacing: 0.1em; text-transform: uppercase; padding: 2px 7px; border-radius: 0; background: var(--color-accent); color: #fff; }
 
 .rq-room-status { display: grid; justify-items: center; gap: 5px; text-align: center; }
 .rq-phase { font-size: 11px; font-weight: 800; letter-spacing: 0.16em; text-transform: uppercase; color: var(--muted); }
 .rq-phase.ready { color: var(--color-accent); }
 .rq-turn { font-size: 15px; font-weight: 700; }
 .rq-turn.mine { color: var(--color-accent); }
-.rq-turnbar { width: min(260px, 60vw); height: 4px; border-radius: 999px; background: color-mix(in srgb, var(--color-text) 12%, transparent); overflow: hidden; }
+.rq-turnbar { width: min(260px, 60vw); height: 4px; border-radius: 0; background: color-mix(in srgb, var(--color-text) 12%, transparent); overflow: hidden; }
 .rq-turnbar > div { height: 100%; background: var(--color-accent); transition: width 0.25s linear; }
 
 .rq-room-body {
@@ -335,7 +360,7 @@
 .rq-map.picked { border-color: var(--color-accent); box-shadow: 0 0 0 3px color-mix(in srgb, var(--color-accent) 30%, transparent); }
 .rq-map-pick {
   position: absolute; top: 8px; left: 8px;
-  padding: 3px 9px; border-radius: 999px;
+  padding: 3px 9px; border-radius: 0;
   font-size: 10px; font-weight: 800; letter-spacing: 0.1em; text-transform: uppercase;
   background: var(--color-accent); color: #fff;
 }
@@ -369,14 +394,14 @@
 }
 
 .rq-sides { display: flex; gap: 10px; flex-wrap: wrap; justify-content: center; }
-.rq-side { padding: 6px 14px; border-radius: 999px; font-size: 13px; font-weight: 700; border: 1.5px solid var(--rq-edge); }
+.rq-side { padding: 6px 14px; border-radius: 0; font-size: 13px; font-weight: 700; border: 1.5px solid var(--rq-edge); }
 .rq-side.ct { color: var(--rq-ct); border-color: color-mix(in srgb, var(--rq-ct) 55%, transparent); }
 .rq-side.tr { color: var(--rq-t); border-color: color-mix(in srgb, var(--rq-t) 55%, transparent); }
 .rq-side.mine { background: color-mix(in srgb, var(--color-text) 8%, transparent); }
 
 .rq-connect { display: flex; gap: 10px; flex-wrap: wrap; align-items: center; justify-content: center; }
 .rq-connect code {
-  padding: 10px 16px; border-radius: 10px;
+  padding: 10px 16px; border-radius: 0;
   background: color-mix(in srgb, var(--color-text) 7%, transparent);
   font-size: 14px; font-weight: 600;
 }
@@ -555,14 +580,14 @@ html[data-motion="off"] .rq-server-pip.now { animation: none; }
 .pf-rating.big { font-size: 20px; }
 
 .pf-strip { display: inline-flex; gap: 2px; }
-.pf-pip { width: 6px; height: 12px; border-radius: 2px; background: color-mix(in srgb, var(--color-text) 20%, transparent); }
+.pf-pip { width: 6px; height: 12px; border-radius: 0; background: color-mix(in srgb, var(--color-text) 20%, transparent); }
 .pf-pip.w { background: #6fcf7f; }
 .pf-pip.l { background: #d8624a; }
 
 .pf-card {
   position: fixed; z-index: 1100;
   padding: 14px 16px;
-  border-radius: 14px;
+  border-radius: 0;
   background: color-mix(in srgb, var(--color-text) 6%, var(--color-bg));
   border: 1px solid color-mix(in srgb, var(--color-text) 16%, transparent);
   box-shadow: 0 18px 50px rgb(0 0 0 / 0.5);
@@ -575,7 +600,7 @@ html[data-motion="off"] .rq-server-pip.now { animation: none; }
 .pf-card-map { margin: 10px 0 0; font-size: 11.5px; color: var(--muted); }
 
 .pf-card .pf-strip { margin-bottom: 12px; }
-.pf-card .pf-pip { width: 9px; height: 16px; border-radius: 3px; }
+.pf-card .pf-pip { width: 9px; height: 16px; border-radius: 0; }
 
 .pf-stats { margin: 0; display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 8px 14px; }
 .pf-stats > div { display: flex; align-items: baseline; justify-content: space-between; gap: 8px; }
@@ -627,7 +652,7 @@ html[data-motion="off"] .rq-server-pip.now { animation: none; }
    a duo and a solo reads at a glance instead of needing the numbers compared. */
 .rq-premade {
   margin-left: 6px;
-  padding: 1px 6px; border-radius: 999px;
+  padding: 1px 6px; border-radius: 0;
   font-size: 9.5px; font-weight: 800; letter-spacing: 0.04em;
   border: 1px solid currentColor;
 }
@@ -667,16 +692,25 @@ html[data-motion="off"] .rq-server-pip.now { animation: none; }
 .rq-rail-row {
   display: flex; align-items: center; gap: 10px;
   width: 100%; padding: 10px 12px;
-  border: none; background: transparent; color: var(--color-text);
+  /* The 2px is reserved on every row, transparent until it is the one you are
+     on — otherwise the labels shift sideways as the selection moves. Same
+     device as the site rail and the social rail, which is the point: this is
+     the third column of tabs on the site and it should not be the third
+     design. */
+  border: none; border-left: 2px solid transparent;
+  background: transparent; color: var(--color-text);
   font: inherit; font-size: 13px; font-weight: 600;
   text-align: left; cursor: pointer;
-  transition: background 0.14s, color 0.14s;
+  transition: background 0.14s, color 0.14s, border-color 0.14s;
 }
 .rq-rail-icon { opacity: 0.55; flex-shrink: 0; transition: opacity 0.14s, color 0.14s; }
 .rq-rail-row:hover .rq-rail-icon { opacity: 1; }
 .rq-rail-row:hover { background: color-mix(in srgb, var(--color-text) 5%, transparent); }
 
-.rq-rail-row.on { background: color-mix(in srgb, var(--color-accent) 12%, transparent); }
+.rq-rail-row.on {
+  border-left-color: var(--color-accent);
+  background: color-mix(in srgb, var(--color-accent) 12%, transparent);
+}
 .rq-rail-row.on .rq-rail-icon { opacity: 1; color: var(--color-accent); }
 .rq-rail-row.on .rq-rail-name { color: var(--color-accent); }
 
@@ -685,7 +719,7 @@ html[data-motion="off"] .rq-server-pip.now { animation: none; }
 .rq-rail-name { flex: 1; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 .rq-rail-count {
   flex-shrink: 0; min-width: 20px; padding: 1px 6px;
-  border-radius: 999px; font-size: 11px; font-weight: 700;
+  border-radius: 0; font-size: 11px; font-weight: 700;
   text-align: center; opacity: 0.6;
   background: color-mix(in srgb, var(--color-text) 10%, transparent);
 }
@@ -708,7 +742,7 @@ html[data-motion="off"] .rq-server-pip.now { animation: none; }
 
 .rq-mode {
   display: flex; flex-direction: column; align-items: flex-start; gap: 4px;
-  padding: 14px; border-radius: 12px;
+  padding: 14px; border-radius: 0;
   border: 1.5px solid var(--border);
   background: var(--color-bg); color: var(--color-text);
   cursor: pointer; text-align: left;
@@ -737,7 +771,7 @@ html[data-motion="off"] .rq-server-pip.now { animation: none; }
 .rq-mode-toggles { display: flex; flex-wrap: wrap; gap: 8px; margin-top: 10px; }
 .rq-toggle {
   display: inline-flex; align-items: center; gap: 7px;
-  padding: 8px 14px; border-radius: 999px;
+  padding: 8px 14px; border-radius: 0;
   border: 1.5px solid var(--border);
   background: transparent; color: var(--muted);
   font-size: 12px; font-weight: 700; cursor: pointer;
@@ -804,7 +838,7 @@ html[data-motion="off"] .rq-server-pip.now { animation: none; }
 }
 .rq-setup-steps button {
   display: inline-flex; align-items: center; gap: 7px;
-  padding: 7px 14px; border-radius: 999px;
+  padding: 7px 14px; border-radius: 0;
   border: 1.5px solid var(--border);
   background: transparent; color: var(--muted);
   font: inherit; font-size: 12px; font-weight: 700; cursor: pointer;
@@ -862,7 +896,7 @@ html[data-motion="off"] .rq-server-pip.now { animation: none; }
 .rq-match.loss .rq-match-score .us { color: var(--color-accent); }
 
 .rq-match-outcome {
-  padding: 3px 10px; border-radius: 999px;
+  padding: 3px 10px; border-radius: 0;
   font-size: 10px; font-weight: 800; letter-spacing: 0.08em; text-transform: uppercase;
   border: 1.5px solid var(--border); color: var(--muted);
 }
@@ -914,7 +948,7 @@ html[data-motion="off"] .rq-server-pip.now { animation: none; }
 .rq-live-score .ct { color: var(--color-team-ct); }
 .rq-live-score .sep { opacity: 0.35; margin: 0 6px; }
 .rq-live-stale {
-  padding: 3px 10px; border-radius: 999px;
+  padding: 3px 10px; border-radius: 0;
   font-size: 10px; font-weight: 800; letter-spacing: 0.08em; text-transform: uppercase;
   border: 1.5px solid color-mix(in srgb, var(--color-accent) 45%, transparent);
   color: var(--color-accent);
@@ -968,7 +1002,7 @@ html[data-motion="off"] .rq-server-pip.now { animation: none; }
 .rq-live-bot {
   margin-left: 7px;
   padding: 1px 6px;
-  border-radius: 999px;
+  border-radius: 0;
   border: 1px solid var(--border);
   font-size: 9px; font-weight: 800; letter-spacing: 0.08em;
   color: var(--muted);
@@ -1003,7 +1037,7 @@ html[data-motion="off"] .rq-server-pip.now { animation: none; }
 }
 .rq-stage-name {
   display: inline-flex; align-items: center; gap: 6px;
-  padding: 4px 10px; border-radius: 999px;
+  padding: 4px 10px; border-radius: 0;
   border: 1px solid var(--rq-edge); background: transparent;
   color: var(--color-text); font-size: 13px; font-weight: 700;
   cursor: pointer; max-width: 220px;
@@ -1020,7 +1054,7 @@ html[data-motion="off"] .rq-server-pip.now { animation: none; }
 .rq-stage-report {
   border: 1px solid transparent; background: none;
   color: var(--muted); font-size: 11.5px; font-weight: 600;
-  padding: 4px 8px; border-radius: 8px; cursor: pointer;
+  padding: 4px 8px; border-radius: 0; cursor: pointer;
 }
 .rq-stage-report:hover { color: #e0533a; border-color: color-mix(in srgb, #e0533a 40%, transparent); }
 
@@ -1108,7 +1142,7 @@ html[data-motion="off"] .rq-server-pip.now { animation: none; }
   transform: translateX(-50%);
   z-index: 60;
   width: 258px; padding: 12px;
-  border-radius: 14px;
+  border-radius: 0;
   border: 1px solid var(--rq-edge);
   background: var(--color-bg);
   box-shadow: 0 18px 44px rgba(0, 0, 0, 0.42);
@@ -1123,7 +1157,7 @@ html[data-motion="off"] .rq-server-pip.now { animation: none; }
 .rq-invitepop-link {
   width: 100%;
   display: flex; align-items: center; justify-content: center; gap: 7px;
-  padding: 8px; border-radius: 10px;
+  padding: 8px; border-radius: 0;
   border: 1px dashed var(--rq-edge); background: transparent;
   color: var(--muted); font-size: 12px; font-weight: 600; cursor: pointer;
 }
@@ -1131,13 +1165,14 @@ html[data-motion="off"] .rq-server-pip.now { animation: none; }
 
 /* --- role pips, under the face ------------------------------------------- */
 
-.rq-roles { display: flex; align-items: center; justify-content: center; gap: 5px; }
+/* Wraps, so the caption can take a line of its own above the pips. */
+.rq-roles { display: flex; flex-wrap: wrap; align-items: center; justify-content: center; gap: 5px; }
 
 .rq-rolepip {
   position: relative;
   display: inline-flex; align-items: center; gap: 3px;
   padding: 3px 7px 3px 5px;
-  border-radius: 999px;
+  border-radius: 0;
   border: 1.5px solid var(--rq-edge);
   background: color-mix(in srgb, var(--color-text) 4%, transparent);
   color: var(--muted);
@@ -1168,7 +1203,7 @@ html[data-motion="off"] .rq-server-pip.now { animation: none; }
   position: fixed;
   width: min(392px, calc(100vw - 24px));
   padding: 14px;
-  border-radius: 18px;
+  border-radius: 0;
   border: 1px solid var(--rq-edge);
   background: var(--color-bg);
   background-image: linear-gradient(160deg, color-mix(in srgb, var(--color-accent) 7%, transparent), transparent 60%);
@@ -1201,7 +1236,7 @@ html[data-motion="off"] .rq-server-pip.now { animation: none; }
 
 .rq-rolebubble-option {
   display: flex; align-items: center; gap: 7px;
-  padding: 8px 9px; border-radius: 10px;
+  padding: 8px 9px; border-radius: 0;
   border: 1.5px solid var(--rq-edge);
   background: color-mix(in srgb, var(--color-text) 3%, transparent);
   color: var(--color-text);
@@ -1220,7 +1255,7 @@ html[data-motion="off"] .rq-server-pip.now { animation: none; }
 .rq-rolebubble-option.taken:not(.on) { opacity: 0.55; }
 .rq-rolebubble-taken {
   flex: none; min-width: 16px; height: 16px; padding: 0 4px;
-  display: inline-grid; place-items: center; border-radius: 999px;
+  display: inline-grid; place-items: center; border-radius: 0;
   background: color-mix(in srgb, #e0533a 22%, transparent);
   color: #e0533a; font-size: 9px; font-weight: 800;
 }
@@ -1229,7 +1264,7 @@ html[data-motion="off"] .rq-server-pip.now { animation: none; }
 .rq-rolebubble-caller {
   margin-top: 10px; width: 100%;
   display: grid; grid-template-columns: auto auto 1fr; align-items: center; gap: 7px;
-  padding: 9px 10px; border-radius: 10px;
+  padding: 9px 10px; border-radius: 0;
   border: 1.5px dashed var(--rq-edge);
   background: transparent; color: var(--muted);
   font-size: 12px; font-weight: 700; text-align: left; cursor: pointer;
@@ -1248,7 +1283,7 @@ html[data-motion="off"] .rq-server-pip.now { animation: none; }
   position: fixed; z-index: 3100;
   width: min(288px, calc(100vw - 24px));
   padding: 14px;
-  border-radius: 16px;
+  border-radius: 0;
   border: 1px solid var(--rq-edge);
   background: var(--color-bg);
   box-shadow: 0 22px 54px rgba(0, 0, 0, 0.5);
@@ -1260,7 +1295,7 @@ html[data-motion="off"] .rq-server-pip.now { animation: none; }
 .rq-roledetail header span { font-size: 10px; font-weight: 700; letter-spacing: 0.08em; text-transform: uppercase; color: var(--muted); }
 .rq-roledetail-icon {
   flex: none; width: 34px; height: 34px;
-  display: grid; place-items: center; border-radius: 10px;
+  display: grid; place-items: center; border-radius: 0;
   border: 1.5px solid var(--rq-edge);
 }
 .rq-roledetail-icon.t { color: var(--rq-t); border-color: color-mix(in srgb, var(--rq-t) 50%, transparent); background: color-mix(in srgb, var(--rq-t) 12%, transparent); }
@@ -1276,7 +1311,7 @@ html[data-motion="off"] .rq-server-pip.now { animation: none; }
 
 .rq-conflict {
   width: min(560px, 100%);
-  padding: 12px 14px; border-radius: 12px;
+  padding: 12px 14px; border-radius: 0;
   border: 1px solid #e0533a;
   background: color-mix(in srgb, #e0533a 10%, transparent);
   color: #e0533a; font-size: 13px; text-align: left;
@@ -1286,7 +1321,9 @@ html[data-motion="off"] .rq-server-pip.now { animation: none; }
 
 /* --- the button and the options under it ---------------------------------- */
 
-.rq-stage .rq-actions { width: min(520px, 100%); margin: 4px 0 0; }
+/* The button comes after the two decisions it acts on now, so it gets the
+   space above it that the mode row used to get below. */
+.rq-stage .rq-actions { width: min(520px, 100%); margin: 18px 0 0; }
 .rq-stage .rq-play { padding: 15px 20px; font-size: 16px; font-weight: 800; }
 .rq-stage .rq-searching { width: 100%; }
 .rq-stage .rq-online { margin: 0; }
@@ -1319,4 +1356,20 @@ html[data-motion="off"] .rq-server-pip.now { animation: none; }
   width: 40px; height: 40px; flex: none;
   object-fit: cover;
   border: 1px solid var(--color-accent);
+}
+
+/* The label over your two role pips.
+   They are the only control on the seat card that opens anything, and they
+   used to say so only in a title attribute — a hover, on a control most
+   people meet on a phone. */
+.rq-roles-cap {
+  flex-basis: 100%;
+  margin-bottom: 3px;
+  font-family: var(--font-mono);
+  font-size: 8.5px;
+  font-weight: 700;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  color: var(--muted);
+  text-align: center;
 }
