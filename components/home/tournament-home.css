@@ -42,6 +42,33 @@
   color: var(--color-accent);
 }
 
+/* The name, in the second face.
+ *
+ * A thin high-contrast serif against a 900-weight grotesque: the contrast is
+ * the point, so it is set LARGER than the line above it and lighter, which is
+ * how a display serif wants to be used and the opposite of how the grotesque
+ * does. Tighter tracking than the sans because the serif's own sidebearings
+ * are generous.
+ *
+ * Not italic. Instrument Serif's roman already leans display; italic on top of
+ * the size jump reads as two effects rather than one. */
+.th-title-serif {
+  display: inline-block;
+  font-family: var(--font-serif);
+  font-weight: 400;
+  font-size: 1.12em;
+  letter-spacing: -0.02em;
+  /* A grotesque cap and a serif cap do not sit on the same optical line. */
+  line-height: 0.92;
+  color: var(--color-accent);
+}
+
+/* The phrase the lead is about. Not bolded as well — the colour is the
+   emphasis, and two emphases on one phrase is a shout. */
+.th-lead-accent {
+  color: var(--color-accent);
+}
+
 .th-lead {
   margin: 0;
   max-width: 46ch;

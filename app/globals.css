@@ -61,6 +61,10 @@
   --font-heading-weight: 800;
   --font-body: var(--font-sans-face), "Archivo", system-ui, sans-serif;
   --font-mono: var(--font-mono-face), "JetBrains Mono", ui-monospace, monospace;
+  /* The second voice: a thin high-contrast display serif, for the half of
+     a headline that is a name rather than a statement. Never body text —
+     its value is that it appears twice on a page. */
+  --font-serif: var(--font-serif-face), "Instrument Serif", Georgia, serif;
 
   --space-1: 4px;
   --space-2: 8px;
@@ -11738,4 +11742,71 @@ button.btn {
 
 @media (max-width: 760px) {
   .nav-burger-fab { display: grid; }
+}
+
+/* ---------- Left rail: groups ----------
+ *
+ * Places, then staff, then you. The rules between them are load-bearing: a
+ * link to /stats and a link to /admin are different KINDS of thing, and a
+ * single unbroken column of glyphs says they are the same one.
+ */
+.site-rail-group {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 2px;
+  padding-top: 8px;
+  margin-top: 8px;
+  border-top: 1px solid var(--rail-line);
+  width: 40px;
+}
+
+/* Staff destinations are tinted, so the group reads as a different register
+   even before you notice the rule above it. */
+.site-rail-btn.is-staff {
+  color: color-mix(in srgb, var(--color-accent) 60%, var(--muted));
+}
+.site-rail-btn.is-staff:hover {
+  color: var(--color-accent);
+}
+
+/* Built and linked, not finished. Dimmed rather than disabled — the page it
+   lands on says so itself, and a control that refuses to be pressed teaches
+   nothing about why. */
+.site-rail-btn.is-soon {
+  opacity: 0.45;
+}
+.site-rail-btn.is-soon:hover {
+  opacity: 0.75;
+}
+
+/* The little corner mark, so "coming soon" is legible without a hover. */
+.site-rail-soon-dot {
+  position: absolute;
+  right: 5px;
+  bottom: 5px;
+  width: 5px;
+  height: 5px;
+  border-radius: 50%;
+  background: var(--muted);
+}
+
+/* No accent ring on the account avatar.
+ *
+ * It was a 2px accent halo on hover and focus, which on a 40px control in a
+ * dark column reads as a lit background rather than as a focus state — and the
+ * accent is the site's "look here", spent on the one control nobody needs
+ * leading to. A neutral ring still says "focused", which is what it is for. */
+.site-rail .avatar-menu-trigger:hover,
+.site-rail .avatar-menu-trigger:focus-visible {
+  box-shadow: 0 0 0 2px color-mix(in srgb, var(--color-text) 30%, transparent);
+}
+
+/* The account menu grows out of the rail's right edge, like the More flyout —
+   it used to drop from a bar and had a page beneath it to drop into. */
+.site-rail .avatar-menu-panel {
+  top: auto;
+  bottom: 0;
+  right: auto;
+  left: calc(100% + 8px);
 }

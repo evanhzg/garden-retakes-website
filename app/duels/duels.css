@@ -1,0 +1,147 @@
+/* Duels, held back.
+ *
+ * A hero that has to carry a whole page on its own, so it is built like one:
+ * a panel with a cropped mark behind it, the same two-face title as the
+ * homepage, and three lines saying what the mode will be rather than one line
+ * saying it is not here. */
+
+.dz {
+  position: relative;
+  overflow: hidden;
+  display: grid;
+  align-items: center;
+  min-height: min(74vh, 640px);
+  padding: clamp(28px, 6vw, 72px);
+  border: 1px solid var(--color-divider);
+  background:
+    radial-gradient(
+      120% 90% at 12% 0%,
+      color-mix(in srgb, var(--color-accent) 10%, transparent),
+      transparent 60%
+    ),
+    var(--color-surface);
+}
+
+.dz-inner {
+  position: relative;
+  z-index: 1;
+  max-width: 58ch;
+}
+
+.dz-kicker {
+  display: inline-flex;
+  align-items: center;
+  gap: 7px;
+  font-family: var(--font-mono);
+  font-size: 11px;
+  font-weight: 700;
+  letter-spacing: 0.16em;
+  text-transform: uppercase;
+  color: var(--color-accent);
+}
+
+.dz-title {
+  margin: 16px 0 20px;
+  font-size: clamp(40px, 7.5vw, 92px);
+  line-height: 0.88;
+  letter-spacing: -0.045em;
+  font-weight: 900;
+}
+
+/* The second face, as on the homepage: larger, lighter, tighter. */
+.dz-title-serif {
+  display: inline-block;
+  font-family: var(--font-serif);
+  font-style: normal;
+  font-weight: 400;
+  font-size: 1.12em;
+  letter-spacing: -0.02em;
+  line-height: 0.92;
+  color: var(--color-accent);
+}
+
+.dz-lead {
+  margin: 0 0 26px;
+  max-width: 46ch;
+  font-size: clamp(15px, 1.6vw, 19px);
+  line-height: 1.45;
+  color: color-mix(in srgb, var(--color-text) 76%, transparent);
+}
+
+.dz-points {
+  list-style: none;
+  margin: 0 0 30px;
+  padding: 0;
+  display: grid;
+  gap: 10px;
+  max-width: 44ch;
+}
+
+.dz-points li {
+  display: flex;
+  align-items: baseline;
+  gap: 12px;
+  padding-top: 10px;
+  border-top: 1px solid var(--color-divider);
+  font-size: 14px;
+  color: color-mix(in srgb, var(--color-text) 82%, transparent);
+}
+
+.dz-point-n {
+  flex: 0 0 auto;
+  font-family: var(--font-mono);
+  font-size: 11px;
+  font-weight: 700;
+  letter-spacing: 0.08em;
+  color: var(--color-accent);
+}
+
+.dz-cta {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px;
+}
+
+.dz-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  padding: 11px 18px;
+  border: 1px solid var(--color-divider);
+  color: var(--color-text);
+  font-size: 14px;
+  font-weight: 700;
+  text-decoration: none;
+  transition: border-color 0.15s ease, color 0.15s ease, background 0.15s ease;
+}
+
+.dz-btn:hover {
+  border-color: var(--color-accent);
+  color: var(--color-accent);
+}
+
+.dz-btn.primary {
+  background: var(--color-accent);
+  border-color: var(--color-accent);
+  color: #fff;
+}
+
+.dz-btn.primary:hover {
+  background: color-mix(in srgb, var(--color-accent) 86%, #000);
+  color: #fff;
+}
+
+/* Cropped by the panel, and deliberately far behind the text. */
+.dz-ghost {
+  position: absolute;
+  right: -8%;
+  bottom: -22%;
+  width: min(58%, 560px);
+  height: auto;
+  color: color-mix(in srgb, var(--color-accent) 12%, transparent);
+  pointer-events: none;
+}
+
+@media (max-width: 760px) {
+  .dz-ghost { display: none; }
+}

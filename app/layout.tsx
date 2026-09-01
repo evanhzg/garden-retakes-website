@@ -1,5 +1,5 @@
 import type { Metadata, Viewport } from "next";
-import { Archivo, JetBrains_Mono } from "next/font/google";
+import { Archivo, Instrument_Serif, JetBrains_Mono } from "next/font/google";
 import fs from "fs";
 import path from "path";
 import { prisma } from "@/lib/db";
@@ -22,6 +22,26 @@ const sans = Archivo({
   subsets: ["latin"],
   weight: ["400", "600", "800"],
   variable: "--font-sans-face",
+  display: "swap",
+});
+
+/**
+ * The second voice.
+ *
+ * One grotesque carrying every word is what makes a page read as a system
+ * rather than as a brand, which is right for a table of numbers and flat for a
+ * headline. Instrument Serif is a thin high-contrast display face: set beside
+ * the Archivo it reads as an aside in another register — a name, an emphasis —
+ * rather than as a different website.
+ *
+ * 400 only, and never for body text. Its whole value is that it appears twice
+ * on a page.
+ */
+const serif = Instrument_Serif({
+  subsets: ["latin"],
+  weight: ["400"],
+  style: ["normal", "italic"],
+  variable: "--font-serif-face",
   display: "swap",
 });
 
@@ -121,7 +141,7 @@ export default async function RootLayout({ children }: { children: React.ReactNo
       lang={locale}
       suppressHydrationWarning
       data-accent={userAccent}
-      className={`${sans.variable} ${mono.variable}`}
+      className={`${sans.variable} ${serif.variable} ${mono.variable}`}
     >
       <body>
         {/* Applied before first paint so an override does not flash the wrong

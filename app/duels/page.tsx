@@ -1,164 +1,85 @@
-import { prisma } from "@/lib/db";
+import Link from "next/link";
+import { ArrowRight, Crosshair } from "lucide-react";
+
 import { getT } from "@/lib/serverI18n";
+import "./duels.css";
 
 export const metadata = {
   title: "Duels — Garden Retakes",
-  description: "The 1v1 duel ladder of the Garden Retakes server.",
+  description: "1v1 duels are coming to the Blitz circuit.",
 };
 
-export const dynamic = "force-dynamic";
-
-type LadderRow = {
-  steamId: bigint;
-  name: string;
-  wins: number;
-  losses: number;
-  winrate: number;
-  challengeWins: number;
-};
-
-async function buildLadder(seasonId: number): Promise<LadderRow[]> {
-  const duels = await prisma.duelRecord.findMany({
-    where: { SeasonId: seasonId },
-    select: {
-      WinnerSteamId: true,
-      WinnerName: true,
-      LoserSteamId: true,
-      LoserName: true,
-      IsChallenge: true,
-      ChallengeScore: true,
-    },
-  });
-
-  const players = new Map<bigint, LadderRow>();
-  const get = (steamId: bigint, name: string) => {
-    let row = players.get(steamId);
-    if (!row) {
-      row = { steamId, name, wins: 0, losses: 0, winrate: 0, challengeWins: 0 };
-      players.set(steamId, row);
-    }
-    row.name = name || row.name;
-    return row;
-  };
-
-  for (const duel of duels) {
-    const winner = get(duel.WinnerSteamId, duel.WinnerName);
-    winner.wins += 1;
-    if (duel.IsChallenge && duel.ChallengeScore) winner.challengeWins += 1;
-    get(duel.LoserSteamId, duel.LoserName).losses += 1;
-  }
-
-  return Array.from(players.values())
-    .map((row) => ({
-      ...row,
-      winrate: row.wins + row.losses > 0 ? (100 * row.wins) / (row.wins + row.losses) : 0,
-    }))
-    .sort((a, b) => b.wins - a.wins || b.winrate - a.winrate);
-}
-
-export default async function DuelsPage() {
+/**
+ * Duels, held back.
+ *
+ * There WAS a page here: a full 1v1 ladder reading from GardenDuels, with
+ * win/loss, winrate and challenge records. It worked, and it is in the git
+ * history at this path — this is a deliberate hold, not a deletion, and
+ * restoring it is a revert rather than a rebuild.
+ *
+ * The hold is because the mode is on the rail now. A link that leads to a
+ * ladder with nothing in it teaches people the feature is dead; a page that
+ * says when it is coming teaches them it is not. So the nav entry is dimmed
+ * and this page says so in as many words.
+ *
+ * Static: no session, no database, nothing to reconcile. It should render if
+ * everything else is down.
+ */
+export default function DuelsPage() {
   const t = getT();
-  const season = await prisma.season.findFirst({ where: { IsActive: true } });
-  const ladder = season ? await buildLadder(season.Id) : [];
-  const recent = season
-    ? await prisma.duelRecord.findMany({
-        where: { SeasonId: season.Id },
-        orderBy: { Id: "desc" },
-        take: 20,
-      })
-    : [];
 
   return (
-    <>
-      <section className="hero hero-compact">
-        <div className="hero-inner">
-          <span className="eyebrow">{t("duels.page.eyebrow")}</span>
-          <h1>
-            {t("duels.page.title_prefix")} <span className="grad">{t("auto.page.1v1")}</span> {t("duels.page.title_suffix")}
-          </h1>
-          <p className="muted">
-            {t("duels.page.description_prefix")}{season ? ` ${t("duels.page.during")} ${season.Name}` : ""} {t("duels.page.description_suffix")}
-          </p>
+    <section className="dz">
+      <div className="dz-inner">
+        <span className="dz-kicker">
+          <Crosshair size={13} />
+          {t("duels.kicker")}
+        </span>
+
+        {/* Same two-face treatment as the homepage: the statement in the
+            grotesque, the name in the serif. */}
+        <h1 className="dz-title">
+          {t("duels.title1")}
+          <br />
+          <em className="dz-title-serif">{t("duels.title2")}</em>
+        </h1>
+
+        <p className="dz-lead">{t("duels.lead")}</p>
+
+        {/* What it will be, stated plainly. A coming-soon page with nothing on
+            it but the words "coming soon" is a dead end with better manners;
+            these are the three things somebody would want to know. */}
+        <ul className="dz-points">
+          <li>
+            <span className="dz-point-n">01</span>
+            <span>{t("duels.point1")}</span>
+          </li>
+          <li>
+            <span className="dz-point-n">02</span>
+            <span>{t("duels.point2")}</span>
+          </li>
+          <li>
+            <span className="dz-point-n">03</span>
+            <span>{t("duels.point3")}</span>
+          </li>
+        </ul>
+
+        {/* Somewhere to go. The one thing a page like this must not be is a
+            terminus. */}
+        <div className="dz-cta">
+          <Link className="dz-btn primary" href="/lobby">
+            {t("duels.ctaPlay")}
+            <ArrowRight size={16} />
+          </Link>
+          <Link className="dz-btn" href="/tournaments">
+            {t("duels.ctaTournaments")}
+          </Link>
         </div>
-      </section>
-
-      <div className="panel">
-        <h2>{t("duels.page.ladder")}</h2>
-        <table>
-          <thead>
-            <tr>
-              <th>#</th>
-              <th>{t("duels.page.player")}</th>
-              <th>{t("duels.page.wins")}</th>
-              <th>{t("duels.page.losses")}</th>
-              <th>{t("duels.page.winrate")}</th>
-              <th>{t("duels.page.challenges_won")}</th>
-            </tr>
-          </thead>
-          <tbody>
-            {ladder.map((row, i) => (
-              <tr key={row.steamId.toString()}>
-                <td className="muted">{i + 1}</td>
-                <td>
-                  <strong>{row.name}</strong>
-                </td>
-                <td className="positive">{row.wins}</td>
-                <td className="negative">{row.losses}</td>
-                <td>{row.winrate.toFixed(0)}%</td>
-                <td>{row.challengeWins || "—"}</td>
-              </tr>
-            ))}
-            {ladder.length === 0 && (
-              <tr>
-                <td colSpan={6} className="muted">
-                  {t("duels.page.no_duels")}
-                </td>
-              </tr>
-            )}
-          </tbody>
-        </table>
       </div>
 
-      <div className="panel">
-        <h2>{t("duels.page.recent_duels")}</h2>
-        <table>
-          <thead>
-            <tr>
-              <th>{t("duels.page.when_utc")}</th>
-              <th>{t("duels.page.winner")}</th>
-              <th>{t("duels.page.loser")}</th>
-              <th>{t("duels.page.arena")}</th>
-              <th>{t("duels.page.map")}</th>
-              <th>{t("duels.page.type")}</th>
-            </tr>
-          </thead>
-          <tbody>
-            {recent.map((duel) => (
-              <tr key={duel.Id.toString()}>
-                <td className="muted">
-                  {duel.PlayedAtUtc.toISOString().replace("T", " ").slice(0, 16)}
-                </td>
-                <td className="positive">{duel.WinnerName}</td>
-                <td className="negative">{duel.LoserName}</td>
-                <td>{duel.ArenaName || "—"}</td>
-                <td className="muted">{duel.Map}</td>
-                <td>
-                  {duel.IsChallenge
-                    ? `${t("duels.page.challenge")}${duel.ChallengeScore ? ` (${duel.ChallengeScore})` : ""}`
-                    : t("duels.page.rotation")}
-                </td>
-              </tr>
-            ))}
-            {recent.length === 0 && (
-              <tr>
-                <td colSpan={6} className="muted">
-                  —
-                </td>
-              </tr>
-            )}
-          </tbody>
-        </table>
-      </div>
-    </>
+      {/* The mark, oversized and cropped by the panel. Decoration that costs
+          one element and no images. */}
+      <Crosshair className="dz-ghost" aria-hidden strokeWidth={0.6} />
+    </section>
   );
 }

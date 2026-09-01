@@ -27,6 +27,10 @@ import {
   Trophy,
   MoreHorizontal,
   LogIn,
+  User,
+  Settings,
+  Server,
+  Gauge,
   type LucideIcon,
 } from "lucide-react";
 import GlobalMatchmaking from "./retakes/GlobalMatchmaking";
@@ -43,6 +47,9 @@ type NavLink = {
   primary?: boolean;
   /** The rail is 64px wide, so every primary link needs a glyph. */
   icon?: LucideIcon;
+  /** Built, linked, and not finished. Rendered dimmed and still clickable —
+      the page it lands on says so itself. */
+  soon?: boolean;
 };
 
 // /players, /pros and /teams are deliberately absent: the ladder, stats tables
@@ -69,14 +76,17 @@ const CS2_LINKS: NavLink[] = [
   // hiddenInDemo", which stopped being true when the blocklist became an
   // allowlist — a comment naming a thing that no longer exists is worse than
   // none, because it is read as current.)
-  { href: "/tournaments", label: "Tournaments", key: "nav.tournaments", primary: true, icon: Trophy },
+  // Not primary any more: the right rail lists tournaments, and it separates
+  // the ones you run from the ones you are playing in — which is more than a
+  // link to the directory ever said. It stays in More and in the phone drawer.
+  { href: "/tournaments", label: "Tournaments", key: "nav.tournaments", icon: Trophy },
   // Standing teams, and the Blitz ladder under them. Primary because a team is
   // the unit a tournament is entered as now, so "where is my team" is a
   // question with an answer worth reaching in one click.
   { href: "/teams", label: "Teams", key: "nav.teams", primary: true, icon: Shield },
   { href: "/safe-place", label: "Safe Place", key: "nav.safe_place", primary: true, icon: HeartHandshake },
   { href: "/compare", label: "Compare", key: "nav.compare", icon: GitCompare },
-  { href: "/duels", label: "Duels", key: "nav.duels", icon: Crosshair },
+  { href: "/duels", label: "Duels", key: "nav.duels", primary: true, soon: true, icon: Crosshair },
   { href: "/request-skin", label: "Request skin", key: "nav.requestSkin", icon: Palette },
   { href: "/commands", label: "Commands", key: "nav.commands", icon: Terminal },
   { href: "/roadmap", label: "Roadmap", key: "nav.roadmap", icon: Map },
@@ -89,6 +99,8 @@ type Session = {
   avatar?: string | null;
   steamId?: string | null;
   adminLevel?: number;
+  /** Runs events. A separate grant from adminLevel — see staffLinks. */
+  isOrganizer?: boolean;
 };
 
 export default function NavBar({ 
@@ -266,6 +278,28 @@ export default function NavBar({
   const primary = links.filter((l) => l.primary);
   const overflow = links.filter((l) => !l.primary);
 
+  /**
+   * The staff shortcuts, which are two separate grants and not one.
+   *
+   * A site admin gets the server panel. An ORGANIZER gets the Blitz panel —
+   * and an organizer may have no admin level at all, which is exactly why this
+   * cannot be a single `adminLevel > 0` check with both links behind it. That
+   * mistake shows up as an organizer who runs events being unable to see the
+   * panel for running them.
+   *
+   * Labels are literal rather than translated: both panels are named the same
+   * in every language on the site already (adminSections.ts), and inventing
+   * two keys for two words that never change is a dictionary entry nobody
+   * maintains.
+   */
+  const isAdmin = (session.adminLevel ?? 0) > 0;
+  const staffLinks: { href: string; label: string; icon: LucideIcon }[] = [
+    ...(isAdmin ? [{ href: "/admin", label: "Server & community", icon: Server }] : []),
+    ...(isAdmin || session.isOrganizer
+      ? [{ href: "/admin/blitz", label: "Blitz", icon: Gauge }]
+      : []),
+  ];
+
   return (
     <>
     {/* The site's navigation, down the left edge.
@@ -300,13 +334,14 @@ export default function NavBar({
             <Link
               key={l.href}
               href={getHref(l.href)}
-              className={`site-rail-btn ${active ? "active" : ""}`}
-              title={tr(l)}
+              className={`site-rail-btn ${active ? "active" : ""} ${l.soon ? "is-soon" : ""}`}
+              title={l.soon ? `${tr(l)} — ${t("nav.comingSoon")}` : tr(l)}
               aria-label={tr(l)}
               aria-current={active ? "page" : undefined}
             >
               {Icon ? <Icon size={18} /> : <span className="site-rail-initial">{tr(l).slice(0, 1)}</span>}
               {live && <span className="live-dot site-rail-live" aria-hidden />}
+              {l.soon && <span className="site-rail-soon-dot" aria-hidden />}
             </Link>
           );
         })}
@@ -362,9 +397,66 @@ export default function NavBar({
         )}
       </div>
 
-      {/* Account, at the bottom. The two things that are about YOU rather than
-          about the site, kept away from the places you go. */}
+      {/* Staff, behind a rule of its own.
+
+          These are a different KIND of destination. /stats is a place on the
+          site; /admin is a place you go to CHANGE the site, and dropping the
+          two into one column of glyphs is how somebody ends up one mis-click
+          from a panel they meant to scroll past. The rule and the gap are the
+          whole point of the group.
+
+          The two panels are separate grants and are drawn separately: Blitz is
+          the one an organizer with no admin level at all can open, so it must
+          never appear only because the site panel did. */}
+      {(staffLinks.length > 0) && (
+        <div className="site-rail-group">
+          {staffLinks.map((l) => {
+            const active = pathname.startsWith(l.href);
+            const Icon = l.icon;
+            return (
+              <Link
+                key={l.href}
+                href={getHref(l.href)}
+                className={`site-rail-btn is-staff ${active ? "active" : ""}`}
+                title={l.label}
+                aria-label={l.label}
+                aria-current={active ? "page" : undefined}
+              >
+                {Icon && <Icon size={18} />}
+              </Link>
+            );
+          })}
+        </div>
+      )}
+
+      {/* Account, at the bottom. The things that are about YOU rather than
+          about the site, kept away from the places you go.
+
+          Profile and Settings are on the rail rather than only inside the
+          avatar menu: they were a hover and a read away, for the two
+          destinations people reach for most after the ones above. */}
       <div className="site-rail-foot">
+        {session.authenticated && (
+          <div className="site-rail-group">
+            <Link
+              href={getHref("/profile")}
+              className={`site-rail-btn ${pathname.startsWith("/profile") ? "active" : ""}`}
+              title={t("nav.profile")}
+              aria-label={t("nav.profile")}
+            >
+              <User size={18} />
+            </Link>
+            <Link
+              href={getHref("/settings")}
+              className={`site-rail-btn ${pathname.startsWith("/settings") ? "active" : ""}`}
+              title={t("nav.settings")}
+              aria-label={t("nav.settings")}
+            >
+              <Settings size={18} />
+            </Link>
+          </div>
+        )}
+
         <NotificationCenter steamId={session.steamId} />
 
         {session.authenticated ? (

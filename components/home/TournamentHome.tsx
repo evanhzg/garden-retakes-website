@@ -112,6 +112,30 @@ const ROLES: Role[] = [
 const FLOW_STEPS = ["ready", "veto", "warmup", "live", "result"] as const;
 const FORMATS = ["single", "double", "group", "swiss"] as const;
 
+
+/**
+ * The lead sentence with one phrase in the accent colour.
+ *
+ * Split rather than composed from two strings: a translator needs the whole
+ * sentence to move the phrase where their grammar wants it, and "lead part
+ * one" plus "lead part two" is a sentence nobody can rewrite. If the phrase is
+ * not found the sentence is returned whole, which is the right failure — a
+ * missed highlight, not a missing clause.
+ */
+function withAccent(sentence: string, phrase: string) {
+  if (!phrase) return sentence;
+  const at = sentence.indexOf(phrase);
+  if (at === -1) return sentence;
+
+  return (
+    <>
+      {sentence.slice(0, at)}
+      <span className="th-lead-accent">{phrase}</span>
+      {sentence.slice(at + phrase.length)}
+    </>
+  );
+}
+
 export default function TournamentHome({
   stats,
   featured,
@@ -135,12 +159,23 @@ export default function TournamentHome({
       <header className="th-hero">
         <div className="th-hero-copy">
           <span className="th-kicker">{t("home.kicker")}</span>
+          {/* Two faces, one line.
+
+              The statement is in the grotesque the whole site is set in; the
+              NAME is in the serif. That is the only job the second face has —
+              it marks the half of the headline that is a proper noun, which is
+              a distinction a single weight change cannot make. */}
           <h1 className="th-title">
             {t("home.title1")}
             <br />
-            <em>{t("home.title2")}</em>
+            <em className="th-title-serif">{t("home.title2")}</em>
           </h1>
-          <p className="th-lead">{t("home.lead")}</p>
+
+          {/* The phrase the sentence is actually about, in the accent. It is
+              matched out of the lead rather than hard-coded around it, so the
+              two translations can put it in different places in the sentence
+              — which French does. */}
+          <p className="th-lead">{withAccent(t("home.lead"), t("home.leadAccent"))}</p>
 
           {/* The point of the page. A visitor who is convinced should not then
               have to go and find the tournament in a nav menu. */}
