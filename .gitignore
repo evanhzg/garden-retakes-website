@@ -37,3 +37,9 @@ tools/bin/
 # .NET build output for tools/map-screenshots
 tools/map-screenshots/bin/
 tools/map-screenshots/obj/
+
+# Machine bundles from tools/machine-bundle.sh — every secret this
+# project has, encrypted. Never in git, not even by accident.
+garden-bundle-*.enc
+WHERE-THINGS-ARE.txt
+.env.backup.*
