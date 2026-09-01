@@ -6,7 +6,6 @@ import { useEffect, useState, useRef } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import { ThemeToggle } from "./ThemeToggle";
 import AvatarImage from "./AvatarImage";
-import AvatarMenu from "./AvatarMenu";
 import NotificationCenter from "@/components/NotificationCenter";
 import { useI18n } from "@/components/I18nProvider";
 import {
@@ -27,6 +26,8 @@ import {
   Trophy,
   MoreHorizontal,
   LogIn,
+  LogOut,
+  Package,
   User,
   Settings,
   Server,
@@ -479,16 +480,37 @@ export default function NavBar({
 
         <NotificationCenter steamId={session.steamId} />
 
+        {/* YOUR FACE IS ON THE RIGHT RAIL. It was on both, at the bottom of
+            this one and the top of that one, and two avatars of the same
+            person on one screen is a question — are these the same me? — where
+            there should not be one. The right rail's is the one that opens
+            your status, so this is the copy that goes.
+
+            What the menu behind it held has to land somewhere, though.
+            Profile, Settings and Admin are already buttons on this rail. That
+            leaves Inventory and Sign out, which were reachable ONLY through
+            the avatar, so they become rail buttons rather than disappearing
+            with the menu that hid them. */}
         {session.authenticated ? (
-          <div className="nav-identity">
-            <AvatarMenu
-              steamId={session.steamId}
-              name={session.name}
-              avatar={session.avatar}
-              adminLevel={session.adminLevel ?? 0}
-              getHref={getHref}
-            />
-          </div>
+          <>
+            <Link
+              href={getHref("/inventory")}
+              className={`site-rail-btn ${pathname.startsWith("/inventory") ? "active" : ""}`}
+              title={t("nav.inventory")}
+              aria-label={t("nav.inventory")}
+            >
+              <Package size={18} />
+            </Link>
+
+            <a
+              className="site-rail-btn is-signout"
+              href="/api/auth/logout"
+              title={t("nav.signOut")}
+              aria-label={t("nav.signOut")}
+            >
+              <LogOut size={18} />
+            </a>
+          </>
         ) : (
           <a
             className="site-rail-btn"

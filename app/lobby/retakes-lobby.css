@@ -1427,3 +1427,111 @@ html[data-motion="off"] .rq-server-pip.now { animation: none; }
 }
 
 .rq-room-hide:hover { opacity: 1; }
+
+/* ───────────────────── the record above the match list ─────────────────── */
+
+/* What the list adds up to. It said what each match did and never what they
+   come to, which is the first question a history is opened with. */
+.rq-mstats {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 1px;
+  margin-bottom: 12px;
+  background: var(--color-divider);
+  border: 1px solid var(--color-divider);
+}
+
+.rq-mstat {
+  flex: 1 1 90px;
+  display: grid;
+  gap: 2px;
+  padding: 10px 12px;
+  background: var(--color-surface);
+}
+
+.rq-mstat-k {
+  font-family: var(--font-mono);
+  font-size: 9px;
+  font-weight: 700;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  color: var(--muted);
+}
+
+.rq-mstat strong {
+  font-size: 20px;
+  font-weight: 800;
+  font-variant-numeric: tabular-nums;
+}
+
+.rq-mstat strong i { font-style: normal; opacity: 0.4; margin: 0 1px; }
+.rq-mstat strong.up { color: var(--color-accent); }
+.rq-mstat strong.down { color: var(--muted); }
+
+/* Ten results as a strip. A run of five losses is a thing you see rather
+   than count. */
+.rq-mform {
+  flex: 1 1 140px;
+  display: flex;
+  align-items: center;
+  gap: 3px;
+  padding: 10px 12px;
+  background: var(--color-surface);
+}
+
+.rq-mform-pip {
+  width: 7px;
+  height: 18px;
+  background: color-mix(in srgb, var(--color-text) 18%, transparent);
+}
+
+.rq-mform-pip.win { background: var(--color-accent); }
+.rq-mform-pip.loss { background: color-mix(in srgb, var(--color-text) 26%, transparent); }
+.rq-mform-pip.draw { background: color-mix(in srgb, var(--color-text) 40%, transparent); }
+
+/* The filter. Same flag-under-the-tab device as every other tab bar. */
+.rq-mfilter {
+  display: flex;
+  gap: 0;
+  margin-bottom: 10px;
+  border-bottom: 1px solid var(--color-divider);
+}
+
+.rq-mfilter-btn {
+  position: relative;
+  padding: 8px 14px;
+  border: 0;
+  border-bottom: 2px solid transparent;
+  margin-bottom: -1px;
+  background: none;
+  color: var(--muted);
+  font: inherit;
+  font-size: 11.5px;
+  font-weight: 700;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  cursor: pointer;
+  transition: color 0.15s ease, border-color 0.15s ease;
+}
+
+.rq-mfilter-btn:hover { color: var(--color-text); }
+.rq-mfilter-btn.on { color: var(--color-text); border-bottom-color: var(--color-accent); }
+
+/* The margin, beside the score: a 13–11 and a 13–2 are the same word in the
+   outcome column and very different matches. */
+.rq-match-diff {
+  margin-left: 8px;
+  font-family: var(--font-mono);
+  font-size: 11px;
+  color: var(--muted);
+}
+
+/* The roster names open the player card now, so they are buttons in effect
+   even though they are spans. */
+.rq-match-who { cursor: pointer; }
+.rq-match-who:hover { color: var(--color-accent); }
+
+/* A seat's name opens the player card. */
+.rq-seat-name.is-clickable { cursor: pointer; }
+.rq-seat-name.is-clickable:hover { color: var(--color-accent); }

@@ -7,7 +7,8 @@ import Link from "next/link";
 import AvatarStatus from "@/components/social/AvatarStatus";
 import { useLivePlayers, gameStateOf } from "@/components/social/useLivePlayers";
 import { shownPresence, type ChosenStatus } from "@/lib/presence";
-import { ExternalLink, Flag, MessageSquare, UserPlus } from "lucide-react";
+import { ExternalLink, Flag, MessageSquare, UserMinus, UserPlus } from "lucide-react";
+import { useSocket } from "@/components/SocketProvider";
 import { useI18n } from '@/components/I18nProvider';
 import "./playerbubble.css";
 
@@ -30,6 +31,16 @@ interface PlayerBubbleProps {
 
 export default function PlayerBubble({ steamId, name, isFriend = false, isOnline = false, onMessage, children }: PlayerBubbleProps) {
     const { t } = useI18n();
+  /**
+   * Who is reading.
+   *
+   * The card offered "Add friend" on every card including your own — and the
+   * POST behind it answers "Cannot add yourself", so the one thing the button
+   * could do on that card was fail. It also offered it to people who already
+   * were friends, where the answer is "Friendship already exists".
+   */
+  const { steamId: mySteamId } = useSocket();
+  const isMe = Boolean(mySteamId) && mySteamId === steamId;
 
   const [isOpen, setIsOpen] = useState(false);
   const [data, setData] = useState<any>(null);
@@ -116,7 +127,10 @@ export default function PlayerBubble({ steamId, name, isFriend = false, isOnline
   const handleToggle = async () => {
     const nextOpen = !isOpen;
     setIsOpen(nextOpen);
-    if (!nextOpen) setNotice(null);
+    if (!nextOpen) {
+      setNotice(null);
+      setArmed(false);
+    }
 
     if (nextOpen && !data && !loading) {
       setLoading(true);
@@ -159,6 +173,38 @@ export default function PlayerBubble({ steamId, name, isFriend = false, isOnline
       setBusy(false);
     }
   }, [steamId, t]);
+
+  /**
+   * Leave a friendship.
+   *
+   * Two presses rather than one: unfriending is not undoable from here — the
+   * way back is a new request and their acceptance — and it sits in a row of
+   * icon buttons where the neighbouring one opens a conversation. The first
+   * press arms it, the second does it, and it disarms itself if the card is
+   * closed.
+   */
+  const [armed, setArmed] = useState(false);
+
+  const handleRemoveFriend = useCallback(async () => {
+    if (!armed) {
+      setArmed(true);
+      return;
+    }
+    setBusy(true);
+    try {
+      const res = await fetch("/api/friends", {
+        method: "DELETE",
+        headers: { "content-type": "application/json" },
+        body: JSON.stringify({ targetSteamId: steamId }),
+      });
+      setNotice(res.ok ? t("bubble.removed") : t("bubble.removeFailed"));
+      if (res.ok) setArmed(false);
+    } catch {
+      setNotice(t("bubble.removeFailed"));
+    } finally {
+      setBusy(false);
+    }
+  }, [armed, steamId, t]);
 
   /**
    * Report, which files an actual ticket.
@@ -296,7 +342,9 @@ export default function PlayerBubble({ steamId, name, isFriend = false, isOnline
                 <span>{t("auto.playerbubble.view_profile")}</span>
               </Link>
 
-              {!isFriend && (
+              {/* Not on your own card: the endpoint refuses it, so the
+                  button could only ever fail. */}
+              {!isFriend && !isMe && (
                 <button
                   className="pb-act"
                   disabled={busy}
@@ -307,14 +355,29 @@ export default function PlayerBubble({ steamId, name, isFriend = false, isOnline
                 </button>
               )}
 
-              <button
-                className="pb-act danger"
-                disabled={busy}
-                onClick={handleReport}
-                title={t("auto.playerbubble.report_player")}
-              >
-                <Flag size={15} />
-              </button>
+              {isFriend && !isMe && (
+                <button
+                  className={`pb-act ${armed ? "danger is-armed" : ""}`}
+                  disabled={busy}
+                  onClick={handleRemoveFriend}
+                  title={armed ? t("bubble.removeConfirm") : t("bubble.remove")}
+                >
+                  <UserMinus size={15} />
+                  {armed && <span>{t("bubble.removeConfirm")}</span>}
+                </button>
+              )}
+
+              {/* Reporting yourself is not a thing. */}
+              {!isMe && (
+                <button
+                  className="pb-act danger"
+                  disabled={busy}
+                  onClick={handleReport}
+                  title={t("auto.playerbubble.report_player")}
+                >
+                  <Flag size={15} />
+                </button>
+              )}
             </footer>
           </motion.div>
         )}

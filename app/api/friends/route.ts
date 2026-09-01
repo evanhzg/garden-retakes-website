@@ -210,3 +210,56 @@ export async function POST(request: Request) {
     return NextResponse.json({ error: "Internal Server Error" }, { status: 500 });
   }
 }
+
+
+/**
+ * DELETE /api/friends  { targetSteamId }
+ *
+ * Unfriend. There was no way to: POST creates a friendship and
+ * /api/friends/[id] PATCH accepts or rejects a PENDING one — and only the
+ * addressee may call that — so an ACCEPTED friendship could be made and never
+ * unmade. The player card offered "Add friend" to people who already were
+ * one, and the POST answered "Friendship already exists".
+ *
+ * Either side may remove. A friendship is symmetric once accepted, and a rule
+ * where only the requester can end one traps whoever was asked.
+ *
+ * The caller's id comes from the session, never from the body. The body says
+ * only WHO to unfriend, and the WHERE is anchored on the caller, so this can
+ * only ever delete a row the caller is part of.
+ */
+export async function DELETE(request: Request) {
+  try {
+    const steamId = sessionSteamId();
+    if (!steamId) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+
+    const { targetSteamId } = await request.json().catch(() => ({}));
+    if (!targetSteamId) {
+      return NextResponse.json({ error: "Missing targetSteamId" }, { status: 400 });
+    }
+
+    let target: bigint;
+    try {
+      target = BigInt(targetSteamId);
+    } catch {
+      return NextResponse.json({ error: "Bad targetSteamId" }, { status: 400 });
+    }
+
+    const { count } = await prisma.webFriendship.deleteMany({
+      where: {
+        OR: [
+          { RequesterId: steamId, AddresseeId: target },
+          { RequesterId: target, AddresseeId: steamId },
+        ],
+      },
+    });
+
+    // Not an error when nothing matched. Removing somebody who is already
+    // gone is the state the caller asked for, and a 404 only makes the UI
+    // handle a case that means "it worked".
+    return NextResponse.json({ success: true, removed: count });
+  } catch (error) {
+    console.error(error);
+    return NextResponse.json({ error: "Internal Server Error" }, { status: 500 });
+  }
+}

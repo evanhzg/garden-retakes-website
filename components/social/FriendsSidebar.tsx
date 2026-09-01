@@ -200,24 +200,25 @@ export default function FriendsSidebar() {
   openChatsRef.current = openChats;
 
   /**
-   * A click on the page puts everything away: the drawer, the phone drawer,
-   * and any open conversations.
+   * A click on the page puts the DRAWER away. Conversations stay.
    *
-   * The docks used to be exempt, and the comment saying so argued that folding
-   * a row of four because somebody clicked the page "is a lot of state to lose
-   * to a stray click". That over-valued the state. A dock holds no unsent
-   * work — the draft is per-dock and the history is on the server — so
-   * reopening one restores everything except the fact that it was open. What
-   * the exemption actually produced was a row of windows that outlived the
-   * task, which is the thing they were meant to avoid.
+   * This closed the docks too for a while, on the argument that a dock holds
+   * no unsent work so reopening one loses nothing. That was wrong about what
+   * the two things are. The drawer is navigation — you open it, you find
+   * somebody, you are done with it. A conversation is a task you are in the
+   * middle of, and it is normal to click the page while having one: to read
+   * the thing you are talking about, to check a scoreboard, to follow a link
+   * somebody sent you. Every one of those closed the window mid-sentence.
    *
-   * Capture phase, and three exclusions. The player bubble and the status menu
-   * are portalled or absolutely placed outside the panel, so a plain
+   * So the dock closes on its own X, and on nothing else.
+   *
+   * Capture phase, and the same exclusions: the player bubble and the status
+   * menu are portalled or absolutely placed outside the panel, so a plain
    * contains() check reads a click inside them as a click outside everything
    * and shuts the thing they were opened from.
    */
   useEffect(() => {
-    const somethingOpen = isOpen || activeTab !== null || openChats.length > 0;
+    const somethingOpen = isOpen || activeTab !== null;
     if (!somethingOpen) return;
 
     const onPointerDown = (event: PointerEvent) => {
@@ -233,12 +234,11 @@ export default function FriendsSidebar() {
 
       setIsOpen(false);
       setActiveTab(null);
-      setOpenChats([]);
     };
 
     document.addEventListener("pointerdown", onPointerDown, true);
     return () => document.removeEventListener("pointerdown", onPointerDown, true);
-  }, [isOpen, activeTab, openChats.length]);
+  }, [isOpen, activeTab]);
 
   /**
    * A click outside the docks closes nothing.

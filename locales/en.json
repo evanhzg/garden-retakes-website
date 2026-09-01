@@ -3130,5 +3130,19 @@
   "lobby.report.placeholder": "What happened? Staff read every report.",
   "lobby.report.submit": "Send report",
   "lobby.report.sent": "Report sent. Staff will look.",
-  "lobby.report.failed": "Could not send that report."
+  "lobby.report.failed": "Could not send that report.",
+  "bubble.remove": "Remove friend",
+  "bubble.removeConfirm": "Sure?",
+  "bubble.removed": "Removed from your friends.",
+  "bubble.removeFailed": "Could not remove that friend.",
+  "lobby.matches.played": "Played",
+  "lobby.matches.record": "Record",
+  "lobby.matches.winrate": "Win rate",
+  "lobby.matches.elo": "Elo",
+  "lobby.matches.form": "Recent form",
+  "lobby.matches.filter": "Filter matches",
+  "lobby.matches.filter.all": "All",
+  "lobby.matches.filter.wins": "Wins",
+  "lobby.matches.filter.losses": "Losses",
+  "lobby.matches.noneMatching": "No matches of that kind yet."
 }

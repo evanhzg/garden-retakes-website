@@ -1,7 +1,8 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { ExternalLink } from "lucide-react";
+import PlayerBubble from "@/components/social/PlayerBubble";
 import { useI18n } from "@/components/I18nProvider";
 import RetakesIcon from "@/components/retakes/RetakesIcon";
 import AvatarImage from "@/components/AvatarImage";
@@ -42,6 +43,8 @@ export default function MatchesTab({ steamId }: { steamId?: string | null }) {
   const { t } = useI18n();
   const [matches, setMatches] = useState<Match[] | null>(null);
   const [open, setOpen] = useState<string | null>(null);
+  /** all | wins | losses. A history is usually read looking for one of them. */
+  const [filter, setFilter] = useState<"all" | "wins" | "losses">("all");
 
   // Both rosters of every match, resolved in one request rather than per row.
   // Without this the detail panel listed raw SteamID64s — seventeen digits that
@@ -58,6 +61,38 @@ export default function MatchesTab({ steamId }: { steamId?: string | null }) {
       .catch(() => setMatches([]));
   }, [steamId]);
 
+  /**
+   * The record, from the rows already on screen.
+   *
+   * The list said what each match did and never what they add up to — which
+   * is the first question anybody opens a match history with. Computed here
+   * rather than asked of the server: the answer is a fold over data the page
+   * already has, and a second endpoint for it could disagree with the list
+   * beneath it.
+   */
+  const record = useMemo(() => {
+    const rows = matches ?? [];
+    const wins = rows.filter((m) => m.outcome === "win").length;
+    const losses = rows.filter((m) => m.outcome === "loss").length;
+    const decided = wins + losses;
+    return {
+      played: rows.length,
+      wins,
+      losses,
+      rate: decided === 0 ? null : Math.round((100 * wins) / decided),
+      elo: rows.reduce((n, m) => n + (m.eloDelta ?? 0), 0),
+      // Newest first, which is the order the list is in.
+      form: rows.slice(0, 10).map((m) => m.outcome),
+    };
+  }, [matches]);
+
+  const shown = useMemo(() => {
+    const rows = matches ?? [];
+    if (filter === "wins") return rows.filter((m) => m.outcome === "win");
+    if (filter === "losses") return rows.filter((m) => m.outcome === "loss");
+    return rows;
+  }, [matches, filter]);
+
   if (!steamId) return <p className="muted rq-empty">{t("lobby.matches.signin")}</p>;
   if (matches === null) return <p className="muted rq-empty">{t("lobby.matches.loading")}</p>;
 
@@ -72,8 +107,58 @@ export default function MatchesTab({ steamId }: { steamId?: string | null }) {
   }
 
   return (
+    <>
+      {/* WHAT THEY ADD UP TO. Record, win rate, and the elo the whole list is
+          worth — then the last ten results as a strip, because a run of five
+          losses is a thing you see rather than count. */}
+      <header className="rq-mstats">
+        <div className="rq-mstat">
+          <span className="rq-mstat-k">{t("lobby.matches.played")}</span>
+          <strong>{record.played}</strong>
+        </div>
+        <div className="rq-mstat">
+          <span className="rq-mstat-k">{t("lobby.matches.record")}</span>
+          <strong>
+            {record.wins}<i>–</i>{record.losses}
+          </strong>
+        </div>
+        <div className="rq-mstat">
+          <span className="rq-mstat-k">{t("lobby.matches.winrate")}</span>
+          <strong>{record.rate === null ? "—" : `${record.rate}%`}</strong>
+        </div>
+        <div className="rq-mstat">
+          <span className="rq-mstat-k">{t("lobby.matches.elo")}</span>
+          <strong className={record.elo >= 0 ? "up" : "down"}>
+            {record.elo >= 0 ? "+" : ""}{record.elo}
+          </strong>
+        </div>
+
+        <div className="rq-mform" aria-label={t("lobby.matches.form")}>
+          {record.form.map((o, i) => (
+            <i key={i} className={`rq-mform-pip ${o}`} title={t(`lobby.matches.outcome.${o}`)} />
+          ))}
+        </div>
+      </header>
+
+      <div className="rq-mfilter" role="tablist" aria-label={t("lobby.matches.filter")}>
+        {(["all", "wins", "losses"] as const).map((f) => (
+          <button
+            key={f}
+            role="tab"
+            aria-selected={filter === f}
+            className={`rq-mfilter-btn ${filter === f ? "on" : ""}`}
+            onClick={() => setFilter(f)}
+          >
+            {t(`lobby.matches.filter.${f}`)}
+          </button>
+        ))}
+      </div>
+
+      {shown.length === 0 ? (
+        <p className="muted rq-empty">{t("lobby.matches.noneMatching")}</p>
+      ) : (
     <ul className="rq-matches">
-      {matches.map((m) => {
+      {shown.map((m) => {
         const [us, them] = m.score;
         const expanded = open === m.id;
         const minutes =
@@ -104,6 +189,11 @@ export default function MatchesTab({ steamId }: { steamId?: string | null }) {
                 <span className="us">{us}</span>
                 <span className="sep">–</span>
                 <span className="them">{them}</span>
+                {/* How close it was. A 13–11 and a 13–2 are the same word in
+                    the outcome column and very different matches. */}
+                <span className="rq-match-diff">
+                  {us - them > 0 ? `+${us - them}` : us - them}
+                </span>
               </span>
 
               <span className={`rq-match-outcome ${m.outcome}`}>
@@ -121,12 +211,18 @@ export default function MatchesTab({ steamId }: { steamId?: string | null }) {
                 <div className="rq-match-team">
                   <h4>{m.teamName || t("lobby.matches.yourTeam")}</h4>
                   <ul>
+                    {/* The card, not a bare link. A name in a match history
+                        is asked about — rating, form, whether you are already
+                        friends — far more often than it is navigated to, and
+                        the card carries the profile link anyway. */}
                     {m.roster.map((id) => (
                       <li key={id} className={id === steamId ? "me" : ""}>
-                        <a className="rq-match-who" href={`/players/${id}`}>
-                          <AvatarImage steamId={id} className="rq-match-face" alt="" />
-                          <span>{displayNameFor(id, names)}</span>
-                        </a>
+                        <PlayerBubble steamId={id} name={displayNameFor(id, names)}>
+                          <span className="rq-match-who">
+                            <AvatarImage steamId={id} className="rq-match-face" alt="" />
+                            <span>{displayNameFor(id, names)}</span>
+                          </span>
+                        </PlayerBubble>
                       </li>
                     ))}
                   </ul>
@@ -136,10 +232,12 @@ export default function MatchesTab({ steamId }: { steamId?: string | null }) {
                   <ul>
                     {m.opponents.map((id) => (
                       <li key={id}>
-                        <a className="rq-match-who" href={`/players/${id}`}>
-                          <AvatarImage steamId={id} className="rq-match-face" alt="" />
-                          <span>{displayNameFor(id, names)}</span>
-                        </a>
+                        <PlayerBubble steamId={id} name={displayNameFor(id, names)}>
+                          <span className="rq-match-who">
+                            <AvatarImage steamId={id} className="rq-match-face" alt="" />
+                            <span>{displayNameFor(id, names)}</span>
+                          </span>
+                        </PlayerBubble>
                       </li>
                     ))}
                   </ul>
@@ -162,5 +260,7 @@ export default function MatchesTab({ steamId }: { steamId?: string | null }) {
         );
       })}
     </ul>
+      )}
+    </>
   );
 }

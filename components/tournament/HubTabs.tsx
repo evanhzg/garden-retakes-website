@@ -188,7 +188,16 @@ function TeamTable({ rows }: { rows: TeamRanking[] }) {
             <tr key={`${row.name}-${i}`}>
               <td className="muted">{i + 1}</td>
               <td>
-                {row.name}
+                {/* Openable when the name belongs to a standing team. Most
+                    bracket-only names have no page to go to, and a link that
+                    404s is worse than plain text. */}
+                {row.slug ? (
+                  <Link className="hub-team-link" href={`/teams/${row.slug}`}>
+                    {row.name}
+                  </Link>
+                ) : (
+                  row.name
+                )}
                 {row.tag && <span className="tv-tag">{row.tag}</span>}
               </td>
               <td className="r">{row.tournaments}</td>

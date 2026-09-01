@@ -1,6 +1,7 @@
 "use client";
 
 import { useCallback, useEffect, useRef, useState } from "react";
+import { createPortal } from "react-dom";
 import { AnimatePresence, motion } from "framer-motion";
 import { BellOff, Circle, EyeOff, Moon } from "lucide-react";
 
@@ -35,6 +36,35 @@ export default function StatusBubble({ steamId }: { steamId: string }) {
   const [status, setStatus] = useState<ChosenStatus>(null);
   const [open, setOpen] = useState(false);
   const wrapRef = useRef<HTMLDivElement>(null);
+  const menuRef = useRef<HTMLDivElement>(null);
+
+  /**
+   * Where the menu goes, measured from the avatar.
+   *
+   * IT WAS CLIPPED. The menu was position:absolute inside .sb, which sits
+   * inside .friends-rail — and that rail sets overflow-y:auto with
+   * overflow-x:hidden so a column of faces can scroll. A menu that opens out
+   * of the rail's left edge is horizontal overflow, so the browser cut it off
+   * at the rail's border: clicking your own avatar appeared to do nothing.
+   *
+   * No z-index could have fixed that. Clipping by an overflowing ancestor is
+   * not a stacking question — the element has to leave the ancestor, which
+   * means a portal and fixed coordinates.
+   */
+  const [pos, setPos] = useState<{ top: number; left: number } | null>(null);
+
+  const place = useCallback(() => {
+    const r = wrapRef.current?.getBoundingClientRect();
+    if (!r) return;
+    const width = 216;
+    const gap = 8;
+    // Out of the left edge — the rail is against the right of the screen, so
+    // there is only one direction. Clamped so it cannot leave the viewport on
+    // a narrow window, and lifted if it would run off the bottom.
+    const left = Math.max(8, r.left - width - gap);
+    const top = Math.min(r.top, window.innerHeight - 240);
+    setPos({ top: Math.max(8, top), left });
+  }, []);
 
   useEffect(() => {
     let cancelled = false;
@@ -56,7 +86,12 @@ export default function StatusBubble({ steamId }: { steamId: string }) {
     if (!open) return;
 
     const onDown = (e: PointerEvent) => {
-      if (!wrapRef.current?.contains(e.target as Node)) setOpen(false);
+      const target = e.target as Node;
+      // The menu is portalled to <body>, so it is no longer inside wrapRef —
+      // checking only the wrapper would close it on its own options.
+      if (wrapRef.current?.contains(target)) return;
+      if (menuRef.current?.contains(target)) return;
+      setOpen(false);
     };
     const onKey = (e: KeyboardEvent) => e.key === "Escape" && setOpen(false);
 
@@ -94,7 +129,10 @@ export default function StatusBubble({ steamId }: { steamId: string }) {
     <div className="sb" ref={wrapRef}>
       <button
         className={`sb-trigger is-${current}`}
-        onClick={() => setOpen((v) => !v)}
+        onClick={() => {
+          place();
+          setOpen((v) => !v);
+        }}
         aria-expanded={open}
         aria-haspopup="menu"
         title={t(`social.status.${current}`)}
@@ -103,11 +141,14 @@ export default function StatusBubble({ steamId }: { steamId: string }) {
         <i className={`sb-dot is-${current}`} aria-hidden />
       </button>
 
+      {typeof document !== "undefined" && createPortal(
       <AnimatePresence>
-        {open && (
+        {open && pos && (
           <motion.div
+            ref={menuRef}
             role="menu"
             className="sb-menu"
+            style={{ top: pos.top, left: pos.left }}
             // Out of the rail's LEFT edge, which is the only direction there is
             // — the rail is against the right of the screen.
             initial={{ opacity: 0, x: 8, scale: 0.97 }}
@@ -135,7 +176,9 @@ export default function StatusBubble({ steamId }: { steamId: string }) {
             })}
           </motion.div>
         )}
-      </AnimatePresence>
+      </AnimatePresence>,
+      document.body,
+      )}
     </div>
   );
 }

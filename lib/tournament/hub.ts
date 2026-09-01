@@ -24,6 +24,17 @@ export type ArchiveEntry = {
 export type TeamRanking = {
   name: string;
   tag: string | null;
+  /**
+   * The persistent team behind this row, when there is one.
+   *
+   * A ranking row is a NAME aggregated across events — TournamentTeam is one
+   * roster in one tournament, so "Greyhaven Bots" in three tournaments is
+   * three rows in the database and one row here. GardenTeam is the standing
+   * team, and TournamentTeam.GardenTeamId is the link an entry keeps to it.
+   * Null for a name that only ever existed inside a bracket, which is most of
+   * them and not an error.
+   */
+  slug: string | null;
   tournaments: number;
   wins: number;
   matchesWon: number;
@@ -205,9 +216,24 @@ export async function teamRankings(
 
   const teams = await prisma.tournamentTeam.findMany({
     where: { Id: { in: teamIds } },
-    select: { Id: true, Name: true, Tag: true, TournamentId: true },
+    select: { Id: true, Name: true, Tag: true, TournamentId: true, GardenTeamId: true },
   });
   const teamById = new Map(teams.map((x) => [x.Id, x]));
+
+  // One query for every standing team any of these entries points at.
+  const gardenIds = Array.from(
+    new Set(teams.map((x) => x.GardenTeamId).filter((x): x is number => x !== null)),
+  );
+  const slugById = new Map(
+    gardenIds.length === 0
+      ? []
+      : (
+          await prisma.gardenTeam.findMany({
+            where: { Id: { in: gardenIds } },
+            select: { Id: true, Slug: true },
+          })
+        ).map((x) => [x.Id, x.Slug] as const),
+  );
 
   const byName = new Map<string, TeamRanking & { events: Set<number>; wonEvents: Set<number> }>();
 
@@ -221,6 +247,7 @@ export async function teamRankings(
       row = {
         name: team.Name,
         tag: team.Tag,
+        slug: team.GardenTeamId ? slugById.get(team.GardenTeamId) ?? null : null,
         tournaments: 0,
         wins: 0,
         matchesWon: 0,
@@ -234,6 +261,9 @@ export async function teamRankings(
       byName.set(key, row);
     }
     row.events.add(team.TournamentId);
+    // A name that was a standing team in ANY of its entries links to it: the
+    // first appearance may predate the team being registered.
+    if (!row.slug && team.GardenTeamId) row.slug = slugById.get(team.GardenTeamId) ?? null;
     return row;
   };
 
@@ -270,6 +300,7 @@ export async function teamRankings(
     .map((row) => ({
       name: row.name,
       tag: row.tag,
+      slug: row.slug,
       tournaments: row.events.size,
       wins: row.wonEvents.size,
       matchesWon: row.matchesWon,

@@ -11928,3 +11928,16 @@ button.btn {
   right: auto;
   left: calc(100% + 8px);
 }
+
+/* A ranked team's name, when it has a page. Underlined only on hover: a
+   column of permanently underlined names reads as a list of links rather
+   than as a table of results. */
+.hub-team-link {
+  color: inherit;
+  text-decoration: none;
+}
+
+.hub-team-link:hover {
+  color: var(--color-accent);
+  text-decoration: underline;
+}

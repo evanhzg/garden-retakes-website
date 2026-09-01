@@ -49,11 +49,14 @@
 .sb-dot.is-dnd { background: var(--color-accent); }
 .sb-dot.is-invisible { background: #64748b; }
 
+/* Fixed and portalled to <body>, with the coordinates measured from the
+   avatar — see the comment in StatusBubble.tsx. Absolute positioning put it
+   inside .friends-rail, which sets overflow-x: hidden so its column of faces
+   can scroll vertically, and the menu opens sideways: the browser cut it off
+   at the rail's edge and the click looked like it did nothing. */
 .sb-menu {
-  position: absolute;
-  top: 0;
-  right: calc(100% + 8px);
-  z-index: 1100;
+  position: fixed;
+  z-index: 1400;
   display: flex;
   flex-direction: column;
   gap: 1px;

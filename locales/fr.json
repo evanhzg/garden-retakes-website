@@ -3130,5 +3130,19 @@
   "lobby.report.placeholder": "Que s'est-il passé ? Le staff lit chaque signalement.",
   "lobby.report.submit": "Envoyer",
   "lobby.report.sent": "Signalement envoyé. Le staff va regarder.",
-  "lobby.report.failed": "Envoi du signalement impossible."
+  "lobby.report.failed": "Envoi du signalement impossible.",
+  "bubble.remove": "Retirer des amis",
+  "bubble.removeConfirm": "Confirmer ?",
+  "bubble.removed": "Retiré de vos amis.",
+  "bubble.removeFailed": "Impossible de retirer cet ami.",
+  "lobby.matches.played": "Joués",
+  "lobby.matches.record": "Bilan",
+  "lobby.matches.winrate": "Victoires",
+  "lobby.matches.elo": "Elo",
+  "lobby.matches.form": "Forme récente",
+  "lobby.matches.filter": "Filtrer les matchs",
+  "lobby.matches.filter.all": "Tous",
+  "lobby.matches.filter.wins": "Victoires",
+  "lobby.matches.filter.losses": "Défaites",
+  "lobby.matches.noneMatching": "Aucun match de ce type pour l'instant."
 }

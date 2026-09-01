@@ -8,6 +8,7 @@ import LevelBadge from "@/components/retakes/LevelBadge";
 import SafeShield from "@/components/retakes/SafeShield";
 import { FormLine, type RecentForm } from "@/components/retakes/PlayerForm";
 import RolePicker, { type RoleClaims, type RoleState } from "./RolePicker";
+import PlayerBubble from "@/components/social/PlayerBubble";
 
 export type Seat = {
   steamId: string;
@@ -122,10 +123,16 @@ export default function PartyStage({
               )}
             </div>
 
-            <span className="rq-seat-name" title={s.name}>
-              {s.name}
-              {s.safe && <SafeShield score={s.safe.score} probation={s.safe.probation} />}
-            </span>
+            {/* The name opens the player card — rating, form, whether you
+                are already friends, and the way to their profile. A lobby is
+                where you meet people you have never played with, so it is the
+                place that question gets asked most, and the name was inert. */}
+            <PlayerBubble steamId={s.steamId} name={s.name}>
+              <span className="rq-seat-name is-clickable" title={s.name}>
+                {s.name}
+                {s.safe && <SafeShield score={s.safe.score} probation={s.safe.probation} />}
+              </span>
+            </PlayerBubble>
 
             <span className="rq-seat-meta">
               <LevelBadge elo={s.elo} matches={s.matches} size="sm" />
