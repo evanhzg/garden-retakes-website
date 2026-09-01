@@ -2416,7 +2416,7 @@
   "maker.pending": "A session is open. These variants are not saved yet — GENERATE writes them to the map.",
   "maker.roleCount": "{n} role(s)",
   "settings.saved": "Saved.",
-  "settings.save": "Save settings",
+  "settings.save": "Save changes",
   "settings.basics": "The basics",
   "settings.description": "Description",
   "settings.maxTeams": "Max teams",
@@ -3146,5 +3146,15 @@
   "lobby.matches.filter.losses": "Losses",
   "lobby.matches.noneMatching": "No matches of that kind yet.",
   "lobby.matches.noMap": "No map played",
-  "form.page.match": "Match {n}"
+  "form.page.match": "Match {n}",
+  "settings.saving": "Saving…",
+  "settings.msg.saved": "Saved.",
+  "settings.msg.saveFailed": "Save failed.",
+  "settings.msg.loadFailed": "Could not load your profile.",
+  "settings.msg.network": "Network error.",
+  "settings.msg.pickImage": "Pick an image file.",
+  "settings.msg.uploadFailed": "Upload failed.",
+  "settings.msg.avatarUpdated": "Avatar updated.",
+  "settings.msg.avatarReverted": "Back to your Steam avatar.",
+  "settings.msg.removeFailed": "Could not remove it."
 }

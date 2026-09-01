@@ -3146,5 +3146,15 @@
   "lobby.matches.filter.losses": "Défaites",
   "lobby.matches.noneMatching": "Aucun match de ce type pour l'instant.",
   "lobby.matches.noMap": "Aucune carte jouée",
-  "form.page.match": "Match {n}"
+  "form.page.match": "Match {n}",
+  "settings.saving": "Enregistrement…",
+  "settings.msg.saved": "Enregistré.",
+  "settings.msg.saveFailed": "Échec de l'enregistrement.",
+  "settings.msg.loadFailed": "Impossible de charger votre profil.",
+  "settings.msg.network": "Erreur réseau.",
+  "settings.msg.pickImage": "Choisissez un fichier image.",
+  "settings.msg.uploadFailed": "Échec de l'envoi.",
+  "settings.msg.avatarUpdated": "Avatar mis à jour.",
+  "settings.msg.avatarReverted": "Retour à votre avatar Steam.",
+  "settings.msg.removeFailed": "Suppression impossible."
 }

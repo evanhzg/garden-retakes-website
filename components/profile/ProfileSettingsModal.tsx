@@ -79,7 +79,7 @@ export function ProfileSettingsBody({
         setCountry(d.country ?? "");
         setAvatarPreview(d.avatarUrl ?? d.steamAvatar ?? null);
       })
-      .catch(() => setStatus({ kind: "error", message: "Could not load your profile." }));
+      .catch(() => setStatus({ kind: "error", message: t("settings.msg.loadFailed") }));
   }, []);
 
   const save = async (payload: Record<string, unknown>) => {
@@ -92,14 +92,14 @@ export function ProfileSettingsBody({
       });
       const json = await res.json().catch(() => ({}));
       if (!res.ok) {
-        setStatus({ kind: "error", message: json.error ?? "Save failed." });
+        setStatus({ kind: "error", message: json.error ?? t("settings.msg.saveFailed") });
         return false;
       }
-      setStatus({ kind: "ok", message: "Saved." });
+      setStatus({ kind: "ok", message: t("settings.msg.saved") });
       onSaved?.();
       return true;
     } catch {
-      setStatus({ kind: "error", message: "Network error." });
+      setStatus({ kind: "error", message: t("settings.msg.network") });
       return false;
     }
   };
@@ -112,7 +112,7 @@ export function ProfileSettingsBody({
   const onPickFile = (file: File | null) => {
     if (!file) return;
     if (!file.type.startsWith("image/")) {
-      setStatus({ kind: "error", message: "Pick an image file." });
+      setStatus({ kind: "error", message: t("settings.msg.pickImage") });
       return;
     }
     setStatus({ kind: "idle" });
@@ -128,13 +128,13 @@ export function ProfileSettingsBody({
       const res = await fetch("/api/profile/avatar", { method: "POST", body });
       const json = await res.json().catch(() => ({}));
       if (!res.ok) {
-        setStatus({ kind: "error", message: json.error ?? "Upload failed." });
+        setStatus({ kind: "error", message: json.error ?? t("settings.msg.uploadFailed") });
         return;
       }
       setAvatarPreview(json.url);
-      setStatus({ kind: "ok", message: "Avatar updated." });
+      setStatus({ kind: "ok", message: t("settings.msg.avatarUpdated") });
     } catch {
-      setStatus({ kind: "error", message: "Network error." });
+      setStatus({ kind: "error", message: t("settings.msg.network") });
     }
   };
 
@@ -143,9 +143,9 @@ export function ProfileSettingsBody({
     const res = await fetch("/api/profile/avatar", { method: "DELETE" });
     if (res.ok) {
       setAvatarPreview(data?.steamAvatar ?? null);
-      setStatus({ kind: "ok", message: "Back to your Steam avatar." });
+      setStatus({ kind: "ok", message: t("settings.msg.avatarReverted") });
     } else {
-      setStatus({ kind: "error", message: "Could not remove it." });
+      setStatus({ kind: "error", message: t("settings.msg.removeFailed") });
     }
   };
 
@@ -241,7 +241,7 @@ export function ProfileSettingsBody({
 
               <div className="pro-settings-actions">
                 <button className="btn btn-primary" type="submit" disabled={status.kind === "saving"}>
-                  {status.kind === "saving" ? "Saving…" : "Save changes"}
+                  {status.kind === "saving" ? t("settings.saving") : t("settings.save")}
                 </button>
                 {data.nameOverride && (
                   <button type="button" className="btn btn-secondary" onClick={revertName}>
