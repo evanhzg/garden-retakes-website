@@ -3106,5 +3106,6 @@
   "chat.empty": "Aucun message. Dites bonjour.",
   "chat.placeholder": "Message, ou /invite",
   "chat.send": "Envoyer",
-  "social.friends.pendingTitle": "Demandes d'ami"
+  "social.friends.pendingTitle": "Demandes d'ami",
+  "social.friends.tabChat": "Discuter"
 }

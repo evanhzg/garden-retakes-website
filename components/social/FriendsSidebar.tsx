@@ -668,7 +668,7 @@ export default function FriendsSidebar() {
         </PlayerBubble>
       </div>
       <div className="friend-actions">
-        <button className="btn-social" onClick={() => openThread(f.friendId)} title="Chat">
+        <button className="btn-social" onClick={() => openThread(f.friendId)} title={t("social.friends.tabChat")}>
           <MessageSquare size={16} />
           {/* The number, not a dot. A dot says "something happened"; a person
               deciding whether to open a conversation wants to know whether it
@@ -891,49 +891,11 @@ export default function FriendsSidebar() {
               <p className="muted-text">{t("social.friends.noFriends")}</p>
             )}
 
-            {/* Staff first, and never mixed in with friends.
-                A message from an admin is not a social one — it is usually
-                about your account or a match you are in — and finding it
-                sorted alphabetically among people you play with is how it gets
-                missed. They leave this list when the admin closes the thread,
-                which is what makes it a queue rather than a permanent section. */}
-            {adminThreads.length > 0 && (
-              <>
-                <div className="friends-category-title is-admin">
-                  {t("social.friends.adminCategory")} — {adminThreads.length}
-                </div>
-                {adminThreads.map((a) => (
-                  <div
-                    key={a.steamId}
-                    className={`friend-item is-admin${(unread[a.steamId] ?? 0) > 0 ? " has-unread" : ""}`}
-                  >
-                    <div className="friend-info">
-                      <AvatarStatus
-                        steamId={a.steamId}
-                        name={a.name}
-                        src={a.avatarUrl}
-                        presence={presenceOf(a.steamId, livePlayers, onlineUsers.includes(a.steamId))}
-                        size={28}
-                      />
-                      <div className="friend-lines">
-                        <span className="friend-name">{a.name}</span>
-                        <span className="friend-stats">{t("social.friends.adminRow")}</span>
-                      </div>
-                    </div>
-                    <div className="friend-actions">
-                      <button className="btn-social" onClick={() => openThread(a.steamId)} title="Chat">
-                        <MessageSquare size={16} />
-                        {(unread[a.steamId] ?? 0) > 0 && (
-                          <span className="count-badge">{Math.min(99, unread[a.steamId] ?? 0)}</span>
-                        )}
-                      </button>
-                    </div>
-                  </div>
-                ))}
-              </>
-            )}
+            {/* Eight faces at the top, straight to a conversation.
 
-            {/* Eight faces, straight to a conversation.
+                Above the staff group rather than under it: sitting between
+                staff and the roster it read as a row of staff, which is the
+                one thing it never contains.
 
                 The list below is the whole roster and answers "who have I
                 got"; this row answers "who can I talk to now", which is the
@@ -967,16 +929,63 @@ export default function FriendsSidebar() {
               </div>
             )}
 
+            {/* Staff first, and never mixed in with friends.
+                A message from an admin is not a social one — it is usually
+                about your account or a match you are in — and finding it
+                sorted alphabetically among people you play with is how it gets
+                missed. They leave this list when the admin closes the thread,
+                which is what makes it a queue rather than a permanent section. */}
+            {adminThreads.length > 0 && (
+              <>
+                <div className="friends-category-title is-admin">
+                  {t("social.friends.adminCategory")} — {adminThreads.length}
+                </div>
+                {adminThreads.map((a) => (
+                  <div
+                    key={a.steamId}
+                    className={`friend-item is-admin${(unread[a.steamId] ?? 0) > 0 ? " has-unread" : ""}`}
+                  >
+                    <div className="friend-info">
+                      <AvatarStatus
+                        steamId={a.steamId}
+                        name={a.name}
+                        src={a.avatarUrl}
+                        presence={presenceOf(a.steamId, livePlayers, onlineUsers.includes(a.steamId))}
+                        size={28}
+                      />
+                      <div className="friend-lines">
+                        <span className="friend-name">{a.name}</span>
+                        <span className="friend-stats">{t("social.friends.adminRow")}</span>
+                      </div>
+                    </div>
+                    <div className="friend-actions">
+                      <button className="btn-social" onClick={() => openThread(a.steamId)} title={t("social.friends.tabChat")}>
+                        <MessageSquare size={16} />
+                        {(unread[a.steamId] ?? 0) > 0 && (
+                          <span className="count-badge">{Math.min(99, unread[a.steamId] ?? 0)}</span>
+                        )}
+                      </button>
+                    </div>
+                  </div>
+                ))}
+              </>
+            )}
+
+
             {onlineFriends.length > 0 && (
               <>
-                <div className="friends-category-title">Online — {onlineFriends.length}</div>
+                <div className="friends-category-title">
+                  {t("social.status.online")} — {onlineFriends.length}
+                </div>
                 {onlineFriends.map((f) => renderFriendRow(f, true))}
               </>
             )}
 
             {offlineFriends.length > 0 && (
               <>
-                <div className="friends-category-title mt-4">Offline — {offlineFriends.length}</div>
+                <div className="friends-category-title mt-4">
+                  {t("social.status.offline")} — {offlineFriends.length}
+                </div>
                 {offlineFriends.map((f) => renderFriendRow(f, false))}
               </>
             )}

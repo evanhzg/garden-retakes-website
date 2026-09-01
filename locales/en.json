@@ -3106,5 +3106,6 @@
   "chat.empty": "No messages yet. Say hi.",
   "chat.placeholder": "Message, or /invite",
   "chat.send": "Send",
-  "social.friends.pendingTitle": "Friend requests"
+  "social.friends.pendingTitle": "Friend requests",
+  "social.friends.tabChat": "Chat"
 }

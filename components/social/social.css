@@ -1037,6 +1037,19 @@ html[data-motion="off"] .dm-bubble.typing i { animation: none; }
   min-height: 0;
 }
 
+/* The log takes the slack, so the composer sits on the bottom edge.
+ *
+ * In the panel .dm-messages was the `minmax(0, 1fr)` row of .dm-view's grid
+ * and got its height from that. In a dock it is a flex item inside .dm-body —
+ * two boxes further in — and a flex item does not grow unless told to. So it
+ * sized to its own content and the composer sat directly underneath it,
+ * halfway up a 440px card with the rest of the card empty below. Which is
+ * exactly what it looked like: a chat window with its text box in the middle
+ * of it. */
+.dm-dock .dm-messages {
+  flex: 1 1 auto;
+}
+
 /* Fills the dock, and keeps its own grid.
    This used to also set display:flex, which overrode the
    `grid-template-rows: auto minmax(0,1fr) auto` on .dm-view — so the message
