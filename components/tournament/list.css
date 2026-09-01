@@ -9,20 +9,16 @@
 
 /* ---------- Hero: title on the left, tools on the right ---------- */
 
-/* One column until there is genuinely room for two. The tools are a stack of
-   full-width buttons, and squeezing them beside a title on a phone gives both
-   halves about 160px, which is too narrow for either. */
+/* One column, always.
+   It was two — title on the left, tools in a 240-300px column on the right —
+   which made sense when the tools were a stack of full-width buttons in a
+   panel. They are a row of ghosts now, and a row of ghosts in a 300px column
+   is a stack of ghosts: the same vertical list, without the panel that used
+   to explain it. Under the blurb they get the width to be a toolbar. */
 .tl-hero-grid {
   display: grid;
   gap: var(--space-4);
   align-items: start;
-}
-
-@media (min-width: 900px) {
-  .tl-hero-grid {
-    grid-template-columns: minmax(0, 1fr) minmax(240px, 300px);
-    gap: var(--space-6);
-  }
 }
 
 /* ---------- Hero ----------
