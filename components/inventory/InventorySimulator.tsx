@@ -1,8 +1,58 @@
 "use client";
 
+/*
+ * The inventory workspace.
+ *
+ * Three columns, each answering one question:
+ *
+ *   Loadouts   — which set am I editing?          (list, always visible)
+ *   Board      — what does it look like, both sides at once?
+ *   Armory     — what can I put in a slot?        (opens beside the board)
+ *
+ * The previous page asked all three through tabs: a strip of four loadout tabs
+ * plus an overflow panel, a nine-row type rail that showed one side's slots for
+ * one type at a time, a Catalog / My Crafts switch inside the skin drawer, and
+ * a breadcrumb that duplicated the rail. Seeing a whole loadout meant clicking
+ * through nine types twice. Here the board is the loadout — T and CT side by
+ * side — and every tile on it is a link into the armory for that slot.
+ *
+ * The armory is one scroll with a jump bar rather than a set of tabs: every
+ * type is on the page, the chips just move you through it. Picking a weapon
+ * opens its skins in place; Back returns to the exact scroll position.
+ */
+
 import { createPortal } from "react-dom";
 import dynamic from "next/dynamic";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
+import {
+  Archive,
+  ArrowLeftRight,
+  Check,
+  ChevronDown,
+  ChevronLeft,
+  Copy,
+  Dices,
+  Download,
+  Ellipsis,
+  Gamepad2,
+  GripVertical,
+  Heart,
+  Link as LinkIcon,
+  LoaderCircle,
+  Music,
+  Pencil,
+  Plus,
+  Radio,
+  Search,
+  Share2,
+  Shuffle,
+  Sparkles,
+  Star,
+  Sticker,
+  Terminal,
+  Trash2,
+  X,
+} from "lucide-react";
 import {
   InventoryItem,
   InventoryStore,
@@ -29,9 +79,11 @@ import {
   saveStore,
   skinKey,
 } from "@/lib/inventory";
-import { useI18n } from '@/components/I18nProvider';
+import { useI18n } from "@/components/I18nProvider";
 import InventoryIcon, { categoryIconId } from "@/components/inventory/InventoryIcon";
+import RadioCommandsModal from "@/components/inventory/RadioCommandsModal";
 import { importSnapshot, type LoadoutSnapshot } from "@/lib/share";
+
 // Loaded on demand, and never on the server.
 //
 // This is what /inventory had been 500ing on. The editor pulls in the 3D
@@ -41,12 +93,7 @@ import { importSnapshot, type LoadoutSnapshot } from "@/lib/share";
 // reported "Element type is invalid ... got: undefined" from a stack that names
 // none of it. Warm rebuilds succeeded, which is why it looked fine in dev after
 // any edit and died on every restart and every deploy.
-//
-// It has no business being server-rendered regardless: it is a modal wrapping a
-// remote iframe, opened by a click, and `ssr: false` says so.
 const SkinEditor3D = dynamic(() => import("./SkinEditor3D"), { ssr: false });
-import agentAudioMapping from "@/lib/agent_audio_mapping.json";
-import agentVoicesV2 from "@/data/agent_voices_v2.json";
 
 type WeaponEntry = {
   id: number;
@@ -59,10 +106,10 @@ type WeaponEntry = {
   rarity?: string;
 };
 type Skin = { id: number; def: number; paint: number; name: string; image: string; rarity: string; collection?: string };
-type StickerOption = { id: number; def: number; name: string; image: string; rarity: string };
 type Catalog = Record<string, WeaponEntry[]>;
 type Session = { authenticated: boolean; steamId?: string; name?: string | null; avatar?: string | null; adminLevel?: number };
 type SkinSort = "name" | "quality" | "newest" | "fav";
+type SlotKind = Exclude<ItemKind, "patch" | "charm">;
 
 /**
  * GET /api/stattrak — this season's counters.
@@ -77,32 +124,55 @@ type SeasonStats = {
   itemKills: Record<string, number>;
 };
 
-/** One tile on the equipped board. */
+/** One tile on the board. */
 type BoardSlot = {
   key: string;
   def: number;
-  kind: ItemKind;
+  kind: SlotKind;
   label: string;
   item?: InventoryItem;
   /** The CT rifle tile, which toggles between M4A4 and M4A1-S. */
   m4?: boolean;
-  /** True for slots outside the signature set, appended so nothing is hidden. */
+  /** Outside the signature set — appended so nothing equipped is hidden. */
   extra?: boolean;
 };
 
+/** What the item menu is pointed at: an owned item, or a catalog skin not yet crafted. */
+type MenuTarget = {
+  skin: Skin;
+  weapon: WeaponEntry;
+  side: Side;
+  item?: InventoryItem;
+  x: number;
+  y: number;
+};
+
 const CATEGORY_ORDER = ["Rifles", "Snipers", "SMGs", "Pistols", "Heavy", "Knives", "Gloves", "Agents", "Music Kits"];
+const SIDES: Side[] = ["t", "ct"];
 
 /**
- * The rail's first entry: every type on one page.
+ * The weapon each type is drawn as, in the jump bar and section headings.
  *
- * This is what the "Preview" button used to be. Preview was a third copy of
- * the type list — a whole browse mode, reached by a button labelled as though
- * it previewed the thing you were editing, which force-closed whatever you had
- * open. As a row in the rail it is just another view of the same list, in the
- * one place the page keeps its type controls.
+ * The glyph is the catalog's own render used as a mask, so it is a real
+ * silhouette in whatever colour the chip is — not a hand-drawn approximation,
+ * and not a copy of Valve's art in this repo. The CDN serves it with an open
+ * CORS header, which a CSS mask needs.
  */
-const ALL_TYPES = "All types";
-const SIDES: Side[] = ["t", "ct"];
+const GLYPH_DEF: Record<string, number> = {
+  Rifles: 7,
+  Snipers: 9,
+  SMGs: 34,
+  Pistols: 1,
+  Heavy: 35,
+  Knives: 507,
+  Gloves: 5030,
+};
+
+/** Types with one slot per side, rather than one per weapon. */
+const SINGLE_SLOT = new Set(["Knives", "Gloves", "Agents", "Music Kits"]);
+
+/** Sections longer than this start folded; the jump bar and search unfold them. */
+const SECTION_PREVIEW = 18;
 
 function wearLabel(wear: number): string {
   if (wear < 0.07) return "Factory New";
@@ -113,6 +183,13 @@ function wearLabel(wear: number): string {
 }
 const wearShort = (wear: number) =>
   wearLabel(wear).split(/[\s-]/).map((w) => w[0]).join("").toUpperCase();
+const WEAR_STOPS = [
+  { at: 0, label: "FN" },
+  { at: 0.07, label: "MW" },
+  { at: 0.15, label: "FT" },
+  { at: 0.38, label: "WW" },
+  { at: 0.45, label: "BS" },
+];
 
 const skinLabel = (name: string) => name.split(" | ")[1] ?? name;
 
@@ -120,13 +197,12 @@ const skinLabel = (name: string) => name.split(" | ")[1] ?? name;
  * Stand-in art for a side with no agent chosen.
  *
  * The game's default T and CT models (item defs 5036 and 5037) are not
- * tradeable, so they are not in the item catalog and have no CDN image. This is
- * a local placeholder for them — the point is that the slot shows a body rather
- * than a hole, because in game an unset agent is still somebody.
+ * tradeable, so they are not in the item catalog and have no CDN image. An
+ * unset agent is still somebody in game, so the slot shows a body, not a hole.
  */
 const DEFAULT_AGENT_ART = "/default_character.PNG";
 
-function kindOfCategory(category: string): ItemKind {
+function kindOfCategory(category: string): SlotKind {
   if (category === "Knives") return "knife";
   if (category === "Gloves") return "gloves";
   if (category === "Agents") return "agent";
@@ -134,376 +210,161 @@ function kindOfCategory(category: string): ItemKind {
   return "weapon";
 }
 
-const RADIO_CATEGORIES = [
-  {
-    name: "Preparation",
-    commands: [
-      { label: "Go Go Go", keys: ["go_go_go", "lets_go", "letsgo", "gogogo"], file: "go_go_go" }, 
-      { label: "Fall Back", keys: ["fall_back", "fallback", "request_fallback"], file: "fall_back" }, 
-      { label: "Stick Together", keys: ["stick_together"], file: "stick_together" }, 
-      { label: "Hold This Position", keys: ["hold_this_position", "holdpos"], file: "hold_this_position" },
-      { label: "Follow Me", keys: ["follow_me", "followme"], file: "follow_me" }, 
-    ]
-  },
-  {
-    name: "Movement",
-    commands: [
-      { label: "Go A", keys: ["go_a", "goa"], file: "go_a" },
-      { label: "Go B", keys: ["go_b", "gob"], file: "go_b" },
-      { label: "Go to Bombsite A", keys: ["goto_a", "gotoa"], file: "goto_a" },
-      { label: "Go to Bombsite B", keys: ["goto_b", "gotob"], file: "goto_b" },
-      { label: "Spread Out", keys: ["spread_out"], file: "spread_out" },
-      { label: "Move Up", keys: ["move_up"], file: "move_up" },
-      { label: "Cover Me", keys: ["cover_me", "coverme"], file: "cover_me" },
-    ]
-  },
-  {
-    name: "Commands",
-    commands: [
-      { label: "Need Drop", keys: ["need_drop"], file: "need_drop" },
-      { label: "Need Backup", keys: ["need_backup", "coverme", "request_coverme"], file: "need_backup" }, 
-      { label: "Need Decoy", keys: ["need_decoy"], file: "need_decoy" },
-      { label: "Need Smoke", keys: ["need_smoke"], file: "need_smoke" },
-      { label: "Need Flashbang", keys: ["need_flashbang"], file: "need_flashbang" },
-      { label: "Need Grenade", keys: ["need_grenade"], file: "need_grenade" },
-      { label: "Need Incendiary", keys: ["need_incendiary"], file: "need_incendiary" },
-      { label: "Take the Point", keys: ["take_the_point", "point"], file: "take_the_point" },
-      { label: "Regroup", keys: ["regroup"], file: "regroup" },
-    ]
-  },
-  {
-    name: "Report",
-    commands: [
-      { label: "Enemy Spotted", keys: ["enemy_spotted", "spotted"], file: "enemy_spotted" }, 
-      { label: "Sector Clear", keys: ["sector_clear", "clear"], file: "sector_clear" }, 
-      { label: "I'm in Position", keys: ["im_in_position", "position"], file: "im_in_position" },
-      { label: "Reporting In", keys: ["report_in", "reporting_in"], file: "report_in" },
-      { label: "Get in Position", keys: ["get_in_position"], file: "get_in_position" },
-      { label: "Sniper Warning", keys: ["sniper_warning"], file: "sniper_warning" },
-      { label: "Taking Fire", keys: ["taking_fire"], file: "taking_fire" },
-      { label: "Multiple Enemies", keys: ["multiple_enemies"], file: "multiple_enemies" },
-      { label: "Enemy Down", keys: ["enemy_down"], file: "enemy_down" },
-      { label: "Area Secure", keys: ["area_secure"], file: "area_secure" },
-      { label: "Bombsite A Clear", keys: ["bombsite_a_clear"], file: "bombsite_a_clear" },
-      { label: "Bombsite B Clear", keys: ["bombsite_b_clear"], file: "bombsite_b_clear" },
-      { label: "Hearing Noise", keys: ["hearing_noise"], file: "hearing_noise" },
-      { label: "Heard Something", keys: ["heard_something"], file: "heard_something" },
-      { label: "Need Assistance", keys: ["need_assistance"], file: "need_assistance" },
-      { label: "Requesting Backup", keys: ["requesting_backup"], file: "requesting_backup" },
-      { label: "Under Attack", keys: ["under_attack"], file: "under_attack" },
-    ]
-  },
-  {
-    name: "Bomb Status",
-    commands: [
-      { label: "Bomb Planted", keys: ["bomb_planted"], file: "bomb_planted" },
-      { label: "Bomb Dropped", keys: ["bomb_dropped"], file: "bomb_dropped" },
-      { label: "Bomb Picked Up", keys: ["bomb_picked_up"], file: "bomb_picked_up" },
-      { label: "Guarding the Bomb", keys: ["guarding_the_bomb"], file: "guarding_the_bomb" },
-      { label: "Defusing the Bomb", keys: ["defusing_the_bomb"], file: "defusing_the_bomb" },
-      { label: "Get Out of There!", keys: ["get_out"], file: "get_out" },
-      { label: "Bomb at A", keys: ["bomb_at_a"], file: "bomb_at_a" },
-      { label: "Bomb at B", keys: ["bomb_at_b"], file: "bomb_at_b" },
-      { label: "Need to Plant", keys: ["need_to_plant"], file: "need_to_plant" },
-      { label: "Need to Defuse", keys: ["need_to_defuse"], file: "need_to_defuse" },
-    ]
-  },
-  {
-    name: "Responses",
-    commands: [
-      { label: "Affirmative", keys: ["affirmative", "agree"], file: "affirmative" }, 
-      { label: "Negative", keys: ["negative", "disagree"], file: "negative" }, 
-      { label: "Cheer", keys: ["cheer"], file: "cheer" }, 
-      { label: "Compliment", keys: ["compliment", "nice"], file: "compliment" },
-      { label: "Thanks", keys: ["thanks"], file: "thanks" }, 
-      { label: "Sorry", keys: ["sorry"], file: "sorry" },
-      { label: "You're Welcome", keys: ["youre_welcome"], file: "youre_welcome" },
-      { label: "Quiet!", keys: ["quiet"], file: "quiet" },
-      { label: "Good Job", keys: ["good_job"], file: "good_job" },
-      { label: "Nice", keys: ["nice_shot", "nice"], file: "nice" },
-      { label: "Oh No", keys: ["oh_no"], file: "oh_no" },
-    ]
-  },
-  {
-    name: "Grenades",
-    commands: [
-      { label: "Throwing Smoke", keys: ["throwing_smoke", "smoke"], file: "throwing_smoke" },
-      { label: "Throwing Flashbang", keys: ["throwing_flashbang", "flash"], file: "throwing_flashbang" },
-      { label: "Throwing Grenade", keys: ["throwing_grenade", "grenade"], file: "throwing_grenade" },
-      { label: "Throwing Decoy", keys: ["throwing_decoy", "decoy"], file: "throwing_decoy" },
-      { label: "Throwing Incendiary", keys: ["throwing_incendiary", "incendiary", "molotov"], file: "throwing_incendiary" },
-    ]
-  }
-];
-
-const BASE_FACTION_MAP: Record<string, string> = {
-  "professional_epic": "professionals",
-  "professional_fem": "professionals",
-  "seal_epic": "seal_team_6",
-  "seal_fem": "seal_team_6",
-  "seal_diver_01": "seal_team_6",
-  "seal_diver_02": "seal_team_6",
-  "seal_diver_03": "seal_team_6",
-  "swat_epic": "swat",
-  "swat_fem": "swat",
-  "balkan_epic": "balkan",
-  "leet_epic": "leet",
-  "fbihrt_epic": "fbi",
-  "gendarmerie_fem": "gign",
-  "gendarmerie_fem_epic": "gign",
-  "jungle_fem": "jungle",
-  "jungle_fem_epic": "jungle",
-  "jungle_male_epic": "jungle",
-  "sas": "sas",
-  "phoenix": "phoenix_connexion",
-};
-
-function RadioCommandsModal({ weapon, onClose }: { weapon: WeaponEntry, onClose: () => void }) {
-  const factionId = (agentAudioMapping as any)[weapon.id.toString()];
-  const voices = factionId ? (agentVoicesV2 as any)[factionId]?.sounds || [] : [];
-  
-  const [playIndexes, setPlayIndexes] = useState<Record<string, number>>({});
-  const [activeTab, setActiveTab] = useState("Preparation");
-  
-  const allPredefinedKeys = RADIO_CATEGORIES.flatMap(c => c.commands).flatMap(cmd => cmd.keys);
-  const allPredefinedMatches = (v: string) => allPredefinedKeys.some(k => v.includes(`_${k}_`) || v.includes(`${k}_`) || v.includes(`_${k}.`) || v.includes(`${k}.`));
-  const eventVariants = voices.filter((v: string) => !allPredefinedMatches(v)).sort();
-  
-  const groupedEvents: Record<string, string[]> = {};
-  eventVariants.forEach((v: string) => {
-    const baseName = v.replace(/_?(0[0-9]|[1-9][0-9]|v[0-9]+)?\.(wav|mp3)$/, '');
-    if (!groupedEvents[baseName]) groupedEvents[baseName] = [];
-    groupedEvents[baseName].push(v);
-  });
-  
-  const eventCommands = Object.entries(groupedEvents).map(([baseName, variants]) => ({
-    label: baseName.replace(/_/g, ' ').replace(/\b\w/g, c => c.toUpperCase()),
-    keys: [baseName],
-    file: baseName,
-    variants
-  }));
-  
-  const categories = [...RADIO_CATEGORIES, { name: "Events", commands: eventCommands }];
-  const activeCategory = categories.find(c => c.name === activeTab) || categories[0];
-
-  return createPortal(
-    <div className="inv4-modal" role="dialog" aria-modal="true" onClick={onClose}>
-      <div className="inv4-modal-card" style={{ maxWidth: 900, width: '100%', maxHeight: '85vh', display: 'flex', flexDirection: 'column' }} onClick={(e) => e.stopPropagation()}>
-        <h2 style={{ marginTop: 0, marginBottom: 8 }}>Radio Commands - {weapon.name}</h2>
-        
-        <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap', paddingBottom: 8, borderBottom: '1px solid var(--border)', marginBottom: 12 }}>
-          {categories.map(c => (
-            <button 
-              key={c.name}
-              className={`btn ${activeTab === c.name ? 'btn-primary' : ''}`}
-              onClick={() => setActiveTab(c.name)}
-              style={{ whiteSpace: 'nowrap' }}
-            >
-              {c.name}
-            </button>
-          ))}
-        </div>
-        
-        <div style={{ flex: 1, overflowY: 'auto', padding: '4px', margin: '0 -4px' }}>
-          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(180px, 1fr))', gap: 8 }}>
-            {(() => {
-              const hasNative: any[] = [];
-              const needsFallback: any[] = [];
-              
-              activeCategory.commands.forEach((cmd: any) => {
-                const variants = cmd.variants || voices.filter((v: string) => {
-                  return cmd.keys.some((k: string) => {
-                    if (v.includes(`_${k}_`) || v.includes(`${k}_`) || v.includes(`_${k}.`) || v.includes(`${k}.`)) return true;
-                    const nk = k.replace(/_/g, '').toLowerCase();
-                    const base = v.split('.')[0].toLowerCase();
-                    const matchRegex = new RegExp(`${nk}(0[0-9]|[1-9][0-9]|v[0-9]+)?$`, 'i');
-                    return matchRegex.test(base);
-                  });
-                }).sort();
-                
-                if (variants.length > 0) {
-                  const idx = playIndexes[cmd.label] || 0;
-                  const currentVariant = variants[idx % variants.length];
-                  hasNative.push({ 
-                    cmd, 
-                    count: variants.length, 
-                    src: `https://cdn.jsdelivr.net/gh/evanhzg/garden-retakes-website@assets/voice-lines/public/audio/agents/${factionId}/${currentVariant}`,
-                    hasVariant: true
-                  });
-                } else {
-                  const base = BASE_FACTION_MAP[factionId] || factionId;
-                  needsFallback.push({
-                    cmd,
-                    count: 1,
-                    src: `https://cdn.jsdelivr.net/gh/evanhzg/garden-retakes-website@assets/voice-lines/public/audio/agents/${base}/${cmd.file}.wav`, 
-                    hasVariant: false
-                  });
-                }
-              });
-              
-              const sortedButtons = [...hasNative, ...needsFallback];
-              
-              return sortedButtons.map(({ cmd, count, src, hasVariant }) => {
-                let finalSrc = hasVariant ? src : `https://cdn.jsdelivr.net/gh/evanhzg/garden-retakes-website@assets/voice-lines/public/audio/agents/${BASE_FACTION_MAP[factionId] || factionId}/${cmd.file}.wav`;
-                
-                return (
-                  <button
-                    key={cmd.label}
-                    onClick={() => {
-                      if (finalSrc) {
-                        new Audio(finalSrc).play().catch(() => {});
-                        setPlayIndexes(prev => ({ ...prev, [cmd.label]: (prev[cmd.label] || 0) + 1 }));
-                      }
-                    }}
-                    style={{
-                      padding: "8px",
-                      borderRadius: "4px",
-                      border: "1px solid var(--border)",
-                      background: hasVariant ? "var(--color-surface)" : "transparent",
-                      color: hasVariant ? "inherit" : "var(--color-dim)",
-                      opacity: hasVariant ? 1 : 0.6,
-                      cursor: "pointer",
-                      textAlign: "left",
-                      display: "flex",
-                      flexDirection: "column",
-                      justifyContent: "center",
-                      minHeight: 52,
-                      transition: "all 0.15s ease"
-                    }}
-                    onMouseOver={e => { e.currentTarget.style.borderColor = hasVariant ? "var(--color-primary)" : "var(--color-dim)"; }}
-                    onMouseOut={e => { e.currentTarget.style.borderColor = "var(--border)"; }}
-                  >
-                    <span style={{ fontWeight: 500, fontSize: 13 }}>{cmd.label}</span>
-                    <span style={{ fontSize: 11, opacity: 0.7, marginTop: 4 }}>
-                      {hasVariant ? (count > 1 ? `(${((playIndexes[cmd.label] || 0) % count) + 1}/${count})` : '(1/1)') : '(Fallback)'}
-                    </span>
-                  </button>
-                );
-              });
-            })()}
-          </div>
-        </div>
-      </div>
-    </div>,
-    document.body
-  );
+function categoryOfKind(kind: SlotKind): string | null {
+  if (kind === "knife") return "Knives";
+  if (kind === "gloves") return "Gloves";
+  if (kind === "agent") return "Agents";
+  if (kind === "musickit") return "Music Kits";
+  return null;
 }
 
+const SINGLE_FIELD: Record<Exclude<SlotKind, "weapon">, Record<Side, keyof Loadout>> = {
+  knife: { t: "knifeT", ct: "knifeCT" },
+  gloves: { t: "glovesT", ct: "glovesCT" },
+  agent: { t: "agentT", ct: "agentCT" },
+  musickit: { t: "musicKitT", ct: "musicKitCT" },
+};
+
+/** The item id a loadout holds in one slot. */
+function slotRef(l: Loadout, kind: SlotKind, s: Side, def: number): string | undefined {
+  if (kind === "weapon") return (s === "t" ? l.equippedT : l.equippedCT)[def];
+  return l[SINGLE_FIELD[kind][s]] as string | undefined;
+}
+
+/** A copy of the loadout with one slot set (or cleared, for `id` undefined). */
+function withSlot(l: Loadout, kind: SlotKind, s: Side, def: number, id: string | undefined): Loadout {
+  if (kind === "weapon") {
+    const key = s === "t" ? "equippedT" : "equippedCT";
+    const map = { ...l[key] };
+    if (id) map[def] = id;
+    else delete map[def];
+    return { ...l, [key]: map };
+  }
+  return { ...l, [SINGLE_FIELD[kind][s]]: id };
+}
+
+/** Every item id a loadout references. */
+function loadoutRefs(l: Loadout): Set<string> {
+  const ids = [
+    l.knifeT, l.knifeCT, l.glovesT, l.glovesCT, l.agentT, l.agentCT, l.musicKitT, l.musicKitCT,
+    ...Object.values(l.equippedT ?? {}),
+    ...Object.values(l.equippedCT ?? {}),
+  ];
+  return new Set(ids.filter((x): x is string => !!x));
+}
+
+const sidesOf = (target: Side | "both"): Side[] => (target === "both" ? ["t", "ct"] : [target]);
+const canHold = (team: Team, s: Side) => team === "both" || team === s;
+
 export default function InventorySimulator() {
-    const { t } = useI18n();
+  const { t } = useI18n();
 
   const [store, setStore] = useState<InventoryStore>(defaultStore());
   const [hydrated, setHydrated] = useState(false);
   const [session, setSession] = useState<Session>({ authenticated: false });
   const [origin, setOrigin] = useState("");
   const [toast, setToast] = useState<string | null>(null);
+  const [mounted, setMounted] = useState(false);
+  useEffect(() => setMounted(true), []);
 
   const [catalog, setCatalog] = useState<Catalog | null>(null);
-  const [category, setCategory] = useState("Rifles");
   /**
-   * Which weapon type the loadout rail has open. Null = all collapsed.
-   *
-   * Starts on the browsed category rather than on null. It began collapsed
-   * while `category` already said "Rifles", so the page's first paint had the
-   * rail and the right-hand pane disagreeing about where you were — and the
-   * rail, which is where you see what is equipped, showed nothing at all until
-   * you clicked something.
+   * This season's StatTrak figures, or null until they load (and for a
+   * signed-out visitor). `itemKills` is per item — what CS2 paints on the gun.
+   * `seasonKills` is the player's kills with anything, which no weapon shows.
    */
-  const [openBoardType, setOpenBoardType] = useState<string | null>("Rifles");
-  const [side, setSide] = useState<Side>("t");
-  const [weapon, setWeapon] = useState<WeaponEntry | null>(null); // set = skin chooser open
-  const [chooserTab, setChooserTab] = useState<"catalog" | "inventory">("catalog");
-  const [skins, setSkins] = useState<Skin[]>([]);
-  const [overrideSide, setOverrideSide] = useState<"t" | "ct" | "both" | null>(null);
-  const [skinsLoading, setSkinsLoading] = useState(false);
+  const [seasonStats, setSeasonStats] = useState<SeasonStats | null>(null);
 
-  // Skin chooser filters
+  // ---- armory ----
+  const [armoryOpen, setArmoryOpen] = useState(false);
+  const [armoryMode, setArmoryMode] = useState<"catalog" | "vault">("catalog");
+  /** The side the armory shows and equips to. */
+  const [side, setSide] = useState<Side>("t");
+  /** Equip to both sides at once (where the weapon allows it). */
+  const [bothSides, setBothSides] = useState(false);
+  const [weaponQuery, setWeaponQuery] = useState("");
+  const [activeSection, setActiveSection] = useState<string>(CATEGORY_ORDER[0]);
+  const [unfolded, setUnfolded] = useState<Record<string, boolean>>({});
+  const armoryScroll = useRef<HTMLDivElement | null>(null);
+  const sectionRefs = useRef<Record<string, HTMLElement | null>>({});
+  const savedScroll = useRef(0);
+  const searchRef = useRef<HTMLInputElement | null>(null);
+
+  // ---- weapon view ----
+  const [weapon, setWeapon] = useState<WeaponEntry | null>(null);
+  const [skins, setSkins] = useState<Skin[]>([]);
+  const [skinsLoading, setSkinsLoading] = useState(false);
   const [skinSearch, setSkinSearch] = useState("");
   const [skinSort, setSkinSort] = useState<SkinSort>("quality");
   const [collectionFilter, setCollectionFilter] = useState("");
   const [favOnly, setFavOnly] = useState(false);
 
-  /**
-   * This season's StatTrak figures, or null until they load (and for a signed-out
-   * visitor, who has no season to speak of).
-   *
-   * Two numbers that answer different questions. `itemKills` is per item — what
-   * CS2 paints on the side of the gun. `seasonKills` is the player's kills with
-   * anything, StatTrak or not, which is the one no weapon can show: a kill with
-   * a plain gun leaves no counter behind anywhere.
-   */
-  const [seasonStats, setSeasonStats] = useState<SeasonStats | null>(null);
-
-  const [radioModalOpen, setRadioModalOpen] = useState<WeaponEntry | null>(null);
-  // Config for the slot being edited
-  const [wear, setWear] = useState(0.02);
-  const [seed, setSeed] = useState(1);
+  // The finish the next equip uses — and, via Apply, the equipped item's.
+  const [wear, setWear] = useState(0);
+  const [seed, setSeed] = useState(0);
   const [statTrak, setStatTrak] = useState(false);
   const [nameTag, setNameTag] = useState("");
   const [stickers, setStickers] = useState<(PlacedSticker | null)[]>(defaultStickerSlots());
   const [charm, setCharm] = useState<PlacedSticker | null>(null);
   const [editor3dOpen, setEditor3dOpen] = useState(false);
-  /**
-   * The item menu.
-   *
-   * One menu for the whole page, positioned in viewport coordinates and
-   * portalled to <body>. It used to be rendered inside each tile with
-   * `position: absolute; transform: translateX(102%)`, which had two
-   * consequences: it was clipped by every scroll container it sat in, and
-   * putting it on a new kind of tile meant remembering to call `renderContext`
-   * there. Three of the six kinds of tile had been given it; the other three
-   * had no menu at all.
-   */
-  const [contextMenu, setContextMenu] = useState<
-    { skin: Skin; weapon: WeaponEntry; side: "t" | "ct"; boardSlot?: BoardSlot; x: number; y: number } | null
-  >(null);
+
+  // ---- vault ----
+  const [vaultQuery, setVaultQuery] = useState("");
+  const [vaultType, setVaultType] = useState<string>("");
   const [selectedItems, setSelectedItems] = useState<Set<string>>(new Set());
   const [selectedSkins, setSelectedSkins] = useState<Set<number>>(new Set());
 
-  const [mounted, setMounted] = useState(false);
-  useEffect(() => setMounted(true), []);
-
-  useEffect(() => {
-    const handleClick = (e: MouseEvent) => {
-      if ((e.target as HTMLElement).closest(".inv4-context")) return;
-      setContextMenu(null);
-    };
-    window.addEventListener("click", handleClick);
-    return () => window.removeEventListener("click", handleClick);
-  }, []);
-  const [stickerQuery, setStickerQuery] = useState("Katowice 2014");
-  const [stickerResults, setStickerResults] = useState<StickerOption[]>([]);
-  const [stickersLoading, setStickersLoading] = useState(false);
-  const [vaultCatsCollapsed, setVaultCatsCollapsed] = useState<Record<string, boolean>>({});
-
-  // Loadout switcher drag-reorder, by id — see onLoDrop for why not by index.
-  const dragId = useRef<string | null>(null);
-  const [dragOver, setDragOver] = useState<string | null>(null);
-  /** The manage-all panel, which replaced a native <select> of the overflow. */
-  const [loMenuOpen, setLoMenuOpen] = useState(false);
-
-  // Share / borrow
-  const [share, setShare] = useState<{ key: string; name: string } | null>(null);
+  // ---- menus & dialogs ----
+  const [menu, setMenu] = useState<MenuTarget | null>(null);
+  const [radioFor, setRadioFor] = useState<WeaponEntry | null>(null);
+  const [loSwitcherOpen, setLoSwitcherOpen] = useState(false);
+  const [colorOpen, setColorOpen] = useState(false);
+  const [renaming, setRenaming] = useState<string | null>(null);
+  const [confirmDelete, setConfirmDelete] = useState<string | null>(null);
+  const [importOpen, setImportOpen] = useState(false);
   const [importKey, setImportKey] = useState("");
+  const [share, setShare] = useState<{ key: string; name: string } | null>(null);
   const [shareBusy, setShareBusy] = useState(false);
   const [copied, setCopied] = useState<string | null>(null);
+  const [equipState, setEquipState] = useState<"idle" | "busy" | "done">("idle");
 
+  const dragId = useRef<string | null>(null);
+  const [dragOver, setDragOver] = useState<string | null>(null);
   const saveTimer = useRef<number | null>(null);
+  const toastTimer = useRef<number | null>(null);
 
   const showToast = useCallback((m: string) => {
     setToast(m);
-    window.setTimeout(() => setToast(null), 2400);
+    if (toastTimer.current) window.clearTimeout(toastTimer.current);
+    toastTimer.current = window.setTimeout(() => setToast(null), 2400);
   }, []);
 
-  const builderKind: ItemKind = weapon ? kindOfCategory(weapon.category) : "weapon";
+  const builderKind: SlotKind = weapon ? kindOfCategory(weapon.category) : "weapon";
   const supportsStickers = builderKind === "weapon" || builderKind === "agent";
   const supportsCharms = builderKind === "weapon";
-  const supportsStatTrak = builderKind !== "gloves";
+  const supportsStatTrak = builderKind !== "gloves" && builderKind !== "agent";
+  const supportsWear = builderKind === "weapon" || builderKind === "knife" || builderKind === "gloves";
+  const supportsNameTag = builderKind === "weapon" || builderKind === "knife";
 
   // Full-height page: hide the global footer so the workspace never scrolls.
   useEffect(() => {
     document.body.classList.add("inv-fullscreen");
     return () => document.body.classList.remove("inv-fullscreen");
+  }, []);
+
+  // Any click outside a popover closes it.
+  useEffect(() => {
+    const onClick = (e: MouseEvent) => {
+      const el = e.target as HTMLElement;
+      if (!el.closest(".iv-menu")) setMenu(null);
+      if (!el.closest(".iv-pop, [data-pop-anchor]")) {
+        setColorOpen(false);
+        setImportOpen(false);
+        setLoSwitcherOpen(false);
+      }
+    };
+    window.addEventListener("click", onClick);
+    return () => window.removeEventListener("click", onClick);
   }, []);
 
   // ---------- Boot ----------
@@ -515,7 +376,7 @@ export default function InventorySimulator() {
       try {
         sess = await fetch("/api/auth/session").then((r) => r.json());
       } catch {
-        /* ignore */
+        /* guest */
       }
       setSession(sess);
       if (sess.authenticated) {
@@ -524,9 +385,8 @@ export default function InventorySimulator() {
         } catch {
           setStore(loadStore());
         }
-        // Separate from the store on purpose: this changes on every kill, where
-        // the store only changes when somebody edits a loadout. A failure here
-        // costs the counters and nothing else, so it is swallowed.
+        // Separate from the store on purpose: this changes on every kill, the
+        // store only when somebody edits. A failure costs the counters only.
         fetch("/api/stattrak")
           .then((r) => (r.ok ? r.json() : null))
           .then((s: SeasonStats | null) => setSeasonStats(s))
@@ -539,196 +399,100 @@ export default function InventorySimulator() {
   }, []);
 
   // ---------- Persist ----------
-  const persist = useCallback((next: InventoryStore, authed: boolean) => {
-    saveStore(next);
-    if (!authed) return;
+  const postStore = useCallback(
+    (next: InventoryStore) =>
+      fetch("/api/inventory", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(next),
+      }),
+    [],
+  );
+  useEffect(() => {
+    if (!hydrated) return;
+    saveStore(store);
+    if (!session.authenticated) return;
     if (saveTimer.current) window.clearTimeout(saveTimer.current);
     saveTimer.current = window.setTimeout(() => {
-      fetch("/api/inventory", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify(next) }).catch(() => {});
+      postStore(store).catch(() => {});
     }, 600);
-  }, []);
-  useEffect(() => {
-    if (hydrated) persist(store, session.authenticated);
-  }, [store, hydrated, session.authenticated, persist]);
+  }, [store, hydrated, session.authenticated, postStore]);
+
+  const storeRef = useRef(store);
+  storeRef.current = store;
 
   const activeLoadout = useMemo(
     () => store.loadouts.find((l) => l.id === store.activeLoadoutId) ?? store.loadouts[0],
-    [store]
+    [store],
   );
-  const itemById = useCallback((id?: string) => (id ? store.items.find((i) => i.id === id) : undefined), [store.items]);
+  const itemsById = useMemo(() => new Map(store.items.map((i) => [i.id, i])), [store.items]);
+  const itemById = useCallback((id?: string) => (id ? itemsById.get(id) : undefined), [itemsById]);
   const favorites = useMemo(() => new Set(store.favorites ?? []), [store.favorites]);
+  const allWeapons = useMemo(() => Object.values(catalog ?? {}).flat(), [catalog]);
+  const weaponByDef = useCallback(
+    (def: number): WeaponEntry | null => allWeapons.find((w) => w.def === def) ?? null,
+    [allWeapons],
+  );
+  const categoryOfDef = useCallback(
+    (def: number): string => {
+      for (const [c, list] of Object.entries(catalog ?? {})) if (list.some((w) => w.def === def)) return c;
+      return "Other";
+    },
+    [catalog],
+  );
 
   // ---------- URL state ----------
   //
-  // Written with history.replaceState rather than the Next router: this is a
-  // client workspace on a force-dynamic route, so router.replace would round
-  // trip to the server on every category click. history + a popstate listener
-  // gives working back/forward with no network at all.
-
-  const applyUrl = useCallback(
-    (cat: Catalog | null) => {
-      const q = new URLSearchParams(window.location.search);
-      const s = q.get("side");
-      if (s === "t" || s === "ct") setSide(s);
-      const c = q.get("cat");
-      // The rail follows the URL too. Arriving on a link to Snipers used to
-      // open the snipers on the right and leave the rail collapsed, so the
-      // slots — the part that says what you have equipped — were closed on
-      // exactly the type the link was about.
-      if (c === ALL_TYPES || (c && CATEGORY_ORDER.includes(c))) {
-        setCategory(c);
-        setOpenBoardType(c === ALL_TYPES ? null : c);
-      }
-      // ?view=preview is retired. An old link still means "show me
-      // everything", which is now a category rather than a mode.
-      else if (q.get("view") === "preview") {
-        setCategory(ALL_TYPES);
-        setOpenBoardType(null);
-      }
-      const lo = q.get("lo");
-      if (lo) setStore((cur) => (cur.loadouts.some((l) => l.id === lo) ? { ...cur, activeLoadoutId: lo } : cur));
-
-      const w = q.get("w");
-      if (w && cat) {
-        const def = Number(w);
-        const entry = Object.values(cat).flat().find((e) => e.def === def);
-        setWeapon(entry ?? null);
-      } else if (!w) {
-        setWeapon(null);
-      }
-    },
-    []
-  );
-
-  const writeUrl = useCallback(
-    (patch: Record<string, string | null>, push = false) => {
-      if (typeof window === "undefined") return;
-      const q = new URLSearchParams(window.location.search);
-      for (const [k, v] of Object.entries(patch)) {
-        if (v === null || v === "") q.delete(k);
-        else q.set(k, v);
-      }
-      const url = `${window.location.pathname}${q.toString() ? `?${q}` : ""}`;
-      if (push) window.history.pushState(null, "", url);
-      else window.history.replaceState(null, "", url);
-    },
-    []
-  );
-
-  // Restore from the URL once the catalog is in (a ?w= needs it to resolve).
-  const bootedUrl = useRef(false);
-  useEffect(() => {
-    if (!hydrated || bootedUrl.current) return;
-    // Side, category and loadout can be restored straight away, but ?w= needs
-    // the catalog to turn a def number back into a weapon. Waiting for it is
-    // what makes a refresh land where you were instead of on the default page.
-    applyUrl(catalog);
-    if (catalog) bootedUrl.current = true;
-  }, [hydrated, catalog, applyUrl]);
-
-  useEffect(() => {
-    const onPop = () => applyUrl(catalog);
-    window.addEventListener("popstate", onPop);
-    return () => window.removeEventListener("popstate", onPop);
-  }, [applyUrl, catalog]);
-
-  // ---------- Skins fetch ----------
-  useEffect(() => {
-    if (!weapon) {
-      setSkins([]);
-      return;
+  // history.replaceState rather than the Next router: this is a client
+  // workspace on a force-dynamic route, so router.replace would round trip to
+  // the server on every click.
+  const writeUrl = useCallback((patch: Record<string, string | null>, push = false) => {
+    const q = new URLSearchParams(window.location.search);
+    for (const [k, v] of Object.entries(patch)) {
+      if (v === null || v === "") q.delete(k);
+      else q.set(k, v);
     }
-    let cancelled = false;
-    setSkinsLoading(true);
-    fetch(`/api/skins?weapon=${weapon.def}`)
-      .then((r) => r.json())
-      .then((d: Skin[]) => !cancelled && setSkins(Array.isArray(d) ? d : []))
-      .catch(() => !cancelled && setSkins([]))
-      .finally(() => !cancelled && setSkinsLoading(false));
-    return () => {
-      cancelled = true;
-    };
-  }, [weapon]);
+    const url = `${window.location.pathname}${q.toString() ? `?${q}` : ""}`;
+    if (push) window.history.pushState(null, "", url);
+    else window.history.replaceState(null, "", url);
+  }, []);
 
-  // ---------- Sticker search ----------
-  useEffect(() => {
-    if (!editor3dOpen && builderKind !== "agent") return; // Allow patches to be picked even without 3D editor if that's how it's handled, but actually keep it true to the original logic
-    // Actually, wait, let me just restore the original logic exactly but with kind support
-    if (!editor3dOpen && builderKind !== "agent" && !weapon) return; // ensure something is open
-    const searchKind = builderKind === "agent" ? "patch" : "sticker";
-    const h = window.setTimeout(() => {
-      setStickersLoading(true);
-      fetch(`/api/stickers?q=${encodeURIComponent(stickerQuery)}&kind=${searchKind}`)
-        .then((r) => r.json())
-        .then((d: StickerOption[]) => setStickerResults(Array.isArray(d) ? d : []))
-        .catch(() => setStickerResults([]))
-        .finally(() => setStickersLoading(false));
-    }, 350);
-    return () => window.clearTimeout(h);
-  }, [stickerQuery, editor3dOpen, builderKind, weapon]);
-
-  // ---------- Slot helpers ----------
-  const slotItemFor = useCallback(
-    (def: number, kind: ItemKind, s: Side, loadout = activeLoadout): InventoryItem | undefined => {
-      if (!loadout) return undefined;
-      if (kind === "knife") {
-        const item = itemById(s === "t" ? loadout.knifeT : loadout.knifeCT);
-        return item?.weaponDef === def ? item : undefined;
-      }
-      if (kind === "gloves") {
-        const item = itemById(s === "t" ? loadout.glovesT : loadout.glovesCT);
-        return item?.weaponDef === def ? item : undefined;
-      }
-      if (kind === "agent") {
-        const item = itemById(s === "t" ? loadout.agentT : loadout.agentCT);
-        return item?.weaponDef === def ? item : undefined;
-      }
-      if (kind === "musickit") {
-        const item = itemById(s === "t" ? loadout.musicKitT : loadout.musicKitCT);
-        return item?.weaponDef === def ? item : undefined;
-      }
-      return itemById((s === "t" ? loadout.equippedT : loadout.equippedCT)[def]);
-    },
-    [activeLoadout, itemById]
+  // ---------- Slot lookups ----------
+  const itemIn = useCallback(
+    (kind: SlotKind, s: Side, def: number, loadout: Loadout | undefined = activeLoadout) =>
+      loadout ? itemById(slotRef(loadout, kind, s, def)) : undefined,
+    [activeLoadout, itemById],
   );
 
-  /**
-   * Kills with one item this season, or null when there is nothing to show.
-   *
-   * Null rather than 0 for a non-StatTrak item, because "this gun has killed
-   * nobody" and "this gun does not count" are different things and only one of
-   * them is worth a badge. A StatTrak item with no kills yet does get one — it
-   * is counting, it just has not started.
-   */
+  /** The item in the slot a catalog entry would go into — for a knife, whatever knife is equipped. */
+  const itemForEntry = useCallback(
+    (w: WeaponEntry, s: Side) => itemIn(kindOfCategory(w.category), s, w.def),
+    [itemIn],
+  );
+
+  /** The item a catalog tile shows: only if it is this exact weapon (not just "a knife"). */
+  const itemOnTile = useCallback(
+    (w: WeaponEntry, s: Side) => {
+      const item = itemForEntry(w, s);
+      return item?.weaponDef === w.def ? item : undefined;
+    },
+    [itemForEntry],
+  );
+
+  /** Kills with one item this season; null when the item does not count. */
   const killsFor = useCallback(
     (item: InventoryItem | undefined): number | null => {
       if (!item?.statTrak || !seasonStats) return null;
       return seasonStats.itemKills[String(item.uid)] ?? 0;
     },
-    [seasonStats]
+    [seasonStats],
   );
 
-  // For the chooser head / sticker stage: resolve knife/gloves without def check
-  // (the user has already clicked that specific weapon entry).
-  const slotItemForChooser = useCallback(
-    (def: number, kind: ItemKind, s: Side, loadout = activeLoadout): InventoryItem | undefined => {
-      if (!loadout) return undefined;
-      if (kind === "knife") return itemById(s === "t" ? loadout.knifeT : loadout.knifeCT);
-      if (kind === "gloves") return itemById(s === "t" ? loadout.glovesT : loadout.glovesCT);
-      if (kind === "agent") return itemById(s === "t" ? loadout.agentT : loadout.agentCT);
-      if (kind === "musickit") return itemById(s === "t" ? loadout.musicKitT : loadout.musicKitCT);
-      return itemById((s === "t" ? loadout.equippedT : loadout.equippedCT)[def]);
-    },
-    [activeLoadout, itemById]
-  );
-
-  // ---------- The equipped board ----------
+  // ---------- The board ----------
   const boardFor = useCallback(
     (s: Side): BoardSlot[] => {
       if (!activeLoadout) return [];
       const preferredM4 = activeLoadout.preferredM4 ?? M4A4;
-      const byDef = (def: number) => Object.values(catalog ?? {}).flat().find((w) => w.def === def);
-
       const guns: BoardSlot[] = SIGNATURE_SLOTS[s].map((slot) => {
         const def = slot.m4 ? preferredM4 : slot.def;
         return {
@@ -736,51 +500,44 @@ export default function InventorySimulator() {
           def,
           kind: "weapon",
           label: slot.m4 ? (preferredM4 === M4A1S ? "M4A1-S" : "M4A4") : slot.label,
-          item: slotItemFor(def, "weapon", s),
+          item: itemIn("weapon", s, def),
           m4: slot.m4,
         };
       });
-
-      const knifeItem = itemById(s === "t" ? activeLoadout.knifeT : activeLoadout.knifeCT);
-      const gloveItem = itemById(s === "t" ? activeLoadout.glovesT : activeLoadout.glovesCT);
-      const agentItem = itemById(s === "t" ? activeLoadout.agentT : activeLoadout.agentCT);
-      const musicKitItem = itemById(s === "t" ? activeLoadout.musicKitT : activeLoadout.musicKitCT);
-
-      // Anything equipped on this side that the signature set doesn't cover —
-      // an AK on CT, an MP9 on T — still has to be visible somewhere.
       const covered = new Set(guns.map((g) => g.def));
       const extras: BoardSlot[] = Object.entries(s === "t" ? activeLoadout.equippedT : activeLoadout.equippedCT)
         .filter(([def]) => !covered.has(Number(def)))
-        .map(([def, id]) => {
-          const n = Number(def);
-          return {
-            key: `${s}-extra-${def}`,
-            def: n,
-            kind: "weapon" as ItemKind,
-            label: byDef(n)?.name ?? `Weapon ${def}`,
-            item: itemById(id),
-            extra: true,
-          };
-        });
-
+        .map(([def, id]) => ({
+          key: `${s}-extra-${def}`,
+          def: Number(def),
+          kind: "weapon" as const,
+          label: weaponByDef(Number(def))?.name ?? `Weapon ${def}`,
+          item: itemById(id),
+          extra: true,
+        }))
+        .sort((a, b) => CATEGORY_ORDER.indexOf(categoryOfDef(a.def)) - CATEGORY_ORDER.indexOf(categoryOfDef(b.def)));
+      const single = (kind: Exclude<SlotKind, "weapon">, label: string): BoardSlot => {
+        const item = itemIn(kind, s, -1);
+        return { key: `${s}-${kind}`, def: item?.weaponDef ?? -1, kind, label, item };
+      };
       return [
+        single("knife", "Knife"),
+        single("gloves", "Gloves"),
         ...guns,
-        { key: `${s}-knife`, def: knifeItem?.weaponDef ?? -1, kind: "knife", label: "Knife", item: knifeItem },
-        { key: `${s}-gloves`, def: gloveItem?.weaponDef ?? -1, kind: "gloves", label: "Gloves", item: gloveItem },
-        { key: `${s}-agent`, def: agentItem?.weaponDef ?? -1, kind: "agent", label: "Agent", item: agentItem },
-        { key: `${s}-musickit`, def: musicKitItem?.weaponDef ?? -1, kind: "musickit", label: "Music Kit", item: musicKitItem },
         ...extras,
+        single("musickit", "Music Kit"),
       ];
     },
-    [activeLoadout, catalog, itemById, slotItemFor]
+    [activeLoadout, itemIn, itemById, weaponByDef, categoryOfDef],
   );
-
   const boardT = useMemo(() => boardFor("t"), [boardFor]);
   const boardCT = useMemo(() => boardFor("ct"), [boardFor]);
 
-  /** Filled signature slots out of the 12 both sides can hold. */
+  /** Filled signature slots (guns + knife + gloves) out of both sides' total. */
   const completeness = useMemo(() => {
-    const filled = [...boardT, ...boardCT].filter((slot) => !slot.extra && slot.item).length;
+    const counts = (b: BoardSlot[]) =>
+      b.filter((x) => !x.extra && x.kind !== "musickit" && x.item).length;
+    const filled = counts(boardT) + counts(boardCT);
     return { filled, total: TOTAL_SIGNATURE_SLOTS, pct: Math.round((filled / TOTAL_SIGNATURE_SLOTS) * 100) };
   }, [boardT, boardCT]);
 
@@ -798,282 +555,225 @@ export default function InventorySimulator() {
     return Array.from(counts.values()).sort((a, b) => b.rank - a.rank);
   }, [boardT, boardCT]);
 
-  // ---------- Opening weapons ----------
+  // ---------- Opening things ----------
+
+  /** Load an item's finish into the builder, or reset it for a fresh pick. */
+  const loadFinish = useCallback((item: InventoryItem | undefined) => {
+    setWear(item?.wear ?? 0);
+    setSeed(item?.seed ?? 0);
+    setStatTrak(item?.statTrak ?? false);
+    setNameTag(item?.nameTag ?? "");
+    setStickers(item?.stickers?.length ? [...item.stickers] : defaultStickerSlots());
+    setCharm(item?.charm ?? null);
+  }, []);
+
+  /**
+   * Scroll the armory (and only the armory) to a type's section, clear of the
+   * sticky toolbar. scrollIntoView also scrolls every ancestor, and lost its
+   * target when the unfold re-rendered the section mid-animation.
+   */
+  const jumpTo = useCallback((name: string, smooth = true) => {
+    const sc = armoryScroll.current;
+    const el = sectionRefs.current[name];
+    if (!sc || !el) return;
+    const sticky = sc.querySelector<HTMLElement>(".iv-armory-tools")?.offsetHeight ?? 0;
+    const top = el.getBoundingClientRect().top - sc.getBoundingClientRect().top + sc.scrollTop - sticky;
+    sc.scrollTo({ top: Math.max(0, top), behavior: smooth ? "smooth" : "auto" });
+  }, []);
+
+  const openArmory = useCallback(
+    (opts: { mode?: "catalog" | "vault"; section?: string } = {}) => {
+      setArmoryOpen(true);
+      setArmoryMode(opts.mode ?? "catalog");
+      writeUrl({ armory: opts.mode === "vault" ? "vault" : "1", cat: opts.section ?? null });
+      if (opts.section) {
+        const target = opts.section;
+        setUnfolded((u) => ({ ...u, [target]: true }));
+        // After the armory has rendered (it may have just opened).
+        window.setTimeout(() => {
+          jumpTo(target);
+        }, 40);
+      }
+    },
+    [writeUrl, jumpTo],
+  );
+
+  /**
+   * Open a weapon's skins.
+   *
+   * `item` preloads the builder with a specific item's finish. It exists
+   * because callers that equip and then open in the same tick would otherwise
+   * read the slot back from a store React has not flushed yet — which is how
+   * the old editor came to open showing the previous item's stickers.
+   */
   const openWeapon = useCallback(
-    (w: WeaponEntry, opts: { push?: boolean } = {}) => {
+    (w: WeaponEntry, s: Side = side, item?: InventoryItem) => {
+      if (!weapon && armoryScroll.current) savedScroll.current = armoryScroll.current.scrollTop;
+      setArmoryOpen(true);
+      setArmoryMode("catalog");
+      setSide(s);
       setWeapon(w);
       setSkinSearch("");
       setCollectionFilter("");
+      setSelectedSkins(new Set());
       setEditor3dOpen(false);
-      writeUrl({ w: String(w.def), cat: w.category }, opts.push ?? true);
-      const existing = slotItemForChooser(w.def, kindOfCategory(w.category), side);
-      if (existing) {
-        setWear(existing.wear ?? 0.0);
-        setSeed(existing.seed ?? 0);
-        setStatTrak(existing.statTrak ?? false);
-        setNameTag(existing.nameTag ?? "");
-        setStickers(existing.stickers?.length ? [...existing.stickers] : defaultStickerSlots());
-        setCharm(existing.charm || null);
-      } else {
-        setWear(0.0);
-        setSeed(0);
-        setStatTrak(false);
-        setNameTag("");
-        setStickers(defaultStickerSlots());
-        setCharm(null);
-      }
+      loadFinish(item ?? itemForEntry(w, s));
+      writeUrl({ armory: "1", w: String(w.def), side: s, cat: null }, true);
     },
-    [side, slotItemForChooser, writeUrl]
+    [side, weapon, itemForEntry, loadFinish, writeUrl],
   );
 
-  /**
-   * Write the sticker editor's result into the saved inventory.
-   *
-   * Without this, Save did nothing that outlived the page. The editor's output
-   * went into `stickers`/`charm`, which are builder scratch state — the
-   * debounced save watches `store` and nothing else, so closing the editor
-   * fired no request, and the next `openWeapon` read the untouched store back
-   * over the top. Stickers only ever survived by accident, when the player
-   * happened to re-equip the skin afterwards and `equipSkin` carried them along.
-   *
-   * Editing targets the item already in the slot, so there is nothing to write
-   * to when the slot is empty — a sticker needs a skin to sit on. Saying so is
-   * better than silently discarding the work a second time.
-   */
-  const commitStickerEdit = useCallback(
-    (nextStickers: (PlacedSticker | null)[], nextCharm: PlacedSticker | null) => {
-      if (!weapon) return;
-
-      const target = slotItemForChooser(weapon.def, builderKind, side);
-      if (!target) {
-        showToast(t("inventory.editor.needSkin"));
-        return;
-      }
-
-      setStore((cur) => ({
-        ...cur,
-        items: cur.items.map((i) =>
-          i.id === target.id
-            ? {
-                ...i,
-                stickers: supportsStickers ? nextStickers : defaultStickerSlots(),
-                charm: supportsCharms ? nextCharm : null,
-              }
-            : i
-        ),
-      }));
-    },
-    [weapon, slotItemForChooser, builderKind, side, supportsStickers, supportsCharms, showToast, t]
-  );
-
-  const closeChooser = useCallback(() => {
+  const closeWeapon = useCallback(() => {
     setWeapon(null);
-    setSkinSearch("");
     setSkins([]);
-    setOverrideSide(null);
-    setChooserTab("catalog");
-    setCharm(null);
+    setSelectedSkins(new Set());
     writeUrl({ w: null }, true);
+    // Back to where the list was.
+    window.setTimeout(() => {
+      if (armoryScroll.current) armoryScroll.current.scrollTop = savedScroll.current;
+    }, 0);
   }, [writeUrl]);
 
-  /** Board tile → the chooser for that slot. */
-  const openBoardSlot = (slot: BoardSlot, s: Side) => {
-    setSide(s);
-    writeUrl({ side: s });
-    if (slot.kind !== "weapon") {
-      // Knife and glove tiles have no fixed def until something is equipped,
-      // so an empty one lands on the right category instead of the chooser.
-      const cat = slot.kind === "knife" ? "Knives" : slot.kind === "gloves" ? "Gloves" : slot.kind === "agent" ? "Agents" : slot.kind === "charm" ? "Charms" : "Gloves";
-      if (slot.item) {
-        const entry = Object.values(catalog ?? {}).flat().find((w) => w.def === slot.item!.weaponDef);
-        if (entry) return openWeapon(entry);
-      }
-      setCategory(cat);
-      setWeapon(null);
-      writeUrl({ cat, w: null }, true);
-      return;
-    }
-    const entry = Object.values(catalog ?? {}).flat().find((w) => w.def === slot.def);
-    if (entry) openWeapon(entry);
-  };
+  const closeArmory = useCallback(() => {
+    setArmoryOpen(false);
+    setWeapon(null);
+    setEditor3dOpen(false);
+    writeUrl({ armory: null, w: null, cat: null });
+  }, [writeUrl]);
 
-  /**
-   * Jump straight to one side's agent from the always-visible pair.
-   *
-   * Switches side first so an equip made from here lands on the side whose
-   * portrait was clicked, then opens the chooser on the equipped agent when
-   * there is one — you almost always want to edit its patches rather than
-   * start again from the full list.
-   */
-  const openAgentFor = useCallback(
-    (s: Side) => {
+  /** A board tile → that slot in the armory. */
+  const openSlot = useCallback(
+    (slot: BoardSlot, s: Side) => {
+      const entry = slot.item ? weaponByDef(slot.item.weaponDef) : slot.def > 0 ? weaponByDef(slot.def) : null;
+      if (entry) return openWeapon(entry, s, slot.item);
+      // An empty knife / gloves / agent / kit slot has no weapon yet: show the type.
       setSide(s);
-      writeUrl({ side: s });
-      setOpenBoardType("Agents");
-      const agent = itemById(s === "t" ? activeLoadout?.agentT : activeLoadout?.agentCT);
-      if (agent && catalog) {
-        const entry = Object.values(catalog).flat().find((w) => w.def === agent.weaponDef);
-        if (entry) return openWeapon(entry);
-      }
-      setCategory("Agents");
       setWeapon(null);
-      writeUrl({ cat: "Agents", w: null }, true);
+      openArmory({ section: categoryOfKind(slot.kind) ?? CATEGORY_ORDER[0] });
     },
-    [activeLoadout, catalog, itemById, openWeapon, writeUrl]
+    [weaponByDef, openWeapon, openArmory],
+  );
+
+  // Restore from the URL once the catalog is in (a ?w= needs it to resolve).
+  const applyUrl = useCallback(() => {
+    const q = new URLSearchParams(window.location.search);
+    const s = q.get("side");
+    if (s === "t" || s === "ct") setSide(s);
+    const lo = q.get("lo");
+    if (lo) setStore((cur) => (cur.loadouts.some((l) => l.id === lo) ? { ...cur, activeLoadoutId: lo } : cur));
+    const armory = q.get("armory");
+    const cat = q.get("cat");
+    const w = q.get("w");
+    // ?view=preview and a bare ?cat= are links from the old page; both meant
+    // "show me the catalog", which is the armory now.
+    const wantsArmory = !!(armory || w || cat || q.get("view") === "preview");
+    setArmoryOpen(wantsArmory);
+    setArmoryMode(armory === "vault" ? "vault" : "catalog");
+    const entry = w ? allWeapons.find((e) => e.def === Number(w)) : undefined;
+    setWeapon(entry ?? null);
+    if (entry) {
+      const side0: Side = s === "ct" ? "ct" : "t";
+      const cur = storeRef.current;
+      const l = cur.loadouts.find((x) => x.id === (lo ?? cur.activeLoadoutId)) ?? cur.loadouts[0];
+      const ref = l ? slotRef(l, kindOfCategory(entry.category), side0, entry.def) : undefined;
+      loadFinish(cur.items.find((i) => i.id === ref));
+    }
+    if (cat && CATEGORY_ORDER.includes(cat) && !entry) {
+      setUnfolded((u) => ({ ...u, [cat]: true }));
+      window.setTimeout(() => jumpTo(cat, false), 60);
+    }
+  }, [allWeapons, loadFinish, jumpTo]);
+
+  const bootedUrl = useRef(false);
+  useEffect(() => {
+    if (!hydrated || !catalog || bootedUrl.current) return;
+    bootedUrl.current = true;
+    applyUrl();
+  }, [hydrated, catalog, applyUrl]);
+
+  useEffect(() => {
+    const onPop = () => applyUrl();
+    window.addEventListener("popstate", onPop);
+    return () => window.removeEventListener("popstate", onPop);
+  }, [applyUrl]);
+
+  // ---------- Skins fetch ----------
+  useEffect(() => {
+    if (!weapon) return;
+    let cancelled = false;
+    setSkinsLoading(true);
+    fetch(`/api/skins?weapon=${weapon.def}`)
+      .then((r) => r.json())
+      .then((d: Skin[]) => !cancelled && setSkins(Array.isArray(d) ? d : []))
+      .catch(() => !cancelled && setSkins([]))
+      .finally(() => !cancelled && setSkinsLoading(false));
+    return () => {
+      cancelled = true;
+    };
+  }, [weapon]);
+
+  // ---------- Scrollspy for the jump bar ----------
+  useEffect(() => {
+    const root = armoryScroll.current;
+    if (!armoryOpen || weapon || armoryMode !== "catalog" || !root) return;
+    const obs = new IntersectionObserver(
+      (entries) => {
+        const visible = entries.filter((e) => e.isIntersecting).sort((a, b) => a.boundingClientRect.top - b.boundingClientRect.top);
+        const name = visible[0]?.target.getAttribute("data-section");
+        if (name) setActiveSection(name);
+      },
+      { root, rootMargin: "0px 0px -70% 0px" },
+    );
+    for (const el of Object.values(sectionRefs.current)) if (el) obs.observe(el);
+    return () => obs.disconnect();
+  }, [armoryOpen, weapon, armoryMode, catalog, weaponQuery]);
+
+  // ---------- Equip / clear ----------
+
+  /** The side(s) an equip lands on, filtered to what the weapon's team can hold. */
+  const equipSides = useCallback(
+    (team: Team, target?: Side | "both"): Side[] =>
+      sidesOf(target ?? (bothSides ? "both" : side)).filter((s) => canHold(team, s)),
+    [bothSides, side],
   );
 
   /**
-   * The rail's slots, grouped by weapon type, for the side currently selected.
-   * Knives and gloves are their own groups since they are not in any category.
-   */
-  const boardGroups = useMemo(() => {
-    const slots = side === "t" ? boardT : boardCT;
-    const categoryOf = (def: number) => {
-      if (!catalog) return "Other";
-      for (const [c, list] of Object.entries(catalog)) {
-        if (list.some((w) => w.def === def)) return c;
-      }
-      return "Other";
-    };
-    const groups = new Map<string, typeof slots>();
-    for (const slot of slots) {
-      const g = slot.kind === "knife" ? "Knives" : slot.kind === "gloves" ? "Gloves" : slot.kind === "agent" ? "Agents" : slot.kind === "musickit" ? "Music Kits" : slot.kind === "charm" ? "Charms" : categoryOf(slot.def);
-      if (!groups.has(g)) groups.set(g, []);
-      groups.get(g)!.push(slot);
-    }
-    return Array.from(groups.entries()).sort(
-      (a, b) => CATEGORY_ORDER.indexOf(a[0]) - CATEGORY_ORDER.indexOf(b[0])
-    );
-  }, [side, boardT, boardCT, catalog]);
-
-  /**
-   * Which of the two imports the pasted text is.
+   * Put a catalog skin in a slot, crafted with the builder's finish.
    *
-   * The submit handler used to work this out inline and the button just said
-   * "Get", so one field silently dispatched to two unrelated code paths and a
-   * mistyped borrow key looked like a rejected key rather than a wrong kind of
-   * input. Deciding it once, here, is what lets the button say so.
+   * An identical item already in the vault is reused rather than duplicated,
+   * so equipping the same thing twice does not grow the inventory.
    */
-  const importSource: "cstrike" | "key" =
-    importKey.includes("cstrike.app") || importKey.trim().startsWith("[") ? "cstrike" : "key";
-
-  /**
-   * The rail's rows: every catalog type, with how much of it is equipped.
-   *
-   * Off CATEGORY_ORDER and not off `boardGroups`, so the list does not change
-   * shape as you equip things — a rail whose rows come and go is a rail you
-   * have to re-read every time you look at it.
-   */
-  const railTypes = useMemo(() => {
-    const counts = new Map(boardGroups.map(([group, slots]) => [group, slots]));
-    return CATEGORY_ORDER.map((group) => {
-      const slots = counts.get(group) ?? [];
-      return {
-        group,
-        filled: slots.filter((s) => s.item).length,
-        total: slots.length,
-      };
-    });
-  }, [boardGroups]);
-
-  const chooseSide = (s: Side) => {
-    setSide(s);
-    writeUrl({ side: s });
-  };
-  /**
-   * Show a weapon type. That is the whole of it.
-   *
-   * It used to end with `openWeapon(catalog[c][0])` — so clicking "Rifles" did
-   * not show you the rifles, it threw you straight into the AK-47's skin list,
-   * fired a fetch for it, and turned its own button inactive (the active test
-   * was `category === c && !weapon`). Clicking the same button again toggled
-   * back out. The control was a hidden two-state toggle whose states were
-   * "AK-47's skins" and "all rifles", and neither was the thing it was labelled
-   * with. That is the jump that made the page feel like it was fighting you.
-   *
-   * Picking an actual weapon is now the only thing that opens skins, and it
-   * opens them over the grid rather than instead of it — see `weapon` in the
-   * render.
-   */
-  const chooseCategory = (c: string) => {
-    setCategory(c);
-    // The rail's open type and the browsed type are the same question asked
-    // twice, and they were separate variables set from different places — so
-    // clicking a weapon in the All-types overview moved the right-hand pane and
-    // left the rail sitting on whatever it had been showing. One call sets both.
-    setOpenBoardType(c);
-    setWeapon(null);
-    writeUrl({ cat: c, w: null });
-  };
-
-  /** Every type at once — the rail's first entry, and no longer a mode. */
-  const chooseAllTypes = () => {
-    setCategory(ALL_TYPES);
-    setOpenBoardType(null);
-    setWeapon(null);
-    writeUrl({ cat: ALL_TYPES, w: null });
-  };
-
-  // Escape backs out of the chooser; T / C flip sides. Skipped while a text
-  // field has focus so typing a skin name doesn't jump the side.
-  useEffect(() => {
-    const onKey = (e: KeyboardEvent) => {
-      const el = document.activeElement;
-      const typing = el instanceof HTMLInputElement || el instanceof HTMLTextAreaElement || el instanceof HTMLSelectElement;
-      if (e.key === "Escape") {
-        if (share) return setShare(null);
-        if (weapon) return closeChooser();
-        return;
-      }
-      if (typing || e.metaKey || e.ctrlKey || e.altKey) return;
-      if (e.key.toLowerCase() === "t") chooseSide("t");
-      if (e.key.toLowerCase() === "c") chooseSide("ct");
-    };
-    window.addEventListener("keydown", onKey);
-    return () => window.removeEventListener("keydown", onKey);
-  });
-
-  // ---------- Equip / clear ----------
-  const equipSkin = (skin: Skin, overrideSide?: "t" | "ct" | "both", preventClose?: boolean, explicitWeapon?: WeaponEntry, onlyVault?: boolean) => {
-    const targetWeapon = explicitWeapon || weapon;
-    if (!targetWeapon) return;
-    const kind = kindOfCategory(targetWeapon.category);
-    const targetSidesRaw = overrideSide === "both" ? ["t" as const, "ct" as const] : [overrideSide || side];
-    const targetSides = targetSidesRaw.filter(s => targetWeapon.team === "both" || targetWeapon.team === s);
-    if (targetSides.length === 0) {
-      showToast("This item cannot be equipped on this team");
+  const equipSkin = (skin: Skin, w: WeaponEntry, target?: Side | "both", onlyVault = false) => {
+    const kind = kindOfCategory(w.category);
+    const sides = onlyVault ? [w.team === "ct" ? "ct" as const : "t" as const] : equipSides(w.team, target);
+    if (sides.length === 0) {
+      showToast(t("inv.toast.wrongTeam"));
       return;
     }
-    
+    const payload = {
+      kind,
+      weaponDef: w.def,
+      weaponName: w.name,
+      team: w.team,
+      skinId: skin.id,
+      skinName: skin.name,
+      paint: skin.paint,
+      image: skin.image,
+      rarity: skin.rarity,
+      wear: supportsWearFor(kind) ? wear : 0,
+      seed: supportsWearFor(kind) ? seed : 0,
+      statTrak: kind !== "gloves" && kind !== "agent" ? statTrak : false,
+      nameTag: kind === "weapon" || kind === "knife" ? nameTag : "",
+      stickers: kind === "weapon" || kind === "agent" ? stickers : defaultStickerSlots(),
+      charm: kind === "weapon" ? charm : null,
+    };
     setStore((cur) => {
       const loadout = cur.loadouts.find((l) => l.id === cur.activeLoadoutId);
       if (!loadout) return cur;
+      let items = cur.items;
       let nextUid = cur.nextUid;
-      let newItems = [...cur.items];
-      let newLoadout = { ...loadout, equippedCT: { ...loadout.equippedCT }, equippedT: { ...loadout.equippedT } };
-
-      for (const s of targetSides) {
-        const existing = slotItemForChooser(targetWeapon.def, kind, s, newLoadout);
-        const payload = {
-          kind,
-          weaponDef: targetWeapon.def,
-          weaponName: targetWeapon.name,
-          team: targetWeapon.team,
-          skinId: skin.id,
-          skinName: skin.name,
-          paint: skin.paint,
-          image: skin.image,
-          rarity: skin.rarity,
-          wear,
-          seed,
-          statTrak: supportsStatTrak ? statTrak : false,
-          nameTag,
-          stickers: supportsStickers ? stickers : defaultStickerSlots(),
-          charm: supportsCharms ? charm : null,
-        };
-        
-        let itemId: string;
-        const identical = cur.items.find(i => 
+      const identical = cur.items.find(
+        (i) =>
           i.weaponDef === payload.weaponDef &&
           i.skinId === payload.skinId &&
           i.wear === payload.wear &&
@@ -1081,83 +781,94 @@ export default function InventorySimulator() {
           i.statTrak === payload.statTrak &&
           i.nameTag === payload.nameTag &&
           JSON.stringify(i.stickers) === JSON.stringify(payload.stickers) &&
-          JSON.stringify(i.charm) === JSON.stringify(payload.charm)
-        );
-
-        if (identical) {
-          itemId = identical.id;
-        } else {
-          itemId = newId();
-          newItems = [{ id: itemId, uid: nextUid, createdAt: Date.now(), ...payload }, ...newItems];
-          nextUid += 1;
-        }
-
-        if (!onlyVault) {
-          if (kind === "knife") {
-            if (s === "t") newLoadout.knifeT = itemId;
-            else newLoadout.knifeCT = itemId;
-          } else if (kind === "gloves") {
-            if (s === "t") newLoadout.glovesT = itemId;
-            else newLoadout.glovesCT = itemId;
-          } else if (kind === "agent") {
-            if (s === "t") newLoadout.agentT = itemId;
-            else newLoadout.agentCT = itemId;
-          } else if (kind === "musickit") {
-            if (s === "t") newLoadout.musicKitT = itemId;
-            else newLoadout.musicKitCT = itemId;
-          } else {
-            if (s === "t") newLoadout.equippedT[targetWeapon.def] = itemId;
-            else newLoadout.equippedCT[targetWeapon.def] = itemId;
-          }
-        }
+          JSON.stringify(i.charm) === JSON.stringify(payload.charm),
+      );
+      let itemId = identical?.id;
+      if (!itemId) {
+        itemId = newId();
+        items = [{ id: itemId, uid: nextUid, createdAt: Date.now(), ...payload }, ...items];
+        nextUid += 1;
       }
-      
-      const loadouts = cur.loadouts.map(l => l.id === newLoadout.id ? newLoadout : l);
-      return { ...cur, items: newItems, loadouts, nextUid };
+      if (onlyVault) return { ...cur, items, nextUid };
+      let next = loadout;
+      for (const s of sides) next = withSlot(next, kind, s, w.def, itemId);
+      return { ...cur, items, nextUid, loadouts: cur.loadouts.map((l) => (l.id === next.id ? next : l)) };
     });
-    
-    showToast(onlyVault ? `Added ${skinLabel(skin.name)} to Vault` : `Equipped ${skinLabel(skin.name)}`);
-    if (!preventClose) closeChooser();
+    showToast(
+      onlyVault
+        ? t("inv.toast.vaulted", { name: skinLabel(skin.name) })
+        : t("inv.toast.equipped", { name: skinLabel(skin.name), side: sides.map((s) => s.toUpperCase()).join(" + ") }),
+    );
   };
 
-  const clearSlot = (def: number, kind: ItemKind, targetSide: Team) => {
-    setStore((cur) => {
-      const loadouts = cur.loadouts.map((l) => {
+  /** Put an item that already exists into slots, as itself — no re-crafting. */
+  const assignItem = (item: InventoryItem, target: Side | "both") => {
+    const sides = sidesOf(target).filter((s) => canHold(item.team, s));
+    if (!sides.length) return showToast(t("inv.toast.wrongTeam"));
+    const kind = item.kind as SlotKind;
+    setStore((cur) => ({
+      ...cur,
+      loadouts: cur.loadouts.map((l) => {
         if (l.id !== cur.activeLoadoutId) return l;
-        const nl: Loadout = { ...l, equippedCT: { ...l.equippedCT }, equippedT: { ...l.equippedT } };
-        
-        const clearForSide = (s: "t" | "ct") => {
-          if (kind === "knife") {
-            if (s === "t") nl.knifeT = undefined;
-            else nl.knifeCT = undefined;
-          } else if (kind === "gloves") {
-            if (s === "t") nl.glovesT = undefined;
-            else nl.glovesCT = undefined;
-          } else if (kind === "agent") {
-            if (s === "t") nl.agentT = undefined;
-            else nl.agentCT = undefined;
-          } else if (kind === "musickit") {
-            if (s === "t") nl.musicKitT = undefined;
-            else nl.musicKitCT = undefined;
-          } else if (s === "t") {
-            delete nl.equippedT[def];
-          } else {
-            delete nl.equippedCT[def];
-          }
-        };
-
-        if (targetSide === "both" || targetSide === "t") clearForSide("t");
-        if (targetSide === "both" || targetSide === "ct") clearForSide("ct");
-        
-        return nl;
-      });
-      return { ...cur, loadouts };
-    });
+        let next = l;
+        for (const s of sides) next = withSlot(next, kind, s, item.weaponDef, item.id);
+        return next;
+      }),
+    }));
+    showToast(t("inv.toast.equipped", { name: skinLabel(item.skinName), side: sides.map((s) => s.toUpperCase()).join(" + ") }));
   };
 
-  /** Drop items no loadout references, to avoid orphan bloat. */
-  const pruneItems = (s: InventoryStore): InventoryStore => {
-    return s;
+  const clearSlot = (def: number, kind: SlotKind, target: Side | "both") => {
+    setStore((cur) => ({
+      ...cur,
+      loadouts: cur.loadouts.map((l) => {
+        if (l.id !== cur.activeLoadoutId) return l;
+        let next = l;
+        for (const s of sidesOf(target)) next = withSlot(next, kind, s, def, undefined);
+        return next;
+      }),
+    }));
+  };
+
+  /** Delete items outright, and drop every loadout's reference to them. */
+  const deleteItems = (ids: Set<string>) => {
+    setStore((cur) => ({
+      ...cur,
+      items: cur.items.filter((i) => !ids.has(i.id)),
+      loadouts: cur.loadouts.map((l) => {
+        let next = l;
+        for (const kind of ["knife", "gloves", "agent", "musickit"] as const)
+          for (const s of SIDES) if (ids.has(slotRef(next, kind, s, -1) ?? "")) next = withSlot(next, kind, s, -1, undefined);
+        for (const s of SIDES)
+          for (const [def, id] of Object.entries(s === "t" ? next.equippedT : next.equippedCT))
+            if (ids.has(id)) next = withSlot(next, "weapon", s, Number(def), undefined);
+        return next;
+      }),
+    }));
+  };
+
+  /**
+   * Write the 3D editor's result into the saved item.
+   *
+   * Editing targets the item already in the slot, so there is nothing to write
+   * to when the slot is empty — a sticker needs a skin to sit on.
+   */
+  const commitStickerEdit = (nextStickers: (PlacedSticker | null)[], nextCharm: PlacedSticker | null) => {
+    if (!weapon) return;
+    const target = itemForEntry(weapon, side);
+    if (!target) return showToast(t("inventory.editor.needSkin"));
+    setStore((cur) => ({
+      ...cur,
+      items: cur.items.map((i) =>
+        i.id === target.id
+          ? {
+              ...i,
+              stickers: supportsStickers ? nextStickers : defaultStickerSlots(),
+              charm: supportsCharms ? nextCharm : null,
+            }
+          : i,
+      ),
+    }));
   };
 
   const toggleFavorite = (def: number, paint: number) => {
@@ -1170,95 +881,87 @@ export default function InventorySimulator() {
     });
   };
 
-  const setPreferredM4 = (def: number) => {
+  const setPreferredM4 = (def: number) =>
     setStore((cur) => ({
       ...cur,
       loadouts: cur.loadouts.map((l) => (l.id === cur.activeLoadoutId ? { ...l, preferredM4: def } : l)),
     }));
-  };
-
-  // The 2D sticker stage that used to live here — addSticker, removeSticker,
-  // onStickerDown, onStageMove, endDrag and stageRef — is gone. It was
-  // unreferenced by any JSX, so it was dead in the shipped page, and it wrote
-  // to the same builder-scratch `stickers` state that never reached the store,
-  // so wiring it back up would have reintroduced the bug it looked like a fix
-  // for. It was also the only caller of SLOT_ANCHORS, which is why those
-  // percentage coordinates looked like a live code path when they were not.
 
   // ---------- Loadouts ----------
+  const patchLoadout = (id: string, patch: Partial<Loadout>) =>
+    setStore((c) => ({ ...c, loadouts: c.loadouts.map((x) => (x.id === id ? { ...x, ...patch } : x)) }));
+
+  const setActiveLoadout = (id: string) => {
+    setStore((c) => ({ ...c, activeLoadoutId: id }));
+    setConfirmDelete(null);
+    writeUrl({ lo: id });
+  };
   const addLoadout = () => {
     const l = emptyLoadout(`Loadout ${store.loadouts.length + 1}`);
     setStore((c) => ({ ...c, loadouts: [...c.loadouts, l], activeLoadoutId: l.id }));
+    setRenaming(l.id);
     writeUrl({ lo: l.id });
   };
   const duplicateLoadout = (src: Loadout) => {
-    const copy: Loadout = { ...src, id: newId(), name: `${src.name} copy`, equippedCT: { ...src.equippedCT }, equippedT: { ...src.equippedT } };
-    setStore((c) => ({ ...c, loadouts: [...c.loadouts, copy], activeLoadoutId: copy.id }));
+    const copy: Loadout = {
+      ...src,
+      id: newId(),
+      name: `${src.name} copy`,
+      favorite: false,
+      createdAt: Date.now(),
+      equippedCT: { ...src.equippedCT },
+      equippedT: { ...src.equippedT },
+    };
+    setStore((c) => {
+      const at = c.loadouts.findIndex((x) => x.id === src.id);
+      const loadouts = [...c.loadouts];
+      loadouts.splice(at + 1, 0, copy);
+      return { ...c, loadouts, activeLoadoutId: copy.id };
+    });
     writeUrl({ lo: copy.id });
-    showToast(`Duplicated "${copy.name}"`);
-  };
-  const renameLoadout = (l: Loadout) => {
-    const name = window.prompt("Loadout name (in-game: /loadout <name>)", l.name)?.trim();
-    if (!name) return;
-    setStore((c) => ({ ...c, loadouts: c.loadouts.map((x) => (x.id === l.id ? { ...x, name } : x)) }));
-  };
-  const toggleFavoriteLoadout = (l: Loadout) => {
-    setStore((c) => ({ ...c, loadouts: c.loadouts.map((x) => (x.id === l.id ? { ...x, favorite: !x.favorite } : x)) }));
+    showToast(t("inv.toast.duplicated", { name: src.name }));
   };
   const deleteLoadout = (l: Loadout) => {
-    if (store.loadouts.length <= 1) {
-      showToast("Keep at least one loadout");
-      return;
-    }
-    if (!window.confirm(`Delete "${l.name}"?`)) return;
+    if (store.loadouts.length <= 1) return showToast(t("inv.toast.keepOne"));
     setStore((c) => {
       const loadouts = c.loadouts.filter((x) => x.id !== l.id);
       return { ...c, loadouts, activeLoadoutId: c.activeLoadoutId === l.id ? loadouts[0].id : c.activeLoadoutId };
     });
-  };
-  const setLoadoutColor = (l: Loadout, color: string) => {
-    setStore((c) => ({ ...c, loadouts: c.loadouts.map((x) => (x.id === l.id ? { ...x, color } : x)) }));
-  };
-  const setActiveLoadout = (id: string) => {
-    setStore((c) => ({ ...c, activeLoadoutId: id }));
-    writeUrl({ lo: id });
+    setConfirmDelete(null);
+    showToast(t("inv.toast.deleted", { name: l.name }));
   };
 
-  /**
-   * Reorder by id, not by index.
-   *
-   * This was a real bug and an invisible one. The strip renders
-   * `sortedLoadouts` — favourites first — and handed those positions to a
-   * splice over `store.loadouts`, which is in insertion order. The two agree
-   * only when nothing is favourited, so the moment anybody starred a loadout,
-   * dragging moved a different one than the one under the cursor.
-   */
+  /** Reorder by id, not by index — the list is shown favourites-first. */
   const onLoDrop = (targetId: string) => {
     const from = dragId.current;
     setDragOver(null);
     dragId.current = null;
     if (!from || from === targetId) return;
-
     setStore((c) => {
       const arr = [...c.loadouts];
       const fromIdx = arr.findIndex((x) => x.id === from);
       const toIdx = arr.findIndex((x) => x.id === targetId);
-      if (fromIdx < 0 || toIdx < 0 || fromIdx === toIdx) return c;
-
+      if (fromIdx < 0 || toIdx < 0) return c;
       const [moved] = arr.splice(fromIdx, 1);
       arr.splice(toIdx, 0, moved);
       return { ...c, loadouts: arr };
     });
   };
 
-  // ---------- Share / borrow ----------
+  /** Favourites first, then the order the player dragged them into. */
+  const sortedLoadouts = useMemo(
+    () => [...store.loadouts].sort((a, b) => Number(!!b.favorite) - Number(!!a.favorite)),
+    [store.loadouts],
+  );
+
+  // ---------- Share / borrow / import ----------
   const copy = async (text: string, what: string) => {
     try {
       await navigator.clipboard.writeText(text);
       setCopied(what);
       window.setTimeout(() => setCopied(null), 1800);
     } catch {
-      showToast("Clipboard blocked — select and copy manually");
+      showToast(t("inv.toast.clipboard"));
     }
   };
 
@@ -1271,19 +974,13 @@ export default function InventorySimulator() {
         body: JSON.stringify({ store, loadoutId: l.id }),
       });
       const j = await res.json();
-      if (!res.ok || !j.key) {
-        showToast(j.error ?? "Could not share");
-        return;
-      }
-      // The old flow wrote the key to the clipboard and said nothing at all, so
-      // a successful share was indistinguishable from a dead button.
+      if (!res.ok || !j.key) return showToast(j.error ?? t("inv.toast.shareFailed"));
       setShare({ key: j.key, name: l.name });
       await copy(j.key, "key");
     } finally {
       setShareBusy(false);
     }
   };
-
 
   const importCstrike = async (raw: string) => {
     const payload = raw.trim();
@@ -1296,10 +993,7 @@ export default function InventorySimulator() {
         body: JSON.stringify({ payload }),
       });
       const j = await res.json();
-      if (!res.ok || !j.loadout) {
-        showToast(j.error ?? "Import failed");
-        return;
-      }
+      if (!res.ok || !j.loadout) return showToast(j.error ?? t("inv.toast.importFailed"));
       setStore((cur) => {
         let maxUid = cur.nextUid;
         for (const i of j.items) if (i.uid >= maxUid) maxUid = i.uid + 1;
@@ -1312,7 +1006,8 @@ export default function InventorySimulator() {
         };
       });
       setImportKey("");
-      showToast("Imported from cstrike");
+      setImportOpen(false);
+      showToast(t("inv.toast.importedCstrike"));
     } finally {
       setShareBusy(false);
     }
@@ -1327,21 +1022,25 @@ export default function InventorySimulator() {
         const res = await fetch(`/api/loadout/borrow/${encodeURIComponent(key)}`);
         const j = await res.json();
         if (!res.ok || !j.snapshot) {
-          showToast(j.error === "not found" ? "No loadout for that key" : j.error ?? "Import failed");
+          showToast(j.error === "not found" ? t("inv.toast.noKey") : j.error ?? t("inv.toast.importFailed"));
           return;
         }
         setStore((cur) => importSnapshot(cur, j.snapshot as LoadoutSnapshot));
         setImportKey("");
-        showToast(`Imported "${j.name}"`);
+        setImportOpen(false);
+        showToast(t("inv.toast.borrowed", { name: j.name }));
       } finally {
         setShareBusy(false);
       }
     },
-    [showToast]
+    [showToast, t],
   );
 
-  // A shared link lands here as ?borrow=<key> and imports itself, so the
-  // recipient never has to know what a borrow key is.
+  /** Which of the two imports the pasted text is — decided once, so the button can say so. */
+  const importSource: "cstrike" | "key" =
+    importKey.includes("cstrike.app") || importKey.trim().startsWith("[") ? "cstrike" : "key";
+
+  // A shared link lands here as ?borrow=<key> and imports itself.
   const borrowed = useRef(false);
   useEffect(() => {
     if (!hydrated || borrowed.current) return;
@@ -1351,92 +1050,162 @@ export default function InventorySimulator() {
     importByKey(key).finally(() => writeUrl({ borrow: null }));
   }, [hydrated, importByKey, writeUrl]);
 
-  // ---------- Derived: skin chooser list ----------
+  const equipInGame = async () => {
+    setEquipState("busy");
+    try {
+      await postStore(store); // the server reads the saved store, so save first
+      const res = await fetch("/api/loadout/equip-rcon", { method: "POST" });
+      if (!res.ok) throw new Error((await res.text()) || t("inv.toast.equipFailed"));
+      setEquipState("done");
+      window.setTimeout(() => setEquipState("idle"), 2200);
+    } catch (err) {
+      showToast(err instanceof Error ? err.message : t("inv.toast.equipFailed"));
+      setEquipState("idle");
+    }
+  };
+
+  // ---------- Weapon view: derived ----------
   const collections = useMemo(() => {
     const set = new Set<string>();
     for (const s of skins) if (s.collection) set.add(s.collection);
     return Array.from(set).sort();
   }, [skins]);
 
-  // The owned item the editor is pointed at. Its uid decides the charm's
-  // hanging pose, which the editor cannot work out for itself.
-  const editorItem = weapon ? slotItemForChooser(weapon.def, builderKind, side) : undefined;
-  const currentSkinId = editorItem?.skinId;
+  const currentItem = weapon ? itemForEntry(weapon, side) : undefined;
+  const currentOnThisWeapon = currentItem && weapon && currentItem.weaponDef === weapon.def ? currentItem : undefined;
+  const currentSkinId = currentOnThisWeapon?.skinId;
 
   const shownSkins = useMemo(() => {
-    let list = skins.filter((s) => skinLabel(s.name).toLowerCase().includes(skinSearch.toLowerCase()));
+    const q = skinSearch.trim().toLowerCase();
+    let list = skins.filter((s) => skinLabel(s.name).toLowerCase().includes(q));
     if (collectionFilter) list = list.filter((s) => s.collection === collectionFilter);
     if (favOnly) list = list.filter((s) => favorites.has(skinKey(s.def, s.paint)));
-    if (skinSort === "quality") list.sort((a, b) => rarityRank(b.rarity) - rarityRank(a.rarity) || skinLabel(a.name).localeCompare(skinLabel(b.name)));
+    if (skinSort === "quality")
+      list.sort((a, b) => rarityRank(b.rarity) - rarityRank(a.rarity) || skinLabel(a.name).localeCompare(skinLabel(b.name)));
     else if (skinSort === "newest") list.sort((a, b) => b.paint - a.paint);
-    else if (skinSort === "fav") list.sort((a, b) => Number(favorites.has(skinKey(b.def, b.paint))) - Number(favorites.has(skinKey(a.def, a.paint))));
+    else if (skinSort === "fav")
+      list.sort((a, b) => Number(favorites.has(skinKey(b.def, b.paint))) - Number(favorites.has(skinKey(a.def, a.paint))));
     else list.sort((a, b) => skinLabel(a.name).localeCompare(skinLabel(b.name)));
-    if (currentSkinId) {
-      const idx = list.findIndex((s) => s.id === currentSkinId);
-      if (idx > 0) list.unshift(list.splice(idx, 1)[0]);
-    }
     return list;
-  }, [skins, skinSearch, collectionFilter, favOnly, favorites, skinSort, currentSkinId]);
+  }, [skins, skinSearch, collectionFilter, favOnly, favorites, skinSort]);
 
-  /** Roll a random skin from whatever the filters currently show. */
-  const surpriseMe = () => {
-    const pool = shownSkins.filter((s) => s.id !== currentSkinId);
-    if (!pool.length) return showToast("Nothing to roll from");
-    const pick = pool[Math.floor(Math.random() * pool.length)];
-    setWear(Math.random() * 0.45);
-    setSeed(Math.floor(Math.random() * 1000));
-    equipSkin(pick);
-  };
-
-  const weapons = catalog?.[category] ?? [];
-  const borrowUrl = share && origin ? `${origin}/inventory?borrow=${share.key}` : "";
-
-  /**
-   * Which side a one-click equip lands on.
-   *
-   * The side you are browsing, except for a weapon only one team can hold — an
-   * M4 clicked while on T would otherwise offer "Equip (T)" and then refuse
-   * it, which is a button that lies about what it does.
-   */
-  const equipSide: "t" | "ct" =
-    weapon && weapon.team !== "both" ? (weapon.team as "t" | "ct") : side;
-
-  const sortedLoadouts = useMemo(() => {
-    return [...store.loadouts].sort((a, b) => {
-      if (a.favorite && !b.favorite) return -1;
-      if (!a.favorite && b.favorite) return 1;
-      const aDate = a.createdAt ?? 0;
-      const bDate = b.createdAt ?? 0;
-      return aDate - bDate; // Ascending by date created
-    });
-  }, [store.loadouts]);
-
-  /**
-   * The four in the strip — and the active one is always among them.
-   *
-   * It was a plain `slice(0, 4)`, so selecting the fifth loadout left the strip
-   * showing four others with none of them highlighted. The thing you are
-   * editing has to be the thing that looks selected.
-   */
-  const visibleLoadouts = useMemo(() => {
-    const head = sortedLoadouts.slice(0, 4);
-    if (head.some((l) => l.id === store.activeLoadoutId)) return head;
-
-    const active = sortedLoadouts.find((l) => l.id === store.activeLoadoutId);
-    return active ? [...head.slice(0, 3), active] : head;
-  }, [sortedLoadouts, store.activeLoadoutId]);
-
-
-  /** A catalog entry by weapon def, for tiles that only know the def. */
-  const weaponByDef = useCallback(
-    (def: number): WeaponEntry | null =>
-      Object.values(catalog ?? {})
-        .flat()
-        .find((w) => w.def === def) ?? null,
-    [catalog],
+  /** Items already crafted for this weapon — equippable as they are. */
+  const craftsForWeapon = useMemo(
+    () => (weapon ? store.items.filter((i) => i.weaponDef === weapon.def) : []),
+    [store.items, weapon],
   );
 
-  /** An owned or equipped item, as the Skin shape the menu wants. */
+  /** Has the builder's finish drifted from the equipped item's? */
+  const finishDirty =
+    !!currentOnThisWeapon &&
+    (currentOnThisWeapon.wear !== wear ||
+      currentOnThisWeapon.seed !== seed ||
+      !!currentOnThisWeapon.statTrak !== statTrak ||
+      (currentOnThisWeapon.nameTag ?? "") !== nameTag);
+
+  const surpriseMe = () => {
+    if (!weapon) return;
+    const pool = shownSkins.filter((s) => s.id !== currentSkinId);
+    if (!pool.length) return showToast(t("inv.toast.nothingToRoll"));
+    const pick = pool[Math.floor(Math.random() * pool.length)];
+    if (supportsWear) {
+      setWear(Math.round(Math.random() * 0.45 * 1000) / 1000);
+      setSeed(Math.floor(Math.random() * 1001));
+    }
+    // State updates above land on the next render; equip with the new values
+    // by deferring a tick.
+    window.setTimeout(() => equipSkinRef.current(pick, weapon), 0);
+  };
+  const equipSkinRef = useRef(equipSkin);
+  equipSkinRef.current = equipSkin;
+
+  // ---------- Armory: derived ----------
+  const weaponMatches = useCallback(
+    (w: WeaponEntry) => {
+      const q = weaponQuery.trim().toLowerCase();
+      if (!q) return true;
+      const item = itemOnTile(w, side);
+      return w.name.toLowerCase().includes(q) || (item ? item.skinName.toLowerCase().includes(q) : false);
+    },
+    [weaponQuery, itemOnTile, side],
+  );
+
+  const sections = useMemo(
+    () =>
+      CATEGORY_ORDER.filter((c) => catalog?.[c]?.length).map((c) => {
+        const list = (catalog![c] ?? []).filter((w) => canHold(w.team, side) || w.team === "both");
+        const matching = list.filter(weaponMatches);
+        // What is equipped first: that is the tile you came to change.
+        matching.sort((a, b) => Number(!!itemOnTile(b, side)) - Number(!!itemOnTile(a, side)));
+        return { name: c, all: list, matching };
+      }),
+    [catalog, side, weaponMatches, itemOnTile],
+  );
+
+  /** Per type, how many of this side's slots are dressed. */
+  const typeFill = useMemo(() => {
+    const board = side === "t" ? boardT : boardCT;
+    const m = new Map<string, { filled: number; total: number }>();
+    for (const slot of board) {
+      const g = categoryOfKind(slot.kind) ?? categoryOfDef(slot.def);
+      const cur = m.get(g) ?? { filled: 0, total: 0 };
+      cur.total += 1;
+      if (slot.item) cur.filled += 1;
+      m.set(g, cur);
+    }
+    return m;
+  }, [side, boardT, boardCT, categoryOfDef]);
+
+  // ---------- Vault: derived ----------
+  const equippedIds = useMemo(() => (activeLoadout ? loadoutRefs(activeLoadout) : new Set<string>()), [activeLoadout]);
+  const vaultItems = useMemo(() => {
+    const q = vaultQuery.trim().toLowerCase();
+    return store.items.filter((i) => {
+      if (vaultType && categoryOfKind(i.kind as SlotKind) !== vaultType && categoryOfDef(i.weaponDef) !== vaultType) return false;
+      if (!q) return true;
+      return `${i.weaponName} ${i.skinName} ${i.nameTag ?? ""}`.toLowerCase().includes(q);
+    });
+  }, [store.items, vaultQuery, vaultType, categoryOfDef]);
+  const vaultTypes = useMemo(() => {
+    const present = new Set(store.items.map((i) => categoryOfKind(i.kind as SlotKind) ?? categoryOfDef(i.weaponDef)));
+    return CATEGORY_ORDER.filter((c) => present.has(c));
+  }, [store.items, categoryOfDef]);
+  const [vaultFolded, setVaultFolded] = useState<Record<string, boolean>>({});
+
+  // ---------- Keyboard ----------
+  useEffect(() => {
+    const onKey = (e: KeyboardEvent) => {
+      const el = document.activeElement;
+      const typing = el instanceof HTMLInputElement || el instanceof HTMLTextAreaElement || el instanceof HTMLSelectElement;
+      if (e.key === "Escape") {
+        if (editor3dOpen || radioFor) return; // those dialogs own Escape
+        if (menu) return setMenu(null);
+        if (share) return setShare(null);
+        if (typing) return (el as HTMLElement).blur();
+        if (selectedItems.size || selectedSkins.size) {
+          setSelectedItems(new Set());
+          setSelectedSkins(new Set());
+          return;
+        }
+        if (weapon && armoryMode === "catalog") return closeWeapon();
+        if (armoryOpen) return closeArmory();
+        return;
+      }
+      if (typing || e.metaKey || e.ctrlKey || e.altKey) return;
+      const k = e.key.toLowerCase();
+      if (k === "t") setSide("t");
+      if (k === "c") setSide("ct");
+      if (k === "/" || k === "f") {
+        e.preventDefault();
+        if (!armoryOpen) openArmory();
+        window.setTimeout(() => searchRef.current?.focus(), 30);
+      }
+    };
+    window.addEventListener("keydown", onKey);
+    return () => window.removeEventListener("keydown", onKey);
+  });
+
+  // ---------- Item menu ----------
   const asSkin = (item: InventoryItem): Skin => ({
     id: item.skinId,
     def: item.weaponDef,
@@ -1446,1195 +1215,1278 @@ export default function InventorySimulator() {
     rarity: item.rarity || "default",
   });
 
-  /**
-   * Open the item menu from anywhere.
-   *
-   * The one entry point, so a tile gains a menu by calling this rather than by
-   * remembering to render one. A right-click opens at the pointer; the ⋯ button
-   * opens at the tile's top-right corner, so the menu lands in the same place
-   * however you asked for it.
-   */
-  const openItemMenu = useCallback(
-    (
-      e: React.MouseEvent,
-      args: { skin: Skin; weapon: WeaponEntry; side: "t" | "ct"; boardSlot?: BoardSlot },
-    ) => {
-      e.preventDefault();
-      e.stopPropagation();
-
-      const fromPointer = e.type === "contextmenu";
-      const box = (e.currentTarget as HTMLElement).getBoundingClientRect();
-
-      setContextMenu({
-        ...args,
-        x: fromPointer ? e.clientX : box.right,
-        y: fromPointer ? e.clientY : box.top,
-      });
-    },
-    [],
-  );
-
-  /**
-   * The props that make any element an item-menu target.
-   *
-   * Returns nothing when there is no item to act on — an empty slot has no skin
-   * to equip, favourite or customise, and a menu of disabled rows would say
-   * less than no menu at all.
-   */
-  const menuTarget = useCallback(
-    (args: { skin: Skin | null; weapon: WeaponEntry | null; side: "t" | "ct"; boardSlot?: BoardSlot }) => {
-      if (!args.skin || !args.weapon) return {};
-      const { skin, weapon, side, boardSlot } = args;
-      return {
-        onContextMenu: (e: React.MouseEvent) => openItemMenu(e, { skin, weapon, side, boardSlot }),
-      };
-    },
-    [openItemMenu],
-  );
-
-  /**
-   * The ⋯ button.
-   *
-   * The left-click route to the same menu. A right-click is not available to
-   * everybody — trackpads, touch, and anybody whose browser or OS has claimed
-   * the gesture — so a feature reachable only that way is a feature some people
-   * do not have. Rendered on every tile that has a menu, in the same corner.
-   */
-  const MenuDots = ({
-    skin,
-    weapon,
-    side,
-    boardSlot,
-  }: {
-    skin: Skin | null;
-    weapon: WeaponEntry | null;
-    side: "t" | "ct";
-    boardSlot?: BoardSlot;
-  }) => {
-    if (!skin || !weapon) return null;
-    return (
-      <button
-        type="button"
-        className="inv4-dots"
-        title="Options"
-        aria-label={`Options for ${skinLabel(skin.name)}`}
-        onClick={(e) => openItemMenu(e, { skin, weapon, side, boardSlot })}
-      >
-        ⋯
-      </button>
-    );
+  const openMenu = (e: React.MouseEvent, target: Omit<MenuTarget, "x" | "y">) => {
+    e.preventDefault();
+    e.stopPropagation();
+    const fromPointer = e.type === "contextmenu";
+    const box = (e.currentTarget as HTMLElement).getBoundingClientRect();
+    setMenu({ ...target, x: fromPointer ? e.clientX : box.right, y: fromPointer ? e.clientY : box.bottom + 4 });
   };
 
-  const renderItemMenu = () => {
-    if (!contextMenu || !mounted) return null;
+  /** Right-click anywhere on a tile, or its ⋯ button — the same menu either way. */
+  const menuProps = (target: Omit<MenuTarget, "x" | "y"> | null) =>
+    target ? { onContextMenu: (e: React.MouseEvent) => openMenu(e, target) } : {};
 
-    const isMusicKit = contextMenu.weapon.category === "Music Kits";
-    const isAgent = contextMenu.weapon.category === "Agents";
-    
-    const fav = favorites.has(skinKey(contextMenu.weapon.def, contextMenu.skin.paint));
-    
-    const payload = {
-      kind: kindOfCategory(contextMenu.weapon.category),
-      weaponDef: contextMenu.weapon.def,
-      skinId: contextMenu.skin.id,
-      wear,
-      seed,
-      statTrak: supportsStatTrak ? statTrak : false,
-      nameTag,
-      stickers: supportsStickers ? stickers : defaultStickerSlots(),
-      charm: charm,
+  const MenuButton = ({ target, label }: { target: Omit<MenuTarget, "x" | "y"> | null; label: string }) =>
+    target ? (
+      <button type="button" className="iv-dots" aria-label={t("inv.menu.optionsFor", { name: label })} onClick={(e) => openMenu(e, target)}>
+        <Ellipsis size={16} />
+      </button>
+    ) : null;
+
+  const renderMenu = () => {
+    if (!menu || !mounted || !activeLoadout) return null;
+    const { skin, weapon: w, item } = menu;
+    const kind = kindOfCategory(w.category);
+    const isAgent = kind === "agent";
+    const fav = favorites.has(skinKey(w.def, skin.paint));
+    const onSide = (s: Side) => (item ? slotRef(activeLoadout, kind, s, w.def) === item.id : false);
+    const eqT = onSide("t");
+    const eqCT = onSide("ct");
+
+    const MENU_W = 240;
+    const MENU_H = 360;
+    const left = Math.min(Math.max(8, menu.x - MENU_W), window.innerWidth - MENU_W - 8);
+    const top = Math.min(Math.max(8, menu.y), Math.max(8, window.innerHeight - MENU_H - 8));
+    const act = (fn: () => void) => () => {
+      fn();
+      setMenu(null);
     };
-    
-    const identical = store.items.find(i => 
-      i.weaponDef === payload.weaponDef &&
-      i.skinId === payload.skinId &&
-      i.wear === payload.wear &&
-      i.seed === payload.seed &&
-      i.statTrak === payload.statTrak &&
-      i.nameTag === payload.nameTag &&
-      JSON.stringify(i.stickers) === JSON.stringify(payload.stickers) &&
-      JSON.stringify(i.charm) === JSON.stringify(payload.charm)
-    );
-    const inVault = !!identical;
-
-    const equippedT = identical && activeLoadout ? (
-      (payload.kind === "knife" && activeLoadout.knifeT === identical.id) ||
-      (payload.kind === "gloves" && activeLoadout.glovesT === identical.id) ||
-      (payload.kind === "agent" && activeLoadout.agentT === identical.id) ||
-      (payload.kind === "musickit" && activeLoadout.musicKitT === identical.id) ||
-      (payload.kind === "weapon" && activeLoadout.equippedT[payload.weaponDef] === identical.id)
-    ) : false;
-
-    const equippedCT = identical && activeLoadout ? (
-      (payload.kind === "knife" && activeLoadout.knifeCT === identical.id) ||
-      (payload.kind === "gloves" && activeLoadout.glovesCT === identical.id) ||
-      (payload.kind === "agent" && activeLoadout.agentCT === identical.id) ||
-      (payload.kind === "musickit" && activeLoadout.musicKitCT === identical.id) ||
-      (payload.kind === "weapon" && activeLoadout.equippedCT[payload.weaponDef] === identical.id)
-    ) : false;
-
-    // Clamped so a tile at the right-hand edge, or one near the bottom of a
-    // long grid, still opens a menu you can read all of.
-    const MENU_W = 232;
-    const MENU_H = 420;
-    const vw = typeof window === "undefined" ? 1280 : window.innerWidth;
-    const vh = typeof window === "undefined" ? 800 : window.innerHeight;
-    const left = Math.min(Math.max(8, contextMenu.x), vw - MENU_W - 8);
-    const top = Math.min(Math.max(8, contextMenu.y), Math.max(8, vh - MENU_H - 8));
+    const equip = (target: Side | "both") => (item ? assignItem(item, target) : equipSkin(skin, w, target));
 
     return createPortal(
       <div
-        className="inv4-context"
-        style={{
-          position: "fixed",
-          left,
-          top,
-          zIndex: 200,
-        }}
+        className="iv-menu"
+        role="menu"
+        style={{ left, top, width: MENU_W, "--rarity": skin.rarity } as React.CSSProperties}
         onClick={(e) => e.stopPropagation()}
         onContextMenu={(e) => e.preventDefault()}
       >
-        <div className="inv4-context-title" style={{ color: contextMenu.skin.rarity, paddingBottom: '8px', borderBottom: '1px solid var(--color-divider)' }}>
-          {contextMenu.weapon.name} | {skinLabel(contextMenu.skin.name)}
+        <div className="iv-menu-head">
+          <span className="iv-menu-weapon">{w.name}</span>
+          <span className="iv-menu-skin">{skinLabel(skin.name)}</span>
         </div>
-        {!isAgent && !isMusicKit && (
-          <div style={{ padding: '8px 12px', display: 'flex', flexDirection: 'column', gap: '4px', borderBottom: '1px solid var(--color-divider)' }}>
-            <label style={{ fontSize: '12px', display: 'flex', flexDirection: 'column' }}>
-              Wear <strong>{wear.toFixed(3)}</strong>
-              <input type="range" min={0} max={1} step={0.001} style={{ width: '100%' }} value={wear} onChange={(e) => setWear(Number(e.target.value))} />
-            </label>
-            <label style={{ fontSize: '12px', display: 'flex', flexDirection: 'column' }}>
-              Pattern
-              <input className="input" type="number" min={0} max={1000} style={{ width: '100%', padding: '2px 4px' }} value={seed} onChange={(e) => setSeed(Math.max(0, Math.min(1000, Number(e.target.value) || 0)))} />
-            </label>
-          </div>
-        )}
-        {supportsStickers && !isMusicKit && (
-          <button className="inv4-context-btn" onClick={() => {
-            // Equip first, THEN open the chooser, THEN the editor — and never
-            // openWeapon after equipping in the same tick.
-            //
-            // The old order ran openWeapon last, which re-read the slot from a
-            // store that setState had not flushed yet and reset `stickers` to
-            // the pre-equip value. So the editor opened showing the stickers of
-            // whatever was equipped a moment ago, and saving wrote those back.
-            if (contextMenu.boardSlot) {
-              openBoardSlot(contextMenu.boardSlot, contextMenu.side);
-            } else {
-              if (!weapon && contextMenu.weapon) openWeapon(contextMenu.weapon);
-              equipSkin(contextMenu.skin, contextMenu.side, true, contextMenu.weapon);
-            }
-            setEditor3dOpen(true);
-            setContextMenu(null);
-          }}>
-            {isAgent ? "Manage Patches" : "Edit (3D)"}
+
+        {(supportsStickerKind(kind)) && (
+          <button
+            role="menuitem"
+            className="iv-menu-item"
+            onClick={act(() => {
+              // Make sure the item is in the slot the editor writes to, then
+              // open the weapon with that item's finish preloaded.
+              const s = menu.side;
+              if (item && !onSide(s)) assignItem(item, s);
+              else if (!item) equipSkin(skin, w, s);
+              openWeapon(w, s, item);
+              setEditor3dOpen(true);
+            })}
+          >
+            <Sticker size={15} /> {isAgent ? t("inv.menu.patches") : t("inv.menu.stickers")}
           </button>
         )}
         {isAgent && (
-          <button className="inv4-context-btn" onClick={() => {
-            setRadioModalOpen(contextMenu.weapon);
-            setContextMenu(null);
-          }}>
-            Radio Commands
+          <button role="menuitem" className="iv-menu-item" onClick={act(() => setRadioFor(w))}>
+            <Radio size={15} /> {t("inv.menu.radio")}
           </button>
         )}
-        {(contextMenu.weapon.team === "both" || contextMenu.weapon.team === "t") && (
-          <button className="inv4-context-btn" onClick={() => { 
-            if (equippedT && identical) clearSlot(contextMenu.weapon.def, payload.kind, "t");
-            else equipSkin(contextMenu.skin, "t", false, contextMenu.weapon); 
-            setContextMenu(null); 
-          }}>
-            {equippedT ? "Unequip (T)" : "Equip (T)"}
+
+        <div className="iv-menu-sep" />
+        {SIDES.filter((s) => canHold(w.team, s)).map((s) => {
+          const on = s === "t" ? eqT : eqCT;
+          return (
+            <button
+              key={s}
+              role="menuitem"
+              className={`iv-menu-item side-${s}`}
+              onClick={act(() => (on ? clearSlot(w.def, kind, s) : equip(s)))}
+            >
+              <span className={`iv-side-tag ${s}`}>{s.toUpperCase()}</span>
+              {on ? t("inv.menu.unequip") : t("inv.menu.equip")}
+              {on && <Check size={14} className="iv-menu-check" />}
+            </button>
+          );
+        })}
+        {w.team === "both" && (
+          <button
+            role="menuitem"
+            className="iv-menu-item"
+            onClick={act(() => (eqT && eqCT ? clearSlot(w.def, kind, "both") : equip("both")))}
+          >
+            <ArrowLeftRight size={15} /> {eqT && eqCT ? t("inv.menu.unequipBoth") : t("inv.menu.equipBoth")}
           </button>
         )}
-        {(contextMenu.weapon.team === "both" || contextMenu.weapon.team === "ct") && (
-          <button className="inv4-context-btn" onClick={() => { 
-            if (equippedCT && identical) clearSlot(contextMenu.weapon.def, payload.kind, "ct");
-            else equipSkin(contextMenu.skin, "ct", false, contextMenu.weapon); 
-            setContextMenu(null); 
-          }}>
-            {equippedCT ? "Unequip (CT)" : "Equip (CT)"}
+
+        <div className="iv-menu-sep" />
+        {item ? (
+          <button
+            role="menuitem"
+            className="iv-menu-item danger"
+            onClick={act(() => deleteItems(new Set([item.id])))}
+          >
+            <Trash2 size={15} /> {t("inv.menu.deleteItem")}
+          </button>
+        ) : (
+          <button role="menuitem" className="iv-menu-item" onClick={act(() => equipSkin(skin, w, undefined, true))}>
+            <Archive size={15} /> {t("inv.menu.addToVault")}
           </button>
         )}
-        {contextMenu.weapon.team === "both" && (
-          <button className="inv4-context-btn" onClick={() => { 
-            if (equippedCT && equippedT && identical) clearSlot(contextMenu.weapon.def, payload.kind, "both");
-            else equipSkin(contextMenu.skin, "both", false, contextMenu.weapon); 
-            setContextMenu(null); 
-          }}>
-            {equippedCT && equippedT ? "Unequip (Both)" : "Equip (Both)"}
-          </button>
-        )}
-        <button className="inv4-context-btn" onClick={() => {
-          if (inVault) {
-            setStore(s => ({ ...s, items: s.items.filter(i => i.id !== identical!.id) }));
-          } else {
-            equipSkin(contextMenu.skin, contextMenu.weapon.team === "ct" ? "ct" : "t", true, contextMenu.weapon, true);
-          }
-          setContextMenu(null);
-        }}>
-          {inVault ? "Remove from Vault" : "Add to Vault"}
-        </button>
-        <button className="inv4-context-btn" onClick={() => {
-          toggleFavorite(contextMenu.weapon.def, contextMenu.skin.paint);
-          setContextMenu(null);
-        }}>
-          {fav ? "Remove from favorites" : "Add to favorites"}
+        <button role="menuitem" className="iv-menu-item" onClick={act(() => toggleFavorite(w.def, skin.paint))}>
+          <Heart size={15} className={fav ? "iv-fav-on" : ""} /> {fav ? t("inv.menu.unfavourite") : t("inv.menu.favourite")}
         </button>
       </div>,
       document.body,
     );
   };
 
-  // ---------- Render ----------
-  return (
-    <div className="inv4">
-      {/* ===== Header: which loadout, how full, and what to do with it ===== */}
-      <header className="inv4-bar">
-        <div className="inv4-loadouts" role="tablist" aria-label={t("auto.inventorysimulator.loadouts")}>
-          {visibleLoadouts.map((l) => (
-            <button
+  // ---------- Pieces ----------
+
+  /** The real weapon, as a flat glyph in currentColor. */
+  const Glyph = ({ category, size = 22 }: { category: string; size?: number }) => {
+    if (category === "Music Kits") return <Music size={size - 4} aria-hidden />;
+    const w =
+      category === "Agents"
+        ? null
+        : weaponByDef(GLYPH_DEF[category] ?? -1) ?? catalog?.[category]?.[0] ?? null;
+    if (category === "Agents") return <span className="iv-glyph agent" style={{ width: size, height: size }} aria-hidden />;
+    if (!w) return <InventoryIcon id={categoryIconId(category)} size={size} />;
+    return (
+      <span
+        className="iv-glyph"
+        aria-hidden
+        style={{ width: size * 1.9, height: size, WebkitMaskImage: `url(${w.image})`, maskImage: `url(${w.image})` }}
+      />
+    );
+  };
+
+  const StatBadges = ({ item }: { item?: InventoryItem }) => {
+    if (!item) return null;
+    const kills = killsFor(item);
+    const stickerCount = item.stickers?.filter(Boolean).length ?? 0;
+    const kind = item.kind as SlotKind;
+    return (
+      <span className="iv-badges">
+        {supportsWearFor(kind) && <span className="iv-badge num" title={wearLabel(item.wear)}>{wearShort(item.wear)}</span>}
+        {kills !== null && (
+          <span className="iv-badge st num" title={t("inv.stattrakTitle")}>
+            ST {kills.toLocaleString()}
+          </span>
+        )}
+        {stickerCount > 0 && (
+          <span className="iv-badge" title={t("inv.stickerCount", { n: stickerCount })}>
+            <Sticker size={11} /> {stickerCount}
+          </span>
+        )}
+        {item.nameTag && <span className="iv-badge tag">“{item.nameTag}”</span>}
+      </span>
+    );
+  };
+
+  const isActiveSlot = (slot: BoardSlot, s: Side) =>
+    armoryOpen && !!weapon && side === s && (slot.item ? slot.item.weaponDef === weapon.def : slot.def === weapon.def);
+
+  const SlotTile = ({ slot, s }: { slot: BoardSlot; s: Side }) => {
+    const w = slot.item ? weaponByDef(slot.item.weaponDef) : null;
+    const target = slot.item && w ? { skin: asSkin(slot.item), weapon: w, side: s, item: slot.item } : null;
+    const emptyIcon = categoryOfKind(slot.kind) ?? categoryOfDef(slot.def);
+    return (
+      <li
+        key={slot.key}
+        className={`iv-slot ${slot.item ? "filled" : "empty"} ${isActiveSlot(slot, s) ? "active" : ""}`}
+        style={slot.item?.rarity ? ({ "--rarity": slot.item.rarity } as React.CSSProperties) : undefined}
+      >
+        <button className="iv-slot-main" onClick={() => openSlot(slot, s)} {...menuProps(target)}>
+          <span className="iv-slot-art">
+            {slot.item ? (
+              // eslint-disable-next-line @next/next/no-img-element
+              <img src={slot.item.image} alt="" loading="lazy" />
+            ) : (
+              <span className="iv-slot-empty-glyph">
+                {Glyph({ category: emptyIcon, size: 16 })}
+              </span>
+            )}
+          </span>
+          <span className="iv-slot-text">
+            <span className="iv-slot-label">{slot.label}</span>
+            <span className="iv-slot-skin">{slot.item ? skinLabel(slot.item.skinName) : t("inv.slot.default")}</span>
+            {StatBadges({ item: slot.item })}
+          </span>
+          {!slot.item && <Plus size={14} className="iv-slot-plus" aria-hidden />}
+        </button>
+        {slot.m4 && (
+          <button
+            className="iv-m4"
+            title={t("inv.slot.m4Title")}
+            onClick={() => setPreferredM4(slot.def === M4A1S ? M4A4 : M4A1S)}
+          >
+            <ArrowLeftRight size={12} /> {slot.def === M4A1S ? "M4A4" : "M4A1-S"}
+          </button>
+        )}
+        {MenuButton({ target: target, label: slot.item ? skinLabel(slot.item.skinName) : slot.label })}
+      </li>
+    );
+  };
+
+  const AgentCard = ({ s }: { s: Side }) => {
+    if (!activeLoadout) return null;
+    const agent = itemIn("agent", s, -1);
+    const w = agent ? weaponByDef(agent.weaponDef) : null;
+    const target = agent && w ? { skin: asSkin(agent), weapon: w, side: s, item: agent } : null;
+    const patches = agent?.stickers.filter(Boolean).length ?? 0;
+    return (
+      <div className="iv-agent" style={agent?.rarity ? ({ "--rarity": agent.rarity } as React.CSSProperties) : undefined}>
+        <button
+          className="iv-agent-main"
+          onClick={() => openSlot({ key: `${s}-agent`, kind: "agent", def: agent?.weaponDef ?? -1, label: "Agent", item: agent }, s)}
+          {...menuProps(target)}
+        >
+          <span className="iv-agent-art">
+            {/* eslint-disable-next-line @next/next/no-img-element */}
+            <img
+              src={agent?.image || DEFAULT_AGENT_ART}
+              alt=""
+              loading="lazy"
+              onError={(e) => {
+                e.currentTarget.src = DEFAULT_AGENT_ART;
+              }}
+            />
+          </span>
+          <span className="iv-agent-text">
+            <span className="iv-slot-label">{t("inv.slot.agent")}</span>
+            <span className="iv-agent-name">{agent ? skinLabel(agent.skinName || agent.weaponName) : t("inv.slot.defaultAgent")}</span>
+            {patches > 0 && <span className="iv-badge"><Sticker size={11} /> {t("inv.patchCount", { n: patches })}</span>}
+          </span>
+        </button>
+        <div className="iv-agent-actions">
+          {w && (
+            <button className="iv-icon-btn" title={t("inv.menu.radio")} aria-label={t("inv.menu.radio")} onClick={() => setRadioFor(w)}>
+              <Radio size={15} />
+            </button>
+          )}
+          {MenuButton({ target: target, label: agent ? skinLabel(agent.skinName) : "Agent" })}
+        </div>
+      </div>
+    );
+  };
+
+  const SideColumn = ({ s, board }: { s: Side; board: BoardSlot[] }) => {
+    const gear = board.filter((x) => x.kind === "knife" || x.kind === "gloves");
+    const guns = board.filter((x) => x.kind === "weapon" && !x.extra);
+    const extras = board.filter((x) => x.extra);
+    const kit = board.filter((x) => x.kind === "musickit");
+    const filled = board.filter((x) => x.item).length;
+    return (
+      <section className={`iv-side ${s}`} aria-label={s === "t" ? t("inv.side.t") : t("inv.side.ct")}>
+        <header className="iv-side-head">
+          <span className={`iv-side-tag ${s}`}>{s.toUpperCase()}</span>
+          <h3>{s === "t" ? t("inv.side.t") : t("inv.side.ct")}</h3>
+          <span className="iv-side-count num">{filled}/{board.length}</span>
+          <button
+            className="iv-ghost-btn"
+            onClick={() => {
+              setSide(s);
+              openArmory();
+            }}
+            title={t("inv.side.browse")}
+          >
+            <Plus size={14} /> {t("inv.side.add")}
+          </button>
+        </header>
+        {AgentCard({ s })}
+        <div className="iv-group">
+          <h4>{t("inv.group.gear")}</h4>
+          <ul className="iv-slots">{gear.map((x) => SlotTile({ slot: x, s }))}</ul>
+        </div>
+        <div className="iv-group">
+          <h4>{t("inv.group.signature")}</h4>
+          <ul className="iv-slots">{guns.map((x) => SlotTile({ slot: x, s }))}</ul>
+        </div>
+        {extras.length > 0 && (
+          <div className="iv-group">
+            <h4>{t("inv.group.extras")} <span className="num">{extras.length}</span></h4>
+            <ul className="iv-slots">{extras.map((x) => SlotTile({ slot: x, s }))}</ul>
+          </div>
+        )}
+        <div className="iv-group">
+          <h4>{t("inv.group.music")}</h4>
+          <ul className="iv-slots">{kit.map((x) => SlotTile({ slot: x, s }))}</ul>
+        </div>
+      </section>
+    );
+  };
+
+  const LoadoutList = ({ compact = false }: { compact?: boolean }) => (
+    <div className={`iv-lolist ${compact ? "compact" : ""}`}>
+      <div className="iv-lolist-head">
+        <h2>{t("auto.inventorysimulator.loadouts")}</h2>
+        <span className="num iv-muted">{store.loadouts.length}</span>
+        <button className="iv-icon-btn" onClick={addLoadout} title={t("auto.inventorysimulator.new_loadout")} aria-label={t("auto.inventorysimulator.new_loadout")}>
+          <Plus size={16} />
+        </button>
+      </div>
+      <ul className="iv-lolist-items" role="listbox" aria-label={t("auto.inventorysimulator.loadouts")}>
+        {sortedLoadouts.map((l) => {
+          const active = l.id === store.activeLoadoutId;
+          return (
+            <li
               key={l.id}
-              role="tab"
-              aria-selected={l.id === store.activeLoadoutId}
-              className={`inv4-lo ${l.id === store.activeLoadoutId ? "active" : ""} ${dragOver === l.id ? "dragover" : ""}`}
-              draggable
+              role="option"
+              aria-selected={active}
+              className={`iv-lo ${active ? "active" : ""} ${dragOver === l.id ? "dragover" : ""}`}
+              style={{ "--lo": l.color ?? "var(--color-neutral-500)" } as React.CSSProperties}
+              draggable={renaming !== l.id}
               onDragStart={() => (dragId.current = l.id)}
               onDragOver={(e) => {
                 e.preventDefault();
                 setDragOver(l.id);
               }}
+              onDragLeave={() => setDragOver((d) => (d === l.id ? null : d))}
               onDrop={() => onLoDrop(l.id)}
               onDragEnd={() => {
                 setDragOver(null);
                 dragId.current = null;
               }}
-              onClick={() => setActiveLoadout(l.id)}
             >
-              <span className="inv4-lo-dot" style={{ background: l.color ?? "var(--color-neutral-500)" }} />
-              {l.favorite ? '★ ' : ''}{l.name}
-              <span className="inv4-lo-count">{loadoutSize(l)}</span>
-            </button>
-          ))}
-
-          {/*
-            All of them, in one place.
-
-            This was a native <select> holding whatever did not fit in the
-            strip, which made "switch loadout" and "manage loadouts" two
-            different controls depending on how many you had — and the fifth
-            loadout could only be renamed by first making it active. The panel
-            lists every loadout, including the four in the strip, with the same
-            row of actions on each.
-          */}
-          <div className="inv4-lo-all">
-            <button
-              type="button"
-              className="btn btn-secondary inv4-lo-new"
-              aria-expanded={loMenuOpen}
-              aria-haspopup="true"
-              onClick={() => setLoMenuOpen((v) => !v)}
-            >
-              {t("inventory.loadouts.all", { n: String(store.loadouts.length) })}
-            </button>
-
-            {loMenuOpen && (
-              <>
-                <div className="inv4-lo-scrim" onClick={() => setLoMenuOpen(false)} aria-hidden />
-                <div className="inv4-lo-panel" role="menu">
-                  {sortedLoadouts.map((l) => (
-                    <div
-                      key={l.id}
-                      className={`inv4-lo-row ${l.id === store.activeLoadoutId ? "active" : ""}`}
-                    >
-                      <button
-                        className="inv4-lo-pick"
-                        onClick={() => {
-                          setActiveLoadout(l.id);
-                          setLoMenuOpen(false);
-                        }}
-                      >
-                        <span className="inv4-lo-dot" style={{ background: l.color ?? "var(--color-neutral-500)" }} />
-                        <span className="inv4-lo-rowname">{l.name}</span>
-                        <span className="inv4-lo-count">{loadoutSize(l)}</span>
-                      </button>
-
-                      <button
-                        className={`inv4-lo-act ${l.favorite ? "on" : ""}`}
-                        title={t("inventory.loadouts.favourite")}
-                        aria-label={`${t("inventory.loadouts.favourite")}: ${l.name}`}
-                        onClick={() => toggleFavoriteLoadout(l)}
-                      >
-                        {l.favorite ? "★" : "☆"}
-                      </button>
-                      <button
-                        className="inv4-lo-act"
-                        title={t("auto.inventorysimulator.rename")}
-                        aria-label={`${t("auto.inventorysimulator.rename")}: ${l.name}`}
-                        onClick={() => renameLoadout(l)}
-                      >
-                        ✎
-                      </button>
-                      <button
-                        className="inv4-lo-act"
-                        title={t("auto.inventorysimulator.duplicate")}
-                        aria-label={`${t("auto.inventorysimulator.duplicate")}: ${l.name}`}
-                        onClick={() => duplicateLoadout(l)}
-                      >
-                        ⧉
-                      </button>
-                      {/* The last loadout cannot be deleted — deleteLoadout
-                          reads loadouts[0] afterwards, and there would not be
-                          one. */}
-                      {store.loadouts.length > 1 && (
-                        <button
-                          className="inv4-lo-act"
-                          title={t("auto.inventorysimulator.delete")}
-                          aria-label={`${t("auto.inventorysimulator.delete")}: ${l.name}`}
-                          onClick={() => deleteLoadout(l)}
-                        >
-                          ×
-                        </button>
-                      )}
-                    </div>
-                  ))}
-                </div>
-              </>
-            )}
-          </div>
-          <button className="btn btn-secondary inv4-lo-new" onClick={addLoadout} title={t("auto.inventorysimulator.new_loadout")}>
-            {t("auto.inventorysimulator._new")}
-                                </button>
-          <button className="btn btn-secondary inv4-lo-new" onClick={() => {
-            if (!session.steamId) return showToast("Not connected");
-            importCstrike(`https://inventory.cstrike.app/api/inventory/${session.steamId}.json`);
-          }} title="Import from inventory.cstrike.app">
-            Import CStrike
-          </button>
-        </div>
-
-        <div className="inv4-bar-right">
-          {/* How the season is going. Not a StatTrak number: this counts the
-              player, with anything they picked up, which is the figure no
-              weapon can show. */}
-          {seasonStats?.season && (
-            <div className="inv4-season" title={`${seasonStats.season} — ${seasonStats.seasonKills}`}>
-              <span className="inv4-season-name">{seasonStats.season}</span>
-              <span className="inv4-season-kills num">{seasonStats.seasonKills.toLocaleString()}</span>
-              <span className="inv4-season-unit">
-                {t("auto.inventorysimulator.season_kills")} {t("auto.inventorysimulator.season_this")}
-              </span>
-            </div>
-          )}
-
-          <div className="inv4-progress" title={`${completeness.filled} of ${completeness.total} signature slots`}>
-            <div className="inv4-progress-track">
-              <div className="inv4-progress-fill" style={{ width: `${completeness.pct}%` }} />
-            </div>
-            <span className="inv4-progress-label num">
-              {completeness.filled}/{completeness.total} {t("auto.inventorysimulator.dressed")}
-                                      </span>
-          </div>
-
-          {/*
-            Preview and Vault used to live here and neither did what it said.
-            Preview was a browse mode — a third copy of the weapon-type list —
-            that force-closed whatever you had open; it is a row in the rail
-            now. Vault was not a view at all: it flipped the chooser's tab and,
-            needing somewhere to render, quietly opened the AK-47, so the header
-            read "AK-47 / T slot" while you looked at your own crafts. It is a
-            tab inside the drawer, where the thing it switches actually is.
-          */}
-
-          <button className="btn btn-secondary" disabled={shareBusy || !activeLoadout} onClick={() => activeLoadout && shareLoadout(activeLoadout)}>
-            <InventoryIcon id="share" size={16} />
-            {t("common.share")}
-          </button>
-
-          <form
-            className="inv4-borrow"
-            onSubmit={(e) => {
-              e.preventDefault();
-              if (importSource === "cstrike") { importCstrike(importKey); } else { importByKey(importKey); }
-            }}
-          >
-            <label className="sr-only" htmlFor="inv-borrow">{t("inventory.import.label")}</label>
-            <input
-              id="inv-borrow"
-              className="input"
-              placeholder={t("inventory.import.placeholder")}
-              value={importKey}
-              // removed max length for cstrike json payloads
-              spellCheck={false}
-              onChange={(e) => setImportKey(e.target.value)}
-            />
-            {/*
-              One field still takes two unrelated things, because that is what
-              people paste — but it now says which one it saw before it runs.
-              "Get" gave no clue that it branched, so pasting the wrong sort of
-              string failed in a way that looked like the key was bad.
-            */}
-            <button className="btn btn-secondary" type="submit" disabled={shareBusy || !importKey.trim()}>
-              <InventoryIcon id="import" size={16} />
-              {importSource === "cstrike"
-                ? t("inventory.import.fromCstrike")
-                : t("inventory.import.fromKey")}
-            </button>
-          </form>
-        </div>
-      </header>
-
-      <div className="inv4-body">
-        {/* ===== LEFT: what is actually equipped ===== */}
-        <aside className="inv4-board">
-          {activeLoadout && (
-            <div className="inv4-board-head">
-              <div className="inv4-board-title">
-                <span className="inv4-lo-dot" style={{ background: activeLoadout.color ?? "var(--color-accent)" }} />
-                <strong>{activeLoadout.name}</strong>
-              </div>
-              <div className="inv4-board-actions">
-                <button 
-                  className="btn btn-primary" 
-                  title="Equip in-game" 
-                  onClick={async (e) => {
-                    const btn = e.currentTarget;
-                    const orig = btn.innerText;
-                    btn.innerText = "Equipping...";
-                    btn.disabled = true;
-                    try {
-                      await fetch("/api/inventory", { method: "POST", body: JSON.stringify(store) }); // Ensure latest is saved
-                      const res = await fetch("/api/loadout/equip-rcon", { method: "POST" });
-                      if (!res.ok) throw new Error(await res.text());
-                      btn.innerText = "Equipped!";
-                      setTimeout(() => { btn.innerText = orig; btn.disabled = false; }, 2000);
-                    } catch (err: any) {
-                      showToast(err.message);
-                      btn.innerText = orig;
-                      btn.disabled = false;
-                    }
+              <GripVertical size={14} className="iv-lo-grip" aria-hidden />
+              {renaming === l.id ? (
+                <form
+                  className="iv-lo-rename"
+                  onSubmit={(e) => {
+                    e.preventDefault();
+                    const name = String(new FormData(e.currentTarget).get("name") ?? "").trim();
+                    if (name) patchLoadout(l.id, { name });
+                    setRenaming(null);
                   }}
                 >
-                  Equip In-Game
-                </button>
-                <button className="btn btn-ghost" title={t("auto.inventorysimulator.rename")} onClick={() => renameLoadout(activeLoadout)}>{t("auto.inventorysimulator.rename")}</button>
-                <button className={`btn btn-ghost ${activeLoadout.favorite ? 'on' : ''}`} title="Favorite" onClick={() => toggleFavoriteLoadout(activeLoadout)}>
-                  {activeLoadout.favorite ? '★' : '☆'}
-                </button>
-                <button className="btn btn-ghost" title={t("auto.inventorysimulator.duplicate")} onClick={() => duplicateLoadout(activeLoadout)}>{t("auto.inventorysimulator.duplicate")}</button>
-                {store.loadouts.length > 1 && (
-                  <button className="btn btn-ghost" title={t("auto.inventorysimulator.delete")} onClick={() => deleteLoadout(activeLoadout)}>{t("auto.inventorysimulator.delete")}</button>
-                )}
-              </div>
-              <div className="inv4-colors">
-                {LOADOUT_COLORS.map((c) => (
-                  <button
-                    key={c.hex}
-                    className={`inv4-color ${activeLoadout.color === c.hex ? "active" : ""}`}
-                    style={{ background: c.hex }}
-                    title={c.name}
-                    aria-label={`Colour ${c.name}`}
-                    onClick={() => setLoadoutColor(activeLoadout, c.hex)}
+                  <input
+                    name="name"
+                    className="iv-input"
+                    defaultValue={l.name}
+                    autoFocus
+                    maxLength={32}
+                    onFocus={(e) => e.currentTarget.select()}
+                    onBlur={(e) => e.currentTarget.form?.requestSubmit()}
+                    onKeyDown={(e) => e.key === "Escape" && setRenaming(null)}
+                    aria-label={t("inv.lo.nameLabel")}
                   />
-                ))}
-              </div>
-              {/* Both sides at once, always visible.
-                  Everywhere else on this board shows one side at a time, which
-                  is right for guns — but "who am I playing as" is a pair, and
-                  answering it used to mean opening the Agents group, reading it,
-                  switching side, and opening it again. An unset side shows the
-                  model the game will actually give you rather than an empty
-                  square, because "nothing" and "the default agent" look the same
-                  in game and only one of them is true. */}
-              <div className="inv4-agents">
-                {(["t", "ct"] as Side[]).map((s) => {
-                  const agent = itemById(s === "t" ? activeLoadout.agentT : activeLoadout.agentCT);
-                  const patches = agent?.stickers.filter(Boolean).length ?? 0;
-                  const agentSkin = agent ? asSkin(agent) : null;
-                  const agentWeapon = agent ? weaponByDef(agent.weaponDef) : null;
-                  return (
-                    <div key={s} className="inv4-agent-cell">
-                    <button
-                      className={`inv4-agent ${s} ${agent ? "filled" : "empty"}`}
-                      onClick={() => openAgentFor(s)}
-                      // Patches and radio commands are on the menu, and this
-                      // tile is where people look for their agent. It had no
-                      // menu at all.
-                      {...menuTarget({ skin: agentSkin, weapon: agentWeapon, side: s })}
-                      title={agent ? agent.skinName || agent.weaponName : "Default agent"}
-                    >
-                      <span className="inv4-agent-art">
-                        {/* eslint-disable-next-line @next/next/no-img-element */}
-                        <img
-                          src={agent?.image || DEFAULT_AGENT_ART}
-                          alt=""
-                          loading="lazy"
-                          onError={(e) => { e.currentTarget.src = DEFAULT_AGENT_ART; }}
-                        />
-                      </span>
-                      <span className="inv4-agent-text">
-                        <span className="inv4-agent-side">{s.toUpperCase()}</span>
-                        <span className="inv4-agent-name">
-                          {agent ? skinLabel(agent.skinName || agent.weaponName) : "Default"}
-                        </span>
-                        {patches > 0 && (
-                          <span className="inv4-agent-patches">{patches} patch{patches > 1 ? "es" : ""}</span>
-                        )}
-                      </span>
+                </form>
+              ) : (
+                <button
+                  className="iv-lo-pick"
+                  onClick={() => {
+                    setActiveLoadout(l.id);
+                    setLoSwitcherOpen(false);
+                  }}
+                  onDoubleClick={() => setRenaming(l.id)}
+                >
+                  <span className="iv-lo-name">{l.name}</span>
+                  <span className="iv-lo-meta num">{t("inv.lo.items", { n: loadoutSize(l) })}</span>
+                </button>
+              )}
+              {confirmDelete === l.id ? (
+                <span className="iv-lo-confirm">
+                  <button className="iv-mini danger" onClick={() => deleteLoadout(l)}>{t("auto.inventorysimulator.delete")}</button>
+                  <button className="iv-mini" onClick={() => setConfirmDelete(null)}>{t("inv.cancel")}</button>
+                </span>
+              ) : (
+                <span className="iv-lo-acts">
+                  <button
+                    className={`iv-lo-act ${l.favorite ? "on" : ""}`}
+                    title={t("inventory.loadouts.favourite")}
+                    aria-label={`${t("inventory.loadouts.favourite")}: ${l.name}`}
+                    aria-pressed={!!l.favorite}
+                    onClick={() => patchLoadout(l.id, { favorite: !l.favorite })}
+                  >
+                    <Star size={14} />
+                  </button>
+                  <button className="iv-lo-act" title={t("auto.inventorysimulator.rename")} aria-label={`${t("auto.inventorysimulator.rename")}: ${l.name}`} onClick={() => setRenaming(l.id)}>
+                    <Pencil size={14} />
+                  </button>
+                  <button className="iv-lo-act" title={t("auto.inventorysimulator.duplicate")} aria-label={`${t("auto.inventorysimulator.duplicate")}: ${l.name}`} onClick={() => duplicateLoadout(l)}>
+                    <Copy size={14} />
+                  </button>
+                  {store.loadouts.length > 1 && (
+                    <button className="iv-lo-act" title={t("auto.inventorysimulator.delete")} aria-label={`${t("auto.inventorysimulator.delete")}: ${l.name}`} onClick={() => setConfirmDelete(l.id)}>
+                      <Trash2 size={14} />
                     </button>
-                    <MenuDots skin={agentSkin} weapon={agentWeapon} side={s} />
-                    </div>
-                  );
-                })}
-              </div>
-
-              {rarityBreakdown.length > 0 && (
-                <div className="inv4-rarities">
-                  {rarityBreakdown.map((r) => (
-                    <span key={r.hex} className="inv4-rarity" title={`${r.count} × ${r.name}`}>
-                      <span className="inv4-rarity-dot" style={{ background: r.hex }} />
-                      {r.count} {r.name}
-                    </span>
-                  ))}
-                </div>
+                  )}
+                </span>
+              )}
+            </li>
+          );
+        })}
+      </ul>
+      <div className="iv-lolist-foot">
+        <button className="iv-btn wide" onClick={addLoadout}>
+          <Plus size={15} /> {t("auto.inventorysimulator.new_loadout")}
+        </button>
+        <div className="iv-pop-wrap">
+          <button
+            className="iv-btn wide"
+            data-pop-anchor
+            aria-expanded={importOpen}
+            onClick={(e) => {
+              e.stopPropagation();
+              setImportOpen((v) => !v);
+            }}
+          >
+            <Download size={15} /> {t("inv.import.title")}
+          </button>
+          {importOpen && (
+            <div className="iv-pop iv-import" onClick={(e) => e.stopPropagation()}>
+              <form
+                onSubmit={(e) => {
+                  e.preventDefault();
+                  if (importSource === "cstrike") importCstrike(importKey);
+                  else importByKey(importKey);
+                }}
+              >
+                <label className="iv-field-label" htmlFor="iv-import">{t("inventory.import.label")}</label>
+                <input
+                  id="iv-import"
+                  className="iv-input"
+                  placeholder={t("inventory.import.placeholder")}
+                  value={importKey}
+                  spellCheck={false}
+                  autoFocus
+                  onChange={(e) => setImportKey(e.target.value)}
+                />
+                <button className="iv-btn primary wide" type="submit" disabled={shareBusy || !importKey.trim()}>
+                  {shareBusy ? <LoaderCircle size={15} className="iv-spin" /> : <Download size={15} />}
+                  {importSource === "cstrike" ? t("inventory.import.fromCstrike") : t("inventory.import.fromKey")}
+                </button>
+              </form>
+              {session.steamId && (
+                <>
+                  <div className="iv-or">{t("inv.or")}</div>
+                  <button
+                    className="iv-btn wide"
+                    disabled={shareBusy}
+                    onClick={() => importCstrike(`https://inventory.cstrike.app/api/inventory/${session.steamId}.json`)}
+                  >
+                    <Sparkles size={15} /> {t("inv.import.mine")}
+                  </button>
+                </>
               )}
             </div>
           )}
+        </div>
+      </div>
+    </div>
+  );
 
-          {/* Only this inner wrapper scrolls, so the loadout name, colours and
-              rarity chips above stay put while the slot list moves. */}
-          {/*
-            The one weapon-type control on the page.
+  // ---------- Armory views ----------
+  const WeaponTile = ({ w, s }: { w: WeaponEntry; s: Side }) => {
+    const item = itemOnTile(w, s);
+    const skin: Skin | null = item
+      ? asSkin(item)
+      : w.category === "Agents"
+        ? { id: w.id, def: w.def, paint: 0, name: w.name, image: w.image, rarity: w.rarity || "default" }
+        : null;
+    const target = skin ? { skin, weapon: w, side: s, item } : null;
+    return (
+      <div
+        key={w.def}
+        className={`iv-tile ${item ? "equipped" : ""}`}
+        style={(item?.rarity || w.rarity) ? ({ "--rarity": item?.rarity || w.rarity } as React.CSSProperties) : undefined}
+      >
+        <button className="iv-tile-main" onClick={() => openWeapon(w, s)} {...menuProps(target)}>
+          <span className="iv-tile-art">
+            {/* eslint-disable-next-line @next/next/no-img-element */}
+            <img src={item?.image ?? w.image} alt="" loading="lazy" />
+          </span>
+          <span className="iv-tile-name">{w.name}</span>
+          <span className="iv-tile-sub">{item ? skinLabel(item.skinName) : SINGLE_SLOT.has(w.category) ? "" : t("inv.slot.default")}</span>
+          {item && <span className="iv-tile-flag" title={t("inv.equippedOn", { side: s.toUpperCase() })}><Check size={12} /></span>}
+        </button>
+        {MenuButton({ target: target, label: w.name })}
+      </div>
+    );
+  };
 
-            There were two. This rail opened a list of equipped slots, and a row
-            of chips in the right-hand pane changed what you were browsing —
-            same nine labels, two visual languages, two state variables, and only
-            one of them in the URL. Nothing said they were different questions,
-            so answering one and expecting the other was the normal experience.
-
-            Selecting a type here now does both: it opens that type's slots and
-            it points the browser at that type. Built from CATEGORY_ORDER rather
-            than from what happens to be equipped, so a type you own nothing in
-            is still reachable — off `boardGroups` it simply vanished from the
-            page until you equipped something, which you could not do without it.
-          */}
-          <div className="inv4-board-scroll">
-            <div className="inv4-types">
+  const CatalogView = () => (
+    <>
+      <div className="iv-armory-tools">
+        <label className="iv-search">
+          <Search size={15} aria-hidden />
+          <input
+            ref={searchRef}
+            className="iv-input"
+            placeholder={t("inv.armory.searchWeapons")}
+            value={weaponQuery}
+            onChange={(e) => setWeaponQuery(e.target.value)}
+            aria-label={t("inv.armory.searchWeapons")}
+          />
+          {weaponQuery && (
+            <button className="iv-icon-btn" onClick={() => setWeaponQuery("")} aria-label={t("inv.clear")}>
+              <X size={14} />
+            </button>
+          )}
+        </label>
+        <nav className="iv-jump" aria-label={t("inv.armory.types")}>
+          {sections.map(({ name, matching }) => {
+            const fill = typeFill.get(name);
+            return (
               <button
-                className={`inv4-type ${category === ALL_TYPES ? "open" : ""}`}
-                onClick={chooseAllTypes}
-                aria-pressed={category === ALL_TYPES}
+                key={name}
+                className={`iv-jump-chip ${activeSection === name ? "on" : ""}`}
+                disabled={matching.length === 0}
+                onClick={() => {
+                  setUnfolded((u) => ({ ...u, [name]: true }));
+                  setActiveSection(name);
+                  // After the unfold has rendered, so the section has its full height.
+                  window.setTimeout(() => jumpTo(name), 0);
+                }}
+                title={name}
               >
-                <InventoryIcon id="alltypes" size={18} className="inv4-type-icon" />
-                <span className="inv4-type-name">{t("inventory.rail.allTypes")}</span>
-                <span className="inv4-type-count num">{completeness.filled}/{completeness.total}</span>
+                {Glyph({ category: name, size: 16 })}
+                <span className="iv-jump-name">{name}</span>
+                {fill && fill.filled > 0 && <span className="iv-jump-count num">{fill.filled}</span>}
               </button>
+            );
+          })}
+        </nav>
+      </div>
+      {!catalog ? (
+        <div className="iv-grid">{Array.from({ length: 12 }, (_, i) => <div key={i} className="iv-tile skeleton" />)}</div>
+      ) : (
+        sections.map(({ name, matching }) => {
+          if (!matching.length) return null;
+          const folded = !unfolded[name] && !weaponQuery && matching.length > SECTION_PREVIEW;
+          const list = folded ? matching.slice(0, SECTION_PREVIEW) : matching;
+          return (
+            <section
+              key={name}
+              className="iv-section"
+              data-section={name}
+              ref={(el) => {
+                sectionRefs.current[name] = el;
+              }}
+            >
+              <h3 className="iv-section-title">
+                {Glyph({ category: name, size: 18 })}
+                {name}
+                <span className="num iv-muted">{matching.length}</span>
+              </h3>
+              <div className="iv-grid">{list.map((w) => WeaponTile({ w, s: side }))}</div>
+              {folded && (
+                <button className="iv-more" onClick={() => setUnfolded((u) => ({ ...u, [name]: true }))}>
+                  <ChevronDown size={14} /> {t("inv.armory.showAll", { n: matching.length })}
+                </button>
+              )}
+            </section>
+          );
+        })
+      )}
+      {catalog && sections.every((x) => !x.matching.length) && (
+        <p className="iv-empty">{t("inv.armory.noWeapons", { q: weaponQuery })}</p>
+      )}
+    </>
+  );
 
-              {railTypes.map(({ group, filled, total }) => {
-                const open = category === group;
+  const WeaponView = ({ w }: { w: WeaponEntry }) => {
+    const current = currentItem;
+    const currentTarget = current ? { skin: asSkin(current), weapon: weaponByDef(current.weaponDef) ?? w, side, item: current } : null;
+    const equipTo = equipSides(w.team);
+    const equipLabel = equipTo.map((s) => s.toUpperCase()).join(" + ") || "—";
+    return (
+      <div className="iv-wv">
+        <div className="iv-wv-head">
+          <button className="iv-ghost-btn" onClick={closeWeapon}>
+            <ChevronLeft size={16} /> {t("inv.armory.back")}
+          </button>
+          <h3>
+            {Glyph({ category: w.category, size: 16 })}
+            {w.name}
+          </h3>
+        </div>
+
+        {/* What is in this slot now, and what to do with it. */}
+        <div
+          className={`iv-current ${current ? "" : "empty"}`}
+          style={current?.rarity ? ({ "--rarity": current.rarity } as React.CSSProperties) : undefined}
+          {...menuProps(currentTarget)}
+        >
+          <span className="iv-current-art">
+            {/* eslint-disable-next-line @next/next/no-img-element */}
+            <img src={current?.image ?? w.image} alt="" />
+          </span>
+          <div className="iv-current-text">
+            <span className="iv-slot-label">
+              <span className={`iv-side-tag ${side}`}>{side.toUpperCase()}</span> {t("inv.wv.inSlot")}
+            </span>
+            <strong>{current ? current.skinName : t("inv.wv.nothing")}</strong>
+            {current && <span className="iv-muted">{rarityName(current.rarity)}</span>}
+            {StatBadges({ item: current })}
+            {current && (current.stickers?.some(Boolean) || current.charm) && (
+              <span className="iv-applied">
+                {current.stickers.filter(Boolean).map((st, i) => (
+                  // eslint-disable-next-line @next/next/no-img-element
+                  <img key={i} src={st!.image} alt="" />
+                ))}
+                {current.charm && (
+                  // eslint-disable-next-line @next/next/no-img-element
+                  <img src={current.charm.image} alt="" />
+                )}
+              </span>
+            )}
+          </div>
+          {current && (
+            <div className="iv-current-acts">
+              {supportsStickers && (
+                <button className="iv-btn" onClick={() => setEditor3dOpen(true)}>
+                  <Sticker size={15} /> {builderKind === "agent" ? t("inv.menu.patches") : t("inv.menu.stickers")}
+                </button>
+              )}
+              {builderKind === "agent" && (
+                <button className="iv-btn" onClick={() => setRadioFor(weaponByDef(current.weaponDef) ?? w)}>
+                  <Radio size={15} /> {t("inv.menu.radio")}
+                </button>
+              )}
+              <button
+                className="iv-btn"
+                onClick={() => {
+                  clearSlot(current.weaponDef, builderKind, side);
+                  loadFinish(undefined);
+                }}
+              >
+                <X size={15} /> {t("auto.inventorysimulator.remove_skin")}
+              </button>
+            </div>
+          )}
+        </div>
+
+        {/* The finish. Applies to the next pick, and to the equipped item via Apply. */}
+        {(supportsWear || supportsStatTrak || supportsNameTag) && (
+          <div className="iv-finish">
+            {supportsWear && (
+              <div className="iv-field wear">
+                <div className="iv-field-row">
+                  <label className="iv-field-label" htmlFor="iv-wear">{t("auto.inventorysimulator.wear")}</label>
+                  <span className="num iv-wear-val">{wear.toFixed(3)} <em>{wearLabel(wear)}</em></span>
+                </div>
+                <input
+                  id="iv-wear"
+                  type="range"
+                  className="iv-range"
+                  min={0}
+                  max={1}
+                  step={0.001}
+                  value={wear}
+                  onChange={(e) => setWear(Number(e.target.value))}
+                />
+                <div className="iv-wear-stops">
+                  {WEAR_STOPS.map((st) => (
+                    <button
+                      key={st.label}
+                      className={wearShort(wear) === st.label ? "on" : ""}
+                      style={{ left: `${st.at * 100}%` }}
+                      onClick={() => setWear(st.at === 0 ? 0 : st.at + 0.001)}
+                    >
+                      {st.label}
+                    </button>
+                  ))}
+                </div>
+              </div>
+            )}
+            {supportsWear && (
+              <div className="iv-field">
+                <label className="iv-field-label" htmlFor="iv-seed">{t("inv.wv.pattern")}</label>
+                <div className="iv-inline">
+                  <input
+                    id="iv-seed"
+                    className="iv-input num"
+                    type="number"
+                    min={0}
+                    max={1000}
+                    value={seed}
+                    onChange={(e) => setSeed(Math.max(0, Math.min(1000, Number(e.target.value) || 0)))}
+                  />
+                  <button className="iv-icon-btn" title={t("inv.wv.randomPattern")} aria-label={t("inv.wv.randomPattern")} onClick={() => setSeed(Math.floor(Math.random() * 1001))}>
+                    <Dices size={15} />
+                  </button>
+                </div>
+              </div>
+            )}
+            {supportsNameTag && (
+              <div className="iv-field">
+                <label className="iv-field-label" htmlFor="iv-tag">{t("auto.inventorysimulator.name_tag")}</label>
+                <input id="iv-tag" className="iv-input" maxLength={20} value={nameTag} placeholder={t("auto.inventorysimulator.none")} onChange={(e) => setNameTag(e.target.value)} />
+              </div>
+            )}
+            {supportsStatTrak && (
+              <label className="iv-toggle">
+                <input type="checkbox" checked={statTrak} onChange={(e) => setStatTrak(e.target.checked)} />
+                <span className="iv-toggle-ui" aria-hidden />
+                StatTrak™
+              </label>
+            )}
+            {finishDirty && current && (
+              <button
+                className="iv-btn primary"
+                onClick={() => {
+                  // Re-craft onto every side that holds the item now, not just this one.
+                  const other: Side = side === "t" ? "ct" : "t";
+                  const onOther = !!activeLoadout && slotRef(activeLoadout, builderKind, other, current.weaponDef) === current.id;
+                  equipSkin(asSkin(current), w, onOther ? "both" : side);
+                }}
+              >
+                <Check size={15} /> {t("inv.wv.apply")}
+              </button>
+            )}
+          </div>
+        )}
+
+        {/* Things already made for this weapon, equippable as they are. */}
+        {craftsForWeapon.length > 0 && (
+          <div className="iv-crafts">
+            <h4>{t("inv.wv.crafts")} <span className="num iv-muted">{craftsForWeapon.length}</span></h4>
+            <div className="iv-crafts-row">
+              {craftsForWeapon.map((item) => {
+                const on = item.id === current?.id;
                 return (
                   <button
-                    key={group}
-                    className={`inv4-type ${open ? "open" : ""}`}
+                    key={item.id}
+                    className={`iv-craft ${on ? "on" : ""}`}
+                    style={{ "--rarity": item.rarity } as React.CSSProperties}
+                    title={`${item.skinName} · ${wearShort(item.wear)}${item.statTrak ? " · ST" : ""}`}
                     onClick={() => {
-                      chooseCategory(group);
-                      setOpenBoardType(group);
+                      assignItem(item, bothSides ? "both" : side);
+                      loadFinish(item);
                     }}
-                    aria-pressed={open}
+                    {...menuProps({ skin: asSkin(item), weapon: w, side, item })}
                   >
-                    <InventoryIcon id={categoryIconId(group)} size={18} className="inv4-type-icon" />
-                    <span className="inv4-type-name">{group}</span>
-                    <span className="inv4-type-count num">{filled}/{total}</span>
+                    {/* eslint-disable-next-line @next/next/no-img-element */}
+                    <img src={item.image} alt="" loading="lazy" />
+                    <span className="num">{wearShort(item.wear)}{item.statTrak ? " ST" : ""}</span>
                   </button>
                 );
               })}
             </div>
-
-            {openBoardType && (
-              <ul className="inv4-slots">
-                {(boardGroups.find(([g]) => g === openBoardType)?.[1] ?? []).map((slot) => {
-                  const slotSkin = slot.item ? asSkin(slot.item) : null;
-                  const slotWeapon = slot.item ? weaponByDef(slot.item.weaponDef) : null;
-                  return (
-                  <li key={slot.key} className="inv4-slot-li">
-                    <button
-                      className={`inv4-slot ${slot.item ? "filled" : "empty"}`}
-                      onClick={() => openBoardSlot(slot, side)}
-                      {...menuTarget({ skin: slotSkin, weapon: slotWeapon, side, boardSlot: slot })}
-                      style={slot.item?.rarity ? ({ "--rarity": slot.item.rarity } as React.CSSProperties) : undefined}
-                    >
-                      <span className="inv4-slot-art">
-                        {slot.item ? (
-                          // eslint-disable-next-line @next/next/no-img-element
-                          <img src={slot.item.image} alt="" loading="lazy" />
-                        ) : (
-                          <span className="inv4-slot-none" aria-hidden />
-                        )}
-                      </span>
-                      <span className="inv4-slot-text">
-                        <span className="inv4-slot-weapon">{slot.label}</span>
-                        <span className="inv4-slot-skin">
-                          {slot.item ? skinLabel(slot.item.skinName) : "Default"}
-                        </span>
-                        {(() => {
-                          const kills = killsFor(slot.item);
-                          if (kills === null) return null;
-                          return (
-                            <span className="inv4-slot-meta">
-                              <span className="inv4-tag-st">
-                                ST{" "}
-                                {kills > 0
-                                  ? kills.toLocaleString()
-                                  : t("auto.inventorysimulator.stattrak_none")}
-                              </span>
-                            </span>
-                          );
-                        })()}
-                      </span>
-                    </button>
-                    <MenuDots skin={slotSkin} weapon={slotWeapon} side={side} boardSlot={slot} />
-                  </li>
-                )})}
-              </ul>
-            )}
           </div>
-        </aside>
+        )}
 
-        {/* ===== RIGHT: browse and choose ===== */}
-        <section className="inv4-browse">
-          <div className="inv4-topbar">
-            <div className="inv4-sides" role="group" aria-label={t("auto.inventorysimulator.side")}>
+        <div className="iv-filters">
+          <label className="iv-search">
+            <Search size={15} aria-hidden />
+            <input
+              ref={searchRef}
+              className="iv-input"
+              placeholder={t("auto.inventorysimulator.search_skins")}
+              value={skinSearch}
+              onChange={(e) => setSkinSearch(e.target.value)}
+              aria-label={t("auto.inventorysimulator.search_skins")}
+            />
+          </label>
+          <select className="iv-input iv-select" value={skinSort} onChange={(e) => setSkinSort(e.target.value as SkinSort)} aria-label={t("auto.inventorysimulator.sort_skins")}>
+            <option value="quality">{t("auto.inventorysimulator.quality")}</option>
+            <option value="name">{t("auto.inventorysimulator.name_a_z")}</option>
+            <option value="newest">{t("auto.inventorysimulator.newest")}</option>
+            <option value="fav">{t("auto.inventorysimulator.favorites_first")}</option>
+          </select>
+          {collections.length > 1 && (
+            <select className="iv-input iv-select" value={collectionFilter} onChange={(e) => setCollectionFilter(e.target.value)} aria-label={t("auto.inventorysimulator.collection")}>
+              <option value="">{t("auto.inventorysimulator.all_collections")}</option>
+              {collections.map((c) => (
+                <option key={c} value={c}>{c}</option>
+              ))}
+            </select>
+          )}
+          <button className={`iv-chip ${favOnly ? "on" : ""}`} aria-pressed={favOnly} onClick={() => setFavOnly((v) => !v)}>
+            <Heart size={14} /> {t("inv.favourites")}
+          </button>
+          <button className="iv-chip" onClick={surpriseMe} disabled={skinsLoading} title={t("auto.inventorysimulator.roll_a_random_skin_from_the_cu")}>
+            <Shuffle size={14} /> {t("inv.random")}
+          </button>
+        </div>
+
+        <p className="iv-hint">
+          {t("inv.wv.clickHint", { side: equipLabel })}
+        </p>
+
+        {skinsLoading ? (
+          <div className="iv-grid skins">{Array.from({ length: 9 }, (_, i) => <div key={i} className="iv-tile skeleton" />)}</div>
+        ) : shownSkins.length === 0 ? (
+          <p className="iv-empty">{t("inv.wv.noSkins")}</p>
+        ) : (
+          <div className="iv-grid skins">
+            {shownSkins.map((s) => {
+              const fav = favorites.has(skinKey(s.def, s.paint));
+              const on = s.id === currentSkinId;
+              const picked = selectedSkins.has(s.id);
+              return (
+                <div
+                  key={s.id}
+                  className={`iv-tile skin ${on ? "equipped" : ""} ${picked ? "picked" : ""}`}
+                  style={{ "--rarity": s.rarity } as React.CSSProperties}
+                >
+                  <button
+                    className="iv-tile-main"
+                    onClick={() => equipSkin(s, w)}
+                    {...menuProps({ skin: s, weapon: w, side })}
+                    title={on ? t("inv.equippedOn", { side: side.toUpperCase() }) : t("inv.equipTo", { side: equipLabel })}
+                  >
+                    <span className="iv-tile-art">
+                      {/* eslint-disable-next-line @next/next/no-img-element */}
+                      <img src={s.image} alt="" loading="lazy" />
+                    </span>
+                    <span className="iv-tile-name">{skinLabel(s.name)}</span>
+                    <span className="iv-tile-sub">{rarityName(s.rarity)}</span>
+                    {on && <span className="iv-tile-flag"><Check size={12} /></span>}
+                  </button>
+                  <input
+                    type="checkbox"
+                    className="iv-pick"
+                    checked={picked}
+                    aria-label={t("inv.select", { name: skinLabel(s.name) })}
+                    onChange={(e) => {
+                      const n = new Set(selectedSkins);
+                      if (e.target.checked) n.add(s.id);
+                      else n.delete(s.id);
+                      setSelectedSkins(n);
+                    }}
+                  />
+                  <button
+                    className={`iv-heart ${fav ? "on" : ""}`}
+                    aria-pressed={fav}
+                    aria-label={fav ? t("inv.menu.unfavourite") : t("inv.menu.favourite")}
+                    onClick={() => toggleFavorite(s.def, s.paint)}
+                  >
+                    <Heart size={14} />
+                  </button>
+                  {MenuButton({ target: { skin: s, weapon: w, side }, label: skinLabel(s.name) })}
+                </div>
+              );
+            })}
+          </div>
+        )}
+      </div>
+    );
+  };
+
+  const VaultView = () => {
+    const groups: { key: string; title: string; items: InventoryItem[] }[] = [
+      { key: "equipped", title: t("inv.vault.equipped"), items: vaultItems.filter((i) => equippedIds.has(i.id)) },
+      { key: "imported", title: t("inv.vault.imported"), items: vaultItems.filter((i) => !equippedIds.has(i.id) && i.source === "cstrike") },
+      { key: "other", title: t("inv.vault.stored"), items: vaultItems.filter((i) => !equippedIds.has(i.id) && i.source !== "cstrike") },
+    ];
+    return (
+      <>
+        <div className="iv-armory-tools">
+          <label className="iv-search">
+            <Search size={15} aria-hidden />
+            <input
+              ref={searchRef}
+              className="iv-input"
+              placeholder={t("inv.vault.search")}
+              value={vaultQuery}
+              onChange={(e) => setVaultQuery(e.target.value)}
+              aria-label={t("inv.vault.search")}
+            />
+          </label>
+          <nav className="iv-jump" aria-label={t("inv.armory.types")}>
+            <button className={`iv-jump-chip ${vaultType === "" ? "on" : ""}`} onClick={() => setVaultType("")}>
+              <span className="iv-jump-name">{t("inventory.rail.allTypes")}</span>
+              <span className="iv-jump-count num">{store.items.length}</span>
+            </button>
+            {vaultTypes.map((c) => (
+              <button key={c} className={`iv-jump-chip ${vaultType === c ? "on" : ""}`} onClick={() => setVaultType(vaultType === c ? "" : c)} title={c}>
+                {Glyph({ category: c, size: 16 })}
+                <span className="iv-jump-name">{c}</span>
+              </button>
+            ))}
+          </nav>
+        </div>
+        {store.items.length === 0 ? (
+          <div className="iv-empty big">
+            <Archive size={28} />
+            <p>{t("inv.vault.empty")}</p>
+            <button className="iv-btn" onClick={() => setArmoryMode("catalog")}>{t("inv.vault.browse")}</button>
+          </div>
+        ) : (
+          groups.map((g) =>
+            g.items.length === 0 ? null : (
+              <section key={g.key} className="iv-section">
+                <button className="iv-section-title fold" aria-expanded={!vaultFolded[g.key]} onClick={() => setVaultFolded((f) => ({ ...f, [g.key]: !f[g.key] }))}>
+                  <ChevronDown size={14} className="iv-fold-caret" />
+                  {g.title}
+                  <span className="num iv-muted">{g.items.length}</span>
+                </button>
+                {!vaultFolded[g.key] && (
+                  <div className="iv-grid">
+                    {g.items.map((item) => {
+                      const w = weaponByDef(item.weaponDef);
+                      const picked = selectedItems.has(item.id);
+                      const target = w ? { skin: asSkin(item), weapon: w, side, item } : null;
+                      return (
+                        <div
+                          key={item.id}
+                          className={`iv-tile ${equippedIds.has(item.id) ? "equipped" : ""} ${picked ? "picked" : ""}`}
+                          style={{ "--rarity": item.rarity } as React.CSSProperties}
+                        >
+                          <button
+                            className="iv-tile-main"
+                            onClick={() => (w ? openWeapon(w, canHold(item.team, side) ? side : (item.team as Side), item) : undefined)}
+                            {...menuProps(target)}
+                          >
+                            <span className="iv-tile-art">
+                              {/* eslint-disable-next-line @next/next/no-img-element */}
+                              <img src={item.image} alt="" loading="lazy" />
+                            </span>
+                            <span className="iv-tile-name">{item.weaponName}</span>
+                            <span className="iv-tile-sub">{skinLabel(item.skinName)}</span>
+                            {StatBadges({ item })}
+                          </button>
+                          <input
+                            type="checkbox"
+                            className="iv-pick"
+                            checked={picked}
+                            aria-label={t("inv.select", { name: item.skinName })}
+                            onChange={(e) => {
+                              const n = new Set(selectedItems);
+                              if (e.target.checked) n.add(item.id);
+                              else n.delete(item.id);
+                              setSelectedItems(n);
+                            }}
+                          />
+                          {MenuButton({ target: target, label: item.skinName })}
+                        </div>
+                      );
+                    })}
+                  </div>
+                )}
+              </section>
+            ),
+          )
+        )}
+      </>
+    );
+  };
+
+  /** Bulk actions, only once something is selected. */
+  const SelectionBar = () => {
+    if (armoryMode === "vault" && selectedItems.size > 0) {
+      const items = store.items.filter((i) => selectedItems.has(i.id));
+      return (
+        <div className="iv-selbar">
+          <span className="num">{t("inv.sel.count", { n: selectedItems.size })}</span>
+          <button
+            className="iv-btn primary"
+            onClick={() => {
+              const defs = new Set(items.map((i) => `${i.kind}:${i.kind === "weapon" ? i.weaponDef : ""}`));
+              if (defs.size !== items.length) return showToast(t("inv.toast.sameSlot"));
+              setStore((cur) => ({
+                ...cur,
+                loadouts: cur.loadouts.map((l) => {
+                  if (l.id !== cur.activeLoadoutId) return l;
+                  let next = l;
+                  for (const item of items)
+                    for (const s of equipSides(item.team)) next = withSlot(next, item.kind as SlotKind, s, item.weaponDef, item.id);
+                  return next;
+                }),
+              }));
+              setSelectedItems(new Set());
+              showToast(t("inv.toast.equippedMany", { n: items.length }));
+            }}
+          >
+            <Check size={15} /> {t("inv.sel.equip", { side: bothSides ? "T + CT" : side.toUpperCase() })}
+          </button>
+          <button
+            className="iv-btn danger"
+            onClick={() => {
+              deleteItems(new Set(selectedItems));
+              setSelectedItems(new Set());
+            }}
+          >
+            <Trash2 size={15} /> {t("auto.inventorysimulator.delete")}
+          </button>
+          <button className="iv-ghost-btn" onClick={() => setSelectedItems(new Set(vaultItems.map((i) => i.id)))}>{t("inv.sel.all")}</button>
+          <button className="iv-icon-btn" onClick={() => setSelectedItems(new Set())} aria-label={t("inv.clear")}><X size={15} /></button>
+        </div>
+      );
+    }
+    if (armoryMode === "catalog" && weapon && selectedSkins.size > 0) {
+      const picked = skins.filter((s) => selectedSkins.has(s.id));
+      return (
+        <div className="iv-selbar">
+          <span className="num">{t("inv.sel.count", { n: selectedSkins.size })}</span>
+          <button
+            className="iv-btn"
+            onClick={() => {
+              for (const s of picked) equipSkin(s, weapon, undefined, true);
+              setSelectedSkins(new Set());
+            }}
+          >
+            <Archive size={15} /> {t("inv.menu.addToVault")}
+          </button>
+          <button
+            className="iv-btn"
+            onClick={() => {
+              setStore((cur) => {
+                const set = new Set(cur.favorites ?? []);
+                for (const s of picked) set.add(skinKey(s.def, s.paint));
+                return { ...cur, favorites: Array.from(set) };
+              });
+              setSelectedSkins(new Set());
+            }}
+          >
+            <Heart size={15} /> {t("inv.menu.favourite")}
+          </button>
+          <button className="iv-ghost-btn" onClick={() => setSelectedSkins(new Set(shownSkins.map((s) => s.id)))}>{t("inv.sel.all")}</button>
+          <button className="iv-icon-btn" onClick={() => setSelectedSkins(new Set())} aria-label={t("inv.clear")}><X size={15} /></button>
+        </div>
+      );
+    }
+    return null;
+  };
+
+  const borrowUrl = share && origin ? `${origin}/inventory?borrow=${share.key}` : "";
+  const lo = activeLoadout;
+
+  // ---------- Render ----------
+  return (
+    <div className={`iv ${armoryOpen ? "armory-open" : ""}`}>
+      {/* ===== Loadouts ===== */}
+      <aside className="iv-col iv-col-lo">
+        {LoadoutList({})}
+      </aside>
+
+      {/* ===== Board ===== */}
+      <main className="iv-col iv-col-board">
+        {lo && (
+          <header className="iv-head" style={{ "--lo": lo.color ?? "var(--color-neutral-500)" } as React.CSSProperties}>
+            <div className="iv-head-id">
+              <div className="iv-pop-wrap iv-lo-switch">
+                <button
+                  className="iv-btn"
+                  data-pop-anchor
+                  aria-expanded={loSwitcherOpen}
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    setLoSwitcherOpen((v) => !v);
+                  }}
+                >
+                  {t("auto.inventorysimulator.loadouts")} <span className="num">{store.loadouts.length}</span>
+                  <ChevronDown size={14} />
+                </button>
+                {loSwitcherOpen && (
+                  <div className="iv-pop iv-pop-lo" onClick={(e) => e.stopPropagation()}>
+                    {LoadoutList({ compact: true })}
+                  </div>
+                )}
+              </div>
+
+              <div className="iv-pop-wrap">
+                <button
+                  className="iv-swatch"
+                  data-pop-anchor
+                  style={{ background: lo.color ?? "var(--color-neutral-500)" }}
+                  aria-label={t("inv.lo.colour")}
+                  title={t("inv.lo.colour")}
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    setColorOpen((v) => !v);
+                  }}
+                />
+                {colorOpen && (
+                  <div className="iv-pop iv-colors" onClick={(e) => e.stopPropagation()}>
+                    {LOADOUT_COLORS.map((c) => (
+                      <button
+                        key={c.hex}
+                        className={`iv-swatch ${lo.color === c.hex ? "on" : ""}`}
+                        style={{ background: c.hex }}
+                        title={c.name}
+                        aria-label={c.name}
+                        onClick={() => {
+                          patchLoadout(lo.id, { color: c.hex });
+                          setColorOpen(false);
+                        }}
+                      />
+                    ))}
+                  </div>
+                )}
+              </div>
+
+              {renaming === `head-${lo.id}` ? (
+                <form
+                  className="iv-head-rename"
+                  onSubmit={(e) => {
+                    e.preventDefault();
+                    const name = String(new FormData(e.currentTarget).get("name") ?? "").trim();
+                    if (name) patchLoadout(lo.id, { name });
+                    setRenaming(null);
+                  }}
+                >
+                  <input
+                    name="name"
+                    className="iv-input iv-title-input"
+                    defaultValue={lo.name}
+                    autoFocus
+                    maxLength={32}
+                    onFocus={(e) => e.currentTarget.select()}
+                    onBlur={(e) => e.currentTarget.form?.requestSubmit()}
+                    onKeyDown={(e) => e.key === "Escape" && setRenaming(null)}
+                    aria-label={t("inv.lo.nameLabel")}
+                  />
+                </form>
+              ) : (
+                <h1 className="iv-title">
+                  <button onClick={() => setRenaming(`head-${lo.id}`)} title={t("auto.inventorysimulator.rename")}>
+                    {lo.name}
+                    <Pencil size={14} className="iv-title-pen" aria-hidden />
+                  </button>
+                </h1>
+              )}
+              <button
+                className={`iv-icon-btn star ${lo.favorite ? "on" : ""}`}
+                aria-pressed={!!lo.favorite}
+                title={t("inventory.loadouts.favourite")}
+                aria-label={t("inventory.loadouts.favourite")}
+                onClick={() => patchLoadout(lo.id, { favorite: !lo.favorite })}
+              >
+                <Star size={16} />
+              </button>
+              <span className="iv-hint-cmd" title={t("inv.lo.cmdTitle")}>
+                <Terminal size={12} /> /loadout {lo.name}
+              </span>
+            </div>
+
+            <div className="iv-head-stats">
+              <div className="iv-meter" title={t("inv.meterTitle", { n: completeness.filled, total: completeness.total })}>
+                <span className="iv-meter-label">
+                  <span className="num">{completeness.filled}/{completeness.total}</span> {t("auto.inventorysimulator.dressed")}
+                </span>
+                <span className="iv-meter-track">
+                  <span className="iv-meter-fill" style={{ width: `${completeness.pct}%` }} />
+                </span>
+              </div>
+              {rarityBreakdown.length > 0 && (
+                <div className="iv-rarities" aria-label={t("inv.rarities")}>
+                  {rarityBreakdown.map((r) => (
+                    <span key={r.hex} className="iv-rarity" title={`${r.count} × ${r.name}`} style={{ "--rarity": r.hex } as React.CSSProperties}>
+                      <span className="num">{r.count}</span>
+                    </span>
+                  ))}
+                </div>
+              )}
+              {seasonStats?.season && (
+                <div className="iv-season" title={seasonStats.season}>
+                  <span className="num">{seasonStats.seasonKills.toLocaleString()}</span>
+                  <span>{t("auto.inventorysimulator.season_kills")} · {seasonStats.season}</span>
+                </div>
+              )}
+            </div>
+
+            <div className="iv-head-acts">
+              <button className="iv-btn" disabled={shareBusy} onClick={() => shareLoadout(lo)}>
+                {shareBusy ? <LoaderCircle size={15} className="iv-spin" /> : <Share2 size={15} />}
+                {t("common.share")}
+              </button>
+              {session.authenticated && (
+                <button className={`iv-btn primary ${equipState}`} disabled={equipState === "busy"} onClick={equipInGame}>
+                  {equipState === "busy" ? <LoaderCircle size={15} className="iv-spin" /> : equipState === "done" ? <Check size={15} /> : <Gamepad2 size={15} />}
+                  {equipState === "done" ? t("inv.equipped") : t("inv.equipInGame")}
+                </button>
+              )}
+              {!armoryOpen && (
+                <button className="iv-btn accent" onClick={() => openArmory()}>
+                  <Search size={15} /> {t("inv.armory.open")}
+                </button>
+              )}
+            </div>
+          </header>
+        )}
+
+        <div className="iv-board">
+          {SideColumn({ s: "t", board: boardT })}
+          {SideColumn({ s: "ct", board: boardCT })}
+        </div>
+
+        {hydrated && !session.authenticated && (
+          <div className="iv-guest">
+            {t("auto.inventorysimulator.guest_saved_on_this_device")}{" "}
+            <a href="/api/auth/steam/login">{t("auto.inventorysimulator.sign_in")}</a>{" "}
+            {t("auto.inventorysimulator.to_sync_in_game")}
+          </div>
+        )}
+      </main>
+
+      {/* ===== Armory ===== */}
+      {armoryOpen && (
+        <section className="iv-col iv-col-armory" aria-label={t("inv.armory.title")}>
+          <header className="iv-armory-head">
+            <div className="iv-seg" role="tablist">
+              <button role="tab" aria-selected={armoryMode === "catalog"} className={armoryMode === "catalog" ? "on" : ""} onClick={() => { setArmoryMode("catalog"); writeUrl({ armory: "1" }); }}>
+                <Search size={14} /> {t("inv.armory.catalog")}
+              </button>
+              <button role="tab" aria-selected={armoryMode === "vault"} className={armoryMode === "vault" ? "on" : ""} onClick={() => { setArmoryMode("vault"); writeUrl({ armory: "vault" }); }}>
+                <Archive size={14} /> {t("inv.armory.vault")} <span className="num">{store.items.length}</span>
+              </button>
+            </div>
+            <div className="iv-target" role="group" aria-label={t("inv.armory.equipTo")}>
+              <span className="iv-target-label">{t("inv.armory.equipTo")}</span>
               {SIDES.map((s) => (
-                <button key={s} className={`inv4-sidebtn side-${s} ${side === s ? "active" : ""}`} onClick={() => chooseSide(s)}>
+                <button key={s} className={`iv-side-btn ${s} ${side === s ? "on" : ""}`} aria-pressed={side === s} onClick={() => { setSide(s); writeUrl({ side: s }); if (weapon) loadFinish(itemForEntry(weapon, s)); }}>
                   {s.toUpperCase()}
                 </button>
               ))}
+              <button className={`iv-side-btn both ${bothSides ? "on" : ""}`} aria-pressed={bothSides} title={t("inv.armory.bothTitle")} onClick={() => setBothSides((v) => !v)}>
+                <LinkIcon size={12} /> {t("inv.armory.both")}
+              </button>
             </div>
-            {/*
-              Where you are, as a path you can walk back up.
-
-              This said the type and nothing else, which answered "what am I
-              looking at" and not "how did I get here" — and the way out of a
-              skin list was a back button in a different bar. Every step is a
-              link to that step, so leaving is the same gesture as arriving.
-            */}
-            <nav className="inv4-crumbs" aria-label="Where you are">
-              <button
-                className="inv4-crumb"
-                onClick={() => setLoMenuOpen(true)}
-                title={t("inventory.loadouts.switch")}
-              >
-                <span
-                  className="inv4-lo-dot"
-                  style={{ background: activeLoadout?.color ?? "var(--color-neutral-500)" }}
-                />
-                {activeLoadout?.name ?? "—"}
-              </button>
-
-              <span className="inv4-crumb-sep" aria-hidden>›</span>
-
-              <button
-                className={`inv4-crumb side-${side}`}
-                onClick={() => chooseSide(side === "t" ? "ct" : "t")}
-                title={t("inventory.crumbs.flipSide")}
-              >
-                {side.toUpperCase()}
-              </button>
-
-              <span className="inv4-crumb-sep" aria-hidden>›</span>
-
-              <button
-                className={`inv4-crumb ${weapon ? "" : "here"}`}
-                onClick={() => (category === ALL_TYPES ? chooseAllTypes() : chooseCategory(category))}
-              >
-                <InventoryIcon
-                  id={category === ALL_TYPES ? "alltypes" : categoryIconId(category)}
-                  size={15}
-                />
-                {category === ALL_TYPES ? t("inventory.rail.allTypes") : category}
-              </button>
-
-              {weapon && (
-                <>
-                  <span className="inv4-crumb-sep" aria-hidden>›</span>
-                  <span className="inv4-crumb here">{weapon.name}</span>
-                </>
-              )}
-            </nav>
+            <button className="iv-icon-btn" onClick={closeArmory} aria-label={t("inv.armory.close")} title={t("inv.armory.close")}>
+              <X size={16} />
+            </button>
+          </header>
+          <div className="iv-armory-scroll" ref={armoryScroll}>
+            {armoryMode === "vault" ? VaultView() : weapon ? WeaponView({ w: weapon }) : CatalogView()}
           </div>
-
-          {category === ALL_TYPES ? (
-            !catalog ? (
-              <p className="empty-hint">{t("auto.inventorysimulator.loading")}</p>
-            ) : (
-              // Every weapon of every type, skinned or not, grouped under a
-              // small heading. This is the "what does my loadout actually look
-              // like" view — the store answers a different question and shows
-              // one type at a time.
-              <div className="inv4-preview">
-                {CATEGORY_ORDER.filter((c) => catalog[c]?.length).map((c) => {
-                  const isSingleSlot = c === "Agents" || c === "Knives" || c === "Gloves" || c === "Charms";
-                  const kind = kindOfCategory(c);
-                  const weaponsToRender = isSingleSlot 
-                    ? (() => {
-                        if (c === "Agents") {
-                          const wT = (() => {
-                            const equippedT = slotItemForChooser(catalog[c][0].def, kind, "t");
-                            return equippedT ? (catalog[c].find(x => x.def === equippedT.weaponDef) || catalog[c][0]) : catalog[c][0];
-                          })();
-                          const wCT = (() => {
-                            const equippedCT = slotItemForChooser(catalog[c][0].def, kind, "ct");
-                            return equippedCT ? (catalog[c].find(x => x.def === equippedCT.weaponDef) || catalog[c][0]) : catalog[c][0];
-                          })();
-                          // Return wrapped objects to pass side info if needed, but since the map uses `side` state, we must render them directly or map them over custom elements.
-                          return [ { ...wT, forceSide: "t" }, { ...wCT, forceSide: "ct" } ];
-                        }
-                        const equippedItem = slotItemForChooser(catalog[c][0].def, kind, side); // The def doesn't matter for these kinds in slotItemForChooser
-                        if (equippedItem) {
-                          const w = catalog[c].find(x => x.def === equippedItem.weaponDef) || catalog[c][0];
-                          return [w];
-                        }
-                        return [catalog[c][0]]; // Return a placeholder (e.g., first item) if none equipped, but we'll show it as unequipped
-                      })()
-                    : catalog[c];
-                  
-                  return (
-                  <section key={c} className="inv4-preview-group">
-                    <h3 className="inv4-preview-title">{c}</h3>
-                    <div className="inv4-preview-row">
-                      {weaponsToRender.map((w: any) => {
-                        const effectiveSide = w.forceSide || side;
-                        const item = slotItemFor(w.def, kind, effectiveSide);
-                        const cellSkin = item ? asSkin(item) : null;
-                        return (
-                          <div key={`${w.def}-${w.forceSide || 'base'}`} className="inv4-preview-holder">
-                          <button
-                            className={`inv4-preview-cell ${item ? "has-skin" : ""}`}
-                            style={item?.rarity ? ({ "--rarity": item.rarity } as React.CSSProperties) : undefined}
-                            onClick={() => {
-                              // Stays on All types: opening a skin list no
-                              // longer costs you the view you opened it from.
-                              if (w.forceSide) chooseSide(w.forceSide as Side);
-                              if (isSingleSlot) chooseCategory(c); else openWeapon(w);
-                            }}
-                            // The overview is where you notice something is
-                            // wrong, so it is where you should be able to fix
-                            // it. It had no menu, so noticing meant navigating
-                            // somewhere else and finding the item again.
-                            {...menuTarget({ skin: cellSkin, weapon: w as WeaponEntry, side: effectiveSide })}
-                            title={item ? item.skinName : `${isSingleSlot ? c : w.name} — no skin`}
-                          >
-                            {/* eslint-disable-next-line @next/next/no-img-element */}
-                            <img src={item?.image ?? w.image} alt={w.name} loading="lazy" />
-                            <span className="inv4-preview-name">{isSingleSlot && !item ? c : w.name}</span>
-                            <span className="inv4-preview-skin">{item ? skinLabel(item.skinName) : "—"}</span>
-                            {(() => {
-                              const kills = killsFor(item);
-                              if (kills === null) return null;
-                              return <span className="inv4-preview-st">ST {kills.toLocaleString()}</span>;
-                            })()}
-                          </button>
-                          <MenuDots skin={cellSkin} weapon={w as WeaponEntry} side={effectiveSide} />
-                          </div>
-                        );
-                      })}
-                    </div>
-                  </section>
-                )})}
-              </div>
-            )
-          ) : (
-            !catalog ? (
-              <p className="empty-hint">{t("auto.inventorysimulator.loading")}</p>
-            ) : (
-              <div className="inv4-weapons">
-                {weapons.map((w) => {
-                  const item = slotItemFor(w.def, kindOfCategory(w.category), side);
-                  // An unskinned agent still has something to act on — the base
-                  // model itself, which has patches and radio commands. Every
-                  // other type has nothing until a skin is on it.
-                  const menuSkin: Skin | null = item
-                    ? asSkin(item)
-                    : w.category === "Agents"
-                      ? { id: w.id, def: w.id, paint: 0, name: w.name, image: w.image, rarity: w.rarity || "default" }
-                      : null;
-                  return (
-                    <div key={w.def} className="inv4-weapon-cell">
-                      <button
-                        className={`inv4-weapon ${item ? "has-skin" : ""}`}
-                        // Left click opens the skin list, on every type. Agents
-                        // used to open the options menu instead — the one tile
-                        // on the page where a left click did a different kind of
-                        // thing, and the reason nobody could find the agent list.
-                        onClick={(e) => {
-                          e.stopPropagation();
-                          openWeapon(w);
-                        }}
-                        {...menuTarget({ skin: menuSkin, weapon: w, side })}
-                        style={
-                          item?.rarity || w.rarity
-                            ? ({ "--rarity": item?.rarity || w.rarity } as React.CSSProperties)
-                            : undefined
-                        }
-                      >
-                        <div className="inv4-weapon-img">
-                          {/* eslint-disable-next-line @next/next/no-img-element */}
-                          <img src={item?.image ?? w.image} alt={w.name} loading="lazy" />
-                        </div>
-                        <div className="inv4-weapon-name">{w.name}</div>
-                        <div className="inv4-weapon-skin">{item ? skinLabel(item.skinName) : "Default"}</div>
-                      </button>
-                      <MenuDots skin={menuSkin} weapon={w} side={side} />
-                    </div>
-                  );
-                })}
-              </div>
-            )
-          )}
-
-          {/*
-            The skin list, over the grid rather than instead of it.
-
-            The right pane used to be a three-way exclusive switch — preview,
-            weapons, or chooser — so every move unmounted what you were looking
-            at and mounted something else. Closing a skin list rebuilt the whole
-            grid and threw your scroll position away, which is most of why
-            moving around here felt like being shoved.
-
-            The grid above stays mounted underneath. Closing this is instant and
-            puts you back exactly where you were.
-          */}
-          {weapon && (
-            <div className="inv4-chooser inv4-drawer" role="dialog" aria-label={weapon.name}>
-              <div className="inv4-chooser-head">
-                <button className="btn btn-secondary" onClick={closeChooser}>← {category}</button>
-                <strong>{weapon.name}</strong>
-                <span className="muted">{side.toUpperCase()} {t("auto.inventorysimulator.slot")}</span>
-                <div className="inv4-chooser-head-right">
-                  <button className={`chip ${chooserTab === 'catalog' ? 'active' : ''}`} onClick={() => setChooserTab('catalog')}>
-                    Catalog
-                  </button>
-                  <button className={`chip ${chooserTab === 'inventory' ? 'active' : ''}`} onClick={() => setChooserTab('inventory')}>
-                    My Crafts
-                  </button>
-
-                  <button className="btn btn-secondary" style={{ display: 'flex', alignItems: 'center', gap: '6px' }} onClick={surpriseMe} disabled={skinsLoading} title={t("auto.inventorysimulator.roll_a_random_skin_from_the_cu")}>
-                    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-                      <path d="M16 3h5v5M4 20L21 3M21 16v5h-5M15 15l6 6M4 4l5 5"/>
-                    </svg>
-                    {t("auto.inventorysimulator._surprise_me")}
-                  </button>
-                  {slotItemForChooser(weapon.def, builderKind, side) && (
-                    <button
-                      className="btn btn-secondary"
-                      onClick={() => {
-                        clearSlot(weapon.def, builderKind, side);
-                        closeChooser();
-                      }}
-                    >
-                      {t("auto.inventorysimulator.remove_skin")}
-                                                                      </button>
-                  )}
-                </div>
-              </div>
-
-              {chooserTab === 'catalog' ? (
-                <>
-                  <div className="inv4-filters">
-                    <label className="sr-only" htmlFor="inv-skin-search">{t("auto.inventorysimulator.search_skins")}</label>
-                    <input id="inv-skin-search" className="input" placeholder={t("auto.inventorysimulator.search_skins")} value={skinSearch} onChange={(e) => setSkinSearch(e.target.value)} />
-                    <label className="sr-only" htmlFor="inv-skin-sort">{t("auto.inventorysimulator.sort_skins")}</label>
-                    <select id="inv-skin-sort" className="input" value={skinSort} onChange={(e) => setSkinSort(e.target.value as SkinSort)}>
-                      <option value="quality">{t("auto.inventorysimulator.quality")}</option>
-                      <option value="name">{t("auto.inventorysimulator.name_a_z")}</option>
-                      <option value="newest">{t("auto.inventorysimulator.newest")}</option>
-                      <option value="fav">{t("auto.inventorysimulator.favorites_first")}</option>
-                    </select>
-                    <label className="sr-only" htmlFor="inv-skin-collection">{t("auto.inventorysimulator.collection")}</label>
-                    <select id="inv-skin-collection" className="input" value={collectionFilter} onChange={(e) => setCollectionFilter(e.target.value)}>
-                      <option value="">{t("auto.inventorysimulator.all_collections")}</option>
-                      {collections.map((c) => (
-                        <option key={c} value={c}>{c}</option>
-                      ))}
-                    </select>
-                    <button className={`chip ${favOnly ? "active" : ""}`} onClick={() => setFavOnly((v) => !v)}>{t("auto.inventorysimulator._favorites")}</button>
-                    <button className="btn btn-secondary" style={{ marginLeft: 'auto', padding: '4px 8px', fontSize: '12px' }} disabled={selectedSkins.size === 0} onClick={() => {
-                       selectedSkins.forEach(id => {
-                         const skin = skins.find(s => s.id === id);
-                         if (skin && weapon) equipSkin(skin, weapon.team === "ct" ? "ct" : "t", true, weapon, true);
-                       });
-                       setSelectedSkins(new Set());
-                    }}>Add to Vault ({selectedSkins.size})</button>
-                    <button className="btn btn-secondary" style={{ padding: '4px 8px', fontSize: '12px' }} disabled={selectedSkins.size === 0} onClick={() => {
-                       setStore(cur => {
-                          const set = new Set(cur.favorites ?? []);
-                          selectedSkins.forEach(id => {
-                            const skin = skins.find(s => s.id === id);
-                            if (skin) set.add(skinKey(skin.def, skin.paint));
-                          });
-                          return { ...cur, favorites: Array.from(set) };
-                       });
-                       setSelectedSkins(new Set());
-                    }}>Fav Selected ({selectedSkins.size})</button>
-                  </div>
-
-                  {/* The wear/seed/name-tag panel used to be here, hidden with
-                      display:none since it moved into the context menu. Markup
-                      that renders nothing still costs a reader the time to work
-                      out that it renders nothing, so it is gone along with its
-                      .inv4-config rules. The controls themselves live on in the
-                      item menu — see renderItemMenu. */}
-
-
-                  {skinsLoading ? (
-                    <p className="empty-hint">{t("auto.inventorysimulator.loading_skins")}</p>
-                  ) : (
-                    <div className="inv4-skins">
-                      {shownSkins.map((s) => {
-                        const fav = favorites.has(skinKey(s.def, s.paint));
-                        return (
-                          <div
-                            key={s.id}
-                            className={`inv4-skin ${s.id === currentSkinId ? "current" : ""}`}
-                            style={{ "--rarity": s.rarity } as React.CSSProperties}
-                            {...menuTarget({ skin: s, weapon: weapon ?? null, side })}
-                          >
-                            <input type="checkbox" className="inv4-skin-check" checked={selectedSkins.has(s.id)} onChange={(e) => {
-                              const n = new Set(selectedSkins);
-                              if (e.target.checked) n.add(s.id); else n.delete(s.id);
-                              setSelectedSkins(n);
-                            }} />
-                            {/* Left click equips it to the side you are on.
-                                It used to open the options menu — which made
-                                this the only tile where a left click opened a
-                                menu, and meant equipping the obvious thing took
-                                two clicks and a decision. The menu is still one
-                                right-click, or the ⋯, away. */}
-                            <button className="inv4-skin-pick" onClick={(e) => {
-                              e.preventDefault();
-                              e.stopPropagation();
-                              if (weapon) equipSkin(s, equipSide, true, weapon);
-                            }}>
-                              {/* eslint-disable-next-line @next/next/no-img-element */}
-                              <img src={s.image} alt={s.name} loading="lazy" />
-                              <span className="inv4-skin-name">{skinLabel(s.name)}</span>
-                              <span className="inv4-skin-rarity">{rarityName(s.rarity)}</span>
-                              <span className="inv4-skin-equip">
-                                {s.id === currentSkinId ? "Equipped" : `Equip (${equipSide.toUpperCase()})`}
-                              </span>
-                            </button>
-                            <button
-                              className={`inv4-heart ${fav ? "on" : ""}`}
-                              title={fav ? "Remove from favorites" : "Add to favorites"}
-                              aria-label={fav ? `Unfavorite ${skinLabel(s.name)}` : `Favorite ${skinLabel(s.name)}`}
-                              onClick={() => toggleFavorite(s.def, s.paint)}
-                            >
-                              {fav ? "♥" : "♡"}
-                            </button>
-                            <MenuDots skin={s} weapon={weapon ?? null} side={side} />
-                          </div>
-                        );
-                      })}
-                    </div>
-                  )}
-                </>
-              ) : (
-                <div style={{ display: 'flex', flexDirection: 'column', height: '100%' }}>
-                  <div style={{ padding: '0 0 12px 0', display: 'flex', gap: '8px', alignItems: 'center' }}>
-                    <button className="btn btn-secondary" disabled={selectedItems.size === 0} onClick={() => {
-                      setStore(cur => ({ ...cur, items: cur.items.filter(i => !selectedItems.has(i.id)) }));
-                      setSelectedItems(new Set());
-                    }}>Delete Selected ({selectedItems.size})</button>
-                    <button className="btn btn-primary" disabled={selectedItems.size === 0} onClick={() => {
-                      const items = store.items.filter(i => selectedItems.has(i.id));
-                      const defs = new Set(items.map(i => i.weaponDef));
-                      if (defs.size !== items.length) {
-                        showToast("Cannot equip multiple of the same weapon");
-                        return;
-                      }
-                      setStore(cur => {
-                        const loadout = cur.loadouts.find(l => l.id === cur.activeLoadoutId);
-                        if (!loadout) return cur;
-                        let newLoadout = { ...loadout, equippedCT: { ...loadout.equippedCT }, equippedT: { ...loadout.equippedT } };
-                        items.forEach(item => {
-                          const kind = item.kind;
-                          const targetSides = (overrideSide === "both" ? ["t" as const, "ct" as const] : [overrideSide || side]).filter(s => item.team === "both" || item.team === s);
-                          for (const s of targetSides) {
-                            if (kind === "knife") { if (s === "t") newLoadout.knifeT = item.id; else newLoadout.knifeCT = item.id; }
-                            else if (kind === "gloves") { if (s === "t") newLoadout.glovesT = item.id; else newLoadout.glovesCT = item.id; }
-                            else if (kind === "agent") { if (s === "t") newLoadout.agentT = item.id; else newLoadout.agentCT = item.id; }
-                            else { if (s === "t") newLoadout.equippedT[item.weaponDef] = item.id; else newLoadout.equippedCT[item.weaponDef] = item.id; }
-                          }
-                        });
-                        return { ...cur, loadouts: cur.loadouts.map(l => l.id === newLoadout.id ? newLoadout : l) };
-                      });
-                      setSelectedItems(new Set());
-                      showToast("Equipped selected items");
-                    }}>Equip Selected ({selectedItems.size})</button>
-                    <button className="btn btn-ghost" onClick={() => {
-                      if (selectedItems.size === store.items.length) setSelectedItems(new Set());
-                      else setSelectedItems(new Set(store.items.map(i => i.id)));
-                    }}>Select All</button>
-                  </div>
-                  <div style={{ flex: 1, overflow: 'visible', paddingRight: '4px' }}>
-                    {(() => {
-                      const loadout = store.loadouts.find(l => l.id === store.activeLoadoutId);
-                      const equipped = new Set<string>();
-                      if (loadout) {
-                        if (loadout.knifeCT) equipped.add(loadout.knifeCT);
-                        if (loadout.knifeT) equipped.add(loadout.knifeT);
-                        if (loadout.glovesCT) equipped.add(loadout.glovesCT);
-                        if (loadout.glovesT) equipped.add(loadout.glovesT);
-                        if (loadout.agentCT) equipped.add(loadout.agentCT);
-                        if (loadout.agentT) equipped.add(loadout.agentT);
-                        if (loadout.musicKitCT) equipped.add(loadout.musicKitCT);
-                        if (loadout.musicKitT) equipped.add(loadout.musicKitT);
-                        Object.values(loadout.equippedCT ?? {}).forEach(id => equipped.add(id as string));
-                        Object.values(loadout.equippedT ?? {}).forEach(id => equipped.add(id as string));
-                      }
-                      
-                      const eq: InventoryItem[] = [];
-                      const imp: InventoryItem[] = [];
-                      const oth: InventoryItem[] = [];
-                      
-                      store.items.forEach(item => {
-                        if (equipped.has(item.id)) {
-                          eq.push(item);
-                        } else if (item.source === 'cstrike') {
-                          imp.push(item);
-                        } else {
-                          oth.push(item);
-                        }
-                      });
-
-                      const renderCat = (title: string, itemsList: InventoryItem[], key: string) => {
-                        if (itemsList.length === 0) return null;
-                        const collapsed = vaultCatsCollapsed[key];
-                        return (
-                          <div key={key} style={{ marginBottom: '16px' }}>
-                            <button 
-                              onClick={() => setVaultCatsCollapsed(c => ({...c, [key]: !collapsed}))}
-                              style={{ width: '100%', textAlign: 'left', padding: '8px 0', borderBottom: '1px solid var(--color-divider)', background: 'none', border: 'none', color: 'var(--color-text)', fontWeight: 600, display: 'flex', justifyContent: 'space-between', alignItems: 'center', cursor: 'pointer', outline: 'none' }}
-                            >
-                              <span>{title} ({itemsList.length})</span>
-                              <span style={{ fontSize: '10px', transition: 'transform 0.2s', transform: collapsed ? 'rotate(-90deg)' : 'rotate(0)' }}>▼</span>
-                            </button>
-                            <div className="inv4-skins" style={{ 
-                              display: collapsed ? 'none' : 'grid',
-                              paddingTop: '12px'
-                            }}>
-                              {itemsList.map(item => {
-                                const vaultSkin = asSkin(item);
-                                const vaultWeapon = weaponByDef(item.weaponDef);
-                                return (
-                                <div
-                                  key={item.id}
-                                  className={`inv4-skin ${equipped.has(item.id) ? "current" : ""}`}
-                                  style={{ "--rarity": item.rarity } as React.CSSProperties}
-                                  // The Vault is the one place a crafted item
-                                  // exists as itself, and it was the one place
-                                  // with no way to equip it except selecting it
-                                  // and finding the bulk button above.
-                                  {...menuTarget({ skin: vaultSkin, weapon: vaultWeapon, side })}
-                                >
-                                  <input type="checkbox" className="inv4-skin-check" checked={selectedItems.has(item.id)} onChange={(e) => {
-                                    const n = new Set(selectedItems);
-                                    if (e.target.checked) n.add(item.id); else n.delete(item.id);
-                                    setSelectedItems(n);
-                                  }} />
-                                  <button className="inv4-skin-pick" onClick={(e) => {
-                                     const n = new Set(selectedItems);
-                                     if (n.has(item.id)) n.delete(item.id); else n.add(item.id);
-                                     setSelectedItems(n);
-                                  }}>
-                                    {/* eslint-disable-next-line @next/next/no-img-element */}
-                                    <img src={item.image} alt={item.skinName} loading="lazy" />
-                                    <div className="inv4-skin-applied">
-                                      {item.stickers?.filter(s => s).slice(0,6).map((st, i) => (
-                                        <img key={i} src={st!.image} alt="" />
-                                      ))}
-                                      {item.charm && <img src={item.charm.image} alt="" />}
-                                    </div>
-                                    <span className="inv4-skin-name">{skinLabel(item.skinName)}</span>
-                                    <span className="inv4-skin-rarity">{item.nameTag ? `"${item.nameTag}"` : rarityName(item.rarity || 'default')}</span>
-                                    <span className="inv4-skin-equip">
-                                      {selectedItems.has(item.id) ? "Selected" : "Select"}
-                                    </span>
-                                  </button>
-                                  <MenuDots skin={vaultSkin} weapon={vaultWeapon} side={side} />
-                                </div>
-                              )})}
-                            </div>
-                          </div>
-                        );
-                      };
-
-                      return (
-                        <>
-                          {renderCat("Equipped", eq, "equipped")}
-                          {renderCat("Imported", imp, "imported")}
-                          {renderCat("Vault", oth, "other")}
-                          {store.items.length === 0 && (
-                            <p className="empty-hint">You have no crafted skins in your Vault.</p>
-                          )}
-                        </>
-                      );
-                    })()}
-                  </div>
-                </div>
-              )}
-            </div>
-          )}
+          {SelectionBar()}
         </section>
-      </div>
+      )}
 
-      {/* ===== Share panel ===== */}
+      {/* ===== Dialogs ===== */}
       {share && (
-        <div className="inv4-modal" role="dialog" aria-modal="true" aria-labelledby="inv-share-title" onClick={() => setShare(null)}>
-          <div className="inv4-modal-card" onClick={(e) => e.stopPropagation()}>
-            <h2 id="inv-share-title">{t("auto.inventorysimulator.share")} “{share.name}”</h2>
-            <p className="muted" style={{ fontSize: 13 }}>
-              {t("auto.inventorysimulator.anyone_with_this_key_can_borro")}
-                                      </p>
-
-            <div className="inv4-share-key num">{share.key}</div>
-
-            <div className="inv4-share-rows">
-              <div className="inv4-share-row">
-                <span className="inv4-share-label">{t("auto.inventorysimulator.link")}</span>
-                <code className="skin-path">{borrowUrl}</code>
-                <button className="btn btn-secondary" onClick={() => copy(borrowUrl, "link")}>
-                  {copied === "link" ? "Copied" : "Copy"}
-                </button>
-              </div>
-              <div className="inv4-share-row">
-                <span className="inv4-share-label">{t("auto.inventorysimulator.in_game")}</span>
-                <code className="skin-path">/borrow {share.key}</code>
-                <button className="btn btn-secondary" onClick={() => copy(`/borrow ${share.key}`, "cmd")}>
-                  {copied === "cmd" ? "Copied" : "Copy"}
-                </button>
-              </div>
+        <div className="iv-modal" role="dialog" aria-modal="true" aria-labelledby="iv-share-title" onClick={() => setShare(null)}>
+          <div className="iv-modal-card" onClick={(e) => e.stopPropagation()}>
+            <header className="iv-modal-head">
+              <Share2 size={18} aria-hidden />
+              <h2 id="iv-share-title">
+                {t("auto.inventorysimulator.share")} <span className="iv-modal-sub">{share.name}</span>
+              </h2>
+              <button className="iv-icon-btn" onClick={() => setShare(null)} aria-label={t("auto.inventorysimulator.done")}>
+                <X size={16} />
+              </button>
+            </header>
+            <p className="iv-muted">{t("auto.inventorysimulator.anyone_with_this_key_can_borro")}</p>
+            <div className="iv-share-key num">{share.key}</div>
+            <div className="iv-share-rows">
+              {[
+                { id: "link", label: t("auto.inventorysimulator.link"), value: borrowUrl, icon: <LinkIcon size={14} /> },
+                { id: "cmd", label: t("auto.inventorysimulator.in_game"), value: `/borrow ${share.key}`, icon: <Terminal size={14} /> },
+              ].map((row) => (
+                <div key={row.id} className="iv-share-row">
+                  <span className="iv-field-label">{row.icon} {row.label}</span>
+                  <code>{row.value}</code>
+                  <button className="iv-btn" onClick={() => copy(row.value, row.id)}>
+                    {copied === row.id ? <Check size={14} /> : <Copy size={14} />}
+                    {copied === row.id ? t("inv.copied") : t("inv.copy")}
+                  </button>
+                </div>
+              ))}
             </div>
-
-            <div style={{ display: "flex", justifyContent: "flex-end", marginTop: "var(--space-4)" }}>
-              <button className="btn btn-primary" onClick={() => setShare(null)}>{t("auto.inventorysimulator.done")}</button>
+            <div className="iv-modal-foot">
+              <button className="iv-btn primary" onClick={() => setShare(null)}>{t("auto.inventorysimulator.done")}</button>
             </div>
           </div>
         </div>
       )}
 
-      {hydrated && !session.authenticated && (
-        <div className="inv4-guest">
-          {t("auto.inventorysimulator.guest_saved_on_this_device")} <a href="/api/auth/steam/login">{t("auto.inventorysimulator.sign_in")}</a> {t("auto.inventorysimulator.to_sync_in_game")}
-                          </div>
-      )}
+      {renderMenu()}
 
-      {/* One menu for every item on the page, portalled to <body>. */}
-      {renderItemMenu()}
+      {toast && <div className="iv-toast" role="status">{toast}</div>}
 
-      {toast && <div className="toast">{toast}</div>}
       {editor3dOpen && weapon && (
-        <SkinEditor3D 
+        <SkinEditor3D
           itemKind={weapon.category === "Agents" ? "agent" : "weapon"}
           skinId={currentSkinId || weapon.id}
           wear={wear}
@@ -2643,23 +2495,25 @@ export default function InventorySimulator() {
           nameTag={nameTag}
           initialStickers={stickers}
           initialCharm={charm}
-          charmSeed={editorItem ? charmSeed(editorItem) : undefined}
-          onSave={(newStickers, newCharm) => {
-            setStickers(newStickers);
-            setCharm(newCharm);
-            commitStickerEdit(newStickers, newCharm);
+          charmSeed={currentOnThisWeapon ? charmSeed(currentOnThisWeapon) : undefined}
+          onSave={(nextStickers, nextCharm) => {
+            setStickers(nextStickers);
+            setCharm(nextCharm);
+            commitStickerEdit(nextStickers, nextCharm);
             setEditor3dOpen(false);
           }}
           onClose={() => setEditor3dOpen(false)}
         />
       )}
-      
-      {radioModalOpen && (
-        <RadioCommandsModal 
-          weapon={radioModalOpen} 
-          onClose={() => setRadioModalOpen(null)} 
-        />
-      )}
+
+      {radioFor && <RadioCommandsModal agentId={radioFor.id} agentName={radioFor.name} onClose={() => setRadioFor(null)} />}
     </div>
   );
+}
+
+function supportsWearFor(kind: SlotKind) {
+  return kind === "weapon" || kind === "knife" || kind === "gloves";
+}
+function supportsStickerKind(kind: SlotKind) {
+  return kind === "weapon" || kind === "agent";
 }

@@ -421,6 +421,27 @@ components), overhauled 2026-07-17 (commit 48b4a2d).
 - [ ] DOC5. Later: OpenAPI JSON generated from a single source of truth + "try it" console for
       the public read-only endpoints; auto-listed changelog of API-affecting commits.
 
+### Phase PANEL — RE5-PANEL (panel.retakes.fr)
+
+The VPS + fleet control panel (`/opt/panel` on 213.130.147.107, `retakes-panel.service`). Built:
+fleet dashboard, power, live console, RCON, cfg editor, playability checks, tournaments,
+Minecraft/Terraria, DatHost, audit trail. Its README lists what is still greyed out.
+
+- [ ] PANEL1. **FTP system** — file access to each game server from the panel, so nobody has to
+      SSH in or use a desktop FTP client to fetch logs, drop a map or edit a plugin config.
+      Scope to decide: an in-browser file manager (browse / download / upload / edit / delete per
+      instance), per-instance FTP/SFTP credentials the panel can issue and revoke, or both.
+      Constraints from how the panel is built: the web process runs as `panel` with **no write
+      access to the game tree** and no general sudo — every write must go through a root helper in
+      `deploy/` that rebuilds the path from a validated instance id (the `panel-writecfg.sh`
+      pattern), never a path taken from the request. Writes land in the instance overlay
+      (`/opt/cs2/overlays/<n>/upper/...`), not in `/opt/cs2/roots/<n>` — see the overlay-shadowing
+      gotcha. Owner-level only (3), every action into `GardenAdminLog`, size caps on upload, and
+      DatHost servers reuse the existing DatHost FTP credentials rather than a second system.
+- [ ] PANEL2. Machine-level snapshots via the Hostinger API.
+- [ ] PANEL3. Scheduled tasks.
+- [ ] PANEL4. Audit-log viewer.
+
 ### Phase P — "Garden PKMN": browser PokeMMO-like at pkmn.retakes.fr
 
 **Vision**: a persistent, multiplayer, Pokémon-style overworld + battle game, fully playable in
@@ -797,3 +818,8 @@ site economy). Long-haul project — phases land independently and each one is p
   replacing them, and the mode word `blitz` is accepted where `cr` was — a
   rename that breaks the old word on the day it ships teaches people the
   feature is gone rather than that it moved.
+- 2026-09-27: `/inventory` rebuilt around three columns — loadouts, the board (T and CT side by
+  side, every slot a link) and the armory (one scroll with a jump bar instead of type tabs, weapon
+  view with wear/pattern/StatTrak/name-tag controls, vault with bulk actions). Real weapon
+  silhouettes as icons, lucide actions, `.iv-*` styles on the Modernist tokens, en+fr strings.
+  Roadmap: Phase PANEL added, with the panel FTP system as PANEL1.
