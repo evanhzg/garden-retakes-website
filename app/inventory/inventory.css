@@ -1,408 +1,2038 @@
 /*
- * The inventory page's own stylesheet.
+ * The inventory workspace — its whole stylesheet.
  *
- * globals.css is 11k lines and holds every page's styles; the inventory's were
- * spread across five separate blocks of it, which is why a change to the rail
- * meant reading all five to find out what else touched it. Per-page files are
- * already the pattern elsewhere (app/loadout/loadout.css, app/docs/docs.css),
- * so new inventory rules land here.
+ * Everything here is `.iv-*` and self-contained on purpose. The page used to
+ * be styled by five `.inv4-*` blocks in globals.css layered over the site's
+ * legacy `.btn` / `.chip` / `.input` rules (rounded, gradient, from before the
+ * Modernist tokens), which is why its controls never looked like each other.
+ * This file owns its controls outright and reads only the tokens
+ * (globals.css:12-175), so it follows light/dark and the accent with no
+ * overrides. The `.inv4-editor3d*` rules in globals.css still style the 3D
+ * sticker editor, which is its own component.
  *
- * The existing .inv4-* blocks are still in globals.css. Moving them is a
- * mechanical but risky edit — they rely on being *later* in the file than the
- * base .btn and .chip rules, and lifting them out changes the cascade — so it
- * is deliberately not bundled with a behaviour change. This file is imported
- * after globals, so anything here wins.
- *
- * Tokens (--color-*, --space-*, --radius-*) come from globals.css:12-90.
+ * Visual language, from the tokens: square corners, 2px rules, one accent for
+ * "do it", the two team colours for sides only, rarity colours for items only,
+ * and the mono face for every figure.
  */
 
-/* ---------- the weapon-type rail ---------- */
+.iv {
+  --iv-gap: var(--space-3);
+  --iv-line: 2px solid var(--color-divider);
+  --iv-soft: color-mix(in srgb, var(--color-text) 5%, transparent);
+  --iv-softer: color-mix(in srgb, var(--color-text) 3%, transparent);
+  --iv-dim: var(--color-neutral-600);
+  --iv-t: var(--color-team-t);
+  --iv-ct: var(--color-team-ct);
+  --iv-ease: cubic-bezier(0.16, 1, 0.3, 1);
 
-/*
- * The rail is the page's only weapon-type control now, so it has to look like
- * navigation rather than like a list of counts. The icon is what makes a row
- * scannable — nine text labels of similar length all read the same at a glance.
- */
-.inv4-type {
-  display: flex;
-  align-items: center;
-  gap: var(--space-2);
+  display: grid;
+  grid-template-columns: 248px minmax(0, 1fr);
+  gap: var(--iv-gap);
+  /* The container pads 16px top and bottom; the workspace takes the rest. */
+  height: calc(100vh - 32px);
+  min-height: 560px;
+  color: var(--color-text);
+}
+.iv.armory-open {
+  grid-template-columns: 248px minmax(380px, 1fr) minmax(440px, 1.15fr);
 }
 
-.inv4-type-icon {
-  flex: none;
-  opacity: 0.55;
-  transition: opacity 120ms ease, color 120ms ease;
-}
-
-.inv4-type:hover .inv4-type-icon,
-.inv4-type.open .inv4-type-icon {
-  opacity: 1;
-}
-
-.inv4-type.open .inv4-type-icon {
-  color: var(--color-accent);
-}
-
-.inv4-type-name {
-  flex: 1 1 auto;
-  text-align: left;
-}
-
-/* The count is secondary information and should never out-shout the name. */
-.inv4-type-count {
-  flex: none;
-  opacity: 0.6;
-  font-size: 12px;
-}
-
-/* ---------- the breadcrumb in the browse bar ---------- */
-
-/*
- * Replaced a label that named the type and nothing else. Every step is a
- * control, because the way out of a skin list used to be a back button in a
- * different bar — so arriving somewhere and leaving it were two unrelated
- * gestures.
- */
-.inv4-crumbs {
-  display: flex;
-  align-items: center;
-  gap: 4px;
-  padding-inline: var(--space-2);
+.iv-col {
   min-width: 0;
-  overflow: hidden;
-}
-
-.inv4-crumb {
-  display: inline-flex;
-  align-items: center;
-  gap: 6px;
-  padding: 4px 8px;
-  border: 0;
-  background: none;
-  color: var(--color-text-muted);
-  font: inherit;
-  font-size: 13px;
-  cursor: pointer;
-  white-space: nowrap;
-  overflow: hidden;
-  text-overflow: ellipsis;
-  max-width: 22ch;
-}
-
-.inv4-crumb:hover {
-  color: var(--color-text);
-  background: color-mix(in srgb, var(--color-text) 6%, transparent);
-}
-
-/* The last step is where you are, so it is text rather than a way to go there. */
-.inv4-crumb.here {
-  color: var(--color-text);
-  font-weight: 600;
-  cursor: default;
-}
-
-.inv4-crumb.here:hover {
-  background: none;
-}
-
-.inv4-crumb.side-t { color: #e0a94a; }
-.inv4-crumb.side-ct { color: #6aa9e0; }
-
-.inv4-crumb svg {
-  flex: none;
-  opacity: 0.7;
-}
-
-.inv4-crumb-sep {
-  color: var(--color-text-muted);
-  opacity: 0.5;
-  font-size: 13px;
-}
-
-/* ---------- the skin drawer ---------- */
-
-/*
- * Skins open OVER the weapon grid instead of replacing it.
- *
- * The grid underneath stays mounted, which is the whole point: closing this
- * costs nothing and puts the page back exactly as it was, where the old
- * three-way pane switch rebuilt the grid from scratch and lost your scroll
- * position every time.
- *
- * Absolutely positioned inside .inv4-browse, which is already a positioned
- * containing block for the context menu.
- */
-.inv4-browse {
-  position: relative;
-}
-
-.inv4-drawer {
-  position: absolute;
-  inset: 0;
-  z-index: 3;
+  min-height: 0;
   display: flex;
   flex-direction: column;
-  background: var(--color-bg);
-  box-shadow: var(--shadow-lg);
-  animation: inv4-drawer-in 140ms ease-out;
+}
+.iv-col-board {
+  gap: var(--iv-gap);
 }
 
-@keyframes inv4-drawer-in {
-  from {
-    opacity: 0;
-    transform: translateY(8px);
-  }
-  to {
-    opacity: 1;
-    transform: none;
-  }
+.iv .num {
+  font-family: var(--font-mono);
+  font-variant-numeric: tabular-nums;
+}
+.iv-muted {
+  color: var(--iv-dim);
 }
 
-/*
- * The drawer slides; a reduced-motion reader gets it without the movement
- * rather than without the drawer.
- */
-@media (prefers-reduced-motion: reduce) {
-  .inv4-drawer {
-    animation: none;
-  }
+/* ═════════════ controls ═════════════ */
+
+.iv button {
+  font: inherit;
+  color: inherit;
 }
-
-/* On a narrow screen there is no room to overlay anything: the drawer becomes
-   the page, which is what a phone wants anyway. */
-@media (max-width: 1000px) {
-  .inv4-drawer {
-    position: static;
-    box-shadow: none;
-    animation: none;
-  }
-}
-
-/* ---------- icons inside buttons ---------- */
-
-/*
- * Every .btn in this page can now carry a glyph. Without this they sit on the
- * text baseline and push the label off-centre.
- */
-.inv4-bar .btn,
-.inv4-board-actions .btn {
+.iv-btn,
+.iv-ghost-btn,
+.iv-icon-btn,
+.iv-chip,
+.iv-mini {
   display: inline-flex;
   align-items: center;
+  justify-content: center;
   gap: 6px;
-}
-
-.inv4-bar .btn svg,
-.inv4-board-actions .btn svg {
-  flex: none;
-}
-
-/* ============================================================
-   The item menu, and the ⋯ that opens it.
-
-   One menu for the page, portalled to <body> and positioned in viewport
-   coordinates — it used to be rendered inside each tile and clipped by every
-   scroll container it sat in. These rules are about the tiles: each one needs
-   a positioning context for its own ⋯, which is the only thing that stayed
-   local.
-   ============================================================ */
-
-.inv4-slot-li,
-.inv4-weapon-cell,
-.inv4-preview-holder,
-.inv4-agent-cell {
-  position: relative;
-}
-
-/* The ⋯ button.
-
-   The left-click route to the item menu, on every tile that has one. A
-   right-click is not available to everybody — trackpads, touch, and anybody
-   whose browser has claimed the gesture — so a menu reachable only that way is
-   a menu some people do not have.
-
-   Hidden until the tile is hovered or the button itself is focused, so a grid
-   of forty items is not forty visible buttons; always visible on touch, where
-   there is no hover to reveal it with. */
-.inv4-dots {
-  position: absolute;
-  top: 4px;
-  right: 4px;
-  z-index: 6;
-  display: grid;
-  place-items: center;
-  width: 22px;
-  height: 22px;
-  padding: 0;
-  border: 1px solid var(--color-divider);
-  background: color-mix(in srgb, var(--color-bg) 82%, transparent);
-  color: var(--color-text);
-  font-size: 15px;
-  line-height: 1;
+  border: 2px solid transparent;
+  border-radius: 0;
+  background: none;
   cursor: pointer;
-  opacity: 0;
-  transition: opacity 0.12s ease, border-color 0.12s ease;
+  white-space: nowrap;
+  transition: background 120ms ease, border-color 120ms ease, color 120ms ease, opacity 120ms ease;
+}
+.iv-btn:disabled,
+.iv-chip:disabled,
+.iv-icon-btn:disabled {
+  opacity: 0.45;
+  cursor: not-allowed;
+}
+.iv-btn:focus-visible,
+.iv-ghost-btn:focus-visible,
+.iv-icon-btn:focus-visible,
+.iv-chip:focus-visible,
+.iv button:focus-visible {
+  outline: 2px solid var(--color-accent);
+  outline-offset: 1px;
 }
 
-.inv4-slot-li:hover .inv4-dots,
-.inv4-weapon-cell:hover .inv4-dots,
-.inv4-preview-holder:hover .inv4-dots,
-.inv4-agent-cell:hover .inv4-dots,
-.inv4-skin:hover .inv4-dots,
-.inv4-dots:focus-visible {
-  opacity: 1;
+.iv-btn {
+  height: 34px;
+  padding: 0 12px;
+  font-size: 13px;
+  font-weight: 700;
+  border-color: var(--color-divider);
+  background: var(--color-surface);
 }
-
-.inv4-dots:hover {
+.iv-btn:hover:not(:disabled) {
+  border-color: var(--color-text);
+}
+.iv-btn.wide {
+  width: 100%;
+  justify-content: flex-start;
+}
+.iv-btn.primary {
+  background: var(--color-accent);
+  border-color: var(--color-accent);
+  color: #fff;
+}
+.iv-btn.primary:hover:not(:disabled) {
+  background: var(--color-accent-600);
+  border-color: var(--color-accent-600);
+}
+.iv-btn.primary.done {
+  background: #16a34a;
+  border-color: #16a34a;
+}
+.iv-btn.accent {
   border-color: var(--color-accent);
   color: var(--color-accent);
 }
-
-@media (hover: none) {
-  .inv4-dots { opacity: 1; }
+.iv-btn.accent:hover:not(:disabled) {
+  background: color-mix(in srgb, var(--color-accent) 10%, transparent);
+  border-color: var(--color-accent);
+}
+.iv-btn.danger {
+  border-color: color-mix(in srgb, #e11d48 60%, transparent);
+  color: #e11d48;
+}
+.iv-btn.danger:hover:not(:disabled) {
+  background: color-mix(in srgb, #e11d48 10%, transparent);
+  border-color: #e11d48;
 }
 
-/* The skin tile owns its own positioning already; it only needed the context. */
-.inv4-skin {
-  position: relative;
+.iv-ghost-btn {
+  height: 30px;
+  padding: 0 8px;
+  font-size: 12px;
+  font-weight: 700;
+  color: var(--iv-dim);
+}
+.iv-ghost-btn:hover {
+  color: var(--color-text);
+  background: var(--iv-soft);
 }
 
-/* Was an inline style repeated on two grids. */
-.inv4-skin-check {
-  position: absolute;
-  top: 8px;
-  left: 8px;
-  z-index: 10;
+.iv-icon-btn {
+  width: 30px;
+  height: 30px;
+  flex: none;
+  color: var(--iv-dim);
+}
+.iv-icon-btn:hover:not(:disabled) {
+  color: var(--color-text);
+  background: var(--iv-soft);
+}
+.iv-icon-btn.star.on {
+  color: #f5b301;
+}
+.iv-icon-btn.star.on svg {
+  fill: currentColor;
 }
 
-/* Stickers and the charm already applied to a crafted item. */
-.inv4-skin-applied {
-  position: absolute;
-  top: 4px;
-  right: 30px;
-  z-index: 5;
-  display: flex;
-  gap: 2px;
-  padding: 2px;
-  border-radius: 4px;
-  background: rgba(0, 0, 0, 0.5);
+.iv-mini {
+  height: 24px;
+  padding: 0 8px;
+  font-size: 11px;
+  font-weight: 700;
+  border-color: var(--color-divider);
+}
+.iv-mini.danger {
+  background: #e11d48;
+  border-color: #e11d48;
+  color: #fff;
 }
 
-.inv4-skin-applied img {
-  width: 16px;
-  height: 16px;
+.iv-chip {
+  height: 32px;
+  padding: 0 10px;
+  font-size: 12px;
+  font-weight: 700;
+  border-color: var(--color-divider);
+}
+.iv-chip:hover:not(:disabled) {
+  border-color: var(--color-text);
+}
+.iv-chip.on {
+  border-color: var(--color-accent);
+  color: var(--color-accent);
+  background: color-mix(in srgb, var(--color-accent) 8%, transparent);
+}
+.iv-chip.on svg {
+  fill: currentColor;
 }
 
-/* The wrappers are grid so the tile inside still stretches to the row height —
-   the tiles were direct grid children before the ⋯ needed somewhere to hang. */
-.inv4-weapon-cell,
-.inv4-preview-holder,
-.inv4-agent-cell {
-  display: grid;
-}
-
-/* A skin tile already has a heart in that corner, so the ⋯ sits beside it
-   rather than on top of it. */
-.inv4-skin .inv4-dots {
-  right: 32px;
-}
-
-.inv4-skin-applied {
-  right: 58px;
-}
-
-/* ---------- the loadout panel ---------- */
-
-/*
- * Replaced a native <select> of whatever did not fit in the strip. That made
- * "switch loadout" and "manage loadouts" two different controls depending on
- * how many you had: the fifth one could only be renamed by making it active
- * first. Every loadout is in here, with the same row of actions on each.
- */
-.inv4-lo-all {
-  position: relative;
-  display: inline-flex;
-}
-
-.inv4-lo-scrim {
-  position: fixed;
-  inset: 0;
-  z-index: 40;
-}
-
-.inv4-lo-panel {
-  position: absolute;
-  top: calc(100% + 6px);
-  left: 0;
-  z-index: 41;
-  min-width: 280px;
-  max-height: min(420px, 60vh);
-  overflow-y: auto;
-  padding: 4px;
-  background: var(--color-surface);
-  border: 1px solid var(--color-divider);
-  box-shadow: var(--shadow-lg);
-}
-
-.inv4-lo-row {
-  display: flex;
-  align-items: center;
-  gap: 2px;
-  padding: 2px;
-}
-
-.inv4-lo-row.active {
-  background: color-mix(in srgb, var(--color-accent) 14%, transparent);
-}
-
-.inv4-lo-pick {
-  flex: 1;
+.iv-input {
+  height: 34px;
+  width: 100%;
   min-width: 0;
-  display: flex;
-  align-items: center;
-  gap: 8px;
-  padding: 6px 8px;
-  border: 0;
-  background: none;
+  padding: 0 10px;
+  border: 2px solid var(--color-divider);
+  border-radius: 0;
+  background: var(--color-bg);
   color: var(--color-text);
   font: inherit;
   font-size: 13px;
-  text-align: left;
+  outline: none;
+  transition: border-color 120ms ease;
+}
+.iv-input:focus {
+  border-color: var(--color-accent);
+}
+.iv-select {
+  width: auto;
+  max-width: 180px;
   cursor: pointer;
 }
 
-.inv4-lo-pick:hover {
-  background: color-mix(in srgb, var(--color-text) 6%, transparent);
+.iv-search {
+  position: relative;
+  display: flex;
+  align-items: center;
+  flex: 1 1 200px;
+  min-width: 0;
+}
+.iv-search > svg {
+  position: absolute;
+  left: 10px;
+  color: var(--iv-dim);
+  pointer-events: none;
+}
+.iv-search .iv-input {
+  padding-left: 32px;
+}
+.iv-search .iv-icon-btn {
+  position: absolute;
+  right: 2px;
+  width: 28px;
+  height: 28px;
 }
 
-.inv4-lo-rowname {
-  flex: 1;
+/* Two or more mutually exclusive views — the only "tabs" left on the page. */
+.iv-seg {
+  display: inline-flex;
+  border: 2px solid var(--color-divider);
+}
+.iv-seg > button {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  height: 30px;
+  padding: 0 12px;
+  border: 0;
+  background: none;
+  font-size: 12px;
+  font-weight: 700;
+  color: var(--iv-dim);
+  cursor: pointer;
+}
+.iv-seg > button + button {
+  border-left: 2px solid var(--color-divider);
+}
+.iv-seg > button:hover {
+  color: var(--color-text);
+}
+.iv-seg > button.on {
+  background: var(--color-text);
+  color: var(--color-bg);
+}
+.iv-seg > button .num {
+  opacity: 0.7;
+}
+
+.iv-side-tag {
+  display: inline-grid;
+  place-items: center;
+  min-width: 26px;
+  height: 18px;
+  padding: 0 4px;
+  font-family: var(--font-mono);
+  font-size: 10px;
+  font-weight: 800;
+  letter-spacing: 0.04em;
+  color: #111;
+  background: var(--iv-t);
+}
+.iv-side-tag.ct {
+  background: var(--iv-ct);
+  color: #fff;
+}
+
+.iv-spin {
+  animation: iv-spin 0.8s linear infinite;
+}
+@keyframes iv-spin {
+  to {
+    transform: rotate(360deg);
+  }
+}
+
+/* A real weapon silhouette: the catalog render used as a mask. */
+.iv-glyph {
+  display: inline-block;
+  flex: none;
+  background: currentColor;
+  -webkit-mask-size: contain;
+  mask-size: contain;
+  -webkit-mask-repeat: no-repeat;
+  mask-repeat: no-repeat;
+  -webkit-mask-position: center;
+  mask-position: center;
+}
+.iv-glyph.agent {
+  -webkit-mask-image: url("/default_character.PNG");
+  mask-image: url("/default_character.PNG");
+}
+
+/* ═════════════ loadouts column ═════════════ */
+
+.iv-col-lo {
+  border-right: var(--iv-line);
+  padding-right: var(--iv-gap);
+}
+.iv-lolist {
+  display: flex;
+  flex-direction: column;
+  min-height: 0;
+  height: 100%;
+}
+.iv-lolist-head {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 4px 0 10px;
+}
+.iv-lolist-head h2 {
+  margin: 0;
+  font-size: 12px;
+  font-weight: 800;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+}
+.iv-lolist-head .iv-icon-btn {
+  margin-left: auto;
+}
+.iv-lolist-items {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  overflow-y: auto;
+  flex: 1 1 auto;
+  min-height: 0;
+}
+
+.iv-lo {
+  --lo: var(--color-neutral-500);
+  position: relative;
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  min-height: 48px;
+  padding: 0 4px 0 0;
+  border: 2px solid transparent;
+  border-left: 4px solid var(--lo);
+  background: var(--iv-softer);
+  transition: background 120ms ease, border-color 120ms ease;
+}
+.iv-lo:hover {
+  background: var(--iv-soft);
+}
+.iv-lo.active {
+  background: color-mix(in srgb, var(--lo) 12%, var(--color-surface));
+  border-color: color-mix(in srgb, var(--lo) 55%, transparent);
+  border-left-color: var(--lo);
+}
+.iv-lo.dragover {
+  border-top-color: var(--color-accent);
+}
+.iv-lo-grip {
+  flex: none;
+  color: var(--iv-dim);
+  opacity: 0;
+  cursor: grab;
+  margin-left: 2px;
+}
+.iv-lo:hover .iv-lo-grip {
+  opacity: 0.6;
+}
+.iv-lo-pick {
+  flex: 1 1 auto;
   min-width: 0;
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 1px;
+  padding: 6px 2px;
+  border: 0;
+  background: none;
+  text-align: left;
+  cursor: pointer;
+}
+.iv-lo-name {
+  max-width: 100%;
+  font-size: 14px;
+  font-weight: 700;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.iv-lo-meta {
+  font-size: 11px;
+  color: var(--iv-dim);
+}
+.iv-lo-acts {
+  display: flex;
+  flex: none;
+}
+.iv-lo-act {
+  width: 26px;
+  height: 26px;
+  display: inline-grid;
+  place-items: center;
+  border: 0;
+  background: none;
+  color: var(--iv-dim);
+  cursor: pointer;
+  opacity: 0;
+  transition: opacity 120ms ease, color 120ms ease;
+}
+.iv-lo:hover .iv-lo-act,
+.iv-lo:focus-within .iv-lo-act,
+.iv-lo-act.on {
+  opacity: 1;
+}
+.iv-lo-act:hover {
+  color: var(--color-text);
+}
+.iv-lo-act.on {
+  color: #f5b301;
+}
+.iv-lo-act.on svg {
+  fill: currentColor;
+}
+.iv-lo-confirm {
+  display: flex;
+  gap: 4px;
+  flex: none;
+}
+.iv-lo-rename {
+  flex: 1 1 auto;
+  padding: 6px 0;
+}
+.iv-lolist-foot {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  padding-top: 10px;
+  margin-top: 8px;
+  border-top: var(--iv-line);
+}
+
+/* popovers */
+.iv-pop-wrap {
+  position: relative;
+}
+.iv-pop {
+  position: absolute;
+  z-index: 60;
+  top: calc(100% + 6px);
+  left: 0;
+  padding: 10px;
+  background: var(--color-surface);
+  border: 2px solid var(--color-text);
+  box-shadow: var(--shadow-lg);
+  animation: iv-pop-in 140ms var(--iv-ease);
+}
+@keyframes iv-pop-in {
+  from {
+    opacity: 0;
+    transform: translateY(-4px);
+  }
+}
+.iv-import {
+  top: auto;
+  bottom: calc(100% + 6px);
+  width: 300px;
+}
+.iv-import form {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+.iv-or {
+  margin: 10px 0;
+  text-align: center;
+  font-size: 11px;
+  font-weight: 700;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: var(--iv-dim);
+}
+.iv-pop-lo {
+  width: 320px;
+  max-height: 70vh;
+  display: flex;
+}
+.iv-pop-lo .iv-lolist {
+  height: auto;
+  max-height: calc(70vh - 20px);
+  width: 100%;
+}
+.iv-colors {
+  display: grid;
+  grid-template-columns: repeat(4, 24px);
+  gap: 8px;
+}
+
+.iv-swatch {
+  width: 24px;
+  height: 24px;
+  flex: none;
+  border: 2px solid color-mix(in srgb, var(--color-text) 25%, transparent);
+  border-radius: 0;
+  cursor: pointer;
+  padding: 0;
+}
+.iv-swatch:hover,
+.iv-swatch.on {
+  border-color: var(--color-text);
+  box-shadow: inset 0 0 0 2px var(--color-surface);
+}
+
+/* ═════════════ board header ═════════════ */
+
+.iv-head {
+  --lo: var(--color-neutral-500);
+  flex: none;
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  grid-template-areas:
+    "id acts"
+    "stats stats";
+  gap: 10px var(--space-4);
+  padding-bottom: var(--iv-gap);
+  border-bottom: var(--iv-line);
+}
+.iv-head-id {
+  grid-area: id;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  min-width: 0;
+  flex-wrap: wrap;
+}
+.iv-lo-switch {
+  display: none;
+}
+.iv-title {
+  margin: 0;
+  min-width: 0;
+  font-family: var(--font-heading);
+  font-weight: var(--font-heading-weight);
+  font-size: 26px;
+  line-height: 1.1;
+  letter-spacing: -0.01em;
+}
+.iv-title button {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  max-width: 100%;
+  padding: 0;
+  border: 0;
+  background: none;
+  cursor: text;
+  font: inherit;
+}
+.iv-title-pen {
+  color: var(--iv-dim);
+  opacity: 0;
+  transition: opacity 120ms ease;
+}
+.iv-title button:hover .iv-title-pen {
+  opacity: 1;
+}
+.iv-title-input {
+  height: 38px;
+  font-size: 20px;
+  font-weight: 800;
+  width: 280px;
+}
+.iv-hint-cmd {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  padding: 2px 6px;
+  font-family: var(--font-mono);
+  font-size: 11px;
+  color: var(--iv-dim);
+  background: var(--iv-soft);
+}
+.iv-head-acts {
+  grid-area: acts;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  flex-wrap: wrap;
+  justify-content: flex-end;
+}
+.iv-head-stats {
+  grid-area: stats;
+  display: flex;
+  align-items: center;
+  gap: var(--space-6);
+  flex-wrap: wrap;
+  min-width: 0;
+}
+.iv-meter {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  font-size: 12px;
+  color: var(--iv-dim);
+}
+.iv-meter-label .num {
+  color: var(--color-text);
+  font-weight: 700;
+}
+.iv-meter-track {
+  position: relative;
+  width: 140px;
+  height: 6px;
+  background: var(--iv-soft);
+  overflow: hidden;
+}
+.iv-meter-fill {
+  position: absolute;
+  inset: 0 auto 0 0;
+  background: linear-gradient(90deg, var(--iv-t), var(--iv-ct));
+  transition: width 400ms var(--iv-ease);
+}
+.iv-rarities {
+  display: flex;
+  gap: 4px;
+}
+.iv-rarity {
+  --rarity: var(--color-neutral-500);
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  height: 20px;
+  padding: 0 6px 0 4px;
+  font-size: 11px;
+  font-weight: 700;
+  border-left: 3px solid var(--rarity);
+  background: color-mix(in srgb, var(--rarity) 14%, transparent);
+}
+.iv-season {
+  display: inline-flex;
+  align-items: baseline;
+  gap: 6px;
+  font-size: 12px;
+  color: var(--iv-dim);
+}
+.iv-season .num {
+  font-size: 16px;
+  font-weight: 800;
+  color: var(--color-text);
+}
+
+/* ═════════════ the board ═════════════ */
+
+.iv-board {
+  flex: 1 1 auto;
+  min-height: 0;
+  overflow-y: auto;
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: var(--iv-gap);
+  align-content: start;
+  padding-bottom: var(--space-6);
+}
+.iv-side {
+  --side: var(--iv-t);
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  padding: 12px;
+  background: var(--color-surface);
+  border-top: 3px solid var(--side);
+  min-width: 0;
+}
+.iv-side.ct {
+  --side: var(--iv-ct);
+}
+.iv-side-head {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+.iv-side-head h3 {
+  margin: 0;
+  font-size: 13px;
+  font-weight: 800;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+}
+.iv-side-count {
+  font-size: 12px;
+  color: var(--iv-dim);
+}
+.iv-side-head .iv-ghost-btn {
+  margin-left: auto;
+}
+
+.iv-group h4 {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  margin: 0 0 6px;
+  font-size: 10px;
+  font-weight: 800;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  color: var(--iv-dim);
+}
+.iv-slots {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(210px, 1fr));
+  gap: 6px;
+}
+
+/* One slot. Rarity is the left rule and a faint wash; nothing else is coloured. */
+.iv-slot {
+  --rarity: var(--color-neutral-400);
+  position: relative;
+  display: flex;
+  min-width: 0;
+  border-left: 3px solid var(--rarity);
+  background: linear-gradient(90deg, color-mix(in srgb, var(--rarity) 13%, transparent), transparent 70%), var(--color-bg);
+  transition: box-shadow 120ms ease, transform 120ms ease;
+}
+.iv-slot.empty {
+  border: 2px dashed color-mix(in srgb, var(--color-text) 18%, transparent);
+  background: transparent;
+}
+.iv-slot:hover {
+  box-shadow: inset 0 0 0 2px color-mix(in srgb, var(--color-text) 30%, transparent);
+}
+.iv-slot.active {
+  box-shadow: inset 0 0 0 2px var(--color-accent);
+}
+.iv-slot-main {
+  flex: 1 1 auto;
+  min-width: 0;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 6px 34px 6px 6px;
+  border: 0;
+  background: none;
+  text-align: left;
+  cursor: pointer;
+}
+.iv-slot-art {
+  width: 76px;
+  height: 52px;
+  flex: none;
+  display: grid;
+  place-items: center;
+}
+.iv-slot-art img {
+  max-width: 100%;
+  max-height: 100%;
+  object-fit: contain;
+  filter: drop-shadow(0 3px 6px rgb(0 0 0 / 0.25));
+  transition: transform 200ms var(--iv-ease);
+}
+.iv-slot:hover .iv-slot-art img {
+  transform: scale(1.06);
+}
+.iv-slot-empty-glyph {
+  color: color-mix(in srgb, var(--color-text) 28%, transparent);
+  display: grid;
+  place-items: center;
+}
+.iv-slot-text {
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 1px;
+}
+.iv-slot-label {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 10px;
+  font-weight: 800;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: var(--iv-dim);
+}
+.iv-slot-skin {
+  font-size: 13px;
+  font-weight: 700;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.iv-slot.empty .iv-slot-skin {
+  font-weight: 500;
+  color: var(--iv-dim);
+}
+.iv-slot-plus {
+  position: absolute;
+  right: 10px;
+  color: var(--iv-dim);
+}
+.iv-m4 {
+  position: absolute;
+  right: 34px;
+  top: 6px;
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  height: 20px;
+  padding: 0 6px;
+  font-size: 10px;
+  font-weight: 800;
+  border: 1px solid var(--color-divider);
+  background: var(--color-surface);
+  color: var(--iv-dim);
+  cursor: pointer;
+}
+.iv-m4:hover {
+  color: var(--color-text);
+  border-color: var(--color-text);
+}
+.iv-slot.empty .iv-m4 {
+  right: 30px;
+}
+
+.iv-badges {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 4px;
+  margin-top: 2px;
+}
+.iv-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 3px;
+  height: 16px;
+  padding: 0 4px;
+  font-size: 10px;
+  font-weight: 700;
+  color: var(--iv-dim);
+  background: var(--iv-soft);
+}
+.iv-badge.st {
+  color: #cf6a32;
+  background: color-mix(in srgb, #cf6a32 14%, transparent);
+}
+.iv-badge.tag {
+  font-style: italic;
+  max-width: 120px;
   overflow: hidden;
   text-overflow: ellipsis;
   white-space: nowrap;
 }
 
-.inv4-lo-act {
+/* ⋯ — the same corner on every tile. */
+.iv-dots {
+  position: absolute;
+  top: 4px;
+  right: 4px;
+  z-index: 2;
   width: 26px;
   height: 26px;
-  flex: none;
   display: grid;
   place-items: center;
+  border: 0;
+  background: none;
+  color: var(--iv-dim);
+  cursor: pointer;
+  opacity: 0.55;
+  transition: opacity 120ms ease, background 120ms ease;
+}
+.iv-slot:hover .iv-dots,
+.iv-tile:hover .iv-dots,
+.iv-agent:hover .iv-dots,
+.iv-dots:focus-visible {
+  opacity: 1;
+}
+.iv-dots:hover {
+  background: var(--iv-soft);
+  color: var(--color-text);
+}
+
+/* agent */
+.iv-agent {
+  --rarity: var(--color-neutral-400);
+  position: relative;
+  display: flex;
+  align-items: stretch;
+  background:
+    radial-gradient(120% 140% at 0% 100%, color-mix(in srgb, var(--side) 22%, transparent), transparent 60%),
+    var(--color-bg);
+  border-bottom: 2px solid color-mix(in srgb, var(--side) 45%, transparent);
+  min-height: 116px;
+  overflow: hidden;
+}
+.iv-agent-main {
+  flex: 1 1 auto;
+  min-width: 0;
+  display: flex;
+  align-items: flex-end;
+  gap: 12px;
+  padding: 0 12px 0 4px;
+  border: 0;
+  background: none;
+  text-align: left;
+  cursor: pointer;
+}
+.iv-agent-art {
+  width: 110px;
+  height: 116px;
+  flex: none;
+  display: flex;
+  align-items: flex-end;
+  justify-content: center;
+  overflow: hidden;
+}
+.iv-agent-art img {
+  height: 130px;
+  width: auto;
+  object-fit: cover;
+  object-position: top;
+  transform: translateY(8px);
+  transition: transform 260ms var(--iv-ease);
+}
+.iv-agent:hover .iv-agent-art img {
+  transform: translateY(2px);
+}
+.iv-agent-text {
+  display: flex;
+  flex-direction: column;
+  gap: 3px;
+  padding-bottom: 14px;
+  min-width: 0;
+}
+.iv-agent-name {
+  font-size: 16px;
+  font-weight: 800;
+  line-height: 1.15;
+}
+.iv-agent-actions {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-end;
+  padding: 4px;
+}
+.iv-agent-actions .iv-dots {
+  position: static;
+}
+
+.iv-guest {
+  flex: none;
+  padding: 8px 12px;
+  font-size: 13px;
+  background: color-mix(in srgb, var(--color-accent) 8%, var(--color-surface));
+  border-left: 3px solid var(--color-accent);
+}
+.iv-guest a {
+  color: var(--color-accent);
+  font-weight: 700;
+}
+
+/* ═════════════ armory ═════════════ */
+
+.iv-col-armory {
+  position: relative;
+  background: var(--color-surface);
+  border-left: var(--iv-line);
+  animation: iv-armory-in 220ms var(--iv-ease);
+}
+@keyframes iv-armory-in {
+  from {
+    opacity: 0;
+    transform: translateX(16px);
+  }
+}
+.iv-armory-head {
+  flex: none;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 10px 12px;
+  border-bottom: var(--iv-line);
+  flex-wrap: wrap;
+}
+.iv-armory-head > .iv-icon-btn {
+  margin-left: auto;
+}
+.iv-target {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+}
+.iv-target-label {
+  font-size: 10px;
+  font-weight: 800;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: var(--iv-dim);
+  margin-right: 2px;
+}
+.iv-side-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  height: 28px;
+  padding: 0 10px;
+  font-family: var(--font-mono);
+  font-size: 12px;
+  font-weight: 800;
+  border: 2px solid var(--color-divider);
+  background: none;
+  color: var(--iv-dim);
+  cursor: pointer;
+}
+.iv-side-btn:hover {
+  color: var(--color-text);
+}
+.iv-side-btn.t.on {
+  background: var(--iv-t);
+  border-color: var(--iv-t);
+  color: #111;
+}
+.iv-side-btn.ct.on {
+  background: var(--iv-ct);
+  border-color: var(--iv-ct);
+  color: #fff;
+}
+.iv-side-btn.both {
+  font-family: var(--font-body);
+}
+.iv-side-btn.both.on {
+  border-color: var(--color-text);
+  color: var(--color-text);
+  background: linear-gradient(90deg, color-mix(in srgb, var(--iv-t) 22%, transparent), color-mix(in srgb, var(--iv-ct) 22%, transparent));
+}
+
+.iv-armory-scroll {
+  flex: 1 1 auto;
+  min-height: 0;
+  overflow-y: auto;
+  padding: 0 12px 80px;
+  scroll-padding-top: 108px;
+}
+.iv-armory-tools .iv-search {
+  flex: none;
+}
+.iv-armory-tools {
+  position: sticky;
+  top: 0;
+  z-index: 5;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  margin: 0 -12px;
+  padding: 12px 12px 10px;
+  background: var(--color-surface);
+  border-bottom: 2px solid var(--iv-soft);
+}
+
+/* the jump bar: anchors, not tabs — every type stays on the page */
+.iv-jump {
+  display: flex;
+  gap: 4px;
+  overflow-x: auto;
+  scrollbar-width: none;
+}
+.iv-jump::-webkit-scrollbar {
+  display: none;
+}
+.iv-jump-chip {
+  flex: none;
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  height: 32px;
+  padding: 0 10px;
+  border: 2px solid transparent;
+  background: var(--iv-softer);
+  font-size: 12px;
+  font-weight: 700;
+  color: var(--iv-dim);
+  cursor: pointer;
+  transition: color 120ms ease, background 120ms ease, border-color 120ms ease;
+}
+.iv-jump-chip:hover:not(:disabled) {
+  color: var(--color-text);
+  background: var(--iv-soft);
+}
+.iv-jump-chip.on {
+  color: var(--color-accent);
+  border-color: var(--color-accent);
+  background: color-mix(in srgb, var(--color-accent) 7%, transparent);
+}
+.iv-jump-chip:disabled {
+  opacity: 0.35;
+  cursor: default;
+}
+.iv-jump-count {
+  display: inline-grid;
+  place-items: center;
+  min-width: 16px;
+  height: 16px;
+  padding: 0 3px;
+  font-size: 10px;
+  background: var(--color-text);
+  color: var(--color-bg);
+}
+.iv-jump-chip.on .iv-jump-count {
+  background: var(--color-accent);
+  color: #fff;
+}
+
+.iv-section {
+  padding-top: 16px;
+}
+.iv-section-title {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  width: 100%;
+  margin: 0 0 10px;
   padding: 0;
   border: 0;
   background: none;
-  color: var(--color-text-muted);
-  cursor: pointer;
   font-size: 13px;
-  line-height: 1;
+  font-weight: 800;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  text-align: left;
 }
-
-.inv4-lo-act:hover {
+.iv-section-title .num {
+  font-size: 11px;
+  font-weight: 600;
+}
+.iv-section-title.fold {
+  cursor: pointer;
+}
+.iv-fold-caret {
+  transition: transform 160ms ease;
+}
+.iv-section-title.fold[aria-expanded="false"] .iv-fold-caret {
+  transform: rotate(-90deg);
+}
+.iv-more {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  width: 100%;
+  height: 32px;
+  margin-top: 6px;
+  border: 2px dashed var(--color-divider);
+  background: none;
+  font-size: 12px;
+  font-weight: 700;
+  color: var(--iv-dim);
+  cursor: pointer;
+}
+.iv-more:hover {
   color: var(--color-text);
-  background: color-mix(in srgb, var(--color-text) 8%, transparent);
+  border-color: var(--color-text);
 }
 
-.inv4-lo-act.on {
-  color: var(--color-accent);
+.iv-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(132px, 1fr));
+  gap: 8px;
+}
+.iv-grid.skins {
+  grid-template-columns: repeat(auto-fill, minmax(150px, 1fr));
+}
+
+.iv-tile {
+  --rarity: var(--color-neutral-400);
+  position: relative;
+  min-width: 0;
+  background:
+    linear-gradient(180deg, transparent 45%, color-mix(in srgb, var(--rarity) 16%, transparent)),
+    var(--color-bg);
+  border-bottom: 3px solid var(--rarity);
+  transition: transform 160ms var(--iv-ease), box-shadow 160ms ease;
+}
+.iv-tile:hover {
+  transform: translateY(-2px);
+  box-shadow: var(--shadow-md);
+}
+.iv-tile.equipped {
+  box-shadow: inset 0 0 0 2px var(--color-accent);
+}
+.iv-tile.picked {
+  box-shadow: inset 0 0 0 2px var(--color-text);
+}
+.iv-tile-main {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  width: 100%;
+  padding: 8px 8px 8px;
+  border: 0;
+  background: none;
+  text-align: left;
+  cursor: pointer;
+}
+.iv-tile-art {
+  height: 72px;
+  display: grid;
+  place-items: center;
+  margin-bottom: 4px;
+}
+.iv-grid.skins .iv-tile-art {
+  height: 88px;
+}
+.iv-tile-art img {
+  max-width: 100%;
+  max-height: 100%;
+  object-fit: contain;
+  filter: drop-shadow(0 4px 8px rgb(0 0 0 / 0.28));
+  transition: transform 220ms var(--iv-ease);
+}
+.iv-tile:hover .iv-tile-art img {
+  transform: scale(1.07) rotate(-2deg);
+}
+.iv-tile-name {
+  font-size: 12px;
+  font-weight: 800;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.iv-tile-sub {
+  min-height: 15px;
+  font-size: 11px;
+  color: var(--iv-dim);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.iv-tile-flag {
+  position: absolute;
+  top: 6px;
+  left: 6px;
+  width: 18px;
+  height: 18px;
+  display: grid;
+  place-items: center;
+  background: var(--color-accent);
+  color: #fff;
+}
+.iv-tile.skeleton {
+  height: 132px;
+  border-bottom-color: var(--iv-soft);
+  background: linear-gradient(90deg, var(--iv-softer), var(--iv-soft), var(--iv-softer));
+  background-size: 200% 100%;
+  animation: iv-shimmer 1.2s linear infinite;
+}
+@keyframes iv-shimmer {
+  to {
+    background-position: -200% 0;
+  }
+}
+
+/* multi-select: out of the way until you reach for it */
+.iv-pick {
+  position: absolute;
+  top: 7px;
+  left: 7px;
+  z-index: 2;
+  width: 16px;
+  height: 16px;
+  margin: 0;
+  accent-color: var(--color-accent);
+  cursor: pointer;
+  opacity: 0;
+  transition: opacity 120ms ease;
+}
+.iv-tile:hover .iv-pick,
+.iv-pick:checked,
+.iv-pick:focus-visible {
+  opacity: 1;
+}
+.iv-tile.equipped:not(:hover) .iv-pick:not(:checked) {
+  opacity: 0;
+}
+.iv-heart {
+  position: absolute;
+  top: 4px;
+  right: 30px;
+  z-index: 2;
+  width: 26px;
+  height: 26px;
+  display: grid;
+  place-items: center;
+  border: 0;
+  background: none;
+  color: var(--iv-dim);
+  cursor: pointer;
+  opacity: 0;
+  transition: opacity 120ms ease, color 120ms ease;
+}
+.iv-tile:hover .iv-heart,
+.iv-heart.on,
+.iv-heart:focus-visible {
+  opacity: 1;
+}
+.iv-heart.on {
+  color: #e11d48;
+}
+.iv-heart.on svg,
+.iv-fav-on {
+  fill: currentColor;
+}
+
+/* weapon view */
+.iv-wv {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  padding-top: 10px;
+}
+.iv-wv-head {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+.iv-wv-head .iv-ghost-btn {
+  padding-left: 2px;
+}
+.iv-wv-head h3 {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  margin: 0;
+  font-size: 18px;
+  font-weight: 800;
+}
+
+.iv-current {
+  --rarity: var(--color-neutral-400);
+  display: grid;
+  grid-template-columns: 150px minmax(0, 1fr);
+  grid-template-areas:
+    "art text"
+    "acts acts";
+  gap: 10px 14px;
+  padding: 12px;
+  background:
+    radial-gradient(90% 120% at 0% 50%, color-mix(in srgb, var(--rarity) 22%, transparent), transparent 70%),
+    var(--color-bg);
+  border-left: 3px solid var(--rarity);
+}
+.iv-current.empty {
+  border-left-style: dashed;
+}
+.iv-current-art {
+  grid-area: art;
+  height: 100px;
+  display: grid;
+  place-items: center;
+}
+.iv-current-art img {
+  max-width: 100%;
+  max-height: 100%;
+  object-fit: contain;
+  filter: drop-shadow(0 6px 12px rgb(0 0 0 / 0.3));
+}
+.iv-current.empty .iv-current-art img {
+  opacity: 0.45;
+  filter: grayscale(1);
+}
+.iv-current-text {
+  grid-area: text;
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  gap: 3px;
+  min-width: 0;
+}
+.iv-current-text strong {
+  font-size: 15px;
+  line-height: 1.2;
+}
+.iv-current-text .iv-muted {
+  font-size: 12px;
+}
+.iv-applied {
+  display: flex;
+  gap: 2px;
+  margin-top: 4px;
+}
+.iv-applied img {
+  width: 26px;
+  height: 26px;
+  object-fit: contain;
+}
+.iv-current-acts {
+  grid-area: acts;
+  display: flex;
+  gap: 6px;
+  flex-wrap: wrap;
+}
+
+.iv-finish {
+  display: grid;
+  grid-template-columns: minmax(0, 1.6fr) minmax(0, 0.7fr) minmax(0, 1fr);
+  gap: 12px;
+  align-items: end;
+  padding: 12px;
+  border: 2px solid var(--iv-soft);
+}
+.iv-finish .iv-toggle,
+.iv-finish > .iv-btn {
+  grid-column: span 1;
+}
+.iv-field {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  min-width: 0;
+}
+.iv-field.wear {
+  padding-bottom: 16px;
+}
+.iv-field-row {
+  display: flex;
+  justify-content: space-between;
+  align-items: baseline;
+  gap: 8px;
+}
+.iv-field-label {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  font-size: 10px;
+  font-weight: 800;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: var(--iv-dim);
+}
+.iv-wear-val {
+  font-size: 12px;
+  font-weight: 700;
+}
+.iv-wear-val em {
+  font-family: var(--font-body);
+  font-style: normal;
+  font-weight: 500;
+  color: var(--iv-dim);
+  margin-left: 4px;
+}
+.iv-range {
+  width: 100%;
+  height: 6px;
+  margin: 4px 0;
+  appearance: none;
+  -webkit-appearance: none;
+  background: linear-gradient(90deg, #4ade80 0 7%, #a3e635 7% 15%, #facc15 15% 38%, #fb923c 38% 45%, #ef4444 45% 100%);
+  outline: none;
+  cursor: pointer;
+}
+.iv-range::-webkit-slider-thumb {
+  -webkit-appearance: none;
+  width: 14px;
+  height: 18px;
+  background: var(--color-text);
+  border: 2px solid var(--color-surface);
+}
+.iv-range::-moz-range-thumb {
+  width: 12px;
+  height: 16px;
+  background: var(--color-text);
+  border: 2px solid var(--color-surface);
+  border-radius: 0;
+}
+.iv-wear-stops {
+  position: relative;
+  height: 14px;
+}
+.iv-wear-stops button {
+  position: absolute;
+  top: 0;
+  transform: translateX(-2px);
+  padding: 0 3px;
+  border: 0;
+  background: none;
+  font-family: var(--font-mono);
+  font-size: 10px;
+  font-weight: 700;
+  color: var(--iv-dim);
+  cursor: pointer;
+}
+.iv-wear-stops button.on {
+  color: var(--color-text);
+  background: var(--iv-soft);
+}
+.iv-inline {
+  display: flex;
+  gap: 4px;
+}
+.iv-inline .iv-icon-btn {
+  width: 34px;
+  height: 34px;
+  border: 2px solid var(--color-divider);
+}
+.iv-toggle {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  height: 34px;
+  font-size: 13px;
+  font-weight: 700;
+  color: #cf6a32;
+  cursor: pointer;
+  user-select: none;
+}
+.iv-toggle input {
+  position: absolute;
+  opacity: 0;
+  pointer-events: none;
+}
+.iv-toggle-ui {
+  position: relative;
+  width: 32px;
+  height: 18px;
+  background: var(--iv-soft);
+  border: 2px solid var(--color-divider);
+  transition: background 120ms ease, border-color 120ms ease;
+}
+.iv-toggle-ui::after {
+  content: "";
+  position: absolute;
+  top: 2px;
+  left: 2px;
+  width: 10px;
+  height: 10px;
+  background: var(--iv-dim);
+  transition: transform 160ms var(--iv-ease), background 120ms ease;
+}
+.iv-toggle input:checked + .iv-toggle-ui {
+  background: color-mix(in srgb, #cf6a32 22%, transparent);
+  border-color: #cf6a32;
+}
+.iv-toggle input:checked + .iv-toggle-ui::after {
+  transform: translateX(14px);
+  background: #cf6a32;
+}
+.iv-toggle input:focus-visible + .iv-toggle-ui {
+  outline: 2px solid var(--color-accent);
+  outline-offset: 1px;
+}
+
+.iv-crafts h4 {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  margin: 0 0 6px;
+  font-size: 10px;
+  font-weight: 800;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  color: var(--iv-dim);
+}
+.iv-crafts-row {
+  display: flex;
+  gap: 6px;
+  overflow-x: auto;
+  padding-bottom: 4px;
+}
+.iv-craft {
+  --rarity: var(--color-neutral-400);
+  flex: none;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 2px;
+  width: 86px;
+  padding: 6px 4px 4px;
+  border: 0;
+  border-bottom: 3px solid var(--rarity);
+  background: var(--color-bg);
+  cursor: pointer;
+  font-size: 10px;
+  color: var(--iv-dim);
+}
+.iv-craft img {
+  height: 40px;
+  max-width: 100%;
+  object-fit: contain;
+}
+.iv-craft:hover {
+  color: var(--color-text);
+}
+.iv-craft.on {
+  box-shadow: inset 0 0 0 2px var(--color-accent);
+  color: var(--color-text);
+}
+
+.iv-filters {
+  display: flex;
+  gap: 6px;
+  flex-wrap: wrap;
+  align-items: center;
+}
+.iv-hint {
+  margin: -4px 0 0;
+  font-size: 11px;
+  color: var(--iv-dim);
+}
+
+.iv-empty {
+  padding: 24px 8px;
+  text-align: center;
+  font-size: 13px;
+  color: var(--iv-dim);
+}
+.iv-empty.big {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 10px;
+  padding: 56px 16px;
+}
+.iv-empty.big p {
+  margin: 0;
+}
+
+/* selection bar */
+.iv-selbar {
+  position: absolute;
+  left: 12px;
+  right: 12px;
+  bottom: 12px;
+  z-index: 10;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  flex-wrap: wrap;
+  padding: 8px 8px 8px 14px;
+  background: var(--color-text);
+  color: var(--color-bg);
+  box-shadow: var(--shadow-lg);
+  animation: iv-pop-in 160ms var(--iv-ease);
+}
+.iv-selbar > .num {
+  font-size: 12px;
+  font-weight: 700;
+  margin-right: auto;
+}
+.iv-selbar .iv-btn:not(.primary):not(.danger) {
+  background: transparent;
+  border-color: color-mix(in srgb, var(--color-bg) 35%, transparent);
+  color: var(--color-bg);
+}
+.iv-selbar .iv-btn.danger {
+  background: transparent;
+  color: #fb7185;
+  border-color: #fb7185;
+}
+.iv-selbar .iv-ghost-btn,
+.iv-selbar .iv-icon-btn {
+  color: color-mix(in srgb, var(--color-bg) 70%, transparent);
+}
+.iv-selbar .iv-ghost-btn:hover,
+.iv-selbar .iv-icon-btn:hover {
+  color: var(--color-bg);
+  background: color-mix(in srgb, var(--color-bg) 12%, transparent);
+}
+
+/* ═════════════ item menu ═════════════ */
+
+.iv-menu {
+  --rarity: var(--color-neutral-400);
+  position: fixed;
+  z-index: 300;
+  padding: 4px;
+  background: var(--color-surface);
+  color: var(--color-text);
+  border: 2px solid var(--color-text);
+  border-top: 4px solid var(--rarity);
+  box-shadow: var(--shadow-lg);
+  animation: iv-pop-in 120ms var(--iv-ease);
+}
+.iv-menu-head {
+  display: flex;
+  flex-direction: column;
+  padding: 6px 8px 8px;
+}
+.iv-menu-weapon {
+  font-size: 10px;
+  font-weight: 800;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: var(--color-neutral-600);
+}
+.iv-menu-skin {
+  font-size: 14px;
+  font-weight: 800;
+}
+.iv-menu-sep {
+  height: 2px;
+  margin: 4px 0;
+  background: var(--color-divider);
+  opacity: 0.5;
+}
+.iv-menu-item {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  width: 100%;
+  height: 34px;
+  padding: 0 8px;
+  border: 0;
+  background: none;
+  font: inherit;
+  font-size: 13px;
+  font-weight: 600;
+  text-align: left;
+  color: var(--color-text);
+  cursor: pointer;
+}
+.iv-menu-item:hover,
+.iv-menu-item:focus-visible {
+  background: color-mix(in srgb, var(--color-text) 7%, transparent);
+  outline: none;
+}
+.iv-menu-item svg {
+  flex: none;
+  color: var(--color-neutral-600);
+}
+.iv-menu-item.danger,
+.iv-menu-item.danger svg {
+  color: #e11d48;
+}
+.iv-menu-item .iv-side-tag {
+  min-width: 26px;
+}
+.iv-menu-check {
+  margin-left: auto;
+  color: var(--color-accent) !important;
+}
+
+/* ═════════════ dialogs ═════════════ */
+
+.iv-modal {
+  position: fixed;
+  inset: 0;
+  z-index: 400;
+  display: grid;
+  place-items: center;
+  padding: 16px;
+  background: color-mix(in srgb, #000 55%, transparent);
+  backdrop-filter: blur(3px);
+  animation: iv-fade 160ms ease;
+}
+@keyframes iv-fade {
+  from {
+    opacity: 0;
+  }
+}
+.iv-modal-card {
+  width: min(560px, 100%);
+  max-height: 86vh;
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  padding: 18px;
+  background: var(--color-surface);
+  color: var(--color-text);
+  border: 2px solid var(--color-text);
+  box-shadow: var(--shadow-lg);
+  animation: iv-pop-in 180ms var(--iv-ease);
+}
+.iv-modal-head {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+.iv-modal-head h2 {
+  margin: 0;
+  font-size: 18px;
+  font-weight: 800;
+}
+.iv-modal-head .iv-icon-btn {
+  margin-left: auto;
+}
+.iv-modal-sub {
+  font-family: var(--font-serif);
+  font-weight: 400;
+  font-style: italic;
+  margin-left: 4px;
+}
+.iv-modal-card > .iv-muted {
+  margin: 0;
+  font-size: 13px;
+}
+.iv-modal-foot {
+  display: flex;
+  justify-content: flex-end;
+}
+.iv-share-key {
+  padding: 14px;
+  text-align: center;
+  font-size: 26px;
+  font-weight: 800;
+  letter-spacing: 0.16em;
+  background: var(--color-bg);
+  border: 2px dashed var(--color-divider);
+}
+.iv-share-rows {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+.iv-share-row {
+  display: grid;
+  grid-template-columns: 88px minmax(0, 1fr) auto;
+  align-items: center;
+  gap: 8px;
+}
+.iv-share-row code {
+  padding: 7px 8px;
+  font-family: var(--font-mono);
+  font-size: 12px;
+  background: var(--color-bg);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.iv-radio {
+  width: min(900px, 100%);
+}
+.iv-radio-cats {
+  flex-wrap: wrap;
+  align-self: flex-start;
+}
+.iv-radio-grid {
+  flex: 1 1 auto;
+  min-height: 0;
+  overflow-y: auto;
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(190px, 1fr));
+  gap: 6px;
+}
+.iv-radio-line {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  min-height: 42px;
+  padding: 0 10px;
+  border: 2px solid var(--color-divider);
+  background: var(--color-bg);
+  text-align: left;
+  cursor: pointer;
+}
+.iv-radio-line:hover {
+  border-color: var(--color-accent);
+}
+.iv-radio-line:active {
+  background: color-mix(in srgb, var(--color-accent) 12%, var(--color-bg));
+}
+.iv-radio-line.borrowed {
+  opacity: 0.6;
+  border-style: dashed;
+}
+.iv-radio-label {
+  flex: 1 1 auto;
+  font-size: 13px;
+  font-weight: 600;
+}
+.iv-radio-count {
+  font-size: 10px;
+  color: var(--color-neutral-600);
+}
+
+.iv-toast {
+  position: fixed;
+  left: 50%;
+  bottom: 24px;
+  z-index: 500;
+  transform: translateX(-50%);
+  max-width: calc(100vw - 32px);
+  padding: 10px 16px;
+  background: var(--color-text);
+  color: var(--color-bg);
+  font-size: 13px;
+  font-weight: 700;
+  border-left: 4px solid var(--color-accent);
+  box-shadow: var(--shadow-lg);
+  animation: iv-toast-in 220ms var(--iv-ease);
+}
+@keyframes iv-toast-in {
+  from {
+    opacity: 0;
+    transform: translate(-50%, 10px);
+  }
+}
+
+/* ═════════════ responsive ═════════════ */
+
+/* With the armory open there is no room for three columns: the list folds
+   into the switcher in the header. */
+@media (max-width: 1440px) {
+  .iv.armory-open {
+    grid-template-columns: minmax(360px, 1fr) minmax(440px, 1.2fr);
+  }
+  .iv.armory-open .iv-col-lo {
+    display: none;
+  }
+  .iv.armory-open .iv-lo-switch {
+    display: block;
+  }
+  .iv.armory-open .iv-board {
+    grid-template-columns: minmax(0, 1fr);
+  }
+}
+
+@media (max-width: 1100px) {
+  .iv {
+    grid-template-columns: minmax(0, 1fr);
+  }
+  .iv-col-lo {
+    display: none;
+  }
+  .iv-lo-switch {
+    display: block;
+  }
+  .iv.armory-open {
+    grid-template-columns: minmax(0, 1fr);
+  }
+  /* The armory becomes a sheet over the board. */
+  .iv-col-armory {
+    position: fixed;
+    inset: 0 0 0 auto;
+    width: min(620px, 100vw);
+    z-index: 250;
+    box-shadow: var(--shadow-lg);
+  }
+}
+
+@media (max-width: 900px) {
+  .iv {
+    height: auto;
+    min-height: 0;
+  }
+  .iv-board {
+    grid-template-columns: minmax(0, 1fr);
+    overflow: visible;
+  }
+  .iv-head {
+    grid-template-columns: minmax(0, 1fr);
+    grid-template-areas:
+      "id"
+      "stats"
+      "acts";
+  }
+  .iv-head-acts {
+    justify-content: flex-start;
+  }
+  .iv-col-armory {
+    inset: 0;
+    width: 100vw;
+  }
+  .iv-finish {
+    grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
+  }
+  .iv-finish .iv-field.wear {
+    grid-column: 1 / -1;
+  }
+  .iv-current {
+    grid-template-columns: 110px minmax(0, 1fr);
+  }
+  .iv-title {
+    font-size: 22px;
+  }
+  .iv-hint-cmd {
+    display: none;
+  }
+  .iv-lo-act {
+    opacity: 1;
+  }
+}
+
+@media (max-width: 520px) {
+  .iv-slots {
+    grid-template-columns: minmax(0, 1fr);
+  }
+  .iv-grid {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+  .iv-share-row {
+    grid-template-columns: minmax(0, 1fr) auto;
+  }
+  .iv-share-row .iv-field-label {
+    grid-column: 1 / -1;
+  }
+  .iv-pop-lo {
+    width: calc(100vw - 32px);
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .iv *,
+  .iv-menu,
+  .iv-modal,
+  .iv-modal-card,
+  .iv-toast {
+    animation: none !important;
+    transition: none !important;
+  }
 }
