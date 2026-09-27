@@ -32,9 +32,12 @@ import {
   Settings,
   Server,
   Gauge,
+  Search,
   type LucideIcon,
 } from "lucide-react";
 import GlobalMatchmaking from "./retakes/GlobalMatchmaking";
+import { OPEN_PALETTE } from "./CommandPalette";
+import { DEMO_ALLOWLIST } from "@/lib/siteMap";
 
 type NavLink = {
   href: string;
@@ -238,8 +241,7 @@ export default function NavBar({
     // is that answer, and it runs the same roles-then-veto-then-server flow a
     // tournament match does, so it demonstrates the product rather than a
     // separate corner of it.
-    const shownInDemo = ["/tournaments", "/stats", "/lobby"];
-    baseLinks = baseLinks.filter((l) => shownInDemo.includes(l.href));
+    baseLinks = baseLinks.filter((l) => DEMO_ALLOWLIST.includes(l.href));
   }
   
   const links = baseLinks.filter(l => !l.adminOnly || (session.adminLevel ?? 0) > 0);
@@ -324,6 +326,21 @@ export default function NavBar({
       <Link href={getHref("/")} className="site-rail-mark" aria-label={t("auto.navbar.reeeeetakes")}>
         R
       </Link>
+
+      {/* Everything the rail does not have room for — every page, every
+          player, the actions — one keystroke away. In a demo the palette
+          itself narrows to the demo's pages (DEMO_ALLOWLIST), so the button
+          stays: a way to search is part of what a demo should show. */}
+      <button
+        type="button"
+        className="site-rail-btn site-rail-search"
+        onClick={() => window.dispatchEvent(new Event(OPEN_PALETTE))}
+        title={`${t("cmd.title")} (Ctrl K)`}
+        aria-label={t("cmd.title")}
+        aria-keyshortcuts="Control+K Meta+K"
+      >
+        <Search size={18} />
+      </button>
 
       <div className="site-rail-links">
         {primary.map((l) => {
@@ -552,6 +569,16 @@ export default function NavBar({
     )}
     <div id="nav-drawer" className={`nav-drawer ${drawerOpen ? "open" : ""}`} role="dialog" aria-modal="true" aria-label={t("nav.more")}>
       <div className="nav-drawer-inner">
+        <button
+          type="button"
+          className="nav-drawer-search"
+          onClick={() => {
+            setDrawerOpen(false);
+            window.dispatchEvent(new Event(OPEN_PALETTE));
+          }}
+        >
+          <Search size={16} /> {t("cmd.placeholder")}
+        </button>
         {session.authenticated && session.steamId && (
           <Link
             href={getHref("/profile")}

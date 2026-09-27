@@ -427,17 +427,18 @@ The VPS + fleet control panel (`/opt/panel` on 213.130.147.107, `retakes-panel.s
 fleet dashboard, power, live console, RCON, cfg editor, playability checks, tournaments,
 Minecraft/Terraria, DatHost, audit trail. Its README lists what is still greyed out.
 
-- [ ] PANEL1. **FTP system** — file access to each game server from the panel, so nobody has to
-      SSH in or use a desktop FTP client to fetch logs, drop a map or edit a plugin config.
-      Scope to decide: an in-browser file manager (browse / download / upload / edit / delete per
-      instance), per-instance FTP/SFTP credentials the panel can issue and revoke, or both.
-      Constraints from how the panel is built: the web process runs as `panel` with **no write
-      access to the game tree** and no general sudo — every write must go through a root helper in
-      `deploy/` that rebuilds the path from a validated instance id (the `panel-writecfg.sh`
-      pattern), never a path taken from the request. Writes land in the instance overlay
-      (`/opt/cs2/overlays/<n>/upper/...`), not in `/opt/cs2/roots/<n>` — see the overlay-shadowing
-      gotcha. Owner-level only (3), every action into `GardenAdminLog`, size caps on upload, and
-      DatHost servers reuse the existing DatHost FTP credentials rather than a second system.
+- [x] PANEL1. **FTP system** — DONE 2026-09-27 (RE5-Projects/RE5-panel PR #1, deployed). An
+      in-browser file manager rather than FTP accounts: a **files** tab on every CS2 instance,
+      Minecraft and Terraria server, and a Files section on DatHost — browse, download, edit,
+      upload, new folder, delete. Admin reads, Owner writes, every write in `GardenAdminLog`.
+      CS2 writes go through the root helper `deploy/panel-files.sh` (sudoers `PANEL_FILES`), which
+      rebuilds paths from a validated instance id and writes through the merged overlay mount so
+      overlayfs does its own copy-up (refusing when the overlay is not mounted). Config zones only
+      (`cfg/`, `addons/counterstrikesharp/configs/`), no binaries, never `rcon.cfg`, deletes only of
+      instance-own files — anything a lower layer provides would get a whiteout. Every entry shows
+      its origin (own / shadows shared / shared), which makes the overlay-shadowing gotcha visible.
+      DatHost goes through its file API with the existing credentials. Still open: writes for
+      Minecraft/Terraria, and reverting a shadowing copy (needs a stop + remount).
 - [ ] PANEL2. Machine-level snapshots via the Hostinger API.
 - [ ] PANEL3. Scheduled tasks.
 - [ ] PANEL4. Audit-log viewer.
