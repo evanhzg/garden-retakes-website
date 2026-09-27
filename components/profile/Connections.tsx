@@ -121,10 +121,8 @@ export default function ConnectionsEditor() {
 
   return (
     <div className="conn-editor">
-      <p className="pro-settings-hint" style={{ marginTop: 0 }}>
-        {t("profile.connections.hint")}
-      </p>
-
+      {/* The explanation is the section's own line now (settings.connectionsHint);
+          this paragraph printed the placeholder word "Hint". */}
       <ul>
         {PROVIDERS.map((p) => {
           const row = links[p.id] ?? { handle: "", public: false };
@@ -154,7 +152,7 @@ export default function ConnectionsEditor() {
         })}
       </ul>
 
-      <div className="clip-form-actions">
+      <div className="set-foot">
         <button className="btn btn-primary" onClick={save} disabled={saving}>
           {saving ? t("profile.connections.saving") : t("profile.connections.saveButton")}
         </button>

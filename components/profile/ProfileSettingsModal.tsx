@@ -2,8 +2,9 @@
 
 import { useCallback, useEffect, useRef, useState } from "react";
 import { createPortal } from "react-dom";
-import MotionToggle from "@/components/MotionToggle";
+import { Clapperboard, Link2, Palette, UserRound, type LucideIcon } from "lucide-react";
 import ConnectionsEditor from "@/components/profile/Connections";
+import "./settings-sections.css";
 import { useI18n } from '@/components/I18nProvider';
 import AppearanceSettings from "@/components/profile/AppearanceSettings";
 import AllstarConnect from "@/components/AllstarConnect";
@@ -27,6 +28,59 @@ type ProfileData = {
   country: string | null;
   accentColor: string | null;
 };
+
+/** The settings page's sections export this list so its index matches. */
+export const SETTINGS_SECTIONS: { id: string; key: string; icon: LucideIcon }[] = [
+  { id: "set-profile", key: "settings.sec.profile", icon: UserRound },
+  { id: "set-appearance", key: "settings.appearance", icon: Palette },
+  { id: "set-connections", key: "settings.connections", icon: Link2 },
+  { id: "set-clips", key: "settings.sec.clips", icon: Clapperboard },
+];
+
+/** The settings page's index — the same list as the sections, so they cannot drift. */
+export function SettingsIndex() {
+  const { t } = useI18n();
+  return (
+    <nav className="set-index" aria-label={t("settings.title")}>
+      {SETTINGS_SECTIONS.map((s) => (
+        <a key={s.id} href={`#${s.id}`}>
+          <s.icon size={16} aria-hidden />
+          {t(s.key)}
+        </a>
+      ))}
+    </nav>
+  );
+}
+
+/** One settings group: an icon, a title, a line saying what it is for. */
+function SettingsSection({
+  id,
+  icon: Icon,
+  title,
+  desc,
+  children,
+}: {
+  id: string;
+  icon: LucideIcon;
+  title: string;
+  desc: string;
+  children: React.ReactNode;
+}) {
+  return (
+    <section className="set-sec" id={id} aria-labelledby={`${id}-h`}>
+      <header className="set-sec-head">
+        <span className="set-sec-icon" aria-hidden>
+          <Icon size={18} />
+        </span>
+        <div>
+          <h3 id={`${id}-h`}>{title}</h3>
+          <p>{desc}</p>
+        </div>
+      </header>
+      <div className="set-sec-body">{children}</div>
+    </section>
+  );
+}
 
 const BIO_MAX = 280;
 /** Output size of the cropper. Square, and small enough to stay well under 1 MB. */
@@ -162,7 +216,8 @@ export function ProfileSettingsBody({
         {!data ? (
           <p className="muted">{t("auto.profilesettingsmodal.loading_your_profile")}</p>
         ) : (
-          <>
+          <div className="set-sections">
+          <SettingsSection id="set-profile" icon={UserRound} title={t("settings.sec.profile")} desc={t("settings.sec.profileDesc")}>
           <form className="pro-settings" onSubmit={onSubmit}>
             <div className="pro-settings-avatar">
               <div className="pro-settings-avatar-frame">
@@ -237,8 +292,6 @@ export function ProfileSettingsBody({
                 </p>
               </div>
 
-              <MotionToggle />
-
               <div className="pro-settings-actions">
                 <button className="btn btn-primary" type="submit" disabled={status.kind === "saving"}>
                   {status.kind === "saving" ? t("settings.saving") : t("settings.save")}
@@ -259,29 +312,33 @@ export function ProfileSettingsBody({
               </div>
             </div>
           </form>
+          </SettingsSection>
+
+          {/* Appearance saves as you click: theme, language and motion are
+              local, the accent is one field on the profile. */}
+          <SettingsSection id="set-appearance" icon={Palette} title={t("settings.appearance")} desc={t("settings.sec.appearanceDesc")}>
+            <AppearanceSettings
+              initialAccent={data.accentColor ?? "orange"}
+              onAccentChange={async (c) => {
+                if (await save({ accentColor: c })) {
+                  setData((d) => (d ? { ...d, accentColor: c } : d));
+                  document.documentElement.setAttribute("data-accent", c);
+                }
+              }}
+            />
+          </SettingsSection>
 
           {/* Connections save on their own — they are a different shape of data
-              and a different request, and folding them into this form would tie
-              a handle change to an avatar upload. */}
-          <AppearanceSettings
-            initialAccent={data.accentColor ?? "orange"}
-            onAccentChange={async (c) => {
-              if (await save({ accentColor: c })) {
-                setData((d) => (d ? { ...d, accentColor: c } : d));
-                document.documentElement.setAttribute("data-accent", c);
-              }
-            }}
-          />
-
-          <section className="pro-settings-conn">
-            <h3>{t("auto.profilesettingsmodal.connections")}</h3>
+              and a different request, and folding them into the profile form
+              would tie a handle change to an avatar upload. */}
+          <SettingsSection id="set-connections" icon={Link2} title={t("settings.connections")} desc={t("settings.connectionsHint")}>
             <ConnectionsEditor />
-          </section>
+          </SettingsSection>
 
-          <section className="pro-settings-conn">
+          <SettingsSection id="set-clips" icon={Clapperboard} title={t("settings.sec.clips")} desc={t("settings.sec.clipsDesc")}>
             <AllstarConnect />
-          </section>
-          </>
+          </SettingsSection>
+          </div>
         )}
       {cropping && (
         <AvatarCropper

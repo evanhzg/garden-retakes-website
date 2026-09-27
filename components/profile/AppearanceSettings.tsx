@@ -2,20 +2,21 @@
 
 import { useTheme } from "next-themes";
 import { useEffect, useState } from "react";
+import { Monitor, Moon, Pause, Play, Sparkles, Sun, type LucideIcon } from "lucide-react";
 import { LOCALES } from "@/lib/i18n";
 import { useI18n } from "@/components/I18nProvider";
+import { applyMotion, readMotion, type MotionPref } from "@/components/MotionToggle";
 
-// Theme and language, in settings.
-//
-// The theme toggle used to live in the header as a single button that cycled
-// through states — you could not see what the options were, only what you had.
-// Both are preferences, both belong with the other preferences, and both are
-// shown as a set so the current choice is visible next to the alternatives.
+const MOTIONS: { id: MotionPref; label: string; icon: LucideIcon }[] = [
+  { id: "system", label: "settings.motion.auto", icon: Sparkles },
+  { id: "full", label: "settings.motion.on", icon: Play },
+  { id: "off", label: "settings.motion.off", icon: Pause },
+];
 
-const THEMES = [
-  { id: "light", label: "settings.theme.light", icon: "☀" },
-  { id: "dark", label: "settings.theme.dark", icon: "☾" },
-  { id: "system", label: "settings.theme.system", icon: "◐" },
+const THEMES: { id: string; label: string; icon: LucideIcon }[] = [
+  { id: "light", label: "settings.theme.light", icon: Sun },
+  { id: "dark", label: "settings.theme.dark", icon: Moon },
+  { id: "system", label: "settings.theme.system", icon: Monitor },
 ];
 
 const ACCENTS = [
@@ -26,6 +27,12 @@ const ACCENTS = [
   { id: "beige", label: "settings.accent.beige", color: "#d97706" },
 ];
 
+/**
+ * Theme, language and accent — one labelled row each.
+ *
+ * No heading of its own: it sits inside the Appearance section of the settings
+ * body, which carries the icon, title and explanation for the whole group.
+ */
 export default function AppearanceSettings({
   initialAccent = "orange",
   onAccentChange,
@@ -38,88 +45,116 @@ export default function AppearanceSettings({
   const [mounted, setMounted] = useState(false);
   const [accent, setAccent] = useState(initialAccent);
 
-  // next-themes only knows the resolved theme after mount; rendering before
-  // that marks the wrong option as current for a frame.
-  useEffect(() => setMounted(true), []);
+  const [motion, setMotion] = useState<MotionPref>("system");
+
+  useEffect(() => {
+    setMounted(true);
+    setMotion(readMotion());
+  }, []);
+
+  // The same three steps MotionToggle takes, so the two can never disagree.
+  const chooseMotion = (next: MotionPref) => {
+    setMotion(next);
+    applyMotion(next);
+    try {
+      localStorage.setItem("garden_motion", next);
+    } catch {
+      /* the choice still applies to this page */
+    }
+    window.dispatchEvent(new CustomEvent("garden:motion", { detail: next }));
+  };
 
   const handleAccentChange = (id: string) => {
     setAccent(id);
-    if (onAccentChange) onAccentChange(id);
+    onAccentChange?.(id);
   };
 
   return (
-    <section className="pro-settings-conn">
-      <h3>{t("settings.appearance")}</h3>
-
-      <div className="pref-row">
-        <span className="pref-label">{t("settings.theme")}</span>
-        <div className="pref-choices" role="group" aria-label={t("settings.theme")}>
+    <div className="set-rows">
+      <div className="set-row">
+        <div className="set-row-label">
+          <span>{t("settings.theme")}</span>
+        </div>
+        <div className="set-seg" role="group" aria-label={t("settings.theme")}>
           {THEMES.map((o) => (
             <button
               key={o.id}
               type="button"
-              className={`pref-choice ${mounted && theme === o.id ? "on" : ""}`}
+              className={mounted && theme === o.id ? "on" : ""}
               aria-pressed={mounted && theme === o.id}
               onClick={() => setTheme(o.id)}
             >
-              <span aria-hidden>{o.icon}</span>
+              <o.icon size={14} aria-hidden />
               {t(o.label)}
             </button>
           ))}
         </div>
       </div>
 
-      <div className="pref-row">
-        <span className="pref-label">{t("settings.language")}</span>
-        <div className="pref-choices" role="group" aria-label={t("settings.language")}>
+      <div className="set-row">
+        <div className="set-row-label">
+          <span>{t("settings.language")}</span>
+          <small>{t("settings.languageHint")}</small>
+        </div>
+        <div className="set-seg" role="group" aria-label={t("settings.language")}>
           {LOCALES.map((l) => (
             <button
               key={l.id}
               type="button"
-              className={`pref-choice ${locale === l.id ? "on" : ""}`}
+              className={locale === l.id ? "on" : ""}
               aria-pressed={locale === l.id}
               onClick={() => setLocale(l.id)}
             >
-              <img 
-                src={`https://flagcdn.com/w40/${l.id === 'en' ? 'gb' : l.id}.png`} 
-                alt=""
-                style={{ width: "20px", height: "15px", borderRadius: "3px", marginRight: "6px", objectFit: "cover" }} 
-                aria-hidden
-              />
+              {/* eslint-disable-next-line @next/next/no-img-element */}
+              <img className="set-flag" src={`https://flagcdn.com/w40/${l.id === "en" ? "gb" : l.id}.png`} alt="" aria-hidden />
               {l.label}
             </button>
           ))}
         </div>
       </div>
-      <p className="pro-settings-hint">{t("settings.languageHint")}</p>
 
-      <div className="pref-row">
-        <span className="pref-label">{t("settings.accent_color")}</span>
-        <div className="pref-choices" role="group" aria-label={t("settings.accent_color")}>
+      {/* Motion lived in the identity form between Bio and Save, where it
+          looked like part of your profile. It is a display preference. */}
+      <div className="set-row">
+        <div className="set-row-label">
+          <span>{t("auto.motiontoggle.motion")}</span>
+          <small>{t("settings.motionHint")}</small>
+        </div>
+        <div className="set-seg" role="group" aria-label={t("auto.motiontoggle.motion_preference")}>
+          {MOTIONS.map((m) => (
+            <button
+              key={m.id}
+              type="button"
+              className={mounted && motion === m.id ? "on" : ""}
+              aria-pressed={mounted && motion === m.id}
+              onClick={() => chooseMotion(m.id)}
+            >
+              <m.icon size={14} aria-hidden />
+              {t(m.label)}
+            </button>
+          ))}
+        </div>
+      </div>
+
+      <div className="set-row">
+        <div className="set-row-label">
+          <span>{t("settings.accent_color")}</span>
+        </div>
+        <div className="set-seg" role="group" aria-label={t("settings.accent_color")}>
           {ACCENTS.map((a) => (
             <button
               key={a.id}
               type="button"
-              className={`pref-choice ${accent === a.id ? "on" : ""}`}
+              className={accent === a.id ? "on" : ""}
               aria-pressed={accent === a.id}
               onClick={() => handleAccentChange(a.id)}
             >
-              <span
-                aria-hidden
-                style={{
-                  display: "inline-block",
-                  width: "12px",
-                  height: "12px",
-                  borderRadius: "50%",
-                  backgroundColor: a.color,
-                  marginRight: "4px",
-                }}
-              />
+              <span className="set-swatch" style={{ background: a.color }} aria-hidden />
               {t(a.label)}
             </button>
           ))}
         </div>
       </div>
-    </section>
+    </div>
   );
 }

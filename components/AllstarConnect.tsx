@@ -1,9 +1,21 @@
 "use client";
 
 import { useEffect, useState } from "react";
+import { Check, LoaderCircle } from "lucide-react";
+import { useI18n } from "@/components/I18nProvider";
 
+/**
+ * Allstar.gg: which account to import clips from, and whether to.
+ *
+ * No heading or glyph of its own any more — it sits in the Clips section of
+ * the settings body, which carries both. The field was a bare browser input
+ * (`.text-input` is not a class the site defines), and every string was
+ * English on the French site.
+ */
 export default function AllstarConnect() {
+  const { t } = useI18n();
   const [busy, setBusy] = useState(false);
+  const [saved, setSaved] = useState(false);
   const [username, setUsername] = useState("");
   const [sync, setSync] = useState(true);
   const [initialSync, setInitialSync] = useState(true);
@@ -21,17 +33,23 @@ export default function AllstarConnect() {
       .catch(() => {});
   };
 
-  useEffect(() => { load(); }, []);
+  useEffect(() => {
+    load();
+  }, []);
 
   const save = async () => {
     setBusy(true);
     try {
-      await fetch("/api/profile", {
+      const res = await fetch("/api/profile", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ allstarUsername: username, allstarSync: sync })
+        body: JSON.stringify({ allstarUsername: username, allstarSync: sync }),
       });
-      await load();
+      if (res.ok) {
+        setSaved(true);
+        window.setTimeout(() => setSaved(false), 1800);
+      }
+      load();
     } finally {
       setBusy(false);
     }
@@ -40,49 +58,39 @@ export default function AllstarConnect() {
   const hasChanges = username !== initialUsername || sync !== initialSync;
 
   return (
-    <div className="discord-connect" style={{ flexDirection: "column", alignItems: "stretch", gap: 16 }}>
-      <div className="discord-connect-head" style={{ alignItems: "flex-start" }}>
-        <span className="discord-glyph" aria-hidden style={{ backgroundColor: "#2e2e38", borderRadius: 4, width: 32, height: 32, display: "flex", alignItems: "center", justifyContent: "center", color: "#fff", fontWeight: "bold", fontSize: 16 }}>
-          ★
-        </span>
-        <div style={{ flex: 1 }}>
-          <h3 style={{ margin: "0 0 4px" }}>Allstar.gg</h3>
-          <p style={{ margin: 0, fontSize: 14, color: "var(--color-muted)" }}>
-            Connect your Allstar account to automatically import clips to the feed.
-          </p>
+    <div className="set-rows">
+      <div className="set-row">
+        <label className="set-row-label" htmlFor="allstar-user">
+          <span>{t("allstar.username")}</span>
+          <small>{t("allstar.usernameHint")}</small>
+        </label>
+        <input
+          id="allstar-user"
+          className="input set-input"
+          value={username}
+          onChange={(e) => setUsername(e.target.value)}
+          placeholder="s1mple"
+          disabled={busy}
+          spellCheck={false}
+        />
+      </div>
+
+      <div className="set-row">
+        <div className="set-row-label">
+          <span>{t("allstar.autoImport")}</span>
+          <small>{t("allstar.autoImportHint")}</small>
         </div>
-      </div>
-      
-      <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
-        <label style={{ fontSize: 14, fontWeight: 500 }}>Allstar Username</label>
-        <input 
-          type="text" 
-          value={username} 
-          onChange={(e) => setUsername(e.target.value)} 
-          placeholder="e.g. S1mple" 
-          className="text-input" 
-          disabled={busy} 
-        />
+        <label className="set-switch">
+          <input type="checkbox" checked={sync} onChange={(e) => setSync(e.target.checked)} disabled={busy} />
+          <span className="set-switch-ui" aria-hidden />
+          <span className="sr-only">{t("allstar.autoImport")}</span>
+        </label>
       </div>
 
-      <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
-        <input 
-          type="checkbox" 
-          id="allstar-sync" 
-          checked={sync} 
-          onChange={(e) => setSync(e.target.checked)} 
-          disabled={busy} 
-        />
-        <label htmlFor="allstar-sync" style={{ fontSize: 14 }}>Auto-import new clips</label>
-      </div>
-
-      <div style={{ display: "flex", justifyContent: "flex-end" }}>
-        <button 
-          className="btn btn-primary" 
-          onClick={save} 
-          disabled={busy || !hasChanges}
-        >
-          {busy ? "Saving..." : "Save"}
+      <div className="set-foot">
+        <button className="btn btn-primary" onClick={save} disabled={busy || !hasChanges}>
+          {busy ? <LoaderCircle size={15} className="set-spin" /> : saved ? <Check size={15} /> : null}
+          {busy ? t("settings.saving") : saved ? t("settings.saved") : t("allstar.save")}
         </button>
       </div>
     </div>

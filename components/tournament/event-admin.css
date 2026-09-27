@@ -1,0 +1,126 @@
+/* One event's admin page: the header, summary strip and jump bar. Tokens only. */
+
+.ev-head {
+  display: grid;
+  gap: var(--space-3);
+}
+.ev-title-row {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  flex-wrap: wrap;
+}
+.ev-back {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  width: 100%;
+  font-size: 12px;
+  font-weight: 700;
+  color: var(--color-neutral-500);
+  text-decoration: none;
+}
+.ev-back:hover {
+  color: var(--color-accent);
+}
+.ev-title {
+  margin: 0;
+  font-size: clamp(24px, 3vw, 34px);
+  font-weight: 900;
+  letter-spacing: -0.02em;
+}
+.ev-hidden {
+  padding: 2px 7px;
+  font-size: 10px;
+  font-weight: 800;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  border: 1px dashed var(--color-divider);
+  color: var(--color-neutral-500);
+}
+.ev-role {
+  margin-left: auto;
+}
+.ev-actions {
+  display: flex;
+  gap: 8px;
+  flex-wrap: wrap;
+}
+.ev-strip {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  margin: 0;
+  border: 1px solid var(--color-divider);
+}
+.ev-strip > div {
+  padding: 10px 14px;
+}
+.ev-strip > div + div {
+  border-left: 1px solid var(--color-divider);
+}
+.ev-strip dt {
+  font-size: 10px;
+  font-weight: 800;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  color: var(--color-neutral-500);
+}
+.ev-strip dd {
+  margin: 2px 0 0;
+  font-size: 22px;
+  font-weight: 800;
+}
+.ev-strip dd span {
+  font-size: 14px;
+  color: var(--color-neutral-500);
+}
+.ev-strip dd.hot {
+  color: var(--color-accent);
+}
+
+/* The jump bar sticks, so moving between sections is one click from anywhere. */
+.ev-jump {
+  position: sticky;
+  top: 0;
+  z-index: 5;
+  display: flex;
+  gap: 4px;
+  flex-wrap: wrap;
+  margin: 0 calc(var(--space-4) * -1) calc(var(--space-4) * -1);
+  padding: 8px var(--space-4);
+  border-top: 1px solid var(--color-divider);
+  background: var(--color-surface);
+}
+.ev-jump a {
+  padding: 6px 10px;
+  font-size: 12px;
+  font-weight: 700;
+  color: var(--color-neutral-600);
+  text-decoration: none;
+  border: 1px solid transparent;
+}
+.ev-jump a:hover {
+  color: var(--color-text);
+  border-color: var(--color-divider);
+}
+.ev-anchor {
+  scroll-margin-top: 16px;
+}
+.ev-panel-link {
+  margin-top: var(--space-3);
+}
+
+@media (max-width: 640px) {
+  .ev-strip {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+  .ev-strip > div:nth-child(3) {
+    border-left: 0;
+  }
+  .ev-strip > div:nth-child(n + 3) {
+    border-top: 1px solid var(--color-divider);
+  }
+  .ev-role {
+    margin-left: 0;
+  }
+}

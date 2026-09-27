@@ -79,12 +79,31 @@
 
 /* The dialog's body was written to sit in a 720px card. On a page it has the
    whole column, and its two halves would drift apart at 1400px. */
+/* An index down the side, the sections beside it. The sections carry their
+   own frames now, so the column around them is bare. */
+.set-layout {
+  display: grid;
+  grid-template-columns: 200px minmax(0, 1fr);
+  gap: 24px;
+  align-items: start;
+}
 .set-panel {
-  padding: 20px;
+  min-width: 0;
 }
 
 .set-panel .pro-settings {
   max-width: 860px;
+}
+
+@media (max-width: 900px) {
+  .set-layout {
+    grid-template-columns: minmax(0, 1fr);
+  }
+  .set-layout .set-index {
+    position: static;
+    display: flex;
+    flex-wrap: wrap;
+  }
 }
 
 .set-signin {

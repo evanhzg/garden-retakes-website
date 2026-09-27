@@ -1,7 +1,7 @@
 import Link from "next/link";
-import { ArrowRight, Building2, Map as MapIcon, Plus, Settings2, Wrench } from "lucide-react";
+import { ArrowRight, Building2, CalendarDays, Map as MapIcon, MonitorPlay, Plus, Settings2, Wrench } from "lucide-react";
 import { prisma } from "@/lib/db";
-import { getT } from "@/lib/serverI18n";
+import { getT, serverLocale } from "@/lib/serverI18n";
 import { canUseOrgs, getTournamentContext, manageableTournamentIds } from "@/lib/tournamentAuth";
 import { AdminLevel } from "@/lib/adminAuth";
 import {
@@ -103,6 +103,49 @@ export default async function TournamentsPage() {
     board(t("tstats.clutches"), "Clutches", (p) => p.clutches, (v) => String(v)),
   ];
 
+  // Every card's derived facts, once — the grouping and the summary strip read
+  // the same values the cards print, so the three can never disagree.
+  const rows = tournaments.map((tournament) => {
+    const edition: EditionState = {
+      published: tournament.Published,
+      state: tournament.State,
+      visibility: tournament.Visibility === "invite" ? "invite" : "public",
+      maxTeams: tournament.MaxTeams,
+      teamCount: tournament._count.Teams,
+      startsAt: tournament.StartsAt,
+      startedAt: tournament.StartedAt,
+    };
+    // A tournament with a champion is over, whatever its row says — nothing
+    // writes State back to "finished".
+    const decided = bracketDecided(tournament.Matches.map((m) => ({ round: m.Round, winnerTeamId: m.WinnerTeamId })));
+    return {
+      tournament,
+      // Registration is offered only where it would actually be accepted — the
+      // same predicate the register page and the API use.
+      openToJoin: registrationBlockedReason(edition, false) === null,
+      when: countdown(edition, now),
+      shown: displayedState(tournament.State, decided),
+      played: tournament.Matches.filter((m) => m.WinnerTeamId !== null).length,
+      total: tournament.Matches.length,
+    };
+  });
+
+  const groups = [
+    { id: "live", rows: rows.filter((r) => r.shown === "live") },
+    { id: "open", rows: rows.filter((r) => r.shown === "registration") },
+    { id: "upcoming", rows: rows.filter((r) => !["live", "registration", "finished", "cancelled"].includes(r.shown)) },
+    { id: "finished", rows: rows.filter((r) => r.shown === "finished" || r.shown === "cancelled") },
+  ];
+
+  const publicRows = rows.filter((r) => r.shown !== "draft");
+  const summary = [
+    { key: "tlist.sum.live", value: groups[0].rows.length, hot: groups[0].rows.length > 0 },
+    { key: "tlist.sum.open", value: groups[1].rows.length },
+    { key: "tlist.sum.teams", value: publicRows.reduce((n, r) => n + r.tournament._count.Teams, 0) },
+    { key: "tlist.sum.matches", value: publicRows.reduce((n, r) => n + r.played, 0) },
+  ];
+  const locale = serverLocale() === "fr" ? "fr-FR" : "en-GB";
+
   return (
     <>
       {/* Title and tools share the hero, side by side.
@@ -186,6 +229,16 @@ export default async function TournamentsPage() {
             </aside>
           )}
         </div>
+
+        {/* The circuit in four numbers, before the list. */}
+        <dl className="tl-summary">
+          {summary.map((s) => (
+            <div key={s.key} className={s.hot ? "hot" : ""}>
+              <dt>{t(s.key)}</dt>
+              <dd className="num">{s.value}</dd>
+            </div>
+          ))}
+        </dl>
       </section>
 
       <section className="panel">
@@ -207,123 +260,122 @@ export default async function TournamentsPage() {
              link on a phone. A card also has room for the two facts the table
              had nowhere to put: when it starts, and whether you can still
              enter. */
-          <ul className="tl-list">
-            {tournaments.map((tournament) => {
-              const edition: EditionState = {
-                published: tournament.Published,
-                state: tournament.State,
-                visibility: tournament.Visibility === "invite" ? "invite" : "public",
-                maxTeams: tournament.MaxTeams,
-                teamCount: tournament._count.Teams,
-                startsAt: tournament.StartsAt,
-                startedAt: tournament.StartedAt,
-              };
-
-              // Registration is offered only where it would actually be
-              // accepted — the same predicate the register page and the API
-              // use, so the button cannot promise what the server refuses.
-              const openToJoin = registrationBlockedReason(edition, false) === null;
-              const when = countdown(edition, now);
-
-              // A tournament with a champion is over, whatever its row says —
-              // nothing writes State back to "finished", so the card used to
-              // sit on "In progress" with a pulsing LIVE dot for as long as the
-              // event existed.
-              const decided = bracketDecided(
-                tournament.Matches.map((m) => ({ round: m.Round, winnerTeamId: m.WinnerTeamId })),
-              );
-
-              return (
-                <li key={tournament.Id} className={`tl-card ${tournament.BannerImage ? "has-banner" : ""}`}>
-                  {/* The banner is a background behind the title, not a
-                      thumbnail beside it — a tournament card should look like a
-                      poster. Without one the card falls back to a tinted panel
-                      rather than a broken image well, so a bannerless event
-                      reads as plain rather than as unfinished. */}
-                  <div className="tl-banner">
-                    {tournament.BannerImage && (
-                      // eslint-disable-next-line @next/next/no-img-element
-                      <img src={`/api/tournaments/${tournament.Slug}/banner`} alt="" loading="lazy" />
-                    )}
-                    <span className="tl-scrim" aria-hidden />
-                  </div>
-
-                  <div className="tl-main">
-                    <Link className="tl-name" href={`/tournaments/${tournament.Slug}`}>
-                      {tournament.Name}
-                    </Link>
-
-                    <div className="tl-facts">
-                      {/* Compact: the two-line version is right in a table
-                          column where it is the only thing in the cell, and
-                          wrong here, where it sat under the name as the
-                          heaviest object on the card. */}
-                      <StatusTag
-                        kind="tournament"
-                        className="compact"
-                        value={displayedState(tournament.State, decided)}
-                      />
-                      <span className="tl-fact">
-                        {tournament.TeamSize}v{tournament.TeamSize}
-                      </span>
-                      {/* A pickup lobby's cap is 9999, which is the schema
-                          saying "no limit" and the card saying "2 / 9999
-                          teams". A ceiling nobody can reach is not a fact
-                          about the tournament; below it, the count alone. */}
-                      <span className="tl-fact">
-                        {tournament.MaxTeams >= 999
-                          ? tournament._count.Teams
-                          : `${tournament._count.Teams} / ${tournament.MaxTeams}`}{" "}
-                        {t("tournaments.teams").toLowerCase()}
-                      </span>
-                      {/* The LIVE pip is gone: the status beside it already
-                          reads "Live", and two ways of saying one thing on one
-                          line is how a card stops being scannable. */}
-                      {when.kind === "starting-soon" && (
-                        <span className="tl-fact">{t("countdown.soon")}</span>
-                      )}
-                      {when.kind === "scheduled" && (
-                        <time className="tl-fact" dateTime={when.startsAt.toISOString()}>
-                          {when.startsAt.toLocaleDateString(undefined, {
-                            day: "numeric",
-                            month: "short",
-                            year: "numeric",
-                          })}
-                        </time>
-                      )}
-                    </div>
-                  </div>
-
-                  {/* Three filled grey boxes down the right of every card was
-                      three equal shouts per row, and on a list of ten
-                      tournaments the loudest thing on the page was the word
-                      "Voir" repeated ten times. Register is the only one that
-                      is ever the point, so it is the only filled one; the
-                      others are ghosts that say where they go. */}
-                  <div className="tl-actions">
-                    {openToJoin && (
-                      <Link
-                        className="tl-btn is-primary"
-                        href={`/tournaments/${tournament.Slug}/register`}
+          /* Grouped by what you can do with each event, not one undifferentiated
+             stack: what is being played now, what you can still enter, what is
+             coming, what is over. The same cards, in four labelled runs. */
+          <div className="tl-groups">
+            {groups.map((group) =>
+              group.rows.length === 0 ? null : (
+                <section key={group.id} className={`tl-group tl-group-${group.id}`}>
+                  <h2 className="tl-group-title">
+                    {group.id === "live" && <span className="tl-live-dot" aria-hidden />}
+                    {t(`tlist.group.${group.id}`)}
+                    <span className="num">{group.rows.length}</span>
+                  </h2>
+                  <ul className="tl-list">
+                    {group.rows.map(({ tournament, openToJoin, when, shown, played, total }) => (
+                      <li
+                        key={tournament.Id}
+                        className={`tl-card st-${shown} ${tournament.BannerImage ? "has-banner" : ""}`}
                       >
-                        {t("tournaments.register")}
-                        <ArrowRight size={14} aria-hidden focusable="false" />
-                      </Link>
-                    )}
-                    <Link className="tl-btn" href={`/tournaments/${tournament.Slug}`}>
-                      {t("tournaments.view")}
-                    </Link>
-                    {manageable.has(tournament.Id) && (
-                      <Link className="tl-btn" href={`/admin/tournaments/${tournament.Id}`}>
-                        <Settings2 size={14} aria-hidden focusable="false" />
-                        {t("tournaments.manage")}
-                      </Link>
-                    )}
-                  </div>
-                </li>
-              );
-            })}
-          </ul>
+                        {/* The banner is a background behind the title, not a
+                            thumbnail beside it — a tournament card should look
+                            like a poster. */}
+                        <div className="tl-banner">
+                          {tournament.BannerImage && (
+                            // eslint-disable-next-line @next/next/no-img-element
+                            <img src={`/api/tournaments/${tournament.Slug}/banner`} alt="" loading="lazy" />
+                          )}
+                          <span className="tl-scrim" aria-hidden />
+                        </div>
+
+                        <div className="tl-main">
+                          <Link className="tl-name" href={`/tournaments/${tournament.Slug}`}>
+                            {tournament.Name}
+                          </Link>
+
+                          <div className="tl-facts">
+                            <StatusTag kind="tournament" className="compact" value={shown} />
+                            <span className="tl-fact">
+                              {tournament.TeamSize}v{tournament.TeamSize}
+                            </span>
+                            <span className="tl-fact">
+                              {t(`tlist.format.${tournament.Format}`)} · BO{tournament.BestOf}
+                            </span>
+                            {/* A pickup lobby's cap is 9999, meaning "no limit";
+                                below it, the count alone. */}
+                            <span className="tl-fact">
+                              {tournament.MaxTeams >= 999
+                                ? tournament._count.Teams
+                                : `${tournament._count.Teams} / ${tournament.MaxTeams}`}{" "}
+                              {t("tournaments.teams").toLowerCase()}
+                            </span>
+                            {when.kind === "starting-soon" && <span className="tl-fact">{t("countdown.soon")}</span>}
+                            {when.kind === "scheduled" && (
+                              <time className="tl-fact" dateTime={when.startsAt.toISOString()}>
+                                <CalendarDays size={12} aria-hidden />
+                                {when.startsAt.toLocaleDateString(locale, {
+                                  weekday: "short",
+                                  day: "numeric",
+                                  month: "short",
+                                  hour: "2-digit",
+                                  minute: "2-digit",
+                                })}
+                              </time>
+                            )}
+                          </div>
+
+                          {/* How full an entry list is, or how far a bracket has
+                              got — the one number that says whether to hurry. */}
+                          {shown === "registration" && tournament.MaxTeams < 999 && (
+                            <div className="tl-progress" aria-label={t("tlist.filled")}>
+                              <span style={{ width: `${Math.min(100, (tournament._count.Teams / tournament.MaxTeams) * 100)}%` }} />
+                            </div>
+                          )}
+                          {shown === "live" && total > 0 && (
+                            <div className="tl-progress live" aria-label={t("tlist.progress", { n: played, total })}>
+                              <span style={{ width: `${Math.min(100, (played / total) * 100)}%` }} />
+                              <em className="num">{t("tlist.progress", { n: played, total })}</em>
+                            </div>
+                          )}
+                        </div>
+
+                        {/* One filled button — the thing this event is for right
+                            now — and ghosts for the rest. */}
+                        <div className="tl-actions">
+                          {openToJoin && (
+                            <Link className="tl-btn is-primary" href={`/tournaments/${tournament.Slug}/register`}>
+                              {t("tournaments.register")}
+                              <ArrowRight size={14} aria-hidden focusable="false" />
+                            </Link>
+                          )}
+                          {shown === "live" && (
+                            <Link className="tl-btn is-live" href={`/tournaments/${tournament.Slug}/live`}>
+                              <MonitorPlay size={14} aria-hidden focusable="false" />
+                              {t("tlist.watch")}
+                            </Link>
+                          )}
+                          <Link className="tl-btn" href={`/tournaments/${tournament.Slug}`}>
+                            {shown === "finished" ? t("tlist.results") : t("tournaments.view")}
+                          </Link>
+                          {manageable.has(tournament.Id) && (
+                            <Link
+                              className="tl-btn tl-btn-icon"
+                              href={`/admin/tournaments/${tournament.Id}`}
+                              title={t("tournaments.manage")}
+                              aria-label={`${t("tournaments.manage")} — ${tournament.Name}`}
+                            >
+                              <Settings2 size={14} aria-hidden focusable="false" />
+                            </Link>
+                          )}
+                        </div>
+                      </li>
+                    ))}
+                  </ul>
+                </section>
+              ),
+            )}
+          </div>
         )}
         </HubTabs>
       </section>

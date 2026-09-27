@@ -31,10 +31,18 @@
    (h + gap) * (2^(r-1) - 1) / 2 and a gap between siblings of
    (h + gap) * 2^(r-1) - h. The component already passes 2^(r-1) as
    --gap-mult, so both fall out of one multiply. */
+/* Round 3: more room everywhere. The boxes were 64px tall with 18px between
+   them and a 24px gutter between rounds, so connectors and labels crowded each
+   other and a name longer than a word was cut. Taller boxes carry a header
+   strip; the gutter is its own variable so the connectors read it. */
 .br {
-  --br-card: 210px;
-  --br-h: 64px;
-  --br-gap: 18px;
+  --br-card: 250px;
+  --br-h: 100px;
+  --br-gap: 32px;
+  --br-col: 64px;
+  --br-head: 24px;
+  gap: var(--br-col);
+  padding: var(--space-2) var(--space-2) var(--space-4);
 }
 
 .br-round {
@@ -69,12 +77,27 @@
 .br-round-name {
   /* A fixed height, so every column's matches begin at the same line however
      long the round is called. */
-  margin: 0 0 var(--space-3);
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin: 0 0 var(--space-4);
+  padding-bottom: 8px;
   min-height: 1.4em;
   font-size: 12px;
+  font-weight: 800;
   text-transform: uppercase;
-  letter-spacing: 0.08em;
-  color: var(--muted);
+  letter-spacing: 0.1em;
+  color: var(--color-text);
+  border-bottom: 2px solid var(--color-divider);
+}
+.br-round:last-child .br-round-name {
+  color: var(--color-accent);
+  border-bottom-color: var(--color-accent);
+}
+.br-round-count {
+  font-size: 11px;
+  font-weight: 600;
+  color: var(--color-text-muted);
 }
 
 /* ---------- Connectors ----------
@@ -91,7 +114,7 @@
   position: absolute;
   top: calc(var(--br-h) / 2);
   left: 100%;
-  width: calc(var(--space-6) / 2);
+  width: calc(var(--br-col) / 2);
   border-top: 2px dashed var(--border);
   pointer-events: none;
 }
@@ -103,7 +126,7 @@
 .br-slot::before {
   content: "";
   position: absolute;
-  left: calc(100% + var(--space-6) / 2);
+  left: calc(100% + var(--br-col) / 2);
   height: calc((var(--br-h) + var(--br-gap)) * var(--gap-mult, 1) / 2);
   border-left: 2px dashed var(--border);
   pointer-events: none;
@@ -144,7 +167,7 @@
   box-sizing: border-box;
   display: flex;
   flex-direction: column;
-  justify-content: center;
+  justify-content: flex-start;
   border: 1px solid var(--color-divider);
   /* Square, and on the site's own surface token rather than the legacy
      --panel, which is a flatter grey that made the boxes vanish into the page.
@@ -155,20 +178,47 @@
   transition: border-color 0.15s ease, background 0.15s ease;
 }
 
-/* Which match this is. Top left, over the box's own border, in the same
-   register as the BO tag on the other corner. */
-.br-num {
-  position: absolute;
-  top: -8px;
-  left: 6px;
-  padding: 0 4px;
-  background: var(--color-bg);
-  color: var(--color-text-muted);
+/* The strip across the top: number, state, length. Inside the box now — it
+   used to sit on the border, where the connectors ran through it. */
+.br-head {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  height: var(--br-head);
+  padding: 0 10px;
+  box-sizing: border-box;
+  border-bottom: 1px solid var(--color-divider);
+  background: color-mix(in srgb, var(--color-text) 4%, transparent);
   font-family: var(--font-mono);
-  font-size: 9px;
+  font-size: 10px;
   letter-spacing: 0.06em;
   text-transform: uppercase;
+  color: var(--color-text-muted);
+}
+.br-num {
   white-space: nowrap;
+}
+.br-live {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  color: var(--color-accent);
+  font-weight: 700;
+}
+.br-live-dot {
+  width: 6px;
+  height: 6px;
+  background: var(--color-accent);
+  animation: br-blink 1.3s ease-in-out infinite;
+}
+@keyframes br-blink {
+  50% {
+    opacity: 0.3;
+  }
+}
+.br-final {
+  color: #16a34a;
+  font-weight: 700;
 }
 
 .br-match.live {
@@ -180,11 +230,12 @@
   display: flex;
   align-items: center;
   gap: var(--space-2);
-  padding: 0 10px;
-  /* Half the box each, less the divider. Fixed rather than padded, so a long
-     name that wraps cannot change the height the layout depends on. */
-  height: calc((var(--br-h) - 2px) / 2);
+  padding: 0 0 0 12px;
+  /* Half of what the header leaves, less the borders. Fixed rather than
+     padded, so a long name cannot change the height the layout depends on. */
+  height: calc((var(--br-h) - var(--br-head) - 3px) / 2);
   box-sizing: border-box;
+  font-size: 14px;
 }
 
 .br-row + .br-row {
@@ -218,23 +269,27 @@
   opacity: 0.7;
 }
 
+/* The score is a column of its own, so a bracket can be read down the right
+   edge. The winner's number is the accent; everything else is quiet. */
 .br-score {
+  align-self: stretch;
+  display: grid;
+  place-items: center;
+  width: 40px;
+  flex: none;
   font-family: var(--font-mono);
-  font-size: 13px;
-  min-width: 1.5em;
-  text-align: right;
+  font-size: 15px;
+  font-weight: 700;
+  border-left: 1px solid var(--color-divider);
+  background: color-mix(in srgb, var(--color-text) 4%, transparent);
+}
+.br-row.won .br-score {
+  color: var(--color-accent);
+  background: color-mix(in srgb, var(--color-accent) 12%, transparent);
 }
 
 .br-bo {
-  position: absolute;
-  top: -8px;
-  right: 6px;
-  padding: 0 4px;
-  background: var(--color-bg);
-  color: var(--color-text-muted);
-  font-family: var(--font-mono);
-  font-size: 9px;
-  letter-spacing: 0.06em;
+  margin-left: auto;
 }
 
 /* The hover target. A wrapper rather than the box itself, so the box keeps its
@@ -273,10 +328,12 @@
      showed one round and a sliver, and a bracket you can only read one column
      at a time is not a bracket. */
   .br {
-    gap: var(--space-4);
+    --br-card: 200px;
+    --br-col: 32px;
+    --br-gap: 20px;
   }
 
   .br-round {
-    min-width: 168px;
+    min-width: 200px;
   }
 }
