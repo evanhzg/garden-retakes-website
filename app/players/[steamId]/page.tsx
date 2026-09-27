@@ -14,6 +14,7 @@ import PassportCard from "@/components/profile/PassportCard";
 import SeasonFilters from "@/components/profile/SeasonFilters";
 import PerformanceMeters from "@/components/profile/PerformanceMeters";
 import { getT } from '@/lib/serverI18n';
+import { allPlayerNames } from "@/lib/tournament/playerNames";
 
 export const dynamic = "force-dynamic";
 export const revalidate = 30;
@@ -42,7 +43,14 @@ export async function generateMetadata({ params }: { params: { steamId: string }
       prisma.playerRoundRecord.count({ where: { ...roundWhere, WonRound: true } }),
     ]);
 
-    const name = override?.Name ?? profile?.LastKnownName ?? params.steamId;
+    // A tournament-only player (a bot, or somebody who has never joined the
+    // retakes server) has no PlayerProfile row, and the tab read as a bare
+    // Steam id while the page itself said their name. Same lookup as the page.
+    const name =
+      override?.Name ??
+      profile?.LastKnownName ??
+      (await allPlayerNames([steamId]).catch(() => ({}) as Record<string, string>))[params.steamId] ??
+      params.steamId;
     const rounds = agg._count._all;
 
     const og = new URLSearchParams({ type: "player", name });

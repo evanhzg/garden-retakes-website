@@ -5,6 +5,7 @@ import TournamentHome, {
   type HomeOngoing,
   type HomeTournament,
 } from "@/components/home/TournamentHome";
+import CircuitNow from "@/components/home/CircuitNow";
 
 // The homepage is the tournament system.
 //
@@ -124,5 +125,9 @@ export default async function HomePage() {
       }
     : null;
 
-  return <TournamentHome stats={stats} featured={featured} ongoing={ongoing} />;
+  return (
+    <TournamentHome stats={stats} featured={featured} ongoing={ongoing}>
+      <CircuitNow />
+    </TournamentHome>
+  );
 }

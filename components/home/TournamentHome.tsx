@@ -140,7 +140,9 @@ export default function TournamentHome({
   stats,
   featured,
   ongoing,
+  children,
 }: {
+  children?: React.ReactNode;
   stats: HomeStats;
   /** The event to point people at, or null when there is not one. */
   featured: HomeTournament | null;
@@ -248,22 +250,30 @@ export default function TournamentHome({
               ladder has seasons and tournaments do not, so it named a concept the
               system has no idea about. What it can honestly say is how much has
               actually been played. */}
+          {/* A zero is left out rather than printed: "0 tournaments played"
+              on the front page argues against the thing the page is for, and
+              the other two counts already say the circuit is running. */}
           <dl className="th-counts">
-            <div>
-              <dt>{t("home.count.tournaments")}</dt>
-              <dd>{stats.tournamentsPlayed}</dd>
-            </div>
-            <div>
-              <dt>{t("home.count.matches")}</dt>
-              <dd>{stats.matchesPlayed}</dd>
-            </div>
-            <div>
-              <dt>{t("home.count.players")}</dt>
-              <dd>{stats.playersPlayed}</dd>
-            </div>
+            {[
+              { key: "home.count.tournaments", value: stats.tournamentsPlayed },
+              { key: "home.count.matches", value: stats.matchesPlayed },
+              { key: "home.count.players", value: stats.playersPlayed },
+            ]
+              .filter((c) => c.value > 0)
+              .map((c) => (
+                <div key={c.key}>
+                  <dt>{t(c.key)}</dt>
+                  <dd>{c.value}</dd>
+                </div>
+              ))}
           </dl>
         </div>
       </header>
+
+      {/* What is actually happening on the circuit — rendered on the server by
+          app/page.tsx and passed in, so this client component never has to
+          carry the queries. */}
+      {children}
 
       {/* ---------------------------------------------------- 01 · the veto */}
       <section className="th-module">

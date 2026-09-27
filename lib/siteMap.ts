@@ -72,7 +72,7 @@ export const SITE_MAP: SiteEntry[] = [
   e("/stats/maps", "compete", "maps", "Maps", "Win rates and round stats per map.", { keywords: "dust mirage inferno ancient anubis" }),
   e("/stats/heatmaps", "compete", "heatmaps", "Heatmaps", "Where kills and deaths happen, per map.", { keywords: "positions kills deaths" }),
   e("/stats/form", "compete", "form", "Recent form", "Your last ten sessions: rating, K/D, ADR and how each went.", { keywords: "streak trend recent sessions" }),
-  e("/compare", "compete", "compare", "Compare", "Put two players side by side.", { keywords: "versus vs head to head" }),
+  e("/stats/compare", "compete", "compare", "Compare", "Put two players side by side.", { keywords: "versus vs head to head" }),
   e("/tournaments", "compete", "tournaments", "Tournaments", "Cups and events: brackets, schedules, sign-ups.", { keywords: "cup event bracket register" }),
   e("/teams", "compete", "teams", "Teams", "Standing teams and the Blitz ladder.", { keywords: "blitz squad roster" }),
   e("/duels", "compete", "duels", "Duels", "1v1 duels on the Blitz circuit — coming soon.", { keywords: "1v1 aim" }),
@@ -87,6 +87,7 @@ export const SITE_MAP: SiteEntry[] = [
   // resources
   e("/economy", "resources", "economy", "Economy", "Money, round types, utility limits and what the allocator buys you.", { keywords: "money buy rounds allocator" }),
   e("/commands", "resources", "commands", "Commands", "Every chat and console command the servers answer to, by mode.", { keywords: "chat console help !" }),
+  e("/status", "resources", "status", "Status", "Live state of the site, matchmaking and every game server.", { keywords: "uptime down servers online outage" }),
   e("/roadmap", "resources", "roadmap", "Roadmap", "What is built, what is next.", { keywords: "changelog plans todo" }),
 
   // account
