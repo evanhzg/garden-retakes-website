@@ -1,0 +1,202 @@
+/* "The circuit, right now" on the homepage. Square, tokens only, like tournament-home.css. */
+
+.cn {
+  padding: clamp(36px, 6vw, 72px) 0;
+  border-bottom: 1px solid var(--border);
+}
+.cn-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16px;
+  flex-wrap: wrap;
+  margin-bottom: 22px;
+}
+.cn-title {
+  margin: 0;
+  font-size: clamp(26px, 3.4vw, 40px);
+  font-weight: 900;
+  letter-spacing: -0.03em;
+}
+
+.cn-live {
+  --cn: #16a34a;
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  padding: 7px 12px;
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--color-text);
+  text-decoration: none;
+  border: 1px solid color-mix(in srgb, var(--cn) 45%, transparent);
+  background: color-mix(in srgb, var(--cn) 8%, transparent);
+}
+.cn-live.down {
+  --cn: #ef4444;
+}
+.cn-live.unknown,
+.cn-live.pending {
+  --cn: var(--color-neutral-500);
+}
+.cn-live.pending {
+  width: 200px;
+  height: 34px;
+  opacity: 0.4;
+}
+.cn-live:hover {
+  border-color: var(--cn);
+}
+.cn-live-dot {
+  width: 8px;
+  height: 8px;
+  background: var(--cn);
+  animation: cn-blink 1.8s ease-in-out infinite;
+}
+@keyframes cn-blink {
+  50% {
+    opacity: 0.35;
+  }
+}
+.cn-live-busy {
+  color: var(--color-accent);
+}
+
+.cn-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+  gap: clamp(20px, 3vw, 36px);
+}
+.cn-col h3 {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin: 0 0 10px;
+  font-family: var(--font-mono);
+  font-size: 11px;
+  font-weight: 700;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+  color: var(--color-accent);
+}
+.cn-col ul,
+.cn-col ol {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  border-top: 2px solid var(--color-divider);
+}
+.cn-item {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 12px 2px;
+  border-bottom: 1px solid var(--color-divider);
+  color: inherit;
+  text-decoration: none;
+  transition: background 0.15s ease;
+}
+a.cn-item:hover {
+  background: color-mix(in srgb, var(--color-text) 4%, transparent);
+}
+.cn-item-main {
+  display: flex;
+  flex-direction: column;
+  gap: 3px;
+  flex: 1;
+  min-width: 0;
+}
+.cn-item-main strong {
+  font-size: 14px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.cn-meta {
+  font-size: 12px;
+  color: var(--color-neutral-500);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.cn-badge {
+  flex: none;
+  padding: 3px 7px;
+  font-size: 10px;
+  font-weight: 800;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  background: var(--color-accent);
+  color: var(--color-bg);
+}
+.cn-badge.live {
+  background: transparent;
+  color: var(--color-accent);
+  border: 1px solid var(--color-accent);
+}
+.cn-score {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto minmax(0, 1fr);
+  gap: 10px;
+  align-items: baseline;
+  font-size: 14px;
+  color: var(--color-neutral-500);
+}
+.cn-score > span:first-child {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.cn-score > span:last-child {
+  text-align: right;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.cn-score .win {
+  color: var(--color-text);
+  font-weight: 800;
+}
+.cn-nums {
+  display: inline-flex;
+  gap: 4px;
+  font-size: 15px;
+}
+.cn-nums b {
+  font-weight: 600;
+}
+.cn-nums b.win {
+  color: var(--color-accent);
+}
+.cn-pos {
+  flex: none;
+  width: 22px;
+  font-size: 13px;
+  color: var(--color-neutral-500);
+}
+.cn-rank li:first-child .cn-pos {
+  color: var(--color-accent);
+  font-weight: 700;
+}
+.cn-tag {
+  margin-right: 6px;
+  font-family: var(--font-mono);
+  font-size: 11px;
+  color: var(--color-neutral-500);
+}
+.cn-more {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  margin-top: 12px;
+  font-size: 13px;
+  font-weight: 700;
+  color: var(--color-accent);
+  text-decoration: none;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .cn-live-dot {
+    animation: none;
+  }
+}
