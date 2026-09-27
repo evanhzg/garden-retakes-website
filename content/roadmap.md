@@ -421,6 +421,28 @@ components), overhauled 2026-07-17 (commit 48b4a2d).
 - [ ] DOC5. Later: OpenAPI JSON generated from a single source of truth + "try it" console for
       the public read-only endpoints; auto-listed changelog of API-affecting commits.
 
+### Phase PANEL — RE5-PANEL (panel.retakes.fr)
+
+The VPS + fleet control panel (`/opt/panel` on 213.130.147.107, `retakes-panel.service`). Built:
+fleet dashboard, power, live console, RCON, cfg editor, playability checks, tournaments,
+Minecraft/Terraria, DatHost, audit trail. Its README lists what is still greyed out.
+
+- [x] PANEL1. **FTP system** — DONE 2026-09-27 (RE5-Projects/RE5-panel PR #1, deployed). An
+      in-browser file manager rather than FTP accounts: a **files** tab on every CS2 instance,
+      Minecraft and Terraria server, and a Files section on DatHost — browse, download, edit,
+      upload, new folder, delete. Admin reads, Owner writes, every write in `GardenAdminLog`.
+      CS2 writes go through the root helper `deploy/panel-files.sh` (sudoers `PANEL_FILES`), which
+      rebuilds paths from a validated instance id and writes through the merged overlay mount so
+      overlayfs does its own copy-up (refusing when the overlay is not mounted). Config zones only
+      (`cfg/`, `addons/counterstrikesharp/configs/`), no binaries, never `rcon.cfg`, deletes only of
+      instance-own files — anything a lower layer provides would get a whiteout. Every entry shows
+      its origin (own / shadows shared / shared), which makes the overlay-shadowing gotcha visible.
+      DatHost goes through its file API with the existing credentials. Still open: writes for
+      Minecraft/Terraria, and reverting a shadowing copy (needs a stop + remount).
+- [ ] PANEL2. Machine-level snapshots via the Hostinger API.
+- [ ] PANEL3. Scheduled tasks.
+- [ ] PANEL4. Audit-log viewer.
+
 ### Phase P — "Garden PKMN": browser PokeMMO-like at pkmn.retakes.fr
 
 **Vision**: a persistent, multiplayer, Pokémon-style overworld + battle game, fully playable in
@@ -797,3 +819,8 @@ site economy). Long-haul project — phases land independently and each one is p
   replacing them, and the mode word `blitz` is accepted where `cr` was — a
   rename that breaks the old word on the day it ships teaches people the
   feature is gone rather than that it moved.
+- 2026-09-27: `/inventory` rebuilt around three columns — loadouts, the board (T and CT side by
+  side, every slot a link) and the armory (one scroll with a jump bar instead of type tabs, weapon
+  view with wear/pattern/StatTrak/name-tag controls, vault with bulk actions). Real weapon
+  silhouettes as icons, lucide actions, `.iv-*` styles on the Modernist tokens, en+fr strings.
+  Roadmap: Phase PANEL added, with the panel FTP system as PANEL1.

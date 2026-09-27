@@ -14,6 +14,7 @@ import { ToastProvider } from "@/components/Toast";
 import { SocketProvider } from "@/components/SocketProvider";
 import NoticeProvider from "@/components/Notices";
 import PassportWorkflow from "@/components/PassportWorkflow";
+import CommandPalette from "@/components/CommandPalette";
 import { resolveLocale, LOCALE_COOKIE } from "@/lib/i18n";
 
 // Modernist: one grotesque carries headings and body, and a mono handles every
@@ -87,7 +88,12 @@ export const viewport: Viewport = {
   width: "device-width",
   initialScale: 1,
   viewportFit: "cover",
-  themeColor: "#a855f7",
+  // The page's own ground, per scheme — this tints the phone's browser chrome,
+  // and it was still the retired purple wash.
+  themeColor: [
+    { media: "(prefers-color-scheme: light)", color: "#f3f2f2" },
+    { media: "(prefers-color-scheme: dark)", color: "#100f0e" },
+  ],
 };
 import { ThemeProvider } from "@/components/ThemeProvider";
 import MotionGate from "@/components/MotionGate";
@@ -187,6 +193,9 @@ export default async function RootLayout({ children }: { children: React.ReactNo
             </div>
           </div>
           {session && <PassportWorkflow session={session} />}
+          {/* Ctrl/⌘K and the site's keyboard layer. In a demo it offers only
+              the demo's pages — see DEMO_ALLOWLIST. */}
+          <CommandPalette demo={isDemoMode} />
         </ToastProvider>
         </NoticeProvider>
         </SocketProvider>

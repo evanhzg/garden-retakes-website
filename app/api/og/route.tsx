@@ -12,8 +12,12 @@ export const runtime = "edge";
 //   /api/og?type=player&name=…&elo=…&rating=…&kd=…&adr=…&wr=…&avatar=…&season=…
 //   /api/og?type=lobby&name=…&game=…&host=…
 
-const PURPLE = "#a855f7";
-const PINK = "#ec4899";
+// The Modernist palette (globals.css), dark side: a warm near-black ground,
+// one hot accent, square corners. The cards were still the retired
+// purple/pink wash, so a shared link looked like a different site.
+const ACCENT = "#ff4a28";
+const GROUND = "#100f0e";
+const SURFACE = "#191817";
 
 function statChip(label: string, value: string, big = false) {
   return (
@@ -24,9 +28,9 @@ function statChip(label: string, value: string, big = false) {
         alignItems: "center",
         justifyContent: "center",
         padding: big ? "18px 34px" : "14px 26px",
-        borderRadius: 18,
-        background: "rgba(255,255,255,0.07)",
-        border: "1px solid rgba(255,255,255,0.14)",
+        borderRadius: 0,
+        background: SURFACE,
+        borderLeft: `6px solid ${ACCENT}`,
       }}
     >
       <div style={{ display: "flex", fontSize: big ? 54 : 40, fontWeight: 800, color: "#fff" }}>{value}</div>
@@ -56,16 +60,13 @@ function frame(children: React.ReactNode, origin: string) {
         height: "100%",
         display: "flex",
         flexDirection: "column",
-        backgroundColor: "#0b0710",
-        backgroundImage:
-          `radial-gradient(circle at 90% 0%, rgba(236,72,153,0.18), transparent 45%),` +
-          `radial-gradient(circle at 0% 30%, rgba(168,85,247,0.22), transparent 45%),` +
-          `radial-gradient(circle at 50% 100%, rgba(217,70,239,0.15), transparent 40%)`,
+        backgroundColor: GROUND,
+        backgroundImage: `radial-gradient(circle at 100% 0%, rgba(255,74,40,0.16), transparent 50%)`,
         padding: 56,
         position: "relative",
       }}
     >
-      {/* top gradient hairline */}
+      {/* the accent rule */}
       <div
         style={{
           position: "absolute",
@@ -74,7 +75,7 @@ function frame(children: React.ReactNode, origin: string) {
           right: 0,
           height: 10,
           display: "flex",
-          background: `linear-gradient(90deg, ${PURPLE}, #d946ef, ${PINK})`,
+          background: ACCENT,
         }}
       />
       {children}
@@ -87,10 +88,11 @@ function frame(children: React.ReactNode, origin: string) {
           right: 56,
           display: "flex",
           alignItems: "center",
-          justifyContent: "flex-end",
+          justifyContent: "space-between",
         }}
       >
-        <div style={{ display: "flex", fontSize: 24, fontWeight: 600, color: "rgba(255,255,255,0.45)" }}>
+        <div style={{ display: "flex", fontSize: 30, fontWeight: 900, color: "#f3f2f2", letterSpacing: -1 }}>REEEETAKES</div>
+        <div style={{ display: "flex", fontSize: 24, fontWeight: 600, color: "rgba(243,242,242,0.45)" }}>
           {t("auto.route.retakes_fr")}
                           </div>
       </div>
@@ -125,16 +127,16 @@ export async function GET(req: Request) {
                 src={avatar}
                 width={148}
                 height={148}
-                style={{ borderRadius: 999, border: `5px solid ${PURPLE}` }}
+                style={{ borderRadius: 0, border: `5px solid ${ACCENT}` }}
               />
             ) : (
               <div
                 style={{
                   width: 148,
                   height: 148,
-                  borderRadius: 999,
-                  border: `5px solid ${PURPLE}`,
-                  background: "rgba(168,85,247,0.25)",
+                  borderRadius: 0,
+                  border: `5px solid ${ACCENT}`,
+                  background: SURFACE,
                   display: "flex",
                   alignItems: "center",
                   justifyContent: "center",
@@ -178,7 +180,7 @@ export async function GET(req: Request) {
     return new ImageResponse(
       frame(
         <div style={{ display: "flex", flexDirection: "column", flex: 1, justifyContent: "center" }}>
-          <div style={{ display: "flex", fontSize: 30, fontWeight: 700, color: PINK, letterSpacing: 3 }}>
+          <div style={{ display: "flex", fontSize: 30, fontWeight: 700, color: ACCENT, letterSpacing: 3 }}>
             {t("auto.route._games_hub_you_re_invited")}
                             </div>
           <div style={{ display: "flex", fontSize: 78, fontWeight: 900, color: "#fff", marginTop: 12, lineHeight: 1.05 }}>
@@ -186,12 +188,12 @@ export async function GET(req: Request) {
           </div>
           <div style={{ display: "flex", gap: 16, marginTop: 30 }}>
             {game && (
-              <div style={{ display: "flex", fontSize: 30, fontWeight: 700, color: "#fff", padding: "12px 28px", borderRadius: 999, background: "rgba(168,85,247,0.35)", border: "1px solid rgba(168,85,247,0.7)" }}>
+              <div style={{ display: "flex", fontSize: 30, fontWeight: 700, padding: "12px 28px", borderRadius: 0, background: ACCENT, color: GROUND }}>
                 {game}
               </div>
             )}
             {host && (
-              <div style={{ display: "flex", fontSize: 30, fontWeight: 600, color: "rgba(255,255,255,0.75)", padding: "12px 28px", borderRadius: 999, background: "rgba(255,255,255,0.08)", border: "1px solid rgba(255,255,255,0.16)" }}>
+              <div style={{ display: "flex", fontSize: 30, fontWeight: 600, color: "rgba(255,255,255,0.75)", padding: "12px 28px", borderRadius: 0, background: SURFACE, border: "2px solid rgba(243,242,242,0.2)" }}>
                 {t("auto.route.hosted_by")} {host.slice(0, 20)}
               </div>
             )}
@@ -217,7 +219,7 @@ export async function GET(req: Request) {
           {icon ? (
             <div style={{ display: "flex", fontSize: 84 }}>{icon}</div>
           ) : (
-            <img src={`${origin}/retakes_logo.png`} width={84} height={84} style={{ borderRadius: 16 }} />
+            <div style={{ display: "flex", width: 84, height: 12, background: ACCENT }} />
           )}
           <div style={{ display: "flex", fontSize: 82, fontWeight: 900, color: "#fff", marginTop: 16, lineHeight: 1.05 }}>
             {title.slice(0, 30)}

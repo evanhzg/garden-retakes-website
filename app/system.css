@@ -1,0 +1,120 @@
+/* 404 and error pages. Tokens only. */
+
+.sys {
+  max-width: 1100px;
+  margin: 0 auto;
+  padding: clamp(28px, 7vh, 80px) 0 64px;
+}
+.sys-hero {
+  display: grid;
+  grid-template-columns: auto minmax(0, 1fr);
+  gap: clamp(20px, 4vw, 56px);
+  align-items: center;
+  padding-bottom: clamp(28px, 5vh, 48px);
+  border-bottom: 2px solid var(--color-divider);
+}
+.sys-code {
+  font-family: var(--font-mono);
+  font-size: clamp(88px, 16vw, 200px);
+  font-weight: 700;
+  line-height: 0.85;
+  letter-spacing: -0.06em;
+  color: var(--color-accent);
+}
+.sys-title {
+  margin: 8px 0 10px;
+  font-family: var(--font-heading);
+  font-weight: var(--font-heading-weight);
+  font-size: clamp(28px, 4vw, 46px);
+  line-height: 1.05;
+  letter-spacing: -0.02em;
+}
+.sys-lede {
+  margin: 0 0 20px;
+  max-width: 56ch;
+  font-size: 16px;
+  color: color-mix(in srgb, var(--color-text) 70%, transparent);
+}
+.sys-actions {
+  display: flex;
+  gap: 10px;
+  flex-wrap: wrap;
+}
+.sys-kbd {
+  margin-left: 6px;
+  padding: 1px 5px;
+  font-family: var(--font-mono);
+  font-size: 11px;
+  border: 1px solid color-mix(in srgb, currentColor 40%, transparent);
+  opacity: 0.8;
+}
+.sys-ref {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  flex-wrap: wrap;
+  margin: 18px 0 0;
+  font-size: 12px;
+  color: var(--color-neutral-500);
+}
+
+.sys-map {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+  gap: 28px;
+  padding-top: 32px;
+}
+.sys-map h2 {
+  margin: 0 0 10px;
+  font-size: 11px;
+  font-weight: 800;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  color: var(--color-neutral-500);
+}
+.sys-map ul {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  border-top: 2px solid var(--color-divider);
+}
+.sys-map li a {
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  padding: 10px 26px 10px 0;
+  border-bottom: 1px solid var(--color-divider);
+  color: inherit;
+  text-decoration: none;
+}
+.sys-map-label {
+  font-weight: 700;
+  font-size: 14px;
+}
+.sys-map-desc {
+  font-size: 12px;
+  color: var(--color-neutral-500);
+}
+.sys-map-arrow {
+  position: absolute;
+  right: 4px;
+  top: 50%;
+  transform: translate(-4px, -50%);
+  opacity: 0;
+  color: var(--color-accent);
+  transition: opacity 0.15s ease, transform 0.15s ease;
+}
+.sys-map li a:hover .sys-map-label {
+  color: var(--color-accent);
+}
+.sys-map li a:hover .sys-map-arrow {
+  opacity: 1;
+  transform: translate(0, -50%);
+}
+
+@media (max-width: 640px) {
+  .sys-hero {
+    grid-template-columns: 1fr;
+  }
+}

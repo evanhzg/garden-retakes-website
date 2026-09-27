@@ -1,6 +1,5 @@
 import InventorySimulator from "@/components/inventory/InventorySimulator";
-// After globals, so the page's own rules win over the .inv4-* blocks still
-// living there. See the note at the top of the file.
+// After globals, so the page's own `.iv-*` rules sit on top of the site base.
 import "./inventory.css";
 
 export const metadata = {
