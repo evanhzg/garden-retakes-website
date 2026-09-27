@@ -73,13 +73,16 @@ export default function Bracket({
             {/* These were three hardcoded English strings in a site that ships
                 a French dictionary and gates its build on the two matching. */}
             <h4 className="br-round-name">
-              {round === lastRound
-                ? t("bracket.final")
-                : round === lastRound - 1
-                  ? t("bracket.semis")
-                  : round === lastRound - 2
-                    ? t("bracket.quarters")
-                    : t("bracket.round", { n: String(round) })}
+              <span>
+                {round === lastRound
+                  ? t("bracket.final")
+                  : round === lastRound - 1
+                    ? t("bracket.semis")
+                    : round === lastRound - 2
+                      ? t("bracket.quarters")
+                      : t("bracket.round", { n: String(round) })}
+              </span>
+              <span className="br-round-count num">{inRound.length}</span>
             </h4>
 
             <div className="br-slots">
@@ -95,14 +98,26 @@ export default function Bracket({
                 className={`br-slot ${match.winnerTeamId !== null ? "decided" : ""}`}
               >
                 <BoxLink slug={slug} match={match} onOpen={setOpen}>
-                <div className={`br-match ${match.state === "live" ? "live" : ""}`}>
-                  {/* Which match this is, top left. A bracket is discussed out
-                      loud — "go and look at match 5" — and without a number the
-                      only way to name one is by its two teams, which is exactly
-                      what changes when it is still TBD. */}
-                  <span className="br-num">
-                    {t("bracket.matchNumber", { n: String(numberOf.get(match.id) ?? 0) })}
-                  </span>
+                <div className={`br-match ${match.state === "live" ? "live" : ""} ${match.winnerTeamId !== null ? "done" : ""}`}>
+                  {/* A strip across the top of the box: which match this is,
+                      its state, its length. It sat ON the box's border before,
+                      where it collided with the connector lines and read as a
+                      label that had slipped. A bracket is discussed out loud —
+                      "go and look at match 5" — so the number stays. */}
+                  <div className="br-head">
+                    <span className="br-num">
+                      {t("bracket.matchNumber", { n: String(numberOf.get(match.id) ?? 0) })}
+                    </span>
+                    {match.state === "live" && (
+                      <span className="br-live">
+                        <span className="br-live-dot" aria-hidden /> {t("bracket.live")}
+                      </span>
+                    )}
+                    {match.winnerTeamId !== null && match.state !== "live" && (
+                      <span className="br-final">{t("bracket.ft")}</span>
+                    )}
+                    <span className="br-bo">BO{match.bestOf}</span>
+                  </div>
 
                   <Row
                     team={match.teamA}
@@ -117,7 +132,6 @@ export default function Bracket({
                     decided={match.winnerTeamId !== null}
                   />
 
-                  {match.bestOf > 1 && <span className="br-bo">BO{match.bestOf}</span>}
                 </div>
                 </BoxLink>
               </MatchBubble>

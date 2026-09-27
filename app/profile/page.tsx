@@ -164,12 +164,9 @@ export default async function ProfilePage({
         recentRatings={recentRatings}
       />
 
-      {/* ---------- Connections + settings ---------- */}
-      <section className="pro-section">
-        <div className="pro-section-head">
-          <h2>{t("profile.connections.title")}</h2>
-        </div>
-      </section>
+      {/* The "Connections" section that stood here was a heading with nothing
+          under it (its string was the placeholder "Title"): connections are in
+          the hero's chips, and edited from Settings. */}
 
     </>
   );

@@ -1,8 +1,8 @@
-import Link from "next/link";
 import { levelName } from "@/lib/adminAuth";
 import { getTournamentContext } from "@/lib/tournamentAuth";
 import { orgsOrganizedBy } from "@/lib/tournament/orgs";
 import AdminPanel from "@/components/AdminPanel";
+import BlitzDashboard from "@/components/admin/BlitzDashboard";
 import { canOpenBlitzPanel } from "@/components/admin/adminSections";
 import { getT } from "@/lib/serverI18n";
 
@@ -56,14 +56,15 @@ export default async function BlitzAdminPage({
 
   return (
     <>
-      <section className="panel">
+      <section className="panel bd-page-head">
         <div className="admin-head">
           <h2>{t("admin.blitz.title")}</h2>
           <span className="role-badge">{ctx.isOrganizer ? t("admin.blitz.organizer") : levelName(ctx.level)}</span>
         </div>
-        <p className="muted" style={{ marginTop: -4 }}>
-          {t("admin.blitz.blurb")}{" "}
-          <Link href={`/tournaments${keyQuery}`}>{t("tournaments.title")}</Link>.
+        {/* The sentence ended in a link whose text was the page title in
+            capitals, so it read "The public listing is at BLITZ TOURNAMENT." */}
+        <p className="muted" style={{ marginTop: -4, marginBottom: 0 }}>
+          {t("blitzdash.blurb")}
         </p>
       </section>
 
@@ -73,6 +74,7 @@ export default async function BlitzAdminPage({
         panel="blitz"
         isOrganizer={ctx.isOrganizer}
         managesSome={managesSome}
+        overview={<BlitzDashboard ctx={ctx} keyQuery={keyQuery} />}
       />
     </>
   );

@@ -336,7 +336,11 @@
    padding-right — after the last, which is otherwise clipped away. */
 .tv .pro-panel .br {
   padding: 1rem;
-  gap: var(--space-5);
+  /* Was var(--space-5), which the scale does not define (it goes 4, 6, 8) —
+     an undefined variable makes the whole declaration invalid, so the gap was
+     0 and every round sat flush against the next, connectors and all. The
+     bracket's own gutter is the one its connectors are drawn to. */
+  gap: var(--br-col);
 }
 
 /* Teams, pool and stats sit inside the padded panel already; the stage blocks

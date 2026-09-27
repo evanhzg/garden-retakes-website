@@ -70,6 +70,9 @@
   --space-2: 8px;
   --space-3: 12px;
   --space-4: 16px;
+  /* Missing from the scale while eight rules used it — an undefined variable
+     voids the whole declaration, so those gaps and paddings were silently 0. */
+  --space-5: 20px;
   --space-6: 24px;
   --space-8: 32px;
 
@@ -8259,8 +8262,16 @@ header .avatar-sm { width: 34px; height: 34px; }
   transition: background 0.14s ease, color 0.14s ease;
 }
 .adm-nav-item:hover { background: color-mix(in srgb, var(--color-text) 8%, transparent); }
-.adm-nav-item.active { background: var(--btn-primary-bg); color: var(--btn-primary-ink); }
-.adm-nav-item.active .adm-nav-hint { color: inherit; opacity: 0.75; }
+/* Where you are, marked the way the panel switcher above it marks it: a tint
+   and an accent rule. A solid accent block was the loudest thing on the page,
+   louder than the content it was only meant to label. */
+.adm-nav-item.active {
+  background: color-mix(in srgb, var(--color-accent) 12%, transparent);
+  box-shadow: inset 2px 0 0 var(--color-accent);
+  color: var(--color-text);
+}
+.adm-nav-item.active .adm-nav-icon { color: var(--color-accent); opacity: 1; }
+.adm-nav-item.active .adm-nav-hint { opacity: 0.85; }
 
 .adm-nav-icon { font-size: 13px; line-height: 1.5; opacity: 0.85; flex: none; }
 .adm-nav-text { display: grid; gap: 1px; min-width: 0; }
@@ -8355,6 +8366,11 @@ header .avatar-sm { width: 34px; height: 34px; }
   min-height: 100%;
 }
 .adm-shell { align-items: stretch; }
+/* The stretch above is for the panel. The nav must NOT take it: stretched to
+   the height of a long dashboard, its grid spread five links over 1500px — a
+   110px "Dashboard" button and empty bands between groups — and a full-height
+   box has nowhere to stick to, so `position: sticky` stopped doing anything. */
+.adm-nav { align-self: start; align-content: start; }
 
 /* ---------------------------------------------------------------------------
    Inventory rail: types first, one row, one side.
@@ -11973,4 +11989,38 @@ button.btn {
     right: 0;
     width: min(340px, calc(100vw - 24px));
   }
+}
+
+/* ═══════════════════════════════════════════════════════════════════════════
+   Profile polish (round 3).
+
+   Numbers: every figure on the profile was painted in the accent, so a 0.63
+   K/D looked exactly as good as a 1.33 rating and colour said nothing. Figures
+   are the text colour now; the accent is kept for the one headline number
+   (CS Rating), and a rating is tinted by what it means — ratingClass() already
+   labels it, nothing styled the label.
+
+   Equipped grid: the hairlines between tiles were the grid's own background
+   showing through a 2px gap, so an empty cell at the end of a row was a solid
+   grey block. The lines are drawn on the tiles instead; an empty cell is empty.
+   ═══════════════════════════════════════════════════════════════════════ */
+.pro-stat-v { color: var(--color-text); }
+.pro-stat-cr .pro-stat-v { color: var(--color-accent); }
+.pro-stat-v.rating-good { color: #16a34a; }
+.pro-stat-v.rating-bad { color: #ef4444; }
+.dark .pro-stat-v.rating-good { color: #4ade80; }
+.dark .pro-stat-v.rating-bad { color: #f87171; }
+
+.pro-guns,
+.pro-showcase .pro-guns {
+  gap: 0;
+  background: transparent;
+  border: 0;
+  border-top: 1px solid var(--color-divider);
+  border-left: 1px solid var(--color-divider);
+}
+.pro-gun {
+  border-right: 1px solid var(--color-divider);
+  border-bottom: 1px solid var(--color-divider);
+  box-shadow: inset 0 -3px 0 var(--rarity, transparent);
 }

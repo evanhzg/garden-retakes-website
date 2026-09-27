@@ -62,7 +62,13 @@ export default function AdminPanel({
   panel = "site",
   isOrganizer = false,
   managesSome = false,
+  overview,
 }: {
+  /**
+   * What the Overview tab shows, when the page has its own. The Blitz panel
+   * passes its event dashboard here; left out, it is the site dashboard.
+   */
+  overview?: React.ReactNode;
   viewerLevel: number;
   adminKey?: string;
   /**
@@ -198,7 +204,8 @@ export default function AdminPanel({
 
         {/* The dashboard carries an Owner-only control, so it needs to know who
             is looking rather than discovering it from a 403 after the click. */}
-        {tab === "overview" && <AdminOverview adminKey={adminKey ?? ""} onGo={go} viewerLevel={viewerLevel} />}
+        {tab === "overview" &&
+          (overview ?? <AdminOverview adminKey={adminKey ?? ""} onGo={go} viewerLevel={viewerLevel} />)}
 
         {tab === "players" && (
           <>

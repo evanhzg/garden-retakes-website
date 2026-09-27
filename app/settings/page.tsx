@@ -5,7 +5,7 @@ import { getT } from "@/lib/serverI18n";
 import { getSession } from "@/lib/auth";
 import AvatarImage from "@/components/AvatarImage";
 import { resolveName } from "@/lib/names";
-import { ProfileSettingsBody } from "@/components/profile/ProfileSettingsModal";
+import { ProfileSettingsBody, SettingsIndex } from "@/components/profile/ProfileSettingsModal";
 import "./settings.css";
 
 export const dynamic = "force-dynamic";
@@ -64,9 +64,12 @@ export default async function SettingsPage() {
         </Link>
       </header>
 
-      <section className="panel set-panel">
-        <ProfileSettingsBody />
-      </section>
+      <div className="set-layout">
+        <SettingsIndex />
+        <div className="set-panel">
+          <ProfileSettingsBody />
+        </div>
+      </div>
     </div>
   );
 }
