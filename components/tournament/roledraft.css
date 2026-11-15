@@ -277,3 +277,11 @@
 .rd-step {
   align-items: center;
 }
+
+/* Name over the role's upgrade (its gadget), in the grid's middle cell. */
+.rd-role-text {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  min-width: 0;
+}

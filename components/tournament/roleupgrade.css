@@ -1,0 +1,86 @@
+/* A role's upgrade (its gadget). Accent on T, blue on CT, from the side class of
+   whichever panel holds it (.ct). */
+
+.ru {
+  display: flex;
+  gap: 12px;
+  align-items: flex-start;
+  margin-top: 14px;
+  padding: 12px;
+  border: 1px dashed color-mix(in srgb, var(--color-accent) 45%, var(--border));
+  background: color-mix(in srgb, var(--color-accent) 6%, transparent);
+}
+
+.ct .ru {
+  border-color: color-mix(in srgb, #3b82f6 45%, var(--border));
+  background: color-mix(in srgb, #3b82f6 6%, transparent);
+}
+
+.ru-icon {
+  flex: 0 0 auto;
+  display: grid;
+  place-items: center;
+  width: 42px;
+  height: 42px;
+  color: var(--color-accent);
+  border: 1px solid currentColor;
+}
+
+.ct .ru-icon {
+  color: #3b82f6;
+}
+
+.ru-body {
+  min-width: 0;
+}
+
+.ru-kicker {
+  display: block;
+  font-family: var(--font-mono);
+  font-size: 9.5px;
+  font-weight: 700;
+  letter-spacing: 0.09em;
+  text-transform: uppercase;
+  color: var(--color-text-muted);
+}
+
+.ru strong {
+  display: block;
+  font-size: 14px;
+  font-weight: 800;
+  margin: 1px 0 3px;
+}
+
+.ru p {
+  margin: 0;
+  font-size: 12.5px;
+  line-height: 1.5;
+  color: color-mix(in srgb, var(--color-text) 78%, transparent);
+}
+
+.ru-compact {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  font-family: var(--font-mono);
+  font-size: 9.5px;
+  font-weight: 700;
+  letter-spacing: 0.05em;
+  text-transform: uppercase;
+  color: var(--color-text-muted);
+  white-space: nowrap;
+}
+
+.ru-compact svg {
+  flex: 0 0 auto;
+  opacity: 0.85;
+}
+
+/* A role tab's small gadget mark (homepage). */
+.th-role .th-role-gadget {
+  opacity: 0.55;
+}
+
+.th-role.on .th-role-gadget {
+  opacity: 0.9;
+}

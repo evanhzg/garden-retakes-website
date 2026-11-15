@@ -73,6 +73,42 @@ export function roleLabel(id: string | null | undefined): string {
   return [...T_ROLES, ...CT_ROLES].find((r) => r.id === id)?.label ?? id;
 }
 
+// ------------------------------------------------------------------ upgrades
+
+/**
+ * A role's upgrade: one piece of equipment that does its signature grenade's job
+ * in a way the stock game does not. Nothing magical — oil that burns when
+ * something lights it, a charge that sticks where it lands, an extinguisher, a
+ * motion sensor, a trap on the bomb.
+ *
+ * In game the gadget rides on the decoy and the blitz_kit Workshop addon plays
+ * it; it replaces the grenade named in `replaces`, so an upgraded kit is never
+ * bigger than the plain one, and a round that would not give the role that
+ * grenade gives no gadget either. Pistol rounds stay stock.
+ *
+ * The ids are on the wire: the tournament plugin
+ * (R5eGames.Tournament.Core/Roles/Gadgets.cs) and the map script
+ * (blitz_kit.js GADGETS) use the same five.
+ */
+export type GadgetDef = {
+  id: "oil" | "trap" | "breach" | "co2" | "sensor";
+  role: string;
+  /** The stock grenade it takes the place of; null for the trap, which is on the bomb. */
+  replaces: "molotov" | "incendiary" | "hegrenade" | "flashbang" | null;
+};
+
+export const GADGETS: GadgetDef[] = [
+  { id: "oil", role: "burner", replaces: "molotov" },
+  { id: "trap", role: "planter", replaces: null },
+  { id: "breach", role: "frontrunner", replaces: "hegrenade" },
+  { id: "co2", role: "backup", replaces: "incendiary" },
+  { id: "sensor", role: "roamer", replaces: "flashbang" },
+];
+
+/** The upgrade a role carries, or null for the roles that play stock. */
+export const gadgetFor = (roleId: string | null | undefined): GadgetDef | null =>
+  GADGETS.find((g) => g.role === roleId) ?? null;
+
 /** How long one player has to choose, before it is chosen for them. */
 export const ROLE_TURN_SECONDS = 30;
 
