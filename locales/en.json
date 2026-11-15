@@ -2787,7 +2787,7 @@
   "gadget.co2.name": "Extinguisher",
   "gadget.co2.desc": "Takes the incendiary's place. A CO2 canister that bursts where it lands: every fire it reaches goes out, every oil slick is smothered, and a short white cloud hangs there for a few seconds. The answer to the Burner.",
   "gadget.sensor.name": "Motion sensor",
-  "gadget.sensor.desc": "Takes one flash's place. Lands, arms after a second, and for 20 seconds puts a red blip on your team's radar for anybody running past it in its line of sight. Shift-walking beats it; so does a bullet.",
+  "gadget.sensor.desc": "Takes one flash's place. Lands, arms after a second, and for 20 seconds outlines anybody running past it in its line of sight — red, for a moment, through walls — and tells your team. Shift-walking beats it; so does a bullet.",
   "home.flow.num": "03 · HOW A MATCH RUNS",
   "home.flow.title": "From bracket to result.",
   "home.flow.body": "Your match page exists from the moment the bracket is drawn, so there is always somewhere to go and something to see. Nothing here needs an admin standing over it.",

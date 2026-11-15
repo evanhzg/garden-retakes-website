@@ -2787,7 +2787,7 @@
   "gadget.co2.name": "Extincteur",
   "gadget.co2.desc": "Remplace l'incendiaire. Une cartouche de CO2 qui éclate là où elle atterrit : chaque feu atteint s'éteint, chaque flaque d'huile est étouffée, et un court nuage blanc reste quelques secondes. La réponse au Burner.",
   "gadget.sensor.name": "Détecteur de mouvement",
-  "gadget.sensor.desc": "Remplace une flash. Atterrit, s'arme après une seconde, et pendant 20 secondes affiche un point rouge sur le radar de votre équipe pour quiconque court devant lui, en ligne de vue. Marcher en shift le trompe ; une balle aussi.",
+  "gadget.sensor.desc": "Remplace une flash. Atterrit, s'arme après une seconde, et pendant 20 secondes surligne en rouge, un instant et à travers les murs, quiconque court devant lui en ligne de vue — et prévient votre équipe. Marcher en shift le trompe ; une balle aussi.",
   "home.flow.num": "03 · DÉROULÉ D'UN MATCH",
   "home.flow.title": "Du bracket au résultat.",
   "home.flow.body": "Votre page de match existe dès que le bracket est tracé : il y a toujours un endroit où aller et quelque chose à voir. Rien ici ne nécessite qu'un admin soit derrière.",
