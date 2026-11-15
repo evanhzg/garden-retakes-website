@@ -1,5 +1,6 @@
 import {
   Bomb,
+  Wrench,
   Cloud,
   Crosshair,
   Flame,
@@ -30,6 +31,9 @@ import {
  */
 export const ROLE_ICON: Record<string, LucideIcon> = {
   // T
+  // The tower mode's T role: a wrench, the one who works the tower.
+  engineer: Wrench,
+  // Retired with the bomb; kept so old picks still draw.
   planter: Bomb,
   sniper: Target,
   // The crosshair the roamer used to hold: the rifler is the T side's duellist,
