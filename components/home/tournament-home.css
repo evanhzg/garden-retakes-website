@@ -391,93 +391,374 @@ a.th-now:hover {
 .th-key.t { color: var(--color-accent); }
 .th-key.ct { color: #3b82f6; margin-left: 8px; }
 
-.bs {
-  display: block;
-  width: 100%;
-  height: auto;
-  padding: 14px;
+/* The round on Dust II (TowerRound.tsx). The map is the nav mesh from above:
+   floor in a faint wash, the upper levels a step stronger, the outline as walls.
+   Strokes do not scale with the view, so switching sites (two different crops)
+   keeps every line the same weight. T is the accent, CT the blue the legend
+   names; the Roamer is a CT, so blue, dashed — its route is the one it takes
+   unseen. */
+.th-key.roam {
+  color: #3b82f6;
+  margin-left: 8px;
+  border-top-style: dotted;
 }
 
-/* The floor has no stroke of its own. The outline is .bs-wall below, drawn as
-   separate segments so the gaps between them are the entrances — a stroke here
-   would close every one of them. */
-.bs-floor {
-  fill: color-mix(in srgb, var(--color-text) 5%, transparent);
+.tr-controls {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 8px;
+  padding: 10px 14px;
+  border-bottom: 1px solid var(--border);
+}
+
+.tr-seg {
+  display: inline-flex;
+  border: 1px solid var(--border);
+}
+
+.tr-seg button,
+.tr-btn,
+.tr-tabs button {
+  font-family: var(--font-mono);
+  font-size: 10.5px;
+  font-weight: 700;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  background: none;
+  color: var(--color-text-muted);
+  border: 0;
+  cursor: pointer;
+}
+
+.tr-seg button {
+  padding: 5px 10px;
+}
+
+.tr-seg button + button {
+  border-left: 1px solid var(--border);
+}
+
+.tr-seg button.on {
+  background: color-mix(in srgb, var(--color-accent) 14%, transparent);
+  color: var(--color-text);
+}
+
+.tr-spotname {
+  flex: 1 1 auto;
+  min-width: 0;
+  font-size: 12.5px;
+  font-weight: 600;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.tr-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  padding: 5px 8px;
+  border: 1px solid var(--border);
+}
+
+.tr-btn:hover,
+.tr-seg button:hover,
+.tr-tabs button:hover {
+  color: var(--color-text);
+}
+
+.tr-stage {
+  position: relative;
+  aspect-ratio: 5 / 4;
+  overflow: hidden;
+}
+
+.tr-map {
+  display: block;
+  width: 100%;
+  height: 100%;
+}
+
+.tr-floor {
+  fill: color-mix(in srgb, var(--color-text) 6%, transparent);
   stroke: none;
 }
 
-/* Solid geometry: what you can stand on or behind. Butt caps, because a round
-   cap on a wall segment bleeds into the doorway beside it and closes the gap
-   the segment exists to leave. */
-.bs-wall {
+.tr-upper {
+  fill: color-mix(in srgb, var(--color-text) 6%, transparent);
+  stroke: none;
+}
+
+.tr-walls {
   fill: none;
+  stroke: var(--color-text);
+  stroke-opacity: 0.35;
+  stroke-width: 1;
+  vector-effect: non-scaling-stroke;
+}
+
+.tr-label {
+  font-family: var(--font-mono);
+  font-weight: 700;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+  text-anchor: middle;
+  dominant-baseline: middle;
+  fill: var(--color-text);
+  fill-opacity: 0.32;
+  pointer-events: none;
+}
+
+.tr-route {
+  fill: none;
+  stroke-width: 1.2;
+  stroke-opacity: 0.22;
+  stroke-linejoin: round;
+  vector-effect: non-scaling-stroke;
+}
+
+.tr-route.t { stroke: var(--color-accent); }
+.tr-route.ct { stroke: #3b82f6; }
+.tr-route.roamer { stroke: #3b82f6; stroke-dasharray: 3 3; }
+
+.tr-route.on {
+  stroke-width: 2.4;
+  stroke-opacity: 0.85;
+}
+
+.tr-spot {
+  fill: none;
+  stroke: var(--color-text);
+  stroke-opacity: 0.45;
+  stroke-width: 1;
+  stroke-dasharray: 2 2;
+  vector-effect: non-scaling-stroke;
+}
+
+.tr-spawn {
+  stroke: var(--color-surface);
+  stroke-width: 1;
+  vector-effect: non-scaling-stroke;
+}
+
+.tr-spawn.t { fill: var(--color-accent); }
+.tr-spawn.ct { fill: #3b82f6; }
+.tr-spawn.roamer {
+  fill: var(--color-surface);
+  stroke: #3b82f6;
+  stroke-width: 1.6;
+  stroke-dasharray: 2 1.5;
+}
+
+/* The tower: white while dormant, then the holder's colour — as in game, where
+   it glows the same way through walls. */
+.tr-tower { color: var(--color-text); }
+.tr-tower.t { color: var(--color-accent); }
+.tr-tower.ct { color: #3b82f6; }
+
+.tr-tower-disc {
+  fill: var(--color-surface);
+  stroke: currentColor;
+  stroke-width: 1.6;
+  vector-effect: non-scaling-stroke;
+  transition: stroke 0.2s;
+}
+
+.tr-tower.t .tr-tower-disc,
+.tr-tower.ct .tr-tower-disc {
+  fill: color-mix(in srgb, currentColor 22%, var(--color-surface));
+}
+
+.tr-tower-glyph {
+  fill: none;
+  stroke: currentColor;
+  stroke-width: 2;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+}
+
+.tr-ring {
+  fill: none;
+  stroke-width: 2.4;
+  vector-effect: non-scaling-stroke;
+}
+
+.tr-ring.t { stroke: var(--color-accent); }
+.tr-ring.ct { stroke: #3b82f6; }
+
+.tr-actor circle {
+  stroke: var(--color-surface);
+  stroke-width: 1.4;
+  vector-effect: non-scaling-stroke;
+}
+
+.tr-actor.t circle { fill: var(--color-accent); }
+.tr-actor.ct circle { fill: #3b82f6; }
+
+.tr-actor text {
+  font-family: var(--font-mono);
+  font-weight: 700;
+  text-anchor: middle;
+  fill: var(--color-text);
+  paint-order: stroke;
+  stroke: var(--color-surface);
+  stroke-width: 3px;
+  stroke-linejoin: round;
+}
+
+.tr-actor.down circle { fill-opacity: 0.35; }
+
+.tr-actor.down path {
   stroke: var(--color-text);
   stroke-width: 1.6;
-  stroke-opacity: 0.55;
-  stroke-linecap: butt;
+  vector-effect: non-scaling-stroke;
 }
 
-.bs-block {
-  fill: color-mix(in srgb, var(--color-text) 13%, transparent);
-  stroke: var(--color-text);
-  stroke-width: 1;
-  stroke-opacity: 0.4;
+/* The in-game strip: the clock and who holds the tower. */
+.tr-hud {
+  position: absolute;
+  top: 10px;
+  left: 50%;
+  transform: translateX(-50%);
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  padding: 4px 10px;
+  border: 1px solid var(--border);
+  background: color-mix(in srgb, var(--color-surface) 88%, transparent);
+  font-family: var(--font-mono);
+  font-size: 10.5px;
+  font-weight: 700;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  white-space: nowrap;
+  color: var(--color-text-muted);
 }
 
-/* The plantable ground: a dashed outline around where the bomb can go, not a
-   wall. In the bomb's own colour so it cannot be mistaken for cover — it is the
-   one shape here you can walk through and still be somewhere that matters. */
-.bs-zone {
-  fill: color-mix(in srgb, var(--color-accent) 5%, transparent);
-  stroke: var(--color-accent);
-  stroke-width: 1.4;
-  stroke-opacity: 0.45;
-  stroke-dasharray: 5 4;
+.tr-hud b {
+  font-size: 13px;
+  color: var(--color-text);
+  font-variant-numeric: tabular-nums;
 }
 
-/* The ways in and the ways back, in the two colours the legend above the figure
-   names. The whole point of the drawing is that the two attack routes share a
-   corner and the three retake routes do not, and that is unreadable if every
-   line is the same colour.
+.tr-hud.t { border-color: var(--color-accent); color: var(--color-accent); }
+.tr-hud.ct { border-color: #3b82f6; color: #3b82f6; }
+.tr-hud.draw { color: var(--color-text); }
+.tr-hud em { font-style: normal; opacity: 0.7; }
 
-   Butt caps, not round. Round caps blunt the ends of every dash and make a
-   dashed line read as a row of lozenges rather than as a route. */
-.bs-path {
-  fill: none;
-  stroke-width: 2;
-  stroke-dasharray: 7 6;
-  stroke-linecap: butt;
-  stroke-opacity: 0.9;
+.tr-tabs {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  border-top: 1px solid var(--border);
 }
 
-.bs-path.t { stroke: var(--color-accent); }
-.bs-path.ct { stroke: #3b82f6; }
-
-.bs-head { fill-opacity: 0.9; }
-.bs-head.t { fill: var(--color-accent); }
-.bs-head.ct { fill: #3b82f6; }
-
-.bs-plant {
-  fill: none;
-  stroke: var(--color-accent);
-  stroke-width: 1.5;
-  stroke-dasharray: 3 3;
+.tr-tabs button {
+  padding: 10px 6px;
+  border-bottom: 2px solid transparent;
 }
 
-.bs-plant-label {
+.tr-tabs button + button {
+  border-left: 1px solid var(--border);
+}
+
+.tr-tabs button.on {
+  color: var(--color-text);
+  border-bottom-color: var(--color-accent);
+}
+
+.tr-steps {
+  list-style: none;
+  margin: 0;
+  padding: 10px 14px 12px;
+  display: grid;
+  gap: 6px;
+  border-top: 1px solid var(--border);
+}
+
+.tr-steps li {
+  display: grid;
+  grid-template-columns: 4.2em minmax(0, 1fr);
+  gap: 10px;
+  font-size: 13px;
+  line-height: 1.4;
+  opacity: 0.38;
+  transition: opacity 0.25s;
+}
+
+.tr-steps li.on { opacity: 1; }
+
+.tr-at {
+  font-family: var(--font-mono);
+  font-size: 11px;
+  font-weight: 700;
+  color: var(--color-text-muted);
+  text-align: right;
+  font-variant-numeric: tabular-nums;
+  padding-top: 1px;
+}
+
+@media (max-width: 520px) {
+  .tr-tabs { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+  .tr-tabs button:nth-child(3) { border-left: 0; }
+  .tr-tabs button:nth-child(n + 3) { border-top: 1px solid var(--border); }
+}
+
+/* The role card's map: where the selected role starts, both sites. */
+.th-role-where {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) 132px;
+  gap: var(--space-3);
+  align-items: start;
+}
+
+.th-rolemap {
+  margin: 0;
+  padding-top: 14px;
+  border-top: 1px solid var(--border);
+}
+
+.th-rolemap svg {
+  display: block;
+  width: 100%;
+  height: auto;
+}
+
+.th-rolemap figcaption {
+  margin-top: 4px;
   font-family: var(--font-mono);
   font-size: 9px;
   font-weight: 700;
-  fill: var(--color-accent);
-  text-anchor: middle;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  color: var(--color-text-muted);
+  text-align: center;
 }
 
-.bs-site {
+.th-rolemap-site {
   font-family: var(--font-mono);
-  font-size: 34px;
   font-weight: 900;
+  text-anchor: middle;
   fill: var(--color-text);
-  fill-opacity: 0.16;
+  fill-opacity: 0.3;
+}
+
+.th-rolemap-other { fill-opacity: 0.25; }
+.th-rolemap-other.t { fill: var(--color-accent); }
+.th-rolemap-other.ct { fill: #3b82f6; }
+
+.th-rolemap-mine {
+  stroke: var(--color-surface);
+  stroke-width: 1;
+  vector-effect: non-scaling-stroke;
+}
+
+.th-rolemap-mine.t { fill: var(--color-accent); }
+.th-rolemap-mine.ct { fill: #3b82f6; }
+
+@media (max-width: 420px) {
+  .th-role-where { grid-template-columns: minmax(0, 1fr); }
+  .th-rolemap { max-width: 200px; }
 }
 
 /* A caption, set like one: the serif italic is what separates a note ABOUT
