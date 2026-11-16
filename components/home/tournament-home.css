@@ -403,23 +403,49 @@ a.th-now:hover {
   border-top-style: dotted;
 }
 
-.tr-controls {
+.twr-controls {
   display: flex;
   flex-wrap: wrap;
-  align-items: center;
+  align-items: flex-start;
   gap: 8px;
   padding: 10px 14px;
   border-bottom: 1px solid var(--border);
 }
 
-.tr-seg {
-  display: inline-flex;
+/* Where the tower can stand: the two bomb sites, then the field spots. */
+.twr-zones {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+  min-width: 0;
+}
+
+.twr-actions {
+  display: flex;
+  gap: 6px;
+  flex: none;
+  margin-left: auto;
+}
+
+.twr-zones button {
+  padding: 5px 9px;
   border: 1px solid var(--border);
 }
 
-.tr-seg button,
-.tr-btn,
-.tr-tabs button {
+.twr-zones button.field {
+  border-style: dashed;
+}
+
+.twr-zones button.on {
+  background: color-mix(in srgb, var(--color-accent) 14%, transparent);
+  border-color: color-mix(in srgb, var(--color-accent) 55%, var(--border));
+  border-style: solid;
+  color: var(--color-text);
+}
+
+.twr-zones button,
+.twr-btn,
+.twr-tabs button {
   font-family: var(--font-mono);
   font-size: 10.5px;
   font-weight: 700;
@@ -431,66 +457,65 @@ a.th-now:hover {
   cursor: pointer;
 }
 
-.tr-seg button {
-  padding: 5px 10px;
-}
-
-.tr-seg button + button {
-  border-left: 1px solid var(--border);
-}
-
-.tr-seg button.on {
-  background: color-mix(in srgb, var(--color-accent) 14%, transparent);
-  color: var(--color-text);
-}
-
-.tr-spotname {
-  flex: 1 1 auto;
-  min-width: 0;
-  font-size: 12.5px;
-  font-weight: 600;
-  white-space: nowrap;
-  overflow: hidden;
-  text-overflow: ellipsis;
-}
-
-.tr-btn {
+.twr-btn {
   display: inline-flex;
   align-items: center;
   gap: 5px;
   padding: 5px 8px;
   border: 1px solid var(--border);
+  white-space: nowrap;
 }
 
-.tr-btn:hover,
-.tr-seg button:hover,
-.tr-tabs button:hover {
+.twr-btn.icon {
+  padding: 5px 7px;
+}
+
+.twr-btn:hover,
+.twr-zones button:hover,
+.twr-tabs button:hover {
   color: var(--color-text);
 }
 
-.tr-stage {
+/* The whole map: a round uses it (both teams from a distance, respawns at the
+   classic spawns). Dust II's floor is a little taller than wide. */
+.twr-stage {
   position: relative;
-  aspect-ratio: 5 / 4;
+  aspect-ratio: 14 / 15;
   overflow: hidden;
 }
 
-.tr-map {
+/* The tower spot's name, under the map. */
+.twr-where {
+  position: absolute;
+  left: 50%;
+  bottom: 8px;
+  transform: translateX(-50%);
+  margin: 0;
+  padding: 3px 9px;
+  background: color-mix(in srgb, var(--color-surface) 88%, transparent);
+  border: 1px solid var(--border);
+  font-size: 12px;
+  font-weight: 600;
+  white-space: nowrap;
+}
+
+.twr-map {
   display: block;
   width: 100%;
   height: 100%;
 }
 
-.tr-floor {
+.twr-floor {
   fill: color-mix(in srgb, var(--color-text) 6%, transparent);
   stroke: none;
 }
 
-.tr-upper {
+.twr-upper {
   fill: color-mix(in srgb, var(--color-text) 6%, transparent);
   stroke: none;
 }
 
-.tr-walls {
+.twr-walls {
   fill: none;
   stroke: var(--color-text);
   stroke-opacity: 0.35;
@@ -498,7 +523,7 @@ a.th-now:hover {
   vector-effect: non-scaling-stroke;
 }
 
-.tr-label {
+.twr-label {
   font-family: var(--font-mono);
   font-weight: 700;
   letter-spacing: 0.04em;
@@ -510,7 +535,7 @@ a.th-now:hover {
   pointer-events: none;
 }
 
-.tr-route {
+.twr-route {
   fill: none;
   stroke-width: 1.2;
   stroke-opacity: 0.22;
@@ -518,33 +543,48 @@ a.th-now:hover {
   vector-effect: non-scaling-stroke;
 }
 
-.tr-route.t { stroke: var(--color-accent); }
-.tr-route.ct { stroke: #3b82f6; }
-.tr-route.roamer { stroke: #3b82f6; stroke-dasharray: 3 3; }
+.twr-route.t { stroke: var(--color-accent); }
+.twr-route.ct { stroke: #3b82f6; }
+.twr-route.roamer { stroke: #3b82f6; stroke-dasharray: 3 3; }
+.twr-route.respawn { stroke-dasharray: 1 3; stroke-linecap: round; }
+.twr-route.respawn.t { stroke: var(--color-accent); }
+.twr-route.respawn.ct { stroke: #3b82f6; }
 
-.tr-route.on {
+/* The classic team spawns, where a respawn comes back. */
+.twr-base rect {
+  fill: none;
+  stroke-width: 1.4;
+  vector-effect: non-scaling-stroke;
+}
+
+.twr-base.t rect { stroke: var(--color-accent); }
+.twr-base.ct rect { stroke: #3b82f6; }
+
+.twr-route.on {
   stroke-width: 2.4;
   stroke-opacity: 0.85;
 }
 
-.tr-spot {
+.twr-spot {
   fill: none;
   stroke: var(--color-text);
-  stroke-opacity: 0.45;
+  stroke-opacity: 0.28;
   stroke-width: 1;
   stroke-dasharray: 2 2;
   vector-effect: non-scaling-stroke;
 }
 
-.tr-spawn {
+.twr-spot.same { stroke-opacity: 0.55; }
+
+.twr-spawn {
   stroke: var(--color-surface);
   stroke-width: 1;
   vector-effect: non-scaling-stroke;
 }
 
-.tr-spawn.t { fill: var(--color-accent); }
-.tr-spawn.ct { fill: #3b82f6; }
-.tr-spawn.roamer {
+.twr-spawn.t { fill: var(--color-accent); }
+.twr-spawn.ct { fill: #3b82f6; }
+.twr-spawn.roamer {
   fill: var(--color-surface);
   stroke: #3b82f6;
   stroke-width: 1.6;
@@ -553,11 +593,11 @@ a.th-now:hover {
 
 /* The tower: white while dormant, then the holder's colour — as in game, where
    it glows the same way through walls. */
-.tr-tower { color: var(--color-text); }
-.tr-tower.t { color: var(--color-accent); }
-.tr-tower.ct { color: #3b82f6; }
+.twr-tower { color: var(--color-text); }
+.twr-tower.t { color: var(--color-accent); }
+.twr-tower.ct { color: #3b82f6; }
 
-.tr-tower-disc {
+.twr-tower-disc {
   fill: var(--color-surface);
   stroke: currentColor;
   stroke-width: 1.6;
@@ -565,12 +605,12 @@ a.th-now:hover {
   transition: stroke 0.2s;
 }
 
-.tr-tower.t .tr-tower-disc,
-.tr-tower.ct .tr-tower-disc {
+.twr-tower.t .twr-tower-disc,
+.twr-tower.ct .twr-tower-disc {
   fill: color-mix(in srgb, currentColor 22%, var(--color-surface));
 }
 
-.tr-tower-glyph {
+.twr-tower-glyph {
   fill: none;
   stroke: currentColor;
   stroke-width: 2;
@@ -578,25 +618,25 @@ a.th-now:hover {
   stroke-linejoin: round;
 }
 
-.tr-ring {
+.twr-ring {
   fill: none;
   stroke-width: 2.4;
   vector-effect: non-scaling-stroke;
 }
 
-.tr-ring.t { stroke: var(--color-accent); }
-.tr-ring.ct { stroke: #3b82f6; }
+.twr-ring.t { stroke: var(--color-accent); }
+.twr-ring.ct { stroke: #3b82f6; }
 
-.tr-actor circle {
+.twr-actor circle {
   stroke: var(--color-surface);
   stroke-width: 1.4;
   vector-effect: non-scaling-stroke;
 }
 
-.tr-actor.t circle { fill: var(--color-accent); }
-.tr-actor.ct circle { fill: #3b82f6; }
+.twr-actor.t circle { fill: var(--color-accent); }
+.twr-actor.ct circle { fill: #3b82f6; }
 
-.tr-actor text {
+.twr-actor text {
   font-family: var(--font-mono);
   font-weight: 700;
   text-anchor: middle;
@@ -607,16 +647,16 @@ a.th-now:hover {
   stroke-linejoin: round;
 }
 
-.tr-actor.down circle { fill-opacity: 0.35; }
+.twr-actor.down circle { fill-opacity: 0.35; }
 
-.tr-actor.down path {
+.twr-actor.down path {
   stroke: var(--color-text);
   stroke-width: 1.6;
   vector-effect: non-scaling-stroke;
 }
 
 /* The in-game strip: the clock and who holds the tower. */
-.tr-hud {
+.twr-hud {
   position: absolute;
   top: 10px;
   left: 50%;
@@ -636,38 +676,39 @@ a.th-now:hover {
   color: var(--color-text-muted);
 }
 
-.tr-hud b {
+.twr-hud b {
   font-size: 13px;
   color: var(--color-text);
   font-variant-numeric: tabular-nums;
 }
 
-.tr-hud.t { border-color: var(--color-accent); color: var(--color-accent); }
-.tr-hud.ct { border-color: #3b82f6; color: #3b82f6; }
-.tr-hud.draw { color: var(--color-text); }
-.tr-hud em { font-style: normal; opacity: 0.7; }
+.twr-hud.t { border-color: var(--color-accent); color: var(--color-accent); }
+.twr-hud.ct { border-color: #3b82f6; color: #3b82f6; }
+.twr-hud.draw { color: var(--color-text); }
+.twr-hud.final b { color: #ff5a4f; }
+.twr-hud em { font-style: normal; opacity: 0.7; }
 
-.tr-tabs {
+.twr-tabs {
   display: grid;
-  grid-template-columns: repeat(4, minmax(0, 1fr));
+  grid-template-columns: repeat(5, minmax(0, 1fr));
   border-top: 1px solid var(--border);
 }
 
-.tr-tabs button {
+.twr-tabs button {
   padding: 10px 6px;
   border-bottom: 2px solid transparent;
 }
 
-.tr-tabs button + button {
+.twr-tabs button + button {
   border-left: 1px solid var(--border);
 }
 
-.tr-tabs button.on {
+.twr-tabs button.on {
   color: var(--color-text);
   border-bottom-color: var(--color-accent);
 }
 
-.tr-steps {
+.twr-steps {
   list-style: none;
   margin: 0;
   padding: 10px 14px 12px;
@@ -676,7 +717,7 @@ a.th-now:hover {
   border-top: 1px solid var(--border);
 }
 
-.tr-steps li {
+.twr-steps li {
   display: grid;
   grid-template-columns: 4.2em minmax(0, 1fr);
   gap: 10px;
@@ -686,9 +727,9 @@ a.th-now:hover {
   transition: opacity 0.25s;
 }
 
-.tr-steps li.on { opacity: 1; }
+.twr-steps li.on { opacity: 1; }
 
-.tr-at {
+.twr-at {
   font-family: var(--font-mono);
   font-size: 11px;
   font-weight: 700;
@@ -698,10 +739,11 @@ a.th-now:hover {
   padding-top: 1px;
 }
 
-@media (max-width: 520px) {
-  .tr-tabs { grid-template-columns: repeat(2, minmax(0, 1fr)); }
-  .tr-tabs button:nth-child(3) { border-left: 0; }
-  .tr-tabs button:nth-child(n + 3) { border-top: 1px solid var(--border); }
+@media (max-width: 560px) {
+  .twr-tabs { grid-template-columns: repeat(3, minmax(0, 1fr)); }
+  .twr-tabs button:nth-child(4) { border-left: 0; }
+  .twr-tabs button:nth-child(n + 4) { border-top: 1px solid var(--border); }
+  .twr-btn span { display: none; }
 }
 
 /* The role card's map: where the selected role starts, both sites. */

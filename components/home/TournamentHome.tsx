@@ -298,6 +298,9 @@ export default function TournamentHome({
             <li>
               <X size={14} /> {t("home.round.p3")}
             </li>
+            <li>
+              <Check size={14} /> {t("home.round.p4")}
+            </li>
           </ul>
         </div>
 

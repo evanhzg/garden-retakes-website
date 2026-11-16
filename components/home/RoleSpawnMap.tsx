@@ -8,9 +8,10 @@ import { TOWER_MAPS, type MapPoint } from "@/lib/tournament/towerRound";
  *
  * The role card's "Spawn" line says it in words ("nearest the tower", "forward,
  * hidden"); this says it on the map, from the spawns the server actually uses for
- * tower rounds — both sites, so the pattern shows rather than one example. The
- * other roles' spawns stay as faint dots so the highlighted ones read as a choice
- * among them, and the tower spots (the plant spots) mark what everybody runs at.
+ * tower rounds — around every place the tower can stand (the bomb sites and the field
+ * spots), so the pattern shows rather than one example. The other roles' spawns stay
+ * as faint dots so the highlighted ones read as a choice among them, and the tower
+ * spots mark what everybody runs at.
  */
 
 const MAP = TOWER_MAPS.de_dust2;
@@ -22,9 +23,9 @@ export default function RoleSpawnMap({ roleId, side }: { roleId: string; side: "
 
   const mine: MapPoint[] = [];
   const rest: { p: MapPoint; side: "t" | "ct" }[] = [];
-  for (const s of MAP.sites) {
+  for (const z of MAP.zones) {
     for (const [group, sd] of [["t", "t"], ["ct", "ct"], ["roamer", "ct"]] as const) {
-      for (const p of s[group]) {
+      for (const p of z[group]) {
         if (p.role === roleId) mine.push(p);
         else rest.push({ p, side: sd });
       }
@@ -34,18 +35,18 @@ export default function RoleSpawnMap({ roleId, side }: { roleId: string; side: "
   return (
     <figure className="th-rolemap">
       <svg viewBox={`${x} ${y} ${w} ${h}`} role="img" aria-label={t("home.roles.where", { role: t(`role.${roleId}.name`) })}>
-        <path className="tr-floor" d={MAP.floor} fillRule="evenodd" />
-        <path className="tr-walls" d={MAP.floor} fillRule="evenodd" />
+        <path className="twr-floor" d={MAP.floor} fillRule="evenodd" />
+        <path className="twr-walls" d={MAP.floor} fillRule="evenodd" />
 
-        {MAP.sites.map((s) => {
-          const cx = s.spots.reduce((a, p) => a + p.x, 0) / s.spots.length;
-          const cy = s.spots.reduce((a, p) => a + p.y, 0) / s.spots.length;
+        {MAP.zones.map((z) => {
+          const cx = z.spots.reduce((a, p) => a + p.x, 0) / z.spots.length;
+          const cy = z.spots.reduce((a, p) => a + p.y, 0) / z.spots.length;
           return (
-            <g key={s.site}>
-              {s.spots.map((p) => (
+            <g key={z.zone}>
+              {z.spots.map((p) => (
                 <rect
                   key={p.name}
-                  className="tr-spot"
+                  className="twr-spot"
                   x={p.x - 2.6 * k}
                   y={p.y - 2.6 * k}
                   width={5.2 * k}
@@ -53,9 +54,11 @@ export default function RoleSpawnMap({ roleId, side }: { roleId: string; side: "
                   transform={`rotate(45 ${p.x} ${p.y})`}
                 />
               ))}
-              <text className="th-rolemap-site" x={cx} y={cy - 9 * k} fontSize={14 * k}>
-                {s.site}
-              </text>
+              {z.kind === "site" && (
+                <text className="th-rolemap-site" x={cx} y={cy - 9 * k} fontSize={14 * k}>
+                  {z.name.slice(0, 1)}
+                </text>
+              )}
             </g>
           );
         })}
