@@ -31,7 +31,7 @@ export const claimKey = (side: Side, roleId: string) => `${side}:${roleId}`;
  * able to read at a glance. It reads much better as two small badges under the
  * face they belong to.
  *
- * Both sides at once in the bubble, in columns, because a retake gives you both
+ * Both sides at once in the bubble, in columns, because a Blitz match gives you both
  * within the same match and picking them one tab at a time is the trip this
  * whole rebuild is removing.
  *
@@ -40,7 +40,7 @@ export const claimKey = (side: Side, roleId: string) => `${side}:${roleId}`;
  * already know they want, and short enough to be findable by anybody who
  * pauses because they do not know what a rotator does *here* — which is the
  * question it answers. Not what the role means in a normal match: what it means
- * when four people are walking onto a planted site.
+ * when both teams are running at the same tower.
  */
 export default function RolePicker({
   value,
@@ -295,7 +295,7 @@ function RoleBubble({
 /**
  * What this role actually does in a retake, beside the cursor that paused on it.
  *
- * Every line of this is about a planted site with four people walking onto it —
+ * Every line of this is about a tower round, with both teams running at it —
  * not the same word's meaning in a normal round, which is where the difference
  * lives and is the reason the card exists at all.
  */

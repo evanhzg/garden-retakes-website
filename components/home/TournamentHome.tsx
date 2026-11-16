@@ -5,9 +5,12 @@ import Link from "next/link";
 import { ArrowRight, Check, GitBranch, Trophy, Users, X } from "lucide-react";
 import { useI18n } from "@/components/I18nProvider";
 import { ROLE_ICON } from "@/components/roleIcons";
-import { CT_ROLES, T_ROLES } from "@/lib/tournament/roles";
+import { CT_ROLES, T_ROLES, gadgetFor } from "@/lib/tournament/roles";
+import GadgetIcon from "@/components/tournament/GadgetIcon";
+import RoleUpgrade from "@/components/tournament/RoleUpgrade";
 import BlitzTiers from "./BlitzTiers";
-import BombsiteDiagram from "./BombsiteDiagram";
+import RoleSpawnMap from "./RoleSpawnMap";
+import TowerRound from "./TowerRound";
 import "./tournament-home.css";
 
 // The homepage.
@@ -275,39 +278,33 @@ export default function TournamentHome({
           carry the queries. */}
       {children}
 
-      {/* ---------------------------------------------------- 01 · the veto */}
+      {/* --------------------------------------------------- 01 · the round */}
+      {/* The mode itself first: everything after it (roles, tiers, the match
+          flow) only makes sense once you know what a round is for. The figure is
+          Dust II as the server plays it — see TowerRound. */}
       <section className="th-module">
         <div className="th-copy">
-          <span className="th-num">{t("home.veto.num")}</span>
-          <h2>{t("home.veto.title")}</h2>
-          <p>{t("home.veto.body")}</p>
+          <span className="th-num">{t("home.round.num")}</span>
+          <h2>{t("home.round.title")}</h2>
+          <p>{t("home.round.body")}</p>
 
           <ul className="th-points">
             <li>
-              <X size={14} /> {t("home.veto.p1")}
+              <Check size={14} /> {t("home.round.p1")}
             </li>
             <li>
-              <Check size={14} /> {t("home.veto.p2")}
+              <Check size={14} /> {t("home.round.p2")}
             </li>
             <li>
-              <Check size={14} /> {t("home.veto.p3")}
+              <X size={14} /> {t("home.round.p3")}
+            </li>
+            <li>
+              <Check size={14} /> {t("home.round.p4")}
             </li>
           </ul>
         </div>
 
-        <figure className="th-figure">
-          <figcaption className="th-figcap">
-            <span>{t("home.map.caption")}</span>
-            <span className="th-legend">
-              <i className="th-key t" /> {t("home.map.attack")}
-              <i className="th-key ct" /> {t("home.map.defend")}
-            </span>
-          </figcaption>
-
-          <BombsiteDiagram />
-
-          <p className="th-fignote">{t("home.map.note")}</p>
-        </figure>
+        <TowerRound />
       </section>
 
       {/* --------------------------------------------------- 02 · the roles */}
@@ -329,6 +326,7 @@ export default function TournamentHome({
 
                 {ROLES.filter((r) => r.side === side).map((r) => {
                   const Icon = ROLE_ICON[r.id];
+                  const gadget = gadgetFor(r.id);
 
                   return (
                     <button
@@ -340,6 +338,10 @@ export default function TournamentHome({
                     >
                       {Icon && <Icon size={16} />}
                       <span>{t(`role.${r.id}.name`)}</span>
+                      {/* The upgrade's mark, small: the role and its gadget read as one thing. */}
+                      {gadget && (
+                        <GadgetIcon id={gadget.id} size={13} className="th-role-gadget" title={t(`gadget.${gadget.id}.name`)} />
+                      )}
                       {/* One per team, and saying so is the whole reason the
                           badge exists — it is the constraint people get wrong. */}
                       {r.unique && <em>{t("home.roles.one")}</em>}
@@ -354,20 +356,25 @@ export default function TournamentHome({
             <h3>{t(`role.${role.id}.name`)}</h3>
             <p>{t(`role.${role.id}.desc`)}</p>
 
-            <dl className="th-role-facts">
-              <div>
-                <dt>{t("home.roles.gun")}</dt>
-                <dd>{t(`role.${role.id}.gun`)}</dd>
-              </div>
-              <div>
-                <dt>{t("home.roles.util")}</dt>
-                <dd>{t(`role.${role.id}.util`)}</dd>
-              </div>
-              <div>
-                <dt>{t("home.roles.spawn")}</dt>
-                <dd>{t(`role.${role.id}.spawn`)}</dd>
-              </div>
-            </dl>
+            <div className="th-role-where">
+              <dl className="th-role-facts">
+                <div>
+                  <dt>{t("home.roles.gun")}</dt>
+                  <dd>{t(`role.${role.id}.gun`)}</dd>
+                </div>
+                <div>
+                  <dt>{t("home.roles.util")}</dt>
+                  <dd>{t(`role.${role.id}.util`)}</dd>
+                </div>
+                <div>
+                  <dt>{t("home.roles.spawn")}</dt>
+                  <dd>{t(`role.${role.id}.spawn`)}</dd>
+                </div>
+              </dl>
+              <RoleSpawnMap roleId={role.id} side={role.side} />
+            </div>
+
+            <RoleUpgrade roleId={role.id} />
           </div>
         </div>
       </section>

@@ -40,7 +40,10 @@ export type RoleDef = {
  * ordinary T mix so no other role can be handed one by accident.
  */
 export const T_ROLES: RoleDef[] = [
-  { id: "planter", label: "Planter", unique: true },
+  // Blitz is played around a tower now, not a planted bomb: the Engineer takes the
+  // planter's place (faster at the tower, wires it with the booby trap). Drafts that
+  // stored "planter" still play — the plugin reads it as the Engineer.
+  { id: "engineer", label: "Engineer", unique: true },
   { id: "sniper", label: "Sniper", unique: true },
   { id: "burner", label: "Burner", unique: true },
   { id: "rifler", label: "Rifler", unique: false },
@@ -67,11 +70,50 @@ export const rolesFor = (side: RoleSide): RoleDef[] => (side === "T" ? T_ROLES :
 export const roleDef = (side: RoleSide, id: string | null | undefined): RoleDef | null =>
   rolesFor(side).find((r) => r.id === id) ?? null;
 
+/** Roles no longer offered, kept so stored picks still read as words. */
+const RETIRED_ROLES: RoleDef[] = [{ id: "planter", label: "Planter", unique: true }];
+
 /** What to show for a stored id, whichever side it came from. */
 export function roleLabel(id: string | null | undefined): string {
   if (!id) return "";
-  return [...T_ROLES, ...CT_ROLES].find((r) => r.id === id)?.label ?? id;
+  return [...T_ROLES, ...CT_ROLES, ...RETIRED_ROLES].find((r) => r.id === id)?.label ?? id;
 }
+
+// ------------------------------------------------------------------ upgrades
+
+/**
+ * A role's upgrade: one piece of equipment that does its signature grenade's job
+ * in a way the stock game does not. Nothing magical — oil that burns when
+ * something lights it, a charge that sticks where it lands, an extinguisher, a
+ * motion sensor, a trap on the bomb.
+ *
+ * In game the gadget rides on the decoy and the blitz_kit Workshop addon plays
+ * it; it replaces the grenade named in `replaces`, so an upgraded kit is never
+ * bigger than the plain one, and a round that would not give the role that
+ * grenade gives no gadget either. Pistol rounds stay stock.
+ *
+ * The ids are on the wire: the tournament plugin
+ * (R5eGames.Tournament.Core/Roles/Gadgets.cs) and the map script
+ * (blitz_kit.js GADGETS) use the same five.
+ */
+export type GadgetDef = {
+  id: "oil" | "trap" | "breach" | "co2" | "sensor";
+  role: string;
+  /** The stock grenade it takes the place of; null for the trap, which goes on the tower. */
+  replaces: "molotov" | "incendiary" | "hegrenade" | "flashbang" | null;
+};
+
+export const GADGETS: GadgetDef[] = [
+  { id: "oil", role: "burner", replaces: "molotov" },
+  { id: "trap", role: "engineer", replaces: null },
+  { id: "breach", role: "frontrunner", replaces: "hegrenade" },
+  { id: "co2", role: "backup", replaces: "incendiary" },
+  { id: "sensor", role: "roamer", replaces: "flashbang" },
+];
+
+/** The upgrade a role carries, or null for the roles that play stock. */
+export const gadgetFor = (roleId: string | null | undefined): GadgetDef | null =>
+  GADGETS.find((g) => g.role === (roleId === "planter" ? "engineer" : roleId)) ?? null;
 
 /** How long one player has to choose, before it is chosen for them. */
 export const ROLE_TURN_SECONDS = 30;
@@ -112,8 +154,12 @@ export type DraftState = {
   left: Record<DraftSlot, number>;
 };
 
-/** The T role every side must field. */
-export const REQUIRED_T_ROLE = "planter";
+/**
+ * The T role every side must field — none, around a tower. It was the planter while
+ * Blitz was a retake: a side without one had no bomb and no round. Kept as a setting
+ * so the draft rule below stays one switch away.
+ */
+export const REQUIRED_T_ROLE: string | null = null;
 
 /**
  * The order players choose in.
@@ -207,7 +253,7 @@ export function draftState(rosterA: string[], rosterB: string[], picks: RolePick
  * the final one to volunteer.
  */
 export const mustTakePlanter = (state: DraftState, team: DraftSlot): boolean =>
-  !state.taken[team].T.includes(REQUIRED_T_ROLE) && state.left[team] <= 1;
+  REQUIRED_T_ROLE !== null && !state.taken[team].T.includes(REQUIRED_T_ROLE) && state.left[team] <= 1;
 
 /**
  * Which roles this team may still take on a side.

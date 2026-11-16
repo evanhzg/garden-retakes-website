@@ -143,6 +143,8 @@ export default function Rules({ facts }: { facts: RulesFacts }) {
         <ul className="rl-list">
           <li>{t("rules.game1")}</li>
           <li>{t("rules.game2")}</li>
+          {/* The round's win condition — the tower — right after its length. */}
+          <li>{t("rules.game6")}</li>
           <li>{t("rules.game3")}</li>
           <li>{t("rules.game4")}</li>
           <li>{t("rules.game5")}</li>

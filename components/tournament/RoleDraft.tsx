@@ -5,6 +5,7 @@ import { useI18n } from "@/components/I18nProvider";
 import { formatRemaining } from "@/lib/tournament/edition";
 import type { DraftTurn, RoleDef } from "@/lib/tournament/roles";
 import RoleIcon from "./RoleIcon";
+import RoleUpgrade from "./RoleUpgrade";
 import "./roledraft.css";
 import AvatarImage from "@/components/AvatarImage";
 
@@ -328,7 +329,13 @@ function RoleColumn({
                   the two are learned together, and it is the one screen where
                   the name is the thing being chosen. */}
               <RoleIcon role={role.id} size={16} labelled={false} />
-              <span className="rd-role-name">{role.label}</span>
+              {/* The name, and under it what the role brings that the stock game
+                  has not: its gadget, named where it is chosen so nobody first
+                  meets it mid-round. One grid cell, so the tile keeps its columns. */}
+              <span className="rd-role-text">
+                <span className="rd-role-name">{role.label}</span>
+                <RoleUpgrade roleId={role.id} compact />
+              </span>
               {role.unique && (
                 <span className="rd-role-tag">
                   {gone ? t("roledraft.taken") : t("roledraft.unique")}

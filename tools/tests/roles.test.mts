@@ -83,14 +83,14 @@ const empty = draftState(A3, B3, []);
 check("nothing picked means the first turn is next", empty.next?.steamId === "a1");
 check("nothing picked is not done", !empty.done);
 
-const after = draftState(A3, B3, [pick("a1", "planter", "roamer")]);
+const after = draftState(A3, B3, [pick("a1", "engineer", "roamer")]);
 check("one pick moves the clock to B's first", after.next?.steamId === "b1", String(after.next?.steamId));
-check("A has claimed planter on T", after.taken.A.T.includes("planter"));
+check("A has claimed engineer on T", after.taken.A.T.includes("engineer"));
 check("B has claimed nothing", after.taken.B.T.length === 0 && after.taken.B.CT.length === 0);
 
 const all: RolePick[] = [
-  pick("a1", "planter", "roamer", 0),
-  pick("b1", "planter", "roamer", 1),
+  pick("a1", "engineer", "roamer", 0),
+  pick("b1", "engineer", "roamer", 1),
   pick("b2", "sniper", "frontrunner", 2),
   pick("a2", "sniper", "frontrunner", 3),
   pick("a3", "rifler", "backup", 4),
@@ -101,15 +101,15 @@ check("a full set of picks is done", finished.done && finished.next === null);
 
 // --------------------------------------------------------------- uniqueness
 
-const oneEach = draftState(A3, B3, [pick("a1", "planter", "roamer")]);
+const oneEach = draftState(A3, B3, [pick("a1", "engineer", "roamer")]);
 
 check(
   "a unique role taken by my team is gone for my team",
-  !availableRoles(oneEach, "A", "T").some((r) => r.id === "planter"),
+  !availableRoles(oneEach, "A", "T").some((r) => r.id === "engineer"),
 );
 check(
   "the same role is still free for the other team",
-  availableRoles(oneEach, "B", "T").some((r) => r.id === "planter"),
+  availableRoles(oneEach, "B", "T").some((r) => r.id === "engineer"),
 );
 check(
   "a non-unique role stays available after it is taken",
@@ -177,7 +177,7 @@ check("no role falls back to nothing", roleLabel(null) === "");
 
 // --------------------------------------------------------------- validation
 
-const one = [pick("a1", "planter", "roamer")];
+const one = [pick("a1", "engineer", "roamer")];
 
 check(
   "picking out of turn is refused",
@@ -185,15 +185,15 @@ check(
 );
 check(
   "the player on the clock may pick",
-  validateRolePick(A3, B3, one, { steamId: "b1", roleT: "planter", roleCt: "roamer" }).ok === true,
+  validateRolePick(A3, B3, one, { steamId: "b1", roleT: "engineer", roleCt: "roamer" }).ok === true,
 );
 
 // The other team taking the same unique role is legal; the same team taking it
 // twice is not.
-const twoOfMine = [pick("a1", "planter", "roamer", 0), pick("b1", "sniper", "backup", 1), pick("b2", "planter", "roamer", 2)];
+const twoOfMine = [pick("a1", "engineer", "roamer", 0), pick("b1", "sniper", "backup", 1), pick("b2", "engineer", "roamer", 2)];
 check(
   "a team cannot take its own unique role twice",
-  validateRolePick(A3, B3, twoOfMine, { steamId: "a2", roleT: "planter", roleCt: "backup" }).ok === false,
+  validateRolePick(A3, B3, twoOfMine, { steamId: "a2", roleT: "engineer", roleCt: "backup" }).ok === false,
 );
 check(
   "a role from the wrong side is refused",
@@ -238,70 +238,35 @@ check("five a side auto-drafts in full", big.length === 10, String(big.length));
 
 // ------------------------------------------------------------------ carrying
 
-check("a team with every role set is complete", rolesComplete([{ roleT: "planter", roleCt: "roamer" }]));
-check("a half-filled team is not", !rolesComplete([{ roleT: "planter", roleCt: null }]));
+check("a team with every role set is complete", rolesComplete([{ roleT: "engineer", roleCt: "roamer" }]));
+check("a half-filled team is not", !rolesComplete([{ roleT: "engineer", roleCt: null }]));
 check("an empty team is not complete", !rolesComplete([]));
 
 
-// ---- somebody has to carry the bomb ---------------------------------------
+// ---- nobody is forced around a tower ---------------------------------------
 //
-// A side with no planter is not playing a worse strategy, it is playing a round
-// that cannot happen: nobody carries the bomb, and the plugin's fallback for an
-// unknown role is a generalist, which does not carry one either.
-//
-// Forced on the LAST turn rather than the first, so a team gets every other
-// turn to volunteer instead of having the job handed to whoever drafts first.
+// While Blitz was a retake, a side's last T pick had to be the planter: no planter,
+// no bomb, no round. Around a tower any side can play, so no role is required —
+// REQUIRED_T_ROLE is null and the last pick keeps every free role.
 
 {
-  // A3 is the last of team A. A1 and A2 took other things.
   const late = [
     pick("a1", "sniper", "roamer", 0),
-    pick("b1", "planter", "roamer", 1),
+    pick("b1", "engineer", "roamer", 1),
     pick("b2", "sniper", "frontrunner", 2),
     pick("a2", "burner", "frontrunner", 3),
   ];
 
   const state = draftState(A3, B3, late);
   check("the draft is waiting on A's last player", state.next?.steamId === "a3", String(state.next?.steamId));
-  check("A has one turn left", state.left.A === 1, String(state.left.A));
-  check("A must take the planter", mustTakePlanter(state, "A"));
-
-  const offered = availableRoles(state, "A", "T");
-  check("and is offered nothing else", offered.length === 1 && offered[0].id === "planter",
-    offered.map((r) => r.id).join());
-
-  // CT is untouched by the rule — it has no bomb.
-  check("the CT side is not narrowed", availableRoles(state, "A", "CT").length > 1);
-
+  check("A is not forced into a role", !mustTakePlanter(state, "A"));
+  check("A's last player keeps the free T roles", availableRoles(state, "A", "T").length > 1,
+    availableRoles(state, "A", "T").map((r) => r.id).join());
   check(
-    "a last pick that is not the planter is refused",
-    validateRolePick(A3, B3, late, { steamId: "a3", roleT: "rifler", roleCt: "backup" }).ok === false,
+    "a last pick without the Engineer is fine",
+    validateRolePick(A3, B3, late, { steamId: "a3", roleT: "rifler", roleCt: "backup" }).ok === true,
   );
-  check(
-    "the planter is accepted",
-    validateRolePick(A3, B3, late, { steamId: "a3", roleT: "planter", roleCt: "backup" }).ok === true,
-  );
-
-  // The timeout has no rule of its own: availableRoles has already narrowed it.
-  check("a timed-out last turn autos to the planter", autoRolePick(A3, B3, late)?.roleT === "planter");
-}
-
-{
-  // A team that already has one is under no constraint on its last turn.
-  const has = [
-    pick("a1", "planter", "roamer", 0),
-    pick("b1", "planter", "roamer", 1),
-    pick("b2", "sniper", "frontrunner", 2),
-    pick("a2", "burner", "frontrunner", 3),
-  ];
-
-  const state = draftState(A3, B3, has);
-  check("a team with a planter is not forced", !mustTakePlanter(state, "A"));
-  check("and keeps its choices", availableRoles(state, "A", "T").length > 1);
-  check(
-    "so its last player may take anything free",
-    validateRolePick(A3, B3, has, { steamId: "a3", roleT: "rifler", roleCt: "backup" }).ok === true,
-  );
+  check("an old 'planter' pick is no longer offered", !availableRoles(state, "A", "T").some((r) => r.id === "planter"));
 }
 
 {

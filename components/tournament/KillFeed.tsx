@@ -2,6 +2,7 @@
 
 import { useEffect, useRef, useState } from "react";
 import { AnimatePresence, motion } from "framer-motion";
+import { RadioTower } from "lucide-react";
 
 import { useI18n } from "@/components/I18nProvider";
 import WeaponIcon, { BombIcon, DefuseIcon, HeadshotIcon } from "./WeaponIcon";
@@ -186,7 +187,10 @@ export default function KillFeed({
                   <span className="kf-mid">
                     {e.reason === "bomb" || e.reason === "defused"
                       ? (e.reason === "bomb" ? <BombIcon className="kf-weapon" /> : <DefuseIcon className="kf-weapon" />)
-                      : <span className="kf-reason">{t(`match.feedReason.${e.reason ?? "elimination"}`)}</span>}
+                      : e.reason === "tower"
+                        // Held at time-out: the tower mode's own way to win a round.
+                        ? <RadioTower className="kf-weapon" aria-label={t("match.feedReason.tower")} />
+                        : <span className="kf-reason">{t(`match.feedReason.${e.reason ?? "elimination"}`)}</span>}
                   </span>
                   <span className="kf-right">
                     <span className={`kf-name slot-${(e.winnerSlot ?? "none").toLowerCase()}`}>
